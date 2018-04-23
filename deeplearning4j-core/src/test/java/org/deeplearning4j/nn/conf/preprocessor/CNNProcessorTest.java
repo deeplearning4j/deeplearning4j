@@ -75,7 +75,7 @@ public class CNNProcessorTest extends BaseDL4JTest {
                         //Check values:
                         //CNN reshaping (for each example) takes a 1d vector and converts it to 3d
                         // (4d total, for minibatch data)
-                        //1d vector is assumed to be rows from depth 0 concatenated, followed by depth 1, etc
+                        //1d vector is assumed to be rows from channels 0 concatenated, followed by channels 1, etc
                         for (int ex = 0; ex < miniBatch; ex++) {
                             for (int r = 0; r < rows; r++) {
                                 for (int c = 0; c < cols; c++) {
@@ -179,7 +179,7 @@ public class CNNProcessorTest extends BaseDL4JTest {
                         //Check values:
                         //CNN reshaping (for each example) takes a 1d vector and converts it to 3d
                         // (4d total, for minibatch data)
-                        //1d vector is assumed to be rows from depth 0 concatenated, followed by depth 1, etc
+                        //1d vector is assumed to be rows from channels 0 concatenated, followed by channels 1, etc
                         for (int ex = 0; ex < miniBatch; ex++) {
                             for (int r = 0; r < rows; r++) {
                                 for (int c = 0; c < cols; c++) {

@@ -41,7 +41,7 @@ import java.util.Arrays;
  * (b) Reshapes 4d epsilons (weights*deltas) from CNN layer, with shape
  * [numExamples, numChannels, inputHeight, inputWidth]) into 2d epsilons (with shape
  * [numExamples, inputHeight*inputWidth*numChannels]) for use in feed forward layer
- * Note: numChannels is equivalent to depth or featureMaps referenced in different literature
+ * Note: numChannels is equivalent to channels or featureMaps referenced in different literature
  *
  * @author Adam Gibson
  * @see Cnn3DToFeedForwardPreProcessor for opposite case (i.e., CNN -> DenseLayer etc)
@@ -139,8 +139,8 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
             case CNN:
                 InputType.InputTypeConvolutional c2 = (InputType.InputTypeConvolutional) inputType;
 
-                if (c2.getDepth() != numChannels || c2.getHeight() != inputHeight || c2.getWidth() != inputWidth) {
-                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c2.getDepth()
+                if (c2.getChannels() != numChannels || c2.getHeight() != inputHeight || c2.getWidth() != inputWidth) {
+                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c2.getChannels()
                                     + "," + c2.getWidth() + "," + c2.getHeight() + ") but expected (" + numChannels
                                     + "," + inputHeight + "," + inputWidth + ")");
                 }

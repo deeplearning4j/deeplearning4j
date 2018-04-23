@@ -128,8 +128,8 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         //only scale and reshape epsilon
         Gradient retGradient = new DefaultGradient();
 
-        //Epsilons in shape: [miniBatch, depth, outH, outW]
-        //Epsilons out shape: [miniBatch, depth, inH, inW]
+        //Epsilons in shape: [miniBatch, channels, outH, outW]
+        //Epsilons out shape: [miniBatch, channels, inH, inW]
 
         int poolingMode;
         switch (poolingType) {

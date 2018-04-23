@@ -80,7 +80,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     /**
      * ConvolutionLayer
      * nIn in the input layer is the number of channels
-     * nOut is the number of filters to be used in the net or in other words the depth
+     * nOut is the number of filters to be used in the net or in other words the channels
      * The builder specifies the filter/kernel size, the stride and padding
      * The pooling layer takes the kernel size
      */
@@ -164,7 +164,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         if (nIn <= 0 || override) {
             InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-            this.nIn = c.getDepth();
+            this.nIn = c.getChannels();
         }
     }
 
@@ -214,7 +214,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         //During forward pass: im2col array, mmul (result activations), in-place broadcast add
         int im2colSizePerEx =
-                        c.getDepth() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
+                        c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
 
         //During training: have im2col array, in-place gradient calculation, then epsilons...
         //But: im2col array may be cached...

@@ -59,7 +59,7 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
     private int[] shape;
 
     /**
-     * @param inputDepth  input depth
+     * @param inputDepth  input channels
      * @param inputHeight input height
      * @param inputWidth  input width
      * @param numChannels input channels
@@ -92,7 +92,7 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
 
         this.shape = input.shape();
         if (input.columns() != inputDepth * inputWidth * inputHeight * numChannels)
-            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to depth "
+            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to channels "
                     + inputDepth + " times height " + inputWidth + "times width " + inputWidth
                     + " times channels " + numChannels
                     + " but was instead " + Arrays.toString(input.shape()));
@@ -144,12 +144,12 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
             case CNN:
                 InputType.InputTypeConvolutional c2 = (InputType.InputTypeConvolutional) inputType;
 
-                if (c2.getDepth() != numChannels || c2.getHeight() != inputHeight || c2.getWidth() != inputWidth) {
-                    throw new IllegalStateException("Invalid input: Got CNN input type with (c,w,h)=(" + c2.getDepth()
+                if (c2.getChannels() != numChannels || c2.getHeight() != inputHeight || c2.getWidth() != inputWidth) {
+                    throw new IllegalStateException("Invalid input: Got CNN input type with (c,w,h)=(" + c2.getChannels()
                             + "," + c2.getWidth() + "," + c2.getHeight() + ") but expected (" + numChannels
                             + "," + inputHeight + "," + inputWidth + ")");
                 }
-                return InputType.convolutional3D(c2.getHeight(), c2.getWidth(), 1, c2.getDepth());
+                return InputType.convolutional3D(c2.getHeight(), c2.getWidth(), 1, c2.getChannels());
             case CNN3D:
                 InputType.InputTypeConvolutional3D c3 = (InputType.InputTypeConvolutional3D) inputType;
 

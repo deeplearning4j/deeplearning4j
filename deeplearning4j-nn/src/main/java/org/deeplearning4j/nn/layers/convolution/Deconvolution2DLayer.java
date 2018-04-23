@@ -57,7 +57,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
-                    + ". Expected rank 4 array with shape [minibatchSize, depth, inputHeight, inputWidth]. "
+                    + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
                     + layerId());
         }
 
@@ -175,9 +175,9 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Cannot do forward pass in Deconvolution2D layer (layer name = " + layerName
-                    + ", layer index = " + index + "): input array depth does not match CNN layer configuration"
-                    + " (data input depth = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
-                    + Arrays.toString(input.shape()) + "; expected" + " input depth = " + inDepth + ") "
+                    + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
+                    + " (data input channels = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
+                    + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
                     + layerId());
         }
         int kH = weights.size(2);

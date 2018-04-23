@@ -51,7 +51,7 @@ public abstract class InputType implements Serializable {
      * RNN: Recurrent neural network (3d minibatch) time series data<br>
      * CNN: 2D Convolutional neural network (4d minibatch, [miniBatchSize, channels, height, width])
      * CNNFlat: Flattened 2D conv net data (2d minibatch, [miniBatchSize, height * width * channels])
-     * CNN3D: 3D convolutional neural network (5d minibatch, [miniBatchSize, channels, height, width, depth])
+     * CNN3D: 3D convolutional neural network (5d minibatch, [miniBatchSize, channels, height, width, channels])
      */
     public enum Type {
         FF, RNN, CNN, CNNFlat, CNN3D
@@ -99,7 +99,7 @@ public abstract class InputType implements Serializable {
     }
 
     /**
-     * Input type for convolutional (CNN) data, that is 4d with shape [miniBatchSize, depth, height, width].
+     * Input type for convolutional (CNN) data, that is 4d with shape [miniBatchSize, channels, height, width].
      * For CNN data that has been flattened, use {@link #convolutionalFlat(int, int, int)}
      *
      * @param height height of the input
@@ -113,7 +113,7 @@ public abstract class InputType implements Serializable {
 
     /**
      * Input type for 3D convolutional (CNN3D) data, that is 5d with shape
-     * [miniBatchSize, channels, height, width, depth].
+     * [miniBatchSize, channels, height, width, channels].
      *
      * @param height   height of the input
      * @param width    Width of the input
@@ -127,7 +127,7 @@ public abstract class InputType implements Serializable {
 
     /**
      * Input type for convolutional (CNN) data, where the data is in flattened (row vector) format.
-     * Expect data with shape [miniBatchSize, height * width * depth]. For CNN data in 4d format, use {@link #convolutional(int, int, int)}
+     * Expect data with shape [miniBatchSize, height * width * channels]. For CNN data in 4d format, use {@link #convolutional(int, int, int)}
      *
      * @param height Height of the (unflattened) data represented by this input type
      * @param width  Width of the (unflattened) data represented by this input type
@@ -205,7 +205,7 @@ public abstract class InputType implements Serializable {
     public static class InputTypeConvolutional extends InputType {
         private int height;
         private int width;
-        private int depth;
+        private int channels;
 
         @Override
         public Type getType() {
@@ -214,12 +214,12 @@ public abstract class InputType implements Serializable {
 
         @Override
         public String toString() {
-            return "InputTypeConvolutional(h=" + height + ",w=" + width + ",d=" + depth + ")";
+            return "InputTypeConvolutional(h=" + height + ",w=" + width + ",c=" + channels + ")";
         }
 
         @Override
         public int arrayElementsPerExample() {
-            return height * width * depth;
+            return height * width * channels;
         }
     }
 
@@ -293,10 +293,10 @@ public abstract class InputType implements Serializable {
             case 3:
                 return InputType.recurrent(inputArray.size(1), inputArray.size(2));
             case 4:
-                //Order: [minibatch, depth, height, width] -> [h, w, d]
+                //Order: [minibatch, channels, height, width] -> [h, w, d]
                 return InputType.convolutional(inputArray.size(2), inputArray.size(3), inputArray.size(1));
             case 5:
-                //Order: [minibatch, channels, height, width, depth] -> [h, w, d, c]
+                //Order: [minibatch, channels, height, width, channels] -> [h, w, d, c]
                 return InputType.convolutional3D(inputArray.size(2), inputArray.size(3),
                         inputArray.size(4), inputArray.size(1));
             default:

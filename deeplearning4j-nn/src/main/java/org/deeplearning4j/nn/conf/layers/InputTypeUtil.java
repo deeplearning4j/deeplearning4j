@@ -136,7 +136,7 @@ public class InputTypeUtil {
         }
         if (kD <= 0 || kD > inDepth + 2 * padD) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
-                    + " Invalid input configuration for kernel depth. Require 0 < kD <= inDepth + 2*padD; got (kD="
+                    + " Invalid input configuration for kernel channels. Require 0 < kD <= inDepth + 2*padD; got (kD="
                     + kD + ", inDepth=" + inDepth + ", padD=" + padD + ")\n" + getConfigErrorCommonLastLine(
                     inputType, kernelSize, stride, padding, outputChannels, convolutionMode));
         }
@@ -184,7 +184,7 @@ public class InputTypeUtil {
                 int sameSize = (int) Math.ceil(inDepth / ((double) stride[2]));
                 throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
                         + "\nCombination of kernel size, stride and padding are not valid for given input width, using ConvolutionMode.Strict\n"
-                        + "ConvolutionMode.Strict requires: output depth = (input depth - kernelSize + 2*padding)/stride + 1 in width dimension to be an integer. Got: ("
+                        + "ConvolutionMode.Strict requires: output channels = (input channels - kernelSize + 2*padding)/stride + 1 in width dimension to be an integer. Got: ("
                         + inDepth + " - " + kD + " + 2*" + padD + ")/" + sD + " + 1 = " + str + "\n"
                         + "See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/ and ConvolutionType enumeration Javadoc.\n"
                         + "To truncate/crop the input, such that output width = floor(" + str + ") = "
@@ -332,7 +332,7 @@ public class InputTypeUtil {
                     int[] padding, int outputDepth, ConvolutionMode convolutionMode) {
         return "Input type = " + inputType + ", kernel = " + Arrays.toString(kernelSize) + ", strides = "
                         + Arrays.toString(stride) + ", padding = " + Arrays.toString(padding)
-                        + ", layer size (output depth) = " + outputDepth + ", convolution mode = " + convolutionMode;
+                        + ", layer size (output channels) = " + outputDepth + ", convolution mode = " + convolutionMode;
     }
 
     /**
@@ -344,7 +344,7 @@ public class InputTypeUtil {
      */
     public static InputPreProcessor getPreProcessorForInputTypeCnnLayers(InputType inputType, String layerName) {
 
-        //To add x-to-CNN preprocessor: need to know image depth/width/height after reshaping
+        //To add x-to-CNN preprocessor: need to know image channels/width/height after reshaping
         //But this can't be inferred from the FF/RNN activations directly (could be anything)
 
         switch (inputType.getType()) {
@@ -390,7 +390,7 @@ public class InputTypeUtil {
             case CNN:
                 //CNN -> RNN
                 InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-                return new CnnToRnnPreProcessor(c.getHeight(), c.getWidth(), c.getDepth());
+                return new CnnToRnnPreProcessor(c.getHeight(), c.getWidth(), c.getChannels());
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
         }

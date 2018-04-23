@@ -42,7 +42,7 @@ import java.util.Arrays;
  * (a) Reshapes epsilons (weights*deltas) out of FeedFoward layer (which is 2D or 3D with shape
  * [numExamples, inputHeight*inputWidth*numChannels]) into 4d epsilons (with shape
  * [numExamples, numChannels, inputHeight, inputWidth]) suitable to feed into CNN layers.<br>
- * Note: numChannels is equivalent to depth or featureMaps referenced in different literature
+ * Note: numChannels is equivalent to channels or featureMaps referenced in different literature
  * @author Adam Gibson
  * @see FeedForwardToCnnPreProcessor for opposite case (i.e., DenseLayer -> CNNetc)
  */
@@ -110,7 +110,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
         if (epsilons.columns() != inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
-                            + inputHeight + " x columns " + inputWidth + " x depth " + numChannels + " but was instead "
+                            + inputHeight + " x columns " + inputWidth + " x channels " + numChannels + " but was instead "
                             + Arrays.toString(epsilons.shape()));
 
         return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
@@ -133,7 +133,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         }
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        int outSize = c.getDepth() * c.getHeight() * c.getWidth();
+        int outSize = c.getChannels() * c.getHeight() * c.getWidth();
         return InputType.feedForward(outSize);
     }
 

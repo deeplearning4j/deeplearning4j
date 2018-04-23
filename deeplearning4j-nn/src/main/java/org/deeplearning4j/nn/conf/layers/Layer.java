@@ -179,7 +179,7 @@ public abstract class Layer implements Serializable, Cloneable {
     public abstract InputType getOutputType(int layerIndex, InputType inputType);
 
     /**
-     * Set the nIn value (number of inputs, or input depth for CNNs) based on the given input type
+     * Set the nIn value (number of inputs, or input channels for CNNs) based on the given input type
      *
      * @param inputType Input type for this layer
      * @param override  If false: only set the nIn value if it's not already set. If true: set it regardless of whether it's

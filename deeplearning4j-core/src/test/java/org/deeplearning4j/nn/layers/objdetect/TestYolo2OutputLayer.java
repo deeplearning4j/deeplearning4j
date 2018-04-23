@@ -431,7 +431,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
                 {5,5}});
 
         //4x downsampling to 13x13 = 52x52 input images
-        //Required depth at output layer: 5B+C, with B=5, C=20 object classes, for VOC
+        //Required channels at output layer: 5B+C, with B=5, C=20 object classes, for VOC
         VocLabelProvider lp = new VocLabelProvider(dir.getPath());
         int h = 52;
         int w = 52;

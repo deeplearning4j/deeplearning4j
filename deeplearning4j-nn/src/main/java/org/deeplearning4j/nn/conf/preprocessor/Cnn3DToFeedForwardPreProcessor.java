@@ -54,7 +54,7 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
     protected boolean isNCDHW = true; // channels first ordering by default
 
     /**
-     * @param inputDepth  input depth
+     * @param inputDepth  input channels
      * @param inputHeight input height
      * @param inputWidth  input width
      * @param numChannels input channels
@@ -91,8 +91,8 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
         // We expect either NCDHW or NDHWC format
         if ((isNCDHW && input.size(1) != numChannels) || (!isNCDHW && input.size(4) != numChannels)) {
             throw new IllegalStateException("Invalid input array: expected shape in format "
-                    + "[minibatch, channels, depth, height, width] or "
-                    + "[minibatch, depth, height, width, channels]"
+                    + "[minibatch, channels, channels, height, width] or "
+                    + "[minibatch, channels, height, width, channels]"
                     + "for numChannels: " + numChannels + ", inputDepth" + inputDepth + ", inputHeight" + inputHeight
                     + " and inputWidth]" + inputWidth + ", but got "
                     + Arrays.toString(input.shape()));
@@ -122,7 +122,7 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
 
         if (epsilons.columns() != inputDepth * inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
-                    + inputHeight + " x columns " + inputWidth + " x depth " + numChannels + " but was instead "
+                    + inputHeight + " x columns " + inputWidth + " x channels " + numChannels + " but was instead "
                     + Arrays.toString(epsilons.shape()));
 
         if (isNCDHW)

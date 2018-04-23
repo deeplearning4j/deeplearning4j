@@ -170,11 +170,11 @@ public class ConvolutionUtils {
             StringBuilder sb = new StringBuilder();
             sb.append("Invalid input data or configuration: ");
             if (atrous) sb.append("effective ");
-            sb.append("kernel depth and input depth must satisfy 0 < ");
+            sb.append("kernel channels and input channels must satisfy 0 < ");
             if (atrous) sb.append("effective ");
-            sb.append("kernel depth <= input depth + 2 * padding depth. \nGot ");
+            sb.append("kernel channels <= input channels + 2 * padding channels. \nGot ");
             if (atrous) sb.append("effective ");
-            sb.append("kernel depth = ").append(eKernel[2]).append(", input depth = ").append(inD)
+            sb.append("kernel channels = ").append(eKernel[2]).append(", input channels = ").append(inD)
                     .append(" and padding height = ").append(padding[2]).append(" which do not satisfy 0 < ")
                     .append(eKernel[2]).append(" <= ").append(inD + 2 * padding[2])
                     .append(getCommonErrorMsg(inputData, eKernel, strides, padding, dilation));
@@ -230,7 +230,7 @@ public class ConvolutionUtils {
                 int sameSize = (int) Math.ceil(inD / ((double) strides[2]));
                 StringBuilder sb = new StringBuilder();
                 sb.append("Invalid input data or configuration: Combination of kernel size, stride and padding are not valid for given input width, using ConvolutionMode.Strict\n")
-                        .append("ConvolutionMode.Strict requires: output depth = (input - kernelSize + 2*padding)/stride + 1 to be an integer. Got: (")
+                        .append("ConvolutionMode.Strict requires: output channels = (input - kernelSize + 2*padding)/stride + 1 to be an integer. Got: (")
                         .append(inD).append(" - ").append(eKernel[2]).append(" + 2*").append(padding[2])
                         .append(")/").append(strides[1]).append(" + 1 = ").append(str).append("\n")
                         .append("See \"Constraints on strides\" at http://cs231n.github.io/convolutional-networks/ and ConvolutionType enumeration Javadoc.\n")
@@ -495,7 +495,7 @@ public class ConvolutionUtils {
     }
 
     /**
-     * Get heigh/width/depth as length 3 int[] from the InputType
+     * Get heigh/width/channels as length 3 int[] from the InputType
      *
      * @param inputType Input type to get
      * @return Length
@@ -508,7 +508,7 @@ public class ConvolutionUtils {
             InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
             inH = conv.getHeight();
             inW = conv.getWidth();
-            inDepth = conv.getDepth();
+            inDepth = conv.getChannels();
         } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
             InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
             inH = conv.getHeight();

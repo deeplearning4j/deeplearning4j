@@ -32,7 +32,7 @@ import static org.junit.Assert.*;
 public class SubsamplingLayerTest extends BaseDL4JTest {
 
     private int nExamples = 1;
-    private int depth = 20; //depth & nOut
+    private int depth = 20; //channels & nOut
     private int nChannelsIn = 1;
     private int inputWidth = 28;
     private int inputHeight = 28;
@@ -59,7 +59,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         INDArray output = layer.activate(input);
         assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, featureMapWidth, featureMapHeight},
                         output.shape()));
-        assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
+        assertEquals(nChannelsIn, output.size(1), 1e-4); // channels retained
     }
 
     @Test
@@ -77,7 +77,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         INDArray output = layer.activate(input);
         assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, featureMapWidth, featureMapHeight},
                         output.shape()));
-        assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
+        assertEquals(nChannelsIn, output.size(1), 1e-4); // channels retained
     }
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -109,7 +109,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
 
         Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
         assertEquals(input.shape().length, out.getSecond().shape().length);
-        assertEquals(depth, out.getSecond().size(1)); // depth retained
+        assertEquals(depth, out.getSecond().size(1)); // channels retained
     }
 
     @Test

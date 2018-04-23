@@ -105,7 +105,7 @@ public class BatchNormalization extends FeedForwardLayer {
                     nIn = ((InputType.InputTypeFeedForward) inputType).getSize();
                     break;
                 case CNN:
-                    nIn = ((InputType.InputTypeConvolutional) inputType).getDepth();
+                    nIn = ((InputType.InputTypeConvolutional) inputType).getChannels();
                     break;
                 case CNNFlat:
                     nIn = ((InputType.InputTypeConvolutionalFlat) inputType).getDepth();

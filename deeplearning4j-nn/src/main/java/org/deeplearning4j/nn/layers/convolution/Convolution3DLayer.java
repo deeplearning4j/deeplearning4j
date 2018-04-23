@@ -187,9 +187,9 @@ public class Convolution3DLayer extends ConvolutionLayer {
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Cannot do forward pass in Convolution3D layer (layer name = "
                     + layerName
-                    + ", layer index = " + index + "): input array depth does not match CNN layer configuration"
-                    + " (data input depth = " + input.size(1)
-                    + ", [minibatch, inputChannels, height, width, depth]="
+                    + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
+                    + " (data input channels = " + input.size(1)
+                    + ", [minibatch, inputChannels, height, width, channels]="
                     + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inWeightChannels + ") "
                     + layerId());
         }
