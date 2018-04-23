@@ -3,7 +3,6 @@ package org.deeplearning4j.ui.play;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorage;
@@ -13,6 +12,7 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
+import org.deeplearning4j.ui.i18n.DefaultI18N;
 import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.module.convolutional.ConvolutionalListenerModule;
 import org.deeplearning4j.ui.module.defaultModule.DefaultModule;
@@ -26,8 +26,6 @@ import org.deeplearning4j.ui.storage.FileStatsStorage;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
 import org.nd4j.linalg.primitives.Pair;
-import org.reflections.ReflectionUtils;
-import org.reflections.Reflections;
 import play.Mode;
 import play.api.routing.Router;
 import play.routing.RoutingDsl;
@@ -114,6 +112,15 @@ public class PlayUIServer extends UIServer {
             }
             System.exit(1);
         }
+
+        if(((DefaultI18N)I18NProvider.getInstance()).noI18NData()){
+            log.error("Error loading UI Language (Internationalization) data: no language resource data files were" +
+                    "found on the classpath. This usually occurs when running DL4J's UI from an uber-jar, which was " +
+                    "built incorrectly (without language resource files). See https://deeplearning4j.org/visualization#issues" +
+                    "for more details");
+            System.exit(1);
+        }
+
         RoutingDsl routingDsl = new RoutingDsl();
 
         //Set up index page and assets routing
@@ -133,26 +140,7 @@ public class PlayUIServer extends UIServer {
         uiModules.add(remoteReceiverModule);
 
         //Check service loader mechanism (Arbiter UI, etc) for modules
-        uiModules.addAll(modulesViaServiceLoader());
-
-
-        //Check if custom UI modules are enabled...
-        String customModulePropertyStr = System.getProperty(UI_CUSTOM_MODULE_PROPERTY);
-        boolean useCustomModules = false;
-        if (customModulePropertyStr != null) {
-            useCustomModules = Boolean.parseBoolean(customModulePropertyStr);
-        }
-
-        if (useCustomModules) {
-            List<Class<?>> excludeClasses = new ArrayList<>();
-            for (UIModule u : uiModules) {
-                excludeClasses.add(u.getClass());
-            }
-            List<UIModule> list = getCustomUIModules(excludeClasses);
-            uiModules.addAll(list);
-        }
-
-
+        modulesViaServiceLoader(uiModules);
 
         for (UIModule m : uiModules) {
             List<Route> routes = m.getRoutes();
@@ -255,60 +243,36 @@ public class PlayUIServer extends UIServer {
         return addr;
     }
 
-    private List<UIModule> modulesViaServiceLoader() {
+    private void modulesViaServiceLoader(List<UIModule> uiModules) {
 
         ServiceLoader<UIModule> sl = ServiceLoader.load(UIModule.class);
         Iterator<UIModule> iter = sl.iterator();
 
         if (!iter.hasNext()) {
-            return Collections.emptyList();
+            return;
         }
 
-        List<UIModule> l = new ArrayList<>();
         while (iter.hasNext()) {
             UIModule m = iter.next();
-            log.debug("Loaded UI module via service loader: {}", m.getClass());
-            l.add(m);
-        }
+            Class<?> c = m.getClass();
+            boolean foundExisting = false;
+            for(UIModule mExisting : uiModules){
+                if(mExisting.getClass() == c){
+                    foundExisting = true;
+                    break;
+                }
+            }
 
-        return l;
+            if(!foundExisting) {
+                log.debug("Loaded UI module via service loader: {}", m.getClass());
+                uiModules.add(m);
+            }
+        }
     }
 
 
     public static void main(String[] args) {
         new PlayUIServer().runMain(args);
-    }
-
-    private List<UIModule> getCustomUIModules(List<Class<?>> excludeClasses) {
-        //Scan classpath for UI module instances, but ignore the 'excludeClasses' classes
-        List<String> classNames = Collections.singletonList(UIModule.class.getName());
-        Reflections reflections = new Reflections();
-        org.reflections.Store store = reflections.getStore();
-        Iterable<String> subtypesByName =
-                        store.getAll(org.reflections.scanners.SubTypesScanner.class.getSimpleName(), classNames);
-        Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
-
-        List<Class<?>> toCreate = new ArrayList<>();
-        for (Class<?> c : subtypeClasses) {
-            if (excludeClasses.contains(c))
-                continue;;
-            toCreate.add(c);
-        }
-
-        List<UIModule> ret = new ArrayList<>(toCreate.size());
-        for (Class<?> c : toCreate) {
-            UIModule m;
-            try {
-                m = (UIModule) c.newInstance();
-            } catch (Exception e) {
-                log.warn("Could not create instance of custom UIModule of type {}; skipping", c, e);
-                continue;
-            }
-            log.debug("Created instance of custom UI module: {}", c);
-            ret.add(m);
-        }
-
-        return ret;
     }
 
     @Override
