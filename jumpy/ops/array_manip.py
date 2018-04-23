@@ -3,27 +3,33 @@ from .op import op
 # Array manipulation routines
 # https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.array-manipulation.html
 
+
 @op
 def reshape(arr, *args):
     if len(args) == 1 and type(args) in (list, tuple):
         args = tuple(args[0])
     return arr.reshape(*args)
 
+
 @op
 def transpose(arr):
     return arr.transpose()
+
 
 @op
 def ravel(arr):
     return arr.ravel()
 
+
 @op
 def flatten(arr):
     return arr.ravel().dup()
 
+
 @op
 def moveaxis(arr, source, destination):
-    assert type(source) == type(destination), 'source and destination should be of same type.'
+    assert type(source) == type(
+        destination), 'source and destination should be of same type.'
     shape = arr.shape()
     ndim = len(shape)
     x = list(range(ndim))
@@ -48,17 +54,20 @@ def moveaxis(arr, source, destination):
             x.insert(dst, z)
         return arr.permute(*x)
 
+
 @op
 def permute(arr, *axis):
     if len(axis) == 1:
         axis = axis[0]
     assert set(axis) in [set(list(range(len(axis)))),
-            set(list(range(len(arr.shape()))))]
+                         set(list(range(len(arr.shape()))))]
     return arr.permute(*axis)
+
 
 @op
 def expand_dims(arr, axis):
     return arr.expandDims(axis)
+
 
 @op
 def squeeze(arr, axis):
@@ -69,17 +78,21 @@ def squeeze(arr, axis):
         shape.pop(axis)
     return arr.reshape(*shape)
 
+
 @op
 def concatenate(arrs, axis):
     return Nd4j.concat(axis, *arrs)
+
 
 @op
 def hstack(arrs):
     return Nd4j.hstack(arrs)
 
+
 @op
 def vstack(arrs):
     return Nd4j.vstack(arrs)
+
 
 @op
 def stack(arrs, axis):
@@ -89,12 +102,14 @@ def stack(arrs, axis):
         arrs[i] = arr.reshape(*shape)
     return Nd4j.concat(axis, *arrs)
 
+
 @op
 def tile(arr, reps):
     if type(reps) is int:
         return Nd4j.tile(arr, reps)
     else:
         return Nd4j.tile(arr, *reps)
+
 
 @op
 def repeat(arr, repeats, axis=None):

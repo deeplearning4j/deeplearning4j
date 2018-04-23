@@ -80,7 +80,7 @@ def _from_numpy(np_array):
     # Convert the numpy array to nd4j context dtype
     required_dtype = get_np_dtype(get_context_dtype())
     if np_array.dtype != required_dtype:
-        raise Exception(required_dtype + ' required.')
+        raise Exception("%s is requied." % repr(np_array.dtype))
 
     # Nd4j does not have 1-d vectors.
     # So we add a dummy dimension.
