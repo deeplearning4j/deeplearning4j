@@ -90,7 +90,7 @@ public class KerasModel {
             throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         this(modelBuilder.getModelJson(), modelBuilder.getModelYaml(), modelBuilder.getWeightsArchive(),
                 modelBuilder.getWeightsRoot(), modelBuilder.getTrainingJson(), modelBuilder.getTrainingArchive(),
-                modelBuilder.isEnforceTrainingConfig());
+                modelBuilder.isEnforceTrainingConfig(), modelBuilder.getInputShape());
     }
 
     /**
@@ -108,7 +108,8 @@ public class KerasModel {
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     protected KerasModel(String modelJson, String modelYaml, Hdf5Archive weightsArchive, String weightsRoot,
-                         String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig)
+                         String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig,
+                         int[] inputShape)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
 
         Map<String, Object> modelConfig = KerasModelUtils.parseModelConfig(modelJson, modelYaml);
@@ -161,7 +162,7 @@ public class KerasModel {
             importTrainingConfiguration(trainingJson);
 
         /* Infer output types for each layer. */
-        inferOutputTypes();
+        inferOutputTypes(inputShape);
 
         /* Store weights in layers. */
         if (weightsArchive != null)
@@ -245,12 +246,15 @@ public class KerasModel {
      * Helper method called from constructor. Infers and records output type
      * for every layer.
      */
-    void inferOutputTypes()
+    void inferOutputTypes(int[] inputShape)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this.outputTypes = new HashMap<>();
         for (KerasLayer layer : this.layersOrdered) {
             InputType outputType;
             if (layer instanceof KerasInput) {
+                if (inputShape != null) {
+                    layer.inputShape =inputShape;
+                }
                 outputType = layer.getOutputType();
                 this.truncatedBPTT = ((KerasInput) layer).getTruncatedBptt();
             } else {

@@ -39,6 +39,8 @@ public class KerasEmbedding extends KerasLayer {
 
     private final int NUM_TRAINABLE_PARAMS = 1;
     private boolean hasZeroMasking;
+    private int inputDim;
+    private int inputLength;
 
 
     /**
@@ -72,11 +74,13 @@ public class KerasEmbedding extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
-        int inputDim = getInputDimFromConfig(layerConfig);
+        this.inputDim = getInputDimFromConfig(layerConfig);
+        this.inputLength = getInputLengthFromConfig(layerConfig);
+
         int[] inputShapeOld = this.inputShape;
         this.inputShape = new int[inputShapeOld.length + 1];
         this.inputShape[0] = inputShapeOld[0];
-        this.inputShape[1] = inputDim;
+        this.inputShape[1] = inputLength; //> 0 ? inputDim * inputLength : inputDim;
 
         this.hasZeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
         if (hasZeroMasking)
@@ -169,7 +173,27 @@ public class KerasEmbedding extends KerasLayer {
     }
 
     /**
-     * Get Keras input shape from Keras layer configuration.
+     * Get Keras input length from Keras layer configuration. In Keras input_length, if present, denotes
+     * the number of indices to embed per mini-batch, i.e. input will be of of shape (mb, input_length)
+     * and (mb, 1) else.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return input length as int
+     */
+    private int getInputLengthFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_LENGTH()))
+            throw new InvalidKerasConfigurationException(
+                    "Keras Embedding layer config missing " + conf.getLAYER_FIELD_INPUT_LENGTH() + " field");
+        if(innerConfig.get(conf.getLAYER_FIELD_INPUT_LENGTH()) == null){
+            return 1;
+        } else {
+            return (int) innerConfig.get(conf.getLAYER_FIELD_INPUT_LENGTH());
+        }
+    }
+
+    /**
+     * Get Keras input dimension from Keras layer configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration
      * @return input dim as int

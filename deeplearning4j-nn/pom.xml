@@ -60,7 +60,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.8</version>
+            <version>${commons-compress.version}</version>
         </dependency>
 
         <dependency>

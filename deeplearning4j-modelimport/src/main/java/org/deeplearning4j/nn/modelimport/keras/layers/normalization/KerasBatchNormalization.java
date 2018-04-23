@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +45,9 @@ public class KerasBatchNormalization extends KerasLayer {
     private final String PARAM_NAME_BETA = "beta";
     private final String PARAM_NAME_RUNNING_MEAN = "running_mean";
     private final String PARAM_NAME_RUNNING_STD = "running_std";
+
+
+    private boolean scale = true;
 
     /**
      * Pass-through constructor from KerasLayer
@@ -79,7 +83,9 @@ public class KerasBatchNormalization extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
-        // TODO: these helper functions should return regularizers that we in constructor
+        this.scale = getScaleParameter(layerConfig);
+
+        // TODO: these helper functions should return regularizers that we use in constructor
         getGammaRegularizerFromConfig(layerConfig, enforceTrainingConfig);
         getBetaRegularizerFromConfig(layerConfig, enforceTrainingConfig);
         int batchNormMode = getBatchNormMode(layerConfig, enforceTrainingConfig);
@@ -153,11 +159,17 @@ public class KerasBatchNormalization extends KerasLayer {
             this.weights.put(BatchNormalizationParamInitializer.BETA, weights.get(PARAM_NAME_BETA));
         else
             throw new InvalidKerasConfigurationException("Parameter " + PARAM_NAME_BETA + " does not exist in weights");
-        if (weights.containsKey(PARAM_NAME_GAMMA))
-            this.weights.put(BatchNormalizationParamInitializer.GAMMA, weights.get(PARAM_NAME_GAMMA));
-        else
-            throw new InvalidKerasConfigurationException(
-                    "Parameter " + PARAM_NAME_GAMMA + " does not exist in weights");
+
+        if (scale) {
+            if (weights.containsKey(PARAM_NAME_GAMMA))
+                this.weights.put(BatchNormalizationParamInitializer.GAMMA, weights.get(PARAM_NAME_GAMMA));
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Parameter " + PARAM_NAME_GAMMA + " does not exist in weights");
+        } else {
+            INDArray dummyGamma = Nd4j.onesLike(weights.get(PARAM_NAME_BETA));
+            this.weights.put(BatchNormalizationParamInitializer.GAMMA, dummyGamma);
+        }
         if (weights.containsKey(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()))
             this.weights.put(BatchNormalizationParamInitializer.GLOBAL_MEAN, weights.get(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()));
         else
@@ -175,7 +187,7 @@ public class KerasBatchNormalization extends KerasLayer {
             paramNames.remove(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN());
             paramNames.remove(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE());
             String unknownParamNames = paramNames.toString();
-            log.warn("Attemping to set weights for unknown parameters: "
+            log.warn("Attempting to set weights for unknown parameters: "
                     + unknownParamNames.substring(1, unknownParamNames.length() - 1));
         }
     }
@@ -226,6 +238,16 @@ public class KerasBatchNormalization extends KerasLayer {
                         "Regularization for BatchNormalization gamma parameter not supported");
             else
                 log.warn("Regularization for BatchNormalization gamma parameter not supported...ignoring.");
+        }
+    }
+
+    private boolean getScaleParameter(Map<String, Object> layerConfig)
+            throws UnsupportedOperationException, InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        if (innerConfig.containsKey("scale")) {
+            return (boolean) innerConfig.get("scale");
+        } else {
+            return true;
         }
     }
 
