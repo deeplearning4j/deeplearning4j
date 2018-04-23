@@ -79,4 +79,9 @@ public class LegacyLayerDeserializer extends BaseLegacyDeserializer<Layer> {
     public ObjectMapper getLegacyJsonMapper() {
         return JsonMappers.getMapperLegacyJson();
     }
+
+    @Override
+    public Class<?> getDeserializedType() {
+        return Layer.class;
+    }
 }

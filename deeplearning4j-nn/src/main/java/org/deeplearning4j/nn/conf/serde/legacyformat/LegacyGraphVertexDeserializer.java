@@ -58,4 +58,9 @@ public class LegacyGraphVertexDeserializer extends BaseLegacyDeserializer<GraphV
     public ObjectMapper getLegacyJsonMapper() {
         return JsonMappers.getMapperLegacyJson();
     }
+
+    @Override
+    public Class<?> getDeserializedType() {
+        return GraphVertex.class;
+    }
 }

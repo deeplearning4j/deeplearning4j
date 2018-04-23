@@ -45,4 +45,9 @@ public class LegacyPreprocessorDeserializer extends BaseLegacyDeserializer<Input
     public ObjectMapper getLegacyJsonMapper() {
         return JsonMappers.getMapperLegacyJson();
     }
+
+    @Override
+    public Class<?> getDeserializedType() {
+        return InputPreProcessor.class;
+    }
 }

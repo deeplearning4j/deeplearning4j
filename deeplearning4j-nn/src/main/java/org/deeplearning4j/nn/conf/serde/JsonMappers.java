@@ -5,6 +5,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
+import org.nd4j.serde.json.LegacyIActivationDeserializer;
+import org.nd4j.serde.json.LegacyILossFunctionDeserializer;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.*;
 import org.nd4j.shade.jackson.databind.cfg.MapperConfig;
@@ -31,6 +33,9 @@ public class JsonMappers {
         configureMapper(jsonMapperLegacyFormat);
 
         jsonMapperLegacyFormat.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector());
+
+        LegacyIActivationDeserializer.setLegacyJsonMapper(jsonMapperLegacyFormat);
+        LegacyILossFunctionDeserializer.setLegacyJsonMapper(jsonMapperLegacyFormat);
     }
 
     public static ObjectMapper getMapper(){
