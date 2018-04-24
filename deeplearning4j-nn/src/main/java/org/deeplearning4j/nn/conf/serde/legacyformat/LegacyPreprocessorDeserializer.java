@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.serde.legacyformat;
 
+import lombok.NonNull;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
@@ -49,5 +50,13 @@ public class LegacyPreprocessorDeserializer extends BaseLegacyDeserializer<Input
     @Override
     public Class<?> getDeserializedType() {
         return InputPreProcessor.class;
+    }
+
+    public static void registerLegacyClassDefaultName(@NonNull Class<? extends InputPreProcessor> clazz){
+        registerLegacyClassSpecifiedName(clazz.getSimpleName(), clazz);
+    }
+
+    public static void registerLegacyClassSpecifiedName(@NonNull String name, @NonNull Class<? extends InputPreProcessor> clazz){
+        LEGACY_NAMES.put(name, clazz.getName());
     }
 }

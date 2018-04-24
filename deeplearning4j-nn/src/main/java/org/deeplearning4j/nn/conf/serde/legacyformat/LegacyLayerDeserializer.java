@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.serde.legacyformat;
 
+import lombok.NonNull;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
@@ -83,5 +84,13 @@ public class LegacyLayerDeserializer extends BaseLegacyDeserializer<Layer> {
     @Override
     public Class<?> getDeserializedType() {
         return Layer.class;
+    }
+
+    public static void registerLegacyClassDefaultName(@NonNull Class<? extends Layer> clazz){
+        registerLegacyClassSpecifiedName(clazz.getSimpleName(), clazz);
+    }
+
+    public static void registerLegacyClassSpecifiedName(@NonNull String name, @NonNull Class<? extends Layer> clazz){
+        LEGACY_NAMES.put(name, clazz.getName());
     }
 }

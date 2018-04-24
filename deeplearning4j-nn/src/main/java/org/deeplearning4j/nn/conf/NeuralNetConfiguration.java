@@ -36,6 +36,10 @@ import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
+import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyGraphVertexDeserializer;
+import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
+import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyPreprocessorDeserializer;
+import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyReconstructionDistributionDeserializer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -46,6 +50,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.serde.json.LegacyIActivationDeserializer;
+import org.nd4j.serde.json.LegacyILossFunctionDeserializer;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -408,7 +415,44 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     );
 
     public void registerLegacyCustomClassesForJSON(Class<?>... classes){
+        //Default names (i.e., old format for custom JSON format)
+        List<Pair<String,Class>> list = new ArrayList<>();
+        for(Class<?> c : classes){
+            list.add(new Pair<String,Class>(c.getSimpleName(), c));
+        }
+    }
 
+    public void registerLegacyCustomClassesForJSON(Pair<String,Class>... classes){
+        for(Pair<String,Class> p : classes){
+            String s = p.getFirst();
+            Class c = p.getRight();
+            //Check if it's a valid class to register...
+            boolean found = false;
+            for( Class<?> c2 : REGISTERABLE_CUSTOM_CLASSES){
+                if(c2.isAssignableFrom(c)){
+                    if(c2 == Layer.class){
+                        LegacyLayerDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends Layer>)c);
+                    } else if(c2 == GraphVertex.class){
+                        LegacyGraphVertexDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends GraphVertex>)c);
+                    } else if(c2 == InputPreProcessor.class){
+                        LegacyPreprocessorDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends InputPreProcessor>)c);
+                    } else if(c2 == IActivation.class ){
+                        LegacyIActivationDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends IActivation>)c);
+                    } else if(c2 == ILossFunction.class ){
+                        LegacyILossFunctionDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends ILossFunction>)c);
+                    } else if(c2 == ReconstructionDistribution.class){
+                        LegacyReconstructionDistributionDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends ReconstructionDistribution>)c);
+                    }
+
+                    found = true;
+                }
+            }
+
+            if(!found){
+                throw new IllegalArgumentException("Cannot register class for legacy JSON deserialization: class " +
+                        c.getName() + " is not a subtype of classes " + REGISTERABLE_CUSTOM_CLASSES);
+            }
+        }
     }
 
     /**

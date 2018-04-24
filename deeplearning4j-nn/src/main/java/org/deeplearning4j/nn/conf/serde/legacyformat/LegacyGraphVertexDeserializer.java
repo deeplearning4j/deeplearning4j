@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.serde.legacyformat;
 
+import lombok.NonNull;
 import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
@@ -62,5 +63,13 @@ public class LegacyGraphVertexDeserializer extends BaseLegacyDeserializer<GraphV
     @Override
     public Class<?> getDeserializedType() {
         return GraphVertex.class;
+    }
+
+    public static void registerLegacyClassDefaultName(@NonNull Class<? extends GraphVertex> clazz){
+        registerLegacyClassSpecifiedName(clazz.getSimpleName(), clazz);
+    }
+
+    public static void registerLegacyClassSpecifiedName(@NonNull String name, @NonNull Class<? extends GraphVertex> clazz){
+        LEGACY_NAMES.put(name, clazz.getName());
     }
 }

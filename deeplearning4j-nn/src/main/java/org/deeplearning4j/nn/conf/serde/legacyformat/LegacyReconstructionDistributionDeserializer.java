@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.serde.legacyformat;
 
+import lombok.NonNull;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.layers.variational.*;
 import org.deeplearning4j.nn.conf.preprocessor.*;
@@ -36,5 +37,13 @@ public class LegacyReconstructionDistributionDeserializer extends BaseLegacyDese
     @Override
     public Class<?> getDeserializedType() {
         return ReconstructionDistribution.class;
+    }
+
+    public static void registerLegacyClassDefaultName(@NonNull Class<? extends ReconstructionDistribution> clazz){
+        registerLegacyClassSpecifiedName(clazz.getSimpleName(), clazz);
+    }
+
+    public static void registerLegacyClassSpecifiedName(@NonNull String name, @NonNull Class<? extends ReconstructionDistribution> clazz){
+        LEGACY_NAMES.put(name, clazz.getName());
     }
 }
