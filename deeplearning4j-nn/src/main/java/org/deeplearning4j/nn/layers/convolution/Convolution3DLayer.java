@@ -84,12 +84,11 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         INDArray weightGradView = gradientViews.get(Convolution3DParamInitializer.WEIGHT_KEY);
 
-        INDArray outEpsilon = Nd4j.create(miniBatch * outChannels * outH * outW * outD);
-        INDArray reshapedEpsilon;
+        INDArray outEpsilon;
         if (isNCDHW)
-            reshapedEpsilon = outEpsilon.reshape('c', miniBatch, outChannels, outD, outH, outW);
+            outEpsilon =  Nd4j.create('c', miniBatch, outChannels, outD, outH, outW);
         else
-            reshapedEpsilon = outEpsilon.reshape('c', miniBatch, outD, outH, outW, outChannels);
+            outEpsilon =  Nd4j.create('c', miniBatch, outD, outH, outW, outChannels);
 
 
         int[] intArgs = new int[]{
@@ -109,26 +108,25 @@ public class Convolution3DLayer extends ConvolutionLayer {
         INDArray bias;
         INDArray biasGradView = null;
 
-        CustomOp op;
+        INDArray[] inputs;
+        INDArray[] outputs;
         if (layerConfig.hasBias()) {
-
             biasGradView = gradientViews.get(Convolution3DParamInitializer.BIAS_KEY);
             bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, true);
-
-            op = DynamicCustomOp.builder("conv3dnew_bp")
-                    .addInputs(input, weights, bias, delta)
-                    .addIntegerArguments(intArgs)
-                    .addOutputs(reshapedEpsilon, weightGradView, biasGradView)
-                    .callInplace(false)
-                    .build();
+            inputs = new INDArray[] {input, weights, bias, delta};
+            outputs = new INDArray[] {outEpsilon, weightGradView, biasGradView};
         } else {
-            op = DynamicCustomOp.builder("conv3dnew_bp")
-                    .addInputs(input, weights, delta)
+            inputs = new INDArray[] {input, weights, delta};
+            outputs = new INDArray[]{outEpsilon, weightGradView};
+        }
+
+        CustomOp op = DynamicCustomOp.builder("conv3dnew_bp")
+                    .addInputs(inputs)
                     .addIntegerArguments(intArgs)
-                    .addOutputs(reshapedEpsilon, weightGradView)
+                    .addOutputs(outputs)
                     .callInplace(false)
                     .build();
-        }
+
         Nd4j.getExecutioner().exec(op);
 
         Gradient retGradient = new DefaultGradient();
@@ -138,7 +136,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         retGradient.setGradientFor(Convolution3DParamInitializer.WEIGHT_KEY, weightGradView, 'c');
         weightNoiseParams.clear();
 
-        return new Pair<>(retGradient, reshapedEpsilon);
+        return new Pair<>(retGradient, outEpsilon);
     }
 
 
@@ -216,12 +214,11 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int outH = outSize[1];
         int outW = outSize[2];
 
-        INDArray output = Nd4j.create(miniBatch * outWeightChannels * outH * outW * outD);
-        INDArray reshapedOutput;
+        INDArray output;
         if (isNCDHW)
-            reshapedOutput = output.reshape('c', miniBatch, outWeightChannels, outD, outH, outW);
+            output = Nd4j.create('c', miniBatch, outWeightChannels, outD, outH, outW);
         else
-            reshapedOutput = output.reshape('c', miniBatch, outD, outH, outW, outWeightChannels);
+            output = Nd4j.create('c', miniBatch, outD, outH, outW, outWeightChannels);
 
         int[] intArgs = new int[]{
                 kernel[0], kernel[1], kernel[2],
@@ -232,26 +229,23 @@ public class Convolution3DLayer extends ConvolutionLayer {
                 isNCDHW ? 0 : 1
         };
 
-        CustomOp op;
+        INDArray[] inputs;
         if (layerConfig.hasBias()) {
             INDArray bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, training);
-
-            op = DynamicCustomOp.builder("conv3dnew")
-                    .addInputs(input, weights, bias)
-                    .addIntegerArguments(intArgs)
-                    .addOutputs(reshapedOutput)
-                    .callInplace(false)
-                    .build();
+            inputs = new INDArray[]{input, weights, bias};
         } else {
-            op = DynamicCustomOp.builder("conv3dnew")
-                    .addInputs(input, weights)
+            inputs = new INDArray[]{input, weights};
+        }
+
+        CustomOp op = DynamicCustomOp.builder("conv3dnew")
+                    .addInputs(inputs)
                     .addIntegerArguments(intArgs)
-                    .addOutputs(reshapedOutput)
+                    .addOutputs(output)
                     .callInplace(false)
                     .build();
-        }
+
         Nd4j.getExecutioner().exec(op);
 
-        return new Pair<>(reshapedOutput, null);
+        return new Pair<>(output, null);
     }
 }
