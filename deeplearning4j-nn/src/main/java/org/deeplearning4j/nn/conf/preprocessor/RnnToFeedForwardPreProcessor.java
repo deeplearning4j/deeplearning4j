@@ -9,6 +9,8 @@ import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -31,39 +33,42 @@ import java.util.Arrays;
 public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Need to reshape RNN activations (3d) activations to 2d (for input into feed forward layer)
         if (input.rank() != 3)
             throw new IllegalArgumentException(
                             "Invalid input: expect NDArray with rank 3 (i.e., activations for RNN layer)");
 
-        if (input.ordering() != 'f')
-            input = input.dup('f');
+        if (input.ordering() != 'f' || !Shape.hasDefaultStridesForShape(input))
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
         int[] shape = input.shape();
-        if (shape[0] == 1)
-            return input.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
-        if (shape[2] == 1)
-            return input.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
-
-        INDArray permuted = input.permute(0, 2, 1); //Permute, so we get correct order after reshaping
-        return permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        INDArray ret;
+        if (shape[0] == 1) {
+            ret = input.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
+        } else if (shape[2] == 1) {
+            ret = input.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
+        } else {
+            INDArray permuted = input.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+            ret = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        }
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (output == null)
             return null; //In a few cases: output may be null, and this is valid. Like time series data -> embedding layer
         //Need to reshape FeedForward layer epsilons (2d) to 3d (for use in RNN layer backprop calculations)
         if (output.rank() != 2)
             throw new IllegalArgumentException(
                             "Invalid input: expect NDArray with rank 2 (i.e., epsilons from feed forward layer)");
-        if (output.ordering() == 'c')
-            output = Shape.toOffsetZeroCopy(output, 'f');
+        if (output.ordering() != 'f' || !Shape.hasDefaultStridesForShape(output))
+            output = workspaceMgr.dup(ArrayType.ACTIVATIONS, output, 'f');
 
         int[] shape = output.shape();
         INDArray reshaped = output.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
-        return reshaped.permute(0, 2, 1);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, reshaped.permute(0, 2, 1));
     }
 
     @Override
@@ -94,7 +99,8 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
             return new Pair<>(maskArray, currentMaskState);
         } else if (maskArray.rank() == 2) {
             //Need to reshape mask array from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
-            return new Pair<>(TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray), currentMaskState);
+            return new Pair<>(TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT),  //TODO
+                    currentMaskState);
         } else {
             throw new IllegalArgumentException("Received mask array of rank " + maskArray.rank()
                             + "; expected rank 2 mask array. Mask array shape: " + Arrays.toString(maskArray.shape()));

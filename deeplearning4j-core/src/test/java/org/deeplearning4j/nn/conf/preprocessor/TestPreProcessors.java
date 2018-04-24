@@ -17,6 +17,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -59,8 +60,8 @@ public class TestPreProcessors extends BaseDL4JTest {
             assertEquals(activations3dc, activations3df);
 
 
-            INDArray activations2dc = proc.preProcess(activations3dc, miniBatchSize);
-            INDArray activations2df = proc.preProcess(activations3df, miniBatchSize);
+            INDArray activations2dc = proc.preProcess(activations3dc, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
+            INDArray activations2df = proc.preProcess(activations3df, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
             assertArrayEquals(activations2dc.shape(), new int[] {miniBatchSize * timeSeriesLength, layerSize});
             assertArrayEquals(activations2df.shape(), new int[] {miniBatchSize * timeSeriesLength, layerSize});
             assertEquals(activations2dc, activations2df);
@@ -87,8 +88,8 @@ public class TestPreProcessors extends BaseDL4JTest {
 
             //Given that epsilons and activations have same shape, we can do this (even though it's not the intended use)
             //Basically backprop should be exact opposite of preProcess
-            INDArray outc = proc.backprop(activations2dc, miniBatchSize);
-            INDArray outf = proc.backprop(activations2df, miniBatchSize);
+            INDArray outc = proc.backprop(activations2dc, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
+            INDArray outf = proc.backprop(activations2df, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
             assertEquals(activations3dc, outc);
             assertEquals(activations3df, outf);
 
@@ -97,8 +98,8 @@ public class TestPreProcessors extends BaseDL4JTest {
             INDArray eps2d_f = Nd4j.create(activations2dc.shape(), 'f');
             eps2d_c.assign(activations2dc);
             eps2d_f.assign(activations2df);
-            INDArray eps3d_c = proc.backprop(eps2d_c, miniBatchSize);
-            INDArray eps3d_f = proc.backprop(eps2d_f, miniBatchSize);
+            INDArray eps3d_c = proc.backprop(eps2d_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
+            INDArray eps3d_f = proc.backprop(eps2d_f, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
             assertEquals(activations3dc, eps3d_c);
             assertEquals(activations3df, eps3d_f);
         }
@@ -137,8 +138,8 @@ public class TestPreProcessors extends BaseDL4JTest {
             activations2df.assign(rand);
             assertEquals(activations2dc, activations2df);
 
-            INDArray activations3dc = proc.preProcess(activations2dc, miniBatchSize);
-            INDArray activations3df = proc.preProcess(activations2df, miniBatchSize);
+            INDArray activations3dc = proc.preProcess(activations2dc, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
+            INDArray activations3df = proc.preProcess(activations2df, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
             assertArrayEquals(new int[] {miniBatchSize, layerSize, timeSeriesLength}, activations3dc.shape());
             assertArrayEquals(new int[] {miniBatchSize, layerSize, timeSeriesLength}, activations3df.shape());
             assertEquals(activations3dc, activations3df);
@@ -161,8 +162,8 @@ public class TestPreProcessors extends BaseDL4JTest {
             }
 
             //Again epsilons and activations have same shape, we can do this (even though it's not the intended use)
-            INDArray epsilon2d1 = proc.backprop(activations3dc, miniBatchSize);
-            INDArray epsilon2d2 = proc.backprop(activations3df, miniBatchSize);
+            INDArray epsilon2d1 = proc.backprop(activations3dc, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
+            INDArray epsilon2d2 = proc.backprop(activations3df, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
             assertEquals(msg, activations2dc, epsilon2d1);
             assertEquals(msg, activations2dc, epsilon2d2);
 
@@ -172,8 +173,8 @@ public class TestPreProcessors extends BaseDL4JTest {
             INDArray act3d_f = Nd4j.create(activations3dc.shape(), 'f');
             act3d_f.assign(activations3dc);
 
-            assertEquals(msg, activations2dc, proc.backprop(act3d_c, miniBatchSize));
-            assertEquals(msg, activations2dc, proc.backprop(act3d_f, miniBatchSize));
+            assertEquals(msg, activations2dc, proc.backprop(act3d_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces()));
+            assertEquals(msg, activations2dc, proc.backprop(act3d_f, miniBatchSize, LayerWorkspaceMgr.noWorkspaces()));
         }
     }
 
@@ -222,13 +223,13 @@ public class TestPreProcessors extends BaseDL4JTest {
 
                             //Check shape of outputs:
                             int prod = nChannels * inputHeight * inputWidth;
-                            INDArray activationsRnn = proc.preProcess(activationsCnn, miniBatchSize);
+                            INDArray activationsRnn = proc.preProcess(activationsCnn, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             assertArrayEquals(msg, new int[] {miniBatchSize, prod, timeSeriesLength},
                                             activationsRnn.shape());
 
                             //Check backward pass. Given that activations and epsilons have same shape, they should
                             //be opposite operations - i.e., get the same thing back out
-                            INDArray twiceProcessed = proc.backprop(activationsRnn, miniBatchSize);
+                            INDArray twiceProcessed = proc.backprop(activationsRnn, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             assertArrayEquals(msg, activationsCnn.shape(), twiceProcessed.shape());
                             assertEquals(msg, activationsCnn, twiceProcessed);
 
@@ -237,13 +238,13 @@ public class TestPreProcessors extends BaseDL4JTest {
                                             new CnnToFeedForwardPreProcessor(inputHeight, inputWidth, nChannels),
                                             new FeedForwardToRnnPreProcessor());
 
-                            INDArray activationsRnnComp = compProc.preProcess(activationsCnn, miniBatchSize);
+                            INDArray activationsRnnComp = compProc.preProcess(activationsCnn, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             assertEquals(msg, activationsRnnComp, activationsRnn);
 
                             INDArray epsilonsRnn = Nd4j.rand(new int[] {miniBatchSize,
                                             nChannels * inputHeight * inputWidth, timeSeriesLength});
-                            INDArray epsilonsCnnComp = compProc.backprop(epsilonsRnn, miniBatchSize);
-                            INDArray epsilonsCnn = proc.backprop(epsilonsRnn, miniBatchSize);
+                            INDArray epsilonsCnnComp = compProc.backprop(epsilonsRnn, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
+                            INDArray epsilonsCnn = proc.backprop(epsilonsRnn, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             if (!epsilonsCnn.equals(epsilonsCnnComp)) {
                                 System.out.println(miniBatchSize + "\t" + timeSeriesLength + "\t" + inputHeight + "\t"
                                                 + inputWidth + "\t" + nChannels);
@@ -309,8 +310,8 @@ public class TestPreProcessors extends BaseDL4JTest {
                             assertEquals(activationsRnn_c, activationsRnn_f);
 
                             //Check shape of outputs:
-                            INDArray activationsCnn_c = proc.preProcess(activationsRnn_c, miniBatchSize);
-                            INDArray activationsCnn_f = proc.preProcess(activationsRnn_f, miniBatchSize);
+                            INDArray activationsCnn_c = proc.preProcess(activationsRnn_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
+                            INDArray activationsCnn_f = proc.preProcess(activationsRnn_f, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             int[] shape_cnn = new int[] {miniBatchSize * timeSeriesLength, nChannels, inputHeight,
                                             inputWidth};
                             assertArrayEquals(shape_cnn, activationsCnn_c.shape());
@@ -319,8 +320,8 @@ public class TestPreProcessors extends BaseDL4JTest {
 
                             //Check backward pass. Given that activations and epsilons have same shape, they should
                             //be opposite operations - i.e., get the same thing back out
-                            INDArray twiceProcessed_c = proc.backprop(activationsCnn_c, miniBatchSize);
-                            INDArray twiceProcessed_f = proc.backprop(activationsCnn_c, miniBatchSize);
+                            INDArray twiceProcessed_c = proc.backprop(activationsCnn_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
+                            INDArray twiceProcessed_f = proc.backprop(activationsCnn_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             assertArrayEquals(shape_rnn, twiceProcessed_c.shape());
                             assertArrayEquals(shape_rnn, twiceProcessed_f.shape());
                             assertEquals(activationsRnn_c, twiceProcessed_c);
@@ -331,8 +332,8 @@ public class TestPreProcessors extends BaseDL4JTest {
                                             new RnnToFeedForwardPreProcessor(),
                                             new FeedForwardToCnnPreProcessor(inputHeight, inputWidth, nChannels));
 
-                            INDArray activationsCnnComp_c = compProc.preProcess(activationsRnn_c, miniBatchSize);
-                            INDArray activationsCnnComp_f = compProc.preProcess(activationsRnn_f, miniBatchSize);
+                            INDArray activationsCnnComp_c = compProc.preProcess(activationsRnn_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
+                            INDArray activationsCnnComp_f = compProc.preProcess(activationsRnn_f, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             assertEquals(activationsCnnComp_c, activationsCnn_c);
                             assertEquals(activationsCnnComp_f, activationsCnn_f);
 
@@ -344,11 +345,11 @@ public class TestPreProcessors extends BaseDL4JTest {
                             epsilonsCnn_c.assign(rand);
                             epsilonsCnn_f.assign(rand);
 
-                            INDArray epsilonsRnnComp_c = compProc.backprop(epsilonsCnn_c, miniBatchSize);
-                            INDArray epsilonsRnnComp_f = compProc.backprop(epsilonsCnn_f, miniBatchSize);
+                            INDArray epsilonsRnnComp_c = compProc.backprop(epsilonsCnn_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
+                            INDArray epsilonsRnnComp_f = compProc.backprop(epsilonsCnn_f, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             assertEquals(epsilonsRnnComp_c, epsilonsRnnComp_f);
-                            INDArray epsilonsRnn_c = proc.backprop(epsilonsCnn_c, miniBatchSize);
-                            INDArray epsilonsRnn_f = proc.backprop(epsilonsCnn_f, miniBatchSize);
+                            INDArray epsilonsRnn_c = proc.backprop(epsilonsCnn_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
+                            INDArray epsilonsRnn_f = proc.backprop(epsilonsCnn_f, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             assertEquals(epsilonsRnn_c, epsilonsRnn_f);
 
                             if (!epsilonsRnn_c.equals(epsilonsRnnComp_c)) {

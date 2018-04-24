@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -52,7 +53,7 @@ public class SpaceToDepthTest extends BaseDL4JTest {
         INDArray containedInput = getContainedData();
         INDArray containedExpectedOut = getContainedOutput();
         Layer std = getSpaceToDepthLayer();
-        INDArray containedOutput = std.preOutput(containedInput);
+        INDArray containedOutput = std.activate(containedInput, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
         assertEquals(containedExpectedOut, containedOutput);
@@ -65,8 +66,8 @@ public class SpaceToDepthTest extends BaseDL4JTest {
         INDArray containedExpectedOut = getContainedData();
         Layer std = getSpaceToDepthLayer();
 
-        std.setInput(getContainedData());
-        INDArray containedOutput = std.backpropGradient(containedInputEpsilon).getRight();
+        std.setInput(getContainedData(), LayerWorkspaceMgr.noWorkspaces());
+        INDArray containedOutput = std.backpropGradient(containedInputEpsilon, LayerWorkspaceMgr.noWorkspaces()).getRight();
 
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
         assertEquals(containedExpectedOut, containedOutput);

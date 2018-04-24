@@ -37,6 +37,7 @@ import org.nd4j.linalg.learning.RmsPropUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,7 +97,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         assertEquals(4 * nOut, l.numParams()); //Gamma, beta, global mean, global var
 
         INDArray randInput = Nd4j.rand(100, nOut);
-        INDArray output = l.activate(randInput, true);
+        INDArray output = l.activate(randInput, true, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray mean = output.mean(0);
         INDArray stdev = output.std(false, 0);
@@ -111,7 +112,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         double beta = 3.0;
         l = getLayer(nOut, 0.0, true, gamma, beta);
         assertEquals(2 * nOut, l.numParams()); //Should have only global mean/var parameters
-        output = l.activate(randInput, true);
+        output = l.activate(randInput, true, LayerWorkspaceMgr.noWorkspaces());
         mean = output.mean(0);
         stdev = output.std(false, 0);
 
@@ -138,7 +139,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         INDArray xHat = input.subRowVector(mean).divRowVector(Transforms.sqrt(var.add(eps), true));
         INDArray outExpected = xHat.mulRowVector(gamma).addRowVector(beta);
 
-        INDArray out = l.activate(input, true);
+        INDArray out = l.activate(input, true, LayerWorkspaceMgr.noWorkspaces());
 
         System.out.println(Arrays.toString(outExpected.data().asDouble()));
         System.out.println(Arrays.toString(out.data().asDouble()));
@@ -161,7 +162,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                         .add(input.subRowVector(mean).mul(2.0 / minibatch).mulRowVector(dldvar))
                         .addRowVector(dldmu.mul(1.0 / minibatch));
 
-        Pair<Gradient, INDArray> p = l.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> p = l.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray dldgamma = p.getFirst().getGradientFor("gamma");
         INDArray dldbeta = p.getFirst().getGradientFor("beta");
@@ -184,7 +185,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         INDArray randInput = Nd4j.rand(12345, 100, nOut, hw, hw);
-        INDArray output = l.activate(randInput, true);
+        INDArray output = l.activate(randInput, true, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(4, output.rank());
 
@@ -199,7 +200,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         double beta = 3.0;
         l = getLayer(nOut, 0.0, true, gamma, beta);
         assertEquals(2 * nOut, l.numParams()); //Should have only global mean/var parameters
-        output = l.activate(randInput, true);
+        output = l.activate(randInput, true, LayerWorkspaceMgr.noWorkspaces());
         mean = output.mean(0, 2, 3);
         stdev = output.std(false, 0, 2, 3);
 
@@ -229,8 +230,8 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         Layer l1 = getLayer(nOut);
         Layer l2 = getLayer(nOut);
 
-        INDArray out2d = l1.activate(in.dup(), true);
-        INDArray out4d = l2.activate(in4.dup(), true);
+        INDArray out2d = l1.activate(in.dup(), true, LayerWorkspaceMgr.noWorkspaces());
+        INDArray out4d = l2.activate(in4.dup(), true, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray out4dAs2 = out4d.permute(0, 2, 3, 1).dup('c');
         out4dAs2 = Shape.newShapeNoCopy(out4dAs2, new int[] {m * h * w, nOut}, false);
@@ -244,8 +245,8 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         assertNotNull(epsilons4d);
         epsilons4d = epsilons4d.permute(0, 3, 1, 2).dup();
 
-        Pair<Gradient, INDArray> b2d = l1.backpropGradient(epsilons2d);
-        Pair<Gradient, INDArray> b4d = l2.backpropGradient(epsilons4d);
+        Pair<Gradient, INDArray> b2d = l1.backpropGradient(epsilons2d, LayerWorkspaceMgr.noWorkspaces());
+        Pair<Gradient, INDArray> b4d = l2.backpropGradient(epsilons4d, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray e4dAs2d = b4d.getSecond().permute(0, 2, 3, 1).dup('c');
         e4dAs2d = Shape.newShapeNoCopy(e4dAs2d, new int[] {m * h * w, nOut}, false);
@@ -276,7 +277,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         INDArray outExpected = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat, gamma, xHat.dup(), 1));
         Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(outExpected, beta, outExpected, 1));
 
-        INDArray out = l.activate(input, true);
+        INDArray out = l.activate(input, true, LayerWorkspaceMgr.noWorkspaces());
 
         System.out.println(Arrays.toString(outExpected.data().asDouble()));
         System.out.println(Arrays.toString(out.data().asDouble()));
@@ -315,7 +316,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         dldinExp = Nd4j.getExecutioner().execAndReturn(
                         new BroadcastAddOp(dldinExp, dldmu.mul(1.0 / effectiveMinibatch), dldinExp.dup(), 1));
 
-        Pair<Gradient, INDArray> p = l.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> p = l.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray dldgamma = p.getFirst().getGradientFor("gamma");
         INDArray dldbeta = p.getFirst().getGradientFor("beta");
@@ -352,7 +353,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         network.init();
 
         network.setInput(next.getFeatureMatrix());
-        INDArray activationsActual = network.preOutput(next.getFeatureMatrix());
+        INDArray activationsActual = network.activate(next.getFeatureMatrix());
         assertEquals(10, activationsActual.shape()[1], 1e-2);
 
         network.fit(next);

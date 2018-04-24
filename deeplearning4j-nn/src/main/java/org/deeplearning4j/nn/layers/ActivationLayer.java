@@ -23,9 +23,10 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 
 /**
@@ -62,31 +63,33 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public void fit(INDArray input) {}
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
+        INDArray temp = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, input, input.ordering());
+        INDArray delta = layerConf().getActivationFn().backprop(temp, epsilon).getFirst(); //TODO handle activation function params
+        if(delta == epsilon ){
+            //Edge case: identity activation + external errors -> no-op
+            delta = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, delta);
+        }
 
-    @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        INDArray delta = layerConf().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
-
+        delta = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta);  //Usually a no-op (except for perhaps identity)
         Gradient ret = new DefaultGradient();
         return new Pair<>(ret, delta);
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        if (input == null) {
-            throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
-        }
-        applyDropOutIfNecessary(training);
+    public INDArray activate(boolean training, LayerWorkspaceMgr mgr) {
+        assertInputSet(false);
+        applyDropOutIfNecessary(training, mgr);
 
         INDArray in;
         if (training) {
             //dup required: need to keep original input for backprop
-            in = input.dup();
+            in = mgr.dup(ArrayType.ACTIVATIONS, input, input.ordering());
         } else {
-            in = input;
+            in = mgr.leverageTo(ArrayType.ACTIVATIONS, input);
         }
-        //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), in));
+
         return layerConf().getActivationFn().getActivation(in, training);
 
     }
@@ -114,11 +117,6 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public INDArray params() {
-        return null;
-    }
-
-    @Override
-    public INDArray preOutput(boolean training) {
         return null;
     }
 

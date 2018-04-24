@@ -1,11 +1,12 @@
 package org.deeplearning4j.nn.layers.objdetect;
 
-import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,13 +24,17 @@ public class YoloUtils {
 
     /** Essentially: just apply activation functions... */
     public static INDArray activate(INDArray boundingBoxPriors, INDArray input) {
+        return activate(boundingBoxPriors, input, LayerWorkspaceMgr.noWorkspaces());
+    }
+
+    public static INDArray activate(INDArray boundingBoxPriors, INDArray input, LayerWorkspaceMgr layerWorkspaceMgr){
         int mb = input.size(0);
         int h = input.size(2);
         int w = input.size(3);
         int b = boundingBoxPriors.size(0);
         int c = (input.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
 
-        INDArray output = Nd4j.create(input.shape(), 'c');
+        INDArray output = layerWorkspaceMgr.create(ArrayType.ACTIVATIONS, input.shape(), 'c');
         INDArray output5 = output.reshape('c', mb, b, 5+c, h, w);
         INDArray output4 = output;  //output.get(all(), interval(0,5*b), all(), all());
         INDArray input4 = input.dup('c');    //input.get(all(), interval(0,5*b), all(), all()).dup('c');

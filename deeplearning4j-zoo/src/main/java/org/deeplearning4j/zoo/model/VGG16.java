@@ -43,14 +43,14 @@ public class VGG16 extends ZooModel {
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
     public VGG16(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.SEPARATE);
+        this(numLabels, seed, WorkspaceMode.ENABLED);
     }
 
     public VGG16(int numLabels, long seed, WorkspaceMode workspaceMode) {
         this.numLabels = numLabels;
         this.seed = seed;
         this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
+        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 

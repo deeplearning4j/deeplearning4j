@@ -659,7 +659,7 @@ public class ParallelWrapper implements AutoCloseable {
         protected boolean isMQ = Nd4j.getAffinityManager().getNumberOfDevices() > 1;
         protected TrainerContext trainerContext = new DefaultTrainerContext();
         protected Object[] trainerContextArgs;
-        protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
+        protected WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
 
         protected GradientsAccumulator accumulator;
 

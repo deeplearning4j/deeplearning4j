@@ -4,14 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.shade.jackson.annotation.JsonCreator;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
-
-import java.util.Arrays;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Preprocessor to flatten input of RNN type
@@ -31,15 +26,15 @@ public class KerasFlattenRnnPreprocessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
-        INDArray output = input.dup('c');
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
+        INDArray output = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
         output.reshape(input.size(0), depth * tsLength);
         return output;
     }
 
     @Override
-    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
-        return epsilons.dup().reshape(miniBatchSize, depth, tsLength);
+    public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
+        return workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilons, 'c').reshape(miniBatchSize, depth, tsLength);
     }
 
     @Override

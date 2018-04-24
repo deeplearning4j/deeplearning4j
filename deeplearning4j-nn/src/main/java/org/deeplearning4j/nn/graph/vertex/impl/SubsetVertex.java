@@ -25,10 +25,11 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -67,32 +68,37 @@ public class SubsetVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
         forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
 
+        INDArray out;
         switch (inputs[0].rank()) {
             case 2:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true));
+                out = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true));
+                break;
             case 3:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all());
+                out = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all());
+                break;
             case 4:
-                return inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(),
+                out = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.interval(from, to, true), NDArrayIndex.all(),
                                 NDArrayIndex.all());
+                break;
             default:
                 throw new UnsupportedOperationException(
                                 "Cannot get subset for activations of rank " + inputs[0].rank());
         }
+        return workspaceMgr.dup(ArrayType.ACTIVATIONS, out);
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: error not set");
 
-        INDArray out = Nd4j.zeros(forwardShape);
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, forwardShape);
         switch (forwardShape.length) {
             case 2:
                 out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(from, to, true)}, epsilon);

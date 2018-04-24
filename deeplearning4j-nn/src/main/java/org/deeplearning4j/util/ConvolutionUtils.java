@@ -24,10 +24,13 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -286,34 +289,40 @@ public class ConvolutionUtils {
     /**
      * Get top and left padding for same mode only.
      *
-     * @param outSize
-     * @param inSize
-     * @param kernel
-     * @param strides
-     * @return
+     * @param outSize  Output size (length 2 array, height dimension first)
+     * @param inSize   Input size (length 2 array, height dimension first)
+     * @param kernel   Kernel size (length 2 array, height dimension first)
+     * @param strides  Strides  (length 2 array, height dimension first)
+     * @param dilation Dilation (length 2 array, height dimension first)
+     * @return Top left padding (length 2 array, height dimension first)
      */
     public static int[] getSameModeTopLeftPadding(int[] outSize, int[] inSize, int[] kernel, int[] strides, int[] dilation) {
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         int[] outPad = new int[2];
         outPad[0] = ((outSize[0] - 1) * strides[0] + eKernel[0] - inSize[0]) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
         outPad[1] = ((outSize[1] - 1) * strides[1] + eKernel[1] - inSize[1]) / 2; //As above
+        Preconditions.checkState(outPad[0] >= 0 && outPad[1] >= 0, "Invalid padding values calculated: %s - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s",
+                outPad, inSize, outSize, kernel, strides, dilation);
         return outPad;
     }
 
     /**
      * Get bottom and right padding for same mode only.
      *
-     * @param outSize
-     * @param inSize
-     * @param kernel
-     * @param strides
-     * @return
+     * @param outSize  Output size (length 2 array, height dimension first)
+     * @param inSize   Input size (length 2 array, height dimension first)
+     * @param kernel   Kernel size (length 2 array, height dimension first)
+     * @param strides  Strides  (length 2 array, height dimension first)
+     * @param dilation Dilation (length 2 array, height dimension first)
+     * @return Bottom right padding (length 2 array, height dimension first)
      */
     public static int[] getSameModeBottomRightPadding(int[] outSize, int[] inSize, int[] kernel, int[] strides, int[] dilation) {
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         int[] outPad = new int[2];
         outPad[0] = ((outSize[0] - 1) * strides[0] + eKernel[0] - inSize[0] + 1) / 2; //Note that padTop is 1 smaller than this if bracketed term is not divisible by 2
         outPad[1] = ((outSize[1] - 1) * strides[1] + eKernel[1] - inSize[1] + 1) / 2; //As above
+        Preconditions.checkState(outPad[0] >= 0 && outPad[1] >= 0, "Invalid padding values calculated: %s - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s",
+                outPad, inSize, outSize, kernel, strides, dilation);
         return outPad;
     }
 
@@ -426,7 +435,8 @@ public class ConvolutionUtils {
         }
     }
 
-    public static INDArray reshape4dTo2d(INDArray in) {
+
+    public static INDArray reshape4dTo2d(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if (in.rank() != 4)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 4, got rank " + in.rank()
                     + " with shape " + Arrays.toString(in.shape()));
@@ -437,44 +447,43 @@ public class ConvolutionUtils {
         INDArray out = in.permute(0, 2, 3, 1);
         if (out.ordering() != 'c' || !Shape.strideDescendingCAscendingF(out))
             out = out.dup('c');
-
         return out.reshape('c', shape[0] * shape[2] * shape[3], shape[1]);
     }
 
-    public static INDArray reshape2dTo4d(INDArray in2d, int[] toShape) {
-        if (in2d.rank() != 2)
+    public static INDArray reshape2dTo4d(INDArray in2d, int[] toShape, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+        if(in2d.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         if (toShape.length != 4)
             throw new IllegalArgumentException("Invalid input: expect toShape with 4 elements: got " + Arrays.toString(toShape));
 
         //Reshape: from [n*h*w,c] to [n,h,w,c] to [n,c,h,w]
-        if (in2d.ordering() != 'c' || !Shape.strideDescendingCAscendingF(in2d))
-            in2d = in2d.dup('c');
+        if(in2d.ordering() != 'c' || !Shape.hasDefaultStridesForShape(in2d))
+            in2d = workspaceMgr.dup(type, in2d, 'c');
 
         INDArray out = in2d.reshape('c', toShape[0], toShape[2], toShape[3], toShape[1]);
         return out.permute(0, 3, 1, 2);
     }
 
-    public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output) {
+    public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if (mask == null)
             return null;
         if (mask.rank() == 2) {
-            return adapt2dMask(mask, output);
+            return adapt2dMask(mask, output, workspaceMgr, type);
         } else if (mask.rank() == 3) {
-            return reshape3dMask(mask);
+            return reshape3dMask(mask, workspaceMgr, type);
         } else {
-            return reshape4dMask(mask);
+            return reshape4dTo2d(mask, workspaceMgr, type);
         }
     }
 
-    public static INDArray adapt2dMask(INDArray mask, INDArray output) {
+    public static INDArray adapt2dMask(INDArray mask, INDArray output, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         //Input in [n,c,h,w] which is reshaped to [n*h*w,c], mask is [n,1]
         //So: We'll broadcast to [n,1,h,w] then reshape to [n*h*w,1] required for the current DL4J loss functions...
 
         //Use workaround for: https://github.com/deeplearning4j/nd4j/issues/2066
 
         int[] s = output.shape();
-        INDArray bMask = Nd4j.create(new int[]{s[0], 1, s[2], s[3]}, 'c');
+        INDArray bMask = workspaceMgr.create(type, new int[]{s[0], 1, s[2], s[3]}, 'c');
         Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 1));
 
         INDArray bMaskPermute = bMask.permute(0, 2, 3).dup('c');  //Not sure if dup is strictly necessary...
@@ -482,10 +491,10 @@ public class ConvolutionUtils {
         return bMaskPermute.reshape('c', s[0] * s[2] * s[3], 1);
     }
 
-    public static INDArray reshape3dMask(INDArray mask) {
+    public static INDArray reshape3dMask(INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         //Assume mask has shape [n,h,w] and will be broadcast along dimension
-        if (mask.ordering() != 'c' || !Shape.strideDescendingCAscendingF(mask))
-            mask = mask.dup('c');
+        if(mask.ordering() != 'c' || !Shape.hasDefaultStridesForShape(mask))
+            mask = workspaceMgr.dup(type, mask, 'c');
 
         return mask.reshape('c', mask.length(), 1);
     }

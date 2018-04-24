@@ -22,6 +22,7 @@ import lombok.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Unit variance operation
@@ -37,7 +38,7 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
     INDArray columnStds;
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         columnStds = input.std(0);
         columnStds.addi(Nd4j.EPS_THRESHOLD);
         input.diviRowVector(columnStds);
@@ -45,7 +46,7 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         return output; //no-op
     }
 

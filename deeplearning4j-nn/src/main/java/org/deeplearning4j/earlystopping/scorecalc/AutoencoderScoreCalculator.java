@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Score function for a MultiLayerNetwork or ComputationGraph with a single
@@ -50,8 +51,9 @@ public class AutoencoderScoreCalculator extends BaseScoreCalculator<Model> {
         }
         AutoEncoder ae = (AutoEncoder) l;
 
-        INDArray encode = ae.encode(input, false);
-        return ae.decode(encode);
+        LayerWorkspaceMgr workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
+        INDArray encode = ae.encode(input, false, workspaceMgr);
+        return ae.decode(encode, workspaceMgr);
     }
 
     @Override

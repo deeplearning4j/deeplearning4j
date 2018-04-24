@@ -1,11 +1,9 @@
 package org.deeplearning4j.nn.layers.objdetect;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
 import org.deeplearning4j.BaseDL4JTest;
@@ -27,10 +25,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
-import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -80,7 +77,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
         INDArray input = Nd4j.rand(new int[]{mb, depth, h, w});
 
-        INDArray out = y2impl.activate(input);
+        INDArray out = y2impl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
         assertNotNull(out);
         assertArrayEquals(input.shape(), out.shape());
 
@@ -110,9 +107,9 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         labels.putScalar(2, 2, 2, 2, 6);
         labels.putScalar(2, 3, 2, 2, 6);
 
-        y2impl.setInput(input);
+        y2impl.setInput(input, LayerWorkspaceMgr.noWorkspaces());
         y2impl.setLabels(labels);
-        double score = y2impl.computeScore(0, 0, true);
+        double score = y2impl.computeScore(0, 0, true, LayerWorkspaceMgr.noWorkspaces());
 
         System.out.println("SCORE: " + score);
         assertTrue(score > 0.0);
@@ -122,9 +119,9 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
 
         y2impl = (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer) netLoaded.getLayer(1);
-        y2impl.setInput(input);
+        y2impl.setInput(input, LayerWorkspaceMgr.noWorkspaces());
         y2impl.setLabels(labels);
-        double score2 = y2impl.computeScore(0, 0, true);
+        double score2 = y2impl.computeScore(0, 0, true, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(score, score2, 1e-8);
     }
@@ -158,7 +155,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
         INDArray input = Nd4j.rand(new int[]{mb, depth, h, w});
 
-        INDArray out = y2impl.activate(input);
+        INDArray out = y2impl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(4, out.rank());
 
@@ -426,6 +423,9 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
             IOUtils.copy(is4, fos);
         } finally { is4.close(); }
 
+        assertEquals(2, jpg.listFiles().length);
+        assertEquals(2, annot.listFiles().length);
+
         INDArray bbPriors = Nd4j.create(new double[][]{
                 {2,2},
                 {5,5}});
@@ -478,7 +478,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         net.init();
         net.setListeners(new ScoreIterationListener(100));
 
-        int nEpochs = 1500;
+        int nEpochs = 1600;
         DataSet ds = iter.next();
         URI[] uris = fileSplit.locations();
         if (!uris[0].getPath().contains("2007_009346")) {

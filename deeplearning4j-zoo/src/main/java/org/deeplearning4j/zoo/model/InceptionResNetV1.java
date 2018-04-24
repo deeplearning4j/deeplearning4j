@@ -40,14 +40,14 @@ public class InceptionResNetV1 extends ZooModel {
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
     public InceptionResNetV1(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.SEPARATE);
+        this(numLabels, seed, WorkspaceMode.ENABLED);
     }
 
     public InceptionResNetV1(int outputNum, long seed, WorkspaceMode workspaceMode) {
         this.seed = seed;
         this.numClasses = outputNum;
         this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
+        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 

@@ -16,6 +16,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -63,11 +65,6 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
-    public INDArray preOutput(boolean training) {
-        return activate(training);
-    }
-
-    @Override
     public boolean isPretrainLayer() {
         return false;
     }
@@ -93,12 +90,10 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        if (input == null) {
-            throw new IllegalStateException("Cannot perform forward pass: input not set for layer " + layerId());
-        }
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
 
-        int[] poolDim = null;
+        int[] poolDim;
         if (input.rank() == 3) {
             //TODO validation on pooling dimensions
 
@@ -181,15 +176,16 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             }
         }
 
+        //TODO optimize without leverage
         if (collapseDimensions) {
             //Standard/common case
-            return reduced2d;
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d);
         } else {
             int[] inputShape = input.shape();
             if (input.rank() == 3) {
-                return reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1);
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1));
             } else {
-                return reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1);
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1));
             }
         }
     }
@@ -223,7 +219,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
 
         if (!collapseDimensions && epsilon.rank() != 2) {
             int[] origShape = epsilon.shape();
@@ -274,6 +271,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         }
 
+        //TODO optimize without leverage
+        epsilonNd = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilonNd);
         return new Pair<>(retGradient, epsilonNd);
     }
 
