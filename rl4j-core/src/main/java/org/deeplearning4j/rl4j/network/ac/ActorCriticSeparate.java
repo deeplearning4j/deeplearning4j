@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
@@ -107,7 +108,7 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         MultiLayerConfiguration valueConf = valueNet.getLayerWiseConfigurations();
         int valueIterationCount = valueConf.getIterationCount();
         int valueEpochCount = valueConf.getEpochCount();
-        valueNet.getUpdater().update(valueNet, gradient[0], valueIterationCount, valueEpochCount, batchSize);
+        valueNet.getUpdater().update(valueNet, gradient[0], valueIterationCount, valueEpochCount, batchSize, LayerWorkspaceMgr.noWorkspaces());
         valueNet.params().subi(gradient[0].gradient());
         Collection<IterationListener> valueIterationListeners = valueNet.getListeners();
         if (valueIterationListeners != null && valueIterationListeners.size() > 0) {
@@ -120,7 +121,7 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         MultiLayerConfiguration policyConf = policyNet.getLayerWiseConfigurations();
         int policyIterationCount = policyConf.getIterationCount();
         int policyEpochCount = policyConf.getEpochCount();
-        policyNet.getUpdater().update(policyNet, gradient[1], policyIterationCount, policyEpochCount, batchSize);
+        policyNet.getUpdater().update(policyNet, gradient[1], policyIterationCount, policyEpochCount, batchSize, LayerWorkspaceMgr.noWorkspaces());
         policyNet.params().subi(gradient[1].gradient());
         Collection<IterationListener> policyIterationListeners = policyNet.getListeners();
         if (policyIterationListeners != null && policyIterationListeners.size() > 0) {
