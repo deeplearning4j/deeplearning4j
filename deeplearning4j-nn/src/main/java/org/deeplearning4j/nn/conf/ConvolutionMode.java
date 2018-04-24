@@ -60,6 +60,6 @@ package org.deeplearning4j.nn.conf;
  */
 public enum ConvolutionMode {
 
-    Strict, Truncate, Same, Valid
+    Strict, Truncate, Same
 
 }

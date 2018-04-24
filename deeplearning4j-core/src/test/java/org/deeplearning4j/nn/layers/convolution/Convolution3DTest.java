@@ -57,9 +57,9 @@ public class Convolution3DTest {
     @Test
     public void testConvolution3dForwardValidMode() throws Exception {
 
-        Convolution3DLayer layer = (Convolution3DLayer) getConvolution3DLayer(ConvolutionMode.Valid);
+        Convolution3DLayer layer = (Convolution3DLayer) getConvolution3DLayer(ConvolutionMode.Strict);
 
-        assertTrue(layer.convolutionMode == ConvolutionMode.Valid);
+        assertTrue(layer.convolutionMode == ConvolutionMode.Strict);
 
         INDArray input = getData();
         INDArray output = layer.activate(input);
@@ -70,7 +70,6 @@ public class Convolution3DTest {
         assertTrue(Arrays.equals(new int[]{nExamples, nChannelsOut, outputDepth, outputWidth, outputHeight},
                 output.shape()));
     }
-
 
 
     @Test
@@ -86,7 +85,7 @@ public class Convolution3DTest {
 
         INDArray input = getContainedData();
 
-        Layer layer = getConvolution3DLayer(ConvolutionMode.Valid);
+        Layer layer = getConvolution3DLayer(ConvolutionMode.Strict);
         layer.activate(input);
 
         Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
@@ -111,8 +110,8 @@ public class Convolution3DTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                 .layer(new Convolution3D.Builder().kernelSize(kernelSize).nIn(nChannelsIn).nOut(nChannelsOut)
-                        .stride(1,1,1).dilation(1,1,1).padding(0,0,0)
-                        .isNCDHW(true).convolutionMode(mode).hasBias(false)
+                        .stride(1, 1, 1).dilation(1, 1, 1).padding(0, 0, 0)
+                        .dataFormat(Convolution3D.DataFormat.NCDHW).convolutionMode(mode).hasBias(false)
                         .build())
                 .build();
         int numParams = conf.getLayer().initializer().numParams(conf);

@@ -53,7 +53,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         Convolution3D layerConfig = (Convolution3D) layerConf();
 
-        boolean isNCDHW = layerConfig.isNCDHW();
+        boolean isNCDHW = layerConfig.getDataFormat() == Convolution3D.DataFormat.NCDHW;
 
         int miniBatch = input.size(0);
         int inD = isNCDHW ? input.size(2) : input.size(1);
@@ -152,7 +152,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         Convolution3D layerConfig = (Convolution3D) layerConf();
 
         ConvolutionMode mode = layerConfig.getConvolutionMode();
-        boolean isNCDHW = layerConfig.isNCDHW();
+        boolean isNCDHW = layerConfig.getDataFormat() == Convolution3D.DataFormat.NCDHW;
 
         INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, training);
 

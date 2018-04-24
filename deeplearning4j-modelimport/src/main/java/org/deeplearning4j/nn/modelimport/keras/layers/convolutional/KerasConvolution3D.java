@@ -44,7 +44,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
 /**
  * Imports a 3D Convolution layer from Keras.
  *
- * @author dave@skymind.io
+ * @author Max Pumperla
  */
 @Slf4j
 @Data

@@ -207,10 +207,24 @@ public abstract class InputType implements Serializable {
         private int width;
         private int channels;
 
+
+        /**
+         * Return the number of channels / depth for this 2D convolution. This method has been deprecated,
+         * for consistency purposes, use getChannels() instead.
+         *
+         * @return number of channels, i.e. depth for 2D convolutions
+         */
+        @Deprecated
         public int getDepth() {
             return channels;
         }
 
+        /**
+         * Set the number of channels / depth for this 2D convolution. This method has been deprecated,
+         * for consistency purposes, use setChannels(channels) instead.
+         *
+         **/
+        @Deprecated
         public void setDepth(int depth) {
             this.channels = depth;
         }

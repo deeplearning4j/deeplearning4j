@@ -31,8 +31,12 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Convolution3D extends ConvolutionLayer {
 
+    public enum DataFormat {
+        NCDHW, NDHWC
+    }
+
     private ConvolutionMode mode = ConvolutionMode.Same;  // in libnd4j: 0 - same mode, 1 - valid mode
-    private boolean isNCDHW = true; // in libnd4j: 1 - NCDHW, 0 - NDHWC
+    private DataFormat dataFormat = DataFormat.NCDHW; // in libnd4j: 1 - NCDHW, 0 - NDHWC
 
     /**
      * 3-dimensional convolutional layer configuration
@@ -43,7 +47,7 @@ public class Convolution3D extends ConvolutionLayer {
      */
     public Convolution3D(Builder builder) {
         super(builder);
-        this.isNCDHW = builder.isNCDHW;
+        this.dataFormat = builder.dataFormat;
         this.convolutionMode = builder.convolutionMode;
     }
 
@@ -122,7 +126,7 @@ public class Convolution3D extends ConvolutionLayer {
 
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
 
-        private boolean isNCDHW = true; // in libnd4j: 1 - NCDHW, 0 - NDHWC
+        private DataFormat dataFormat = DataFormat.NCDHW;
         protected int[] kernelSize = new int[] {2, 2, 2};
         protected int[] stride = new int[] {1, 1, 1};
         protected int[] padding = new int[] {0, 0, 0};
@@ -174,8 +178,8 @@ public class Convolution3D extends ConvolutionLayer {
             return this;
         }
 
-        public Builder isNCDHW(boolean dataFormat) {
-            this.isNCDHW = dataFormat;
+        public Builder dataFormat(DataFormat dataFormat) {
+            this.dataFormat = dataFormat;
             return this;
         }
 
