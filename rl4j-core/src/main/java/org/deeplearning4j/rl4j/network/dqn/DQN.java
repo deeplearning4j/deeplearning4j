@@ -4,6 +4,7 @@ import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
@@ -92,7 +93,7 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
         MultiLayerConfiguration mlnConf = mln.getLayerWiseConfigurations();
         int iterationCount = mlnConf.getIterationCount();
         int epochCount = mlnConf.getEpochCount();
-        mln.getUpdater().update(mln, gradient[0], iterationCount, epochCount, batchSize);
+        mln.getUpdater().update(mln, gradient[0], iterationCount, epochCount, batchSize, LayerWorkspaceMgr.noWorkspaces());
         mln.params().subi(gradient[0].gradient());
         Collection<IterationListener> iterationListeners = mln.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {

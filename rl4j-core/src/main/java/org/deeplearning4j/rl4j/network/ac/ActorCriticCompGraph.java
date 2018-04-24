@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
@@ -92,7 +93,7 @@ public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IA
         ComputationGraphConfiguration cgConf = cg.getConfiguration();
         int iterationCount = cgConf.getIterationCount();
         int epochCount = cgConf.getEpochCount();
-        cg.getUpdater().update(gradient[0], iterationCount, epochCount, batchSize);
+        cg.getUpdater().update(gradient[0], iterationCount, epochCount, batchSize, LayerWorkspaceMgr.noWorkspaces());
         cg.params().subi(gradient[0].gradient());
         Collection<IterationListener> iterationListeners = cg.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {
