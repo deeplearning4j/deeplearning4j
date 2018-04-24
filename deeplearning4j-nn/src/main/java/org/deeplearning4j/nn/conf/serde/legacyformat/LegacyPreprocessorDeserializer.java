@@ -33,7 +33,10 @@ public class LegacyPreprocessorDeserializer extends BaseLegacyDeserializer<Input
         LEGACY_NAMES.put("zeroMeanAndUnitVariance", ZeroMeanAndUnitVariancePreProcessor.class.getName());
         LEGACY_NAMES.put("zeroMean",ZeroMeanPrePreProcessor.class.getName());
 
-        //TODO: Keras preprocessors
+        //Keras preprocessors: they defaulted to class simple name
+        LEGACY_NAMES.put("KerasFlattenRnnPreprocessor","org.deeplearning4j.nn.modelimport.keras.preprocessors.KerasFlattenRnnPreprocessor");
+        LEGACY_NAMES.put("ReshapePreprocessor","org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor");
+        LEGACY_NAMES.put("TensorFlowCnnToFeedForwardPreProcessor","org.deeplearning4j.nn.modelimport.keras.preprocessors.TensorFlowCnnToFeedForwardPreProcessor");
     }
 
 

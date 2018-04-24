@@ -44,9 +44,6 @@ public class LegacyGraphVertexDeserializer extends BaseLegacyDeserializer<GraphV
         for(Class<?> c : cList){
             LEGACY_NAMES.put(c.getSimpleName(), c.getName());
         }
-
-
-        //TODO: Keras vertices - if any?
     }
 
 
