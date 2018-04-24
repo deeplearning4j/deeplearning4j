@@ -31,6 +31,8 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
+import static org.nd4j.linalg.api.shape.Shape.hasDefaultStridesForShape;
+
 /**
  * A preprocessor to allow 3D CNN and standard feed-forward network layers to be used together.<br>
  * For example, DenseLayer -> Convolution3D<br>
@@ -87,7 +89,7 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize) {
-        if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input))
+        if (!hasDefaultStridesForShape(input))
             input = input.dup('c');
 
         this.shape = input.shape();
@@ -106,7 +108,7 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray backprop(INDArray epsilons, int miniBatchSize) {
-        if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
+        if (!hasDefaultStridesForShape(epsilons))
             epsilons = epsilons.dup('c');
 
         if (shape == null || ArrayUtil.prod(shape) != epsilons.length())

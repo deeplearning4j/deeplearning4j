@@ -30,6 +30,8 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
+import static org.nd4j.linalg.api.shape.Shape.hasDefaultStridesForShape;
+
 /**
  * A preprocessor to allow CNN and standard feed-forward network layers to be used together.<br>
  * For example, CNN3D -> Denselayer <br>
@@ -98,11 +100,7 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
                     + Arrays.toString(input.shape()));
         }
 
-
-        //Assume input is standard rank 5 activations out of CNN3D layer
-        //First: we require input to be in c order. But c order (as declared in array order) isn't enough;
-        // also need strides to be correct
-        if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input))
+        if (!hasDefaultStridesForShape(input))
             input = input.dup('c');
 
         int[] inShape = input.shape();
@@ -114,7 +112,8 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
     @Override
     public INDArray backprop(INDArray epsilons, int miniBatchSize) {
         //Epsilons are 2d, with shape [miniBatchSize, outChannels*outD*outH*outW]
-        if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
+
+        if (!hasDefaultStridesForShape(epsilons))
             epsilons = epsilons.dup('c');
 
         if (epsilons.rank() == 5)
