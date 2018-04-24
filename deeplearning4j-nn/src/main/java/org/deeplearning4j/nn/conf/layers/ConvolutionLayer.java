@@ -86,18 +86,23 @@ public class ConvolutionLayer extends FeedForwardLayer {
      */
     protected ConvolutionLayer(BaseConvBuilder<?> builder) {
         super(builder);
+        int dim = builder.convolutionDim;
+
         this.hasBias = builder.hasBias;
         this.convolutionMode = builder.convolutionMode;
         this.dilation = builder.dilation;
-//        if (builder.kernelSize.length != 2)
-//            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
+        if (builder.kernelSize.length != dim)
+            throw new IllegalArgumentException("Kernel argument should be a " + dim + "d array");
         this.kernelSize = builder.kernelSize;
-//        if (builder.stride.length != 2)
-//            throw new IllegalArgumentException("Stride should include stride for rows and columns (a 2d array)");
+        if (builder.stride.length != dim)
+            throw new IllegalArgumentException("Strides argument should be a " + dim + "d array");
         this.stride = builder.stride;
-//        if (builder.padding.length != 2)
-//            throw new IllegalArgumentException("Padding should include padding for rows and columns (a 2d array)");
+        if (builder.padding.length != dim)
+            throw new IllegalArgumentException("Padding argument should be a " + dim + "d array");
         this.padding = builder.padding;
+        if (builder.dilation.length != dim)
+            throw new IllegalArgumentException("Dilation argument should be a " + dim + "d array");
+        this.dilation = builder.dilation;
         this.cudnnAlgoMode = builder.cudnnAlgoMode;
         this.cudnnFwdAlgo = builder.cudnnFwdAlgo;
         this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
@@ -304,6 +309,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     protected static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
+        protected int convolutionDim = 2; // 2D convolution by default
         protected boolean hasBias = true;
         protected ConvolutionMode convolutionMode = null;
         protected int[] dilation = new int[]{1, 1};
@@ -317,11 +323,26 @@ public class ConvolutionLayer extends FeedForwardLayer {
         protected boolean cudnnAllowFallback = true;
 
 
+        protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding, int[] dilation, int dim) {
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+            this.padding = padding;
+            this.dilation = dilation;
+            this.convolutionDim = dim;
+        }
+
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding, int[] dilation) {
             this.kernelSize = kernelSize;
             this.stride = stride;
             this.padding = padding;
             this.dilation = dilation;
+        }
+
+        protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding, int dim) {
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+            this.padding = padding;
+            this.convolutionDim = dim;
         }
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding) {
@@ -330,10 +351,23 @@ public class ConvolutionLayer extends FeedForwardLayer {
             this.padding = padding;
         }
 
+        protected BaseConvBuilder(int[] kernelSize, int[] stride, int dim) {
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+            this.convolutionDim = dim;
+        }
+
+
         protected BaseConvBuilder(int[] kernelSize, int[] stride) {
             this.kernelSize = kernelSize;
             this.stride = stride;
         }
+
+        protected BaseConvBuilder(int dim, int... kernelSize) {
+            this.kernelSize = kernelSize;
+            this.convolutionDim = dim;
+        }
+
 
         protected BaseConvBuilder(int... kernelSize) {
             this.kernelSize = kernelSize;

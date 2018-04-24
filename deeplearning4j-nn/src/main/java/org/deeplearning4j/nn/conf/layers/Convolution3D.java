@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -127,48 +128,80 @@ public class Convolution3D extends ConvolutionLayer {
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
 
         private DataFormat dataFormat = DataFormat.NCDHW;
-        protected int[] kernelSize = new int[] {2, 2, 2};
-        protected int[] stride = new int[] {1, 1, 1};
-        protected int[] padding = new int[] {0, 0, 0};
+        protected int[] kernelSize = new int[]{2, 2, 2};
+        protected int[] stride = new int[]{1, 1, 1};
+        protected int[] padding = new int[]{0, 0, 0};
         protected int[] dilation = new int[]{0, 0, 0};
+
+        public Builder() {
+            super(new int[]{2, 2, 2}, new int[]{1, 1, 1}, new int[]{0, 0, 0}, new int[]{0, 0, 0}, 3);
+        }
 
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
-            super(kernelSize, stride, padding);
+            super(kernelSize, stride, padding, 3);
+            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
+            Preconditions.checkState(stride.length == 3, "Stride size argument has to have length 3.");
+            Preconditions.checkState(padding.length == 3, "Padding size argument has to have length 3.");
+
         }
 
         public Builder(int[] kernelSize, int[] stride) {
-            super(kernelSize, stride);
+            super(kernelSize, stride, 3);
+            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
+            Preconditions.checkState(stride.length == 3, "Stride size argument has to have length 3.");
         }
 
         public Builder(int... kernelSize) {
-            super(kernelSize);
+            super(3, kernelSize);
+            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
         }
 
-        public Builder() {
-            super(new int[]{1, 1, 1},
-                    new int[]{1, 1, 1},
-                    new int[]{0, 0, 0},
-                    new int[]{0, 0, 0});
-        }
-
-
+        /**
+         * Set kernel size for 3D convolutions in (depth, height, width) order
+         *
+         * @param kernelSize kernel size
+         * @return 3D convolution layer builder
+         */
         public Builder kernelSize(int... kernelSize) {
+            Preconditions.checkState(kernelSize.length == 3, "Kernel size argument has to have length 3.");
             this.kernelSize = kernelSize;
             return this;
         }
 
+        /**
+         * Set stride size for 3D convolutions in (depth, height, width) order
+         *
+         * @param stride kernel size
+         * @return 3D convolution layer builder
+         */
         public Builder stride(int... stride) {
+            Preconditions.checkState(stride.length == 3, "Stride size argument has to have length 3.");
             this.stride = stride;
             return this;
         }
 
+        /**
+         * Set padding size for 3D convolutions in (depth, height, width) order
+         *
+         * @param padding kernel size
+         * @return 3D convolution layer builder
+         */
         public Builder padding(int... padding) {
+            Preconditions.checkState(padding.length == 3, "Padding size argument has to have length 3.");
+
             this.padding = padding;
             return this;
         }
 
+        /**
+         * Set dilation size for 3D convolutions in (depth, height, width) order
+         *
+         * @param dilation kernel size
+         * @return 3D convolution layer builder
+         */
         public Builder dilation(int... dilation) {
+            Preconditions.checkState(dilation.length == 3, "Dilation size argument has to have length 3.");
             this.dilation = dilation;
             return this;
         }
