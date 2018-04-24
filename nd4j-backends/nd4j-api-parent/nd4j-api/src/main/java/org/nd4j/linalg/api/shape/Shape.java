@@ -133,7 +133,8 @@ public class Shape {
                 dims.add(i);
             }
             else if(left[leftIdx] != right[rightIdx]) {
-                throw new IllegalArgumentException("Unable to broadcast dimension " + i + " due to shape mismatch. Right shape must be 1.");
+                throw new IllegalArgumentException("Unable to broadcast dimension " + i + " due to shape mismatch. Right shape must be 1. "
+                        + "Left array shape: " + Arrays.toString(left) + ", right array shape: " + Arrays.toString(right));
             }
 
             leftIdx--;

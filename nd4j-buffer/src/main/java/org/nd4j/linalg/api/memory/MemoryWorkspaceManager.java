@@ -183,4 +183,11 @@ public interface MemoryWorkspaceManager {
      * This method returns all workspaces for current thread
      */
     List<MemoryWorkspace> getAllWorkspacesForCurrentThread();
+
+    /**
+     * Determine if there are any workspaces open for the current thread.
+     *
+     * @return True if any workspaces are open for this thread, false otherwise
+     */
+    boolean anyWorkspaceActiveForCurrentThread();
 }

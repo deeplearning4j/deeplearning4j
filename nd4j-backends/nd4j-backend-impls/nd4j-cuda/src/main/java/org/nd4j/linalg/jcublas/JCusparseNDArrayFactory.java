@@ -130,6 +130,11 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray pullRows(INDArray source, INDArray destination, int sourceDimension, int[] indexes) {
+        return null;
+    }
+
+    @Override
     public void shuffle(INDArray array, Random rnd, int... dimension) {
 
     }

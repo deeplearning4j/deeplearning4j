@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.workspace.WorkspaceUtils;
 
 import java.util.List;
 
@@ -365,6 +366,7 @@ public class NDArray extends BaseNDArray {
      */
     @Override
     public INDArray unsafeDuplication() {
+        WorkspaceUtils.assertValidArray(this, "Cannot duplicate array");
         if (isView())
             return this.dup(this.ordering());
 

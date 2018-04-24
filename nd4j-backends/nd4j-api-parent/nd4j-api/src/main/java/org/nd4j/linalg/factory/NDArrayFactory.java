@@ -428,6 +428,8 @@ public interface NDArrayFactory {
     INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order);
 
 
+    INDArray pullRows(INDArray source, INDArray destination, int sourceDimension, int[] indexes);
+
     /**
      * In place shuffle of an ndarray
      * along a specified set of dimensions

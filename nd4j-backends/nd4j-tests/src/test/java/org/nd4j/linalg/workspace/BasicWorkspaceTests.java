@@ -945,6 +945,218 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testInvalidLeverageMigrateDetach(){
+
+        try {
+            MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig, "testInvalidLeverage");
+
+            INDArray invalidArray = null;
+
+            for (int i = 0; i < 10; i++) {
+                try (MemoryWorkspace ws2 = ws.notifyScopeEntered()) {
+                    invalidArray = Nd4j.linspace(1, 10, 10);
+                }
+            }
+            assertTrue(invalidArray.isAttached());
+
+            MemoryWorkspace ws2 = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig, "testInvalidLeverage2");
+
+            //Leverage
+            try (MemoryWorkspace ws3 = ws2.notifyScopeEntered()) {
+                invalidArray.leverage();
+                fail("Exception should be thrown");
+            } catch (ND4JWorkspaceException e) {
+                //Expected exception
+                e.printStackTrace();
+            }
+
+            try (MemoryWorkspace ws3 = ws2.notifyScopeEntered()) {
+                invalidArray.leverageTo("testInvalidLeverage2");
+                fail("Exception should be thrown");
+            } catch (ND4JWorkspaceException e) {
+                //Expected exception
+                e.printStackTrace();
+            }
+
+            try (MemoryWorkspace ws3 = ws2.notifyScopeEntered()) {
+                invalidArray.leverageOrDetach("testInvalidLeverage2");
+                fail("Exception should be thrown");
+            } catch (ND4JWorkspaceException e) {
+                //Expected exception
+                e.printStackTrace();
+            }
+
+            try {
+                invalidArray.leverageTo("testInvalidLeverage2");
+                fail("Exception should be thrown");
+            } catch (ND4JWorkspaceException e) {
+                //Expected exception
+                e.printStackTrace();
+            }
+
+            //Detach
+            try{
+                invalidArray.detach();
+                fail("Exception should be thrown");
+            } catch (ND4JWorkspaceException e){
+                e.printStackTrace();
+            }
+
+
+            //Migrate
+            try (MemoryWorkspace ws3 = ws2.notifyScopeEntered()) {
+                invalidArray.migrate();
+                fail("Exception should be thrown");
+            } catch (ND4JWorkspaceException e) {
+                //Expected exception
+                e.printStackTrace();
+            }
+
+            try {
+                invalidArray.migrate(true);
+                fail("Exception should be thrown");
+            } catch (ND4JWorkspaceException e) {
+                //Expected exception
+                e.printStackTrace();
+            }
+
+
+            //Dup
+            try{
+                invalidArray.dup();
+                fail("Exception should be thrown");
+            } catch (ND4JWorkspaceException e){
+                e.printStackTrace();
+            }
+
+            //Unsafe dup:
+            try{
+                invalidArray.unsafeDuplication();
+                fail("Exception should be thrown");
+            } catch (ND4JWorkspaceException e){
+                e.printStackTrace();
+            }
+
+            try{
+                invalidArray.unsafeDuplication(true);
+                fail("Exception should be thrown");
+            } catch (ND4JWorkspaceException e){
+                e.printStackTrace();
+            }
+
+
+        } finally {
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        }
+    }
+
+    @Test
+    public void testBadGenerationLeverageMigrateDetach(){
+        INDArray gen2 = null;
+
+        for (int i = 0; i < 4; i++) {
+            MemoryWorkspace wsOuter = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig, "testBadGeneration");
+
+            try (MemoryWorkspace wsOuter2 = wsOuter.notifyScopeEntered()) {
+                INDArray arr = Nd4j.linspace(1, 10, 10);
+                if (i == 2) {
+                    gen2 = arr;
+                }
+
+                if (i == 3) {
+                    MemoryWorkspace wsInner = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig, "testBadGeneration2");
+                    try (MemoryWorkspace wsInner2 = wsInner.notifyScopeEntered()) {
+
+                        //Leverage
+                        try {
+                            gen2.leverage();
+                            fail("Exception should be thrown");
+                        } catch (ND4JWorkspaceException e) {
+                            //Expected exception
+                            e.printStackTrace();
+                        }
+
+                        try {
+                            gen2.leverageTo("testBadGeneration2");
+                            fail("Exception should be thrown");
+                        } catch (ND4JWorkspaceException e) {
+                            //Expected exception
+                            e.printStackTrace();
+                        }
+
+                        try {
+                            gen2.leverageOrDetach("testBadGeneration2");
+                            fail("Exception should be thrown");
+                        } catch (ND4JWorkspaceException e) {
+                            //Expected exception
+                            e.printStackTrace();
+                        }
+
+                        try {
+                            gen2.leverageTo("testBadGeneration2");
+                            fail("Exception should be thrown");
+                        } catch (ND4JWorkspaceException e) {
+                            //Expected exception
+                            e.printStackTrace();
+                        }
+
+                        //Detach
+                        try {
+                            gen2.detach();
+                            fail("Exception should be thrown");
+                        } catch (ND4JWorkspaceException e) {
+                            e.printStackTrace();
+                        }
+
+
+                        //Migrate
+                        try {
+                            gen2.migrate();
+                            fail("Exception should be thrown");
+                        } catch (ND4JWorkspaceException e) {
+                            //Expected exception
+                            e.printStackTrace();
+                        }
+
+                        try {
+                            gen2.migrate(true);
+                            fail("Exception should be thrown");
+                        } catch (ND4JWorkspaceException e) {
+                            //Expected exception
+                            e.printStackTrace();
+                        }
+
+
+                        //Dup
+                        try {
+                            gen2.dup();
+                            fail("Exception should be thrown");
+                        } catch (ND4JWorkspaceException e) {
+                            e.printStackTrace();
+                        }
+
+                        //Unsafe dup:
+                        try {
+                            gen2.unsafeDuplication();
+                            fail("Exception should be thrown");
+                        } catch (ND4JWorkspaceException e) {
+                            e.printStackTrace();
+                        }
+
+                        try {
+                            gen2.unsafeDuplication(true);
+                            fail("Exception should be thrown");
+                        } catch (ND4JWorkspaceException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
     @Override
     public char ordering() {
         return 'c';

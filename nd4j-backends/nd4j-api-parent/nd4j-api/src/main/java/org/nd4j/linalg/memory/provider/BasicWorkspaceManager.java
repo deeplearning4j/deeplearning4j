@@ -329,4 +329,17 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         ensureThreadExistense();
         return new ArrayList<>(backingMap.get().values());
     }
+
+    @Override
+    public boolean anyWorkspaceActiveForCurrentThread(){
+        ensureThreadExistense();
+        boolean anyActive = false;
+        for(MemoryWorkspace ws : backingMap.get().values()){
+            if(ws.isScopeActive()){
+                anyActive = true;
+                break;
+            }
+        }
+        return anyActive;
+    }
 }

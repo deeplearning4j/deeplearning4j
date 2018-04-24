@@ -3,19 +3,19 @@ package org.nd4j.linalg.memory.abstracts;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.memory.pointers.PagedPointer;
+import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemoryManager;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.pointers.PagedPointer;
-import org.nd4j.linalg.api.memory.pointers.PointersPair;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -98,6 +98,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     // pinned allocations are purged with delay, used for circular mode only
     protected Queue<PointersPair> pinnedAllocations = new LinkedTransferQueue<>();
 
+    @Setter
     protected MemoryWorkspace previousWorkspace;
     protected MemoryWorkspace borrowingWorkspace;
 

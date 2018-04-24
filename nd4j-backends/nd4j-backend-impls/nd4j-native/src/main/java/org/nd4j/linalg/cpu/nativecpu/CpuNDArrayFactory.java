@@ -759,6 +759,21 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         if (indexes == null || indexes.length < 1)
             throw new IllegalStateException("Indexes can't be null or zero-length");
 
+        int[] shape;
+        if (sourceDimension == 1)
+            shape = new int[] {indexes.length, source.shape()[sourceDimension]};
+        else if (sourceDimension == 0)
+            shape = new int[] {source.shape()[sourceDimension], indexes.length};
+        else
+            throw new UnsupportedOperationException("2D input is expected");
+        return pullRows(source, Nd4j.createUninitialized(shape, order), sourceDimension, indexes);
+    }
+
+    @Override
+    public INDArray pullRows(INDArray source, INDArray destination, int sourceDimension, int[] indexes) {
+        if (indexes == null || indexes.length < 1)
+            throw new IllegalStateException("Indexes can't be null or zero-length");
+
         int[] shape = null;
         if (sourceDimension == 1)
             shape = new int[] {indexes.length, source.shape()[sourceDimension]};
@@ -767,7 +782,15 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         else
             throw new UnsupportedOperationException("2D input is expected");
 
-        INDArray ret = Nd4j.createUninitialized(shape, order);
+        INDArray ret = destination;
+        if(ret == null){
+            ret = Nd4j.createUninitialized(shape, order);
+        } else {
+            if(!Arrays.equals(shape, destination.shape())){
+                throw new IllegalStateException("Cannot pull rows into destination array: expected destination array of" +
+                        " shape " + Arrays.toString(shape) + " but got destination array of shape " + Arrays.toString(destination.shape()));
+            }
+        }
 
         Nd4j.getCompressor().autoDecompress(source);
 

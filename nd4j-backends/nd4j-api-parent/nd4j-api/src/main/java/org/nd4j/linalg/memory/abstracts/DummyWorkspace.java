@@ -233,4 +233,9 @@ public class DummyWorkspace implements MemoryWorkspace {
     public MemoryWorkspace tagOutOfScopeUse() {
         return this;
     }
+
+    @Override
+    public void setPreviousWorkspace(MemoryWorkspace memoryWorkspace) {
+        parentWorkspace = memoryWorkspace;
+    }
 }

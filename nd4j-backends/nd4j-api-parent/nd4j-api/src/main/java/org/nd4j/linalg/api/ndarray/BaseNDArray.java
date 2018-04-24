@@ -66,6 +66,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.LongUtils;
 import org.nd4j.linalg.util.NDArrayMath;
+import org.nd4j.linalg.workspace.WorkspaceUtils;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -1694,6 +1695,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray dup() {
+        WorkspaceUtils.assertValidArray(this, "Cannot duplicate INDArray");
         if (this.isCompressed() && this.ordering() == Nd4j.order().charValue()) {
             INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
             ret.markAsCompressed(true);
@@ -1706,6 +1708,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray dup(char order) {
+        WorkspaceUtils.assertValidArray(this, "Cannot duplicate INDArray");
         if (this.isCompressed() && this.ordering() == order) {
             INDArray ret = Nd4j.createArrayFromShapeBuffer(data().dup(), this.shapeInfoDataBuffer());
             ret.markAsCompressed(true);
@@ -1724,7 +1727,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public int getInt(int... indices) {
         return (int) getDouble(indices);
-
     }
 
     /**
@@ -5659,6 +5661,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (!isAttached())
             return this;
 
+        WorkspaceUtils.assertValidArray(this, "Cannot detach INDArray");
+
         Nd4j.getExecutioner().commit();
 
         /*
@@ -5718,6 +5722,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray leverage() {
+        WorkspaceUtils.assertValidArray(this, "Cannot leverage INDArray to new workspace");
         if (!isAttached())
             return this;
 
@@ -5787,6 +5792,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray leverageTo(String id, boolean enforceExistence) throws Nd4jNoSuchWorkspaceException {
+        WorkspaceUtils.assertValidArray(this, "Cannot leverage INDArray to new workspace");
         if (!isAttached())
             return this;
 
@@ -5799,11 +5805,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
-
         MemoryWorkspace target = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(id);
-
-        if (current == target)
-            return this;
 
         if (this.data.getParentWorkspace() == target)
             return this;
@@ -5873,6 +5875,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray migrate(boolean detachOnNoWs){
+        WorkspaceUtils.assertValidArray(this, "Cannot leverage INDArray to new workspace");
+
         MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
 
         if (current == null) {

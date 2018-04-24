@@ -37,6 +37,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -433,12 +434,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
                 if (!ws.isScopeActive()) {
                     throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses leaked workspace pointer from workspace ["
-                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
                 }
 
                 if (ws.getGenerationId() != x.data().getGenerationId())
                     throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses outdated workspace pointer from workspace ["
-                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
             }
 
         }
@@ -450,12 +451,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
             if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
                 if (!ws.isScopeActive()) {
                     throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses leaked workspace pointer from workspace ["
-                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
                 }
 
                 if (ws.getGenerationId() != y.data().getGenerationId())
                     throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses outdated workspace pointer from workspace ["
-                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
             }
         }
 
@@ -466,14 +467,25 @@ public class DefaultOpExecutioner implements OpExecutioner {
             if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
                 if (!ws.isScopeActive()) {
                     throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses leaked workspace pointer from workspace ["
-                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
                 }
 
                 if (ws.getGenerationId() != z.data().getGenerationId())
                     throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses outdated workspace pointer from workspace ["
-                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
             }
         }
+    }
+
+    private static List<String> allOpenWorkspaces(){
+        List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
+        List<String> workspaces = new ArrayList<>(l.size());
+        for( MemoryWorkspace ws : l){
+            if(ws.isScopeActive()) {
+                workspaces.add(ws.getId());
+            }
+        }
+        return workspaces;
     }
 
     public long profilingHookIn(Op op) {

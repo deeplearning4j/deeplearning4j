@@ -5837,6 +5837,36 @@ public class Nd4j {
     }
 
     /**
+     * This method produces concatenated array, that consist from tensors, fetched from source array, against some
+     * dimension and specified indexes.
+     * The concatenated arrays are placed in the specified array.
+     *
+     * @param source source tensor
+     * @param destination Destination tensor (result will be placed here)
+     * @param sourceDimension dimension of source tensor
+     * @param indexes indexes from source array
+     * @return Destination array with specified tensors
+     */
+    public static INDArray pullRows(INDArray source, INDArray destination, int sourceDimension, int[] indexes){
+        if (sourceDimension >= source.rank())
+            throw new IllegalStateException("Source dimension can't be higher the rank of source tensor");
+
+        if (indexes == null || indexes.length == 0)
+            throw new IllegalStateException("Indexes shouldn't be empty");
+
+        for (int idx : indexes) {
+            if (idx < 0 || idx >= source.shape()[source.rank() - sourceDimension - 1]) {
+                throw new IllegalStateException(
+                        "Index can't be < 0 and >= " + source.shape()[source.rank() - sourceDimension - 1]);
+            }
+        }
+
+        INDArray ret = INSTANCE.pullRows(source, destination, sourceDimension, indexes);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Concatneate ndarrays along a dimension
      *
      * @param dimension the dimension to concatneate along

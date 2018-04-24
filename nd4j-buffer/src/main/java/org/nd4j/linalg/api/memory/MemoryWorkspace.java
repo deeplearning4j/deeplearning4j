@@ -194,4 +194,14 @@ public interface MemoryWorkspace extends AutoCloseable {
      * @return
      */
     MemoryWorkspace tagOutOfScopeUse();
+
+    /**
+     * Set the previous workspace, if any<br>
+     * NOTE: this method should only be used if you are fully aware of the consequences of doing so. Incorrect use
+     * of this method may leave workspace management in an invalid/indeterminant state!
+     *
+     * @param memoryWorkspace Workspace to set as the previous workspace. This is the workspace that will become active
+     *                        when this workspace is closed.
+     */
+    void setPreviousWorkspace(MemoryWorkspace memoryWorkspace);
 }

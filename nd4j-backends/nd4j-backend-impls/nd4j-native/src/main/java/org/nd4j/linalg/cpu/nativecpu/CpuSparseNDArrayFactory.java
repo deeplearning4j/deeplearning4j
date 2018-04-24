@@ -113,6 +113,11 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
+    public INDArray pullRows(INDArray source, INDArray destination, int sourceDimension, int[] indexes) {
+        return null;
+    }
+
+    @Override
     public INDArray create(float[] data, int[] shape, int[] stride, long offset) {
         return null;
     }

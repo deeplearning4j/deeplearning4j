@@ -181,6 +181,24 @@ public class Preconditions {
     }
 
     /**
+     * See {@link #checkArgument(boolean, String, Object...)}
+     */
+    public static void checkArgument(boolean b, String msg, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) {
+        if (!b) {
+            throwEx(msg, arg1, arg2, arg3, arg4, arg5);
+        }
+    }
+
+    /**
+     * See {@link #checkArgument(boolean, String, Object...)}
+     */
+    public static void checkArgument(boolean b, String msg, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6) {
+        if (!b) {
+            throwEx(msg, arg1, arg2, arg3, arg4, arg5, arg6);
+        }
+    }
+
+    /**
      * Check the specified boolean argument. Throws an IllegalArgumentException with the specified message if {@code b} is false.
      * Note that the message may specify argument locations using "%s" - for example,
      * {@code checkArgument(false, "Got %s values, expected %s", 3, "more"} would throw an IllegalArgumentException
@@ -325,6 +343,24 @@ public class Preconditions {
     public static void checkState(boolean b, String msg, Object arg1, Object arg2, Object arg3, Object arg4) {
         if (!b) {
             throwStateEx(msg, arg1, arg2, arg3, arg4);
+        }
+    }
+
+    /**
+     * See {@link #checkState(boolean, String, Object...)}
+     */
+    public static void checkState(boolean b, String msg, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) {
+        if (!b) {
+            throwStateEx(msg, arg1, arg2, arg3, arg4, arg5);
+        }
+    }
+
+    /**
+     * See {@link #checkState(boolean, String, Object...)}
+     */
+    public static void checkState(boolean b, String msg, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6) {
+        if (!b) {
+            throwStateEx(msg, arg1, arg2, arg3, arg4, arg5, arg6);
         }
     }
 
