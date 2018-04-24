@@ -885,6 +885,23 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(segment_mean, 2, 1, false, 0, 0);
 
+        /**
+         * extract_image_patches op - Extract patches from images and put them in the "depth" output dimension.
+         *
+         * input params:
+         *    0 - images tensor (4D)
+         *
+         * int params:
+         *    0 - ksize_rows
+         *    1 - ksize_cols
+         *    2 - strides_rows
+         *    3 - strides_cols
+         *    4 - rates_rows
+         *    5 - rates_cols
+         *    6 - padding_type - 0 - equiv 'VALID', 1 - 'SAME'
+         */
+        DECLARE_CUSTOM_OP(extract_image_patches, 1, 1, false, 0, 7);
+
     }
 }
 
