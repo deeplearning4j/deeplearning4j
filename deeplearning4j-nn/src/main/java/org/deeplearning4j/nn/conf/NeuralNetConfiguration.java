@@ -71,16 +71,6 @@ import java.util.*;
 @Slf4j
 public class NeuralNetConfiguration implements Serializable, Cloneable {
 
-
-    /**
-     * System property for custom layers, preprocessors, graph vertices etc. Enabled by default.
-     * Run JVM with "-Dorg.deeplearning4j.config.custom.enabled=false" to disable classpath scanning for
-     * Overriding the default (i.e., disabling) this is only useful if (a) no custom layers/preprocessors etc will be
-     * used, and (b) minimizing startup/initialization time for new JVMs is very important.
-     * Results are cached, so there is no cost to custom layers after the first network has been constructed.
-     */
-    public static final String CUSTOM_FUNCTIONALITY = "org.deeplearning4j.config.custom.enabled";
-
     protected Layer layer;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;
