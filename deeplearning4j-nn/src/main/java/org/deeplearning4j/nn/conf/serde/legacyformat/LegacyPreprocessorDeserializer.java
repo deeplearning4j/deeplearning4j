@@ -21,7 +21,7 @@ public class LegacyPreprocessorDeserializer extends BaseLegacyDeserializer<Input
     private static final Map<String,String> LEGACY_NAMES = new HashMap<>();
 
     static {
-
+        LEGACY_NAMES.put("cnnToFeedForward", CnnToFeedForwardPreProcessor.class.getName());
         LEGACY_NAMES.put("cnnToRnn", CnnToRnnPreProcessor.class.getName());
         LEGACY_NAMES.put("composableInput", ComposableInputPreProcessor.class.getName());
         LEGACY_NAMES.put("feedForwardToCnn", FeedForwardToCnnPreProcessor.class.getName());
@@ -44,7 +44,8 @@ public class LegacyPreprocessorDeserializer extends BaseLegacyDeserializer<Input
 
     @Override
     public ObjectMapper getLegacyJsonMapper() {
-        return JsonMappers.getMapperLegacyJson();
+//        return JsonMappers.getMapperLegacyJson();
+        return JsonMappers.getJsonMapperLegacyFormatPreproc();
     }
 
     @Override

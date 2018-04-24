@@ -1,8 +1,15 @@
 package org.deeplearning4j.nn.conf.serde;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.serde.json.LegacyIActivationDeserializer;
 import org.nd4j.serde.json.LegacyILossFunctionDeserializer;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -18,22 +25,47 @@ import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.lang.annotation.Annotation;
+import java.util.Collections;
+import java.util.List;
 
 public class JsonMappers {
 
     private static ObjectMapper jsonMapper = new ObjectMapper();
     private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-    private static ObjectMapper jsonMapperLegacyFormat = new ObjectMapper();
+    private static ObjectMapper jsonMapperLegacyFormat = null;      //new ObjectMapper();
+
+    @Getter
+    private static ObjectMapper jsonMapperLegacyFormatLayer = new ObjectMapper();
+    @Getter
+    private static ObjectMapper jsonMapperLegacyFormatVertex = new ObjectMapper();
+    @Getter
+    private static ObjectMapper jsonMapperLegacyFormatPreproc = new ObjectMapper();
+    @Getter
+    private static ObjectMapper jsonMapperLegacyFormatIActivation = new ObjectMapper();
+    @Getter
+    private static ObjectMapper jsonMapperLegacyFormatILoss = new ObjectMapper();
+    @Getter
+    private static ObjectMapper jsonMapperLegacyFormatReconstruction = new ObjectMapper();
 
     static {
         configureMapper(jsonMapper);
         configureMapper(yamlMapper);
-        configureMapper(jsonMapperLegacyFormat);
+        configureMapper(jsonMapperLegacyFormatLayer);
+        configureMapper(jsonMapperLegacyFormatVertex);
+        configureMapper(jsonMapperLegacyFormatPreproc);
+        configureMapper(jsonMapperLegacyFormatIActivation);
+        configureMapper(jsonMapperLegacyFormatILoss);
+        configureMapper(jsonMapperLegacyFormatReconstruction);
 
-        jsonMapperLegacyFormat.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector());
+        jsonMapperLegacyFormatLayer.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(Layer.class)));
+        jsonMapperLegacyFormatVertex.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(GraphVertex.class)));
+        jsonMapperLegacyFormatPreproc.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(InputPreProcessor.class)));
+        jsonMapperLegacyFormatIActivation.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(IActivation.class)));
+        jsonMapperLegacyFormatILoss.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(ILossFunction.class)));
+        jsonMapperLegacyFormatReconstruction.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(ReconstructionDistribution.class)));
 
-        LegacyIActivationDeserializer.setLegacyJsonMapper(jsonMapperLegacyFormat);
-        LegacyILossFunctionDeserializer.setLegacyJsonMapper(jsonMapperLegacyFormat);
+        LegacyIActivationDeserializer.setLegacyJsonMapper(jsonMapperLegacyFormatIActivation);
+        LegacyILossFunctionDeserializer.setLegacyJsonMapper(jsonMapperLegacyFormatILoss);
     }
 
     public static ObjectMapper getMapper(){
@@ -77,13 +109,26 @@ public class JsonMappers {
      * Custom Jackson Introspector to ignore the {@code @JsonTypeYnfo} annotations on layers etc.
      * This is so we can deserialize legacy format JSON without recursing infinitely
      */
+    @AllArgsConstructor
     private static class IgnoreJsonTypeInfoIntrospector extends JacksonAnnotationIntrospector {
+
+        private List<Class> classList;
+
         @Override
         protected TypeResolverBuilder<?> _findTypeResolver(MapperConfig<?> config, Annotated ann, JavaType baseType) {
             if(ann instanceof AnnotatedClass){
                 AnnotatedClass c = (AnnotatedClass)ann;
                 Class<?> annClass = c.getAnnotated();
-                if (Layer.class.isAssignableFrom(annClass)) {
+
+                boolean isAssignable = false;
+                for(Class c2 : classList){
+                    if(c2.isAssignableFrom(annClass)){
+                        isAssignable = true;
+                        break;
+                    }
+                }
+
+                if( isAssignable ){
                     AnnotationMap annotations = (AnnotationMap) ((AnnotatedClass) ann).getAnnotations();
                     if(annotations == null || annotations.annotations() == null){
                         //Probably not necessary - but here for safety
