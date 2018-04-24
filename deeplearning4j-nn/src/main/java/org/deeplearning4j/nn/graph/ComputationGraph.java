@@ -123,7 +123,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     protected static final WorkspaceConfiguration WS_ALL_LAYERS_ACT_CONFIG = WorkspaceConfiguration.builder()
             .initialSize(0)
-            .overallocationLimit(0.2)
+            .overallocationLimit(0.05)
             .policyLearning(LearningPolicy.FIRST_LOOP)
             .policyReset(ResetPolicy.BLOCK_LEFT)
             .policySpill(SpillPolicy.REALLOCATE)
@@ -133,7 +133,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     protected final WorkspaceConfiguration WS_LAYER_ACT_X_CONFIG;
 
     protected static final WorkspaceConfiguration WS_RNN_LOOP_WORKING_MEM_CONFIG = WorkspaceConfiguration.builder()
-            .initialSize(0).overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
+            .initialSize(0).overallocationLimit(0.05).policyReset(ResetPolicy.BLOCK_LEFT)
             .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
             .policyLearning(LearningPolicy.FIRST_LOOP).build();
 
@@ -196,7 +196,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         int numWorkingMem = 2 * configuration.getVertices().size();
         WS_LAYER_WORKING_MEM_CONFIG = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(0.3)
+                .overallocationLimit(0.02)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .cyclesBeforeInitialization(numWorkingMem)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -209,7 +209,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         // account for a backward pass
         WS_LAYER_ACT_X_CONFIG = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(0.2)
+                .overallocationLimit(0.02)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .cyclesBeforeInitialization(configuration.getVertices().size())
                 .policyReset(ResetPolicy.BLOCK_LEFT)
