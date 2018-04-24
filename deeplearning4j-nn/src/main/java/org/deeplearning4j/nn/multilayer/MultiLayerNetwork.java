@@ -147,14 +147,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     protected static final String WS_RNN_LOOP_WORKING_MEM = "WS_RNN_LOOP_WORKING_MEM";
 
 
-    protected static final WorkspaceConfiguration WS_LAYER_WORKING_MEM_CONFIG = WorkspaceConfiguration.builder()
-            .initialSize(0)
-            .overallocationLimit(0.3)
-            .policyLearning(LearningPolicy.OVER_TIME)
-            .policyReset(ResetPolicy.BLOCK_LEFT)
-            .policySpill(SpillPolicy.REALLOCATE)
-            .policyAllocation(AllocationPolicy.OVERALLOCATE)
-            .build();
+    protected final WorkspaceConfiguration WS_LAYER_WORKING_MEM_CONFIG;
 
     protected static final WorkspaceConfiguration WS_ALL_LAYERS_ACT_CONFIG = WorkspaceConfiguration.builder()
             .initialSize(0)
@@ -165,14 +158,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             .policyAllocation(AllocationPolicy.OVERALLOCATE)
             .build();
 
-    protected static final WorkspaceConfiguration WS_LAYER_ACT_X_CONFIG = WorkspaceConfiguration.builder()
-            .initialSize(0)
-            .overallocationLimit(0.2)
-            .policyLearning(LearningPolicy.OVER_TIME)
-            .policyReset(ResetPolicy.BLOCK_LEFT)
-            .policySpill(SpillPolicy.REALLOCATE)
-            .policyAllocation(AllocationPolicy.OVERALLOCATE)
-            .build();
+    protected final WorkspaceConfiguration WS_LAYER_ACT_X_CONFIG;
 
     protected static final WorkspaceConfiguration WS_RNN_LOOP_WORKING_MEM_CONFIG = WorkspaceConfiguration.builder()
             .initialSize(0).overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
@@ -183,6 +169,32 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
         this.defaultConfiguration = conf.getConf(0).clone();
+
+        //Working memory: should learn over course of: (a) full forward pass, and (b) full backward pass
+        //Working memory should be opened once per layer and once per preprocessor, for each of forward and backward passes
+        int numWorkingMem = 2 * (layerWiseConfigurations.getConfs().size() + layerWiseConfigurations.getInputPreProcessors().size());
+        WS_LAYER_WORKING_MEM_CONFIG = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(0.3)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .cyclesBeforeInitialization(numWorkingMem)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policySpill(SpillPolicy.REALLOCATE)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .build();
+
+        //Activations memory: opened once per layer - for every second layer (preprocessors are within the loop).
+        //Technically we could set learning to numLayers / 2, but will set to numLayers for simplicity, and also to
+        // account for a backward pass
+        WS_LAYER_ACT_X_CONFIG = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .cyclesBeforeInitialization(layerWiseConfigurations.getConfs().size())
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .build();
     }
 
     /**
