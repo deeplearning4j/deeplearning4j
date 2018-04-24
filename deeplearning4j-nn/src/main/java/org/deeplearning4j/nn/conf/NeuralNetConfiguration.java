@@ -420,12 +420,13 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      *
      * @param classes Classes to register
      */
-    public void registerLegacyCustomClassesForJSON(Class<?>... classes){
+    public static void registerLegacyCustomClassesForJSON(Class<?>... classes){
         //Default names (i.e., old format for custom JSON format)
         List<Pair<String,Class>> list = new ArrayList<>();
         for(Class<?> c : classes){
             list.add(new Pair<String,Class>(c.getSimpleName(), c));
         }
+        registerLegacyCustomClassesForJSON(list);
     }
 
     /**
@@ -434,7 +435,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      * Using this method directly should never be required (instead: use {@link #registerLegacyCustomClassesForJSON(Class[])}
      * but is added in case it is required in non-standard circumstances.
      */
-    public void registerLegacyCustomClassesForJSON(Pair<String,Class>... classes){
+    public static void registerLegacyCustomClassesForJSON(List<Pair<String,Class>> classes){
         for(Pair<String,Class> p : classes){
             String s = p.getFirst();
             Class c = p.getRight();
