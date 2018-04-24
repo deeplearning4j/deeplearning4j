@@ -405,6 +405,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         return JsonMappers.getMapper();
     }
 
+    /**
+     * Set of classes that can be registered for legacy deserialization.
+     */
     private static List<Class<?>> REGISTERABLE_CUSTOM_CLASSES = (List<Class<?>>) Arrays.<Class<?>>asList(
             Layer.class,
             GraphVertex.class,
@@ -414,6 +417,19 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             ReconstructionDistribution.class
     );
 
+    /**
+     * Register a set of classes (Layer, GraphVertex, InputPreProcessor, IActivation, ILossFunction, ReconstructionDistribution
+     * ONLY) for JSON deserialization.<br>
+     * <br>
+     * This is required ONLY when BOTH of the following conditions are met:<br>
+     * 1. You want to load a serialized net, saved in 1.0.0-alpha or before, AND<br>
+     * 2. The serialized net has a custom Layer, GraphVertex, etc (i.e., one not defined in DL4J)<br>
+     * <br>
+     * By passing the classes of these layers here, DL4J should be able to deserialize them, in spite of the JSON
+     * format change between versions.
+     *
+     * @param classes Classes to register
+     */
     public void registerLegacyCustomClassesForJSON(Class<?>... classes){
         //Default names (i.e., old format for custom JSON format)
         List<Pair<String,Class>> list = new ArrayList<>();
@@ -422,6 +438,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
     }
 
+    /**
+     * Register a set of classes (Layer, GraphVertex, InputPreProcessor, IActivation, ILossFunction, ReconstructionDistribution
+     * ONLY) for JSON deserialization, with custom names.<br>
+     * Using this method directly should never be required (instead: use {@link #registerLegacyCustomClassesForJSON(Class[])}
+     * but is added in case it is required in non-standard circumstances.
+     */
     public void registerLegacyCustomClassesForJSON(Pair<String,Class>... classes){
         for(Pair<String,Class> p : classes){
             String s = p.getFirst();

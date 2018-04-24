@@ -28,12 +28,39 @@ import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * JSON mappers for deserializing neural net configurations, etc.
+ *
+ * @author Alex Black
+ */
 public class JsonMappers {
 
     private static ObjectMapper jsonMapper = new ObjectMapper();
     private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private static ObjectMapper jsonMapperLegacyFormat = null;      //new ObjectMapper();
 
+    /*
+    Note to developers: The following JSON mappers are for handling legacy format JSON.
+    Note that after 1.0.0-alpha, the JSON subtype format for layers, preprocessors, graph vertices,
+    etc were changed from a wrapper object, to an "@class" field.
+    However, in an attempt to not break saved networks, these mappers are part of the solution.
+
+    How legacy loading works (same pattern for all types - Layer, GraphVertex, InputPreprocesor etc)
+    1. Layers etc that have an "@class" field are deserialized as normal
+    2. Layers that don't have such a field are mapped (via Layer @JsonTypeInfo) to the LegacyLayerDeserializerHelper class.
+    3. LegacyLayerDeserializerHelper has a @JsonDeserialize annotation - we use LegacyLayerDeserialize to handle it
+    4. LegacyLayerDeserializer has a list of old names (present in the legacy format JSON) and the corresponding class names
+    5. BaseLegacyDeserializer (that LegacyLayerDeserializer extends) does a lookup and handles the deserialization
+
+    Now, as to why we have one ObjectMapper for each type: We can't use the default JSON mapper for the legacy format,
+    as it'll fail due to not having the expected "@class" annotation.
+    Consequently, we need to tell Jackson to ignore that specific annotation and deserialize to the specified
+    class anyway. The ignoring is done via an annotation introspector, defined below in this class.
+    However, we can't just use a single annotation introspector (and hence ObjectMapper) for loading legacy values of
+    all types - if we did, then any nested types would fail (i.e., an IActivation in a Layer - the IActivation couldn't
+    be deserialized correctly, as the annotation would be ignored).
+
+     */
     @Getter
     private static ObjectMapper jsonMapperLegacyFormatLayer = new ObjectMapper();
     @Getter
@@ -68,10 +95,16 @@ public class JsonMappers {
         LegacyILossFunctionDeserializer.setLegacyJsonMapper(jsonMapperLegacyFormatILoss);
     }
 
+    /**
+     * @return The default/primary ObjectMapper for deserializing JSON network configurations in DL4J
+     */
     public static ObjectMapper getMapper(){
         return jsonMapper;
     }
 
+    /**
+     * @return The default/primary ObjectMapper for deserializing network configurations in DL4J (YAML format)
+     */
     public static ObjectMapper getMapperYaml() {
         return yamlMapper;
     }
@@ -107,7 +140,8 @@ public class JsonMappers {
 
     /**
      * Custom Jackson Introspector to ignore the {@code @JsonTypeYnfo} annotations on layers etc.
-     * This is so we can deserialize legacy format JSON without recursing infinitely
+     * This is so we can deserialize legacy format JSON without recursing infinitely, by selectively ignoring
+     * a set of JsonTypeInfo annotations
      */
     @AllArgsConstructor
     private static class IgnoreJsonTypeInfoIntrospector extends JacksonAnnotationIntrospector {
