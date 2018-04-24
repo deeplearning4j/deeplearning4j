@@ -20,6 +20,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -106,7 +108,8 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                                     net.init();
 
-                                    String msg = "Minibatch=" + minibatchSize + ", activationFn=" + afn + ", kernel = " + kernel;
+                                    String msg = "Minibatch=" + minibatchSize + ", activationFn=" + afn
+                                            + ", kernel = " + Arrays.toString(kernel);
 
                                     if (PRINT_RESULTS) {
                                         System.out.println(msg);
@@ -114,8 +117,9 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                             System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
                                     }
 
-                                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS,
+                                            DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS,
+                                            RETURN_ON_FIRST_FAILURE, input, labels);
 
                                     assertTrue(msg, gradOK);
                                 }
