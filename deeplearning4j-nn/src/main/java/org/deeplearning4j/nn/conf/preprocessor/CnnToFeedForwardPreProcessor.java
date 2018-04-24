@@ -25,6 +25,8 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -76,7 +78,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
     // return 2 dimensions
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() == 2)
             return input; //Should usually never happen
 
@@ -90,30 +92,31 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
         //Assume input is standard rank 4 activations out of CNN layer
         //First: we require input to be in c order. But c order (as declared in array order) isn't enough; also need strides to be correct
-        if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input))
-            input = input.dup('c');
+        if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
 
         int[] inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
-        int[] outShape = new int[] {inShape[0], inShape[1] * inShape[2] * inShape[3]};
+        int[] outShape = new int[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
-        return input.reshape('c', outShape);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.reshape('c', outShape));    //Should be zero copy reshape
     }
 
     @Override
-    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
+    public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Epsilons from layer above should be 2d, with shape [miniBatchSize, depthOut*outH*outW]
         if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
-            epsilons = epsilons.dup('c');
+            epsilons = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilons, 'c');
 
         if (epsilons.rank() == 4)
-            return epsilons; //Should never happen
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilons); //Should never happen
 
         if (epsilons.columns() != inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
-                            + inputHeight + " x columns " + inputWidth + " x depth " + numChannels + " but was instead "
-                            + Arrays.toString(epsilons.shape()));
+                    + inputHeight + " x columns " + inputWidth + " x depth " + numChannels + " but was instead "
+                    + Arrays.toString(epsilons.shape()));
 
-        return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
+        INDArray ret = epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, ret); //Move if required to specified workspace
     }
 
     @Override

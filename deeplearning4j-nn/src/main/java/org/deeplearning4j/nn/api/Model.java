@@ -24,6 +24,7 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Collection;
 import java.util.Map;
@@ -64,6 +65,7 @@ public interface Model {
     /**
      * All models have a fit method
      */
+    @Deprecated
     void fit();
 
     /**
@@ -88,7 +90,7 @@ public interface Model {
     /**
      * Update the score
      */
-    void computeGradientAndScore();
+    void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr);
 
     /**
      * Sets a rolling tally for the score. This is useful for mini batch learning when
@@ -148,14 +150,7 @@ public interface Model {
      * Fit the model to the given data
      * @param data the data to fit the model to
      */
-    void fit(INDArray data);
-
-
-    /**
-     * Run one iteration
-     * @param input the input to iterate on
-     */
-    void iterate(INDArray input);
+    void fit(INDArray data, LayerWorkspaceMgr workspaceMgr);
 
 
     /**

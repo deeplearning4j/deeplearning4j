@@ -9,6 +9,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * ReverseTimeSeriesVertex is used in recurrent neural networks to revert the order of time series.
@@ -43,19 +45,23 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
         }
     }
 
+    @Override
     public boolean hasLayer() {
         return false;
     }
 
+    @Override
     public boolean isOutputVertex() {
         return false;
     }
 
+    @Override
     public Layer getLayer() {
         return null;
     }
 
-    public INDArray doForward(boolean training) {
+    @Override
+    public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         // Get the mask arrays for the given input, if any
         final INDArray mask = getMask();
 
@@ -63,17 +69,18 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
         final INDArray input = inputs[0];
 
         // Compute the output
-        return revertTimeSeries(input, mask);
+        return revertTimeSeries(input, mask, workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    @Override
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
 
         // Get the mask arrays for the given input, if any
         INDArray mask = getMask();
 
         // Backpropagate the output error (epsilon) to the input variables:
         //      Just undo the revert (which can be done by another revert)
-        INDArray epsilonsOut = revertTimeSeries(epsilon, mask);
+        INDArray epsilonsOut = revertTimeSeries(epsilon, mask, workspaceMgr, ArrayType.ACTIVATION_GRAD);
 
         return new Pair<>(null, new INDArray[] {epsilonsOut});
     }
@@ -104,7 +111,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
      * @param mask The masking tensor (1 for meaningful entries, 0 for padding)
      * @return The reverted mask.
      */
-    private static INDArray revertTimeSeries(INDArray input, INDArray mask) {
+    private static INDArray revertTimeSeries(INDArray input, INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType type) {
         // Get number of samples
         int n = input.size(0);
 
@@ -112,7 +119,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
         int m = input.size(2);
 
         // Create empty output
-        INDArray out = input.dup();
+        INDArray out = workspaceMgr.create(type, input.shape(), 'f');
 
         // Iterate over all samples
         for (int s = 0; s < n; s++) {
@@ -166,9 +173,9 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
+    @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                                                           int minibatchSize)
-    {
+                                                           int minibatchSize){
         if (maskArrays.length > 1) {
             throw new IllegalArgumentException("This vertex can only handle one input and hence only one mask");
         }

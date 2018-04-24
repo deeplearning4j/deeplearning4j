@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -18,6 +17,8 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
 
 import java.util.ArrayList;
@@ -90,7 +91,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         INDArray nextEpsilon;
         int[] shape = getShape(epsilon);
         int batchSize = epsilon.size(0); // number examples in batch
@@ -121,7 +123,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 gamma = Nd4j.valueArrayOf(new int[] {1, shape[1]}, layerConf.getGamma());
             }
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, shape, gamma, dGammaView, dBetaView,
-                            layerConf.getEps());
+                            layerConf.getEps(), workspaceMgr);
             if (ret != null) {
                 return ret;
             }
@@ -215,15 +217,20 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                                             + layerId());
         }
 
+        //TODO could optimize this
+        nextEpsilon = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, nextEpsilon);
         return new Pair<>(retGradient, nextEpsilon);
     }
 
     @Override
-    public void fit(INDArray data) {}
+    public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        throw new UnsupportedOperationException("Not supported");
+    }
 
     @Override
-    public INDArray activate(boolean training) {
-        return preOutput(input, training ? TrainingMode.TRAIN : TrainingMode.TEST);
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
+        return preOutput(input, training ? TrainingMode.TRAIN : TrainingMode.TEST, workspaceMgr);
     }
 
     @Override
@@ -231,12 +238,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         return gradient;
     }
 
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return preOutput(x, TrainingMode.TRAIN);
-    }
-
-    public INDArray preOutput(INDArray x, TrainingMode training) {
+    public INDArray preOutput(INDArray x, TrainingMode training, LayerWorkspaceMgr workspaceMgr) {
         INDArray activations;
         // TODO add this directly in layer or get the layer prior...
         // batchnorm true but need to clarify if activation before or after
@@ -276,7 +278,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             mean = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
             var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
         }
-        std = Transforms.sqrt(var, true).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
+        std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var), false);
 
         INDArray gamma = null;
         INDArray beta = null;
@@ -298,7 +300,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             //Note that cudnn does not support dense (2d) batch norm case as of v5.1
             double decay = layerConf.getDecay();
             INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN, shape, gamma, beta, globalMeanView,
-                            globalVarView, decay, layerConf.getEps());
+                            globalVarView, decay, layerConf.getEps(), workspaceMgr);
             if (ret != null) {
                 return ret;
             }
@@ -306,8 +308,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation)
         if (x.rank() == 2) {
-            xMu = x.subRowVector(mean).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
-            xHat = xMu.divRowVector(std).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
+            xMu = workspaceMgr.leverageTo(ArrayType.INPUT, x.subRowVector(mean));
+            xHat = workspaceMgr.leverageTo(ArrayType.INPUT, xMu.divRowVector(std));
+
 
             if (layerConf.isLockGammaBeta()) {
                 //Special case: gamma/beta have fixed values for all outputs
@@ -327,14 +330,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else if (x.rank() == 4) {
             if (!Shape.strideDescendingCAscendingF(x))
                 x = x.dup(); //TODO: temp Workaround for broadcast bug. To be removed when fixed
-            xMu = Nd4j.getExecutioner()
-                            .execAndReturn(new BroadcastSubOp(x, mean,
-                                            Nd4j.createUninitialized(x.shape(), x.ordering()), 1))
-                            .leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
-            xHat = Nd4j.getExecutioner()
-                            .execAndReturn(new BroadcastDivOp(xMu, std,
-                                            Nd4j.createUninitialized(x.shape(), x.ordering()), 1))
-                            .leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
+            xMu = workspaceMgr.createUninitialized(ArrayType.INPUT, x.shape(), x.ordering());
+            xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x, mean,xMu, 1));
+            xHat =  workspaceMgr.createUninitialized(ArrayType.INPUT, x.shape(), x.ordering());
+            xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std,xHat, 1));
 
             if (layerConf.isLockGammaBeta()) {
                 //Special case: gamma/beta have fixed values for all outputs
@@ -349,8 +348,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 }
             } else {
                 //Standard case: gamma and beta are learned per parameter
+                activations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, x.shape(), x.ordering());
                 activations = Nd4j.getExecutioner().execAndReturn(
-                                new BroadcastMulOp(xHat, gamma, Nd4j.createUninitialized(x.shape(), x.ordering()), 1));
+                                new BroadcastMulOp(xHat, gamma, activations, 1));
                 activations = Nd4j.getExecutioner()
                                 .execAndReturn(new BroadcastAddOp(activations, beta, activations, 1));
             }
@@ -391,22 +391,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             }
         }
 
+        activations = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, activations);   //Most of the time this should be a no-op
         return activations;
-    }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return preOutput(input, training);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return preOutput(x, training ? TrainingMode.TRAIN : TrainingMode.TEST);
     }
 
     @Override

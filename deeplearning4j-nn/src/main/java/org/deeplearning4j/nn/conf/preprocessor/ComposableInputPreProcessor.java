@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -43,18 +44,18 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         for (InputPreProcessor preProcessor : inputPreProcessors)
-            input = preProcessor.preProcess(input, miniBatchSize);
+            input = preProcessor.preProcess(input, miniBatchSize, workspaceMgr);
         return input;
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Apply input preprocessors in opposite order for backprop (compared to forward pass)
         //For example, CNNtoFF + FFtoRNN, need to do backprop in order of FFtoRNN + CNNtoFF
         for (int i = inputPreProcessors.length - 1; i >= 0; i--) {
-            output = inputPreProcessors[i].backprop(output, miniBatchSize);
+            output = inputPreProcessors[i].backprop(output, miniBatchSize, workspaceMgr);
         }
         return output;
     }

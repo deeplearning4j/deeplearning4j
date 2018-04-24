@@ -4,7 +4,6 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -13,6 +12,8 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 
@@ -50,7 +51,8 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         if(sameDiff == null){
             doInit();
         }
@@ -59,21 +61,17 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             INDArray result = sameDiff.execAndEndResult();
-            return result;
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, result);
         }
     }
 
-    @Override
-    public INDArray preOutput(boolean training) {
-        return activate(training);
-    }
-
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Fitting DL4J SameDiff layers via backpropagation is not yet supported");
 
         /*
+        assertInputSet(true);
         Gradient g = new DefaultGradient();
 
         INDArray dLdIn;
@@ -89,34 +87,6 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         return new Pair<>(g, dLdIn);
         */
-    }
-
-    @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        double l2Sum = 0.0;
-        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
-            double l2 = conf.getL2ByParam(entry.getKey());
-            if (l2 > 0) {
-                double norm2 = getParam(entry.getKey()).norm2Number().doubleValue();
-                l2Sum += 0.5 * l2 * norm2 * norm2;
-            }
-        }
-
-        return l2Sum;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        double l1Sum = 0.0;
-        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
-            double l1 = conf.getL1ByParam(entry.getKey());
-            if (l1 > 0) {
-                double norm1 = getParam(entry.getKey()).norm1Number().doubleValue();
-                l1Sum += l1 * norm1;
-            }
-        }
-
-        return l1Sum;
     }
 
     /**Returns the parameters of the neural network as a flattened row vector

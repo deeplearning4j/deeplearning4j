@@ -195,6 +195,8 @@ public class TestMasking extends BaseDL4JTest {
                 double gScore1 = graph.score();
                 INDArray gGrad1 = graph.gradient().gradient();
 
+                graph.setLayerMaskArrays(null, new INDArray[] {labelMask});
+                graph.setInputs(features);
                 graph.setLabels(newLabels);
                 graph.computeGradientAndScore();
 

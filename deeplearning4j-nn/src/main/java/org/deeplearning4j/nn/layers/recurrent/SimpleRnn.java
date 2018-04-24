@@ -4,7 +4,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.SimpleRnnParamInitializer;
-import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -13,6 +12,8 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
@@ -33,10 +34,10 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public INDArray rnnTimeStep(INDArray input) {
-        setInput(input);
+    public INDArray rnnTimeStep(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
         INDArray last = stateMap.get(STATE_KEY_PREV_ACTIVATION);
-        INDArray out = activateHelper(last, false, false).getFirst();
+        INDArray out = activateHelper(last, false, false, workspaceMgr).getFirst();
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
             stateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)));
         }
@@ -44,10 +45,10 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        setInput(input);
+    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
         INDArray last = tBpttStateMap.get(STATE_KEY_PREV_ACTIVATION);
-        INDArray out = activateHelper(last, training, false).getFirst();
+        INDArray out = activateHelper(last, training, false, workspaceMgr).getFirst();
         if(storeLastForTBPTT){
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
                 tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)));
@@ -57,19 +58,21 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return tbpttBackpropGradient(epsilon, -1);
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        return tbpttBackpropGradient(epsilon, -1, workspaceMgr);
     }
 
     @Override
-    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength) {
-        epsilon = epsilon.dup('f');
+    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
+        if(epsilon.ordering() != 'f' || !Shape.hasDefaultStridesForShape(epsilon))
+            epsilon = epsilon.dup('f');
 
         //First: Do forward pass to get gate activations and Zs
-        Pair<INDArray,INDArray> p = activateHelper(null, true, true);
+        Pair<INDArray,INDArray> p = activateHelper(null, true, true, workspaceMgr);
 
-        INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, true);
-        INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, true);
+        INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, true, workspaceMgr);
+        INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, true, workspaceMgr);
 
         INDArray wg = gradientViews.get(SimpleRnnParamInitializer.WEIGHT_KEY);
         INDArray rwg = gradientViews.get(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY);
@@ -80,7 +83,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         int tsLength = input.size(2);
 
-        INDArray epsOut = Nd4j.createUninitialized(input.shape(), 'f');
+        INDArray epsOut = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.shape(), 'f');
 
         INDArray dldzNext = null;
         int end;
@@ -150,30 +153,26 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public INDArray preOutput(boolean training){
-        return activate(training);
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr){
+        return activateHelper(null, training, false, workspaceMgr).getFirst();
     }
 
-    @Override
-    public INDArray activate(boolean training){
-        return activateHelper(null, training, false).getFirst();
-    }
-
-    private Pair<INDArray,INDArray> activateHelper(INDArray prevStepOut, boolean training, boolean forBackprop){
-        applyDropOutIfNecessary(training);
+    private Pair<INDArray,INDArray> activateHelper(INDArray prevStepOut, boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr){
+        assertInputSet(false);
+        applyDropOutIfNecessary(training, workspaceMgr);
         int m = input.size(0);
         int tsLength = input.size(2);
         int nOut = layerConf().getNOut();
 
-        INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, training);
-        INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training);
-        INDArray b = getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training);
+        INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, training, workspaceMgr);
+        INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr);
+        INDArray b = getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training, workspaceMgr);
 
-        INDArray out = Nd4j.createUninitialized(new int[]{m, nOut, tsLength}, 'f');
-        INDArray outZ = (forBackprop ? Nd4j.createUninitialized(out.shape()) : null);
+        INDArray out = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[]{m, nOut, tsLength}, 'f');
+        INDArray outZ = (forBackprop ? workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, out.shape()) : null);
 
         if(input.ordering() != 'f' || Shape.strideDescendingCAscendingF(input))
-            input = input.dup('f');
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
         //TODO implement 'mmul across time' optimization
 

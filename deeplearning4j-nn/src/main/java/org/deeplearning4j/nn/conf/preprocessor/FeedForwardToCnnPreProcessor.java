@@ -26,6 +26,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -79,35 +81,36 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
-        if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input))
-            input = input.dup('c');
-
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         this.shape = input.shape();
-        if (input.shape().length == 4)
-            return input;
+        if (input.rank() == 4)
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
+
         if (input.columns() != inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
-                            + inputHeight + " x columns " + inputWidth + " x channels " + numChannels
-                            + " but was instead " + Arrays.toString(input.shape()));
+                    + inputHeight + " x columns " + inputWidth + " x channels " + numChannels
+                    + " but was instead " + Arrays.toString(input.shape()));
+
+        if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
 
         return input.reshape('c', input.size(0), numChannels, inputHeight, inputWidth);
     }
 
     @Override
     // return 4 dimensions
-    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
-        if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
-            epsilons = epsilons.dup('c');
+    public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
+        if (epsilons.ordering() != 'c' || !Shape.hasDefaultStridesForShape(epsilons))
+            epsilons = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilons, 'c');
 
         if (shape == null || ArrayUtil.prod(shape) != epsilons.length()) {
             if (epsilons.rank() == 2)
-                return epsilons; //should never happen
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilons); //should never happen
 
             return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
         }
 
-        return epsilons.reshape('c', shape);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilons.reshape('c', shape));
     }
 
 

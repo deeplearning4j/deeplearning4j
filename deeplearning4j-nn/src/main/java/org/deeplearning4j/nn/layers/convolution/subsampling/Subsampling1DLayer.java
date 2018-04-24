@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -34,7 +35,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         if (epsilon.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
                             + " array as epsilon for Subsampling1DLayer backprop with shape "
@@ -47,7 +48,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
 
         // call 2D SubsamplingLayer's backpropGradient method
-        Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon, workspaceMgr);
         INDArray epsNext = gradientEpsNext.getSecond();
 
         // remove singleton fourth dimension from input and current epsilon
@@ -58,7 +59,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                             + " array as input to Subsampling1DLayer with shape " + Arrays.toString(input.shape())
@@ -69,7 +70,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D SubsamplingLayer's activate method
-        INDArray acts = super.activate(training);
+        INDArray acts = super.activate(training, workspaceMgr);
 
         // remove singleton fourth dimension from input and output activations
         input = origInput;

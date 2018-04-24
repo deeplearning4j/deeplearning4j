@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -16,6 +15,8 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -205,8 +206,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     }
 
     @Override
-    public void update(Layer layer, Gradient gradient, int iteration, int epoch, int batchSize) {
-        update(gradient, iteration, epoch, batchSize);
+    public void update(Layer layer, Gradient gradient, int iteration, int epoch, int batchSize, LayerWorkspaceMgr workspaceMgr) {
+        update(gradient, iteration, epoch, batchSize, workspaceMgr);
     }
 
     /**
@@ -220,7 +221,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @param iteration The current iteration (i.e., number of parameter updates so far)
      * @param batchSize The current minibatch size (number of examples)
      */
-    public void update(Gradient gradient, int iteration, int epoch, int batchSize) {
+    public void update(Gradient gradient, int iteration, int epoch, int batchSize, LayerWorkspaceMgr workspaceMgr) {
 
         //First: check if gradient is standard or external...
         //In a MultiLayerNetwork, the INDArray returned by .gradient() is always the standard full view array
@@ -263,25 +264,15 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
 
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
-        //
+
+        workspaceMgr.assertNotOpen(ArrayType.UPDATER_WORKING_MEM, "Updater working memory");
         for (UpdaterBlock ub : updaterBlocks) {
             if (ub.skipDueToPretrainConfig()) {
                 //Should skip some updater blocks sometimes
                 //For example, VAE decoder params while doing supervised backprop
                 continue;
             }
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_FEED_FORWARD)) {
-                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                                .getAndActivateWorkspace(ComputationGraph.WORKSPACE_FEED_FORWARD)) {
-                    if (isExternal) {
-                        //RL4J etc type case: calculate gradients in 1 net, update them in another
-                        ub.updateExternalGradient(iteration, epoch, gradient.gradient(), getParams());
-                    } else {
-                        //Standard case
-                        ub.update(iteration, epoch);
-                    }
-                }
-            } else {
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.UPDATER_WORKING_MEM)){
                 if (isExternal) {
                     //RL4J etc type case: calculate gradients in 1 net, update them in another
                     ub.updateExternalGradient(iteration, epoch, gradient.gradient(), getParams());

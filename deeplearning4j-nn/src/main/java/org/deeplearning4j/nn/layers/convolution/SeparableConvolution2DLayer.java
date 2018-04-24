@@ -15,9 +15,10 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -59,8 +60,8 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
@@ -69,9 +70,9 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         }
         INDArray bias;
         INDArray depthWiseWeights =
-                getParamWithNoise(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, true);
+                getParamWithNoise(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, true, workspaceMgr);
         INDArray pointWiseWeights =
-                getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, true);
+                getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, true, workspaceMgr);
 
 
         int miniBatch = input.size(0);
@@ -86,26 +87,19 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
         int[] pad;
-        int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(
-                    input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(
-                    input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
+            ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
-
-        int outH = outSize[0];
-        int outW = outSize[1];
 
         INDArray biasGradView = gradientViews.get(SeparableConvolutionParamInitializer.BIAS_KEY);
         INDArray depthWiseweightGradView = gradientViews.get(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY);
         INDArray pointWiseweightGradView = gradientViews.get(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY);
 
-        INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
-        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
+        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
@@ -116,24 +110,24 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         INDArray delta;
         IActivation afn = layerConf().getActivationFn();
-        Pair<INDArray, INDArray> p = preOutput4d(true, true);
+        Pair<INDArray, INDArray> p = preOutput4d(true, true, workspaceMgr);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
         CustomOp op;
         if(layerConf().hasBias()){
-            bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, true);
+            bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
 
             op = DynamicCustomOp.builder("sconv2d_bp")
                     .addInputs(input, delta, depthWiseWeights, pointWiseWeights, bias)
                     .addIntegerArguments(args)
-                    .addOutputs(reshapedEpsilon, depthWiseweightGradView, pointWiseweightGradView, biasGradView)
+                    .addOutputs(outEpsilon, depthWiseweightGradView, pointWiseweightGradView, biasGradView)
                     .callInplace(false)
                     .build();
         } else {
             op = DynamicCustomOp.builder("sconv2d_bp")
                     .addInputs(input, delta, depthWiseWeights, pointWiseWeights)
                     .addIntegerArguments(args)
-                    .addOutputs(reshapedEpsilon, depthWiseweightGradView, pointWiseweightGradView)
+                    .addOutputs(outEpsilon, depthWiseweightGradView, pointWiseweightGradView)
                     .callInplace(false)
                     .build();
         }
@@ -148,22 +142,17 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         weightNoiseParams.clear();
 
-        return new Pair<>(retGradient, reshapedEpsilon);
+        return new Pair<>(retGradient, outEpsilon);
     }
-
 
     @Override
-    public INDArray preOutput(boolean training) {
-        return preOutput(training, false).getFirst();
-    }
-
-    protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop) {
-
-        INDArray bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, training);
+    protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
+        INDArray bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray depthWiseWeights =
-                getParamWithNoise(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, training);
+                getParamWithNoise(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, training, workspaceMgr);
         INDArray pointWiseWeights =
-                getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, training);
+                getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, training, workspaceMgr);
 
         if (input.rank() != 4) {
             String layerName = conf.getLayer().getLayerName();
@@ -214,8 +203,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         int outW = outSize[1];
 
         int miniBatch = input.size(0);
-        INDArray output = Nd4j.create(miniBatch * outDepth * outH * outW);
-        INDArray reshapedOutput = output.reshape('c', miniBatch, outDepth, outH, outW);
+        INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, new int[]{miniBatch, outDepth, outH, outW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
@@ -224,48 +212,34 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                 pad[0], pad[1], dilation[0], dilation[1], sameMode
         };
 
-        CustomOp op;
+        INDArray[] opInputs;
         if (layerConf().hasBias()) {
-            op = DynamicCustomOp.builder("sconv2d")
-                .addInputs(input, depthWiseWeights, pointWiseWeights, bias)
-                .addIntegerArguments(args)
-                .addOutputs(reshapedOutput)
-                .callInplace(false)
-                .build();
+            opInputs = new INDArray[]{input, depthWiseWeights, pointWiseWeights, bias};
         } else {
-            op = DynamicCustomOp.builder("sconv2d")
-                .addInputs(input, depthWiseWeights, pointWiseWeights)
+            opInputs = new INDArray[]{input, depthWiseWeights, pointWiseWeights};
+
+        }
+        CustomOp op = DynamicCustomOp.builder("sconv2d")
+                .addInputs(opInputs)
                 .addIntegerArguments(args)
-                .addOutputs(reshapedOutput)
+                .addOutputs(output)
                 .callInplace(false)
                 .build();
-        }
         Nd4j.getExecutioner().exec(op);
 
-        return new Pair<>(reshapedOutput, null);
+        return new Pair<>(output, null);
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        if (input == null) {
-            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
-        }
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
 
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, workspaceMgr);
 
-        INDArray z = preOutput(training);
-
-        // we do cache only if cache workspace exists. Skip otherwise
-        if (training && cacheMode != CacheMode.NONE
-                && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_CACHE)) {
-            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                    .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE).notifyScopeBorrowed()) {
-                preOutput = z.unsafeDuplication();
-            }
-        }
+        INDArray z = preOutput(training, false, workspaceMgr).getFirst();
 
         //String afn = conf.getLayer().getActivationFunction();
         IActivation afn = layerConf().getActivationFn();

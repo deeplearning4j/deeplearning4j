@@ -33,6 +33,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.FeatureUtil;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -72,7 +74,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
@@ -99,7 +101,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = input;
@@ -111,19 +113,19 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
         }
-        return scoreArray;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreArray);
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             return;
 
         INDArray preOut = input;
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
+        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut, workspaceMgr);
         this.gradient = pair.getFirst();
 
-        score = computeScore(fullNetworkL1, fullNetworkL2, true);
+        score = computeScore(fullNetworkL1, fullNetworkL2, true, workspaceMgr);
     }
 
     @Override
@@ -137,13 +139,13 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return getGradientsAndDelta(input);
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        return getGradientsAndDelta(input, workspaceMgr);
     }
 
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut) {
+    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut, LayerWorkspaceMgr workspaceMgr) {
         // delta calculation
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray delta = lossFunction.computeGradient(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray);
@@ -151,6 +153,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
 
+        delta = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta);
         return new Pair<>(gradient, delta);
     }
 
@@ -179,12 +182,12 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public void fit(INDArray input) {
-        // no-op
+    public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray z = input;
         INDArray ret = layerConf().getActivationFn().getActivation(z.dup(), training);
 
@@ -192,50 +195,13 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             ret.muliColumnVector(maskArray);
         }
 
-        return ret;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return output(training);
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return output(true);
-    }
-
-    @Override
-    public INDArray activate() {
-        return output(false);
-    }
-
-    public INDArray output(INDArray input, boolean training) {
-        setInput(input);
-        return output(training);
-    }
-
-    public INDArray output(INDArray input) {
-        setInput(input);
-        return output(false);
-    }
-
-    /**
-     * Classify input
-     * @param training determines if its training
-     * the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    public INDArray output(boolean training) {
-        if (input == null) {
-            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
-        }
-        return activate(training);
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
+        return activate(training, workspaceMgr);
     }
 
     @Override
@@ -306,7 +272,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      */
     @Override
     public int[] predict(INDArray input) {
-        INDArray output = output(input);
+        INDArray output = activate(input, false, LayerWorkspaceMgr.noWorkspacesImmutable());
         int[] ret = new int[input.rows()];
         for (int i = 0; i < ret.length; i++)
             ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
@@ -338,7 +304,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      */
     @Override
     public INDArray labelProbabilities(INDArray examples) {
-        return output(examples);
+        return activate(examples, false, LayerWorkspaceMgr.noWorkspacesImmutable());
     }
 
     /**
@@ -383,11 +349,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             labels = null;
         }
         solver = null;
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
