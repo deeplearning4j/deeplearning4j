@@ -432,7 +432,7 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         RecordReader testReader = new CSVRecordReader();
         testReader.initialize(new FileSplit(new File(path)));
 
-        DataSetIterator iter = new RecordReaderDataSetIterator(testReader, null, miniBatchSize, labelIdx, 1, true);
+        DataSetIterator iter = new RecordReaderDataSetIterator(testReader, miniBatchSize, labelIdx, labelIdx, true);
         int miniBatch = 0;
         while (iter.hasNext()) {
             DataSet test = iter.next();
