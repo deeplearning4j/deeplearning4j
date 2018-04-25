@@ -11,6 +11,11 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Deserializer for ReconstructionDistribution JSON in legacy format - see {@link BaseLegacyDeserializer}
+ *
+ * @author Alex Black
+ */
 public class LegacyReconstructionDistributionDeserializer extends BaseLegacyDeserializer<ReconstructionDistribution> {
 
     private static final Map<String,String> LEGACY_NAMES = new HashMap<>();

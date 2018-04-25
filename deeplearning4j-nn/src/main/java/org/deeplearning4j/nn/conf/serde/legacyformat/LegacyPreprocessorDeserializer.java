@@ -16,6 +16,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Deserializer for InputPreProcessor JSON in legacy format - see {@link BaseLegacyDeserializer}
+ *
+ * @author Alex Black
+ */
 public class LegacyPreprocessorDeserializer extends BaseLegacyDeserializer<InputPreProcessor> {
 
     private static final Map<String,String> LEGACY_NAMES = new HashMap<>();

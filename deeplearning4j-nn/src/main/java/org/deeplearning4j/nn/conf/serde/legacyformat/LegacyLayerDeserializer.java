@@ -24,6 +24,11 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Deserializer for Layer JSON in legacy format - see {@link BaseLegacyDeserializer}
+ *
+ * @author Alex Black
+ */
 public class LegacyLayerDeserializer extends BaseLegacyDeserializer<Layer> {
 
     private static final Map<String,String> LEGACY_NAMES = new HashMap<>();

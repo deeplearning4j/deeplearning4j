@@ -14,6 +14,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Deserializer for GraphVertex JSON in legacy format - see {@link BaseLegacyDeserializer}
+ *
+ * @author Alex Black
+ */
 public class LegacyGraphVertexDeserializer extends BaseLegacyDeserializer<GraphVertex> {
 
     private static final Map<String,String> LEGACY_NAMES = new HashMap<>();
