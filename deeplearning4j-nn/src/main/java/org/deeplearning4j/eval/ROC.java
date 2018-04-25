@@ -31,8 +31,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 /**
  * ROC (Receiver Operating Characteristic) for binary classifiers.<br>
  * ROC has 2 modes of operation:
- * (a) Thresholded (default, less memory)<br>
- * (b) Exact (use numSteps == 0. May not scale to very large datasets)
+ * (a) Thresholded (less memory)<br>
+ * (b) Exact (default; use numSteps == 0 to set. May not scale to very large datasets)
  *
  * <p>
  * Thresholded Is an approximate method, that (for large datasets) may use significantly less memory than exact..
@@ -168,7 +168,15 @@ public class ROC extends BaseEvaluation<ROC> {
 
     @Override
     public String stats() {
-        return "AUC: [" + calculateAUC() + "]";
+        StringBuilder sb = new StringBuilder();
+        sb.append("AUC (Area under ROC Curve):                ").append(calculateAUC()).append("\n");
+        sb.append("AUPRC (Area under Precision/Recall Curve): ").append(calculateAUCPR());
+        if(!isExact){
+            sb.append("\n");
+            sb.append("[Note: Thresholded AUC/AUPRC calculation used with ").append(thresholdSteps)
+                    .append(" steps); accuracy may reduced compared to exact mode]");
+        }
+        return sb.toString();
     }
 
     /**
