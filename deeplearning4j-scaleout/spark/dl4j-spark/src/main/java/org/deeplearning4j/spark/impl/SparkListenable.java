@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;
 
@@ -20,14 +20,14 @@ import java.util.List;
 public class SparkListenable {
 
     protected TrainingMaster trainingMaster;
-    private List<IterationListener> listeners = new ArrayList<>();
+    private List<TrainingListener> listeners = new ArrayList<>();
 
     /**
-     * This method allows you to specify IterationListeners for this model.
+     * This method allows you to specify trainingListeners for this model.
      *
      * @param listeners Iteration listeners
      */
-    public void setListeners(@NonNull Collection<IterationListener> listeners) {
+    public void setListeners(@NonNull Collection<TrainingListener> listeners) {
         this.listeners.clear();
         this.listeners.addAll(listeners);
         if (trainingMaster != null)
@@ -35,13 +35,13 @@ public class SparkListenable {
     }
 
     /**
-     * This method allows you to specify IterationListeners for this model. Note that for listeners
+     * This method allows you to specify trainingListeners for this model. Note that for listeners
      * like StatsListener (that have state that will be sent somewhere), consider instead using {@link
      * #setListeners(StatsStorageRouter, Collection)}
      *
      * @param listeners Listeners to set
      */
-    public void setListeners(@NonNull IterationListener... listeners) {
+    public void setListeners(@NonNull TrainingListener... listeners) {
         setListeners(Arrays.asList(listeners));
     }
 
@@ -52,7 +52,7 @@ public class SparkListenable {
      * @param statsStorage Stats storage router to place the results into
      * @param listeners Listeners to set
      */
-    public void setListeners(StatsStorageRouter statsStorage, IterationListener... listeners) {
+    public void setListeners(StatsStorageRouter statsStorage, TrainingListener... listeners) {
         setListeners(statsStorage, Arrays.asList(listeners));
     }
 
@@ -63,11 +63,11 @@ public class SparkListenable {
      * @param statsStorage Stats storage router to place the results into
      * @param listeners Listeners to set
      */
-    public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
+    public void setListeners(StatsStorageRouter statsStorage, Collection<? extends TrainingListener> listeners) {
         //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
         StatsStorageRouterProvider routerProvider = null;
         if (listeners != null) {
-            for (IterationListener l : listeners) {
+            for (TrainingListener l : listeners) {
                 if (l instanceof RoutingIterationListener) {
                     RoutingIterationListener rl = (RoutingIterationListener) l;
                     if (statsStorage == null && rl.getStorageRouter() == null) {

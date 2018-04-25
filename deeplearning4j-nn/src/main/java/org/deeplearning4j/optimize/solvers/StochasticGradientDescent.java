@@ -22,14 +22,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Collection;
 
@@ -44,14 +44,14 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
 
     public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners, Model model) {
-        super(conf, stepFunction, iterationListeners, model);
+                    Collection<TrainingListener> trainingListeners, Model model) {
+        super(conf, stepFunction, trainingListeners, model);
     }
 
     public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners,
+                    Collection<TrainingListener> trainingListeners,
                     Collection<TerminationCondition> terminationConditions, Model model) {
-        super(conf, stepFunction, iterationListeners, terminationConditions, model);
+        super(conf, stepFunction, trainingListeners, terminationConditions, model);
     }
 
 
@@ -87,7 +87,7 @@ public class StochasticGradientDescent extends BaseOptimizer {
         int iterationCount = BaseOptimizer.getIterationCount(model);
         int epochCount = BaseOptimizer.getEpochCount(model);
         try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            for (IterationListener listener : iterationListeners)
+            for (TrainingListener listener : trainingListeners)
                 listener.iterationDone(model, iterationCount, epochCount);
         }
 

@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.ui.stats.api.*;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsInitializationConfiguration;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
@@ -40,7 +41,7 @@ import java.util.*;
  * @author Alex Black
  */
 @Slf4j
-public abstract class BaseStatsListener implements RoutingIterationListener {
+public abstract class BaseStatsListener extends BaseTrainingListener implements RoutingIterationListener {
     public static final String TYPE_ID = "StatsListener";
 
     private enum StatType {

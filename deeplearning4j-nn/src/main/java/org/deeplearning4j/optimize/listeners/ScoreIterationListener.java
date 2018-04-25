@@ -19,7 +19,7 @@
 package org.deeplearning4j.optimize.listeners;
 
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Adam Gibson
  */
-public class ScoreIterationListener implements IterationListener {
+public class ScoreIterationListener extends BaseTrainingListener {
+
     private int printIterations = 10;
     private static final Logger log = LoggerFactory.getLogger(ScoreIterationListener.class);
 

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TrainingListener: an extension of {@link IterationListener} that adds onEpochStart, onEpochEnd, onForwardPass and
+ * An extension of {@link IterationListener} that adds onEpochStart, onEpochEnd, onForwardPass and
  * onBackwardPass methods
  *
  * @author Alex Black

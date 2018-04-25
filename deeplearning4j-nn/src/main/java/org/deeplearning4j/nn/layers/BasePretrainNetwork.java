@@ -23,15 +23,16 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -43,7 +44,6 @@ import java.util.*;
 public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.nn.conf.layers.BasePretrainNetwork>
                 extends BaseLayer<LayerConfT> {
 
-    protected Collection<TrainingListener> trainingListeners = null;
 
     public BasePretrainNetwork(NeuralNetConfiguration conf) {
         super(conf);
@@ -53,32 +53,6 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         super(conf, input);
     }
 
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        if (iterationListeners == null)
-            iterationListeners = new ArrayList<>();
-        else
-            iterationListeners.clear();
-        if (trainingListeners == null)
-            trainingListeners = new ArrayList<>();
-        else
-            trainingListeners.clear();
-
-        if (listeners != null && !listeners.isEmpty()) {
-            iterationListeners.addAll(listeners);
-            for (IterationListener il : listeners) {
-                if (il instanceof TrainingListener) {
-                    trainingListeners.add((TrainingListener) il);
-                }
-            }
-        }
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        setListeners(Arrays.asList(listeners));
-    }
 
     /**
      * Corrupts the given input by doing a binomial sampling
