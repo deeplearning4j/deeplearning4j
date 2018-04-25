@@ -2,9 +2,11 @@ package org.deeplearning4j.nn.conf.serde;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
@@ -25,6 +27,7 @@ import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,7 +36,38 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Slf4j
 public class JsonMappers {
+
+    /**
+     * This system property is provided as an alternative to {@link NeuralNetConfiguration#registerLegacyCustomClassesForJSON(Class[])}.
+     * Classes can be specified in comma-separated format
+     */
+    public static String CUSTOM_REGISTRATION_PROPERTY = "org.deeplearning4j.config.custom.legacyclasses";
+
+    static {
+        String p = System.getProperty(CUSTOM_REGISTRATION_PROPERTY);
+        if(p != null && !p.isEmpty()){
+            String[] split = p.split(",");
+            List<Class<?>> list = new ArrayList<>();
+            for(String s : split){
+                try{
+                    Class<?> c = Class.forName(s);
+                    list.add(c);
+                } catch (Throwable t){
+                    log.warn("Error parsing {} system property: class \"{}\" could not be loaded",CUSTOM_REGISTRATION_PROPERTY, s, t);
+                }
+            }
+
+            if(list.size() > 0){
+                try {
+                    NeuralNetConfiguration.registerLegacyCustomClassesForJSONList(list);
+                } catch (Throwable t){
+                    log.warn("Error registering custom classes for legacy JSON deserialization ({} system property)",CUSTOM_REGISTRATION_PROPERTY, t);
+                }
+            }
+        }
+    }
 
     private static ObjectMapper jsonMapper = new ObjectMapper();
     private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());

@@ -420,7 +420,14 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      *
      * @param classes Classes to register
      */
-    public static void registerLegacyCustomClassesForJSON(Class<?>... classes){
+    public static void registerLegacyCustomClassesForJSON(Class<?>... classes) {
+        registerLegacyCustomClassesForJSONList(Arrays.<Class<?>>asList(classes));
+    }
+
+    /**
+     * @see #registerLegacyCustomClassesForJSON(Class[])
+     */
+    public static void registerLegacyCustomClassesForJSONList(List<Class<?>> classes){
         //Default names (i.e., old format for custom JSON format)
         List<Pair<String,Class>> list = new ArrayList<>();
         for(Class<?> c : classes){
