@@ -2,7 +2,7 @@ package org.deeplearning4j.optimize.listeners;
 
 import lombok.Builder;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public class ParamAndGradientIterationListener implements IterationListener {
+public class ParamAndGradientIterationListener extends BaseTrainingListener {
     private static final int MAX_WRITE_FAILURE_MESSAGES = 10;
     private static final Logger logger = LoggerFactory.getLogger(ParamAndGradientIterationListener.class);
 

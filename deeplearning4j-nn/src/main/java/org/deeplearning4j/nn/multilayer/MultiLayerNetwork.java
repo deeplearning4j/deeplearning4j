@@ -43,16 +43,20 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.*;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -70,9 +74,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.linalg.util.FeatureUtil;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.workspace.ND4JWorkspaceException;
-import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
 
@@ -101,7 +103,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     protected INDArray input, labels;
 
     protected boolean initCalled = false;
-    protected Collection<IterationListener> listeners = new ArrayList<>();
     protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
     protected NeuralNetConfiguration defaultConfiguration;
@@ -581,7 +582,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 paramCountSoFar += nParamsPerLayer[i];
 
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                layers[i] = conf.getLayer().instantiate(conf, listeners, i, paramsView, initializeParams);
+                layers[i] = conf.getLayer().instantiate(conf, trainingListeners, i, paramsView, initializeParams);
                 layerMap.put(conf.getLayer().getLayerName(), layers[i]);
             }
             initCalled = true;
@@ -1725,8 +1726,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      *
      * @return listeners
      */
-    public Collection<IterationListener> getListeners() {
-        return listeners;
+    public Collection<TrainingListener> getListeners() {
+        return trainingListeners;
     }
 
     /**
@@ -1738,9 +1739,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
    }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        this.listeners = listeners;
-
+    public void setListeners(Collection<TrainingListener> listeners) {
         if (layers == null) {
             init();
         }
@@ -1754,45 +1753,32 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         this.trainingListeners.clear();
         if (listeners != null) {
-            for (IterationListener il : listeners) {
-                if (il instanceof TrainingListener) {
-                    this.trainingListeners.add((TrainingListener) il);
-                }
-            }
+            this.trainingListeners.addAll(listeners);
         }
     }
 
     /**
-     * This method ADDS additional IterationListener to existing listeners
+     * This method ADDS additional TrainingListener to existing listeners
      *
      * @param listeners
      */
     @Override
-    public void addListeners(IterationListener... listeners) {
-        if (this.listeners == null) {
-            setListeners(listeners);
-            return;
-        }
+    public void addListeners(TrainingListener... listeners) {
+        Collections.addAll(trainingListeners, listeners);
 
-        for (IterationListener listener : listeners) {
-            this.listeners.add(listener);
-            if (listener instanceof TrainingListener) {
-                this.trainingListeners.add((TrainingListener) listener);
-            }
-        }
-
+        // fixme this is wrong, since it removes existing listeners from the solver
         if (solver != null) {
-            solver.setListeners(this.listeners);
+            solver.setListeners(this.trainingListeners);
         }
     }
 
     @Override
-    public void setListeners(IterationListener... listeners) {
-        Collection<IterationListener> cListeners = new ArrayList<>();
+    public void setListeners(TrainingListener... listeners) {
+        Collection<TrainingListener> cListeners = new ArrayList<>();
         //Check: user might have done setListeners(null) thinking this would clear the current listeners.
-        //This results in an IterationListener[1] with a single null value -> results in a NPE later
+        //This results in an TrainingListener[1] with a single null value -> results in a NPE later
         if (listeners != null && listeners.length > 0) {
-            for (IterationListener i : listeners) {
+            for (TrainingListener i : listeners) {
                 if (i != null)
                     cListeners.add(i);
             }

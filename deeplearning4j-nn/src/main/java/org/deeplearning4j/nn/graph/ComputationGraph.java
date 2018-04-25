@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.graph;
 
-import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -45,16 +44,20 @@ import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.*;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -71,8 +74,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
@@ -179,7 +180,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private transient int[] outputLayerIdxs;
 
     private NeuralNetConfiguration defaultConfiguration;
-    private Collection<IterationListener> listeners = new ArrayList<>();
+    private Collection<TrainingListener> listeners = new ArrayList<>();
     private Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
 
@@ -2387,9 +2388,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      */
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<TrainingListener> listeners) {
         this.listeners = listeners;
         if (layers == null)
             init();
@@ -2404,23 +2405,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         this.trainingListeners.clear();
         if (listeners != null) {
-            for (IterationListener il : listeners) {
-                if (il instanceof TrainingListener) {
-                    this.trainingListeners.add((TrainingListener) il);
-                }
-            }
+            this.trainingListeners.addAll(listeners);
         }
     }
 
     /**
-     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      */
-    public void setListeners(IterationListener... listeners) {
-        List<IterationListener> list = new ArrayList<>();
+    public void setListeners(TrainingListener... listeners) {
+        List<TrainingListener> list = new ArrayList<>();
         //Check: user might have done setListeners(null) thinking this would clear the current listeners.
-        //This results in an IterationListener[1] with a single null value -> results in a NPE later
+        //This results in an TrainingListener[1] with a single null value -> results in a NPE later
         if (listeners != null && listeners.length > 0) {
-            for (IterationListener i : listeners) {
+            for (TrainingListener i : listeners) {
                 if (i != null)
                     list.add(i);
             }
@@ -2429,18 +2426,18 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * This method ADDS additional IterationListener to existing listeners
+     * This method ADDS additional TrainingListener to existing listeners
      *
      * @param listeners Listeners to add
      */
     @Override
-    public void addListeners(IterationListener... listeners) {
+    public void addListeners(TrainingListener... listeners) {
         if (this.listeners == null) {
             setListeners(listeners);
             return;
         }
 
-        for (IterationListener listener : listeners) {
+        for (TrainingListener listener : listeners) {
             this.listeners.add(listener);
             if (listener instanceof TrainingListener) {
                 this.trainingListeners.add((TrainingListener) listener);
@@ -2453,9 +2450,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Get the IterationListeners for the ComputationGraph
+     * Get the trainingListeners for the ComputationGraph
      */
-    public Collection<IterationListener> getListeners() {
+    public Collection<TrainingListener> getListeners() {
         return listeners;
     }
 

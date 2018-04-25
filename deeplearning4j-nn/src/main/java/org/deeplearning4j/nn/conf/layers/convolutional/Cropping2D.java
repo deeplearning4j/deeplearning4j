@@ -13,7 +13,7 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.NoParamLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.convolution.Cropping2DLayer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -63,10 +63,10 @@ public class Cropping2D extends NoParamLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                                                        int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         Cropping2DLayer ret = new Cropping2DLayer(conf);
-        ret.setListeners(iterationListeners);
+        ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
