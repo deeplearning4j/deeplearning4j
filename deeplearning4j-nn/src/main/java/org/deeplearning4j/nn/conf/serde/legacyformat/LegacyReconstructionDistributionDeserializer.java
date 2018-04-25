@@ -31,7 +31,7 @@ public class LegacyReconstructionDistributionDeserializer extends BaseLegacyDese
 
     @Override
     public ObjectMapper getLegacyJsonMapper() {
-        return JsonMappers.getMapperLegacyJson();
+        return JsonMappers.getJsonMapperLegacyFormatReconstruction();
     }
 
     @Override

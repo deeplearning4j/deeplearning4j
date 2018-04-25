@@ -45,7 +45,8 @@ public class LegacyLayerDeserializer extends BaseLegacyDeserializer<Layer> {
         LEGACY_NAMES.put("batchNormalization", BatchNormalization.class.getName());
         LEGACY_NAMES.put("localResponseNormalization", LocalResponseNormalization.class.getName());
         LEGACY_NAMES.put("embedding", EmbeddingLayer.class.getName());
-        LEGACY_NAMES.put("activation", VariationalAutoencoder.class.getName());
+        LEGACY_NAMES.put("activation", ActivationLayer.class.getName());
+        LEGACY_NAMES.put("VariationalAutoencoder", VariationalAutoencoder.class.getName());
         LEGACY_NAMES.put("dropout", DropoutLayer.class.getName());
         LEGACY_NAMES.put("GlobalPooling", GlobalPoolingLayer.class.getName());
         LEGACY_NAMES.put("zeroPadding", ZeroPaddingLayer.class.getName());

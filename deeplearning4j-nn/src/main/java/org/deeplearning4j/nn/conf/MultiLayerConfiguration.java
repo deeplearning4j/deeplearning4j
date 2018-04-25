@@ -146,7 +146,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             if(msg != null && msg.contains("legacy")){
                 throw new RuntimeException("Error deserializing MultiLayerConfiguration - configuration may have a custom " +
                         "layer, vertex or preprocessor, in pre version 1.0.0-alpha JSON format. These layers can be " +
-                        "deserialized by first registering them with NeuralNetConfiguration.registerLegacyCustomClassesForJSON(Class...)");
+                        "deserialized by first registering them with NeuralNetConfiguration.registerLegacyCustomClassesForJSON(Class...)", e);
             }
             throw new RuntimeException(e);
         }

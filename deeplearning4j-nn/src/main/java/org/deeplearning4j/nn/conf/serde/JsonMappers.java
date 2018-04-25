@@ -37,7 +37,6 @@ public class JsonMappers {
 
     private static ObjectMapper jsonMapper = new ObjectMapper();
     private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-    private static ObjectMapper jsonMapperLegacyFormat = null;      //new ObjectMapper();
 
     /*
     Note to developers: The following JSON mappers are for handling legacy format JSON.
@@ -107,10 +106,6 @@ public class JsonMappers {
      */
     public static ObjectMapper getMapperYaml() {
         return yamlMapper;
-    }
-
-    public static ObjectMapper getMapperLegacyJson(){
-        return jsonMapperLegacyFormat;
     }
 
     private static void configureMapper(ObjectMapper ret) {
