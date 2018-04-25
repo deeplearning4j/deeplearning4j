@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.datasets.datavec;
 
+
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -107,14 +108,18 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private RecordReaderMultiDataSetIterator underlying;
     private boolean underlyingIsDisjoint;
 
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
-        this(recordReader, converter, batchSize, -1,
-                        recordReader.getLabels() == null ? -1 : recordReader.getLabels().size());
-    }
-
+    /**
+     * Constructor for classification, where:<br>
+     * (a) the label index is assumed to be the very last Writable/column, and<br>
+     * (b) the number of classes is inferred from RecordReader.getLabels()<br>
+     * Note that if RecordReader.getLabels() returns null, no output labels will be produced
+     *
+     * @param recordReader Record reader to use as the source of data
+     * @param batchSize    Minibatch size, for each call of .next()
+     */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize) {
-        this(recordReader, new SelfWritableConverter(), batchSize, -1,
-                        recordReader.getLabels() == null ? -1 : recordReader.getLabels().size());
+        this(recordReader, new SelfWritableConverter(), batchSize, -1, -1,
+                        recordReader.getLabels() == null ? -1 : recordReader.getLabels().size(), -1, false);
     }
 
     /**
@@ -128,22 +133,20 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex,
                     int numPossibleLabels) {
-        this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels);
+        this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, labelIndex, numPossibleLabels, -1, false);
     }
 
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
-                    int labelIndex, int numPossibleLabels, boolean regression) {
-        this(recordReader, converter, batchSize, labelIndex, numPossibleLabels, -1, regression);
-    }
-
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
-                    int labelIndex, int numPossibleLabels) {
-        this(recordReader, converter, batchSize, labelIndex, numPossibleLabels, -1, false);
-    }
-
+    /**
+     * Constructor for classification, where the maximum number of returned batches is limited to the specified value
+     *
+     * @param recordReader      the recordreader to use
+     * @param labelIndex        the index/column of the label (for classification)
+     * @param numPossibleLabels the number of possible labels for classification. Not used if regression == true
+     * @param maxNumBatches     The maximum number of batches to return between resets. Set to -1 to return all available data
+     */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels,
                     int maxNumBatches) {
-        this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels, maxNumBatches, false);
+        this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, labelIndex, numPossibleLabels, maxNumBatches, false);
     }
 
     /**
@@ -161,21 +164,16 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
 
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
-                    int labelIndex, int numPossibleLabels, int maxNumBatches, boolean regression) {
-        this(recordReader, converter, batchSize, labelIndex, labelIndex, numPossibleLabels, maxNumBatches, regression);
-    }
-
-
     /**
      * Main constructor
      *
      * @param recordReader      the recordreader to use
-     * @param converter         the batch size
-     * @param maxNumBatches     Maximum number of batches to return
+     * @param converter         Converter. May be null.
+     * @param batchSize         Minibatch size - number of examples returned for each call of .next()
      * @param labelIndexFrom    the index of the label (for classification), or the first index of the labels for multi-output regression
-     * @param labelIndexTo      only used if regression == true. The last index _inclusive_ of the multi-output regression
+     * @param labelIndexTo      only used if regression == true. The last index <i>inclusive</i> of the multi-output regression
      * @param numPossibleLabels the number of possible labels for classification. Not used if regression == true
+     * @param maxNumBatches     Maximum number of batches to return
      * @param regression        if true: regression. If false: classification (assume labelIndexFrom is the class it belongs to)
      */
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
@@ -230,6 +228,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         //allow people to specify label index as -1 and infer the last possible label
         if (numPossibleLabels >= 1 && labelIndex < 0) {
             labelIndex = totalSize - 1;
+            labelIndexTo = labelIndex;
         }
 
         if(recordReader.resetSupported()) {
@@ -582,6 +581,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
          */
         public Builder classification(int labelIndex, int numClasses){
             this.labelIndex = labelIndex;
+            this.labelIndexTo = labelIndex;
             this.numPossibleLabels = numClasses;
             this.regression = false;
             clOrRegCalled = true;
