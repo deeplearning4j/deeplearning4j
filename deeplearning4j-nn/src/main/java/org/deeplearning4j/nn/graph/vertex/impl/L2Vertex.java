@@ -24,12 +24,15 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * L2Vertex calculates the L2 least squares error of two inputs.
@@ -63,7 +66,7 @@ public class L2Vertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
@@ -75,24 +78,29 @@ public class L2Vertex extends BaseGraphVertex {
             dimensions[i - 1] = i;
         }
 
-        return Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions);
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
+            return Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions);
+        }
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: error not set");
 
         INDArray a = inputs[0];
         INDArray b = inputs[1];
-        INDArray out = doForward(tbptt);
+        INDArray out = doForward(tbptt, workspaceMgr);
         Transforms.max(out, eps, false); // in case of 0
 
         INDArray dLdlambda = epsilon; //dL/dlambda aka 'epsilon' - from layer above
 
         INDArray sNegHalf = out.rdiv(1.0); //s^(-1/2) = 1.0 / s^(1/2) = 1.0 / out
 
-        INDArray diff = a.sub(b);
+        INDArray diff;
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
+            diff = a.sub(b);
+        }
 
         INDArray first = dLdlambda.mul(sNegHalf); //Column vector for all cases
 
@@ -101,11 +109,15 @@ public class L2Vertex extends BaseGraphVertex {
         if (a.rank() == 2) {
             //2d case (MLPs etc)
             dLda = diff.muliColumnVector(first);
-            dLdb = dLda.neg();
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
+                dLdb = dLda.neg();
+            }
         } else {
             //RNN and CNN case - Broadcast along dimension 0
             dLda = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(diff, first, diff, 0));
-            dLdb = dLda.neg();
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
+                dLdb = dLda.neg();
+            }
         }
 
         return new Pair<>(null, new INDArray[] {dLda, dLdb});

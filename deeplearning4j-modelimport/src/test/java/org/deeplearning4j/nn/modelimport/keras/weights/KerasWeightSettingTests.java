@@ -34,6 +34,12 @@ public class KerasWeightSettingTests {
                 importConv2D(conv2dPath);
                 log.info("***** Successfully imported " + conv2dPath);
 
+                if (version == 2) {
+                    String conv1dFlattenPath = "weights/embedding_conv1d_flatten_" + backend + "_" + version + ".h5";
+                    importConv1DFlatten(conv1dFlattenPath);
+                    log.info("***** Successfully imported " + conv1dFlattenPath);
+                }
+
                 String lstmPath = "weights/lstm_" + backend + "_" + version + ".h5";
                 importLstm(lstmPath);
                 log.info("***** Successfully imported " + lstmPath);
@@ -41,6 +47,13 @@ public class KerasWeightSettingTests {
                 String embeddingLstmPath = "weights/embedding_lstm_" + backend + "_" + version + ".h5";
                 importEmbeddingLstm(embeddingLstmPath);
                 log.info("***** Successfully imported " + embeddingLstmPath);
+
+
+                if (version == 2) {
+                    String embeddingConv1dExtendedPath = "weights/embedding_conv1d_extended_" + backend + "_" + version + ".h5";
+                    importEmbeddingConv1DExtended(embeddingConv1dExtendedPath);
+                    log.info("***** Successfully imported " + embeddingConv1dExtendedPath);
+                }
 
                 if (version == 2) {
                     String embeddingConv1dPath = "weights/embedding_conv1d_" + backend + "_" + version + ".h5";
@@ -52,9 +65,9 @@ public class KerasWeightSettingTests {
                 importSimpleRnn(simpleRnnPath);
                 log.info("***** Successfully imported " + simpleRnnPath);
 
-                String bidirectionalLstmPath = "weights/bidirectional_lstm_" + backend + "_" + version + ".h5";
-                importBidirectionalLstm(bidirectionalLstmPath);
-                log.info("***** Successfully imported " + bidirectionalLstmPath);
+//                String bidirectionalLstmPath = "weights/bidirectional_lstm_" + backend + "_" + version + ".h5";
+//                importBidirectionalLstm(bidirectionalLstmPath);
+//                log.info("***** Successfully imported " + bidirectionalLstmPath);
 
                 String batchToConv2dPath = "weights/batch_to_conv2d_" + backend + "_" + version + ".h5";
                 importBatchNormToConv2D(batchToConv2dPath);
@@ -99,6 +112,20 @@ public class KerasWeightSettingTests {
 
         INDArray bias = model.getLayer(0).getParam("b");
         assert (bias.length() == 6);
+    }
+
+
+    private static void importConv1DFlatten(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+
+        int nOut = 6;
+        int inputLength = 10;
+        int mb = 42;
+        int kernel = 3;
+
+        INDArray input = Nd4j.zeros(mb, 1, inputLength);
+        INDArray output = model.output(input);
+        assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength - kernel + 1});
     }
 
     private static void importBatchNormToConv2D(String modelPath) throws Exception {
@@ -149,6 +176,10 @@ public class KerasWeightSettingTests {
         INDArray output = model.output(inEmbedding);
         assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength});
 
+    }
+
+    private static void importEmbeddingConv1DExtended(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
     }
 
     private static void importEmbeddingConv1D(String modelPath) throws Exception {

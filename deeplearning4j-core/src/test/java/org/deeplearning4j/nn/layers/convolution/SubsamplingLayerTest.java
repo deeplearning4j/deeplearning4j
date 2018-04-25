@@ -21,6 +21,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -52,11 +53,11 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         INDArray input = getData();
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
 
-        INDArray containedOutput = layer.activate(containedInput);
+        INDArray containedOutput = layer.activate(containedInput, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
         assertEquals(containedExpectedOut, containedOutput);
 
-        INDArray output = layer.activate(input);
+        INDArray output = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, featureMapWidth, featureMapHeight},
                         output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
@@ -70,11 +71,11 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         INDArray input = getData();
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
 
-        INDArray containedOutput = layer.activate(containedInput);
+        INDArray containedOutput = layer.activate(containedInput, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
         assertEquals(containedExpectedOut, containedOutput);
 
-        INDArray output = layer.activate(input);
+        INDArray output = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, featureMapWidth, featureMapHeight},
                         output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
@@ -94,20 +95,20 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         INDArray input = getContainedData();
 
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
-        layer.activate(input);
+        layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
 
         INDArray input2 = getData();
-        layer.activate(input2);
+        layer.activate(input2, false, LayerWorkspaceMgr.noWorkspaces());
         int depth = input2.size(1);
 
         epsilon = Nd4j.ones(5, depth, featureMapHeight, featureMapWidth);
 
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(input.shape().length, out.getSecond().shape().length);
         assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
@@ -123,9 +124,9 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         INDArray input = getContainedData();
 
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
-        layer.activate(input);
+        layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertArrayEquals(expectedContainedEpsilonResult.shape(), containedOutput.getSecond().shape());
@@ -137,8 +138,8 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
     public void testSubSampleLayerSumBackprop() throws Exception {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
         INDArray input = getData();
-        layer.setInput(input);
-        layer.backpropGradient(epsilon);
+        layer.setInput(input, LayerWorkspaceMgr.noWorkspaces());
+        layer.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
     }
 
     //////////////////////////////////////////////////////////////////////////////////

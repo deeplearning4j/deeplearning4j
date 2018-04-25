@@ -46,7 +46,7 @@ public class RandomTests extends BaseDL4JTest {
                                     //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
                                     .weightInit(WeightInit.XAVIER)
                                     .updater(new Nesterovs(0.01, 0.9))
-                                    .trainingWorkspaceMode(WorkspaceMode.SINGLE).list()
+                                    .trainingWorkspaceMode(WorkspaceMode.ENABLED).list()
                                     .layer(0, new ConvolutionLayer.Builder(5, 5)
                                                     //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
                                                     .nIn(1).stride(1, 1).nOut(20).activation(Activation.IDENTITY)

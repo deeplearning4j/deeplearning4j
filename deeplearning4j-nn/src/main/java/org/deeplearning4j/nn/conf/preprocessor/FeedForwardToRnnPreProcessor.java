@@ -9,6 +9,8 @@ import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -31,13 +33,13 @@ import java.util.Arrays;
 public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Need to reshape FF activations (2d) activations to 3d (for input into RNN layer)
         if (input.rank() != 2)
             throw new IllegalArgumentException(
                             "Invalid input: expect NDArray with rank 2 (i.e., activations for FF layer)");
-        if (input.ordering() == 'c')
-            input = Shape.toOffsetZeroCopy(input, 'f');
+        if (input.ordering() != 'f' || !Shape.hasDefaultStridesForShape(input))
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
         int[] shape = input.shape();
         INDArray reshaped = input.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
@@ -45,20 +47,25 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Need to reshape RNN epsilons (3d) to 2d (for use in FF layer backprop calculations)
         if (output.rank() != 3)
             throw new IllegalArgumentException(
                             "Invalid input: expect NDArray with rank 3 (i.e., epsilons from RNN layer)");
-        if (output.ordering() != 'f')
-            output = output.dup('f');
+        if (output.ordering() != 'f' || !Shape.hasDefaultStridesForShape(output))
+            output = workspaceMgr.dup(ArrayType.ACTIVATIONS, output, 'f');
         int[] shape = output.shape();
-        if (shape[0] == 1)
-            return output.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
-        if (shape[2] == 1)
+
+        INDArray ret;
+        if (shape[0] == 1) {
+            ret = output.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
+        } else if (shape[2] == 1) {
             return output.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
-        INDArray permuted = output.permute(0, 2, 1); //Permute, so we get correct order after reshaping
-        return permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        } else {
+            INDArray permuted = output.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+            ret = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        }
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, ret);
     }
 
     @Override

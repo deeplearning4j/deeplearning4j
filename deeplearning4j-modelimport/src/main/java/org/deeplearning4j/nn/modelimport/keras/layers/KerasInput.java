@@ -120,9 +120,12 @@ public class KerasInput extends KerasLayer {
                                 this.inputShape[0]);
                         break;
                     default:
-                        throw new UnsupportedKerasConfigurationException(
-                                "3D (convolutional) inputs with unknown dimension ordering " + this.dimOrder
-                                        + " are not supported.");
+                        this.dimOrder = DimOrder.THEANO;
+                        myInputType = new InputType.InputTypeConvolutional(this.inputShape[1], this.inputShape[2],
+                                this.inputShape[0]);
+                        log.warn("Couldn't determine dim ordering / data format from model file. Older Keras " +
+                                "versions may come without specified backend, in which case we assume the model was " +
+                                "built with theano." );
                 }
                 break;
             default:

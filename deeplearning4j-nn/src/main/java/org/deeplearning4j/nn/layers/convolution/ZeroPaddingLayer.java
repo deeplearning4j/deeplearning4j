@@ -6,10 +6,11 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 /**
  * Zero padding layer for convolutional neural networks.
@@ -24,11 +25,6 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     public ZeroPaddingLayer(NeuralNetConfiguration conf) {
         super(conf);
         this.padding = ((org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer) conf.getLayer()).getPadding();
-    }
-
-    @Override
-    public INDArray preOutput(boolean training) {
-        return activate(training);
     }
 
     @Override
@@ -47,25 +43,28 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         int[] inShape = input.shape();
 
         INDArray epsNext = epsilon.get(NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),
                         NDArrayIndex.interval(padding[2], padding[2] + inShape[3]));
 
+        epsNext = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsNext);
         return new Pair<>((Gradient) new DefaultGradient(), epsNext);
     }
 
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         int[] inShape = input.shape();
         int outH = inShape[2] + padding[0] + padding[1];
         int outW = inShape[3] + padding[2] + padding[3];
         int[] outShape = new int[] {inShape[0], inShape[1], outH, outW};
 
-        INDArray out = Nd4j.create(outShape);
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape, 'c');
 
         out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),

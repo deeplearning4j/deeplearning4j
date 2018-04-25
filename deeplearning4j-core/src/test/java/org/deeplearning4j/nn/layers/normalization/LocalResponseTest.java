@@ -24,6 +24,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -96,7 +97,7 @@ public class LocalResponseTest extends BaseDL4JTest {
                         .build();
 
         layer = new LocalResponseNormalization().instantiate(conf, null, 0, null, false);
-        activationsActual = layer.activate(x);
+        activationsActual = layer.activate(x, false, LayerWorkspaceMgr.noWorkspaces());
     }
 
     @Test
@@ -108,7 +109,7 @@ public class LocalResponseTest extends BaseDL4JTest {
 
     @Test
     public void testBackpropGradient() {
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(newEpsilonExpected.getDouble(8), containedOutput.getSecond().getDouble(8), 1e-4);
         assertEquals(newEpsilonExpected.getDouble(20), containedOutput.getSecond().getDouble(20), 1e-4);
@@ -188,7 +189,7 @@ public class LocalResponseTest extends BaseDL4JTest {
                         (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) lrn.instantiate(nnc,
                                         null, 0, null, false);
 
-        INDArray outAct = layer.activate(in, true);
+        INDArray outAct = layer.activate(in, true, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(outExp, outAct);
     }

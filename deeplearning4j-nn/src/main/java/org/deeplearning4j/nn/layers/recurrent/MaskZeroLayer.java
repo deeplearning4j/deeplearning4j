@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
 import lombok.NonNull;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  *
@@ -27,11 +28,6 @@ public class MaskZeroLayer extends BaseWrapperLayer {
         super(underlying);
     }
 
-    @Override
-    public void migrateInput() {
-        underlying.migrateInput();
-    }
-
 
     @Override
     public Type type() {
@@ -39,63 +35,22 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return underlying.backpropGradient(epsilon);
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        return underlying.backpropGradient(epsilon, workspaceMgr);
     }
 
 
     @Override
-    public INDArray preOutput(INDArray x) {
-        return underlying.preOutput(x);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return underlying.preOutput(x, training);
-    }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray input = input();
         setMaskFromInput(input);
-        return underlying.activate(training);
+        return underlying.activate(training, workspaceMgr);
     }
 
     @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setMaskFromInput(input);
-        return underlying.activate(input, training);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return underlying.activate(x, training);
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
-        INDArray input = input();
-        setMaskFromInput(input);
-        return underlying.activate(training);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setMaskFromInput(input);
-        return underlying.activate(input, training);
-    }
-
-    @Override
-    public INDArray activate() {
-        INDArray input = input();
-        setMaskFromInput(input);
-        return underlying.activate();
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        setMaskFromInput(input);
-        return underlying.activate(input);
+        return underlying.activate(input, training, workspaceMgr);
     }
 
     private void setMaskFromInput(INDArray input) {

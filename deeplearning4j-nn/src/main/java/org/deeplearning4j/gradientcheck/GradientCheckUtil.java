@@ -31,7 +31,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
-import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 
@@ -187,7 +187,7 @@ public class GradientCheckUtil {
         Pair<Gradient, Double> gradAndScore = mln.gradientAndScore();
 
         Updater updater = UpdaterCreator.getUpdater(mln);
-        updater.update(mln, gradAndScore.getFirst(), 0, 0, mln.batchSize());
+        updater.update(mln, gradAndScore.getFirst(), 0, 0, mln.batchSize(), LayerWorkspaceMgr.noWorkspaces());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = mln.params().dup(); //need dup: params are a *view* of full parameters
@@ -415,7 +415,7 @@ public class GradientCheckUtil {
         Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
 
         ComputationGraphUpdater updater = new ComputationGraphUpdater(graph);
-        updater.update(gradAndScore.getFirst(), 0, 0, graph.batchSize());
+        updater.update(gradAndScore.getFirst(), 0, 0, graph.batchSize(), LayerWorkspaceMgr.noWorkspaces());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = graph.params().dup(); //need dup: params are a *view* of full parameters
@@ -511,6 +511,9 @@ public class GradientCheckUtil {
      */
     public static boolean checkGradientsPretrainLayer(Layer layer, double epsilon, double maxRelError,
                     double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
+
+        LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces();
+
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -525,13 +528,13 @@ public class GradientCheckUtil {
         }
 
         //Check network configuration:
-        layer.setInput(input);
+        layer.setInput(input, LayerWorkspaceMgr.noWorkspaces());
         Nd4j.getRandom().setSeed(rngSeed);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(mgr);
         Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();
 
         Updater updater = UpdaterCreator.getUpdater(layer);
-        updater.update(layer, gradAndScore.getFirst(), 0, 0, layer.batchSize());
+        updater.update(layer, gradAndScore.getFirst(), 0, 0, layer.batchSize(), LayerWorkspaceMgr.noWorkspaces());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = layer.params().dup(); //need dup: params are a *view* of full parameters
@@ -565,13 +568,13 @@ public class GradientCheckUtil {
 
             //TODO add a 'score' method that doesn't calculate gradients...
             Nd4j.getRandom().setSeed(rngSeed);
-            layer.computeGradientAndScore();
+            layer.computeGradientAndScore(mgr);
             double scorePlus = layer.score();
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - epsilon);
             Nd4j.getRandom().setSeed(rngSeed);
-            layer.computeGradientAndScore();
+            layer.computeGradientAndScore(mgr);
             double scoreMinus = layer.score();
 
             //Reset original param value

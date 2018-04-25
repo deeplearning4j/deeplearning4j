@@ -9,10 +9,9 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -37,9 +36,9 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         //If this layer is layer L, then epsilon for this layer is ((w^(L+1)*(delta^(L+1))^T))^T (or equivalent)
-        INDArray z = preOutput(true); //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
+        INDArray z = preOutput(true, workspaceMgr); //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
@@ -61,6 +60,7 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
 
 //      epsilonNext is a 2d matrix
         INDArray epsilonNext = delta.mulRowVector(params.get(ElementWiseParamInitializer.WEIGHT_KEY));
+        epsilonNext = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilonNext);
 
         return new Pair<>(ret, epsilonNext);
     }
@@ -76,7 +76,8 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
         return false;
     }
 
-    public INDArray preOutput(boolean training) {
+    @Override
+    public INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
@@ -87,13 +88,11 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
                             + W.shapeInfoToString() + ") " + layerId());
         }
 
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, null);    //TODO
 
-        INDArray ret = Nd4j.zeros(input.rows(),input.columns());
+        INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.shape(), 'c');
 
-        for(int row = 0; row<input.rows();row++){
-            ret.put(new INDArrayIndex[]{NDArrayIndex.point(row), NDArrayIndex.all()},input.getRow(row).mul(W).addRowVector(b));
-        }
+        ret.assign(input.mulRowVector(W).addiRowVector(b));
 
         if (maskArray != null) {
             applyMask(ret);

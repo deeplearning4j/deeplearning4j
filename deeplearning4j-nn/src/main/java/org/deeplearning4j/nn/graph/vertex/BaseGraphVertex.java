@@ -24,6 +24,7 @@ import lombok.Setter;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
  */
@@ -124,25 +125,11 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
-    public void setInput(int inputNumber, INDArray input) {
+    public void setInput(int inputNumber, INDArray input, LayerWorkspaceMgr workspaceMgr) {
         if (inputNumber >= getNumInputArrays()) {
             throw new IllegalArgumentException("Invalid input number");
         }
         inputs[inputNumber] = input;
-    }
-
-    @Override
-    public void migrateInput(){
-        if(inputs != null){
-            for( int i=0; i<inputs.length; i++ ){
-                if(inputs[i] != null){
-                    inputs[i] = inputs[i].migrate(true);
-                }
-            }
-        }
-        if(epsilon != null){
-            epsilon = epsilon.migrate(true);
-        }
     }
 
     @Override
@@ -156,6 +143,9 @@ public abstract class BaseGraphVertex implements GraphVertex {
             inputs[i] = null;
         }
         epsilon = null;
+        if(getLayer() != null){
+            getLayer().clear();
+        }
     }
 
     @Override
@@ -196,6 +186,5 @@ public abstract class BaseGraphVertex implements GraphVertex {
     @Override
     public void clearVertex() {
         clear();
-        epsilon = null;
     }
 }

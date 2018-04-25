@@ -16,6 +16,8 @@ import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -59,7 +61,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public INDArray rnnTimeStep(INDArray input) {
+    public INDArray rnnTimeStep(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Cannot RnnTimeStep bidirectional layers");
     }
 
@@ -81,7 +83,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
+    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported: cannot use this method (or truncated BPTT) with bidirectional layers");
     }
 
@@ -96,7 +98,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength) {
+    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported: cannot use this method (or truncated BPTT) with bidirectional layers");
     }
 
@@ -122,7 +124,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         INDArray eFwd;
         INDArray eBwd;
 
@@ -148,10 +150,10 @@ public class BidirectionalLayer implements RecurrentLayer {
                 throw new RuntimeException("Unknown mode: " + layerConf.getMode());
         }
 
-        eBwd = TimeSeriesUtils.reverseTimeSeries(eBwd);
+        eBwd = TimeSeriesUtils.reverseTimeSeries(eBwd, workspaceMgr, ArrayType.BP_WORKING_MEM);
 
-        Pair<Gradient,INDArray> g1 = fwd.backpropGradient(eFwd);
-        Pair<Gradient,INDArray> g2 = bwd.backpropGradient(eBwd);
+        Pair<Gradient,INDArray> g1 = fwd.backpropGradient(eFwd, workspaceMgr);
+        Pair<Gradient,INDArray> g2 = bwd.backpropGradient(eBwd, workspaceMgr);
 
         Gradient g = new DefaultGradient(gradientView);
         for(Map.Entry<String,INDArray> e : g1.getFirst().gradientForVariable().entrySet()){
@@ -161,43 +163,17 @@ public class BidirectionalLayer implements RecurrentLayer {
             g.gradientForVariable().put(BidirectionalParamInitializer.BACKWARD_PREFIX + e.getKey(), e.getValue());
         }
 
-        INDArray g2Reversed = TimeSeriesUtils.reverseTimeSeries(g2.getRight());
+        INDArray g2Reversed = TimeSeriesUtils.reverseTimeSeries(g2.getRight(), workspaceMgr, ArrayType.BP_WORKING_MEM);
         INDArray epsOut = g1.getRight().addi(g2Reversed);
 
         return new Pair<>(g, epsOut);
     }
 
     @Override
-    public INDArray preOutput(INDArray x) {
-        return activate(x);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return activate(x, training);
-    }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
-        return activate(training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        setInput(input);
-        return activate(training);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return activate(x, training);
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
-        INDArray out1 = fwd.activate(training);
-        INDArray out2 = bwd.activate(training);
-        out2 = TimeSeriesUtils.reverseTimeSeries(out2);
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        INDArray out1 = fwd.activate(training, workspaceMgr);
+        INDArray out2 = bwd.activate(training, workspaceMgr);
+        out2 = TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM);
 
         switch (layerConf.getMode()){
             case ADD:
@@ -206,31 +182,21 @@ public class BidirectionalLayer implements RecurrentLayer {
                 //TODO may be more efficient ways than this...
                 this.outFwd = out1.detach();
                 this.outBwd = out2.detach();
-                return out1.mul(out2);
+                return workspaceMgr.dup(ArrayType.ACTIVATIONS, out1).muli(out2);
             case AVERAGE:
                 return out1.addi(out2).muli(0.5);
             case CONCAT:
-                return Nd4j.concat(1, out1, out2);
+                INDArray ret = Nd4j.concat(1, out1, out2);
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
             default:
                 throw new RuntimeException("Unknown mode: " + layerConf.getMode());
         }
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return activate(training);
-    }
-
-    @Override
-    public INDArray activate() {
-        return activate(false);
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return activate();
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
+        return activate(training, workspaceMgr);
     }
 
     @Override
@@ -281,9 +247,9 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void computeGradientAndScore() {
-        fwd.computeGradientAndScore();
-        bwd.computeGradientAndScore();
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
+        fwd.computeGradientAndScore(workspaceMgr);
+        bwd.computeGradientAndScore(workspaceMgr);
     }
 
     @Override
@@ -340,12 +306,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void fit(INDArray data) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void iterate(INDArray input) {
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported");
     }
 
@@ -498,16 +459,12 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void setInput(INDArray input) {
+    public void setInput(INDArray input, LayerWorkspaceMgr layerWorkspaceMgr) {
         this.input = input;
-        fwd.setInput(input);
-        bwd.setInput(TimeSeriesUtils.reverseTimeSeries(input));
-    }
-
-    @Override
-    public void migrateInput() {
-        fwd.migrateInput();
-        bwd.migrateInput();
+        fwd.setInput(input, layerWorkspaceMgr);
+        INDArray reversed;
+        reversed = TimeSeriesUtils.reverseTimeSeries(input, layerWorkspaceMgr, ArrayType.INPUT);
+        bwd.setInput(reversed, layerWorkspaceMgr);
     }
 
     @Override
@@ -524,7 +481,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     @Override
     public void setMaskArray(INDArray maskArray) {
         fwd.setMaskArray(maskArray);
-        bwd.setMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray));
+        bwd.setMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT));  //TODO
     }
 
     @Override
@@ -546,7 +503,8 @@ public class BidirectionalLayer implements RecurrentLayer {
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
         Pair<INDArray,MaskState> ret = fwd.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
-        bwd.feedForwardMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray), currentMaskState, minibatchSize);
+        bwd.feedForwardMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT),   //TODO
+                currentMaskState, minibatchSize);
         return ret;
     }
 }

@@ -89,12 +89,12 @@ public class TestDropout extends BaseDL4JTest {
         net.fit(iter);
 
         List<Triple<Integer,Integer,Boolean>> expList = Arrays.asList(
-                new Triple<>(0, 0, false),
-                new Triple<>(1, 0, false),
-                new Triple<>(2, 0, false),
-                new Triple<>(3, 1, false),
-                new Triple<>(4, 1, false),
-                new Triple<>(5, 1, false));
+                new Triple<>(0, 0, true),
+                new Triple<>(1, 0, true),
+                new Triple<>(2, 0, true),
+                new Triple<>(3, 1, true),
+                new Triple<>(4, 1, true),
+                new Triple<>(5, 1, true));
 
         assertEquals(expList, d1.getAllCalls());
         assertEquals(expList, d2.getAllCalls());

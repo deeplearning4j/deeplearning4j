@@ -33,6 +33,14 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
         initializeConstraints(builder);
     }
 
+    public ActivationLayer(Activation activation){
+        this(new Builder().activation(activation));
+    }
+
+    public ActivationLayer(IActivation activationFn){
+        this(new Builder().activation(activationFn));
+    }
+
     @Override
     public ActivationLayer clone() {
         ActivationLayer clone = (ActivationLayer) super.clone();

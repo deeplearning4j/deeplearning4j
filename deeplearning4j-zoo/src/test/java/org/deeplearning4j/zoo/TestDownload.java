@@ -26,8 +26,8 @@ public class TestDownload {
         // iterate through each available model
         //        Map<ZooType, ZooModel> models = ModelSelector.select(ZooType.CNN, 10);
         Map<ZooType, ZooModel> models = new HashMap<>();
-        models.putAll(ModelSelector.select(ZooType.LENET, 10, 12345, WorkspaceMode.SINGLE));
-        models.putAll(ModelSelector.select(ZooType.SIMPLECNN, 10, 12345, WorkspaceMode.SINGLE));
+        models.putAll(ModelSelector.select(ZooType.LENET, 10, 12345, WorkspaceMode.ENABLED));
+        models.putAll(ModelSelector.select(ZooType.SIMPLECNN, 10, 12345, WorkspaceMode.ENABLED));
 
 
         for (Map.Entry<ZooType, ZooModel> entry : models.entrySet()) {

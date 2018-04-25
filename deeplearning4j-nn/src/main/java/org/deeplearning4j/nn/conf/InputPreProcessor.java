@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
@@ -50,22 +51,26 @@ import java.io.Serializable;
                 @JsonSubTypes.Type(value = ZeroMeanPrePreProcessor.class, name = "zeroMean"),})
 public interface InputPreProcessor extends Serializable, Cloneable {
 
-
     /**
      * Pre preProcess input/activations for a multi layer network
      * @param input the input to pre preProcess
-     * @param miniBatchSize
-     * @return the processed input
+     * @param miniBatchSize Minibatch size
+     * @param workspaceMgr Workspace manager
+     * @return the processed input. Note that the returned array should be placed in the
+     *         {@link org.deeplearning4j.nn.workspace.ArrayType#ACTIVATIONS} workspace via the workspace manager
      */
-    INDArray preProcess(INDArray input, int miniBatchSize);
+    INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr);
 
     /**Reverse the preProcess during backprop. Process Gradient/epsilons before
      * passing them to the layer below.
      * @param output which is a pair of the gradient and epsilon
-     * @param miniBatchSize
-     * @return the reverse of the pre preProcess step (if any)
+     * @param miniBatchSize Minibatch size
+     * @param workspaceMgr Workspace manager
+     * @return the reverse of the pre preProcess step (if any). Note that the returned array should be
+     *         placed in {@link org.deeplearning4j.nn.workspace.ArrayType#ACTIVATION_GRAD} workspace via the
+     *         workspace manager
      */
-    INDArray backprop(INDArray output, int miniBatchSize);
+    INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr);
 
     InputPreProcessor clone();
 

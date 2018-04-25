@@ -71,8 +71,10 @@ public class KerasEmbeddingTest {
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_EMBEDDING());
         Map<String, Object> config = new HashMap<>();
         Integer inputDim = 10;
+        Integer inputLength = 1;
         Integer outputDim = 10;
         config.put(conf.getLAYER_FIELD_INPUT_DIM(), inputDim);
+        config.put(conf.getLAYER_FIELD_INPUT_LENGTH(), inputLength);
         config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), outputDim);
 
         List<Integer> inputShape = new ArrayList<>(INPUT_SHAPE.length);

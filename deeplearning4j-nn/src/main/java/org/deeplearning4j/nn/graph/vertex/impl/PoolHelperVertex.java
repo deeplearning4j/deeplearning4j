@@ -29,6 +29,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.Or;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * A custom layer for removing the first column and row from an input. This is meant to allow
@@ -58,7 +60,7 @@ public class PoolHelperVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
@@ -67,15 +69,15 @@ public class PoolHelperVertex extends BaseGraphVertex {
 
         INDArray strippedInput = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.interval(1, inputs[0].size(2)), NDArrayIndex.interval(1, inputs[0].size(3)));
-        return strippedInput;
+        return workspaceMgr.dup(ArrayType.ACTIVATIONS, strippedInput);
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
-        return new Pair<>(null, new INDArray[] {epsilon});
+        return new Pair<>(null, new INDArray[] {workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon)});
     }
 
     @Override
