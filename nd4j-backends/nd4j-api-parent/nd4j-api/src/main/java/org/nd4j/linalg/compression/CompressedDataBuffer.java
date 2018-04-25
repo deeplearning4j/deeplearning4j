@@ -84,7 +84,7 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         else {
             try {
 
-                // if buffer is compressed one, we''ll restore and decompress it here
+                // if buffer is compressed one, we''ll restore it here
                 String compressionAlgorithm = s.readUTF();
                 long compressedLength = s.readLong();
                 long originalLength = s.readLong();
@@ -95,17 +95,13 @@ public class CompressedDataBuffer extends BaseDataBuffer {
                     temp[i] = s.readByte();
                 }
 
-                try (Pointer pointer = new BytePointer(temp)) {
-                    CompressionDescriptor descriptor = new CompressionDescriptor();
-                    descriptor.setCompressedLength(compressedLength);
-                    descriptor.setCompressionAlgorithm(compressionAlgorithm);
-                    descriptor.setOriginalLength(originalLength);
-                    descriptor.setNumberOfElements(numberOfElements);
-
-                    CompressedDataBuffer compressedBuffer = new CompressedDataBuffer(pointer, descriptor);
-                    return Nd4j.getCompressor().decompress(compressedBuffer);
-                }
-
+                Pointer pointer = new BytePointer(temp);
+                CompressionDescriptor descriptor = new CompressionDescriptor();
+                descriptor.setCompressedLength(compressedLength);
+                descriptor.setCompressionAlgorithm(compressionAlgorithm);
+                descriptor.setOriginalLength(originalLength);
+                descriptor.setNumberOfElements(numberOfElements);
+                return new CompressedDataBuffer(pointer, descriptor);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
