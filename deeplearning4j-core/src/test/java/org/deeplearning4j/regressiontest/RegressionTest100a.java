@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -72,6 +73,34 @@ public class RegressionTest100a extends BaseDL4JTest {
         }
 
         INDArray outAct = net.output(in);
+
+        assertEquals(outExp, outAct);
+
+
+        //Check graph
+        f = new ClassPathResource("regression_testing/100a/CustomLayerExample_Graph_100a.bin").getTempFileFromArchive();
+
+        //Deregister custom class:
+        new LegacyLayerDeserializer().getLegacyNamesMap().remove("CustomLayer");
+
+        try {
+            ComputationGraph.load(f, true);
+            fail("Expected exception");
+        } catch (Exception e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("NeuralNetConfiguration.registerLegacyCustomClassesForJSON"));
+        }
+
+        NeuralNetConfiguration.registerLegacyCustomClassesForJSON(CustomLayer.class);
+
+        ComputationGraph graph = ComputationGraph.load(f, true);
+
+        f2 = new ClassPathResource("regression_testing/100a/CustomLayerExample_Graph_Output_100a.bin").getTempFileFromArchive();
+        try(DataInputStream dis = new DataInputStream(new FileInputStream(f2))){
+            outExp = Nd4j.read(dis);
+        }
+
+        outAct = graph.outputSingle(in);
 
         assertEquals(outExp, outAct);
     }

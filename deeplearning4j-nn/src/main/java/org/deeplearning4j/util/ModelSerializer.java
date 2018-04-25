@@ -602,7 +602,10 @@ public class ModelSerializer {
                     //May be deserialized correctly, but mostly with null fields
                     throw new RuntimeException("Invalid JSON - not a ComputationGraphConfiguration");
                 }
-            } catch (Throwable e){
+            } catch (Exception e){
+                if(e.getMessage() != null && e.getMessage().contains("registerLegacyCustomClassesForJSON")){
+                    throw e;
+                }
                 try{
                     MultiLayerConfiguration.fromJson(json);
                 } catch (Exception e2){
