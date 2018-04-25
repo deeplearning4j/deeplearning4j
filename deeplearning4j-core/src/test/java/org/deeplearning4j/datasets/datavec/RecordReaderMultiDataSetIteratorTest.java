@@ -20,6 +20,7 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -516,9 +517,9 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         f1.mkdirs();
         f2.mkdirs();
 
-        writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
+        TestUtils.writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
                         new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
-        writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
+        TestUtils.writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
                         new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
 
 
@@ -570,9 +571,9 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         f1.mkdirs();
         f2.mkdirs();
 
-        writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
+        TestUtils.writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
                         new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
-        writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
+        TestUtils.writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
                         new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
 
         int outputNum = 2;
@@ -621,14 +622,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         assertEquals(expLabels, d1.getLabels());
         assertEquals(expLabels, d2.getLabels());
     }
-
-
-    private static void writeStreamToFile(File out, InputStream is) throws IOException {
-        byte[] b = IOUtils.toByteArray(is);
-        try (OutputStream os = new BufferedOutputStream(new FileOutputStream(out))) {
-            os.write(b);
-        }
-    }
+    
 
 
 

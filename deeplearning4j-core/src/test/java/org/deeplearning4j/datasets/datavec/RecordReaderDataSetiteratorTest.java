@@ -18,8 +18,10 @@
 
 package org.deeplearning4j.datasets.datavec;
 
+import com.google.common.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
+import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
@@ -35,7 +37,9 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
+import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
 import org.deeplearning4j.datasets.datavec.tools.SpecialImageRecordReader;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -1297,5 +1301,49 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
                 //expected
             }
         }
+    }
+
+
+    @Test
+    public void testImagesRRDSI() throws Exception {
+        File parentDir = Files.createTempDir();
+        parentDir.deleteOnExit();
+        String str1 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Zico/");
+        String str2 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Ziwang_Xu/");
+
+        File f1 = new File(str1);
+        File f2 = new File(str2);
+        f1.mkdirs();
+        f2.mkdirs();
+
+        TestUtils.writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
+                new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
+        TestUtils.writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
+                new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
+
+
+        Random r = new Random(12345);
+        ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+
+        ImageRecordReader rr1 = new ImageRecordReader(28, 28, 3, labelMaker);
+        rr1.initialize(new FileSplit(parentDir));
+
+
+        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr1,2);
+        DataSet ds = rrdsi.next();
+        assertArrayEquals(new int[]{2, 3, 28, 28}, ds.getFeatures().shape());
+        assertArrayEquals(new int[]{2, 2}, ds.getLabels().shape());
+
+
+        //Check the same thing via the builder:
+        rr1.reset();
+        rrdsi = new RecordReaderDataSetIterator.Builder(rr1, 2)
+                .classification(1,2)
+                .build();
+
+
+        ds = rrdsi.next();
+        assertArrayEquals(new int[]{2, 3, 28, 28}, ds.getFeatures().shape());
+        assertArrayEquals(new int[]{2, 2}, ds.getLabels().shape());
     }
 }

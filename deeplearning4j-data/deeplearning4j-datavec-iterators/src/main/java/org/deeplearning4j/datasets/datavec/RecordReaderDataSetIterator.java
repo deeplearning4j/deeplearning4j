@@ -230,6 +230,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         //allow people to specify label index as -1 and infer the last possible label
         if (numPossibleLabels >= 1 && labelIndex < 0) {
             labelIndex = totalSize - 1;
+            labelIndexTo = labelIndex;
         }
 
         if(recordReader.resetSupported()) {
@@ -582,6 +583,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
          */
         public Builder classification(int labelIndex, int numClasses){
             this.labelIndex = labelIndex;
+            this.labelIndexTo = labelIndex;
             this.numPossibleLabels = numClasses;
             this.regression = false;
             clOrRegCalled = true;

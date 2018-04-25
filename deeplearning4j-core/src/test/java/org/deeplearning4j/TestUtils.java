@@ -1,5 +1,6 @@
 package org.deeplearning4j;
 
+import org.apache.commons.compress.utils.IOUtils;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
@@ -7,9 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -98,5 +97,12 @@ public class TestUtils {
         INDArray ret = Nd4j.createUninitialized(shape);
         Nd4j.getExecutioner().exec(new BernoulliDistribution(ret, p));
         return ret;
+    }
+
+    public static void writeStreamToFile(File out, InputStream is) throws IOException {
+        byte[] b = IOUtils.toByteArray(is);
+        try (OutputStream os = new BufferedOutputStream(new FileOutputStream(out))) {
+            os.write(b);
+        }
     }
 }
