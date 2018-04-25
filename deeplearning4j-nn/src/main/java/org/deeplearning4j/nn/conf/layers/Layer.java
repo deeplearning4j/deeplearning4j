@@ -27,24 +27,12 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
-import org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer;
-import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
-import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
-import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
-import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
-import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializerHelper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo.Id;
 
 import java.io.Serializable;
 import java.util.*;
@@ -52,42 +40,8 @@ import java.util.*;
 /**
  * A neural network layer.
  */
-@JsonTypeInfo(use = Id.NAME, include = As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
-                @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
-                @JsonSubTypes.Type(value = Convolution1DLayer.class, name = "convolution1d"),
-                @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
-                @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
-                @JsonSubTypes.Type(value = GravesBidirectionalLSTM.class, name = "gravesBidirectionalLSTM"),
-                @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
-                @JsonSubTypes.Type(value = CenterLossOutputLayer.class, name = "CenterLossOutputLayer"),
-                @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
-                @JsonSubTypes.Type(value = LossLayer.class, name = "loss"),
-                @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
-                @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
-                @JsonSubTypes.Type(value = Subsampling1DLayer.class, name = "subsampling1d"),
-                @JsonSubTypes.Type(value = BatchNormalization.class, name = "batchNormalization"),
-                @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
-                @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
-                @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
-                @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
-                @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
-                @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling"),
-                @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding"),
-                @JsonSubTypes.Type(value = ZeroPadding1DLayer.class, name = "zeroPadding1d"),
-                @JsonSubTypes.Type(value = FrozenLayer.class, name = "FrozenLayer"),
-                @JsonSubTypes.Type(value = Upsampling2D.class, name = "Upsampling2D"),
-                @JsonSubTypes.Type(value = Yolo2OutputLayer.class, name = "Yolo2OutputLayer"),
-                @JsonSubTypes.Type(value = RnnLossLayer.class, name = "RnnLossLayer"),
-                @JsonSubTypes.Type(value = CnnLossLayer.class, name = "CnnLossLayer"),
-                @JsonSubTypes.Type(value = Bidirectional.class, name = "Bidirectional"),
-                @JsonSubTypes.Type(value = SimpleRnn.class, name = "SimpleRnn"),
-                @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult"),
-                @JsonSubTypes.Type(value = MaskLayer.class, name = "MaskLayer"),
-                @JsonSubTypes.Type(value = MaskZeroLayer.class, name = "MaskZeroLayer"),
-                @JsonSubTypes.Type(value = Cropping1D.class, name = "Cropping1D"),
-                @JsonSubTypes.Type(value = Cropping2D.class, name = "Cropping2D")}
-)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyLayerDeserializerHelper.class)
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {

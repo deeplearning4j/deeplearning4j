@@ -90,7 +90,6 @@
         <mapdb.version>3.0.5</mapdb.version>
         <sqlite.version>3.15.1</sqlite.version>
         <playframework.version>2.4.8</playframework.version>    <!-- Play Framework 2.5 dropped Scala 2.10 support - use 2.4 for Spark compatibility w/ Scala 2.10 -->
-        <reflections.version>0.9.10</reflections.version>
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
         <guava.version>20.0</guava.version>
         <threadly.version>4.10.0</threadly.version>
