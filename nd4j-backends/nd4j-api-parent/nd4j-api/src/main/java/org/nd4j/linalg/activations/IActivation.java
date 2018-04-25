@@ -1,10 +1,9 @@
 package org.nd4j.linalg.activations;
 
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.serde.json.LegacyIActivationDeserializerHelper;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -12,24 +11,8 @@ import java.io.Serializable;
 /**
  * Interface for implementing custom activation functions
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = ActivationCube.class, name = "Cube"),
-                @JsonSubTypes.Type(value = ActivationELU.class, name = "ELU"),
-                @JsonSubTypes.Type(value = ActivationHardSigmoid.class, name = "HardSigmoid"),
-                @JsonSubTypes.Type(value = ActivationHardTanH.class, name = "HardTanh"),
-                @JsonSubTypes.Type(value = ActivationIdentity.class, name = "Identity"),
-                @JsonSubTypes.Type(value = ActivationLReLU.class, name = "LReLU"),
-                @JsonSubTypes.Type(value = ActivationRationalTanh.class, name = "RationalTanh"),
-                @JsonSubTypes.Type(value = ActivationRectifiedTanh.class, name = "RectifiedTanh"),
-                @JsonSubTypes.Type(value = ActivationSELU.class, name = "SELU"),
-                @JsonSubTypes.Type(value = ActivationSwish.class, name = "SWISH"),
-                @JsonSubTypes.Type(value = ActivationReLU.class, name = "ReLU"),
-                @JsonSubTypes.Type(value = ActivationRReLU.class, name = "RReLU"),
-                @JsonSubTypes.Type(value = ActivationSigmoid.class, name = "Sigmoid"),
-                @JsonSubTypes.Type(value = ActivationSoftmax.class, name = "Softmax"),
-                @JsonSubTypes.Type(value = ActivationSoftPlus.class, name = "SoftPlus"),
-                @JsonSubTypes.Type(value = ActivationSoftSign.class, name = "SoftSign"),
-                @JsonSubTypes.Type(value = ActivationTanH.class, name = "TanH")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyIActivationDeserializerHelper.class)
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE,
                 setterVisibility = JsonAutoDetect.Visibility.NONE)
 public interface IActivation extends Serializable {

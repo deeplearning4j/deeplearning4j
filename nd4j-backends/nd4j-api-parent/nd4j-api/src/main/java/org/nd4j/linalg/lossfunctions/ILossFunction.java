@@ -1,11 +1,10 @@
 package org.nd4j.linalg.lossfunctions;
 
 
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.lossfunctions.impl.*;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.serde.json.LegacyILossFunctionDeserializerHelper;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -13,23 +12,8 @@ import java.io.Serializable;
 /**
  * Interface for loss functions
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = LossBinaryXENT.class, name = "BinaryXENT"),
-                @JsonSubTypes.Type(value = LossCosineProximity.class, name = "CosineProximity"),
-                @JsonSubTypes.Type(value = LossHinge.class, name = "Hinge"),
-                @JsonSubTypes.Type(value = LossKLD.class, name = "KLD"),
-                @JsonSubTypes.Type(value = LossMAE.class, name = "MAE"),
-                @JsonSubTypes.Type(value = LossL1.class, name = "L1"),
-                @JsonSubTypes.Type(value = LossMAPE.class, name = "MAPE"),
-                @JsonSubTypes.Type(value = LossMCXENT.class, name = "MCXENT"),
-                @JsonSubTypes.Type(value = LossMSE.class, name = "MSE"),
-                @JsonSubTypes.Type(value = LossL2.class, name = "L2"),
-                @JsonSubTypes.Type(value = LossMSLE.class, name = "MSLE"),
-                @JsonSubTypes.Type(value = LossNegativeLogLikelihood.class, name = "NegativeLogLikelihood"),
-                @JsonSubTypes.Type(value = LossPoisson.class, name = "Poisson"),
-                @JsonSubTypes.Type(value = LossSquaredHinge.class, name = "SquaredHinge"),
-                @JsonSubTypes.Type(value = LossMultiLabel.class, name = "MultiLabel"),
-                @JsonSubTypes.Type(value = LossFMeasure.class, name = "FMeasure")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyILossFunctionDeserializerHelper.class)
 public interface ILossFunction extends Serializable {
 
     /**
