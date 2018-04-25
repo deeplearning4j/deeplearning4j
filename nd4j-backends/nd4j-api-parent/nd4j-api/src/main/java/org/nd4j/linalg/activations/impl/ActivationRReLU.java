@@ -2,6 +2,7 @@ package org.nd4j.linalg.activations.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -45,7 +46,9 @@ public class ActivationRReLU extends BaseActivationFunction {
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
         if (training) {
-            this.alpha = Nd4j.rand(in.shape(), l, u, Nd4j.getRandom());
+            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                this.alpha = Nd4j.rand(in.shape(), l, u, Nd4j.getRandom());
+            }
             INDArray inTimesAlpha = in.mul(alpha);
             BooleanIndexing.replaceWhere(in, inTimesAlpha, Conditions.lessThan(0));
         } else {
