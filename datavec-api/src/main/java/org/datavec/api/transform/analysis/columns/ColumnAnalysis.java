@@ -17,8 +17,8 @@
 package org.datavec.api.transform.analysis.columns;
 
 import org.datavec.api.transform.ColumnType;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -27,14 +27,8 @@ import java.io.Serializable;
  * Interface for column analysis
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = BytesAnalysis.class, name = "BytesAnalysis"),
-                @JsonSubTypes.Type(value = CategoricalAnalysis.class, name = "CategoricalAnalysis"),
-                @JsonSubTypes.Type(value = DoubleAnalysis.class, name = "DoubleAnalysis"),
-                @JsonSubTypes.Type(value = IntegerAnalysis.class, name = "IntegerAnalysis"),
-                @JsonSubTypes.Type(value = LongAnalysis.class, name = "LongAnalysis"),
-                @JsonSubTypes.Type(value = StringAnalysis.class, name = "StringAnalysis"),
-                @JsonSubTypes.Type(value = TimeAnalysis.class, name = "TimeAnalysis")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyMappingHelper.ColumnAnalysisHelper.class)
 public interface ColumnAnalysis extends Serializable {
 
     long getCountTotal();

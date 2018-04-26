@@ -39,6 +39,7 @@ import org.datavec.api.transform.sequence.*;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
 import org.datavec.api.transform.sequence.window.WindowFunction;
+import org.datavec.api.transform.serde.JsonMappers;
 import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
@@ -103,10 +104,6 @@ public class TransformProcess implements Serializable {
 
     private final Schema initialSchema;
     private List<DataAction> actionList;
-
-    private static Set<Class<?>> subtypesClassCache = null;
-    private static ObjectMapper jsonMapper = initMapperJson();
-    private static ObjectMapper yamlMapper = initMapperYaml();
 
     public TransformProcess(@JsonProperty("initialSchema") Schema initialSchema,
                             @JsonProperty("actionList") List<DataAction> actionList) {
@@ -409,16 +406,9 @@ public class TransformProcess implements Serializable {
      */
     public String toJson() {
         try {
-            return jsonMapper.writeValueAsString(this);
+            return JsonMappers.getMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
-            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
-        }
-
-        jsonMapper = reinitializeMapperWithSubtypes(jsonMapper);
-
-        try {
-            return jsonMapper.writeValueAsString(this);
-        } catch (JsonProcessingException e) {
+            //TODO proper exception message
             throw new RuntimeException(e);
         }
     }
@@ -430,16 +420,9 @@ public class TransformProcess implements Serializable {
      */
     public String toYaml() {
         try {
-            return yamlMapper.writeValueAsString(this);
+            return JsonMappers.getMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
-            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
-        }
-
-        yamlMapper = reinitializeMapperWithSubtypes(yamlMapper);
-
-        try {
-            return yamlMapper.writeValueAsString(this);
-        } catch (JsonProcessingException e) {
+            //TODO proper exception message
             throw new RuntimeException(e);
         }
     }
@@ -451,16 +434,9 @@ public class TransformProcess implements Serializable {
      */
     public static TransformProcess fromJson(String json) {
         try {
-            return jsonMapper.readValue(json, TransformProcess.class);
+            return JsonMappers.getMapper().readValue(json, TransformProcess.class);
         } catch (IOException e) {
-            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
-        }
-
-        jsonMapper = reinitializeMapperWithSubtypes(jsonMapper);
-
-        try {
-            return jsonMapper.readValue(json, TransformProcess.class);
-        } catch (IOException e) {
+            //TODO proper exception message
             throw new RuntimeException(e);
         }
     }
@@ -472,16 +448,9 @@ public class TransformProcess implements Serializable {
      */
     public static TransformProcess fromYaml(String yaml) {
         try {
-            return yamlMapper.readValue(yaml, TransformProcess.class);
+            return JsonMappers.getMapper().readValue(yaml, TransformProcess.class);
         } catch (IOException e) {
-            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
-        }
-
-        yamlMapper = reinitializeMapperWithSubtypes(yamlMapper);
-
-        try {
-            return yamlMapper.readValue(yaml, TransformProcess.class);
-        } catch (IOException e) {
+            //TODO proper exception message
             throw new RuntimeException(e);
         }
     }
@@ -571,131 +540,6 @@ public class TransformProcess implements Serializable {
 
         return categoryMap;
     }
-
-
-
-    private static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper) {
-        return reinitializeMapperWithSubtypes(mapper, Arrays.<Class<?>>asList(Transform.class, Condition.class,
-                Filter.class, IAssociativeReducer.class));
-    }
-
-    public static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper, List<Class<?>> classes) {
-        //Register concrete subtypes for JSON serialization
-
-        List<String> classNames = new ArrayList<>(6);
-        for (Class<?> c : classes)
-            classNames.add(c.getName());
-
-        // First: scan the classpath and find all instances of the 'baseClasses' classes
-
-        if (subtypesClassCache == null) {
-            List<Class<?>> interfaces = Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class,
-                    IAssociativeReducer.class);
-            List<Class<?>> classesList = Arrays.<Class<?>>asList();
-
-            Collection<URL> urls = ClasspathHelper.forClassLoader();
-            List<URL> scanUrls = new ArrayList<>();
-            for (URL u : urls) {
-                String path = u.getPath();
-                if (!path.matches(".*/jre/lib/.*jar")) { //Skip JRE/JDK JARs
-                    scanUrls.add(u);
-                }
-            }
-
-            Reflections reflections = new Reflections(
-                    new ConfigurationBuilder().filterInputsBy(new FilterBuilder().exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                            //Exclude the following: the assumption here is that no custom functionality will ever be present
-                            // under these package name prefixes.
-                            .exclude("^org.nd4j.*").exclude("^org.bytedeco.*") //JavaCPP
-                            .exclude("^com.fasterxml.*")//Jackson
-                            .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
-                            .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*")
-                            .exclude("^org.joda.*").exclude("^org.slf4j.*").exclude("^com.google.*")
-                            .exclude("^org.reflections.*").exclude("^ch.qos.*") //Logback
-                    ).addUrls(scanUrls).setScanners(new DataVecSubTypesScanner(interfaces, classesList)));
-            org.reflections.Store store = reflections.getStore();
-
-            Iterable<String> subtypesByName = store.getAll(DataVecSubTypesScanner.class.getSimpleName(), classNames);
-
-            Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
-            subtypesClassCache = new HashSet<>();
-            for (Class<?> c : subtypeClasses) {
-                if (Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())) {
-                    //log.info("Skipping abstract/interface: {}",c);
-                    continue;
-                }
-                subtypesClassCache.add(c);
-            }
-        }
-
-        //Second: get all currently registered subtypes for this mapper
-        Set<Class<?>> registeredSubtypes = new HashSet<>();
-        for (Class<?> c : classes) {
-            AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(),
-                    null);
-            Collection<NamedType> types =
-                    mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
-                            mapper.getSerializationConfig().getAnnotationIntrospector());
-            for (NamedType nt : types) {
-                registeredSubtypes.add(nt.getType());
-            }
-        }
-
-        //Third: register all _concrete_ subtypes that are not already registered
-        List<NamedType> toRegister = new ArrayList<>();
-        for (Class<?> c : subtypesClassCache) {
-            //Check if it's concrete or abstract...
-            if (Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())) {
-                //log.info("Skipping abstract/interface: {}",c);
-                continue;
-            }
-
-            if (!registeredSubtypes.contains(c)) {
-                String name;
-                if (ClassUtils.isInnerClass(c)) {
-                    Class<?> c2 = c.getDeclaringClass();
-                    name = c2.getSimpleName() + "$" + c.getSimpleName();
-                } else {
-                    name = c.getSimpleName();
-                }
-                toRegister.add(new NamedType(c, name));
-                if (log.isDebugEnabled()) {
-                    for (Class<?> baseClass : classes) {
-                        if (baseClass.isAssignableFrom(c)) {
-                            log.debug("Registering class for JSON serialization: {} as subtype of {}", c.getName(),
-                                    baseClass.getName());
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        mapper.registerSubtypes(toRegister.toArray(new NamedType[toRegister.size()]));
-        //Recreate the mapper (via copy), as mapper won't use registered subtypes after first use
-        mapper = mapper.copy();
-        return mapper;
-    }
-
-    private static ObjectMapper initMapperJson() {
-        return initMapper(new JsonFactory());
-    }
-
-    private static ObjectMapper initMapperYaml() {
-        return initMapper(new YAMLFactory());
-    }
-
-    private static ObjectMapper initMapper(JsonFactory factory) {
-        ObjectMapper om = new ObjectMapper(factory);
-        om.registerModule(new JodaModule());
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        om.enable(SerializationFeature.INDENT_OUTPUT);
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        return om;
-    }
-
 
     /**
      * Transforms a sequence

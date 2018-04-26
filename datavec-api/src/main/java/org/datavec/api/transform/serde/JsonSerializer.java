@@ -32,12 +32,13 @@ import java.util.Arrays;
  *
  * @author Alex Black
  */
+@Deprecated
 public class JsonSerializer extends BaseSerializer {
 
     private ObjectMapper om;
 
     public JsonSerializer() {
-        this.om = getMapper();
+        this.om = JsonMappers.getMapper();
     }
 
     @Override
@@ -47,12 +48,7 @@ public class JsonSerializer extends BaseSerializer {
 
     @Override
     protected ObjectMapper reinitializeMapperWithSubtypes() {
-        om = TransformProcess.reinitializeMapperWithSubtypes(om, Arrays.<Class<?>>asList(Transform.class,
-                        Condition.class, Filter.class, IAssociativeReducer.class, SequenceComparator.class));
+        //No op
         return om;
-    }
-
-    private ObjectMapper getMapper() {
-        return getObjectMapper(new JsonFactory());
     }
 }
