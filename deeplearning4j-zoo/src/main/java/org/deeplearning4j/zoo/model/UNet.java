@@ -77,7 +77,7 @@ public class UNet extends ZooModel {
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(updater)
-                .weightInit(WeightInit.DISTRIBUTION)
+                .weightInit(WeightInit.RELU)
                 .dist(new NormalDistribution(0.0, 0.5))
                 .l2(5e-5)
                 .miniBatch(true)
