@@ -15,7 +15,7 @@ public class GenericDeserializer extends JsonDeserializer<Object> {
     @Override
     public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         JsonNode node = p.getCodec().readTree(p);
-        String className = node.get("class").asText();
+        String className = node.get("@class").asText();
         Class<?> c;
         try {
             c = Class.forName(className);
