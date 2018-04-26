@@ -40,21 +40,21 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
     public void testCnn3DPlain() {
         Nd4j.getRandom().setSeed(1337);
 
-        int[] depths = {6, 8, 10};
-        int[] heights = {6, 8, 10};
-        int[] widths = {6, 8, 10};
+        int[] depths = {6};
+        int[] heights = {6};
+        int[] widths = {6};
 
 
-        int[] minibatchSizes = {1, 3};
+        int[] minibatchSizes = {2, 3};
         int convNIn = 2;
         int convNOut1 = 3;
         int convNOut2 = 4;
         int denseNOut = 5;
-        int finalNOut = 6;
+        int finalNOut = 42;
 
 
-        int[][] kernels = {{1, 1, 1}, {2, 2, 2}, {1, 2, 3}};
-        int[][] strides = {{1, 1, 1}, {2, 2, 2}, {1, 2, 3}};
+        int[][] kernels = {{1, 1, 1}};
+        int[][] strides = {{1, 1, 1}};
 
         Activation[] activations = {Activation.SIGMOID, Activation.RELU};
 
@@ -69,29 +69,23 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                             for (int[] kernel : kernels) {
                                 for (int[] stride : strides) {
 
-                                    int outDepth = (depth - kernel[0]) / stride[0] + 1;
-                                    int outHeight = (height - kernel[1]) / stride[1] + 1;
-                                    int outWidth = (width - kernel[2]) / stride[2] + 1;
-
                                     INDArray input = Nd4j.rand(new int[]{minibatchSize, convNIn, depth, height, width});
-                                    INDArray labels = Nd4j.zeros(minibatchSize, finalNOut, depth * width * height);
+                                    INDArray labels = Nd4j.zeros(minibatchSize, finalNOut);
                                     for (int i = 0; i < minibatchSize; i++) {
-                                        for (int j = 0; j < outDepth * outHeight * outWidth; j++) {
-                                            labels.putScalar(new int[]{i, i % finalNOut, j}, 1.0);
+                                        for (int j = 0; j < finalNOut; j++) {
+                                            labels.putScalar(new int[]{i, j}, 1.0);
                                         }
                                     }
 
-
                                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                            .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                                            .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
                                             .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same)
                                             .list()
                                             .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(kernel)
-                                                    .stride(stride).nIn(convNIn).nOut(convNOut1)
+                                                    .stride(stride).nIn(convNIn).nOut(convNOut1).hasBias(false)
                                                     .build())
-                                            .layer(1, new Convolution3D.Builder().activation(afn).kernelSize(kernel)
-                                                    .stride(stride).nIn(convNOut1).nOut(convNOut2)
-                                                    .build())
+                                            .layer(1, new Convolution3D.Builder().activation(afn).kernelSize(1,1,1)
+                                                    .nIn(convNOut1).nOut(convNOut2).hasBias(false).build())
                                             .layer(2, new DenseLayer.Builder().nOut(denseNOut).build())
                                             .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                     .activation(Activation.SOFTMAX).nOut(finalNOut).build())
@@ -105,8 +99,11 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                     MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
                                     assertEquals(conf, c2);
 
+
                                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                                     net.init();
+
+                                    INDArray out = net.output(input);
 
                                     String msg = "Minibatch=" + minibatchSize + ", activationFn=" + afn
                                             + ", kernel = " + Arrays.toString(kernel);

@@ -46,6 +46,9 @@ public class Convolution3DTest {
 
         INDArray containedInput = getContainedData();
         Convolution3DLayer layer = (Convolution3DLayer) getConvolution3DLayer(ConvolutionMode.Same);
+        int[] dilation = layer.layerConf().getDilation();
+        int[] kernel = layer.layerConf().getKernelSize();
+
 
         assertTrue(layer.convolutionMode == ConvolutionMode.Same);
 
@@ -112,7 +115,6 @@ public class Convolution3DTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                 .layer(new Convolution3D.Builder().kernelSize(kernelSize).nIn(nChannelsIn).nOut(nChannelsOut)
-                        .stride(1, 1, 1).dilation(1, 1, 1).padding(0, 0, 0)
                         .dataFormat(Convolution3D.DataFormat.NCDHW).convolutionMode(mode).hasBias(false)
                         .build())
                 .build();

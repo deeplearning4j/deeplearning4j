@@ -73,8 +73,7 @@ public class ConvolutionUtils {
         boolean atrous = (eKernel == kernel);
 
         int[] inShape = new int[]{hIn, wIn};
-        // TODO: fix this for 3D and data formats
-//        validateShapes(inputData, kernel, strides, padding, convolutionMode, dilation, inShape, atrous);
+        validateShapes(inputData, kernel, strides, padding, convolutionMode, dilation, inShape, atrous);
 
         if (convolutionMode == ConvolutionMode.Same) {
             int hOut = strides[0] * hIn;

@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.nd4j.linalg.activations.IActivation;
@@ -61,7 +62,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int inH = isNCDHW ? input.size(3) : input.size(2);
         int inW = isNCDHW ? input.size(4) : input.size(3);
 
-        int outChannels = isNCDHW ? weights.size(0) : weights.size(4);
+        int outEpsChannels = isNCDHW ? weights.size(1) : weights.size(3);
 
         int[] dilation = layerConfig.getDilation();
         int[] kernel = layerConfig.getKernelSize();
@@ -79,17 +80,15 @@ public class Convolution3DLayer extends ConvolutionLayer {
             outSize = Convolution3DUtils.get3DOutputSize(
                     input, kernel, strides, pad, convolutionMode, dilation, isNCDHW);
         }
-        int outD = outSize[0];
-        int outH = outSize[1];
-        int outW = outSize[2];
 
         INDArray weightGradView = gradientViews.get(Convolution3DParamInitializer.WEIGHT_KEY);
 
-        INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * outChannels * outD * outH * outW);
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD,
+                miniBatch * outEpsChannels * inD * inH * inW);
         if (isNCDHW)
-            outEpsilon = outEpsilon.reshape('c', miniBatch, outChannels, outD, outH, outW);
+            outEpsilon = outEpsilon.reshape('c', miniBatch, outEpsChannels, inD, inH, inW);
         else
-            outEpsilon = outEpsilon.reshape('c', miniBatch, outD, outH, outW, outChannels);
+            outEpsilon = outEpsilon.reshape('c', miniBatch, inD, inH, inW, outEpsChannels);
 
 
         int[] intArgs = new int[]{
@@ -98,13 +97,16 @@ public class Convolution3DLayer extends ConvolutionLayer {
                 pad[0], pad[1], pad[2],
                 dilation[0], dilation[1], dilation[2],
                 convolutionMode == ConvolutionMode.Same ? 0 : 1,
-                isNCDHW ? 1 : 0
+                isNCDHW ? 0 : 1
         };
 
         INDArray delta;
-        IActivation afn = layerConfig.getActivationFn();
+        IActivation activation = layerConfig.getActivationFn();
         Pair<INDArray, INDArray> p = preOutput(true, true, workspaceMgr);
-        delta = afn.backprop(p.getFirst(), epsilon).getFirst();
+        System.out.println(Arrays.toString(p.getFirst().shape()));
+        System.out.println(Arrays.toString(epsilon.shape()));
+
+        delta = activation.backprop(p.getFirst(), epsilon).getFirst();
 
         INDArray bias;
         INDArray biasGradView = null;
@@ -215,7 +217,8 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int outH = outSize[1];
         int outW = outSize[2];
 
-        INDArray output = Nd4j.createUninitialized(miniBatch*outWeightChannels*outD*outH*outW);
+        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
+                miniBatch*outWeightChannels*outD*outH*outW);
         if (isNCDHW)
             output = output.reshape('c', miniBatch, outWeightChannels, outD, outH, outW);
         else

@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -125,16 +122,13 @@ public class Convolution3D extends ConvolutionLayer {
         }
     }
 
+    @AllArgsConstructor
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
 
         private DataFormat dataFormat = DataFormat.NCDHW;
-        protected int[] kernelSize = new int[]{2, 2, 2};
-        protected int[] stride = new int[]{1, 1, 1};
-        protected int[] padding = new int[]{0, 0, 0};
-        protected int[] dilation = new int[]{0, 0, 0};
 
         public Builder() {
-            super(new int[]{2, 2, 2}, new int[]{1, 1, 1}, new int[]{0, 0, 0}, new int[]{0, 0, 0}, 3);
+            super(new int[]{2, 2, 2}, new int[]{1, 1, 1}, new int[]{0, 0, 0}, new int[]{1, 1, 1}, 3);
         }
 
 

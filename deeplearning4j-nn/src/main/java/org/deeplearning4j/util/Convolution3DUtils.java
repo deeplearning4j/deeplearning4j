@@ -76,7 +76,7 @@ public class Convolution3DUtils {
             int outH = (int) Math.ceil(inH / ((double) strides[1]));
             int outW = (int) Math.ceil(inW / ((double) strides[2]));
 
-            return new int[]{outH, outW, outD};
+            return new int[]{outD, outH, outW};
         }
 
         int outD = (inD - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
