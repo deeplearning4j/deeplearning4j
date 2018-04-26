@@ -46,9 +46,6 @@ public class Convolution3DTest {
 
         INDArray containedInput = getContainedData();
         Convolution3DLayer layer = (Convolution3DLayer) getConvolution3DLayer(ConvolutionMode.Same);
-        int[] dilation = layer.layerConf().getDilation();
-        int[] kernel = layer.layerConf().getKernelSize();
-
 
         assertTrue(layer.convolutionMode == ConvolutionMode.Same);
 
@@ -68,48 +65,9 @@ public class Convolution3DTest {
         INDArray input = getData();
         INDArray output = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
-        System.out.println(Arrays.toString(input.shape()));
-
-        System.out.println(Arrays.toString(output.shape()));
         assertTrue(Arrays.equals(new int[]{nExamples, nChannelsOut, outputDepth, outputWidth, outputHeight},
                 output.shape()));
     }
-
-
-    @Test
-    public void testConvolution3DBackprop() throws Exception {
-        INDArray expectedContainedEpsilonInput =
-                Nd4j.create(
-                        new double[]{1.},
-                        new int[]{1, 1, 1, 1, 1});
-
-        INDArray expectedContainedEpsilonResult = Nd4j.create(
-                new double[]{1., 1., 1., 1., 1., 1., 1., 1.},
-                new int[]{1, 1, 2, 2, 2});
-
-        INDArray input = getContainedData();
-
-        Layer layer = getConvolution3DLayer(ConvolutionMode.Strict);
-        layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
-
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput,
-                LayerWorkspaceMgr.noWorkspaces());
-
-        assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
-        assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
-        assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
-
-        INDArray input2 = getData();
-        layer.activate(input2, false, LayerWorkspaceMgr.noWorkspaces());
-        int depth = input2.size(1);
-
-        epsilon = Nd4j.ones(5, depth, outputHeight, outputWidth);
-
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
-        assertEquals(input.shape().length, out.getSecond().shape().length);
-        assertEquals(depth, out.getSecond().size(1));
-    }
-
 
     private Layer getConvolution3DLayer(ConvolutionMode mode) {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -131,9 +89,7 @@ public class Convolution3DTest {
     }
 
     private INDArray getContainedData() {
-        return Nd4j.create
-                (new double[]{1., 2., 3., 4., 5., 6., 7., 8},
-                        new int[]{1, 1, 2, 2, 2});
+        return Nd4j.create(new double[]{1., 2., 3., 4., 5., 6., 7., 8}, new int[]{1, 1, 2, 2, 2});
     }
 
 }

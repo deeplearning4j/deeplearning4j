@@ -1,6 +1,8 @@
 package org.deeplearning4j.gradientcheck;
 
+import lombok.extern.java.Log;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -23,6 +25,7 @@ import java.util.Arrays;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Log
 public class CNN3DGradientCheckTest extends BaseDL4JTest {
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
@@ -38,6 +41,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
     public void testCnn3DPlain() {
         Nd4j.getRandom().setSeed(1337);
 
+        // Note: we checked this with a variety of parameters, but it takes a lot of time.
         int[] depths = {6};
         int[] heights = {6};
         int[] widths = {6};
@@ -51,33 +55,32 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
         int finalNOut = 42;
 
 
-        int[][] kernels = {{2, 2, 2}, {1, 2, 3}};
+        int[][] kernels = {{1, 1, 1}, {2, 2, 2}};
         int[][] strides = {{1, 1, 1}, {2, 2, 2}};
 
-        Activation[] activations = {Activation.SIGMOID, Activation.RELU};
+        Activation[] activations = {Activation.RELU};
 
-        ConvolutionMode[] modes = {ConvolutionMode.Truncate};
+        ConvolutionMode[] modes = {ConvolutionMode.Truncate, ConvolutionMode.Same};
 
         for (Activation afn : activations) {
-            for (int minibatchSize : minibatchSizes) {
-
+            for (int miniBatchSize : minibatchSizes) {
                 for (int depth : depths) {
                     for (int height : heights) {
                         for (int width : widths) {
                             for (ConvolutionMode mode : modes) {
-
-
                                 for (int[] kernel : kernels) {
                                     for (int[] stride : strides) {
 
-                                        int outDepth = mode == ConvolutionMode.Same ? depth :(depth - kernel[0]) / stride[0] + 1;
-                                        int outHeight = mode == ConvolutionMode.Same ? height : (height - kernel[1]) / stride[1] + 1;
-                                        int outWidth = mode == ConvolutionMode.Same ? width : (width - kernel[2]) / stride[2] + 1;
+                                        int outDepth = mode == ConvolutionMode.Same ?
+                                                depth / stride[0] :(depth - kernel[0]) / stride[0] + 1;
+                                        int outHeight = mode == ConvolutionMode.Same ?
+                                                height / stride[1] : (height - kernel[1]) / stride[1] + 1;
+                                        int outWidth = mode == ConvolutionMode.Same ?
+                                                width / stride[2] : (width - kernel[2]) / stride[2] + 1;
 
-
-                                        INDArray input = Nd4j.rand(new int[]{minibatchSize, convNIn, depth, height, width});
-                                        INDArray labels = Nd4j.zeros(minibatchSize, finalNOut);
-                                        for (int i = 0; i < minibatchSize; i++) {
+                                        INDArray input = Nd4j.rand(new int[]{miniBatchSize, convNIn, depth, height, width});
+                                        INDArray labels = Nd4j.zeros(miniBatchSize, finalNOut);
+                                        for (int i = 0; i < miniBatchSize; i++) {
                                             labels.putScalar(new int[]{i, i % finalNOut}, 1.0);
                                         }
 
@@ -101,25 +104,24 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                                         convNOut2, true))
                                                 .setInputType(InputType.convolutional3D(height, width, depth, convNIn)).build();
 
-
-                                        // test ser/de
                                         String json = conf.toJson();
                                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
                                         assertEquals(conf, c2);
 
-
                                         MultiLayerNetwork net = new MultiLayerNetwork(conf);
                                         net.init();
 
-                                        INDArray out = net.output(input);
-
-                                        String msg = "Minibatch=" + minibatchSize + ", activationFn=" + afn
-                                                + ", kernel = " + Arrays.toString(kernel);
+                                        String msg = "Minibatch size = " + miniBatchSize + ", activationFn=" + afn
+                                                + ", kernel = " + Arrays.toString(kernel) + ", stride = "
+                                                + Arrays.toString(stride) + ", mode = " + mode.toString()
+                                                + ", input depth " + depth + ", input height " + height
+                                                + ", input width " + width;
 
                                         if (PRINT_RESULTS) {
-                                            System.out.println(msg);
-                                            for (int j = 0; j < net.getnLayers(); j++)
-                                                System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                                            log.info(msg);
+                                            for (int j = 0; j < net.getnLayers(); j++) {
+                                                log.info("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                                            }
                                         }
 
                                         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS,
@@ -127,6 +129,8 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                                 RETURN_ON_FIRST_FAILURE, input, labels);
 
                                         assertTrue(msg, gradOK);
+
+                                        TestUtils.testModelSerialization(net);
                                     }
                                 }
                             }

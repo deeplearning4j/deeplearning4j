@@ -77,8 +77,6 @@ public class Convolution3DLayer extends ConvolutionLayer {
                     outSize, new int[]{inD, inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConfig.getPadding();
-            outSize = Convolution3DUtils.get3DOutputSize(
-                    input, kernel, strides, pad, convolutionMode, dilation, isNCDHW);
         }
 
         INDArray weightGradView = gradientViews.get(Convolution3DParamInitializer.WEIGHT_KEY);
@@ -103,8 +101,6 @@ public class Convolution3DLayer extends ConvolutionLayer {
         INDArray delta;
         IActivation activation = layerConfig.getActivationFn();
         Pair<INDArray, INDArray> p = preOutput(true, true, workspaceMgr);
-        System.out.println(Arrays.toString(p.getFirst().shape()));
-        System.out.println(Arrays.toString(epsilon.shape()));
 
         delta = activation.backprop(p.getFirst(), epsilon).getFirst();
 

@@ -123,8 +123,9 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
 
         if (epsilons.columns() != inputDepth * inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output to have depth: "
-                    + inputDepth + ", height: " + inputHeight + ", width: " + inputWidth + "and channels: "
-                    + numChannels + " but was instead "
+                    + inputDepth + ", height: " + inputHeight + ", width: " + inputWidth + " and channels: "
+                    + numChannels + ", i.e. [" + epsilons.rows() + ", "
+                    + inputDepth * inputHeight * inputWidth * numChannels + "] but was instead "
                     + Arrays.toString(epsilons.shape()));
 
         INDArray ret;
