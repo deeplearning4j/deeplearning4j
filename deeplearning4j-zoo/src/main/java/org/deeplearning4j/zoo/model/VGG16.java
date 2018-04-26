@@ -43,7 +43,7 @@ public class VGG16 extends ZooModel {
     private int numLabels;
     @Builder.Default private IUpdater updater = new Nesterovs();
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
-    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override

@@ -46,7 +46,7 @@ public class GoogLeNet extends ZooModel {
     private int numLabels;
     @Builder.Default private IUpdater updater = new Nesterovs(new StepSchedule(ScheduleType.ITERATION, 1e-2, 0.96, 320000), 0.9);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
-    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
@@ -132,7 +132,7 @@ public class GoogLeNet extends ZooModel {
                         .biasUpdater(new Nesterovs(new StepSchedule(ScheduleType.ITERATION, 2e-2, 0.96, 320000), 0.9))
                         .weightInit(WeightInit.XAVIER)
                         .l2(2e-4)
-                        .cacheMode(CacheMode.DEVICE)
+                        .cacheMode(cacheMode)
                         .trainingWorkspaceMode(workspaceMode)
                         .inferenceWorkspaceMode(workspaceMode)
                         .cudnnAlgoMode(cudnnAlgoMode)

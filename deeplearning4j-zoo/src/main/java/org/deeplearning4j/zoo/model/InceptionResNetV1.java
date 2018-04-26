@@ -39,7 +39,7 @@ public class InceptionResNetV1 extends ZooModel {
     private int numClasses;
     @Builder.Default private IUpdater updater = new RmsProp(0.1, 0.96, 0.001);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
-    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override

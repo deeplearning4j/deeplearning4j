@@ -82,7 +82,7 @@ public class TinyYOLO extends ZooModel {
     private int numLabels;
     @Builder.Default private IUpdater updater = new Adam(1e-3);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
-    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override

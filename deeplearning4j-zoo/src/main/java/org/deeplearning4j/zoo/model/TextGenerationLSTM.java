@@ -40,7 +40,7 @@ public class TextGenerationLSTM extends ZooModel {
     private int[] inputShape = new int[] {maxLength, totalUniqueCharacters};
     @Builder.Default private IUpdater updater = new RmsProp(0.01);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
-    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override

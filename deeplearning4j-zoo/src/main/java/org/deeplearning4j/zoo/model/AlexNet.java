@@ -49,7 +49,7 @@ public class AlexNet extends ZooModel {
     private int numLabels;
     @Builder.Default private IUpdater updater = new Nesterovs(1e-2, 0.9);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
-    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
@@ -80,8 +80,8 @@ public class AlexNet extends ZooModel {
                         .biasUpdater(new Nesterovs(2e-2, 0.9))
                         .convolutionMode(ConvolutionMode.Same)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer) // normalize to prevent vanishing or exploding gradients
-                        .trainingWorkspaceMode(WorkspaceMode.ENABLED)
-                        .inferenceWorkspaceMode(WorkspaceMode.ENABLED)
+                        .trainingWorkspaceMode(workspaceMode)
+                        .inferenceWorkspaceMode(workspaceMode)
                         .cacheMode(cacheMode)
                         .dropOut(0.5).l2(5 * 1e-4).miniBatch(false)
                         .list()

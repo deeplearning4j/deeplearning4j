@@ -39,7 +39,7 @@ public class FaceNetNN4Small2 extends ZooModel {
     @Builder.Default private IUpdater updater = new Adam(0.1, 0.9, 0.999, 0.01);
     @Builder.Default private Activation transferFunction = Activation.RELU;
     @Builder.Default CacheMode cacheMode = CacheMode.DEVICE;
-    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
