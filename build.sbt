@@ -1,7 +1,7 @@
 import scala.sys.process._
 
 name := "ScalNet"
-version := "0.9.2-SNAPSHOT"
+version := "1.0.0-SNAPSHOT"
 description := "A Scala wrapper for Deeplearning4j, inspired by Keras. Scala + DL + Spark + GPUs"
 
 scalaVersion := "2.11.12"
@@ -22,7 +22,7 @@ update := {
 
 libraryDependencies ++= {
 
-  val dl4j = "0.9.2-SNAPSHOT"
+  val dl4j = "1.0.0-SNAPSHOT"
   val logback = "1.2.3"
   val scalaCheck = "1.13.5"
   val scalaTest = "3.0.5"
