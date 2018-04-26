@@ -28,6 +28,7 @@ import org.nd4j.shade.jackson.databind.introspect.AnnotationMap;
 import org.nd4j.shade.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import org.nd4j.shade.jackson.databind.jsontype.TypeResolverBuilder;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
+import org.nd4j.shade.jackson.datatype.joda.JodaModule;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -74,8 +75,15 @@ public class JsonMappers {
         }
     }
 
-    private static ObjectMapper jsonMapper = new ObjectMapper();
-    private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+    private static ObjectMapper jsonMapper;
+    private static ObjectMapper yamlMapper;
+
+    static {
+        jsonMapper = new ObjectMapper();
+        yamlMapper = new ObjectMapper(new YAMLFactory());
+        configureMapper(jsonMapper);
+        configureMapper(yamlMapper);
+    }
 
     private static Map<Class, ObjectMapper> legacyMappers = new ConcurrentHashMap<>();
 
@@ -104,16 +112,11 @@ public class JsonMappers {
     public static synchronized ObjectMapper getLegacyMapperFor(@NonNull Class<?> clazz){
         if(!legacyMappers.containsKey(clazz)){
             ObjectMapper m = new ObjectMapper();
-            configureMapper(jsonMapper);
+            configureMapper(m);
             m.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(clazz)));
             legacyMappers.put(clazz, m);
         }
         return legacyMappers.get(clazz);
-    }
-
-    static {
-        configureMapper(jsonMapper);
-        configureMapper(yamlMapper);
     }
 
     /**
@@ -131,27 +134,11 @@ public class JsonMappers {
     }
 
     private static void configureMapper(ObjectMapper ret) {
+        ret.registerModule(new JodaModule());
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
-
-//        SimpleModule customDeserializerModule = new SimpleModule();
-//        customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
-//            @Override
-//            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
-//                                                          JsonDeserializer<?> deserializer) {
-//                //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
-//                if (beanDesc.getBeanClass() == MultiLayerConfiguration.class) {
-//                    return new MultiLayerConfigurationDeserializer(deserializer);
-//                } else if (beanDesc.getBeanClass() == ComputationGraphConfiguration.class) {
-//                    return new ComputationGraphConfigurationDeserializer(deserializer);
-//                }
-//                return deserializer;
-//            }
-//        });
-//
-//        ret.registerModule(customDeserializerModule);
     }
 
 

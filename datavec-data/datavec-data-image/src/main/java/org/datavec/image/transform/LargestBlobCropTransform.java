@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,6 +35,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  *
  * @author antdood
  */
+@Data
 public class LargestBlobCropTransform extends BaseImageTransform<Mat> {
 
     protected org.nd4j.linalg.api.rng.Random rng;

@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
@@ -33,6 +34,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.equalizeHist;
  */
 @JsonIgnoreProperties({"splitChannels", "converter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Data
 public class EqualizeHistTransform extends BaseImageTransform {
 
     /**

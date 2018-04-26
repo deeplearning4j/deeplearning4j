@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import org.bytedeco.javacv.FFmpegFrameFilter;
 import org.bytedeco.javacv.FrameFilter;
 import org.datavec.image.data.ImageWritable;
@@ -35,6 +36,7 @@ import static org.bytedeco.javacpp.avutil.*;
  */
 @JsonIgnoreProperties({"filter", "converter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Data
 public class FilterImageTransform extends BaseImageTransform {
 
     private FFmpegFrameFilter filter;

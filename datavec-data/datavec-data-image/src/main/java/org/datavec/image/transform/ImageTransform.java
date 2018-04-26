@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.serde.LegacyImageMappingHelper;
 import org.nd4j.shade.jackson.annotation.JsonInclude;

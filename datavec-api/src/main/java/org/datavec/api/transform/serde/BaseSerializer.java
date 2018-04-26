@@ -46,32 +46,12 @@ public abstract class BaseSerializer {
 
     public abstract ObjectMapper getObjectMapper();
 
-    protected abstract ObjectMapper reinitializeMapperWithSubtypes();
-
-    protected ObjectMapper getObjectMapper(JsonFactory factory) {
-        ObjectMapper om = new ObjectMapper(factory);
-        om.registerModule(new JodaModule());
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        om.enable(SerializationFeature.INDENT_OUTPUT);
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        return om;
-    }
-
     private <T> T load(String str, Class<T> clazz) {
         ObjectMapper om = getObjectMapper();
         try {
             return om.readValue(str, clazz);
         } catch (Exception e) {
-            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
-        }
-
-        om = reinitializeMapperWithSubtypes();
-
-        try {
-            return om.readValue(str, clazz);
-        } catch (Exception e) {
+            //TODO better exception
             throw new RuntimeException(e);
         }
     }
@@ -81,14 +61,7 @@ public abstract class BaseSerializer {
         try {
             return om.readValue(str, typeReference);
         } catch (Exception e) {
-            //Ignore the first exception, try reinitializing subtypes for custom transforms etc
-        }
-
-        om = reinitializeMapperWithSubtypes();
-
-        try {
-            return om.readValue(str, typeReference);
-        } catch (Exception e) {
+            //TODO better exception
             throw new RuntimeException(e);
         }
     }

@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
@@ -31,6 +32,7 @@ import static org.bytedeco.javacpp.opencv_core.Rect;
  * @author saudet
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Data
 public class CropImageTransform extends BaseImageTransform<Mat> {
 
     private int cropTop;

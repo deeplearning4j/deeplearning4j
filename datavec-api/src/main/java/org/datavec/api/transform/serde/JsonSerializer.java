@@ -32,7 +32,6 @@ import java.util.Arrays;
  *
  * @author Alex Black
  */
-@Deprecated
 public class JsonSerializer extends BaseSerializer {
 
     private ObjectMapper om;
@@ -43,12 +42,6 @@ public class JsonSerializer extends BaseSerializer {
 
     @Override
     public ObjectMapper getObjectMapper() {
-        return om;
-    }
-
-    @Override
-    protected ObjectMapper reinitializeMapperWithSubtypes() {
-        //No op
         return om;
     }
 }
