@@ -1,12 +1,10 @@
 package org.deeplearning4j.zoo.model;
 
-import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -18,6 +16,7 @@ import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -29,26 +28,17 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * @author Justin Long (crockpotveggies)
  */
-@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ResNet50 extends ZooModel {
 
-    private int[] inputShape = new int[] {3, 224, 224};
-    private long seed;
-    private int numClasses;
-    private WorkspaceMode workspaceMode;
-    private ConvolutionLayer.AlgoMode cudnnAlgoMode;
-
-    public ResNet50(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.ENABLED);
-    }
-
-    public ResNet50(int outputNum, long seed, WorkspaceMode workspaceMode) {
-        this.seed = seed;
-        this.numClasses = outputNum;
-        this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
-                        : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
-    }
+    @Builder.Default private long seed = 1234;
+    @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
+    private int numLabels;
+    @Builder.Default private IUpdater updater = new RmsProp(0.1, 0.96, 0.001);
+    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
@@ -64,11 +54,6 @@ public class ResNet50 extends ZooModel {
             return 1982516793L;
         else
             return 0L;
-    }
-
-    @Override
-    public ZooType zooType() {
-        return ZooType.RESNET50;
     }
 
     @Override
@@ -173,9 +158,18 @@ public class ResNet50 extends ZooModel {
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
                         .activation(Activation.IDENTITY)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new RmsProp(0.1, 0.96, 0.001)).weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0.0, 0.5)).l1(1e-7).l2(5e-5).miniBatch(true)
-                        .convolutionMode(ConvolutionMode.Truncate).graphBuilder();
+                        .updater(updater)
+                        .weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0.0, 0.5))
+                        .l1(1e-7)
+                        .l2(5e-5)
+                        .miniBatch(true)
+                        .cacheMode(cacheMode)
+                        .trainingWorkspaceMode(workspaceMode)
+                        .inferenceWorkspaceMode(workspaceMode)
+                        .cudnnAlgoMode(cudnnAlgoMode)
+                        .convolutionMode(ConvolutionMode.Truncate)
+                        .graphBuilder();
 
 
         graph.addInputs("input").setInputTypes(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]))
@@ -217,7 +211,7 @@ public class ResNet50 extends ZooModel {
                         // TODO add flatten/reshape layer here
                         .addLayer("output",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                                        .nOut(numClasses).activation(Activation.SOFTMAX).build(),
+                                                        .nOut(numLabels).activation(Activation.SOFTMAX).build(),
                                         "avgpool")
                         .setOutputs("output").backprop(true).pretrain(false);
 

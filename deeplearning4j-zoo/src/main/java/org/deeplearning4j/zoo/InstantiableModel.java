@@ -12,9 +12,7 @@ public interface InstantiableModel {
 
     public Model init();
 
-    public ModelMetaData metaData();
-
-    public ZooType zooType();
+    @Deprecated public ModelMetaData metaData();
 
     public Class<? extends Model> modelType();
 

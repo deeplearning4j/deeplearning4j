@@ -1,6 +1,7 @@
 package org.deeplearning4j.zoo.model;
 
-import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -18,6 +19,7 @@ import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -38,26 +40,17 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * Weight distribution uses 0.1 std for all layers in the paper but 0.005 in the dense layers in the imagenetExample code
  *
  */
-@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class AlexNet extends ZooModel {
 
-    private int[] inputShape = new int[] {3, 224, 224};
-    private int numLabels = 1000;
-    private long seed = 42;
-    private WorkspaceMode workspaceMode;
-    private ConvolutionLayer.AlgoMode cudnnAlgoMode;
-
-    public AlexNet(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.ENABLED);
-    }
-
-    public AlexNet(int numLabels, long seed, WorkspaceMode workspaceMode) {
-        this.numLabels = numLabels;
-        this.seed = seed;
-        this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
-                        : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
-    }
+    @Builder.Default private long seed = 1234;
+    @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
+    private int numLabels;
+    @Builder.Default private IUpdater updater = new Nesterovs(1e-2, 0.9);
+    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
@@ -70,11 +63,6 @@ public class AlexNet extends ZooModel {
     }
 
     @Override
-    public ZooType zooType() {
-        return ZooType.ALEXNET;
-    }
-
-    @Override
     public Class<? extends Model> modelType() {
         return MultiLayerNetwork.class;
     }
@@ -84,16 +72,20 @@ public class AlexNet extends ZooModel {
         double dropOut = 0.5;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0.0, 0.01))
-                        .activation(Activation.RELU).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Nesterovs(1e-2, 0.9))
+                        .weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0.0, 0.01))
+                        .activation(Activation.RELU)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(updater)
                         .biasUpdater(new Nesterovs(2e-2, 0.9))
                         .convolutionMode(ConvolutionMode.Same)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer) // normalize to prevent vanishing or exploding gradients
-                        .trainingWorkspaceMode(WorkspaceMode.ENABLED).inferenceWorkspaceMode(WorkspaceMode.ENABLED)
+                        .trainingWorkspaceMode(WorkspaceMode.ENABLED)
+                        .inferenceWorkspaceMode(WorkspaceMode.ENABLED)
+                        .cacheMode(cacheMode)
                         .dropOut(0.5).l2(5 * 1e-4).miniBatch(false)
-                        .list().layer(0,
-                                        new ConvolutionLayer.Builder(new int[] {11, 11}, new int[] {4, 4},
+                        .list()
+                        .layer(0, new ConvolutionLayer.Builder(new int[] {11, 11}, new int[] {4, 4},
                                                         new int[] {2, 2}).name("cnn1")
                                                                         .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
                                                                         .convolutionMode(ConvolutionMode.Truncate)

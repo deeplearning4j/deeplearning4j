@@ -1,5 +1,7 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -17,6 +19,7 @@ import org.deeplearning4j.zoo.ZooType;
 import org.deeplearning4j.zoo.model.helper.FaceNetHelper;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
@@ -26,27 +29,18 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * Revised and consolidated version by @crockpotveggies
  */
-@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class FaceNetNN4Small2 extends ZooModel {
 
-    private int[] inputShape = new int[] {3, 96, 96};
+    @Builder.Default private long seed = 1234;
+    @Builder.Default private int[] inputShape = new int[] {3, 96, 96};
     private int numLabels;
-    private long seed;
-    private Activation transferFunction = Activation.RELU;
-    private WorkspaceMode workspaceMode;
-    private ConvolutionLayer.AlgoMode cudnnAlgoMode;
-
-    public FaceNetNN4Small2(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.ENABLED);
-    }
-
-    public FaceNetNN4Small2(int numLabels, long seed, WorkspaceMode workspaceMode) {
-        this.numLabels = numLabels;
-        this.seed = seed;
-        this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
-                        : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
-    }
+    @Builder.Default private IUpdater updater = new Adam(0.1, 0.9, 0.999, 0.01);
+    @Builder.Default private Activation transferFunction = Activation.RELU;
+    @Builder.Default CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
@@ -56,11 +50,6 @@ public class FaceNetNN4Small2 extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         return 0L;
-    }
-
-    @Override
-    public ZooType zooType() {
-        return ZooType.FACENETNN4SMALL2;
     }
 
     @Override
@@ -74,8 +63,15 @@ public class FaceNetNN4Small2 extends ZooModel {
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
                         .activation(Activation.IDENTITY)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Adam(0.1, 0.9, 0.999, 0.01)).weightInit(WeightInit.RELU)
-                        .l2(5e-5).miniBatch(true).convolutionMode(ConvolutionMode.Same)
+                        .updater(updater)
+                        .weightInit(WeightInit.RELU)
+                        .l2(5e-5)
+                        .miniBatch(true)
+                        .cacheMode(cacheMode)
+                        .trainingWorkspaceMode(workspaceMode)
+                        .inferenceWorkspaceMode(workspaceMode)
+                        .cudnnAlgoMode(cudnnAlgoMode)
+                        .convolutionMode(ConvolutionMode.Same)
                         .graphBuilder();
 
 

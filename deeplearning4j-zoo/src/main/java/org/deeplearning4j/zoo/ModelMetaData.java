@@ -9,6 +9,7 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
+@Deprecated
 public class ModelMetaData {
     private int[][] inputShape;
     private int numOutputs;

@@ -35,19 +35,20 @@ public class TestInstantiation {
 
     @Test
     public void testMultipleCnnTraining() throws Exception {
-        Map<ZooType, ZooModel> models = ModelSelector.select(ZooType.VGG19, 10);
-        models.putAll(ModelSelector.select(ZooType.DARKNET19, 10));
-        models.putAll(ModelSelector.select(ZooType.TINYYOLO, 10));
-        models.putAll(ModelSelector.select(ZooType.YOLO2, 10));
+        ZooModel[] models = new ZooModel[]{
+                Darknet19.builder().numLabels(10).build(),
+                TinyYOLO.builder().numLabels(10).build(),
+                YOLO2.builder().numLabels(10).build()
+        };
 
-        for (Map.Entry<ZooType, ZooModel> entry : models.entrySet()) {
-            log.info("Testing training on zoo model " + entry.getKey());
-            ZooType type = entry.getKey();
-            ZooModel model = entry.getValue();
+        for(int i = 0; i < models.length; i++) {
+            ZooModel model = models[i];
+            String modelName = model.getClass().getName();
+            log.info("Testing training on zoo model " + modelName);
             int gridWidth = -1;
             int gridHeight = -1;
             int numLabels = 10;
-            if (type == ZooType.TINYYOLO || type == ZooType.YOLO2) {
+            if (modelName == "TinyYOLO" || modelName == "YOLO2") {
                 int[] inputShapes = model.metaData().getInputShape()[0];
                 gridWidth = DarknetHelper.getGridWidth(inputShapes);
                 gridHeight = DarknetHelper.getGridHeight(inputShapes);
@@ -80,7 +81,7 @@ public class TestInstantiation {
 
     @Test
     public void testInitPretrained() throws IOException {
-        ZooModel model = new ResNet50(); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = ResNet50.builder().numLabels(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
@@ -91,7 +92,7 @@ public class TestInstantiation {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
-        model = new VGG16(); //num labels doesn't matter since we're getting pretrained imagenet
+        model = VGG16.builder().numLabels(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
@@ -102,7 +103,7 @@ public class TestInstantiation {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
-        model = new GoogLeNet(); //num labels doesn't matter since we're getting pretrained imagenet
+        model = GoogLeNet.builder().numLabels(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
@@ -113,7 +114,7 @@ public class TestInstantiation {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
-        model = new Darknet19(); //num labels doesn't matter since we're getting pretrained imagenet
+        model = Darknet19.builder().numLabels(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
@@ -124,7 +125,7 @@ public class TestInstantiation {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
-        model = new Darknet19(); //num labels doesn't matter since we're getting pretrained imagenet
+        model = Darknet19.builder().numLabels(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         model.setInputShape(new int[][] {{3, 448, 448}});
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
@@ -136,7 +137,7 @@ public class TestInstantiation {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
-        model = new TinyYOLO(); //num labels doesn't matter since we're getting pretrained imagenet
+        model = TinyYOLO.builder().numLabels(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
@@ -147,7 +148,7 @@ public class TestInstantiation {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
-        model = new YOLO2(); //num labels doesn't matter since we're getting pretrained imagenet
+        model = YOLO2.builder().numLabels(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
@@ -161,8 +162,7 @@ public class TestInstantiation {
         //https://github.com/deeplearning4j/deeplearning4j/issues/4635
 
         int nClasses = 10;
-        int seed = 12345;
-        TinyYOLO model = new TinyYOLO(nClasses, seed);
+        TinyYOLO model = TinyYOLO.builder().numLabels(nClasses).build();
         ComputationGraph computationGraph = (ComputationGraph) model.initPretrained();
         TransferLearningHelper transferLearningHelper = new TransferLearningHelper(computationGraph, "conv2d_9");
     }

@@ -1,8 +1,11 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -16,6 +19,7 @@ import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.schedule.ScheduleType;
@@ -32,26 +36,18 @@ import org.nd4j.linalg.schedule.StepSchedule;
  * @author kedardoshi
  * @author Justin Long (crockpotveggies)
  */
-@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Deprecated
 public class GoogLeNet extends ZooModel {
 
-    private int[] inputShape = new int[] {3, 224, 224};
+    @Builder.Default private long seed = 1234;
+    @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
     private int numLabels;
-    private long seed;
-    private WorkspaceMode workspaceMode;
-    private ConvolutionLayer.AlgoMode cudnnAlgoMode;
-
-    public GoogLeNet(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.ENABLED);
-    }
-
-    public GoogLeNet(int numLabels, long seed, WorkspaceMode workspaceMode) {
-        this.numLabels = numLabels;
-        this.seed = seed;
-        this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
-                        : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
-    }
+    @Builder.Default private IUpdater updater = new Nesterovs(new StepSchedule(ScheduleType.ITERATION, 1e-2, 0.96, 320000), 0.9);
+    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
@@ -67,11 +63,6 @@ public class GoogLeNet extends ZooModel {
             return 3337733202L;
         else
             return 0L;
-    }
-
-    @Override
-    public ZooType zooType() {
-        return ZooType.GOOGLENET;
     }
 
     @Override
@@ -135,10 +126,17 @@ public class GoogLeNet extends ZooModel {
 
     public ComputationGraphConfiguration conf() {
         GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
-                        .activation(Activation.RELU).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Nesterovs(new StepSchedule(ScheduleType.ITERATION, 1e-2, 0.96, 320000), 0.9))
+                        .activation(Activation.RELU)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(updater)
                         .biasUpdater(new Nesterovs(new StepSchedule(ScheduleType.ITERATION, 2e-2, 0.96, 320000), 0.9))
-                        .weightInit(WeightInit.XAVIER).l2(2e-4).graphBuilder();
+                        .weightInit(WeightInit.XAVIER)
+                        .l2(2e-4)
+                        .cacheMode(CacheMode.DEVICE)
+                        .trainingWorkspaceMode(workspaceMode)
+                        .inferenceWorkspaceMode(workspaceMode)
+                        .cudnnAlgoMode(cudnnAlgoMode)
+                        .graphBuilder();
 
         graph.addInputs("input").addLayer("cnn1", conv7x7(inputShape[0], 64, 0.2), "input")
                         .addLayer("max1",

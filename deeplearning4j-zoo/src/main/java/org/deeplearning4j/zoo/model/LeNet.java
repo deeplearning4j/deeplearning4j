@@ -1,12 +1,11 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -20,6 +19,7 @@ import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.AdaDelta;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
@@ -33,26 +33,17 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * @author kepricon
  * @author Justin Long (crockpotveggies)
  */
-@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class LeNet extends ZooModel {
 
-    private int[] inputShape = new int[] {3, 224, 224};
+    @Builder.Default private long seed = 1234;
+    @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
     private int numLabels;
-    private long seed;
-    private WorkspaceMode workspaceMode;
-    private ConvolutionLayer.AlgoMode cudnnAlgoMode;
-
-    public LeNet(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.ENABLED);
-    }
-
-    public LeNet(int numLabels, long seed, WorkspaceMode workspaceMode) {
-        this.numLabels = numLabels;
-        this.seed = seed;
-        this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
-                        : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
-    }
+    @Builder.Default private IUpdater updater = new AdaDelta();
+    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default @Deprecated private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
@@ -71,21 +62,22 @@ public class LeNet extends ZooModel {
     }
 
     @Override
-    public ZooType zooType() {
-        return ZooType.LENET;
-    }
-
-    @Override
     public Class<? extends Model> modelType() {
         return MultiLayerNetwork.class;
     }
 
     public MultiLayerConfiguration conf() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().trainingWorkspaceMode(workspaceMode)
-                        .inferenceWorkspaceMode(workspaceMode).seed(seed)
-                        .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new AdaDelta())
-                        .convolutionMode(ConvolutionMode.Same).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
+                        .activation(Activation.IDENTITY)
+                        .weightInit(WeightInit.XAVIER)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(updater)
+                        .cacheMode(cacheMode)
+                        .trainingWorkspaceMode(workspaceMode)
+                        .inferenceWorkspaceMode(workspaceMode)
+                        .cudnnAlgoMode(cudnnAlgoMode)
+                        .convolutionMode(ConvolutionMode.Same)
+                        .list()
                         // block 1
                         .layer(0, new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {1, 1}).name("cnn1")
                                         .nIn(inputShape[0]).nOut(20).activation(Activation.RELU).build())
