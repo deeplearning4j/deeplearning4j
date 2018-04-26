@@ -8,10 +8,7 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
@@ -69,7 +66,6 @@ public class AlexNet extends ZooModel {
 
     public MultiLayerConfiguration conf() {
         double nonZeroBias = 1;
-        double dropOut = 0.5;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
                         .weightInit(WeightInit.DISTRIBUTION)
@@ -86,42 +82,81 @@ public class AlexNet extends ZooModel {
                         .l2(5 * 1e-4)
                         .miniBatch(false)
                         .list()
-                        .layer(0, new ConvolutionLayer.Builder(new int[] {11, 11}, new int[] {4, 4},
-                                                        new int[] {2, 2}).name("cnn1")
-                                                                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
-                                                                        .convolutionMode(ConvolutionMode.Truncate)
-                                                                        .nIn(inputShape[0]).nOut(64).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {3, 3},
-                                        new int[] {2, 2}, new int[] {1, 1}).convolutionMode(ConvolutionMode.Truncate)
-                                                        .name("maxpool1").build())
-                        .layer(2, new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {2, 2}, new int[] {2, 2}) // TODO: fix input and put stride back to 1,1
-                                        .convolutionMode(ConvolutionMode.Truncate).name("cnn2")
-                                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST).nOut(192)
-                                        .biasInit(nonZeroBias).build())
-                        .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {3, 3},
-                                        new int[] {2, 2}).name("maxpool2").build())
-                        .layer(4, new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {1, 1}, new int[] {1, 1})
-                                        .name("cnn3").cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST).nOut(384)
-                                        .build())
-                        .layer(5, new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {1, 1}, new int[] {1, 1})
-                                        .name("cnn4").cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST).nOut(256)
-                                        .biasInit(nonZeroBias).build())
-                        .layer(6, new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {1, 1}, new int[] {1, 1})
-                                        .name("cnn5").cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST).nOut(256)
-                                        .biasInit(nonZeroBias).build())
-                        .layer(7, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {3, 3},
-                                        new int[] {7, 7}) // TODO: fix input and put stride back to 2,2
-                                                        .name("maxpool3").build())
-                        .layer(8, new DenseLayer.Builder().name("ffn1").nIn(256).nOut(4096)
-                                        .dist(new GaussianDistribution(0, 0.005)).biasInit(nonZeroBias).dropOut(dropOut)
-                                        .build())
-                        .layer(9, new DenseLayer.Builder().name("ffn2").nOut(4096)
-                                        .dist(new GaussianDistribution(0, 0.005)).biasInit(nonZeroBias).dropOut(dropOut)
-                                        .build())
-                        .layer(10, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                        .name("output").nOut(numLabels).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false)
-                        .setInputType(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0])).build();
+                .layer(0, new ConvolutionLayer.Builder(new int[]{11,11}, new int[]{4, 4})
+                        .name("cnn1")
+                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
+                        .convolutionMode(ConvolutionMode.Truncate)
+                        .nIn(inputShape[0])
+                        .nOut(96)
+                        .build())
+                .layer(1, new LocalResponseNormalization.Builder().build())
+                .layer(2, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                        .kernelSize(3,3)
+                        .stride(2,2)
+                        .padding(1,1)
+                        .name("maxpool1")
+                        .build())
+                .layer(3, new ConvolutionLayer.Builder(new int[]{5,5}, new int[]{1,1}, new int[]{2,2})
+                        .name("cnn2")
+                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
+                        .convolutionMode(ConvolutionMode.Truncate)
+                        .nOut(256)
+                        .biasInit(nonZeroBias)
+                        .build())
+                .layer(4, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2, 2})
+                        .convolutionMode(ConvolutionMode.Truncate)
+                        .name("maxpool2")
+                        .build())
+                .layer(5, new LocalResponseNormalization.Builder().build())
+                .layer(6, new ConvolutionLayer.Builder()
+                        .kernelSize(3,3)
+                        .stride(1,1)
+                        .convolutionMode(ConvolutionMode.Same)
+                        .name("cnn3")
+                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
+                        .nOut(384)
+                        .build())
+                .layer(7, new ConvolutionLayer.Builder(new int[]{3,3}, new int[]{1,1})
+                        .name("cnn4")
+                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
+                        .nOut(384)
+                        .biasInit(nonZeroBias)
+                        .build())
+                .layer(8, new ConvolutionLayer.Builder(new int[]{3,3}, new int[]{1,1})
+                        .name("cnn5")
+                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
+                        .nOut(256)
+                        .biasInit(nonZeroBias)
+                        .build())
+                .layer(9, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3,3}, new int[]{2,2})
+                        .name("maxpool3")
+                        .convolutionMode(ConvolutionMode.Truncate)
+                        .build())
+                .layer(10, new DenseLayer.Builder()
+                        .name("ffn1")
+                        .nIn(256*6*6)
+                        .nOut(4096)
+                        .dist(new GaussianDistribution(0, 0.005))
+                        .biasInit(nonZeroBias)
+                        .build())
+                .layer(11, new DenseLayer.Builder()
+                        .name("ffn2")
+                        .nOut(4096)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0, 0.005))
+                        .biasInit(nonZeroBias)
+                        .dropOut(0.5)
+                        .build())
+                .layer(12, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .name("output")
+                        .nOut(numLabels)
+                        .activation(Activation.SOFTMAX)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0, 0.005))
+                        .biasInit(0.1)
+                        .build())
+                .backprop(true)
+                .pretrain(false)
+                .setInputType(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]))
+                .build();
 
         return conf;
     }
