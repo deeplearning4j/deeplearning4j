@@ -83,7 +83,8 @@ public class AlexNet extends ZooModel {
                         .trainingWorkspaceMode(workspaceMode)
                         .inferenceWorkspaceMode(workspaceMode)
                         .cacheMode(cacheMode)
-                        .dropOut(0.5).l2(5 * 1e-4).miniBatch(false)
+                        .l2(5 * 1e-4)
+                        .miniBatch(false)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder(new int[] {11, 11}, new int[] {4, 4},
                                                         new int[] {2, 2}).name("cnn1")
