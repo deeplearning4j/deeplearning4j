@@ -22,6 +22,7 @@ import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
+import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
@@ -404,17 +405,17 @@ public class KerasModelEndToEndTest {
                     String layerName = model.getLayerNames().get(i);
                     if (activationsKeras.containsKey(layerName)) {
                         INDArray activationsDl4j = model.feedForwardToLayer(i, input, false).get(i + 1);
-                    /* TODO: investigate why this fails for some layers:
-                     * compareINDArrays(layerName, activationsKeras.get(layerName), activationsDl4j, EPS);
-                     */
+                        /* TODO: investigate why this fails for some layers:
+                         * compareINDArrays(layerName, activationsKeras.get(layerName), activationsDl4j, EPS);
+                         */
                     }
                 }
 
                 INDArray predictionsKeras = getPredictions(outputsArchive, tfOrdering)[0];
                 INDArray predictionsDl4j = model.output(input, false);
-            /* TODO: investigate why this fails when max difference is ~1E-7!
-             * compareINDArrays("predictions", predictionsKeras, predictionsDl4j, EPS);
-             */
+                /* TODO: investigate why this fails when max difference is ~1E-7!
+                 * compareINDArrays("predictions", predictionsKeras, predictionsDl4j, EPS);
+                 */
                 INDArray outputs = getOutputs(outputsArchive, true)[0];
                 compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, 10, EPS);
             }

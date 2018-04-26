@@ -71,7 +71,7 @@ public class SameDiffConv extends BaseSameDiffLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (nIn <= 0 || override) {
             InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-            this.nIn = c.getDepth();
+            this.nIn = c.getChannels();
         }
     }
 

@@ -102,11 +102,11 @@ public class KerasReshape extends KerasLayer {
             switch (this.getDimOrder()) {
                 case NONE:
                 case THEANO:
-                    int[] inputShapeTh = new int[]{it.getHeight(), it.getWidth(), it.getDepth()};
+                    int[] inputShapeTh = new int[]{it.getHeight(), it.getWidth(), it.getChannels()};
                     preprocessor = new ReshapePreprocessor(inputShapeTh, this.targetShape);
                     break;
                 case TENSORFLOW:
-                    int[] inputShapeTf = new int[]{it.getWidth(), it.getDepth(), it.getHeight()};
+                    int[] inputShapeTf = new int[]{it.getWidth(), it.getChannels(), it.getHeight()};
                     preprocessor = new ReshapePreprocessor(inputShapeTf, this.targetShape);
 
             }

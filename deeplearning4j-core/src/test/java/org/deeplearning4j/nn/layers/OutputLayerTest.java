@@ -522,7 +522,7 @@ public class OutputLayerTest extends BaseDL4JTest {
 
     @Test
     public void testCnnOutputLayerSoftmax(){
-        //Check that softmax is applied depth-wise
+        //Check that softmax is applied channels-wise
 
         MultiLayerConfiguration conf =
                 new NeuralNetConfiguration.Builder().seed(12345L)

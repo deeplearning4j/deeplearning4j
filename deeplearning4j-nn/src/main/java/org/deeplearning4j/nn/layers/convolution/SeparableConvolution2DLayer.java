@@ -28,13 +28,13 @@ import java.util.Arrays;
  * Separable convolutions split a regular convolution operation into two
  * simpler operations, which are usually computationally more efficient.
  *
- * The first step in a separable convolution is a depth-wise convolution, which
- * operates on each of the input maps separately. A depth multiplier is used to
+ * The first step in a separable convolution is a channels-wise convolution, which
+ * operates on each of the input maps separately. A channels multiplier is used to
  * specify the number of outputs per input map in this step. This convolution
  * is carried out with the specified kernel sizes, stride and padding values.
  *
  * The second step is a point-wise operation, in which the intermediary outputs
- * of the depth-wise convolution are mapped to the desired number of feature
+ * of the channels-wise convolution are mapped to the desired number of feature
  * maps, by using a 1x1 convolution.
  *
  * The result of chaining these two operations will result in a tensor of the
@@ -65,7 +65,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
-                    + ". Expected rank 4 array with shape [minibatchSize, depth, inputHeight, inputWidth]. "
+                    + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
                     + layerId());
         }
         INDArray bias;
@@ -176,9 +176,9 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Cannot do forward pass in SeparableConvolution2D layer (layer name = " + layerName
-                    + ", layer index = " + index + "): input array depth does not match CNN layer configuration"
-                    + " (data input depth = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
-                    + Arrays.toString(input.shape()) + "; expected" + " input depth = " + inDepth + ") "
+                    + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
+                    + " (data input channels = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
+                    + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
                     + layerId());
         }
         int kH = depthWiseWeights.size(2);

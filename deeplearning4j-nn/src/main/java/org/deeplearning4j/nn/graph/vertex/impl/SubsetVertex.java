@@ -38,7 +38,7 @@ import java.util.Arrays;
  * Note that this subset is specifying by means of an interval of the original activations.
  * For example, to get the first 10 activations of a layer (or, first 10 features out of a CNN layer) use
  * new SubsetVertex(0,9).<br>
- * In the case of convolutional (4d) activations, this is done along depth.
+ * In the case of convolutional (4d) activations, this is done along channels.
  * @author Alex Black
  */
 public class SubsetVertex extends BaseGraphVertex {

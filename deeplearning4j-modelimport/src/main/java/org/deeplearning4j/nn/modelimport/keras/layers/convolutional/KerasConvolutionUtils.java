@@ -47,8 +47,8 @@ public class KerasConvolutionUtils {
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         int[] strides;
-        if (innerConfig.containsKey(conf.getLAYER_FIELD_CONVOLUTION_STRIDES()) && dimension == 2) {
-            /* 2D Convolutional layers. */
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_CONVOLUTION_STRIDES()) && dimension >= 2) {
+            /* 2D/3D Convolutional layers. */
             @SuppressWarnings("unchecked")
             List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_CONVOLUTION_STRIDES());
             strides = ArrayUtil.toArray(stridesList);
@@ -62,8 +62,8 @@ public class KerasConvolutionUtils {
                 int subsampleLength = (int) innerConfig.get(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH());
                 strides = new int[]{subsampleLength};
             }
-        } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_STRIDES()) && dimension == 2) {
-            /* 2D Pooling layers. */
+        } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_STRIDES()) && dimension >= 2) {
+            /* 2D/3D Pooling layers. */
             @SuppressWarnings("unchecked")
             List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_STRIDES());
             strides = ArrayUtil.toArray(stridesList);
@@ -95,7 +95,7 @@ public class KerasConvolutionUtils {
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         int[] atrousRate;
-        if (innerConfig.containsKey(conf.getLAYER_FIELD_DILATION_RATE()) && dimension == 2) {
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_DILATION_RATE()) && dimension >= 2) {
             @SuppressWarnings("unchecked")
             List<Integer> atrousRateList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
             atrousRate = ArrayUtil.toArray(atrousRateList);
@@ -171,12 +171,21 @@ public class KerasConvolutionUtils {
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_ROW()));
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_COL()));
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
+            } else if (innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_1()) && dimension == 3
+                    && innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_2())
+                    && innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_3())) {
+            /* 3D Convolutional layers. */
+                List<Integer> kernelSizeList = new ArrayList<>();
+                kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_1()));
+                kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_2()));
+                kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_3()));
+                kernelSize = ArrayUtil.toArray(kernelSizeList);
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_FILTER_LENGTH()) && dimension == 1) {
             /* 1D Convolutional layers. */
                 int filterLength = (int) innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH());
                 kernelSize = new int[]{filterLength};
-            } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE()) && dimension == 2) {
-            /* 2D Pooling layers. */
+            } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE()) && dimension >= 2) {
+            /* 2D/3D Pooling layers. */
                 @SuppressWarnings("unchecked")
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE());
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
@@ -193,8 +202,8 @@ public class KerasConvolutionUtils {
                         + conf.getLAYER_FIELD_POOL_SIZE() + " field found");
             }
         } else {
-            /* 2D Convolutional layers. */
-            if (innerConfig.containsKey(conf.getLAYER_FIELD_KERNEL_SIZE()) && dimension == 2) {
+            /* 2D/3D Convolutional layers. */
+            if (innerConfig.containsKey(conf.getLAYER_FIELD_KERNEL_SIZE()) && dimension >= 2) {
                 @SuppressWarnings("unchecked")
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_KERNEL_SIZE());
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
@@ -203,7 +212,7 @@ public class KerasConvolutionUtils {
                 @SuppressWarnings("unchecked")
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH());
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
-            } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE()) && dimension == 2) {
+            } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE()) && dimension >= 2) {
             /* 2D Pooling layers. */
                 @SuppressWarnings("unchecked")
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE());

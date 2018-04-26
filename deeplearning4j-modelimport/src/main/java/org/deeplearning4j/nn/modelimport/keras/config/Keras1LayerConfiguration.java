@@ -32,6 +32,8 @@ public class Keras1LayerConfiguration extends KerasLayerConfiguration {
     /* Basic layer names */
     private final String LAYER_CLASS_NAME_CONVOLUTION_1D = "Convolution1D";
     private final String LAYER_CLASS_NAME_CONVOLUTION_2D = "Convolution2D";
+    private final String LAYER_CLASS_NAME_CONVOLUTION_3D = "Convolution3D";
+
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = "SeparableConvolution2D";
     private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = "Deconvolution2D";
 

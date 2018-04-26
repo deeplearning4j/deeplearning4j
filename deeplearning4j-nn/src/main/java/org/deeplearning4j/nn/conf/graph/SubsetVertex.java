@@ -35,7 +35,7 @@ import java.util.Arrays;
  * Note that this subset is specifying by means of an interval of the original activations.
  * For example, to get the first 10 activations of a layer (or, first 10 features out of a CNN layer) use
  * new SubsetVertex(0,9).<br>
- * In the case of convolutional (4d) activations, this is done along depth.
+ * In the case of convolutional (4d) activations, this is done along channels.
  *
  * @author Alex Black
  */
@@ -107,10 +107,10 @@ public class SubsetVertex extends GraphVertex {
                 return InputType.recurrent(to - from + 1);
             case CNN:
                 InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) vertexInputs[0];
-                int depth = conv.getDepth();
+                int depth = conv.getChannels();
                 if (to >= depth) {
-                    throw new InvalidInputTypeException("Invalid range: Cannot select depth subset [" + from + "," + to
-                                    + "] inclusive from CNN activations with " + " [depth,width,height] = [" + depth
+                    throw new InvalidInputTypeException("Invalid range: Cannot select channels subset [" + from + "," + to
+                                    + "] inclusive from CNN activations with " + " [channels,width,height] = [" + depth
                                     + "," + conv.getWidth() + "," + conv.getHeight() + "]");
                 }
                 return InputType.convolutional(conv.getHeight(), conv.getWidth(), from - to + 1);

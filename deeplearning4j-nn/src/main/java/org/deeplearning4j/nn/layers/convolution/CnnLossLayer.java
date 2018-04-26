@@ -44,8 +44,8 @@ import java.util.List;
  * NOTE: CnnLossLayer does not have any parameters. Consequently, the output activations size is equal to the input size.<br>
  * Input and output activations are same as other CNN layers: 4 dimensions with shape [miniBatchSize,channels,height,width]<br>
  * CnnLossLayer has support for a built-in activation function (tanh, softmax etc) - if this is not required, set
- * activation function to Activation.IDENTITY. For activations such as softmax, note that this is applied depth-wise:
- * that is, softmax is applied along dimension 1 (depth) for each minibatch, and x/y location separately.<br>
+ * activation function to Activation.IDENTITY. For activations such as softmax, note that this is applied channels-wise:
+ * that is, softmax is applied along dimension 1 (channels) for each minibatch, and x/y location separately.<br>
  * <br>
  * Note that 3 types of masking are supported: (n=minibatchSize, c=channels, h=height, w=width)<br>
  * - Per example masking: Where an example is present or not (and all outputs are masked by it). Mask shape [n,1]<br>
@@ -70,7 +70,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         if (input.rank() != 4)
             throw new UnsupportedOperationException(
                     "Input is not rank 4. Got input with rank " + input.rank() + " " + layerId() + " with shape "
-                            + Arrays.toString(input.shape()) + " - expected shape [minibatch,depth,height,width]");
+                            + Arrays.toString(input.shape()) + " - expected shape [minibatch,channels,height,width]");
         if (labels == null)
             throw new IllegalStateException("Labels are not set (null)");
 
