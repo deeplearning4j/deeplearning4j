@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.longtransform;
 
+import lombok.Data;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.LongMetaData;
@@ -41,6 +42,7 @@ import java.util.List;
  * @author Alex Black
  * @see LongMathOpTransform To do an in-place mathematical operation of a long column and a long scalar value
  */
+@Data
 public class LongColumnsMathOpTransform extends BaseColumnsMathOpTransform {
 
     public LongColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName,

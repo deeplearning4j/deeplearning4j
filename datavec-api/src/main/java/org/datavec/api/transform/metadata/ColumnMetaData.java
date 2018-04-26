@@ -17,9 +17,9 @@
 package org.datavec.api.transform.metadata;
 
 import org.datavec.api.transform.ColumnType;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -31,17 +31,9 @@ import java.io.Serializable;
  *
  * @author Alex Black
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = CategoricalMetaData.class, name = "Categorical"),
-                @JsonSubTypes.Type(value = DoubleMetaData.class, name = "Double"),
-                @JsonSubTypes.Type(value = FloatMetaData.class, name = "Float"),
-                @JsonSubTypes.Type(value = IntegerMetaData.class, name = "Integer"),
-                @JsonSubTypes.Type(value = LongMetaData.class, name = "Long"),
-                @JsonSubTypes.Type(value = StringMetaData.class, name = "String"),
-                @JsonSubTypes.Type(value = TimeMetaData.class, name = "Time"),
-                @JsonSubTypes.Type(value = NDArrayMetaData.class, name = "NDArray")
-})
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyMappingHelper.ColumnMetaDataHelper.class)
 public interface ColumnMetaData extends Serializable, Cloneable {
 
     /**

@@ -17,9 +17,9 @@
 package org.datavec.api.transform.sequence.window;
 
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -36,10 +36,8 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = TimeWindowFunction.class, name = "TimeWindowFunction"),
-                @JsonSubTypes.Type(value = OverlappingTimeWindowFunction.class,
-                                name = "OverlappingTimeWindowFunction")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyMappingHelper.WindowFunctionHelper.class)
 public interface WindowFunction extends Serializable {
 
     /**

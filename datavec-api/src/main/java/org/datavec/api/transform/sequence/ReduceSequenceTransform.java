@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -39,6 +40,7 @@ import java.util.List;
  */
 @JsonIgnoreProperties({"inputSchema"})
 @EqualsAndHashCode(exclude = {"inputSchema"})
+@Data
 public class ReduceSequenceTransform implements Transform {
 
     private IAssociativeReducer reducer;

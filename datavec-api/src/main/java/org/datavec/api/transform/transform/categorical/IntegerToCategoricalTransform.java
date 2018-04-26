@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.categorical;
 
+import lombok.Data;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
@@ -32,6 +33,7 @@ import java.util.*;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "columnNumber"})
+@Data
 public class IntegerToCategoricalTransform extends BaseColumnTransform {
 
     private final Map<Integer, String> map;

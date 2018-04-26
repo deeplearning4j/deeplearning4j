@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence.trim;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.schema.Schema;
@@ -35,6 +36,7 @@ import java.util.List;
  */
 @JsonIgnoreProperties({"schema"})
 @EqualsAndHashCode(exclude = {"schema"})
+@Data
 public class SequenceTrimTransform implements Transform {
 
     private int numStepsToTrim;

@@ -1,5 +1,6 @@
 package org.datavec.image.transform;
 
+import lombok.Data;
 import org.datavec.image.data.ImageWritable;
 
 import java.util.Random;
@@ -11,6 +12,7 @@ import static org.bytedeco.javacpp.opencv_core.Mat;
  *
  * @author saudet
  */
+@Data
 public class MultiImageTransform extends BaseImageTransform<Mat> {
     private PipelineImageTransform transform;
 

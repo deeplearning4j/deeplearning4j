@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.Frame;
 import org.datavec.image.data.ImageWritable;
@@ -28,6 +29,7 @@ import java.util.Random;
  *
  * @author saudet
  */
+@Data
 public class ShowImageTransform extends BaseImageTransform {
 
     CanvasFrame canvas;

@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import lombok.Data;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.writable.Writable;
 
@@ -24,6 +25,7 @@ import org.datavec.api.writable.Writable;
  *
  * @author Alex Black
  */
+@Data
 public class NaNColumnCondition extends BaseColumnCondition {
 
     /**

@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -39,6 +40,7 @@ import static org.bytedeco.javacpp.opencv_core.*;
 @Accessors(fluent = true)
 @JsonIgnoreProperties({"borderValue"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Data
 public class BoxImageTransform extends BaseImageTransform<Mat> {
 
     private int width;

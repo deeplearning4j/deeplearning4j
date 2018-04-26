@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import lombok.Data;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
@@ -34,6 +35,7 @@ import java.util.List;
  * @author Alex Black
  * @see DoubleColumnsMathOpTransform to do a mathematical operation involving multiple columns (instead of a scalar)
  */
+@Data
 public class DoubleMathOpTransform extends BaseColumnTransform {
 
     private final MathOp mathOp;

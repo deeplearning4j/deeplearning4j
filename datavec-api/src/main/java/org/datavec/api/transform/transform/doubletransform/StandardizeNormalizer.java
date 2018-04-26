@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import lombok.Data;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -26,6 +27,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Alex Black
  */
+@Data
 public class StandardizeNormalizer extends BaseDoubleTransform {
 
     protected final double mean;

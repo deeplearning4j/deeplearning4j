@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.time;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.Transform;
@@ -34,6 +35,7 @@ import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -55,6 +57,7 @@ import java.util.List;
  */
 @JsonIgnoreProperties({"inputSchema", "insertAfterIdx", "deriveFromIdx"})
 @EqualsAndHashCode(exclude = {"inputSchema", "insertAfterIdx", "deriveFromIdx"})
+@Data
 public class DeriveColumnsFromTimeTransform implements Transform {
 
     private final String columnName;
@@ -350,6 +353,8 @@ public class DeriveColumnsFromTimeTransform implements Transform {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @EqualsAndHashCode
+    @Data
+    @JsonIgnoreProperties({"dateTimeFormatter"})
     public static class DerivedColumn implements Serializable {
         private final String columnName;
         private final ColumnType columnType;

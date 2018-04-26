@@ -1,5 +1,6 @@
 package org.datavec.api.transform.transform.doubletransform;
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
@@ -13,6 +14,7 @@ import org.datavec.api.writable.WritableType;
  * @author Justin Long (crockpotveggies)
  */
 @NoArgsConstructor
+@Data
 public class ConvertToDouble extends BaseDoubleTransform {
 
     /**

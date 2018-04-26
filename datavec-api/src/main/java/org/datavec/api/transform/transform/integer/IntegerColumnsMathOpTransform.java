@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.integer;
 
+import lombok.Data;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
@@ -44,6 +45,7 @@ import java.util.List;
  * @author Alex Black
  * @see IntegerMathOpTransform To do an in-place mathematical operation of an integer column and an integer scalar value
  */
+@Data
 public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
 
     /**

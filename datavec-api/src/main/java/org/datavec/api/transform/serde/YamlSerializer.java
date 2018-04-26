@@ -37,22 +37,11 @@ public class YamlSerializer extends BaseSerializer {
     private ObjectMapper om;
 
     public YamlSerializer() {
-        this.om = getMapper();
+        this.om = JsonMappers.getMapperYaml();
     }
 
     @Override
     public ObjectMapper getObjectMapper() {
         return om;
-    }
-
-    @Override
-    protected ObjectMapper reinitializeMapperWithSubtypes() {
-        om = TransformProcess.reinitializeMapperWithSubtypes(om, Arrays.<Class<?>>asList(Transform.class,
-                        Condition.class, Filter.class, IAssociativeReducer.class, SequenceComparator.class));
-        return om;
-    }
-
-    private ObjectMapper getMapper() {
-        return getObjectMapper(new YAMLFactory());
     }
 }

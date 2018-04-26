@@ -15,7 +15,9 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import org.datavec.image.data.ImageWritable;
+import org.datavec.image.serde.LegacyImageMappingHelper;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -27,21 +29,9 @@ import java.util.Random;
  *
  * @author saudet
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = ColorConversionTransform.class, name = "ColorConversionTransform"),
-                @JsonSubTypes.Type(value = BoxImageTransform.class, name = "BoxImageTransform"),
-                @JsonSubTypes.Type(value = CropImageTransform.class, name = "CropImageTransform"),
-                @JsonSubTypes.Type(value = EqualizeHistTransform.class, name = "EqualizeHistTransform"),
-                @JsonSubTypes.Type(value = FilterImageTransform.class, name = "FilterImageTransform"),
-                @JsonSubTypes.Type(value = FlipImageTransform.class, name = "FlipImageTransform"),
-                @JsonSubTypes.Type(value = LargestBlobCropTransform.class, name = "LargestBlobCropTransform"),
-                @JsonSubTypes.Type(value = RandomCropTransform.class, name = "RandomCropTransform"),
-                @JsonSubTypes.Type(value = ResizeImageTransform.class, name = "ResizeImageTransform"),
-                @JsonSubTypes.Type(value = RotateImageTransform.class, name = "RotateImageTransform"),
-                @JsonSubTypes.Type(value = ScaleImageTransform.class, name = "ScaleImageTransform"),
-                @JsonSubTypes.Type(value = WarpImageTransform.class, name = "WarpImageTransform")})
-
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyImageMappingHelper.ImageTransformHelper.class)
 public interface ImageTransform {
 
     /**

@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence.comparator;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
@@ -32,6 +33,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  */
 @JsonIgnoreProperties({"columnType", "schema", "columnIdx"})
 @EqualsAndHashCode(callSuper = true, exclude = {"columnType"})
+@Data
 public class NumericalColumnComparator extends BaseColumnComparator {
 
     private ColumnType columnType;

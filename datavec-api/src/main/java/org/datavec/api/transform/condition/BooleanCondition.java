@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
@@ -33,6 +34,7 @@ import java.util.List;
  * @author Alex Black
  */
 @EqualsAndHashCode
+@Data
 public class BooleanCondition implements Condition {
 
     /**

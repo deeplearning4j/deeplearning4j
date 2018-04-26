@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence.comparator;
 
+import lombok.Data;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -25,6 +26,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Alex
  */
+@Data
 public class StringComparator extends BaseColumnComparator {
 
     /**

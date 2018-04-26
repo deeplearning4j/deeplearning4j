@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import lombok.Data;
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -36,6 +37,7 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "outputOrder"})
+@Data
 public class ReorderColumnsTransform implements Transform, ColumnOp {
 
     private final List<String> newOrder;

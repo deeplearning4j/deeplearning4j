@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.sequence;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.condition.ConditionOp;
@@ -36,6 +37,7 @@ import java.util.Set;
 @JsonIgnoreProperties({"inputSchema"})
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Data
 public class SequenceLengthCondition implements Condition {
 
     private ConditionOp op;

@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.transform.string;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -29,6 +31,8 @@ import java.util.Set;
  *
  * @author Alex Black
  */
+@Data
+@EqualsAndHashCode
 public class MapAllStringsExceptListTransform extends BaseStringTransform {
 
     private final Set<String> exceptions;

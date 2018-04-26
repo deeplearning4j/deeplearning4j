@@ -16,7 +16,7 @@
 
 package org.datavec.api.writable;
 
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.DataInput;
@@ -60,17 +60,8 @@ import java.io.Serializable;
  *     }
  * </pre></blockquote></p>
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = ArrayWritable.class, name = "ArrayWritable"),
-        @JsonSubTypes.Type(value = BooleanWritable.class, name = "BooleanWritable"),
-        @JsonSubTypes.Type(value = ByteWritable.class, name = "ByteWritable"),
-        @JsonSubTypes.Type(value = DoubleWritable.class, name = "DoubleWritable"),
-        @JsonSubTypes.Type(value = FloatWritable.class, name = "FloatWritable"),
-        @JsonSubTypes.Type(value = IntWritable.class, name = "IntWritable"),
-        @JsonSubTypes.Type(value = LongWritable.class, name = "LongWritable"),
-        @JsonSubTypes.Type(value = NullWritable.class, name = "NullWritable"),
-        @JsonSubTypes.Type(value = Text.class, name = "Text"),
-        @JsonSubTypes.Type(value = BytesWritable.class, name = "BytesWritable")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyMappingHelper.WritableHelper.class)
 public interface Writable extends Serializable {
     /**
      * Serialize the fields of this object to <code>out</code>.

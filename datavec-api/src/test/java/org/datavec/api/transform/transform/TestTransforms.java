@@ -32,6 +32,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
+import org.datavec.api.transform.serde.JsonMappers;
 import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
@@ -287,9 +288,8 @@ public class TestTransforms {
         outputColumnValues.add(new Text(NEW_COLUMN_VALUE));
         Assert.assertEquals(outputColumnValues, transformed);
 
-        ObjectMapper om = TestUtil.initMapper(new JsonFactory());
-        String s = om.writeValueAsString(transform);
-        Transform transform2 = om.readValue(s, ConcatenateStringColumns.class);
+        String s = JsonMappers.getMapper().writeValueAsString(transform);
+        Transform transform2 = JsonMappers.getMapper().readValue(s, ConcatenateStringColumns.class);
         Assert.assertEquals(transform, transform2);
     }
 
@@ -330,9 +330,8 @@ public class TestTransforms {
         Assert.assertEquals(transformed.get(0).toString(), TEXT_UPPER_CASE);
         Assert.assertEquals(transformed, output);
 
-        ObjectMapper om = TestUtil.initMapper(new JsonFactory());
-        String s = om.writeValueAsString(transform);
-        Transform transform2 = om.readValue(s, ChangeCaseStringTransform.class);
+        String s = JsonMappers.getMapper().writeValueAsString(transform);
+        Transform transform2 = JsonMappers.getMapper().readValue(s, ChangeCaseStringTransform.class);
         Assert.assertEquals(transform, transform2);
     }
 
@@ -1441,9 +1440,8 @@ public class TestTransforms {
 
         assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{2,3,0}))), out);
 
-        ObjectMapper om = TestUtil.initMapper(new JsonFactory());
-        String json = om.writeValueAsString(t);
-        Transform transform2 = om.readValue(json, StringListToCountsNDArrayTransform.class);
+        String json = JsonMappers.getMapper().writeValueAsString(t);
+        Transform transform2 = JsonMappers.getMapper().readValue(json, StringListToCountsNDArrayTransform.class);
         Assert.assertEquals(t, transform2);
     }
 
@@ -1463,9 +1461,8 @@ public class TestTransforms {
 
         assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{1,2,2,2}))), out);
 
-        ObjectMapper om = TestUtil.initMapper(new JsonFactory());
-        String json = om.writeValueAsString(t);
-        Transform transform2 = om.readValue(json, StringListToIndicesNDArrayTransform.class);
+        String json = JsonMappers.getMapper().writeValueAsString(t);
+        Transform transform2 = JsonMappers.getMapper().readValue(json, StringListToIndicesNDArrayTransform.class);
         Assert.assertEquals(t, transform2);
     }
 

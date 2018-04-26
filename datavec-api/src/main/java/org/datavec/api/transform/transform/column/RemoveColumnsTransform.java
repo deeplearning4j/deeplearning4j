@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import lombok.Data;
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
@@ -35,6 +36,7 @@ import java.util.*;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "columnsToRemoveIdx", "indicesToRemove"})
+@Data
 public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
 
     private int[] columnsToRemoveIdx;

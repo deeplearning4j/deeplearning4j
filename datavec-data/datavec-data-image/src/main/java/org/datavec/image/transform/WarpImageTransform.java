@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -41,6 +42,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 @Accessors(fluent = true)
 @JsonIgnoreProperties({"interMode", "borderMode", "borderValue", "converter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Data
 public class WarpImageTransform extends BaseImageTransform<Mat> {
 
     private float[] deltas;

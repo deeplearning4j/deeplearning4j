@@ -16,34 +16,9 @@
 
 package org.datavec.api.transform;
 
-import org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform;
-import org.datavec.api.transform.ndarray.NDArrayDistanceTransform;
-import org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform;
-import org.datavec.api.transform.ndarray.NDArrayScalarOpTransform;
-import org.datavec.api.transform.sequence.ReduceSequenceTransform;
-import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
-import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
-import org.datavec.api.transform.transform.categorical.*;
-import org.datavec.api.transform.transform.column.*;
-import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
-import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
-import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransformWithDefault;
-import org.datavec.api.transform.transform.doubletransform.*;
-import org.datavec.api.transform.transform.integer.*;
-import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
-import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
-import org.datavec.api.transform.transform.nlp.TextToCharacterIndexTransform;
-import org.datavec.api.transform.transform.parse.ParseDoubleTransform;
-import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
-import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
-import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
-import org.datavec.api.transform.transform.string.*;
-import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
-import org.datavec.api.transform.transform.time.StringToTimeTransform;
-import org.datavec.api.transform.transform.time.TimeMathOpTransform;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -52,73 +27,8 @@ import java.util.List;
 /**A Transform converts an example to another example, or a sequence to another sequence
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {
-                @JsonSubTypes.Type(value = CategoricalToIntegerTransform.class, name = "CategoricalToIntegerTransform"),
-                @JsonSubTypes.Type(value = CategoricalToOneHotTransform.class, name = "CategoricalToOneHotTransform"),
-                @JsonSubTypes.Type(value = IntegerToCategoricalTransform.class, name = "IntegerToCategoricalTransform"),
-                @JsonSubTypes.Type(value = StringToCategoricalTransform.class, name = "StringToCategoricalTransform"),
-                @JsonSubTypes.Type(value = DuplicateColumnsTransform.class, name = "DuplicateColumnsTransform"),
-                @JsonSubTypes.Type(value = RemoveColumnsTransform.class, name = "RemoveColumnsTransform"),
-                @JsonSubTypes.Type(value = RenameColumnsTransform.class, name = "RenameColumnsTransform"),
-                @JsonSubTypes.Type(value = ReorderColumnsTransform.class, name = "ReorderColumnsTransform"),
-                @JsonSubTypes.Type(value = ConditionalCopyValueTransform.class, name = "ConditionalCopyValueTransform"),
-                @JsonSubTypes.Type(value = ConditionalReplaceValueTransform.class,
-                                name = "ConditionalReplaceValueTransform"),
-                @JsonSubTypes.Type(value = ConditionalReplaceValueTransformWithDefault.class,
-                                name = "ConditionalReplaceValueTransformWithDefault"),
-                @JsonSubTypes.Type(value = DoubleColumnsMathOpTransform.class, name = "DoubleColumnsMathOpTransform"),
-                @JsonSubTypes.Type(value = DoubleMathOpTransform.class, name = "DoubleMathOpTransform"),
-                @JsonSubTypes.Type(value = Log2Normalizer.class, name = "Log2Normalizer"),
-                @JsonSubTypes.Type(value = MinMaxNormalizer.class, name = "MinMaxNormalizer"),
-                @JsonSubTypes.Type(value = StandardizeNormalizer.class, name = "StandardizeNormalizer"),
-                @JsonSubTypes.Type(value = SubtractMeanNormalizer.class, name = "SubtractMeanNormalizer"),
-                @JsonSubTypes.Type(value = IntegerColumnsMathOpTransform.class, name = "IntegerColumnsMathOpTransform"),
-                @JsonSubTypes.Type(value = IntegerMathOpTransform.class, name = "IntegerMathOpTransform"),
-                @JsonSubTypes.Type(value = ReplaceEmptyIntegerWithValueTransform.class,
-                                name = "ReplaceEmptyIntegerWithValueTransform"),
-                @JsonSubTypes.Type(value = ReplaceInvalidWithIntegerTransform.class,
-                                name = "ReplaceInvalidWithIntegerTransform"),
-                @JsonSubTypes.Type(value = LongColumnsMathOpTransform.class, name = "LongColumnsMathOpTransform"),
-                @JsonSubTypes.Type(value = LongMathOpTransform.class, name = "LongMathOpTransform"),
-                @JsonSubTypes.Type(value = MapAllStringsExceptListTransform.class,
-                                name = "MapAllStringsExceptListTransform"),
-                @JsonSubTypes.Type(value = RemoveWhiteSpaceTransform.class, name = "RemoveWhiteSpaceTransform"),
-                @JsonSubTypes.Type(value = ReplaceEmptyStringTransform.class, name = "ReplaceEmptyStringTransform"),
-                @JsonSubTypes.Type(value = ReplaceStringTransform.class, name = "ReplaceStringTransform"),
-                @JsonSubTypes.Type(value = StringListToCategoricalSetTransform.class,
-                                name = "StringListToCategoricalSetTransform"),
-                @JsonSubTypes.Type(value = StringMapTransform.class, name = "StringMapTransform"),
-                @JsonSubTypes.Type(value = DeriveColumnsFromTimeTransform.class,
-                                name = "DeriveColumnsFromTimeTransform"),
-                @JsonSubTypes.Type(value = StringToTimeTransform.class, name = "StringToTimeTransform"),
-                @JsonSubTypes.Type(value = TimeMathOpTransform.class, name = "TimeMathOpTransform"),
-                @JsonSubTypes.Type(value = ReduceSequenceByWindowTransform.class,
-                                name = "ReduceSequenceByWindowTransform"),
-                @JsonSubTypes.Type(value = DoubleMathFunctionTransform.class, name = "DoubleMathFunctionTransform"),
-                @JsonSubTypes.Type(value = AddConstantColumnTransform.class, name = "AddConstantColumnTransform"),
-                @JsonSubTypes.Type(value = RemoveAllColumnsExceptForTransform.class,
-                                name = "RemoveAllColumnsExceptForTransform"),
-                @JsonSubTypes.Type(value = ParseDoubleTransform.class, name = "ParseDoubleTransform"),
-                @JsonSubTypes.Type(value = ConvertToString.class, name = "ConvertToStringTransform"),
-                @JsonSubTypes.Type(value = AppendStringColumnTransform.class, name = "AppendStringColumnTransform"),
-                @JsonSubTypes.Type(value = SequenceDifferenceTransform.class, name = "SequenceDifferenceTransform"),
-                @JsonSubTypes.Type(value = ReduceSequenceTransform.class, name = "ReduceSequenceTransform"),
-                @JsonSubTypes.Type(value = SequenceMovingWindowReduceTransform.class, name = "SequenceMovingWindowReduceTransform"),
-                @JsonSubTypes.Type(value = IntegerToOneHotTransform.class, name = "IntegerToOneHotTransform"),
-                @JsonSubTypes.Type(value = SequenceTrimTransform.class, name = "SequenceTrimTransform"),
-                @JsonSubTypes.Type(value = SequenceOffsetTransform.class, name = "SequenceOffsetTransform"),
-                @JsonSubTypes.Type(value = NDArrayColumnsMathOpTransform.class, name = "NDArrayColumnsMathOpTransform"),
-                @JsonSubTypes.Type(value = NDArrayDistanceTransform.class, name = "NDArrayDistanceTransform"),
-                @JsonSubTypes.Type(value = NDArrayMathFunctionTransform.class, name = "NDArrayMathFunctionTransform"),
-                @JsonSubTypes.Type(value = NDArrayScalarOpTransform.class, name = "NDArrayScalarOpTransform"),
-                @JsonSubTypes.Type(value = ChangeCaseStringTransform.class, name = "ChangeCaseStringTransform"),
-                @JsonSubTypes.Type(value = ConcatenateStringColumns.class, name = "ConcatenateStringColumns"),
-                @JsonSubTypes.Type(value = StringListToCountsNDArrayTransform.class, name = "StringListToCountsNDArrayTransform"),
-                @JsonSubTypes.Type(value = StringListToIndicesNDArrayTransform.class, name = "StringListToIndicesNDArrayTransform"),
-                @JsonSubTypes.Type(value = PivotTransform.class, name = "PivotTransform"),
-                @JsonSubTypes.Type(value = TextToCharacterIndexTransform.class, name = "TextToCharacterIndexTransform")
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyMappingHelper.TransformHelper.class)
 public interface Transform extends Serializable, ColumnOp {
 
     /**

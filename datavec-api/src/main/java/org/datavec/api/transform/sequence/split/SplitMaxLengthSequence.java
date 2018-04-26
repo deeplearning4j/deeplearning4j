@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence.split;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.SequenceSplit;
@@ -35,6 +36,7 @@ import java.util.List;
  */
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonIgnoreProperties({"inputSchema"})
+@Data
 public class SplitMaxLengthSequence implements SequenceSplit {
 
     private final int maxSequenceLength;

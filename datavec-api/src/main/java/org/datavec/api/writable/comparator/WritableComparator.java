@@ -16,6 +16,7 @@
 
 package org.datavec.api.writable.comparator;
 
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -23,12 +24,8 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 import java.util.Comparator;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = DoubleWritableComparator.class, name = "DoubleWritableComparator"),
-                @JsonSubTypes.Type(value = FloatWritableComparator.class, name = "FloatWritableComparator"),
-                @JsonSubTypes.Type(value = IntWritableComparator.class, name = "IntWritableComparator"),
-                @JsonSubTypes.Type(value = LongWritableComparator.class, name = "LongWritableComparator"),
-                @JsonSubTypes.Type(value = TextWritableComparator.class, name = "TextWritableComparator")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyMappingHelper.WritableComparatorHelper.class)
 public interface WritableComparator extends Comparator<Writable>, Serializable {
 
 }

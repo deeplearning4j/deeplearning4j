@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.string;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
@@ -38,6 +39,7 @@ import java.util.*;
  */
 @JsonIgnoreProperties({"inputSchema", "map", "columnIdx"})
 @EqualsAndHashCode(callSuper = false, exclude = {"columnIdx"})
+@Data
 public class StringListToCategoricalSetTransform extends BaseTransform {
 
     private final String columnName;

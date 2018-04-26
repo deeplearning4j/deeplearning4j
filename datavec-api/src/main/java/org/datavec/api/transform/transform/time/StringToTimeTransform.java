@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.time;
 
+import lombok.Data;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.TimeMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
@@ -24,6 +25,7 @@ import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.io.IOException;
@@ -42,6 +44,8 @@ import java.util.regex.Pattern;
  *
  * @author Alex Black
  */
+@Data
+@JsonIgnoreProperties({"formatters", "formatter"})
 public class StringToTimeTransform extends BaseColumnTransform {
 
     private final String timeFormat;

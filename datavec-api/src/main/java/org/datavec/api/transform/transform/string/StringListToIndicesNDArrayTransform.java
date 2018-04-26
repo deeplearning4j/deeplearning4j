@@ -1,5 +1,6 @@
 package org.datavec.api.transform.transform.string;
 
+import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -17,6 +18,7 @@ import java.util.List;
  *
  * @author dave@skymind.io
  */
+@Data
 public class StringListToIndicesNDArrayTransform extends StringListToCountsNDArrayTransform {
     /**
      * @param columnName     The name of the column to convert

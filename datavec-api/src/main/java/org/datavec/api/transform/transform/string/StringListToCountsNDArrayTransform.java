@@ -1,5 +1,6 @@
 package org.datavec.api.transform.transform.string;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.ColumnType;
@@ -26,6 +27,7 @@ import java.util.*;
  */
 @JsonIgnoreProperties({"inputSchema", "map", "columnIdx"})
 @EqualsAndHashCode(callSuper = false, exclude = {"columnIdx"})
+@Data
 public class StringListToCountsNDArrayTransform extends BaseTransform {
     protected final String columnName;
     protected final String newColumnName;

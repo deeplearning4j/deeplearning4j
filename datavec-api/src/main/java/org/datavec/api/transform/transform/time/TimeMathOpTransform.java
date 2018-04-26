@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.time;
 
+import lombok.Data;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.TimeMetaData;
@@ -36,6 +37,7 @@ import java.util.concurrent.TimeUnit;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "columnNumber", "asMilliseconds"})
+@Data
 public class TimeMathOpTransform extends BaseColumnTransform {
 
     private final MathOp mathOp;

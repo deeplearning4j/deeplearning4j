@@ -119,12 +119,12 @@ public class TestYamlJsonSerde {
             String json = j.serialize(t);
 
             //            System.out.println(yaml);
-            //            System.out.println(json);
+//                        System.out.println(json);
             //            System.out.println();
 
-            Transform t2 = y.deserializeTransform(yaml);
+//            Transform t2 = y.deserializeTransform(yaml);
             Transform t3 = j.deserializeTransform(json);
-            assertEquals(t, t2);
+//            assertEquals(t, t2);
             assertEquals(t, t3);
         }
 
@@ -163,27 +163,17 @@ public class TestYamlJsonSerde {
                                         new StringRegexColumnCondition("someCol", "[]{}()][}{)("))};
 
         for (Transform t : transforms) {
-            String yaml = y.serialize(t);
             String json = j.serialize(t);
 
-            //            System.out.println(yaml);
-            //            System.out.println(json);
-            //            System.out.println();
-
-            Transform t2 = y.deserializeTransform(yaml);
             Transform t3 = j.deserializeTransform(json);
-            assertEquals(t, t2);
             assertEquals(t, t3);
 
             TransformProcess tp = new TransformProcess.Builder(schema).transform(t).build();
 
-            String tpYaml = y.serialize(tp);
             String tpJson = j.serialize(tp);
 
-            TransformProcess fromYaml = TransformProcess.fromYaml(tpYaml);
             TransformProcess fromJson = TransformProcess.fromJson(tpJson);
 
-            assertEquals(tp, fromYaml);
             assertEquals(tp, fromJson);
         }
 
@@ -192,9 +182,6 @@ public class TestYamlJsonSerde {
         String tArrAsJson = j.serialize(transforms);
         String tListAsYaml = y.serializeTransformList(Arrays.asList(transforms));
         String tListAsJson = j.serializeTransformList(Arrays.asList(transforms));
-
-        //        System.out.println("\n\n\n\n");
-        //        System.out.println(tListAsYaml);
 
         List<Transform> lFromYaml = y.deserializeTransformList(tListAsYaml);
         List<Transform> lFromJson = j.deserializeTransformList(tListAsJson);
@@ -291,8 +278,8 @@ public class TestYamlJsonSerde {
             String yaml = y.serialize(c);
             String json = j.serialize(c);
 
-            //            System.out.println(yaml);
-            //            System.out.println(json);
+//                        System.out.println(yaml);
+//                        System.out.println(json);
             //            System.out.println();
 
             Condition t2 = y.deserializeCondition(yaml);

@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.column;
 
+import lombok.Data;
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -37,6 +38,7 @@ import java.util.Set;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"columnsToDuplicateSet", "columnIndexesToDuplicateSet", "inputSchema"})
+@Data
 public class DuplicateColumnsTransform implements Transform, ColumnOp {
 
     private final List<String> columnsToDuplicate;

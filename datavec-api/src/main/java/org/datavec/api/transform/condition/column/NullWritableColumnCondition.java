@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
@@ -28,6 +29,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = true)
+@Data
 public class NullWritableColumnCondition extends BaseColumnCondition {
 
     public NullWritableColumnCondition(@JsonProperty("columnName") String columnName) {

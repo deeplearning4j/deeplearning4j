@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.string;
 
+import lombok.Data;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
@@ -31,6 +32,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema", "columnNumber"})
+@Data
 public class AppendStringColumnTransform extends BaseColumnTransform {
 
     private String toAppend;

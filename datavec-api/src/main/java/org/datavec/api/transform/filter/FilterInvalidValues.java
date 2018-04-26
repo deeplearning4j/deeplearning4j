@@ -16,7 +16,9 @@
 
 package org.datavec.api.transform.filter;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
@@ -32,6 +34,8 @@ import java.util.List;
  */
 @EqualsAndHashCode(exclude = {"schema", "columnIdxs"})
 @JsonIgnoreProperties({"schema", "columnIdxs"})
+@Data
+@ToString(exclude = {"schema", "columnIdxs"})
 public class FilterInvalidValues implements Filter {
 
     private Schema schema;

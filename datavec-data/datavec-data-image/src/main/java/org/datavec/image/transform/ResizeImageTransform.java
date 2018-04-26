@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
@@ -35,6 +36,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * @author raver119@gmail.com
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Data
 public class ResizeImageTransform extends BaseImageTransform<Mat> {
 
     private int newHeight;

@@ -17,13 +17,10 @@
 package org.datavec.api.transform.condition;
 
 import org.datavec.api.transform.ColumnOp;
-import org.datavec.api.transform.condition.column.*;
-import org.datavec.api.transform.condition.sequence.SequenceLengthCondition;
-import org.datavec.api.transform.condition.string.StringRegexColumnCondition;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -37,21 +34,9 @@ import java.util.List;
  *
  * @author Alex Black
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = TrivialColumnCondition.class, name = "TrivialColumnCondition"),
-                @JsonSubTypes.Type(value = CategoricalColumnCondition.class, name = "CategoricalColumnCondition"),
-                @JsonSubTypes.Type(value = DoubleColumnCondition.class, name = "DoubleColumnCondition"),
-                @JsonSubTypes.Type(value = IntegerColumnCondition.class, name = "IntegerColumnCondition"),
-                @JsonSubTypes.Type(value = LongColumnCondition.class, name = "LongColumnCondition"),
-                @JsonSubTypes.Type(value = NullWritableColumnCondition.class, name = "NullWritableColumnCondition"),
-                @JsonSubTypes.Type(value = StringColumnCondition.class, name = "StringColumnCondition"),
-                @JsonSubTypes.Type(value = TimeColumnCondition.class, name = "TimeColumnCondition"),
-                @JsonSubTypes.Type(value = StringRegexColumnCondition.class, name = "StringRegexColumnCondition"),
-                @JsonSubTypes.Type(value = BooleanCondition.class, name = "BooleanCondition"),
-                @JsonSubTypes.Type(value = NaNColumnCondition.class, name = "NaNColumnCondition"),
-                @JsonSubTypes.Type(value = InfiniteColumnCondition.class, name = "InfiniteColumnCondition"),
-                @JsonSubTypes.Type(value = SequenceLengthCondition.class, name = "SequenceLengthCondition")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyMappingHelper.ConditionHelper.class)
 public interface Condition extends Serializable, ColumnOp {
 
     /**

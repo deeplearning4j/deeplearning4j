@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,6 +36,7 @@ import static org.bytedeco.javacpp.opencv_core.Rect;
  */
 @JsonIgnoreProperties({"rng", "converter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Data
 public class RandomCropTransform extends BaseImageTransform<Mat> {
 
     protected int outputHeight;

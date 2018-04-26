@@ -23,6 +23,7 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.LongMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.comparator.WritableComparator;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
@@ -49,7 +50,8 @@ import java.util.List;
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonIgnoreProperties({"inputSchema"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyMappingHelper.CalculateSortedRankHelper.class)
 public class CalculateSortedRank implements Serializable, ColumnOp {
 
     private final String newColumnName;

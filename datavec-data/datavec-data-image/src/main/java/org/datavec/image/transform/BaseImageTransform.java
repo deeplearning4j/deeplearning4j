@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bytedeco.javacv.FrameConverter;
 import org.datavec.image.data.ImageWritable;
@@ -31,6 +32,7 @@ import java.util.Random;
  */
 @NoArgsConstructor
 @JsonIgnoreProperties({"converter", "currentImage"})
+@Data
 public abstract class BaseImageTransform<F> implements ImageTransform {
 
     protected Random random;

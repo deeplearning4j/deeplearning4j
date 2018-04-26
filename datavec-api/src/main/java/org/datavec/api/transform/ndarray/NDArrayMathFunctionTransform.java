@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.ndarray;
 
+import lombok.Data;
 import org.datavec.api.transform.MathFunction;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
@@ -32,6 +33,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Alex Black
  */
+@Data
 public class NDArrayMathFunctionTransform extends BaseColumnTransform {
 
     //Can't guarantee that the writable won't be re-used, for example in different Spark ops on the same RDD

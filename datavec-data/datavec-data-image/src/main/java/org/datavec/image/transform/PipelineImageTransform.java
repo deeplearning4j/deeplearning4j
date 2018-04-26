@@ -15,6 +15,7 @@
  */
 package org.datavec.image.transform;
 
+import lombok.Data;
 import lombok.NonNull;
 
 import org.datavec.image.data.ImageWritable;
@@ -40,6 +41,7 @@ import static org.bytedeco.javacpp.opencv_core.Mat;
  * @author saudet
  * @author crockpotveggies
  */
+@Data
 public class PipelineImageTransform extends BaseImageTransform<Mat> {
 
     protected List<Pair<ImageTransform, Double>> imageTransforms;

@@ -17,11 +17,9 @@
 package org.datavec.api.transform.sequence;
 
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
-import org.datavec.api.transform.sequence.comparator.StringComparator;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -32,9 +30,8 @@ import java.util.List;
  * Compare the time steps of a sequence
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = NumericalColumnComparator.class, name = "NumericalColumnComparator"),
-                @JsonSubTypes.Type(value = StringComparator.class, name = "StringComparator"),})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyMappingHelper.SequenceComparatorHelper.class)
 public interface SequenceComparator extends Comparator<List<Writable>>, Serializable {
 
     /**

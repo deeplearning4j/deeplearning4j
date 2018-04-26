@@ -1,5 +1,6 @@
 package org.datavec.api.transform.transform.parse;
 
+import lombok.Data;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.BaseTransform;
@@ -15,6 +16,7 @@ import java.util.List;
  *
  *  @author Adam GIbson
  */
+@Data
 public class ParseDoubleTransform extends BaseTransform {
 
     @Override

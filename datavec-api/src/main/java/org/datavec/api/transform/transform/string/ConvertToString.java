@@ -1,5 +1,6 @@
 package org.datavec.api.transform.transform.string;
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
@@ -10,6 +11,7 @@ import org.datavec.api.writable.Writable;
  * @author Adam Gibson
  */
 @NoArgsConstructor
+@Data
 public class ConvertToString extends BaseStringTransform {
     public ConvertToString(String column) {
         super(column);

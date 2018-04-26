@@ -38,7 +38,6 @@ import java.util.*;
  * @author Dave Kale
  */
 @Data
-//@EqualsAndHashCode()
 @EqualsAndHashCode(callSuper = true, exclude = {"writableMap"})
 @JsonIgnoreProperties({"writableMap"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
