@@ -76,265 +76,342 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class LegacyMappingHelper {
+
+    public static Map<String,String> legacyMappingForClass(Class c){
+        //Need to be able to get the map - and they need to be mutable...
+        switch (c.getSimpleName()){
+            case "Transform":
+                return getLegacyMappingImageTransform();
+            case "ColumnAnalysis":
+                return getLegacyMappingColumnAnalysis();
+            case "Condition":
+                return getLegacyMappingCondition();
+            case "Filter":
+                return getLegacyMappingFilter();
+            case "ColumnMetaData":
+                return mapColumnMetaData;
+            case "CalculateSortedRank":
+                return mapCalculateSortedRank;
+            case "Schema":
+                return mapSchema;
+            case "SequenceComparator":
+                return mapSequenceComparator;
+            case "SequenceSplit":
+                return mapSequenceSplit;
+            case "WindowFunction":
+                return mapWindowFunction;
+            case "IStringReducer":
+                return mapIStringReducer;
+            case "Writable":
+                return mapWritable;
+            case "WritableComparator":
+                return mapWritableComparator;
+            case "ImageTransform":
+                return mapImageTransform;
+            default:
+                //Should never happen
+                throw new IllegalArgumentException("No legacy mapping available for class " + c.getName());
+        }
+    }
+
+    private static Map<String,String> mapTransform;
+    private static Map<String,String> mapColumnAnalysis;
+    private static Map<String,String> mapCondition;
+    private static Map<String,String> mapFilter;
+    private static Map<String,String> mapColumnMetaData;
+    private static Map<String,String> mapCalculateSortedRank;
+    private static Map<String,String> mapSchema;
+    private static Map<String,String> mapSequenceComparator;
+    private static Map<String,String> mapSequenceSplit;
+    private static Map<String,String> mapWindowFunction;
+    private static Map<String,String> mapIStringReducer;
+    private static Map<String,String> mapWritable;
+    private static Map<String,String> mapWritableComparator;
+    private static Map<String,String> mapImageTransform;
     
-    private static Map<String,String> getLegacyMappingTransform(){
-        
-        //The following classes all used their class short name
-        Map<String,String> m = new HashMap<>();
-        m.put("CategoricalToIntegerTransform", CategoricalToIntegerTransform.class.getName());
-        m.put("CategoricalToOneHotTransform", CategoricalToOneHotTransform.class.getName());
-        m.put("IntegerToCategoricalTransform", IntegerToCategoricalTransform.class.getName());
-        m.put("StringToCategoricalTransform", StringToCategoricalTransform.class.getName());
-        m.put("DuplicateColumnsTransform", DuplicateColumnsTransform.class.getName());
-        m.put("RemoveColumnsTransform", RemoveColumnsTransform.class.getName());
-        m.put("RenameColumnsTransform", RenameColumnsTransform.class.getName());
-        m.put("ReorderColumnsTransform", ReorderColumnsTransform.class.getName());
-        m.put("ConditionalCopyValueTransform", ConditionalCopyValueTransform.class.getName());
-        m.put("ConditionalReplaceValueTransform", ConditionalReplaceValueTransform.class.getName());
-        m.put("ConditionalReplaceValueTransformWithDefault", ConditionalReplaceValueTransformWithDefault.class.getName());
-        m.put("DoubleColumnsMathOpTransform", DoubleColumnsMathOpTransform.class.getName());
-        m.put("DoubleMathOpTransform", DoubleMathOpTransform.class.getName());
-        m.put("Log2Normalizer", Log2Normalizer.class.getName());
-        m.put("MinMaxNormalizer", MinMaxNormalizer.class.getName());
-        m.put("StandardizeNormalizer", StandardizeNormalizer.class.getName());
-        m.put("SubtractMeanNormalizer", SubtractMeanNormalizer.class.getName());
-        m.put("IntegerColumnsMathOpTransform", IntegerColumnsMathOpTransform.class.getName());
-        m.put("IntegerMathOpTransform", IntegerMathOpTransform.class.getName());
-        m.put("ReplaceEmptyIntegerWithValueTransform", ReplaceEmptyIntegerWithValueTransform.class.getName());
-        m.put("ReplaceInvalidWithIntegerTransform", ReplaceInvalidWithIntegerTransform.class.getName());
-        m.put("LongColumnsMathOpTransform", LongColumnsMathOpTransform.class.getName());
-        m.put("LongMathOpTransform", LongMathOpTransform.class.getName());
-        m.put("MapAllStringsExceptListTransform", MapAllStringsExceptListTransform.class.getName());
-        m.put("RemoveWhiteSpaceTransform", RemoveWhiteSpaceTransform.class.getName());
-        m.put("ReplaceEmptyStringTransform", ReplaceEmptyStringTransform.class.getName());
-        m.put("ReplaceStringTransform", ReplaceStringTransform.class.getName());
-        m.put("StringListToCategoricalSetTransform", StringListToCategoricalSetTransform.class.getName());
-        m.put("StringMapTransform", StringMapTransform.class.getName());
-        m.put("DeriveColumnsFromTimeTransform", DeriveColumnsFromTimeTransform.class.getName());
-        m.put("StringToTimeTransform", StringToTimeTransform.class.getName());
-        m.put("TimeMathOpTransform", TimeMathOpTransform.class.getName());
-        m.put("ReduceSequenceByWindowTransform", ReduceSequenceByWindowTransform.class.getName());
-        m.put("DoubleMathFunctionTransform", DoubleMathFunctionTransform.class.getName());
-        m.put("AddConstantColumnTransform", AddConstantColumnTransform.class.getName());
-        m.put("RemoveAllColumnsExceptForTransform", RemoveAllColumnsExceptForTransform.class.getName());
-        m.put("ParseDoubleTransform", ParseDoubleTransform.class.getName());
-        m.put("ConvertToStringTransform", ConvertToString.class.getName());
-        m.put("AppendStringColumnTransform", AppendStringColumnTransform.class.getName());
-        m.put("SequenceDifferenceTransform", SequenceDifferenceTransform.class.getName());
-        m.put("ReduceSequenceTransform", ReduceSequenceTransform.class.getName());
-        m.put("SequenceMovingWindowReduceTransform", SequenceMovingWindowReduceTransform.class.getName());
-        m.put("IntegerToOneHotTransform", IntegerToOneHotTransform.class.getName());
-        m.put("SequenceTrimTransform", SequenceTrimTransform.class.getName());
-        m.put("SequenceOffsetTransform", SequenceOffsetTransform.class.getName());
-        m.put("NDArrayColumnsMathOpTransform", NDArrayColumnsMathOpTransform.class.getName());
-        m.put("NDArrayDistanceTransform", NDArrayDistanceTransform.class.getName());
-        m.put("NDArrayMathFunctionTransform", NDArrayMathFunctionTransform.class.getName());
-        m.put("NDArrayScalarOpTransform", NDArrayScalarOpTransform.class.getName());
-        m.put("ChangeCaseStringTransform", ChangeCaseStringTransform.class.getName());
-        m.put("ConcatenateStringColumns", ConcatenateStringColumns.class.getName());
-        m.put("StringListToCountsNDArrayTransform", StringListToCountsNDArrayTransform.class.getName());
-        m.put("StringListToIndicesNDArrayTransform", StringListToIndicesNDArrayTransform.class.getName());
-        m.put("PivotTransform", PivotTransform.class.getName());
-        m.put("TextToCharacterIndexTransform", TextToCharacterIndexTransform.class.getName());
+    private static synchronized Map<String,String> getLegacyMappingTransform(){
 
-        //The following never had subtype annotations, and hence will have had the default name:
-        m.put(TextToTermIndexSequenceTransform.class.getSimpleName(), TextToTermIndexSequenceTransform.class.getName());
-        m.put(ConvertToInteger.class.getSimpleName(), ConvertToInteger.class.getName());
-        m.put(ConvertToDouble.class.getSimpleName(), ConvertToDouble.class.getName());
+        if(mapTransform == null) {
+            //The following classes all used their class short name
+            Map<String, String> m = new HashMap<>();
+            m.put("CategoricalToIntegerTransform", CategoricalToIntegerTransform.class.getName());
+            m.put("CategoricalToOneHotTransform", CategoricalToOneHotTransform.class.getName());
+            m.put("IntegerToCategoricalTransform", IntegerToCategoricalTransform.class.getName());
+            m.put("StringToCategoricalTransform", StringToCategoricalTransform.class.getName());
+            m.put("DuplicateColumnsTransform", DuplicateColumnsTransform.class.getName());
+            m.put("RemoveColumnsTransform", RemoveColumnsTransform.class.getName());
+            m.put("RenameColumnsTransform", RenameColumnsTransform.class.getName());
+            m.put("ReorderColumnsTransform", ReorderColumnsTransform.class.getName());
+            m.put("ConditionalCopyValueTransform", ConditionalCopyValueTransform.class.getName());
+            m.put("ConditionalReplaceValueTransform", ConditionalReplaceValueTransform.class.getName());
+            m.put("ConditionalReplaceValueTransformWithDefault", ConditionalReplaceValueTransformWithDefault.class.getName());
+            m.put("DoubleColumnsMathOpTransform", DoubleColumnsMathOpTransform.class.getName());
+            m.put("DoubleMathOpTransform", DoubleMathOpTransform.class.getName());
+            m.put("Log2Normalizer", Log2Normalizer.class.getName());
+            m.put("MinMaxNormalizer", MinMaxNormalizer.class.getName());
+            m.put("StandardizeNormalizer", StandardizeNormalizer.class.getName());
+            m.put("SubtractMeanNormalizer", SubtractMeanNormalizer.class.getName());
+            m.put("IntegerColumnsMathOpTransform", IntegerColumnsMathOpTransform.class.getName());
+            m.put("IntegerMathOpTransform", IntegerMathOpTransform.class.getName());
+            m.put("ReplaceEmptyIntegerWithValueTransform", ReplaceEmptyIntegerWithValueTransform.class.getName());
+            m.put("ReplaceInvalidWithIntegerTransform", ReplaceInvalidWithIntegerTransform.class.getName());
+            m.put("LongColumnsMathOpTransform", LongColumnsMathOpTransform.class.getName());
+            m.put("LongMathOpTransform", LongMathOpTransform.class.getName());
+            m.put("MapAllStringsExceptListTransform", MapAllStringsExceptListTransform.class.getName());
+            m.put("RemoveWhiteSpaceTransform", RemoveWhiteSpaceTransform.class.getName());
+            m.put("ReplaceEmptyStringTransform", ReplaceEmptyStringTransform.class.getName());
+            m.put("ReplaceStringTransform", ReplaceStringTransform.class.getName());
+            m.put("StringListToCategoricalSetTransform", StringListToCategoricalSetTransform.class.getName());
+            m.put("StringMapTransform", StringMapTransform.class.getName());
+            m.put("DeriveColumnsFromTimeTransform", DeriveColumnsFromTimeTransform.class.getName());
+            m.put("StringToTimeTransform", StringToTimeTransform.class.getName());
+            m.put("TimeMathOpTransform", TimeMathOpTransform.class.getName());
+            m.put("ReduceSequenceByWindowTransform", ReduceSequenceByWindowTransform.class.getName());
+            m.put("DoubleMathFunctionTransform", DoubleMathFunctionTransform.class.getName());
+            m.put("AddConstantColumnTransform", AddConstantColumnTransform.class.getName());
+            m.put("RemoveAllColumnsExceptForTransform", RemoveAllColumnsExceptForTransform.class.getName());
+            m.put("ParseDoubleTransform", ParseDoubleTransform.class.getName());
+            m.put("ConvertToStringTransform", ConvertToString.class.getName());
+            m.put("AppendStringColumnTransform", AppendStringColumnTransform.class.getName());
+            m.put("SequenceDifferenceTransform", SequenceDifferenceTransform.class.getName());
+            m.put("ReduceSequenceTransform", ReduceSequenceTransform.class.getName());
+            m.put("SequenceMovingWindowReduceTransform", SequenceMovingWindowReduceTransform.class.getName());
+            m.put("IntegerToOneHotTransform", IntegerToOneHotTransform.class.getName());
+            m.put("SequenceTrimTransform", SequenceTrimTransform.class.getName());
+            m.put("SequenceOffsetTransform", SequenceOffsetTransform.class.getName());
+            m.put("NDArrayColumnsMathOpTransform", NDArrayColumnsMathOpTransform.class.getName());
+            m.put("NDArrayDistanceTransform", NDArrayDistanceTransform.class.getName());
+            m.put("NDArrayMathFunctionTransform", NDArrayMathFunctionTransform.class.getName());
+            m.put("NDArrayScalarOpTransform", NDArrayScalarOpTransform.class.getName());
+            m.put("ChangeCaseStringTransform", ChangeCaseStringTransform.class.getName());
+            m.put("ConcatenateStringColumns", ConcatenateStringColumns.class.getName());
+            m.put("StringListToCountsNDArrayTransform", StringListToCountsNDArrayTransform.class.getName());
+            m.put("StringListToIndicesNDArrayTransform", StringListToIndicesNDArrayTransform.class.getName());
+            m.put("PivotTransform", PivotTransform.class.getName());
+            m.put("TextToCharacterIndexTransform", TextToCharacterIndexTransform.class.getName());
 
-        return m;
+            //The following never had subtype annotations, and hence will have had the default name:
+            m.put(TextToTermIndexSequenceTransform.class.getSimpleName(), TextToTermIndexSequenceTransform.class.getName());
+            m.put(ConvertToInteger.class.getSimpleName(), ConvertToInteger.class.getName());
+            m.put(ConvertToDouble.class.getSimpleName(), ConvertToDouble.class.getName());
+
+            mapTransform = m;
+        }
+
+        return mapTransform;
     }
 
     private static Map<String,String> getLegacyMappingColumnAnalysis(){
-        Map<String,String> m = new HashMap<>();
-        m.put("BytesAnalysis", BytesAnalysis.class.getName());
-        m.put("CategoricalAnalysis", CategoricalAnalysis.class.getName());
-        m.put("DoubleAnalysis", DoubleAnalysis.class.getName());
-        m.put("IntegerAnalysis", IntegerAnalysis.class.getName());
-        m.put("LongAnalysis", LongAnalysis.class.getName());
-        m.put("StringAnalysis", StringAnalysis.class.getName());
-        m.put("TimeAnalysis", TimeAnalysis.class.getName());
+        if(mapColumnAnalysis == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("BytesAnalysis", BytesAnalysis.class.getName());
+            m.put("CategoricalAnalysis", CategoricalAnalysis.class.getName());
+            m.put("DoubleAnalysis", DoubleAnalysis.class.getName());
+            m.put("IntegerAnalysis", IntegerAnalysis.class.getName());
+            m.put("LongAnalysis", LongAnalysis.class.getName());
+            m.put("StringAnalysis", StringAnalysis.class.getName());
+            m.put("TimeAnalysis", TimeAnalysis.class.getName());
 
-        //The following never had subtype annotations, and hence will have had the default name:
-        m.put(NDArrayAnalysis.class.getSimpleName(), NDArrayAnalysis.class.getName());
+            //The following never had subtype annotations, and hence will have had the default name:
+            m.put(NDArrayAnalysis.class.getSimpleName(), NDArrayAnalysis.class.getName());
 
-        return m;
+            mapColumnAnalysis = m;
+        }
+
+        return mapColumnAnalysis;
     }
 
     private static Map<String,String> getLegacyMappingCondition(){
-        Map<String,String> m = new HashMap<>();
-        m.put("TrivialColumnCondition", TrivialColumnCondition.class.getName());
-        m.put("CategoricalColumnCondition", CategoricalColumnCondition.class.getName());
-        m.put("DoubleColumnCondition", DoubleColumnCondition.class.getName());
-        m.put("IntegerColumnCondition", IntegerColumnCondition.class.getName());
-        m.put("LongColumnCondition", LongColumnCondition.class.getName());
-        m.put("NullWritableColumnCondition", NullWritableColumnCondition.class.getName());
-        m.put("StringColumnCondition", StringColumnCondition.class.getName());
-        m.put("TimeColumnCondition", TimeColumnCondition.class.getName());
-        m.put("StringRegexColumnCondition", StringRegexColumnCondition.class.getName());
-        m.put("BooleanCondition", BooleanCondition.class.getName());
-        m.put("NaNColumnCondition", NaNColumnCondition.class.getName());
-        m.put("InfiniteColumnCondition", InfiniteColumnCondition.class.getName());
-        m.put("SequenceLengthCondition", SequenceLengthCondition.class.getName());
+        if(mapCondition == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("TrivialColumnCondition", TrivialColumnCondition.class.getName());
+            m.put("CategoricalColumnCondition", CategoricalColumnCondition.class.getName());
+            m.put("DoubleColumnCondition", DoubleColumnCondition.class.getName());
+            m.put("IntegerColumnCondition", IntegerColumnCondition.class.getName());
+            m.put("LongColumnCondition", LongColumnCondition.class.getName());
+            m.put("NullWritableColumnCondition", NullWritableColumnCondition.class.getName());
+            m.put("StringColumnCondition", StringColumnCondition.class.getName());
+            m.put("TimeColumnCondition", TimeColumnCondition.class.getName());
+            m.put("StringRegexColumnCondition", StringRegexColumnCondition.class.getName());
+            m.put("BooleanCondition", BooleanCondition.class.getName());
+            m.put("NaNColumnCondition", NaNColumnCondition.class.getName());
+            m.put("InfiniteColumnCondition", InfiniteColumnCondition.class.getName());
+            m.put("SequenceLengthCondition", SequenceLengthCondition.class.getName());
 
-        //The following never had subtype annotations, and hence will have had the default name:
-        m.put(InvalidValueColumnCondition.class.getSimpleName(), InvalidValueColumnCondition.class.getName());
-        m.put(BooleanColumnCondition.class.getSimpleName(), BooleanColumnCondition.class.getName());
+            //The following never had subtype annotations, and hence will have had the default name:
+            m.put(InvalidValueColumnCondition.class.getSimpleName(), InvalidValueColumnCondition.class.getName());
+            m.put(BooleanColumnCondition.class.getSimpleName(), BooleanColumnCondition.class.getName());
 
-        return m;
+            mapCondition = m;
+        }
+
+        return mapCondition;
     }
 
     private static Map<String,String> getLegacyMappingFilter(){
-        Map<String,String> m = new HashMap<>();
-        m.put("ConditionFilter", ConditionFilter.class.getName());
-        m.put("FilterInvalidValues", FilterInvalidValues.class.getName());
-        m.put("InvalidNumCols", InvalidNumColumns.class.getName());
-        return m;
+        if(mapFilter == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("ConditionFilter", ConditionFilter.class.getName());
+            m.put("FilterInvalidValues", FilterInvalidValues.class.getName());
+            m.put("InvalidNumCols", InvalidNumColumns.class.getName());
+
+            mapFilter = m;
+        }
+        return mapFilter;
     }
 
     private static Map<String,String> getLegacyMappingColumnMetaData(){
-        Map<String,String> m = new HashMap<>();
-        m.put("Categorical", CategoricalMetaData.class.getName());
-        m.put("Double", DoubleMetaData.class.getName());
-        m.put("Float", FloatMetaData.class.getName());
-        m.put("Integer", IntegerMetaData.class.getName());
-        m.put("Long", LongMetaData.class.getName());
-        m.put("String", StringMetaData.class.getName());
-        m.put("Time", TimeMetaData.class.getName());
-        m.put("NDArray", NDArrayMetaData.class.getName());
+        if(mapColumnMetaData == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("Categorical", CategoricalMetaData.class.getName());
+            m.put("Double", DoubleMetaData.class.getName());
+            m.put("Float", FloatMetaData.class.getName());
+            m.put("Integer", IntegerMetaData.class.getName());
+            m.put("Long", LongMetaData.class.getName());
+            m.put("String", StringMetaData.class.getName());
+            m.put("Time", TimeMetaData.class.getName());
+            m.put("NDArray", NDArrayMetaData.class.getName());
 
-        //The following never had subtype annotations, and hence will have had the default name:
-        m.put(BooleanMetaData.class.getSimpleName(), BooleanMetaData.class.getName());
-        m.put(BinaryMetaData.class.getSimpleName(), BinaryMetaData.class.getName());
+            //The following never had subtype annotations, and hence will have had the default name:
+            m.put(BooleanMetaData.class.getSimpleName(), BooleanMetaData.class.getName());
+            m.put(BinaryMetaData.class.getSimpleName(), BinaryMetaData.class.getName());
 
-        return m;
+            mapColumnMetaData = m;
+        }
+
+        return mapColumnMetaData;
     }
 
     private static Map<String,String> getLegacyMappingCalculateSortedRank(){
-        Map<String,String> m = new HashMap<>();
-        m.put("CalculateSortedRank", CalculateSortedRank.class.getName());
-        return m;
+        if(mapCalculateSortedRank == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("CalculateSortedRank", CalculateSortedRank.class.getName());
+            mapCalculateSortedRank = m;
+        }
+        return mapCalculateSortedRank;
     }
 
     private static Map<String,String> getLegacyMappingSchema(){
-        Map<String,String> m = new HashMap<>();
-        m.put("Schema", Schema.class.getName());
-        m.put("SequenceSchema", SequenceSchema.class.getName());
-        return m;
+        if(mapSchema == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("Schema", Schema.class.getName());
+            m.put("SequenceSchema", SequenceSchema.class.getName());
+
+            mapSchema = m;
+        }
+        return mapSchema;
     }
 
     private static Map<String,String> getLegacyMappingSequenceComparator(){
-        Map<String,String> m = new HashMap<>();
-        m.put("NumericalColumnComparator", NumericalColumnComparator.class.getName());
-        m.put("StringComparator", StringComparator.class.getName());
-        return m;
+        if(mapSequenceComparator == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("NumericalColumnComparator", NumericalColumnComparator.class.getName());
+            m.put("StringComparator", StringComparator.class.getName());
+
+            mapSequenceComparator = m;
+        }
+        return mapSequenceComparator;
     }
 
     private static Map<String,String> getLegacyMappingSequenceSplit(){
-        Map<String,String> m = new HashMap<>();
-        m.put("SequenceSplitTimeSeparation", SequenceSplitTimeSeparation.class.getName());
-        m.put("SplitMaxLengthSequence", SplitMaxLengthSequence.class.getName());
-        return m;
+        if(mapSequenceSplit == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("SequenceSplitTimeSeparation", SequenceSplitTimeSeparation.class.getName());
+            m.put("SplitMaxLengthSequence", SplitMaxLengthSequence.class.getName());
+
+            mapSequenceSplit = m;
+        }
+        return mapSequenceSplit;
     }
 
     private static Map<String,String> getLegacyMappingWindowFunction(){
-        Map<String,String> m = new HashMap<>();
-        m.put("TimeWindowFunction", TimeWindowFunction.class.getName());
-        m.put("OverlappingTimeWindowFunction", OverlappingTimeWindowFunction.class.getName());
-        return m;
+        if(mapWindowFunction == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("TimeWindowFunction", TimeWindowFunction.class.getName());
+            m.put("OverlappingTimeWindowFunction", OverlappingTimeWindowFunction.class.getName());
+
+            mapWindowFunction = m;
+        }
+        return mapWindowFunction;
     }
 
     private static Map<String,String> getLegacyMappingIStringReducer(){
-        Map<String,String> m = new HashMap<>();
-        m.put("StringReducer", StringReducer.class.getName());
-        return m;
+        if(mapIStringReducer == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("StringReducer", StringReducer.class.getName());
+
+            mapIStringReducer = m;
+        }
+        return mapIStringReducer;
     }
 
     private static Map<String,String> getLegacyMappingWritable(){
-        Map<String,String> m = new HashMap<>();
-        m.put("ArrayWritable", ArrayWritable.class.getName());
-        m.put("BooleanWritable", BooleanWritable.class.getName());
-        m.put("ByteWritable", ByteWritable.class.getName());
-        m.put("DoubleWritable", DoubleWritable.class.getName());
-        m.put("FloatWritable", FloatWritable.class.getName());
-        m.put("IntWritable", IntWritable.class.getName());
-        m.put("LongWritable", LongWritable.class.getName());
-        m.put("NullWritable", NullWritable.class.getName());
-        m.put("Text", Text.class.getName());
-        m.put("BytesWritable", BytesWritable.class.getName());
+        if (mapWritable == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("ArrayWritable", ArrayWritable.class.getName());
+            m.put("BooleanWritable", BooleanWritable.class.getName());
+            m.put("ByteWritable", ByteWritable.class.getName());
+            m.put("DoubleWritable", DoubleWritable.class.getName());
+            m.put("FloatWritable", FloatWritable.class.getName());
+            m.put("IntWritable", IntWritable.class.getName());
+            m.put("LongWritable", LongWritable.class.getName());
+            m.put("NullWritable", NullWritable.class.getName());
+            m.put("Text", Text.class.getName());
+            m.put("BytesWritable", BytesWritable.class.getName());
 
-        //The following never had subtype annotations, and hence will have had the default name:
-        m.put(NDArrayWritable.class.getSimpleName(), NDArrayWritable.class.getName());
+            //The following never had subtype annotations, and hence will have had the default name:
+            m.put(NDArrayWritable.class.getSimpleName(), NDArrayWritable.class.getName());
 
-        return m;
+            mapWritable = m;
+        }
+
+        return mapWritable;
     }
 
     private static Map<String,String> getLegacyMappingWritableComparator(){
-        Map<String,String> m = new HashMap<>();
-        m.put("DoubleWritableComparator", DoubleWritableComparator.class.getName());
-        m.put("FloatWritableComparator", FloatWritableComparator.class.getName());
-        m.put("IntWritableComparator", IntWritableComparator.class.getName());
-        m.put("LongWritableComparator", LongWritableComparator.class.getName());
-        m.put("TextWritableComparator", TextWritableComparator.class.getName());
+        if(mapWritableComparator == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("DoubleWritableComparator", DoubleWritableComparator.class.getName());
+            m.put("FloatWritableComparator", FloatWritableComparator.class.getName());
+            m.put("IntWritableComparator", IntWritableComparator.class.getName());
+            m.put("LongWritableComparator", LongWritableComparator.class.getName());
+            m.put("TextWritableComparator", TextWritableComparator.class.getName());
 
-        //The following never had subtype annotations, and hence will have had the default name:
-        m.put(ByteWritable.Comparator.class.getSimpleName(), ByteWritable.Comparator.class.getName());
-        m.put(FloatWritable.Comparator.class.getSimpleName(), FloatWritable.Comparator.class.getName());
-        m.put(IntWritable.Comparator.class.getSimpleName(), IntWritable.Comparator.class.getName());
-        m.put(BooleanWritable.Comparator.class.getSimpleName(), BooleanWritable.Comparator.class.getName());
-        m.put(LongWritable.Comparator.class.getSimpleName(), LongWritable.Comparator.class.getName());
-        m.put(Text.Comparator.class.getSimpleName(), Text.Comparator.class.getName());
-        m.put(LongWritable.DecreasingComparator.class.getSimpleName(), LongWritable.DecreasingComparator.class.getName());
-        m.put(DoubleWritable.Comparator.class.getSimpleName(), DoubleWritable.Comparator.class.getName());
+            //The following never had subtype annotations, and hence will have had the default name:
+            m.put(ByteWritable.Comparator.class.getSimpleName(), ByteWritable.Comparator.class.getName());
+            m.put(FloatWritable.Comparator.class.getSimpleName(), FloatWritable.Comparator.class.getName());
+            m.put(IntWritable.Comparator.class.getSimpleName(), IntWritable.Comparator.class.getName());
+            m.put(BooleanWritable.Comparator.class.getSimpleName(), BooleanWritable.Comparator.class.getName());
+            m.put(LongWritable.Comparator.class.getSimpleName(), LongWritable.Comparator.class.getName());
+            m.put(Text.Comparator.class.getSimpleName(), Text.Comparator.class.getName());
+            m.put(LongWritable.DecreasingComparator.class.getSimpleName(), LongWritable.DecreasingComparator.class.getName());
+            m.put(DoubleWritable.Comparator.class.getSimpleName(), DoubleWritable.Comparator.class.getName());
 
-        return m;
+            mapWritableComparator = m;
+        }
+
+        return mapWritableComparator;
     }
 
     public static Map<String,String> getLegacyMappingImageTransform(){
-        Map<String,String> m = new HashMap<>();
-        m.put("EqualizeHistTransform", "org.datavec.image.transform.EqualizeHistTransform");
-        m.put("RotateImageTransform", "org.datavec.image.transform.RotateImageTransform");
-        m.put("ColorConversionTransform", "org.datavec.image.transform.ColorConversionTransform");
-        m.put("WarpImageTransform", "org.datavec.image.transform.WarpImageTransform");
-        m.put("BoxImageTransform", "org.datavec.image.transform.BoxImageTransform");
-        m.put("CropImageTransform", "org.datavec.image.transform.CropImageTransform");
-        m.put("FilterImageTransform", "org.datavec.image.transform.FilterImageTransform");
-        m.put("FlipImageTransform", "org.datavec.image.transform.FlipImageTransform");
-        m.put("LargestBlobCropTransform", "org.datavec.image.transform.LargestBlobCropTransform");
-        m.put("ResizeImageTransform", "org.datavec.image.transform.ResizeImageTransform");
-        m.put("RandomCropTransform", "org.datavec.image.transform.RandomCropTransform");
-        m.put("ScaleImageTransform", "org.datavec.image.transform.ScaleImageTransform");
-        return m;
-    }
+        if(mapImageTransform == null) {
+            Map<String, String> m = new HashMap<>();
+            m.put("EqualizeHistTransform", "org.datavec.image.transform.EqualizeHistTransform");
+            m.put("RotateImageTransform", "org.datavec.image.transform.RotateImageTransform");
+            m.put("ColorConversionTransform", "org.datavec.image.transform.ColorConversionTransform");
+            m.put("WarpImageTransform", "org.datavec.image.transform.WarpImageTransform");
+            m.put("BoxImageTransform", "org.datavec.image.transform.BoxImageTransform");
+            m.put("CropImageTransform", "org.datavec.image.transform.CropImageTransform");
+            m.put("FilterImageTransform", "org.datavec.image.transform.FilterImageTransform");
+            m.put("FlipImageTransform", "org.datavec.image.transform.FlipImageTransform");
+            m.put("LargestBlobCropTransform", "org.datavec.image.transform.LargestBlobCropTransform");
+            m.put("ResizeImageTransform", "org.datavec.image.transform.ResizeImageTransform");
+            m.put("RandomCropTransform", "org.datavec.image.transform.RandomCropTransform");
+            m.put("ScaleImageTransform", "org.datavec.image.transform.ScaleImageTransform");
 
-    public static void main(String[] args) {
-        String s = "@JsonSubTypes.Type(value = ColorConversionTransform.class, name = \"ColorConversionTransform\"),\n" +
-                "                @JsonSubTypes.Type(value = BoxImageTransform.class, name = \"BoxImageTransform\"),\n" +
-                "                @JsonSubTypes.Type(value = CropImageTransform.class, name = \"CropImageTransform\"),\n" +
-                "                @JsonSubTypes.Type(value = EqualizeHistTransform.class, name = \"EqualizeHistTransform\"),\n" +
-                "                @JsonSubTypes.Type(value = FilterImageTransform.class, name = \"FilterImageTransform\"),\n" +
-                "                @JsonSubTypes.Type(value = FlipImageTransform.class, name = \"FlipImageTransform\"),\n" +
-                "                @JsonSubTypes.Type(value = LargestBlobCropTransform.class, name = \"LargestBlobCropTransform\"),\n" +
-                "                @JsonSubTypes.Type(value = RandomCropTransform.class, name = \"RandomCropTransform\"),\n" +
-                "                @JsonSubTypes.Type(value = ResizeImageTransform.class, name = \"ResizeImageTransform\"),\n" +
-                "                @JsonSubTypes.Type(value = RotateImageTransform.class, name = \"RotateImageTransform\"),\n" +
-                "                @JsonSubTypes.Type(value = ScaleImageTransform.class, name = \"ScaleImageTransform\"),\n" +
-                "                @JsonSubTypes.Type(value = WarpImageTransform.class, name = \"WarpImageTransform\")";
-
-        String[] str = s.split("\n");
-        for(String s2 : str){
-            String[] str2 = s2.split(",");
-            int first = str2[0].indexOf(" = ");
-            int second = str2[0].indexOf(".class");
-
-            String className = str2[0].substring(first+3, second);
-
-            int a = str2[1].indexOf("\"");
-            int b = str2[1].indexOf("\"", a+1);
-            String oldName = str2[1].substring(a+1,b);
-
-            System.out.println("m.put(\"" + oldName + "\", " + className + ".class.getName());");
+            mapImageTransform = m;
         }
+        return mapImageTransform;
     }
 
     @JsonDeserialize(using = LegacyTransformDeserializer.class)

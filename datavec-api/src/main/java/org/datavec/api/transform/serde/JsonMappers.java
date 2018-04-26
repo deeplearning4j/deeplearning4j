@@ -19,6 +19,24 @@ package org.datavec.api.transform.serde;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.datavec.api.io.WritableComparator;
+import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
+import org.datavec.api.transform.condition.column.ColumnCondition;
+import org.datavec.api.transform.filter.Filter;
+import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.rank.CalculateSortedRank;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.sequence.SequenceComparator;
+import org.datavec.api.transform.sequence.SequenceSplit;
+import org.datavec.api.transform.sequence.window.WindowFunction;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
+import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.serde.json.LegacyIActivationDeserializer;
+import org.nd4j.serde.json.LegacyILossFunctionDeserializer;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
@@ -33,10 +51,7 @@ import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.nd4j.shade.jackson.datatype.joda.JodaModule;
 
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -48,7 +63,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class JsonMappers {
 
     /**
-     * This system property is provided as an alternative to
+     * This system property is provided as an alternative to {@link #registerLegacyCustomClassesForJSON(Class[])}
      * Classes can be specified in comma-separated format
      */
     public static String CUSTOM_REGISTRATION_PROPERTY = "org.datavec.config.custom.legacyclasses";
@@ -69,7 +84,7 @@ public class JsonMappers {
 
             if(list.size() > 0){
                 try {
-//                    NeuralNetConfiguration.registerLegacyCustomClassesForJSONList(list);
+                    registerLegacyCustomClassesForJSONList(list);
                 } catch (Throwable t){
                     log.warn("Error registering custom classes for legacy JSON deserialization ({} system property)",CUSTOM_REGISTRATION_PROPERTY, t);
                 }
@@ -89,27 +104,106 @@ public class JsonMappers {
 
     private static Map<Class, ObjectMapper> legacyMappers = new ConcurrentHashMap<>();
 
-    /*
-    Note to developers: The following JSON mappers are for handling legacy format JSON.
-    Note that after 1.0.0-alpha, the JSON subtype format for layers, preprocessors, graph vertices,
-    etc were changed from a wrapper object, to an "@class" field.
-    However, in an attempt to not break saved networks, these mappers are part of the solution.
 
-    How legacy loading works (same pattern for all types - Layer, GraphVertex, InputPreprocesor etc)
-    1. Layers etc that have an "@class" field are deserialized as normal
-    2. Layers that don't have such a field are mapped (via Layer @JsonTypeInfo) to the LegacyLayerDeserializerHelper class.
-    3. LegacyLayerDeserializerHelper has a @JsonDeserialize annotation - we use LegacyLayerDeserialize to handle it
-    4. LegacyLayerDeserializer has a list of old names (present in the legacy format JSON) and the corresponding class names
-    5. BaseLegacyDeserializer (that LegacyLayerDeserializer extends) does a lookup and handles the deserialization
+    /**
+     * Register a set of classes (Transform, Filter, etc) for JSON deserialization.<br>
+     * <br>
+     * This is required ONLY when BOTH of the following conditions are met:<br>
+     * 1. You want to load a serialized TransformProcess, saved in 1.0.0-alpha or before, AND<br>
+     * 2. The serialized TransformProcess has a custom Transform, Filter, etc (i.e., one not defined in DL4J)<br>
+     * <br>
+     * By passing the classes of these custom classes here, DataVec should be able to deserialize them, in spite of the JSON
+     * format change between versions.
+     *
+     * @param classes Classes to register
+     */
+    public static void registerLegacyCustomClassesForJSON(Class<?>... classes) {
+        registerLegacyCustomClassesForJSONList(Arrays.<Class<?>>asList(classes));
+    }
 
-    Now, as to why we have one ObjectMapper for each type: We can't use the default JSON mapper for the legacy format,
-    as it'll fail due to not having the expected "@class" annotation.
-    Consequently, we need to tell Jackson to ignore that specific annotation and deserialize to the specified
-    class anyway. The ignoring is done via an annotation introspector, defined below in this class.
-    However, we can't just use a single annotation introspector (and hence ObjectMapper) for loading legacy values of
-    all types - if we did, then any nested types would fail (i.e., an IActivation in a Layer - the IActivation couldn't
-    be deserialized correctly, as the annotation would be ignored).
+    /**
+     * @see #registerLegacyCustomClassesForJSON(Class[])
+     */
+    public static void registerLegacyCustomClassesForJSONList(List<Class<?>> classes){
+        //Default names (i.e., old format for custom JSON format)
+        List<Pair<String,Class>> list = new ArrayList<>();
+        for(Class<?> c : classes){
+            list.add(new Pair<String,Class>(c.getSimpleName(), c));
+        }
+        registerLegacyCustomClassesForJSON(list);
+    }
 
+    /**
+     * Set of classes that can be registered for legacy deserialization.
+     */
+    private static List<Class<?>> REGISTERABLE_CUSTOM_CLASSES = (List<Class<?>>) Arrays.<Class<?>>asList(
+            Transform.class,
+            ColumnAnalysis.class,
+            ColumnCondition.class,
+            Filter.class,
+            ColumnMetaData.class,
+            CalculateSortedRank.class,
+            Schema.class,
+            SequenceComparator.class,
+            SequenceSplit.class,
+            WindowFunction.class,
+            Writable.class,
+            WritableComparator.class
+    );
+
+    /**
+     * Register a set of classes (Layer, GraphVertex, InputPreProcessor, IActivation, ILossFunction, ReconstructionDistribution
+     * ONLY) for JSON deserialization, with custom names.<br>
+     * Using this method directly should never be required (instead: use {@link #registerLegacyCustomClassesForJSON(Class[])}
+     * but is added in case it is required in non-standard circumstances.
+     */
+    public static void registerLegacyCustomClassesForJSON(List<Pair<String,Class>> classes){
+        for(Pair<String,Class> p : classes){
+            String s = p.getFirst();
+            Class c = p.getRight();
+            //Check if it's a valid class to register...
+            boolean found = false;
+            for( Class<?> c2 : REGISTERABLE_CUSTOM_CLASSES){
+                if(c2.isAssignableFrom(c)){
+                    Map<String,String> map = LegacyMappingHelper.legacyMappingForClass(c2);
+                    map.put(p.getFirst(), p.getSecond().getName());
+                    found = true;
+                }
+            }
+
+            if(!found){
+                throw new IllegalArgumentException("Cannot register class for legacy JSON deserialization: class " +
+                        c.getName() + " is not a subtype of classes " + REGISTERABLE_CUSTOM_CLASSES);
+            }
+        }
+    }
+
+
+    /**
+     * Get the legacy JSON mapper for the specified class.<br>
+     *
+     * <b>NOTE</b>: This is intended for internal backward-compatibility use.
+     *
+     * Note to developers: The following JSON mappers are for handling legacy format JSON.
+     * Note that after 1.0.0-alpha, the JSON subtype format for Transforms, Filters, Conditions etc were changed from
+     * a wrapper object, to an "@class" field. However, to not break all saved transforms networks, these mappers are
+     * part of the solution.<br>
+     * <br>
+     * How legacy loading works (same pattern for all types - Transform, Filter, Condition etc)<br>
+     * 1. Transforms etc JSON that has a "@class" field are deserialized as normal<br>
+     * 2. Transforms JSON that don't have such a field are mapped (via Layer @JsonTypeInfo) to LegacyMappingHelper.TransformHelper<br>
+     * 3. LegacyMappingHelper.TransformHelper has a @JsonDeserialize annotation - we use LegacyMappingHelper.LegacyTransformDeserializer to handle it<br>
+     * 4. LegacyTransformDeserializer has a list of old names (present in the legacy format JSON) and the corresponding class names
+     * 5. BaseLegacyDeserializer (that LegacyTransformDeserializer extends) does a lookup and handles the deserialization
+     *
+     * Now, as to why we have one ObjectMapper for each type: We can't use the default JSON mapper for the legacy format,
+     * as it'll fail due to not having the expected "@class" annotation.
+     * Consequently, we need to tell Jackson to ignore that specific annotation and deserialize to the specified
+     * class anyway. The ignoring is done via an annotation introspector, defined below in this class.
+     * However, we can't just use a single annotation introspector (and hence ObjectMapper) for loading legacy values of
+     * all types - if we did, then any nested types would fail (i.e., an Condition in a Transform - the Transform couldn't
+     * be deserialized correctly, as the annotation would be ignored).
+     *
      */
     public static synchronized ObjectMapper getLegacyMapperFor(@NonNull Class<?> clazz){
         if(!legacyMappers.containsKey(clazz)){
