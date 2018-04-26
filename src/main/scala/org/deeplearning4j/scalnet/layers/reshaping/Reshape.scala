@@ -19,6 +19,7 @@ package org.deeplearning4j.scalnet.layers.reshaping
 import org.deeplearning4j.nn.conf.InputPreProcessor
 import org.deeplearning4j.nn.conf.inputs.InputType
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr
 import org.deeplearning4j.scalnet.layers.core.Preprocessor
 import org.nd4j.linalg.api.ndarray.INDArray
 
@@ -41,12 +42,12 @@ class Reshape(newOutputShape: List[Int], oldInputShape: List[Int] = List()) exte
       extends BaseInputPreProcessor
       with Cloneable {
 
-    override def preProcess(input: INDArray, miniBatchSize: Int): INDArray = {
+    override def preProcess(input: INDArray, miniBatchSize: Int, workspace: LayerWorkspaceMgr): INDArray = {
       if (dynamic && fromShape != None) fromShape.get(0) = input.shape()(0)
       if (input.shape().length == toShape.length) input else input.reshape(toShape: _*)
     }
 
-    override def backprop(output: INDArray, miniBatchSize: Int): INDArray =
+    override def backprop(output: INDArray, miniBatchSize: Int, workspace: LayerWorkspaceMgr): INDArray =
       if (fromShape == None || outputShape.length == fromShape.get.length) {
         output
       } else if (output.length() != fromShape.get.product) {
