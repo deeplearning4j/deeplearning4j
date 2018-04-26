@@ -85,11 +85,11 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         INDArray weightGradView = gradientViews.get(Convolution3DParamInitializer.WEIGHT_KEY);
 
-        INDArray outEpsilon;
+        INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * outChannels * outD * outH * outW);
         if (isNCDHW)
-            outEpsilon = Nd4j.create('c', miniBatch, outChannels, outD, outH, outW);
+            outEpsilon = outEpsilon.reshape('c', miniBatch, outChannels, outD, outH, outW);
         else
-            outEpsilon = Nd4j.create('c', miniBatch, outD, outH, outW, outChannels);
+            outEpsilon = outEpsilon.reshape('c', miniBatch, outD, outH, outW, outChannels);
 
 
         int[] intArgs = new int[]{
@@ -215,11 +215,11 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int outH = outSize[1];
         int outW = outSize[2];
 
-        INDArray output;
+        INDArray output = Nd4j.createUninitialized(miniBatch*outWeightChannels*outD*outH*outW);
         if (isNCDHW)
-            output = Nd4j.create('c', miniBatch, outWeightChannels, outD, outH, outW);
+            output = output.reshape('c', miniBatch, outWeightChannels, outD, outH, outW);
         else
-            output = Nd4j.create('c', miniBatch, outD, outH, outW, outWeightChannels);
+            output = output.reshape('c', miniBatch, outD, outH, outW, outWeightChannels);
 
         int[] intArgs = new int[]{
                 kernel[0], kernel[1], kernel[2],

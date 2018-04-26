@@ -42,7 +42,7 @@ public class Convolution3DTest {
 
 
     @Test
-    public void testConvolution3dForwardSameMode() throws Exception {
+    public void testConvolution3dForwardSameMode() {
 
         INDArray containedInput = getContainedData();
         Convolution3DLayer layer = (Convolution3DLayer) getConvolution3DLayer(ConvolutionMode.Same);
