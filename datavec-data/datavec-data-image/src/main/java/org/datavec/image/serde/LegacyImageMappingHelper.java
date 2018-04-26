@@ -1,5 +1,5 @@
-/*-
- *  * Copyright 2016 Skymind, Inc.
+/*
+ *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -14,18 +14,22 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.writable.comparator;
+package org.datavec.image.serde;
 
+import org.datavec.api.transform.serde.legacy.GenericLegacyDeserializer;
 import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
-import org.datavec.api.writable.Writable;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.datavec.image.transform.ImageTransform;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 
-import java.io.Serializable;
-import java.util.Comparator;
+public class LegacyImageMappingHelper {
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-        defaultImpl = LegacyMappingHelper.WritableComparatorHelper.class)
-public interface WritableComparator extends Comparator<Writable>, Serializable {
+    @JsonDeserialize(using = LegacyImageTransformDeserializer.class)
+    public static class ImageTransformHelper { }
 
+    public static class LegacyImageTransformDeserializer extends GenericLegacyDeserializer<ImageTransform> {
+        public LegacyImageTransformDeserializer() {
+            super(ImageTransform.class, LegacyMappingHelper.getLegacyMappingImageTransform());
+        }
+    }
+    
 }

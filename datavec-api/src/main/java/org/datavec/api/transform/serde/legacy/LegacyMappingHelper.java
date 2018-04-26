@@ -37,10 +37,18 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
 import org.datavec.api.transform.sequence.SequenceComparator;
+import org.datavec.api.transform.sequence.SequenceSplit;
 import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
 import org.datavec.api.transform.sequence.comparator.StringComparator;
+import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
+import org.datavec.api.transform.sequence.split.SplitMaxLengthSequence;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
+import org.datavec.api.transform.sequence.window.OverlappingTimeWindowFunction;
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
+import org.datavec.api.transform.sequence.window.TimeWindowFunction;
+import org.datavec.api.transform.sequence.window.WindowFunction;
+import org.datavec.api.transform.stringreduce.IStringReducer;
+import org.datavec.api.transform.stringreduce.StringReducer;
 import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
@@ -59,6 +67,8 @@ import org.datavec.api.transform.transform.string.*;
 import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
 import org.datavec.api.transform.transform.time.StringToTimeTransform;
 import org.datavec.api.transform.transform.time.TimeMathOpTransform;
+import org.datavec.api.writable.*;
+import org.datavec.api.writable.comparator.*;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.HashMap;
@@ -200,9 +210,81 @@ public class LegacyMappingHelper {
         return m;
     }
 
+    private static Map<String,String> getLegacyMappingSequenceSplit(){
+        Map<String,String> m = new HashMap<>();
+        m.put("SequenceSplitTimeSeparation", SequenceSplitTimeSeparation.class.getName());
+        m.put("SplitMaxLengthSequence", SplitMaxLengthSequence.class.getName());
+        return m;
+    }
+
+    private static Map<String,String> getLegacyMappingWindowFunction(){
+        Map<String,String> m = new HashMap<>();
+        m.put("TimeWindowFunction", TimeWindowFunction.class.getName());
+        m.put("OverlappingTimeWindowFunction", OverlappingTimeWindowFunction.class.getName());
+        return m;
+    }
+
+    private static Map<String,String> getLegacyMappingIStringReducer(){
+        Map<String,String> m = new HashMap<>();
+        m.put("StringReducer", StringReducer.class.getName());
+        return m;
+    }
+
+    private static Map<String,String> getLegacyMappingWritable(){
+        Map<String,String> m = new HashMap<>();
+        m.put("ArrayWritable", ArrayWritable.class.getName());
+        m.put("BooleanWritable", BooleanWritable.class.getName());
+        m.put("ByteWritable", ByteWritable.class.getName());
+        m.put("DoubleWritable", DoubleWritable.class.getName());
+        m.put("FloatWritable", FloatWritable.class.getName());
+        m.put("IntWritable", IntWritable.class.getName());
+        m.put("LongWritable", LongWritable.class.getName());
+        m.put("NullWritable", NullWritable.class.getName());
+        m.put("Text", Text.class.getName());
+        m.put("BytesWritable", BytesWritable.class.getName());
+        return m;
+    }
+
+    private static Map<String,String> getLegacyMappingWritableComparator(){
+        Map<String,String> m = new HashMap<>();
+        m.put("DoubleWritableComparator", DoubleWritableComparator.class.getName());
+        m.put("FloatWritableComparator", FloatWritableComparator.class.getName());
+        m.put("IntWritableComparator", IntWritableComparator.class.getName());
+        m.put("LongWritableComparator", LongWritableComparator.class.getName());
+        m.put("TextWritableComparator", TextWritableComparator.class.getName());
+        return m;
+    }
+
+    public static Map<String,String> getLegacyMappingImageTransform(){
+        Map<String,String> m = new HashMap<>();
+        m.put("EqualizeHistTransform", "org.datavec.image.transform.EqualizeHistTransform");
+        m.put("RotateImageTransform", "org.datavec.image.transform.RotateImageTransform");
+        m.put("ColorConversionTransform", "org.datavec.image.transform.ColorConversionTransform");
+        m.put("WarpImageTransform", "org.datavec.image.transform.WarpImageTransform");
+        m.put("BoxImageTransform", "org.datavec.image.transform.BoxImageTransform");
+        m.put("CropImageTransform", "org.datavec.image.transform.CropImageTransform");
+        m.put("FilterImageTransform", "org.datavec.image.transform.FilterImageTransform");
+        m.put("FlipImageTransform", "org.datavec.image.transform.FlipImageTransform");
+        m.put("LargestBlobCropTransform", "org.datavec.image.transform.LargestBlobCropTransform");
+        m.put("ResizeImageTransform", "org.datavec.image.transform.ResizeImageTransform");
+        m.put("RandomCropTransform", "org.datavec.image.transform.RandomCropTransform");
+        m.put("ScaleImageTransform", "org.datavec.image.transform.ScaleImageTransform");
+        return m;
+    }
+
     public static void main(String[] args) {
-        String s = "@JsonSubTypes.Type(value = NumericalColumnComparator.class, name = \"NumericalColumnComparator\"),\n" +
-                "                @JsonSubTypes.Type(value = StringComparator.class, name = \"StringComparator\")";
+        String s = "@JsonSubTypes.Type(value = ColorConversionTransform.class, name = \"ColorConversionTransform\"),\n" +
+                "                @JsonSubTypes.Type(value = BoxImageTransform.class, name = \"BoxImageTransform\"),\n" +
+                "                @JsonSubTypes.Type(value = CropImageTransform.class, name = \"CropImageTransform\"),\n" +
+                "                @JsonSubTypes.Type(value = EqualizeHistTransform.class, name = \"EqualizeHistTransform\"),\n" +
+                "                @JsonSubTypes.Type(value = FilterImageTransform.class, name = \"FilterImageTransform\"),\n" +
+                "                @JsonSubTypes.Type(value = FlipImageTransform.class, name = \"FlipImageTransform\"),\n" +
+                "                @JsonSubTypes.Type(value = LargestBlobCropTransform.class, name = \"LargestBlobCropTransform\"),\n" +
+                "                @JsonSubTypes.Type(value = RandomCropTransform.class, name = \"RandomCropTransform\"),\n" +
+                "                @JsonSubTypes.Type(value = ResizeImageTransform.class, name = \"ResizeImageTransform\"),\n" +
+                "                @JsonSubTypes.Type(value = RotateImageTransform.class, name = \"RotateImageTransform\"),\n" +
+                "                @JsonSubTypes.Type(value = ScaleImageTransform.class, name = \"ScaleImageTransform\"),\n" +
+                "                @JsonSubTypes.Type(value = WarpImageTransform.class, name = \"WarpImageTransform\")";
 
         String[] str = s.split("\n");
         for(String s2 : str){
@@ -289,6 +371,53 @@ public class LegacyMappingHelper {
     public static class LegacySequenceComparatorDeserializer extends GenericLegacyDeserializer<SequenceComparator> {
         public LegacySequenceComparatorDeserializer() {
             super(SequenceComparator.class, getLegacyMappingSequenceComparator());
+        }
+    }
+
+    @JsonDeserialize(using = LegacySequenceSplitDeserializer.class)
+    public static class SequenceSplitHelper { }
+
+    public static class LegacySequenceSplitDeserializer extends GenericLegacyDeserializer<SequenceSplit> {
+        public LegacySequenceSplitDeserializer() {
+            super(SequenceSplit.class, getLegacyMappingSequenceSplit());
+        }
+    }
+
+    @JsonDeserialize(using = LegacyWindowFunctionDeserializer.class)
+    public static class WindowFunctionHelper { }
+
+    public static class LegacyWindowFunctionDeserializer extends GenericLegacyDeserializer<WindowFunction> {
+        public LegacyWindowFunctionDeserializer() {
+            super(WindowFunction.class, getLegacyMappingWindowFunction());
+        }
+    }
+
+
+    @JsonDeserialize(using = LegacyIStringReducerDeserializer.class)
+    public static class IStringReducerHelper { }
+
+    public static class LegacyIStringReducerDeserializer extends GenericLegacyDeserializer<IStringReducer> {
+        public LegacyIStringReducerDeserializer() {
+            super(IStringReducer.class, getLegacyMappingIStringReducer());
+        }
+    }
+
+
+    @JsonDeserialize(using = LegacyWritableDeserializer.class)
+    public static class WritableHelper { }
+
+    public static class LegacyWritableDeserializer extends GenericLegacyDeserializer<Writable> {
+        public LegacyWritableDeserializer() {
+            super(Writable.class, getLegacyMappingWritable());
+        }
+    }
+
+    @JsonDeserialize(using = LegacyWritableComparatorDeserializer.class)
+    public static class WritableComparatorHelper { }
+
+    public static class LegacyWritableComparatorDeserializer extends GenericLegacyDeserializer<WritableComparator> {
+        public LegacyWritableComparatorDeserializer() {
+            super(WritableComparator.class, getLegacyMappingWritableComparator());
         }
     }
 }
