@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -48,7 +49,7 @@ public class Convolution3DTest {
 
         assertTrue(layer.convolutionMode == ConvolutionMode.Same);
 
-        INDArray containedOutput = layer.activate(containedInput);
+        INDArray containedOutput = layer.activate(containedInput, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertTrue(Arrays.equals(containedInput.shape(), containedOutput.shape()));
 
@@ -62,7 +63,7 @@ public class Convolution3DTest {
         assertTrue(layer.convolutionMode == ConvolutionMode.Strict);
 
         INDArray input = getData();
-        INDArray output = layer.activate(input);
+        INDArray output = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
         System.out.println(Arrays.toString(input.shape()));
 
@@ -86,21 +87,22 @@ public class Convolution3DTest {
         INDArray input = getContainedData();
 
         Layer layer = getConvolution3DLayer(ConvolutionMode.Strict);
-        layer.activate(input);
+        layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput,
+                LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
 
         INDArray input2 = getData();
-        layer.activate(input2);
+        layer.activate(input2, false, LayerWorkspaceMgr.noWorkspaces());
         int depth = input2.size(1);
 
         epsilon = Nd4j.ones(5, depth, outputHeight, outputWidth);
 
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(input.shape().length, out.getSecond().shape().length);
         assertEquals(depth, out.getSecond().size(1));
     }

@@ -499,8 +499,9 @@ public class ConvolutionUtils {
         return mask.reshape('c', mask.length(), 1);
     }
 
-    public static INDArray reshape4dMask(INDArray mask) {
-        return reshape4dTo2d(mask);
+    public static INDArray reshape4dMask(INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
+
+        return reshape4dTo2d(mask, workspaceMgr, arrayType);
     }
 
     /**

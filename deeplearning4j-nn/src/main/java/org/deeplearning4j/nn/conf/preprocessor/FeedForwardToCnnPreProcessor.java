@@ -94,7 +94,8 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
         if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
 
-        return input.reshape('c', input.size(0), numChannels, inputHeight, inputWidth);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,
+                input.reshape('c', input.size(0), numChannels, inputHeight, inputWidth));
     }
 
     @Override

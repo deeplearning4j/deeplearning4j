@@ -22,6 +22,8 @@ import lombok.*;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
@@ -88,33 +90,39 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
-        if (!hasDefaultStridesForShape(input))
-            input = input.dup('c');
-
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         this.shape = input.shape();
+
+        if (shape.length == 5)
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
+
+        if (!hasDefaultStridesForShape(input))
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
+
         if (input.columns() != inputDepth * inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to channels "
                     + inputDepth + " times height " + inputWidth + "times width " + inputWidth
                     + " times channels " + numChannels
                     + " but was instead " + Arrays.toString(input.shape()));
 
+        INDArray ret;
         if (isNCDHW)
-            return input.reshape('c', input.size(0), numChannels, inputDepth, inputHeight, inputWidth);
+            ret = input.reshape('c', input.size(0), numChannels, inputDepth, inputHeight, inputWidth);
         else
-            return input.reshape('c', input.size(0), inputDepth, inputHeight, inputWidth, numChannels);
-
+            ret = input.reshape('c', input.size(0), inputDepth, inputHeight, inputWidth, numChannels);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
     }
 
     @Override
-    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
+    public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (!hasDefaultStridesForShape(epsilons))
-            epsilons = epsilons.dup('c');
+            epsilons = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilons, 'c');
 
         if (shape == null || ArrayUtil.prod(shape) != epsilons.length())
-            return epsilons.reshape('c', epsilons.size(0), inputDepth * inputHeight * inputWidth * numChannels);
+            return epsilons.reshape('c', epsilons.size(0),
+                    inputDepth * inputHeight * inputWidth * numChannels);
 
-        return epsilons.reshape('c', shape);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilons.reshape('c', shape));
     }
 
 

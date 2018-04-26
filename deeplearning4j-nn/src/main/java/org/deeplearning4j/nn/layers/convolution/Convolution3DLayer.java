@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,7 +40,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
 
         if (input.rank() != 5) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
@@ -49,7 +50,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
                     + layerId());
         }
 
-        INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, true);
+        INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
         Convolution3D layerConfig = (Convolution3D) layerConf();
 
@@ -86,9 +87,9 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         INDArray outEpsilon;
         if (isNCDHW)
-            outEpsilon =  Nd4j.create('c', miniBatch, outChannels, outD, outH, outW);
+            outEpsilon = Nd4j.create('c', miniBatch, outChannels, outD, outH, outW);
         else
-            outEpsilon =  Nd4j.create('c', miniBatch, outD, outH, outW, outChannels);
+            outEpsilon = Nd4j.create('c', miniBatch, outD, outH, outW, outChannels);
 
 
         int[] intArgs = new int[]{
@@ -102,7 +103,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         INDArray delta;
         IActivation afn = layerConfig.getActivationFn();
-        Pair<INDArray, INDArray> p = preOutput(true, true);
+        Pair<INDArray, INDArray> p = preOutput(true, true, workspaceMgr);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
         INDArray bias;
@@ -112,20 +113,20 @@ public class Convolution3DLayer extends ConvolutionLayer {
         INDArray[] outputs;
         if (layerConfig.hasBias()) {
             biasGradView = gradientViews.get(Convolution3DParamInitializer.BIAS_KEY);
-            bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, true);
-            inputs = new INDArray[] {input, weights, bias, delta};
-            outputs = new INDArray[] {outEpsilon, weightGradView, biasGradView};
+            bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, true, workspaceMgr);
+            inputs = new INDArray[]{input, weights, bias, delta};
+            outputs = new INDArray[]{outEpsilon, weightGradView, biasGradView};
         } else {
-            inputs = new INDArray[] {input, weights, delta};
+            inputs = new INDArray[]{input, weights, delta};
             outputs = new INDArray[]{outEpsilon, weightGradView};
         }
 
         CustomOp op = DynamicCustomOp.builder("conv3dnew_bp")
-                    .addInputs(inputs)
-                    .addIntegerArguments(intArgs)
-                    .addOutputs(outputs)
-                    .callInplace(false)
-                    .build();
+                .addInputs(inputs)
+                .addIntegerArguments(intArgs)
+                .addOutputs(outputs)
+                .callInplace(false)
+                .build();
 
         Nd4j.getExecutioner().exec(op);
 
@@ -141,18 +142,18 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
 
     @Override
-    public INDArray preOutput(boolean training) {
-        return preOutput(training, false).getFirst();
+    public INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return preOutput(training, false, workspaceMgr).getFirst();
     }
 
-    protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop) {
+    protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
 
         Convolution3D layerConfig = (Convolution3D) layerConf();
 
         ConvolutionMode mode = layerConfig.getConvolutionMode();
         boolean isNCDHW = layerConfig.getDataFormat() == Convolution3D.DataFormat.NCDHW;
 
-        INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, training);
+        INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
         if (input.rank() != 5) {
             String layerName = conf.getLayer().getLayerName();
@@ -231,18 +232,18 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         INDArray[] inputs;
         if (layerConfig.hasBias()) {
-            INDArray bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, training);
+            INDArray bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, training, workspaceMgr);
             inputs = new INDArray[]{input, weights, bias};
         } else {
             inputs = new INDArray[]{input, weights};
         }
 
         CustomOp op = DynamicCustomOp.builder("conv3dnew")
-                    .addInputs(inputs)
-                    .addIntegerArguments(intArgs)
-                    .addOutputs(output)
-                    .callInplace(false)
-                    .build();
+                .addInputs(inputs)
+                .addIntegerArguments(intArgs)
+                .addOutputs(output)
+                .callInplace(false)
+                .build();
 
         Nd4j.getExecutioner().exec(op);
 
