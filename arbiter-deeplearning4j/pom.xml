@@ -11,12 +11,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jackson-reflectionloader</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>arbiter-core</artifactId>
             <version>${project.version}</version>

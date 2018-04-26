@@ -34,10 +34,6 @@ public class JsonMapper {
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
         mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-
-        Map<String, String> types = JacksonReflectionLoader.getImpls(Collections.<Class<?>>emptyList());
-        mapper = JacksonReflectionLoader.withTypes(mapper, types);
-        yamlMapper = JacksonReflectionLoader.withTypes(yamlMapper, types);
     }
 
     private JsonMapper() {}

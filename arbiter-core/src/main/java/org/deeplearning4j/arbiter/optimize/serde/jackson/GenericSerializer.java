@@ -15,7 +15,7 @@ public class GenericSerializer extends JsonSerializer<Object> {
     public void serialize(Object o, JsonGenerator j, SerializerProvider serializerProvider)
                     throws IOException, JsonProcessingException {
         j.writeStartObject();
-        j.writeStringField("class", o.getClass().getName());
+        j.writeStringField("@class", o.getClass().getName());
         j.writeObjectField("value", o);
         j.writeEndObject();
     }
