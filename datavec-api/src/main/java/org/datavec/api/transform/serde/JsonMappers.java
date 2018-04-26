@@ -19,7 +19,9 @@ package org.datavec.api.transform.serde;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.annotation.PropertyAccessor;
 import org.nd4j.shade.jackson.databind.*;
 import org.nd4j.shade.jackson.databind.cfg.MapperConfig;
 import org.nd4j.shade.jackson.databind.introspect.Annotated;
@@ -139,6 +141,8 @@ public class JsonMappers {
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
+        ret.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        ret.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
     }
 
 
