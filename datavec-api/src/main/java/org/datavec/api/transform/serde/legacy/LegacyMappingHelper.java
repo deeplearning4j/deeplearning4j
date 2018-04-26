@@ -59,6 +59,7 @@ import org.datavec.api.transform.transform.integer.*;
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
 import org.datavec.api.transform.transform.nlp.TextToCharacterIndexTransform;
+import org.datavec.api.transform.transform.nlp.TextToTermIndexSequenceTransform;
 import org.datavec.api.transform.transform.parse.ParseDoubleTransform;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
@@ -136,6 +137,11 @@ public class LegacyMappingHelper {
         m.put("PivotTransform", PivotTransform.class.getName());
         m.put("TextToCharacterIndexTransform", TextToCharacterIndexTransform.class.getName());
 
+        //The following never had subtype annotations, and hence will have had the default name:
+        m.put(TextToTermIndexSequenceTransform.class.getSimpleName(), TextToTermIndexSequenceTransform.class.getName());
+        m.put(ConvertToInteger.class.getSimpleName(), ConvertToInteger.class.getName());
+        m.put(ConvertToDouble.class.getSimpleName(), ConvertToDouble.class.getName());
+
         return m;
     }
 
@@ -148,6 +154,10 @@ public class LegacyMappingHelper {
         m.put("LongAnalysis", LongAnalysis.class.getName());
         m.put("StringAnalysis", StringAnalysis.class.getName());
         m.put("TimeAnalysis", TimeAnalysis.class.getName());
+
+        //The following never had subtype annotations, and hence will have had the default name:
+        m.put(NDArrayAnalysis.class.getSimpleName(), NDArrayAnalysis.class.getName());
+
         return m;
     }
 
@@ -166,6 +176,11 @@ public class LegacyMappingHelper {
         m.put("NaNColumnCondition", NaNColumnCondition.class.getName());
         m.put("InfiniteColumnCondition", InfiniteColumnCondition.class.getName());
         m.put("SequenceLengthCondition", SequenceLengthCondition.class.getName());
+
+        //The following never had subtype annotations, and hence will have had the default name:
+        m.put(InvalidValueColumnCondition.class.getSimpleName(), InvalidValueColumnCondition.class.getName());
+        m.put(BooleanColumnCondition.class.getSimpleName(), BooleanColumnCondition.class.getName());
+
         return m;
     }
 
@@ -187,6 +202,11 @@ public class LegacyMappingHelper {
         m.put("String", StringMetaData.class.getName());
         m.put("Time", TimeMetaData.class.getName());
         m.put("NDArray", NDArrayMetaData.class.getName());
+
+        //The following never had subtype annotations, and hence will have had the default name:
+        m.put(BooleanMetaData.class.getSimpleName(), BooleanMetaData.class.getName());
+        m.put(BinaryMetaData.class.getSimpleName(), BinaryMetaData.class.getName());
+
         return m;
     }
 
@@ -242,6 +262,10 @@ public class LegacyMappingHelper {
         m.put("NullWritable", NullWritable.class.getName());
         m.put("Text", Text.class.getName());
         m.put("BytesWritable", BytesWritable.class.getName());
+
+        //The following never had subtype annotations, and hence will have had the default name:
+        m.put(NDArrayWritable.class.getSimpleName(), NDArrayWritable.class.getName());
+
         return m;
     }
 
@@ -252,6 +276,17 @@ public class LegacyMappingHelper {
         m.put("IntWritableComparator", IntWritableComparator.class.getName());
         m.put("LongWritableComparator", LongWritableComparator.class.getName());
         m.put("TextWritableComparator", TextWritableComparator.class.getName());
+
+        //The following never had subtype annotations, and hence will have had the default name:
+        m.put(ByteWritable.Comparator.class.getSimpleName(), ByteWritable.Comparator.class.getName());
+        m.put(FloatWritable.Comparator.class.getSimpleName(), FloatWritable.Comparator.class.getName());
+        m.put(IntWritable.Comparator.class.getSimpleName(), IntWritable.Comparator.class.getName());
+        m.put(BooleanWritable.Comparator.class.getSimpleName(), BooleanWritable.Comparator.class.getName());
+        m.put(LongWritable.Comparator.class.getSimpleName(), LongWritable.Comparator.class.getName());
+        m.put(Text.Comparator.class.getSimpleName(), Text.Comparator.class.getName());
+        m.put(LongWritable.DecreasingComparator.class.getSimpleName(), LongWritable.DecreasingComparator.class.getName());
+        m.put(DoubleWritable.Comparator.class.getSimpleName(), DoubleWritable.Comparator.class.getName());
+
         return m;
     }
 

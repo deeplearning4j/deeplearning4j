@@ -17,10 +17,7 @@
 package org.datavec.api.transform.transform;
 
 import org.apache.commons.io.FileUtils;
-import org.datavec.api.transform.ColumnType;
-import org.datavec.api.transform.MathOp;
-import org.datavec.api.transform.ReduceOp;
-import org.datavec.api.transform.TransformProcess;
+import org.datavec.api.transform.*;
 import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.column.DoubleColumnCondition;
 import org.datavec.api.transform.condition.column.NullWritableColumnCondition;
@@ -33,6 +30,7 @@ import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
 import org.datavec.api.transform.sequence.comparator.StringComparator;
 import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
 import org.datavec.api.transform.sequence.window.OverlappingTimeWindowFunction;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueTransform;
 import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
 import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
@@ -48,12 +46,11 @@ import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.reflections.Reflections;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.lang.reflect.Modifier;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
