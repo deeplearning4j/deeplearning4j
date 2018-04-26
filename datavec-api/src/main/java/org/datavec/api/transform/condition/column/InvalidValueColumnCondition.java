@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import lombok.Data;
 import org.datavec.api.writable.*;
 
 /**
@@ -27,6 +28,7 @@ import org.datavec.api.writable.*;
  *
  * @author Alex Black
  */
+@Data
 public class InvalidValueColumnCondition extends BaseColumnCondition {
 
 

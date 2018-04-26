@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.sequence;
 
+import lombok.Data;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.*;
@@ -47,6 +48,7 @@ import java.util.List;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties({"inputSchema", "columnType"})
+@Data
 public class SequenceDifferenceTransform implements Transform {
 
 

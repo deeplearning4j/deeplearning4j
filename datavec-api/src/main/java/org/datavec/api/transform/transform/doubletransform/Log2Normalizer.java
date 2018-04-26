@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import lombok.Data;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.writable.DoubleWritable;
@@ -29,6 +30,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Alex Black
  */
+@Data
 public class Log2Normalizer extends BaseDoubleTransform {
 
     protected static final double log2 = Math.log(2);

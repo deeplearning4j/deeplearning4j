@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform;
 
+import lombok.Data;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
@@ -33,6 +34,7 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema"})
+@Data
 public abstract class BaseTransform implements Transform {
 
     protected Schema inputSchema;

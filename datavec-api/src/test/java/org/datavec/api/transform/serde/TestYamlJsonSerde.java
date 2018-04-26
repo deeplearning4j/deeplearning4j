@@ -291,8 +291,8 @@ public class TestYamlJsonSerde {
             String yaml = y.serialize(c);
             String json = j.serialize(c);
 
-            //            System.out.println(yaml);
-            //            System.out.println(json);
+//                        System.out.println(yaml);
+//                        System.out.println(json);
             //            System.out.println();
 
             Condition t2 = y.deserializeCondition(yaml);

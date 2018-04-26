@@ -1,5 +1,6 @@
 package org.datavec.api.transform.transform.integer;
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
@@ -12,6 +13,7 @@ import org.datavec.api.writable.WritableType;
  *
  * @author Justin Long (crockpotveggies)
  */
+@Data
 @NoArgsConstructor
 public class ConvertToInteger extends BaseIntegerTransform {
 

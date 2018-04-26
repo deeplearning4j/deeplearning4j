@@ -1,5 +1,6 @@
 package org.datavec.api.transform.transform.string;
 
+import lombok.Data;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -9,6 +10,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author dave@skymind.io
  */
+@Data
 public class ChangeCaseStringTransform extends BaseStringTransform {
     public enum CaseType {
         LOWER, UPPER

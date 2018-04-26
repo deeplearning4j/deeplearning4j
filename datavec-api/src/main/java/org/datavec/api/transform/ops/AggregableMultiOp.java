@@ -1,6 +1,7 @@
 package org.datavec.api.transform.ops;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import org.datavec.api.writable.Writable;
@@ -17,6 +18,7 @@ import java.util.List;
  * Created by huitseeker on 5/8/17.
  */
 @AllArgsConstructor
+@Data
 public class AggregableMultiOp<T> implements IAggregableReduceOp<T, List<Writable>> {
 
     @Getter

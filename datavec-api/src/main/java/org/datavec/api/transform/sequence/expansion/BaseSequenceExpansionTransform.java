@@ -36,6 +36,7 @@ import java.util.*;
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonIgnoreProperties({"inputSchema"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Data
 public abstract class BaseSequenceExpansionTransform implements Transform {
 
     protected List<String> requiredColumns;

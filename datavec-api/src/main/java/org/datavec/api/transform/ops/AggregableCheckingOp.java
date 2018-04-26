@@ -1,6 +1,7 @@
 package org.datavec.api.transform.ops;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.Writable;
@@ -12,6 +13,7 @@ import org.datavec.api.writable.Writable;
  * Created by huitseeker on 5/8/17.
  */
 @AllArgsConstructor
+@Data
 public class AggregableCheckingOp<T> implements IAggregableReduceOp<Writable, T> {
 
     @Getter

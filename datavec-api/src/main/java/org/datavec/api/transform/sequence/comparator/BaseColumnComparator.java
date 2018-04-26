@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence.comparator;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.schema.Schema;
@@ -30,6 +31,7 @@ import java.util.List;
  */
 @EqualsAndHashCode(exclude = {"schema", "columnIdx"})
 @JsonIgnoreProperties({"schema", "columnIdx"})
+@Data
 public abstract class BaseColumnComparator implements SequenceComparator, ColumnOp {
 
     protected Schema schema;

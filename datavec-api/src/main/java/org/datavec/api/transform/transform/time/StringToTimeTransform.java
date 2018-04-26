@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.time;
 
+import lombok.Data;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.TimeMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
@@ -42,6 +43,7 @@ import java.util.regex.Pattern;
  *
  * @author Alex Black
  */
+@Data
 public class StringToTimeTransform extends BaseColumnTransform {
 
     private final String timeFormat;

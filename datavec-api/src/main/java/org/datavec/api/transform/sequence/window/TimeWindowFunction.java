@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence.window;
 
+import lombok.Data;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.TimeMetaData;
@@ -41,6 +42,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Alex Black
  */
+@Data
 public class TimeWindowFunction implements WindowFunction {
 
     private final String timeColumn;

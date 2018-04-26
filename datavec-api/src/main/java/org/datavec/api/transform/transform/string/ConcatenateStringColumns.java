@@ -1,5 +1,6 @@
 package org.datavec.api.transform.transform.string;
 
+import lombok.Data;
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -24,6 +25,7 @@ import java.util.List;
  * @author dave@skymind.io
  */
 @JsonIgnoreProperties({"inputSchema"})
+@Data
 public class ConcatenateStringColumns extends BaseTransform implements ColumnOp {
 
     private final String newColumnName;

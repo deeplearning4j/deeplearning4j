@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence.window;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -53,6 +54,7 @@ import java.util.concurrent.TimeUnit;
                 "windowSeparationMilliseconds", "timeZone"})
 @EqualsAndHashCode(exclude = {"inputSchema", "offsetAmountMilliseconds", "windowSizeMilliseconds",
                 "windowSeparationMilliseconds", "timeZone"})
+@Data
 public class OverlappingTimeWindowFunction implements WindowFunction {
 
     private final String timeColumn;

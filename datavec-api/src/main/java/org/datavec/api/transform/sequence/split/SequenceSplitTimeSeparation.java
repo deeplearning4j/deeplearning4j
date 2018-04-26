@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence.split;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
@@ -40,6 +41,7 @@ import java.util.concurrent.TimeUnit;
  */
 @JsonIgnoreProperties({"separationMilliseconds", "timeColumnIdx", "schema"})
 @EqualsAndHashCode(exclude = {"separationMilliseconds", "timeColumnIdx", "schema"})
+@Data
 public class SequenceSplitTimeSeparation implements SequenceSplit {
 
     private final String timeColumn;

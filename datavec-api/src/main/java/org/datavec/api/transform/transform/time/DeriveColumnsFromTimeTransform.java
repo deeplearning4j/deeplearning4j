@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.time;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.Transform;
@@ -55,6 +56,7 @@ import java.util.List;
  */
 @JsonIgnoreProperties({"inputSchema", "insertAfterIdx", "deriveFromIdx"})
 @EqualsAndHashCode(exclude = {"inputSchema", "insertAfterIdx", "deriveFromIdx"})
+@Data
 public class DeriveColumnsFromTimeTransform implements Transform {
 
     private final String columnName;

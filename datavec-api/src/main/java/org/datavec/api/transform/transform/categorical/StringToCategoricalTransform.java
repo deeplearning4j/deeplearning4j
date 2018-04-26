@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.categorical;
 
+import lombok.Data;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
@@ -31,6 +32,7 @@ import java.util.List;
  * to a categorical column
  */
 @JsonIgnoreProperties({"inputSchema", "columnNumber"})
+@Data
 public class StringToCategoricalTransform extends BaseColumnTransform {
 
     private final List<String> stateNames;

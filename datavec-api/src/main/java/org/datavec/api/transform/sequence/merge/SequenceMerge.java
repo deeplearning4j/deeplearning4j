@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence.merge;
 
+import lombok.Data;
 import org.datavec.api.transform.sequence.SequenceComparator;
 import org.datavec.api.writable.Writable;
 
@@ -31,6 +32,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Data
 public class SequenceMerge implements Serializable {
 
     private final SequenceComparator comparator;

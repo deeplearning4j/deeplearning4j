@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class JsonMappers {
 
     /**
-     * This system property is provided as an alternative to {@link NeuralNetConfiguration#registerLegacyCustomClassesForJSON(Class[])}.
+     * This system property is provided as an alternative to
      * Classes can be specified in comma-separated format
      */
     public static String CUSTOM_REGISTRATION_PROPERTY = "org.datavec.config.custom.legacyclasses";
@@ -106,6 +106,7 @@ public class JsonMappers {
             ObjectMapper m = new ObjectMapper();
             configureMapper(jsonMapper);
             m.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(clazz)));
+            legacyMappers.put(clazz, m);
         }
         return legacyMappers.get(clazz);
     }

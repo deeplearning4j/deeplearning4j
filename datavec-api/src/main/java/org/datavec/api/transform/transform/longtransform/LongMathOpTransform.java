@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.longtransform;
 
+import lombok.Data;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.LongMetaData;
@@ -31,6 +32,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  * @see LongColumnsMathOpTransform to do a mathematical operation involving multiple long columns (instead of a scalar)
  */
+@Data
 public class LongMathOpTransform extends BaseColumnTransform {
 
     private final MathOp mathOp;

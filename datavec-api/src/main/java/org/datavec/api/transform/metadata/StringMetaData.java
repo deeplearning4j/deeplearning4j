@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.metadata;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
@@ -27,6 +28,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = true)
+@Data
 public class StringMetaData extends BaseColumnMetaData {
 
     //regex + min/max length are nullable: null -> no restrictions on these

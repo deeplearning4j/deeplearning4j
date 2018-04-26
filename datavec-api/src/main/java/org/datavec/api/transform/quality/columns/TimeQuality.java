@@ -16,11 +16,14 @@
 
 package org.datavec.api.transform.quality.columns;
 
+import lombok.Data;
+
 /**
  * TimeQuality: quality of a time column
  *
  * @author Alex Black
  */
+@Data
 public class TimeQuality extends ColumnQuality {
 
 

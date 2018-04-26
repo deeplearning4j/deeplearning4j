@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.condition.column;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.transform.schema.Schema;
@@ -31,6 +32,7 @@ import java.util.List;
  */
 @JsonIgnoreProperties({"columnIdx", "schema", "sequenceMode"})
 @EqualsAndHashCode(exclude = {"columnIdx", "schema", "sequenceMode"})
+@Data
 public abstract class BaseColumnCondition implements ColumnCondition {
 
     protected final String columnName;

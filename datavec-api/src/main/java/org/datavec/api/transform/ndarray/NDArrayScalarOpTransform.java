@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.ndarray;
 
+import lombok.Data;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.NDArrayMetaData;
@@ -33,6 +34,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Alex Black
  */
+@Data
 public class NDArrayScalarOpTransform extends BaseColumnTransform {
 
     private final MathOp mathOp;

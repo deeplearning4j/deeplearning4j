@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.condition;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.Transform;
@@ -41,6 +42,7 @@ import java.util.List;
  */
 @JsonIgnoreProperties({"columnToReplaceIdx"})
 @EqualsAndHashCode(exclude = {"columnToReplaceIdx"})
+@Data
 public class ConditionalReplaceValueTransform implements Transform, ColumnOp {
 
     private final String columnToReplace;
