@@ -18,9 +18,9 @@ package org.datavec.api.transform.filter;
 
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -33,10 +33,8 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = ConditionFilter.class, name = "ConditionFilter"),
-                @JsonSubTypes.Type(value = FilterInvalidValues.class, name = "FilterInvalidValues"),
-                @JsonSubTypes.Type(value = InvalidNumColumns.class, name = "InvalidNumCols")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyMappingHelper.FilterHelper.class)
 public interface Filter extends Serializable, ColumnOp {
 
     /**

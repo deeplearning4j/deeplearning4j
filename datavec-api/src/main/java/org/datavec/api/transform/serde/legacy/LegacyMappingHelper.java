@@ -23,11 +23,22 @@ import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.condition.column.*;
 import org.datavec.api.transform.condition.sequence.SequenceLengthCondition;
 import org.datavec.api.transform.condition.string.StringRegexColumnCondition;
+import org.datavec.api.transform.filter.ConditionFilter;
+import org.datavec.api.transform.filter.Filter;
+import org.datavec.api.transform.filter.FilterInvalidValues;
+import org.datavec.api.transform.filter.InvalidNumColumns;
+import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform;
 import org.datavec.api.transform.ndarray.NDArrayDistanceTransform;
 import org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform;
 import org.datavec.api.transform.ndarray.NDArrayScalarOpTransform;
+import org.datavec.api.transform.rank.CalculateSortedRank;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
+import org.datavec.api.transform.sequence.SequenceComparator;
+import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
+import org.datavec.api.transform.sequence.comparator.StringComparator;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
 import org.datavec.api.transform.transform.categorical.*;
@@ -148,20 +159,50 @@ public class LegacyMappingHelper {
         return m;
     }
 
+    private static Map<String,String> getLegacyMappingFilter(){
+        Map<String,String> m = new HashMap<>();
+        m.put("ConditionFilter", ConditionFilter.class.getName());
+        m.put("FilterInvalidValues", FilterInvalidValues.class.getName());
+        m.put("InvalidNumCols", InvalidNumColumns.class.getName());
+        return m;
+    }
+
+    private static Map<String,String> getLegacyMappingColumnMetaData(){
+        Map<String,String> m = new HashMap<>();
+        m.put("Categorical", CategoricalMetaData.class.getName());
+        m.put("Double", DoubleMetaData.class.getName());
+        m.put("Float", FloatMetaData.class.getName());
+        m.put("Integer", IntegerMetaData.class.getName());
+        m.put("Long", LongMetaData.class.getName());
+        m.put("String", StringMetaData.class.getName());
+        m.put("Time", TimeMetaData.class.getName());
+        m.put("NDArray", NDArrayMetaData.class.getName());
+        return m;
+    }
+
+    private static Map<String,String> getLegacyMappingCalculateSortedRank(){
+        Map<String,String> m = new HashMap<>();
+        m.put("CalculateSortedRank", CalculateSortedRank.class.getName());
+        return m;
+    }
+
+    private static Map<String,String> getLegacyMappingSchema(){
+        Map<String,String> m = new HashMap<>();
+        m.put("Schema", Schema.class.getName());
+        m.put("SequenceSchema", SequenceSchema.class.getName());
+        return m;
+    }
+
+    private static Map<String,String> getLegacyMappingSequenceComparator(){
+        Map<String,String> m = new HashMap<>();
+        m.put("NumericalColumnComparator", NumericalColumnComparator.class.getName());
+        m.put("StringComparator", StringComparator.class.getName());
+        return m;
+    }
+
     public static void main(String[] args) {
-        String s = "@JsonSubTypes.Type(value = TrivialColumnCondition.class, name = \"TrivialColumnCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = CategoricalColumnCondition.class, name = \"CategoricalColumnCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = DoubleColumnCondition.class, name = \"DoubleColumnCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = IntegerColumnCondition.class, name = \"IntegerColumnCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = LongColumnCondition.class, name = \"LongColumnCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = NullWritableColumnCondition.class, name = \"NullWritableColumnCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = StringColumnCondition.class, name = \"StringColumnCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = TimeColumnCondition.class, name = \"TimeColumnCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = StringRegexColumnCondition.class, name = \"StringRegexColumnCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = BooleanCondition.class, name = \"BooleanCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = NaNColumnCondition.class, name = \"NaNColumnCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = InfiniteColumnCondition.class, name = \"InfiniteColumnCondition\"),\n" +
-                "                @JsonSubTypes.Type(value = SequenceLengthCondition.class, name = \"SequenceLengthCondition\")";
+        String s = "@JsonSubTypes.Type(value = NumericalColumnComparator.class, name = \"NumericalColumnComparator\"),\n" +
+                "                @JsonSubTypes.Type(value = StringComparator.class, name = \"StringComparator\")";
 
         String[] str = s.split("\n");
         for(String s2 : str){
@@ -203,6 +244,51 @@ public class LegacyMappingHelper {
     public static class LegacyConditionDeserializer extends GenericLegacyDeserializer<Condition> {
         public LegacyConditionDeserializer() {
             super(Condition.class, getLegacyMappingCondition());
+        }
+    }
+
+    @JsonDeserialize(using = LegacyFilterDeserializer.class)
+    public static class FilterHelper { }
+
+    public static class LegacyFilterDeserializer extends GenericLegacyDeserializer<Filter> {
+        public LegacyFilterDeserializer() {
+            super(Filter.class, getLegacyMappingFilter());
+        }
+    }
+
+    @JsonDeserialize(using = LegacyColumnMetaDataDeserializer.class)
+    public static class ColumnMetaDataHelper { }
+
+    public static class LegacyColumnMetaDataDeserializer extends GenericLegacyDeserializer<ColumnMetaData> {
+        public LegacyColumnMetaDataDeserializer() {
+            super(ColumnMetaData.class, getLegacyMappingColumnMetaData());
+        }
+    }
+
+    @JsonDeserialize(using = LegacyCalculateSortedRankDeserializer.class)
+    public static class CalculateSortedRankHelper { }
+
+    public static class LegacyCalculateSortedRankDeserializer extends GenericLegacyDeserializer<CalculateSortedRank> {
+        public LegacyCalculateSortedRankDeserializer() {
+            super(CalculateSortedRank.class, getLegacyMappingCalculateSortedRank());
+        }
+    }
+
+    @JsonDeserialize(using = LegacySchemaDeserializer.class)
+    public static class SchemaHelper { }
+
+    public static class LegacySchemaDeserializer extends GenericLegacyDeserializer<Schema> {
+        public LegacySchemaDeserializer() {
+            super(Schema.class, getLegacyMappingSchema());
+        }
+    }
+
+    @JsonDeserialize(using = LegacySequenceComparatorDeserializer.class)
+    public static class SequenceComparatorHelper { }
+
+    public static class LegacySequenceComparatorDeserializer extends GenericLegacyDeserializer<SequenceComparator> {
+        public LegacySequenceComparatorDeserializer() {
+            super(SequenceComparator.class, getLegacyMappingSequenceComparator());
         }
     }
 }

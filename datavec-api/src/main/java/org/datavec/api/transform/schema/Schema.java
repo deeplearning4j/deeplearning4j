@@ -19,6 +19,7 @@ package org.datavec.api.transform.schema;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.*;
+import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.*;
 import org.joda.time.DateTimeZone;
 import org.nd4j.shade.jackson.annotation.*;
@@ -45,9 +46,8 @@ import java.util.*;
  */
 @JsonIgnoreProperties({"columnNames", "columnNamesIndex"})
 @EqualsAndHashCode
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = SequenceSchema.class, name = "SequenceSchema"),})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyMappingHelper.SchemaHelper.class)
 public class Schema implements Serializable {
 
     private List<String> columnNames;
