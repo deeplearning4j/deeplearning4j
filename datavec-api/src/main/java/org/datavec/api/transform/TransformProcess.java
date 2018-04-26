@@ -16,10 +16,8 @@
 
 package org.datavec.api.transform;
 
-import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ClassUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
@@ -61,33 +59,15 @@ import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
 import org.datavec.api.transform.transform.string.*;
 import org.datavec.api.transform.transform.time.StringToTimeTransform;
 import org.datavec.api.transform.transform.time.TimeMathOpTransform;
-import org.datavec.api.util.reflections.DataVecSubTypesScanner;
 import org.datavec.api.writable.*;
 import org.datavec.api.writable.comparator.WritableComparator;
 import org.joda.time.DateTimeZone;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.nd4j.shade.jackson.annotation.PropertyAccessor;
-import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
-import org.nd4j.shade.jackson.databind.DeserializationFeature;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.SerializationFeature;
-import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
-import org.nd4j.shade.jackson.databind.jsontype.NamedType;
-import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
-import org.nd4j.shade.jackson.datatype.joda.JodaModule;
-import org.reflections.ReflectionUtils;
-import org.reflections.Reflections;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.reflect.Modifier;
-import java.net.URL;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 

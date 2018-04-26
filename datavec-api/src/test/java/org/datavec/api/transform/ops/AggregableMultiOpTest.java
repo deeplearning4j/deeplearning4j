@@ -2,11 +2,6 @@ package org.datavec.api.transform.ops;
 
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 
 import java.io.Serializable;
 import java.util.*;
@@ -55,22 +50,46 @@ public class AggregableMultiOpTest {
         List<Writable> combinedRes = multi.get();
         assertTrue(combinedRes.get(1).toDouble() == 90D);
         assertTrue(combinedRes.get(0).toInt() == 1);
-
     }
 
     @Test
     public void testAllAggregateOpsAreSerializable() throws Exception {
-        List<ClassLoader> classLoadersList = new LinkedList<ClassLoader>();
-        classLoadersList.add(ClasspathHelper.contextClassLoader());
-        classLoadersList.add(ClasspathHelper.staticClassLoader());
+        Set<String> allTypes = new HashSet<>();
+        allTypes.add("org.datavec.api.transform.ops.LongWritableOp");
+        allTypes.add("org.datavec.api.transform.ops.IntWritableOp");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableMean");
+        allTypes.add("org.datavec.api.transform.ops.StringAggregatorImpls$AggregableStringReduce");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableRange");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImplsTest");
+        allTypes.add("org.datavec.api.transform.ops.DispatchWithConditionOp");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableVariance");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls");
+        allTypes.add("org.datavec.api.transform.ops.FloatWritableOp");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableProd");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableLast");
+        allTypes.add("org.datavec.api.transform.ops.StringAggregatorImpls$AggregableStringPrepend");
+        allTypes.add("org.datavec.api.transform.ops.ByteWritableOp");
+        allTypes.add("org.datavec.api.transform.ops.AggregableMultiOpTest");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableStdDev");
+        allTypes.add("org.datavec.api.transform.ops.StringAggregatorImpls$1");
+        allTypes.add("org.datavec.api.transform.ops.DispatchOp");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableMin");
+        allTypes.add("org.datavec.api.transform.ops.StringAggregatorImpls$AggregableStringAppend");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableCount");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableSum");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregablePopulationVariance");
+        allTypes.add("org.datavec.api.transform.ops.AggregableCheckingOp");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableMax");
+        allTypes.add("org.datavec.api.transform.ops.AggregableMultiOp");
+        allTypes.add("org.datavec.api.transform.ops.IAggregableReduceOp");
+        allTypes.add("org.datavec.api.transform.ops.DispatchOpTest");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableCountUnique");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableUncorrectedStdDev");
+        allTypes.add("org.datavec.api.transform.ops.StringWritableOp");
+        allTypes.add("org.datavec.api.transform.ops.StringAggregatorImpls");
+        allTypes.add("org.datavec.api.transform.ops.DoubleWritableOp");
+        allTypes.add("org.datavec.api.transform.ops.AggregatorImpls$AggregableFirst");
 
-        Reflections reflections = new Reflections(new ConfigurationBuilder()
-                        .setScanners(new SubTypesScanner(false /* don't exclude Object.class */))
-                        .setUrls(ClasspathHelper.forClassLoader(classLoadersList.toArray(new ClassLoader[0])))
-                        .filterInputsBy(new FilterBuilder()
-                                        .include(FilterBuilder.prefix("org.datavec.api.transform.ops"))));
-
-        Set<String> allTypes = reflections.getAllTypes();
         Set<String> ops = new HashSet<>();
 
         for (String type : allTypes) {

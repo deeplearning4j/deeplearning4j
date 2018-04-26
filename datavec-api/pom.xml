@@ -82,18 +82,6 @@
             <version>${freemarker.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>${reflections.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>*</artifactId>
-              </exclusion>
-            </exclusions>
-        </dependency>
-
         <!-- ND4J common, mainly for CompactHeapStringList -->
         <dependency>
             <groupId>org.nd4j</groupId>
