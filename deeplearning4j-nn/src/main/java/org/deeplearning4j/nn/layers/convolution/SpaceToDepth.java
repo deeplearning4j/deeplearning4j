@@ -31,12 +31,14 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
 
 /**
- * Space to depth utility layer for convolutional input types.
+ * Space to channels utility layer for convolutional input types.
  * <p>
  * This operation takes 4D array in, in either NCHW or NHWC format, and moves data from spatial dimensions (HW)
  * to channels (C) for given blockSize
@@ -75,14 +77,14 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
         int inH = input.size(2);
         int inW = input.size(3);
 
-        INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
+        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[]{1, miniBatch * inDepth * inH * inW}, 'c');
         INDArray reshapedEpsilon;
 
         if (isNHWC() == 1) {
@@ -105,19 +107,14 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         return new Pair<>(gradient, reshapedEpsilon);
     }
 
-
-    @Override
-    public INDArray preOutput(boolean training) {
-        return preOutput(training, false);
-    }
-
-    public INDArray preOutput(boolean training, boolean forBackprop) {
-        applyDropOutIfNecessary(training);
+    protected INDArray preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
+        applyDropOutIfNecessary(training, null);
 
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                    + " array as input to space to depth with shape " + Arrays.toString(input.shape())
-                    + ". Expected rank 4 array with shape [minibatchSize, depth, inputHeight, inputWidth]. "
+                    + " array as input to space to channels with shape " + Arrays.toString(input.shape())
+                    + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
                     + layerId());
         }
 
@@ -136,7 +133,7 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int outW = inW / blockSize;
         int outDepth = depth * blockSize * blockSize;
 
-        INDArray out = Nd4j.create(miniBatch * outDepth * outH * outW);
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, new int[]{1, miniBatch * outDepth * outH * outW}, 'c');
         INDArray reshapedOut;
         if (isNHWC() == 1) {
             reshapedOut = out.reshape('c', miniBatch, outH, outW,  outDepth);
@@ -155,9 +152,8 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        applyDropOutIfNecessary(training);
-        return preOutput(training);
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return preOutput(training, false, workspaceMgr);
     }
 
 
@@ -192,32 +188,13 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
     public Gradient gradient() {
         throw new UnsupportedOperationException("Not supported - no parameters");
     }
 
     @Override
-    public void fit() {
-
-    }
-
-    @Override
     public int numParams() {
         return 0;
-    }
-
-    @Override
-    public void fit(INDArray input) {
-    }
-
-    @Override
-    public void computeGradientAndScore() {
-        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

@@ -63,6 +63,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -395,7 +396,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         net.setInput(input);
         net.feedForward(true, false); //Need to feed forward before backprop
 
-        Pair<Gradient, INDArray> pair = net.backpropGradient(eps);
+        Pair<Gradient, INDArray> pair = net.backpropGradient(eps, LayerWorkspaceMgr.noWorkspaces());
         INDArray epsOut = pair.getSecond();
         assertNotNull(epsOut);
         assertArrayEquals(new int[] {miniBatch, nIn}, epsOut.shape());
@@ -733,20 +734,6 @@ public class MultiLayerTest extends BaseDL4JTest {
         assertTrue(paramTable.containsKey("0_vb"));
     }
 
-    @Test
-    public void testLayerPreTrainSetFalseAfterPreTrain() {
-        INDArray input = Nd4j.linspace(1, 10, 10);
-        int nIn = 10;
-        int nOut = 10;
-
-        MultiLayerNetwork vaePre = getAeModel(true, nIn, nOut);
-        vaePre.fit(input);
-        assertTrue(vaePre.conf().isPretrain()); // check on the network
-        assertFalse(vaePre.getLayer(0).conf().isPretrain()); // check pretrain layer
-        assertFalse(vaePre.getLayer(1).conf().isPretrain()); // check none pretrain layer
-
-    }
-
     public MultiLayerNetwork getAeModel(boolean preTrain, int nIn, int nOut) {
         MultiLayerConfiguration vae = new NeuralNetConfiguration.Builder()
                 .seed(42).updater(new NoOp())
@@ -944,32 +931,6 @@ public class MultiLayerTest extends BaseDL4JTest {
         System.out.println(modelExpectedArch.summary());
         System.out.println(modelMow.summary());
         System.out.println(modelMow.summary(InputType.recurrent(V_HEIGHT*V_WIDTH*3)));
-    }
-
-
-    @Test
-    public void testComputeZ() {
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .activation(Activation.TANH).list().layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-        INDArray in = Nd4j.rand(10, 10);
-        List<INDArray> preOuts = net.computeZ(in, false);
-
-        assertEquals(3, preOuts.size()); //Includes original input
-        assertEquals(in, preOuts.get(0));
-
-        INDArray preOut0 = net.getLayer(0).preOutput(in);
-        INDArray out0 = net.getLayer(0).activate(in);
-        assertEquals(preOut0, preOuts.get(1));
-
-        INDArray preOut1 = net.getLayer(1).preOutput(out0);
-        INDArray out1 = net.getLayer(1).activate(out0);
-        assertEquals(preOut1, preOuts.get(2));
     }
 
     @Test(expected = DL4JException.class)
@@ -1171,13 +1132,13 @@ public class MultiLayerTest extends BaseDL4JTest {
             e.feedForward(true, false); //FF without clearing inputs as we need them later
 
             org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
-            Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null);
+            Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null, LayerWorkspaceMgr.noWorkspaces());
 
             INDArray olEpsilon = olPairStd.getSecond().detach();
 
             e.setInput(inData);
             e.feedForward(true, false);
-            Pair<Gradient, INDArray> extErrorGrad = e.backpropGradient(olEpsilon);
+            Pair<Gradient, INDArray> extErrorGrad = e.backpropGradient(olEpsilon, LayerWorkspaceMgr.noWorkspaces());
 
             int nParamsDense = 10 * 10 + 10;
             assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
@@ -1229,8 +1190,8 @@ public class MultiLayerTest extends BaseDL4JTest {
             }
 
             // Compute Gradient
-            Pair<Gradient,INDArray> gradient = graph.backpropGradient(error);
-            graph.getUpdater().update(graph, gradient.getFirst(), 0, 0, minibatch);
+            Pair<Gradient,INDArray> gradient = graph.backpropGradient(error, LayerWorkspaceMgr.noWorkspaces());
+            graph.getUpdater().update(graph, gradient.getFirst(), 0, 0, minibatch, LayerWorkspaceMgr.noWorkspaces());
 
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }

@@ -188,14 +188,10 @@ public class TransferLearningComplex extends BaseDL4JTest {
 
         ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
                         .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inCentre")
-                        .addLayer("outCentre",
-                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(2).nOut(2).build(),
-                                        "denseCentre0")
+                        .addLayer("outCentre", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(2).nOut(2).build(),"denseCentre0")
                         .addLayer("denseRight0", new DenseLayer.Builder().nIn(3).nOut(2).build(), "inRight")
                         .addVertex("mergeRight", new MergeVertex(), "denseCentre0", "denseRight0")
-                        .addLayer("outRight",
-                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),
-                                        "mergeRight")
+                        .addLayer("outRight", new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),"mergeRight")
                         .setOutputs("outCentre", "outRight").build();
         ComputationGraph modelToTune = new ComputationGraph(conf);
         modelToTune.init();
@@ -212,11 +208,6 @@ public class TransferLearningComplex extends BaseDL4JTest {
         assertTrue(modelNow.getLayer("denseCentre0") instanceof FrozenLayer);
         int n = 0;
         while (n < 5) {
-            if (n == 0) {
-                //confirm activations out of the merge are equivalent
-                assertEquals(modelToTune.feedForward(randData.getFeatures(), false).get("mergeRight"),
-                                modelNow.feedForward(otherRandData.getFeatures(), false).get("mergeRight"));
-            }
             //confirm activations out of frozen vertex is the same as the input to the other model
             modelToTune.fit(randData);
             modelNow.fit(randData);

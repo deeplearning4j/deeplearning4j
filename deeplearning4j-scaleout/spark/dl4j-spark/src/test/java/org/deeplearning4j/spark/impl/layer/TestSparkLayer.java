@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -64,7 +65,7 @@ public class TestSparkLayer extends BaseSparkTest {
         OutputLayer network2 = (OutputLayer) master.fitDataSet(data);
 
         Evaluation evaluation = new Evaluation();
-        evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
+        evaluation.eval(d.getLabels(), network2.activate(d.getFeatureMatrix(), false, LayerWorkspaceMgr.noWorkspaces()));
         System.out.println(evaluation.stats());
     }
 }

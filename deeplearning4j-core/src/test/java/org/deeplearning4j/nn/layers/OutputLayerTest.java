@@ -21,8 +21,6 @@ package org.deeplearning4j.nn.layers;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
-import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -37,20 +35,14 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.SplitTestAndTrain;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Collections;
 import java.util.Random;
@@ -62,182 +54,6 @@ import static org.junit.Assert.*;
  */
 @Slf4j
 public class OutputLayerTest extends BaseDL4JTest {
-
-    @Test
-    public void testIris2() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(1e-1))
-                        .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3)
-                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        OutputLayer l = (OutputLayer) conf.getLayer().instantiate(conf,
-                        Collections.<IterationListener>singletonList(new ScoreIterationListener(1)), 0, params, true);
-        l.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-
-
-        DataSet next = iter.next();
-        next.shuffle();
-        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
-        trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
-        for( int i=0; i<10; i++ ) {
-            l.fit(trainTest.getTrain());
-        }
-
-
-        DataSet test = trainTest.getTest();
-        test.normalizeZeroMeanZeroUnitVariance();
-        Evaluation eval = new Evaluation();
-        INDArray output = l.output(test.getFeatureMatrix());
-        eval.eval(test.getLabels(), output);
-        log.info("Score " + eval.stats());
-
-
-    }
-
-    @Test
-    public void test3() {
-
-        org.nd4j.linalg.dataset.api.iterator.DataSetIterator iter = new IrisDataSetIterator(150, 150);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().miniBatch(false)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                        LossFunctions.LossFunction.MCXENT).nIn(4).nOut(3).activation(Activation.SOFTMAX)
-                                                        .weightInit(WeightInit.XAVIER).build())
-                        .build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        org.deeplearning4j.nn.layers.OutputLayer layer = (org.deeplearning4j.nn.layers.OutputLayer) conf.getLayer()
-                        .instantiate(conf, null, 0, params, true);
-        layer.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
-
-        DataSet next = iter.next();
-        next.normalizeZeroMeanZeroUnitVariance();
-        layer.setListeners(new ScoreIterationListener(1));
-
-        for( int i=0; i<3; i++ ) {
-            layer.fit(next);
-        }
-
-
-    }
-
-    @Test
-    public void testWeightsDifferent() {
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .miniBatch(false).seed(123)
-                        .updater(new AdaGrad(1e-1))
-                        .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3)
-                                        .weightInit(WeightInit.XAVIER)
-                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                        .activation(Activation.SOFTMAX).build())
-                        .build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        OutputLayer o = (OutputLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
-        o.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
-
-
-        int numSamples = 150;
-        int batchSize = 150;
-
-
-        DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);
-        DataSet iris = iter.next(); // Loads data into generator and format consumable for NN
-        iris.normalizeZeroMeanZeroUnitVariance();
-        o.setListeners(new ScoreIterationListener(1));
-        SplitTestAndTrain t = iris.splitTestAndTrain(0.8);
-        for( int i=0; i<1000; i++ ){
-            o.fit(t.getTrain());
-        }
-        log.info("Evaluate model....");
-        Evaluation eval = new Evaluation(3);
-        eval.eval(t.getTest().getLabels(), o.output(t.getTest().getFeatureMatrix(), true));
-        log.info(eval.stats());
-
-    }
-
-
-    @Test
-    public void testBinary() {
-
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
-        DataBuffer.Type initialType = Nd4j.dataType();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
-        INDArray data = Nd4j.create(new double[][] {{1, 1, 1, 0, 0, 0}, {1, 0, 1, 0, 0, 0}, {1, 1, 1, 0, 0, 0},
-                        {0, 0, 1, 1, 1, 0}, {0, 0, 1, 1, 0, 0}, {0, 0, 1, 1, 1, 0}});
-
-        INDArray data2 = Nd4j.create(new double[][] {{1, 0}, {1, 0}, {1, 0}, {0, 1}, {0, 1}, {0, 1}});
-
-        DataSet dataset = new DataSet(data, data2);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .seed(123)
-                        .updater(new Sgd(1e-2))
-                        .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(6).nOut(2)
-                                        .weightInit(WeightInit.ZERO).activation(Activation.SOFTMAX)
-                                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).build())
-                        .build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        OutputLayer o = (OutputLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
-        o.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
-
-        o.setListeners(new ScoreIterationListener(1));
-        for( int i=0; i<200; i++ ) {
-            o.fit(dataset);
-        }
-
-        DataTypeUtil.setDTypeForContext(initialType);
-    }
-
-
-    @Test
-    public void testIris() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).updater(new Sgd(1e-1))
-                        .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3)
-                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .build();
-
-        int numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        OutputLayer l = (OutputLayer) conf.getLayer().instantiate(conf,
-                        Collections.<IterationListener>singletonList(new ScoreIterationListener(1)), 0, params, true);
-        l.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-
-
-        DataSet next = iter.next();
-        next.shuffle();
-        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
-        trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
-        for( int i=0; i<5; i++ ) {
-            l.fit(trainTest.getTrain());
-        }
-
-
-        DataSet test = trainTest.getTest();
-        test.normalizeZeroMeanZeroUnitVariance();
-        Evaluation eval = new Evaluation();
-        INDArray output = l.output(test.getFeatureMatrix());
-        eval.eval(test.getLabels(), output);
-        log.info("Score " + eval.stats());
-
-
-    }
 
     @Test
     public void testSetParams() {
@@ -297,7 +113,7 @@ public class OutputLayerTest extends BaseDL4JTest {
         INDArray out = mln.output(input);
         assertArrayEquals(out.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
-        INDArray preout = mln.preOutput(input);
+        INDArray preout = mln.activate(input);
         assertArrayEquals(preout.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
         //As above, but for RnnOutputLayer. Expect all activations etc. to be 3d
@@ -321,7 +137,7 @@ public class OutputLayerTest extends BaseDL4JTest {
         INDArray outRnn = mlnRnn.output(input);
         assertArrayEquals(outRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
 
-        INDArray preoutRnn = mlnRnn.preOutput(input);
+        INDArray preoutRnn = mlnRnn.activate(input);
         assertArrayEquals(preoutRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
     }
 
@@ -357,7 +173,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                     labels3d.putScalar(new int[] {i, idx, j}, 1.0f);
                 }
             }
-            INDArray labels2d = proc.backprop(labels3d, miniBatchSize);
+            INDArray labels2d = proc.backprop(labels3d, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
@@ -374,7 +190,7 @@ public class OutputLayerTest extends BaseDL4JTest {
             mln.init();
 
             INDArray out2d = mln.feedForward(input).get(2);
-            INDArray out3d = proc.preProcess(out2d, miniBatchSize);
+            INDArray out3d = proc.preProcess(out2d, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
 
             MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
@@ -429,7 +245,7 @@ public class OutputLayerTest extends BaseDL4JTest {
             INDArray out = mln.output(input);
             assertArrayEquals(out.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
-            INDArray preout = mln.preOutput(input);
+            INDArray preout = mln.activate(input);
             assertArrayEquals(preout.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
 
 
@@ -439,7 +255,7 @@ public class OutputLayerTest extends BaseDL4JTest {
             INDArray outRnn2 = mlnRnn.output(input);
             assertArrayEquals(outRnn2.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
 
-            INDArray preoutRnn = mlnRnn.preOutput(input);
+            INDArray preoutRnn = mlnRnn.activate(input);
             assertArrayEquals(preoutRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
         }
     }
@@ -706,7 +522,7 @@ public class OutputLayerTest extends BaseDL4JTest {
 
     @Test
     public void testCnnOutputLayerSoftmax(){
-        //Check that softmax is applied depth-wise
+        //Check that softmax is applied channels-wise
 
         MultiLayerConfiguration conf =
                 new NeuralNetConfiguration.Builder().seed(12345L)

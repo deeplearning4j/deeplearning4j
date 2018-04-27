@@ -29,6 +29,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /** LastTimeStepVertex is used in the context of recurrent neural network activations, to go from 3d (time series)
  * activations to 2d activations, by extracting out the last time step of activations for each example.<br>
@@ -74,7 +76,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         //First: get the mask arrays for the given input, if any
         INDArray[] inputMaskArrays = graph.getInputMaskArrays();
         INDArray mask = (inputMaskArrays != null ? inputMaskArrays[inputIdx] : null);
@@ -88,10 +90,11 @@ public class LastTimeStepVertex extends BaseGraphVertex {
             //No mask array -> extract same (last) column for all
             int lastTS = inputs[0].size(2) - 1;
             out = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
+            out = workspaceMgr.dup(ArrayType.ACTIVATIONS, out);
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
             int[] outShape = new int[] {inputs[0].size(0), inputs[0].size(1)};
-            out = Nd4j.create(outShape);
+            out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape);
 
             //Want the index of the last non-zero entry in the mask array.
             //Check a little here by using mulRowVector([0,1,2,3,...]) and argmax
@@ -115,10 +118,10 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
 
         //Allocate the appropriate sized array:
-        INDArray epsilonsOut = Nd4j.create(fwdPassShape);
+        INDArray epsilonsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, fwdPassShape, 'f');
 
         if (fwdPassTimeSteps == null) {
             //Last time step for all examples

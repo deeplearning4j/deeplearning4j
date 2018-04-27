@@ -86,7 +86,7 @@ public class CenterLossOutputLayerTest extends BaseDL4JTest {
                         .graphBuilder().addInputs("input")
                         .setInputTypes(InputType.convolutionalFlat(28, 28, 1))
                         .addLayer("0", new ConvolutionLayer.Builder(5, 5)
-                                        //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
+                                        //nIn and nOut specify channels. nIn here is the nChannels and nOut is the number of filters to be applied
                                         .nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build(),
                                         "input")
                         .addLayer("1", new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)

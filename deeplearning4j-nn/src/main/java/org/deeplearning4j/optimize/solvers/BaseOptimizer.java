@@ -41,6 +41,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,8 +123,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public double score() {
-        model.computeGradientAndScore();
-        return model.score();
+//        model.computeGradientAndScore();
+//        return model.score();
+        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
     @Override
@@ -168,9 +170,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public Pair<Gradient, Double> gradientAndScore() {
+    public Pair<Gradient, Double> gradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         oldScore = score;
-        model.computeGradientAndScore();
+        model.computeGradientAndScore(workspaceMgr);
 
         if (iterationListeners != null && !iterationListeners.isEmpty()) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -184,7 +186,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
         Pair<Gradient, Double> pair = model.gradientAndScore();
         score = pair.getSecond();
-        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
+        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize(), workspaceMgr);
         return pair;
     }
 
@@ -194,12 +196,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      */
     // TODO add flag to allow retaining state between mini batches and when to apply updates
     @Override
-    public boolean optimize() {
+    public boolean optimize(LayerWorkspaceMgr workspaceMgr) {
         //validate the input before training
         INDArray gradient;
         INDArray searchDirection;
         INDArray parameters;
-        Pair<Gradient, Double> pair = gradientAndScore();
+        Pair<Gradient, Double> pair = gradientAndScore(workspaceMgr);
         if (searchState.isEmpty()) {
             searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
@@ -231,7 +233,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
         //perform one line search optimization
         try {
-            step = lineMaximizer.optimize(parameters, gradient, searchDirection);
+            step = lineMaximizer.optimize(parameters, gradient, searchDirection, workspaceMgr);
         } catch (InvalidStepException e) {
             log.warn("Invalid step...continuing another iteration: {}", e.getMessage());
             step = 0.0;
@@ -246,7 +248,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             log.debug("Step size returned by line search is 0.0.");
         }
 
-        pair = gradientAndScore();
+        pair = gradientAndScore(workspaceMgr);
 
         //updates searchDirection
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
@@ -315,7 +317,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
     @Override
-    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
+    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, LayerWorkspaceMgr workspaceMgr) {
         if (model instanceof ComputationGraph) {
             ComputationGraph graph = (ComputationGraph) model;
             if (computationGraphUpdater == null) {
@@ -323,7 +325,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                     computationGraphUpdater = new ComputationGraphUpdater(graph);
                 }
             }
-            computationGraphUpdater.update(gradient, getIterationCount(model), getEpochCount(model), batchSize);
+            computationGraphUpdater.update(gradient, getIterationCount(model), getEpochCount(model), batchSize, workspaceMgr);
         } else {
             if (updater == null) {
                 try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -332,7 +334,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             }
             Layer layer = (Layer) model;
 
-            updater.update(layer, gradient, getIterationCount(model), getEpochCount(model), batchSize);
+            updater.update(layer, gradient, getIterationCount(model), getEpochCount(model), batchSize, workspaceMgr);
         }
     }
 

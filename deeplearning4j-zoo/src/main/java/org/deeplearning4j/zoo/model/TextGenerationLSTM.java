@@ -41,7 +41,7 @@ public class TextGenerationLSTM extends ZooModel {
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
     public TextGenerationLSTM(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.SEPARATE);
+        this(numLabels, seed, WorkspaceMode.ENABLED);
     }
 
     public TextGenerationLSTM(int numLabels, long seed, WorkspaceMode workspaceMode) {
@@ -49,7 +49,7 @@ public class TextGenerationLSTM extends ZooModel {
         this.inputShape = new int[] {maxLength, totalUniqueCharacters};
         this.seed = seed;
         this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
+        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 

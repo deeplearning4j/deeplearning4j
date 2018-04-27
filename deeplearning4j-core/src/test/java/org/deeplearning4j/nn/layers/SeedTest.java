@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,13 +36,13 @@ public class SeedTest extends BaseDL4JTest {
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
-        layer.fit(data.getFeatureMatrix());
+        layer.fit(data.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
 
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         double score = layer.score();
         INDArray parameters = layer.params();
         layer.setParams(parameters);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
 
         double score2 = layer.score();
         assertEquals(parameters, layer.params());

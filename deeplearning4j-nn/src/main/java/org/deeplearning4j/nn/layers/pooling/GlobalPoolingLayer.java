@@ -16,6 +16,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -26,16 +28,16 @@ import java.util.Arrays;
  * to be 2d, and are fed forward through the network during training or post-training forward pass:<br>
  * - Time series: mask arrays are shape [minibatchSize, maxTimeSeriesLength] and contain values 0 or 1 only<br>
  * - CNNs: mask have shape [minibatchSize, height] or [minibatchSize, width]. Important: the current implementation assumes
- *   that for CNNs + variable length (masking), the input shape is [minibatchSize, depth, height, 1] or
- *   [minibatchSize, depth, 1, width] respectively. This is the case with global pooling in architectures like CNN for
+ *   that for CNNs + variable length (masking), the input shape is [minibatchSize, channels, height, 1] or
+ *   [minibatchSize, channels, 1, width] respectively. This is the case with global pooling in architectures like CNN for
  *   sentence classification.<br>
  * <p>
  * Behaviour with default settings:<br>
  * - 3d (time series) input with shape [minibatchSize, vectorSize, timeSeriesLength] -> 2d output [minibatchSize, vectorSize]<br>
- * - 4d (CNN) input with shape [minibatchSize, depth, height, width] -> 2d output [minibatchSize, depth]<br>
+ * - 4d (CNN) input with shape [minibatchSize, channels, height, width] -> 2d output [minibatchSize, channels]<br>
  * <p>
  * Alternatively, by setting collapseDimensions = false in the configuration, it is possible to retain the reduced dimensions
- * as 1s: this gives [minibatchSize, vectorSize, 1] for RNN output, and [minibatchSize, depth, 1, 1] for CNN output.<br>
+ * as 1s: this gives [minibatchSize, vectorSize, 1] for RNN output, and [minibatchSize, channels, 1, 1] for CNN output.<br>
  *
  * @author Alex Black
  */
@@ -60,11 +62,6 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         collapseDimensions = layerConf.isCollapseDimensions();
         poolingType = layerConf.getPoolingType();
         pNorm = layerConf.getPnorm();
-    }
-
-    @Override
-    public INDArray preOutput(boolean training) {
-        return activate(training);
     }
 
     @Override
@@ -93,12 +90,10 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        if (input == null) {
-            throw new IllegalStateException("Cannot perform forward pass: input not set for layer " + layerId());
-        }
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
 
-        int[] poolDim = null;
+        int[] poolDim;
         if (input.rank() == 3) {
             //TODO validation on pooling dimensions
 
@@ -134,10 +129,10 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
                 reduced2d = MaskedReductionUtil.maskedPoolingTimeSeries(poolingType, input, maskArray, pNorm);
             } else if (input.rank() == 4) {
-                //Masked convolutions. 4d convolution data, shape [minibatch, depth, h, w]
+                //Masked convolutions. 4d convolution data, shape [minibatch, channels, h, w]
                 //and 2d mask array.
                 //Because of this: for now we'll support *masked* CNN global pooling on either
-                // [minibatch, depth, 1, X] or [minibatch, depth, X, 1] data
+                // [minibatch, channels, 1, X] or [minibatch, channels, X, 1] data
                 // with a mask array of shape [minibatch, X]
 
                 if (maskArray.rank() != 2) {
@@ -155,7 +150,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 if ((h != 1 && w != 1) || (h != maskLength && w != maskLength)) {
                     throw new UnsupportedOperationException(
                                     "Masked global pooling with on CNN data currently only supports data with h=1 or w=1:\n"
-                                                    + " input activations must have shape [minibatchSize,depth,height=1,width] or [minibatchSize,depth,height,width=1] with "
+                                                    + " input activations must have shape [minibatchSize,channels,height=1,width] or [minibatchSize,channels,height,width=1] with "
                                                     + " mask array of shape [minibatchSize,width] or [minibatchSize,height] respectively.\n"
                                                     + " Got 4d activations array (shape "
                                                     + Arrays.toString(input.shape()) + ") and " + maskArray.rank()
@@ -181,15 +176,16 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             }
         }
 
+        //TODO optimize without leverage
         if (collapseDimensions) {
             //Standard/common case
-            return reduced2d;
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d);
         } else {
             int[] inputShape = input.shape();
             if (input.rank() == 3) {
-                return reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1);
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1));
             } else {
-                return reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1);
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1));
             }
         }
     }
@@ -223,11 +219,12 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
 
         if (!collapseDimensions && epsilon.rank() != 2) {
             int[] origShape = epsilon.shape();
-            //Don't collapse dims case: error should be [minibatch, vectorSize, 1] or [minibatch, depth, 1, 1]
+            //Don't collapse dims case: error should be [minibatch, vectorSize, 1] or [minibatch, channels, 1, 1]
             //Reshape it to 2d, to get rid of the 1s
             epsilon = epsilon.reshape(epsilon.ordering(), origShape[0], origShape[1]);
         }
@@ -274,6 +271,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         }
 
+        //TODO optimize without leverage
+        epsilonNd = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilonNd);
         return new Pair<>(retGradient, epsilonNd);
     }
 

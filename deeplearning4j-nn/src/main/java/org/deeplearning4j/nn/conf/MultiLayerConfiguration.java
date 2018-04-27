@@ -64,11 +64,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     @Getter
     @Setter
-    protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
+    protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.ENABLED;
 
     @Getter
     @Setter
-    protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+    protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
 
     @Getter
     @Setter
@@ -141,6 +141,13 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         try {
             conf = mapper.readValue(json, MultiLayerConfiguration.class);
         } catch (IOException e) {
+            //Check if this exception came from legacy legacy deserializer...
+            String msg = e.getMessage();
+            if(msg != null && msg.contains("legacy")){
+                throw new RuntimeException("Error deserializing MultiLayerConfiguration - configuration may have a custom " +
+                        "layer, vertex or preprocessor, in pre version 1.0.0-alpha JSON format. These layers can be " +
+                        "deserialized by first registering them with NeuralNetConfiguration.registerLegacyCustomClassesForJSON(Class...)", e);
+            }
             throw new RuntimeException(e);
         }
 
@@ -356,8 +363,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int tbpttBackLength = 20;
         protected InputType inputType;
 
-        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
-        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.ENABLED;
+        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
         protected CacheMode cacheMode = CacheMode.NONE;
 
         /**

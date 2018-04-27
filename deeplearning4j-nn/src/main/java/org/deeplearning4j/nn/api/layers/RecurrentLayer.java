@@ -20,6 +20,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 
@@ -38,7 +39,7 @@ public interface RecurrentLayer extends Layer {
      * @param input Input to this layer
      * @return activations
      */
-    INDArray rnnTimeStep(INDArray input);
+    INDArray rnnTimeStep(INDArray input, LayerWorkspaceMgr workspaceMgr);
 
     /**
      * Returns a shallow copy of the RNN stateMap (that contains the stored history for use in methods such
@@ -69,7 +70,7 @@ public interface RecurrentLayer extends Layer {
      * @param storeLastForTBPTT If true: store the final state in tBpttStateMap for use in truncated BPTT training
      * @return Layer activations
      */
-    INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT);
+    INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT, LayerWorkspaceMgr workspaceMg);
 
     /**
      * Get the RNN truncated backpropagations through time (TBPTT) state for the recurrent layer.
@@ -95,6 +96,6 @@ public interface RecurrentLayer extends Layer {
      * forward pass using stored state for truncated BPTT vs. from zero initialization
      * for standard BPTT.
      */
-    Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength);
+    Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength, LayerWorkspaceMgr workspaceMgr);
 
 }

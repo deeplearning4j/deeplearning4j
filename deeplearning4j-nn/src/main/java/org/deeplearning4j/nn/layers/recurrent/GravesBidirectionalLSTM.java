@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 
@@ -72,18 +73,19 @@ public class GravesBidirectionalLSTM
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return backpropGradientHelper(epsilon, false, -1);
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        return backpropGradientHelper(epsilon, false, -1, workspaceMgr);
     }
 
     @Override
-    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength) {
-        return backpropGradientHelper(epsilon, true, tbpttBackwardLength);
+    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength, LayerWorkspaceMgr workspaceMgr) {
+        return backpropGradientHelper(epsilon, true, tbpttBackwardLength, workspaceMgr);
     }
 
 
     private Pair<Gradient, INDArray> backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
-                    final int tbpttBackwardLength) {
+                    final int tbpttBackwardLength, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
 
         if (truncatedBPTT) {
             throw new UnsupportedOperationException(
@@ -91,7 +93,7 @@ public class GravesBidirectionalLSTM
                                             + layerId());
         }
 
-        final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true);
+        final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true, workspaceMgr);
 
         final Pair<Gradient, INDArray> forwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
                         this.layerConf().getGateActivationFn(), this.input,
@@ -101,11 +103,11 @@ public class GravesBidirectionalLSTM
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray, true,
-                        null);
+                        null, workspaceMgr);
 
 
 
-        final FwdPassReturn backPass = activateHelperDirectional(true, null, null, true, false);
+        final FwdPassReturn backPass = activateHelperDirectional(true, null, null, true, false, workspaceMgr);
 
         final Pair<Gradient, INDArray> backwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
                         this.layerConf().getGateActivationFn(), this.input,
@@ -115,7 +117,7 @@ public class GravesBidirectionalLSTM
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray, true,
-                        null);
+                        null, workspaceMgr);
 
 
         //merge the gradient, which is key value pair of String,INDArray
@@ -147,42 +149,19 @@ public class GravesBidirectionalLSTM
 
     }
 
-
-
     @Override
-    public INDArray preOutput(INDArray x) {
-        return activate(x, true);
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
+        return activateOutput(training, false, workspaceMgr);
     }
 
     @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return activate(x, training);
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return activateOutput(training, false, workspaceMgr);
     }
 
-    @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return activateOutput(training, false);
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return activateOutput(true, false);
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
-        return activateOutput(training, false);
-    }
-
-    @Override
-    public INDArray activate() {
-
-        return activateOutput(false, false);
-    }
-
-    private INDArray activateOutput(final boolean training, boolean forBackprop) {
+    private INDArray activateOutput(final boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         final FwdPassReturn forwardsEval;
         final FwdPassReturn backwardsEval;
 
@@ -201,7 +180,7 @@ public class GravesBidirectionalLSTM
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), true,
                             GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray, true, null,
-                            forBackprop ? cacheMode : CacheMode.NONE);
+                            forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
 
             backwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
                             this.input,
@@ -210,7 +189,7 @@ public class GravesBidirectionalLSTM
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), false,
                             GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true, null,
-                            forBackprop ? cacheMode : CacheMode.NONE);
+                            forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
 
             cachedPassForward = forwardsEval;
             cachedPassBackward = backwardsEval;
@@ -228,7 +207,7 @@ public class GravesBidirectionalLSTM
     }
 
     private FwdPassReturn activateHelperDirectional(final boolean training, final INDArray prevOutputActivations,
-                    final INDArray prevMemCellState, boolean forBackprop, boolean forwards) {
+                    final INDArray prevMemCellState, boolean forBackprop, boolean forwards, LayerWorkspaceMgr workspaceMgr) {
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
@@ -256,7 +235,7 @@ public class GravesBidirectionalLSTM
             return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                             getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training,
                             prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, maskArray, true,
-                            null, forBackprop ? cacheMode : CacheMode.NONE);
+                            null, forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
         }
     }
 
@@ -276,36 +255,7 @@ public class GravesBidirectionalLSTM
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        double l2Sum = 0.0;
-        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
-            double l2 = conf.getL2ByParam(entry.getKey());
-            if (l2 > 0) {
-                double norm2 = getParam(entry.getKey()).norm2Number().doubleValue();
-                l2Sum += 0.5 * l2 * norm2 * norm2;
-            }
-        }
-
-        return l2Sum;
-    }
-
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        double l1Sum = 0.0;
-        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
-            double l1 = conf.getL1ByParam(entry.getKey());
-            if (l1 > 0) {
-                double norm1 = getParam(entry.getKey()).norm1Number().doubleValue();
-                l1Sum += l1 * norm1;
-            }
-        }
-
-        return l1Sum;
-    }
-
-    @Override
-    public INDArray rnnTimeStep(INDArray input) {
+    public INDArray rnnTimeStep(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException(
                         "you can not time step a bidirectional RNN, it has to run on a batch of data all at once "
                                         + layerId());
@@ -314,7 +264,7 @@ public class GravesBidirectionalLSTM
 
 
     @Override
-    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
+    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException(
                         "Cannot set stored state: bidirectional RNNs don't have stored state " + layerId());
     }

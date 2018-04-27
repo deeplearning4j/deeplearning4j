@@ -2,7 +2,7 @@ package org.deeplearning4j.datasets.fetchers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.datavec.api.util.ArchiveUtils;
+import org.nd4j.util.ArchiveUtils;
 
 import java.io.File;
 import java.io.IOException;

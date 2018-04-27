@@ -28,7 +28,6 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdFilterAlgo;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.FwdAlgo;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseCudnnHelper;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -36,7 +35,6 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -44,6 +42,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
 
 import java.util.Arrays;
@@ -128,7 +128,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
                     AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
-                    ConvolutionMode convolutionMode, int[] dilation) {
+                    ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
         if(dilation[0] > 2 || dilation[1] > 2){
             //CuDNN seems to not support all (valid) configurations...
             //Same mode + dilation 3: cuDNN status = 9: CUDNN_STATUS_NOT_SUPPORTED
@@ -246,14 +246,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             checkCudnn(false, "cudnnGetConvolutionBackwardDataAlgorithm", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
         }
 
-        INDArray epsNext;
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
-                epsNext = Nd4j.create(new int[] {miniBatch, inDepth, inH, inW}, 'c');
-            }
-        } else
-            epsNext = Nd4j.create(new int[] {miniBatch, inDepth, inH, inW}, 'c');
+        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {miniBatch, inDepth, inH, inW}, 'c');
 
         int[] dstStride = epsNext.stride();
 
@@ -331,7 +324,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
     @Override
     public INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
-                    AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation) {
+                              AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
         if(dilation[0] > 2 || dilation[1] > 2){
             //CuDNN seems to not support all (valid) configurations...
             //Same mode + dilation 3: cuDNN status = 9: CUDNN_STATUS_NOT_SUPPORTED
@@ -355,15 +348,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        INDArray z;
-
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
-                z = Nd4j.createUninitialized(new int[] {miniBatch, outDepth, outSize[0], outSize[1]});
-            }
-        } else
-            z = Nd4j.createUninitialized(new int[] {miniBatch, outDepth, outSize[0], outSize[1]});
+        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[] {miniBatch, outDepth, outSize[0], outSize[1]});
 
         code = cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]);

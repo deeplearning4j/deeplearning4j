@@ -27,23 +27,12 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
-import org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer;
-import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
-import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
-import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
-import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
-import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializerHelper;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo.Id;
 
 import java.io.Serializable;
 import java.util.*;
@@ -51,41 +40,9 @@ import java.util.*;
 /**
  * A neural network layer.
  */
-@JsonTypeInfo(use = Id.NAME, include = As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
-                @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
-                @JsonSubTypes.Type(value = Convolution1DLayer.class, name = "convolution1d"),
-                @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
-                @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
-                @JsonSubTypes.Type(value = GravesBidirectionalLSTM.class, name = "gravesBidirectionalLSTM"),
-                @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
-                @JsonSubTypes.Type(value = CenterLossOutputLayer.class, name = "CenterLossOutputLayer"),
-                @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
-                @JsonSubTypes.Type(value = LossLayer.class, name = "loss"),
-                @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
-                @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
-                @JsonSubTypes.Type(value = Subsampling1DLayer.class, name = "subsampling1d"),
-                @JsonSubTypes.Type(value = BatchNormalization.class, name = "batchNormalization"),
-                @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
-                @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
-                @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
-                @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
-                @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
-                @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling"),
-                @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding"),
-                @JsonSubTypes.Type(value = ZeroPadding1DLayer.class, name = "zeroPadding1d"),
-                @JsonSubTypes.Type(value = FrozenLayer.class, name = "FrozenLayer"),
-                @JsonSubTypes.Type(value = Upsampling2D.class, name = "Upsampling2D"),
-                @JsonSubTypes.Type(value = Yolo2OutputLayer.class, name = "Yolo2OutputLayer"),
-                @JsonSubTypes.Type(value = RnnLossLayer.class, name = "RnnLossLayer"),
-                @JsonSubTypes.Type(value = CnnLossLayer.class, name = "CnnLossLayer"),
-                @JsonSubTypes.Type(value = Bidirectional.class, name = "Bidirectional"),
-                @JsonSubTypes.Type(value = SimpleRnn.class, name = "SimpleRnn"),
-                @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult"),
-                @JsonSubTypes.Type(value = MaskLayer.class, name = "MaskLayer"),
-                @JsonSubTypes.Type(value = MaskZeroLayer.class, name = "MaskZeroLayer"),
-                @JsonSubTypes.Type(value = Cropping2D.class, name = "Cropping2D")}
-)
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyLayerDeserializerHelper.class)
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {
@@ -102,7 +59,7 @@ public abstract class Layer implements Serializable, Cloneable {
     /**
      * Initialize the weight constraints. Should be called last, in the outer-most constructor
      */
-    protected void initializeConstraints(Builder<?> builder){
+    protected void initializeConstraints(Builder<?> builder) {
         //Note: this has to be done AFTER all constructors have finished - otherwise the required
         // fields may not yet be set yet
         List<LayerConstraint> allConstraints = new ArrayList<>();
@@ -129,7 +86,7 @@ public abstract class Layer implements Serializable, Cloneable {
                 allConstraints.add(c2);
             }
         }
-        if(!allConstraints.isEmpty()) {
+        if (!allConstraints.isEmpty()) {
             this.constraints = allConstraints;
         } else {
             this.constraints = null;
@@ -158,8 +115,8 @@ public abstract class Layer implements Serializable, Cloneable {
     }
 
     public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams);
+                                                                Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                                                                boolean initializeParams);
 
     /**
      * @return The parameter initializer for this model
@@ -170,14 +127,14 @@ public abstract class Layer implements Serializable, Cloneable {
      * For a given type of input to this layer, what is the type of the output?
      *
      * @param layerIndex Index of the layer
-     * @param inputType Type of input for the layer
+     * @param inputType  Type of input for the layer
      * @return Type of output from the layer
      * @throws IllegalStateException if input type is invalid for this layer
      */
     public abstract InputType getOutputType(int layerIndex, InputType inputType);
 
     /**
-     * Set the nIn value (number of inputs, or input depth for CNNs) based on the given input type
+     * Set the nIn value (number of inputs, or input channels for CNNs) based on the given input type
      *
      * @param inputType Input type for this layer
      * @param override  If false: only set the nIn value if it's not already set. If true: set it regardless of whether it's
@@ -203,7 +160,7 @@ public abstract class Layer implements Serializable, Cloneable {
      * Different parameters may have different L1 values, even for a single .l1(x) configuration.
      * For example, biases generally aren't L1 regularized, even if weights are
      *
-     * @param paramName    Parameter name
+     * @param paramName Parameter name
      * @return L1 value for that parameter
      */
     public abstract double getL1ByParam(String paramName);
@@ -213,7 +170,7 @@ public abstract class Layer implements Serializable, Cloneable {
      * Different parameters may have different L2 values, even for a single .l2(x) configuration.
      * For example, biases generally aren't L1 regularized, even if weights are
      *
-     * @param paramName    Parameter name
+     * @param paramName Parameter name
      * @return L2 value for that parameter
      */
     public abstract double getL2ByParam(String paramName);
@@ -233,12 +190,12 @@ public abstract class Layer implements Serializable, Cloneable {
      * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
      * is not necessarily the case
      *
-     * @param paramName    Parameter name
-     * @return             IUpdater for the parameter
+     * @param paramName Parameter name
+     * @return IUpdater for the parameter
      */
     public IUpdater getUpdaterByParam(String paramName) {
         throw new UnsupportedOperationException(
-                        "Not supported: all layers with parameters should override this method");
+                "Not supported: all layers with parameters should override this method");
     }
 
     /**
@@ -290,7 +247,7 @@ public abstract class Layer implements Serializable, Cloneable {
          * @see #dropOut(IDropout)
          */
         public T dropOut(double inputRetainProbability) {
-            if(inputRetainProbability == 0.0){
+            if (inputRetainProbability == 0.0) {
                 return dropOut(null);
             }
             return dropOut(new Dropout(inputRetainProbability));
@@ -302,9 +259,9 @@ public abstract class Layer implements Serializable, Cloneable {
          * @param dropout Dropout, such as {@link Dropout}, {@link org.deeplearning4j.nn.conf.dropout.GaussianDropout},
          *                {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise} etc
          */
-        public T dropOut(IDropout dropout){
+        public T dropOut(IDropout dropout) {
             this.iDropout = dropout;
-            return (T)this;
+            return (T) this;
         }
 
         /**

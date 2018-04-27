@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.Serializable;
 
@@ -92,13 +93,11 @@ public interface GraphVertex extends Serializable {
     Layer getLayer();
 
     /** Set the input activations.
-     *
-     * @param inputNumber Must be in range 0 to {@link #getNumInputArrays()}-1
+     *  @param inputNumber Must be in range 0 to {@link #getNumInputArrays()}-1
      * @param input The input array
+     * @param workspaceMgr
      */
-    void setInput(int inputNumber, INDArray input);
-
-    void migrateInput();
+    void setInput(int inputNumber, INDArray input, LayerWorkspaceMgr workspaceMgr);
 
     /** Set the errors (epsilon - aka dL/dActivation) for this GraphVertex */
     void setEpsilon(INDArray epsilon);
@@ -116,13 +115,13 @@ public interface GraphVertex extends Serializable {
      * @param training if true: forward pass at training time. If false: forward pass at test time
      * @return The output (for example, activations) of the GraphVertex
      */
-    INDArray doForward(boolean training);
+    INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr);
 
     /** Do backward pass
      * @param tbptt If true: do backprop using truncated BPTT
      * @return The gradients (may be null), and the errors/epsilons for all inputs to this GraphVertex
      */
-    Pair<Gradient, INDArray[]> doBackward(boolean tbptt);
+    Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr);
 
     /** Get the array of inputs previously set for this GraphVertex */
     INDArray[] getInputs();
@@ -131,7 +130,7 @@ public interface GraphVertex extends Serializable {
     INDArray getEpsilon();
 
     /** Set all inputs for this GraphVertex
-     * @see #setInput(int, INDArray)
+     * @see #setInput(int, INDArray, LayerWorkspaceMgr)
      */
     void setInputs(INDArray... inputs);
 

@@ -27,6 +27,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -116,8 +118,8 @@ public class BidirectionalTest extends BaseDL4JTest {
             MultiLayerUpdater u1 = (MultiLayerUpdater) net1.getUpdater();
             MultiLayerUpdater u2 = (MultiLayerUpdater) net2.getUpdater();
             assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
-            u1.update(net1, g1, 0, 0, 3);
-            u2.update(net2, g2, 0, 0, 3);
+            u1.update(net1, g1, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+            u2.update(net2, g2, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
             assertEquals(g1.gradient(), g2.gradient());
             assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
 
@@ -134,7 +136,7 @@ public class BidirectionalTest extends BaseDL4JTest {
     @Test
     public void compareImplementationsCompGraph(){
 //        for(WorkspaceMode wsm : WorkspaceMode.values()) {
-        for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.SEPARATE}) {
+        for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.NONE, WorkspaceMode.ENABLED}) {
             log.info("*** Starting workspace mode: " + wsm);
 
             //Bidirectional(GravesLSTM) and GravesBidirectionalLSTM should be equivalent, given equivalent params
@@ -215,8 +217,8 @@ public class BidirectionalTest extends BaseDL4JTest {
             ComputationGraphUpdater u1 = (ComputationGraphUpdater) net1.getUpdater();
             ComputationGraphUpdater u2 = (ComputationGraphUpdater) net2.getUpdater();
             assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
-            u1.update(g1, 0, 0, 3);
-            u2.update(g2, 0, 0, 3);
+            u1.update(g1, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+            u2.update(g2, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
             assertEquals(g1.gradient(), g2.gradient());
             assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
 
@@ -402,10 +404,11 @@ public class BidirectionalTest extends BaseDL4JTest {
                 net3.setParam("0_RW", net1.getParam("0_bRW"));
                 net3.setParam("0_b", net1.getParam("0_bb"));
 
+                INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
 
                 INDArray out1 = net1.output(in);
                 INDArray out2 = net2.output(in);
-                INDArray out3 = TimeSeriesUtils.reverseTimeSeries(net3.output(TimeSeriesUtils.reverseTimeSeries(in)));
+                INDArray out3 = TimeSeriesUtils.reverseTimeSeries(net3.output(inReverse), LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
 
                 INDArray outExp;
                 switch (m) {
@@ -442,23 +445,23 @@ public class BidirectionalTest extends BaseDL4JTest {
 
                     net1.setInput(in);
                     net2.setInput(in);
-                    net3.setInput(TimeSeriesUtils.reverseTimeSeries(in));
+                    net3.setInput(TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT));
                     net1.feedForward(true, false);
                     net2.feedForward(true, false);
                     net3.feedForward(true, false);
 
-                    Pair<Gradient, INDArray> p1 = net1.backpropGradient(eps1);
-                    Pair<Gradient, INDArray> p2 = net2.backpropGradient(eps);
-                    Pair<Gradient, INDArray> p3 = net3.backpropGradient(TimeSeriesUtils.reverseTimeSeries(eps));
+                    Pair<Gradient, INDArray> p1 = net1.backpropGradient(eps1, LayerWorkspaceMgr.noWorkspaces());
+                    Pair<Gradient, INDArray> p2 = net2.backpropGradient(eps, LayerWorkspaceMgr.noWorkspaces());
+                    Pair<Gradient, INDArray> p3 = net3.backpropGradient(TimeSeriesUtils.reverseTimeSeries(eps, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT), LayerWorkspaceMgr.noWorkspaces());
                     Gradient g1 = p1.getFirst();
                     Gradient g2 = p2.getFirst();
                     Gradient g3 = p3.getFirst();
 
                     for (boolean updates : new boolean[]{false, true}) {
                         if (updates) {
-                            net1.getUpdater().update(net1, g1, 0, 0, 3);
-                            net2.getUpdater().update(net2, g2, 0, 0, 3);
-                            net3.getUpdater().update(net3, g3, 0, 0, 3);
+                            net1.getUpdater().update(net1, g1, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+                            net2.getUpdater().update(net2, g2, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+                            net3.getUpdater().update(net3, g3, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
                         }
 
                         assertEquals(g2.gradientForVariable().get("0_W"), g1.gradientForVariable().get("0_fW"));
@@ -531,7 +534,9 @@ public class BidirectionalTest extends BaseDL4JTest {
 
                 INDArray out1 = net1.outputSingle(in);
                 INDArray out2 = net2.outputSingle(in);
-                INDArray out3 = TimeSeriesUtils.reverseTimeSeries(net3.outputSingle(TimeSeriesUtils.reverseTimeSeries(in)));
+                INDArray out3 = TimeSeriesUtils.reverseTimeSeries(net3.outputSingle(
+                        TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT)),
+                        LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
 
                 INDArray outExp;
                 switch (m) {
@@ -568,17 +573,17 @@ public class BidirectionalTest extends BaseDL4JTest {
 
                     net1.outputSingle(true, false, in);
                     net2.outputSingle(true, false, in);
-                    net3.outputSingle(true, false, TimeSeriesUtils.reverseTimeSeries(in));
+                    net3.outputSingle(true, false, TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT));
 
                     Gradient g1 = net1.backpropGradient(eps1);
                     Gradient g2 = net2.backpropGradient(eps);
-                    Gradient g3 = net3.backpropGradient(TimeSeriesUtils.reverseTimeSeries(eps));
+                    Gradient g3 = net3.backpropGradient(TimeSeriesUtils.reverseTimeSeries(eps, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT));
 
                     for (boolean updates : new boolean[]{false, true}) {
                         if (updates) {
-                            net1.getUpdater().update(g1, 0, 0, 3);
-                            net2.getUpdater().update(g2, 0, 0, 3);
-                            net3.getUpdater().update(g3, 0, 0, 3);
+                            net1.getUpdater().update(g1, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+                            net2.getUpdater().update(g2, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+                            net3.getUpdater().update(g3, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
                         }
 
                         assertEquals(g2.gradientForVariable().get("0_W"), g1.gradientForVariable().get("0_fW"));

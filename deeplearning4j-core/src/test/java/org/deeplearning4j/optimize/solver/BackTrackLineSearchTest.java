@@ -23,6 +23,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Collections;
 
@@ -58,12 +59,12 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
 
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
+        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient(), LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(1.0, step, 1e-3);
     }
@@ -76,14 +77,14 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
 
         BackTrackLineSearch lineSearch =
                         new BackTrackLineSearch(layer, new NegativeDefaultStepFunction(), layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
+        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient(), LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(1.0, step, 1e-3);
     }
@@ -97,19 +98,19 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
         INDArray origGradient = layer.gradient().gradient().dup();
 
         NegativeDefaultStepFunction sf = new NegativeDefaultStepFunction();
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, sf, layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
+        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient(), LayerWorkspaceMgr.noWorkspacesImmutable());
         INDArray currParams = layer.params();
         sf.step(currParams, origGradient, step);
         layer.setParams(currParams);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
 
         score2 = layer.score();
 
@@ -125,21 +126,21 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.MCXENT);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
         INDArray origGradient = layer.gradient().gradient().dup();
 
         DefaultStepFunction sf = new DefaultStepFunction();
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, sf, layer.getOptimizer());
         double step = lineSearch.optimize(layer.params().dup(), layer.gradient().gradient().dup(),
-                        layer.gradient().gradient().dup());
+                        layer.gradient().gradient().dup(), LayerWorkspaceMgr.noWorkspacesImmutable());
 
         INDArray currParams = layer.params();
         sf.step(currParams, origGradient, step);
         layer.setParams(currParams);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score2 = layer.score();
 
         assertTrue("score1 = " + score1 + ", score2 = " + score2, score1 < score2);

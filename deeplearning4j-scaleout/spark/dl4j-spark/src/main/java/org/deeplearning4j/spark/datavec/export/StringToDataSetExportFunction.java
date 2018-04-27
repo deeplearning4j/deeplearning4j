@@ -88,8 +88,7 @@ public class StringToDataSetExportFunction implements VoidFunction<Iterator<Stri
             return;
 
         RecordReader rr = new CollectionRecordReader(list);
-        RecordReaderDataSetIterator iter = new RecordReaderDataSetIterator(rr, new SelfWritableConverter(), batchSize,
-                        labelIndex, numPossibleLabels, regression);
+        RecordReaderDataSetIterator iter = new RecordReaderDataSetIterator(rr, batchSize, labelIndex, numPossibleLabels, regression);
 
         DataSet ds = iter.next();
 

@@ -64,11 +64,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     @Getter
     @Setter
-    protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
+    protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.ENABLED;
 
     @Getter
     @Setter
-    protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+    protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
 
     @Getter
     @Setter
@@ -159,7 +159,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         ComputationGraphConfiguration conf;
         try {
             conf = mapper.readValue(json, ComputationGraphConfiguration.class);
-        } catch (IOException e) {
+        } catch (Exception e) {
+            //Check if this exception came from legacy legacy deserializer...
+            String msg = e.getMessage();
+            if(msg != null && msg.contains("legacy")){
+                throw new RuntimeException("Error deserializing ComputationGraphConfiguration - configuration may have a custom " +
+                        "layer, vertex or preprocessor, in pre version 1.0.0-alpha JSON format. These layers can be " +
+                        "deserialized by first registering them with NeuralNetConfiguration.registerLegacyCustomClassesForJSON(Class...)", e);
+            }
             throw new RuntimeException(e);
         }
 
@@ -805,7 +812,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * InputType.convolutional(1,28,28)) then the input labelled "a" is a feed forward input, whereas the input labelled "b" in a CNN
          * input, with 28x28x1 images as input.<br>
          * <b>Note</b>: Using setInputTypes is not always necessary, but can be especially helpful for example with CNNs such that
-         * the calculations on input/ouput sizes (width, height, depth, etc) don't need to be done manually.<br>
+         * the calculations on input/ouput sizes (width, height, channels, etc) don't need to be done manually.<br>
          * <b>Note 2</b>: If a preprocessor is manually added for a given layer, it will not be overridden by the automatic
          * addition of preprocessors.
          * <b>Note 3</b>: If a layer has an nIn set manually, this will not be overridden

@@ -31,6 +31,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.*;
 
@@ -236,7 +237,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
     public void testCNNInputSetupMNIST() throws Exception {
         INDArray input = getMnistData();
         Layer layer = getMNISTConfig();
-        layer.activate(input);
+        layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(input, layer.input());
         assertArrayEquals(input.shape(), layer.input().shape());
@@ -255,7 +256,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         INDArray input = getMnistData();
 
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
-        INDArray convActivations = layer.activate(input);
+        INDArray convActivations = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(featureMapWidth, convActivations.size(2));
         assertEquals(depth, convActivations.size(1));
@@ -271,7 +272,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                         0.99966465, 0.99966465, 0.99966465, 0.98201379, 0.98201379, 0.98201379, 0.98201379, 0.99966465,
                         0.99966465, 0.99966465, 0.99966465}, new int[] {1, 2, 4, 4});
 
-        INDArray convActivations = layer.activate(input);
+        INDArray convActivations = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertArrayEquals(expectedOutput.shape(), convActivations.shape());
         assertEquals(expectedOutput, convActivations);
@@ -442,7 +443,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         /*
          ----- Input images -----
         example 0:
-        depth 0     depth 1
+        channels 0     channels 1
         [ 0  1  2      [ 9 10 11
           3  4  5       12 13 14
           6  7  8]      15 16 17]
@@ -471,7 +472,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         //Specifically, it tests the row and column orders after reshaping on im2col is reshaped (both forward and backward pass)
         INDArray input = getInput();
 
-        //im2col in the required order: want [outW,outH,miniBatch,depthIn,kH,kW], but need to input [miniBatch,depth,kH,kW,outH,outW]
+        //im2col in the required order: want [outW,outH,miniBatch,depthIn,kH,kW], but need to input [miniBatch,channels,kH,kW,outH,outW]
         // given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(2,3,4,5,1,2)
@@ -482,7 +483,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         /*
         Expected Output, im2col
         - example 0 -
-            depth 0                        depth 1
+            channels 0                        channels 1
         h0,w0      h0,w1               h0,w0      h0,w1
         0  1     1  2                 9 10      10 11
         3  4     4  5                12 13      13 14
@@ -492,7 +493,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         6  7     7  8                15 16      16 17
         
         - example 1 -
-            depth 0                        depth 1
+            channels 0                        channels 1
         h0,w0      h0,w1               h0,w0      h0,w1
         18 19     19 20               27 28      28 29
         21 22     22 23               30 31      31 32
@@ -561,7 +562,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         /*
          ----- Input delta -----
         example 0:
-        depth 0     depth 1
+        channels 0     channels 1
         [ 0  1  2      [ 9 10 11
           3  4  5       12 13 14
           6  7  8]      15 16 17]

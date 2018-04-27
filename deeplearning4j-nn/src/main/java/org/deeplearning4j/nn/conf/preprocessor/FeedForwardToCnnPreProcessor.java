@@ -26,6 +26,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -41,10 +43,10 @@ import java.util.Arrays;
  * (b) Reshapes 4d epsilons (weights*deltas) from CNN layer, with shape
  * [numExamples, numChannels, inputHeight, inputWidth]) into 2d epsilons (with shape
  * [numExamples, inputHeight*inputWidth*numChannels]) for use in feed forward layer
- * Note: numChannels is equivalent to depth or featureMaps referenced in different literature
+ * Note: numChannels is equivalent to channels or featureMaps referenced in different literature
  *
  * @author Adam Gibson
- * @see CnnToFeedForwardPreProcessor for opposite case (i.e., CNN -> DenseLayer etc)
+ * @see Cnn3DToFeedForwardPreProcessor for opposite case (i.e., CNN -> DenseLayer etc)
  */
 @Data
 @EqualsAndHashCode(exclude = {"shape"})
@@ -79,35 +81,37 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
-        if (input.ordering() != 'c' || !Shape.strideDescendingCAscendingF(input))
-            input = input.dup('c');
-
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         this.shape = input.shape();
-        if (input.shape().length == 4)
-            return input;
+        if (input.rank() == 4)
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
+
         if (input.columns() != inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
-                            + inputHeight + " x columns " + inputWidth + " x channels " + numChannels
-                            + " but was instead " + Arrays.toString(input.shape()));
+                    + inputHeight + " x columns " + inputWidth + " x channels " + numChannels
+                    + " but was instead " + Arrays.toString(input.shape()));
 
-        return input.reshape('c', input.size(0), numChannels, inputHeight, inputWidth);
+        if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
+
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,
+                input.reshape('c', input.size(0), numChannels, inputHeight, inputWidth));
     }
 
     @Override
     // return 4 dimensions
-    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
-        if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
-            epsilons = epsilons.dup('c');
+    public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
+        if (epsilons.ordering() != 'c' || !Shape.hasDefaultStridesForShape(epsilons))
+            epsilons = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilons, 'c');
 
         if (shape == null || ArrayUtil.prod(shape) != epsilons.length()) {
             if (epsilons.rank() == 2)
-                return epsilons; //should never happen
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilons); //should never happen
 
             return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
         }
 
-        return epsilons.reshape('c', shape);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilons.reshape('c', shape));
     }
 
 
@@ -139,8 +143,8 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
             case CNN:
                 InputType.InputTypeConvolutional c2 = (InputType.InputTypeConvolutional) inputType;
 
-                if (c2.getDepth() != numChannels || c2.getHeight() != inputHeight || c2.getWidth() != inputWidth) {
-                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c2.getDepth()
+                if (c2.getChannels() != numChannels || c2.getHeight() != inputHeight || c2.getWidth() != inputWidth) {
+                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c2.getChannels()
                                     + "," + c2.getWidth() + "," + c2.getHeight() + ") but expected (" + numChannels
                                     + "," + inputHeight + "," + inputWidth + ")");
                 }

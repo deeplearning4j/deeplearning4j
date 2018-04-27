@@ -28,6 +28,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 
 /**
@@ -62,12 +64,12 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(training);
+        INDArray preOut = preOutput2d(training, workspaceMgr);
 
         // center loss has two components
         // the first enforces inter-class dissimilarity, the second intra-class dissimilarity (squared l2 norm of differences)
@@ -92,7 +94,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
 
         // now calculate the inter-class score component
-        double interClassScore = interClassLoss.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(),
+        double interClassScore = interClassLoss.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut, layerConf().getActivationFn(),
                         maskArray, false);
 
         double score = interClassScore + intraClassScore;
@@ -112,10 +114,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        INDArray preOut = preOutput2d(false);
+        INDArray preOut = preOutput2d(false, workspaceMgr);
 
         // calculate the intra-class score component
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
@@ -124,7 +126,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // calculate the inter-class score component
         ILossFunction interClassLoss = layerConf().getLossFn();
-        INDArray scoreArray = interClassLoss.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(),
+        INDArray scoreArray = interClassLoss.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut, layerConf().getActivationFn(),
                         maskArray);
         scoreArray.addi(intraClassScoreArray.muli(layerConf().getLambda() / 2));
 
@@ -133,19 +135,19 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
         }
-        return scoreArray;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreArray);
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             return;
 
-        INDArray preOut = preOutput2d(true);
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
+        INDArray preOut = preOutput2d(true, workspaceMgr);
+        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut, workspaceMgr);
         this.gradient = pair.getFirst();
 
-        score = computeScore(fullNetworkL1, fullNetworkL2, true);
+        score = computeScore(fullNetworkL1, fullNetworkL2, true, workspaceMgr);
     }
 
     @Override
@@ -159,8 +161,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
+        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr), workspaceMgr); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = pair.getSecond();
 
         // centers
@@ -168,9 +171,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray centersForExamples = labels.mmul(centers);
         INDArray dLcdai = input.sub(centersForExamples);
 
-        INDArray w = getParamWithNoise(CenterLossParamInitializer.WEIGHT_KEY, true);
+        INDArray w = getParamWithNoise(CenterLossParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
-        INDArray epsilonNext = w.mmul(delta.transpose()).transpose();
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{w.size(0), delta.size(0)}, 'f');
+        epsilonNext = w.mmuli(delta.transpose(), epsilonNext).transpose();
         double lambda = layerConf().getLambda();
         epsilonNext.addi(dLcdai.muli(lambda)); // add center loss here
 
@@ -189,9 +193,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut) {
+    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut, LayerWorkspaceMgr workspaceMgr) {
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray labels2d = getLabels2d();
+        INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.BP_WORKING_MEM);
         if (labels2d.size(1) != preOut.size(1)) {
             throw new DL4JInvalidInputException(
                             "Labels array numColumns (size(1) = " + labels2d.size(1) + ") does not match output layer"

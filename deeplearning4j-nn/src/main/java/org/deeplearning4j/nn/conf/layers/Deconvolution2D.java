@@ -44,7 +44,7 @@ public class Deconvolution2D extends ConvolutionLayer {
     /**
      * Deconvolution2D layer
      * nIn in the input layer is the number of channels
-     * nOut is the number of filters to be used in the net or in other words the depth
+     * nOut is the number of filters to be used in the net or in other words the channels
      * The builder specifies the filter/kernel size, the stride and padding
      * The pooling layer takes the kernel size
      */

@@ -57,11 +57,16 @@ public class KerasLayerConfiguration {
 
     private final String LAYER_CLASS_NAME_MAX_POOLING_1D = "MaxPooling1D";
     private final String LAYER_CLASS_NAME_MAX_POOLING_2D = "MaxPooling2D";
+    private final String LAYER_CLASS_NAME_MAX_POOLING_3D = "MaxPooling3D";
     private final String LAYER_CLASS_NAME_AVERAGE_POOLING_1D = "AveragePooling1D";
     private final String LAYER_CLASS_NAME_AVERAGE_POOLING_2D = "AveragePooling2D";
+    private final String LAYER_CLASS_NAME_AVERAGE_POOLING_3D = "AveragePooling3D";
     private final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
     private final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
+    private final String LAYER_CLASS_NAME_ZERO_PADDING_3D = "ZeroPadding3D";
+    private final String LAYER_CLASS_NAME_CROPPING_1D = "Cropping1D";
     private final String LAYER_CLASS_NAME_CROPPING_2D = "Cropping2D";
+    private final String LAYER_CLASS_NAME_CROPPING_3D = "Cropping3D";
 
 
     private final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
@@ -94,6 +99,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_ATROUS_CONVOLUTION_2D = "AtrousConvolution2D"; // Keras 1 only
     private final String LAYER_CLASS_NAME_CONVOLUTION_1D = ""; // 1: Convolution1D, 2: Conv1D
     private final String LAYER_CLASS_NAME_CONVOLUTION_2D = ""; // 1: Convolution2D, 2: Conv2D
+    private final String LAYER_CLASS_NAME_CONVOLUTION_3D = ""; // 1: Convolution2D, 2: Conv2D
     private final String LAYER_CLASS_NAME_LEAKY_RELU = "LeakyReLU";
     private final String LAYER_CLASS_NAME_UPSAMPLING_1D = "UpSampling1D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_2D = "UpSampling2D";
@@ -184,6 +190,9 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_DILATION_RATE = ""; // 1: atrous_rate, 2: dilation_rate
     private final String LAYER_FIELD_ZERO_PADDING = "padding";
     private final String LAYER_FIELD_CROPPING = "cropping";
+    private final String LAYER_FIELD_3D_KERNEL_1 = "kernel_dim1"; // keras 1 only
+    private final String LAYER_FIELD_3D_KERNEL_2 = "kernel_dim2"; // keras 1 only
+    private final String LAYER_FIELD_3D_KERNEL_3 = "kernel_dim3"; // keras 1 only
 
 
     /* Pooling / Upsampling layer properties */
@@ -285,6 +294,7 @@ public class KerasLayerConfiguration {
     private final String KERAS_ACTIVATION_SOFTPLUS = "softplus";
     private final String KERAS_ACTIVATION_SOFTSIGN = "softsign";
     private final String KERAS_ACTIVATION_RELU = "relu";
+    private final String KERAS_ACTIVATION_RELU6 = "relu6";
     private final String KERAS_ACTIVATION_TANH = "tanh";
     private final String KERAS_ACTIVATION_SIGMOID = "sigmoid";
     private final String KERAS_ACTIVATION_HARD_SIGMOID = "hard_sigmoid";

@@ -81,7 +81,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         int inHeight = i.getHeight();
         int inWidth = i.getWidth();
-        int inDepth = i.getDepth();
+        int inDepth = i.getChannels();
 
         return InputType.convolutional(size * inHeight, size * inWidth, inDepth);
     }
@@ -101,7 +101,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        int im2colSizePerEx = c.getDepth() * outputType.getHeight() * outputType.getWidth() * size;
+        int im2colSizePerEx = c.getChannels() * outputType.getHeight() * outputType.getWidth() * size;
 
         // Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         int trainingWorkingSizePerEx = im2colSizePerEx;

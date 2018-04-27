@@ -11,6 +11,7 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.util.OneTimeLogger;
 
 import java.util.Collection;
@@ -77,59 +78,19 @@ public class FrozenLayer implements Layer {
 
     //FIXME
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         return new Pair<>(zeroGradient, null);
     }
-
     @Override
-    public INDArray preOutput(INDArray x) {
-        return insideLayer.preOutput(x);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);
-        return insideLayer.preOutput(x, TrainingMode.TEST);
+        return insideLayer.activate(false, workspaceMgr);
     }
 
     @Override
-    public INDArray activate(TrainingMode training) {
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);
-        return insideLayer.activate(TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        logTestMode(training);
-        return insideLayer.activate(input, TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        logTestMode(training);
-        return preOutput(x, TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
-        logTestMode(training);
-        return insideLayer.activate(false);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, boolean training) {
-        logTestMode(training);
-        return insideLayer.activate(input, false);
-    }
-
-    @Override
-    public INDArray activate() {
-        return insideLayer.activate();
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        return insideLayer.activate(input);
+        return insideLayer.activate(input, false, workspaceMgr);
     }
 
     @Override
@@ -196,7 +157,7 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (!logGradient) {
             OneTimeLogger.info(log,
                             "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
@@ -252,17 +213,11 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void fit(INDArray data) {
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
         if (!logFit) {
             OneTimeLogger.info(log, "Frozen layers cannot be fit.Warning will be issued only once per instance");
             logFit = true;
         }
-    }
-
-    //FIXME - what is iterate
-    @Override
-    public void iterate(INDArray input) {
-        insideLayer.iterate(input);
     }
 
     @Override
@@ -395,13 +350,8 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void setInput(INDArray input) {
-        insideLayer.setInput(input);
-    }
-
-    @Override
-    public void migrateInput() {
-        insideLayer.migrateInput();
+    public void setInput(INDArray input, LayerWorkspaceMgr layerWorkspaceMgr) {
+        insideLayer.setInput(input, layerWorkspaceMgr);
     }
 
     @Override

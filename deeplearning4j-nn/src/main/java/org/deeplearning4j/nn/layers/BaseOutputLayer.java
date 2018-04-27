@@ -18,9 +18,9 @@
 
 package org.deeplearning4j.nn.layers;
 
+import com.google.common.base.Preconditions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -34,12 +34,13 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.FeatureUtil;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -79,18 +80,17 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(training);
+        INDArray preOut = preOutput2d(training, workspaceMgr);
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
-        //double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray, false);
-        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray,
-                        false);
+        double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
+                layerConf().getActivationFn(), maskArray,false);
         score += fullNetworkL1 + fullNetworkL2;
         score /= getInputMiniBatchSize();
 
@@ -106,31 +106,32 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        INDArray preOut = preOutput2d(false);
+        INDArray preOut = preOutput2d(false, workspaceMgr);
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
-                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray);
+                        lossFunction.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM),
+                                preOut, layerConf().getActivationFn(), maskArray);
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
         }
-        return scoreArray;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreArray);
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             return;
 
-        INDArray preOut = preOutput2d(true);
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
+        INDArray preOut = preOutput2d(true, workspaceMgr);
+        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut, workspaceMgr);
         this.gradient = pair.getFirst();
 
-        score = computeScore(fullNetworkL1, fullNetworkL2, true);
+        score = computeScore(fullNetworkL1, fullNetworkL2, true, workspaceMgr);
     }
 
     @Override
@@ -144,11 +145,14 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
+        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr), workspaceMgr); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = pair.getSecond();
 
-        INDArray epsilonNext = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true).mmul(delta.transpose()).transpose();
+        INDArray w = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{w.size(0), delta.size(0)}, 'f');
+        epsilonNext = w.mmuli(delta.transpose(), epsilonNext).transpose();
 
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
         // So this is instead done in MultiLayerNetwork/CompGraph backprop methods
@@ -166,9 +170,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut) {
+    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut, LayerWorkspaceMgr workspaceMgr) {
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray labels2d = getLabels2d();
+        INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.BP_WORKING_MEM);
         //INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFunction(), maskArray);
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
 
@@ -184,51 +188,15 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradView);
         }
 
+        delta = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta);
         return new Pair<>(gradient, delta);
     }
 
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return output(training);
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return output(true);
-    }
-
-    @Override
-    public INDArray activate() {
-        return output(false);
-    }
-
-    public INDArray output(INDArray input, boolean training) {
-        setInput(input);
-        return output(training);
-    }
-
-    public INDArray output(INDArray input) {
-        setInput(input);
-        return output(false);
-    }
-
-    /**
-     * Classify input
-     * @param training determines if its training
-     * the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    public INDArray output(boolean training) {
-        if (input == null) {
-            throw new IllegalArgumentException("Cannot perform forward pass with null input - " + layerId());
-        }
-        return super.activate(training);
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
+        return activate(training, workspaceMgr);
     }
 
 
@@ -284,7 +252,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public int[] predict(INDArray input) {
-        INDArray output = output(input);
+        INDArray output = activate(input, false, LayerWorkspaceMgr.noWorkspacesImmutable());
         int[] ret = new int[input.rows()];
         for (int i = 0; i < ret.length; i++)
             ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
@@ -316,7 +284,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public INDArray labelProbabilities(INDArray examples) {
-        return output(examples);
+        return activate(examples, false, LayerWorkspaceMgr.noWorkspacesImmutable());
     }
 
     /**
@@ -327,24 +295,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public void fit(INDArray input, INDArray labels) {
-        setInput(input);
-        setLabels(labels);
-        applyDropOutIfNecessary(true);
-        if (solver == null) {
-            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-            //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
-            Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = 0;
-            Map<String, INDArray> paramTable = paramTable();
-            for (Map.Entry<String, INDArray> entry : paramTable.entrySet()) {
-                updaterStateSize += (int) conf().getLayer().getUpdaterByParam(entry.getKey())
-                                .stateSize(entry.getValue().length());
-            }
-            if (updaterStateSize > 0)
-                updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
-                                true);
-        }
-        solver.optimize();
+        throw new UnsupportedOperationException("Not supported");
     }
 
     /**
@@ -367,7 +318,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public void fit(INDArray examples, int[] labels) {
         INDArray outcomeMatrix = FeatureUtil.toOutcomeMatrix(labels, numLabels());
         fit(examples, outcomeMatrix);
-
     }
 
     @Override
@@ -387,14 +337,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @param data the data to fit the model to
      */
     @Override
-    public void fit(INDArray data) {
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
         //no-op
-
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException(layerId());
     }
 
     @Override
@@ -406,19 +350,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         this.labels = labels;
     }
 
-    @Override
-    public void migrateInput(){
-        super.migrateInput();
-        if(labels != null && labels.isAttached()){
-            labels = labels.migrate(true);
-        }
-        if(inputMaskArray != null && inputMaskArray.isAttached()){
-            inputMaskArray = inputMaskArray.migrate(true);
-        }
-    }
-
-    protected INDArray preOutput2d(boolean training) {
-        return preOutput(training);
+    protected INDArray preOutput2d(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return preOutput(training, workspaceMgr);
     }
 
     @Override
@@ -437,9 +370,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
 
-    protected INDArray getLabels2d() {
+    protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
+        Preconditions.checkArgument(labels != null, "Labels are null");
         if (labels.rank() > 2) {
-            return labels.reshape(labels.size(2), labels.size(1));
+            return workspaceMgr.leverageTo(arrayType, labels.reshape(labels.size(2), labels.size(1)));
         }
         return labels;
     }

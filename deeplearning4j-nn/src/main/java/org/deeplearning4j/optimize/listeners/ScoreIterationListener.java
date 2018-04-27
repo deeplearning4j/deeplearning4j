@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 public class ScoreIterationListener implements IterationListener {
     private int printIterations = 10;
     private static final Logger log = LoggerFactory.getLogger(ScoreIterationListener.class);
-    private boolean invoked = false;
 
     /**
      * @param printIterations    frequency with which to print scores (i.e., every printIterations parameter updates)
