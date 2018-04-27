@@ -71,6 +71,8 @@ public class LegacyLayerDeserializer extends BaseLegacyDeserializer<Layer> {
 
         //The following didn't previously have subtype annotations - hence will be using default name (class simple name)
         LEGACY_NAMES.put("LastTimeStep", LastTimeStep.class.getName());
+        LEGACY_NAMES.put("SpaceToDepthLayer", SpaceToDepthLayer.class.getName());
+        LEGACY_NAMES.put("SpaceToBatchLayer", SpaceToBatchLayer.class.getName());
     }
 
 

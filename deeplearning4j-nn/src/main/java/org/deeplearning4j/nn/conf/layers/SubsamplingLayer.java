@@ -120,7 +120,7 @@ public class SubsamplingLayer extends Layer {
         }
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                        ((InputType.InputTypeConvolutional) inputType).getDepth(), layerIndex, getLayerName(),
+                        ((InputType.InputTypeConvolutional) inputType).getChannels(), layerIndex, getLayerName(),
                         SubsamplingLayer.class);
     }
 
@@ -166,7 +166,7 @@ public class SubsamplingLayer extends Layer {
 
         //During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
         int im2colSizePerEx =
-                        c.getDepth() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
+                        c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
 
         //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         int trainingWorkingSizePerEx = im2colSizePerEx;

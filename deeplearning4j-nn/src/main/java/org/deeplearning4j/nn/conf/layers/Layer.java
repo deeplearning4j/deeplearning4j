@@ -40,6 +40,7 @@ import java.util.*;
 /**
  * A neural network layer.
  */
+
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
         defaultImpl = LegacyLayerDeserializerHelper.class)
 @Data
@@ -58,7 +59,7 @@ public abstract class Layer implements Serializable, Cloneable {
     /**
      * Initialize the weight constraints. Should be called last, in the outer-most constructor
      */
-    protected void initializeConstraints(Builder<?> builder){
+    protected void initializeConstraints(Builder<?> builder) {
         //Note: this has to be done AFTER all constructors have finished - otherwise the required
         // fields may not yet be set yet
         List<LayerConstraint> allConstraints = new ArrayList<>();
@@ -85,7 +86,7 @@ public abstract class Layer implements Serializable, Cloneable {
                 allConstraints.add(c2);
             }
         }
-        if(!allConstraints.isEmpty()) {
+        if (!allConstraints.isEmpty()) {
             this.constraints = allConstraints;
         } else {
             this.constraints = null;
@@ -114,8 +115,8 @@ public abstract class Layer implements Serializable, Cloneable {
     }
 
     public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams);
+                                                                Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                                boolean initializeParams);
 
     /**
      * @return The parameter initializer for this model
@@ -126,14 +127,14 @@ public abstract class Layer implements Serializable, Cloneable {
      * For a given type of input to this layer, what is the type of the output?
      *
      * @param layerIndex Index of the layer
-     * @param inputType Type of input for the layer
+     * @param inputType  Type of input for the layer
      * @return Type of output from the layer
      * @throws IllegalStateException if input type is invalid for this layer
      */
     public abstract InputType getOutputType(int layerIndex, InputType inputType);
 
     /**
-     * Set the nIn value (number of inputs, or input depth for CNNs) based on the given input type
+     * Set the nIn value (number of inputs, or input channels for CNNs) based on the given input type
      *
      * @param inputType Input type for this layer
      * @param override  If false: only set the nIn value if it's not already set. If true: set it regardless of whether it's
@@ -159,7 +160,7 @@ public abstract class Layer implements Serializable, Cloneable {
      * Different parameters may have different L1 values, even for a single .l1(x) configuration.
      * For example, biases generally aren't L1 regularized, even if weights are
      *
-     * @param paramName    Parameter name
+     * @param paramName Parameter name
      * @return L1 value for that parameter
      */
     public abstract double getL1ByParam(String paramName);
@@ -169,7 +170,7 @@ public abstract class Layer implements Serializable, Cloneable {
      * Different parameters may have different L2 values, even for a single .l2(x) configuration.
      * For example, biases generally aren't L1 regularized, even if weights are
      *
-     * @param paramName    Parameter name
+     * @param paramName Parameter name
      * @return L2 value for that parameter
      */
     public abstract double getL2ByParam(String paramName);
@@ -189,12 +190,12 @@ public abstract class Layer implements Serializable, Cloneable {
      * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
      * is not necessarily the case
      *
-     * @param paramName    Parameter name
-     * @return             IUpdater for the parameter
+     * @param paramName Parameter name
+     * @return IUpdater for the parameter
      */
     public IUpdater getUpdaterByParam(String paramName) {
         throw new UnsupportedOperationException(
-                        "Not supported: all layers with parameters should override this method");
+                "Not supported: all layers with parameters should override this method");
     }
 
     /**
@@ -246,7 +247,7 @@ public abstract class Layer implements Serializable, Cloneable {
          * @see #dropOut(IDropout)
          */
         public T dropOut(double inputRetainProbability) {
-            if(inputRetainProbability == 0.0){
+            if (inputRetainProbability == 0.0) {
                 return dropOut(null);
             }
             return dropOut(new Dropout(inputRetainProbability));
@@ -258,9 +259,9 @@ public abstract class Layer implements Serializable, Cloneable {
          * @param dropout Dropout, such as {@link Dropout}, {@link org.deeplearning4j.nn.conf.dropout.GaussianDropout},
          *                {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise} etc
          */
-        public T dropOut(IDropout dropout){
+        public T dropOut(IDropout dropout) {
             this.iDropout = dropout;
-            return (T)this;
+            return (T) this;
         }
 
         /**

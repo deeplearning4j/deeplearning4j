@@ -26,7 +26,7 @@ import java.util.Arrays;
  * (b) Reshapes 3d epsilons (weights.*deltas) out of RNN layer (with shape
  * [miniBatchSize,inputHeight*inputWidth*numChannels,timeSeriesLength]) into 4d epsilons with shape
  * [miniBatchSize*timeSeriesLength, numChannels, inputHeight, inputWidth] suitable to feed into CNN layers.
- * Note: numChannels is equivalent to depth or featureMaps referenced in different literature
+ * Note: numChannels is equivalent to channels or featureMaps referenced in different literature
  * @author Alex Black
  */
 @Data
@@ -92,7 +92,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
 
         if (shape[1] != product)
             throw new IllegalArgumentException("Invalid input: expected output size(1)=" + shape[1]
-                            + " must be equal to " + inputHeight + " x columns " + inputWidth + " x depth "
+                            + " must be equal to " + inputHeight + " x columns " + inputWidth + " x channels "
                             + numChannels + " = " + product + ", received: " + shape[1]);
         INDArray ret = workspaceMgr.dup(ArrayType.ACTIVATIONS, output2d, 'c');
         return ret.reshape('c', output2d.size(0), numChannels, inputHeight, inputWidth);
@@ -110,7 +110,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         }
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        int outSize = c.getDepth() * c.getHeight() * c.getWidth();
+        int outSize = c.getChannels() * c.getHeight() * c.getWidth();
         return InputType.recurrent(outSize);
     }
 

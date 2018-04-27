@@ -38,7 +38,7 @@ import java.util.Arrays;
 
 
 /**
- * Space to depth utility layer for convolutional input types.
+ * Space to channels utility layer for convolutional input types.
  * <p>
  * This operation takes 4D array in, in either NCHW or NHWC format, and moves data from spatial dimensions (HW)
  * to channels (C) for given blockSize
@@ -113,8 +113,8 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                    + " array as input to space to depth with shape " + Arrays.toString(input.shape())
-                    + ". Expected rank 4 array with shape [minibatchSize, depth, inputHeight, inputWidth]. "
+                    + " array as input to space to channels with shape " + Arrays.toString(input.shape())
+                    + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
                     + layerId());
         }
 

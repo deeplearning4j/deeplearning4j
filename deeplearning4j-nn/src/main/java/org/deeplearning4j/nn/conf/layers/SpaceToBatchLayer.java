@@ -113,7 +113,7 @@ public class SpaceToBatchLayer extends Layer {
         return InputType.convolutional(
                 (i.getHeight() + padding[0][0] + padding[0][1]) / blocks[0],
                 (i.getWidth()+ padding[1][0] + padding[1][1]) / blocks[1],
-                i.getDepth()
+                i.getChannels()
         );
     }
 
