@@ -1,5 +1,6 @@
 package org.nd4j.linalg.profiler.data;
 
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.profiler.data.primitives.ComparableAtomicLong;
 import org.nd4j.linalg.profiler.data.primitives.TimeSet;
@@ -44,6 +45,21 @@ public class StringAggregator {
 
         if (timeSpent > THRESHOLD) {
             String keyExt = key + " " + op.opName() + " (" + op.opNum() + ")";
+            if (!longCalls.containsKey(keyExt))
+                longCalls.put(keyExt, new ComparableAtomicLong(0));
+
+            longCalls.get(keyExt).incrementAndGet();
+        }
+    }
+
+    public void putTime(String key, CustomOp op, long timeSpent) {
+        if (!times.containsKey(key))
+            times.put(key, new TimeSet());
+
+        times.get(key).addTime(timeSpent);
+
+        if (timeSpent > THRESHOLD) {
+            String keyExt = key + " " + op.opName() + " (" + op.opHash() + ")";
             if (!longCalls.containsKey(keyExt))
                 longCalls.put(keyExt, new ComparableAtomicLong(0));
 

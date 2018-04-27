@@ -3449,6 +3449,32 @@ public class Nd4j {
         return INSTANCE.create(data);
     }
 
+
+    public static INDArray create(double[][][] data) {
+        return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length});
+    }
+
+    public static INDArray create(float[][][] data) {
+        return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length});
+    }
+
+    public static INDArray create(int[][][] data) {
+        return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length});
+    }
+
+    public static INDArray create(double[][][][] data) {
+        return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length, data[0][0][0].length});
+    }
+
+    public static INDArray create(float[][][][] data) {
+        return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length, data[0][0][0].length});
+    }
+
+    public static INDArray create(int[][][][] data) {
+        return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length, data[0][0][0].length});
+    }
+
+
     /**
      *
      * @param data

@@ -425,56 +425,43 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
+    protected void checkWorkspace(String opName, INDArray array) {
+        if (array.isAttached()) {
+            val ws = array.data().getParentWorkspace();
+
+            if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
+
+                if (!ws.isScopeActive()) {
+                    throw new ND4JIllegalStateException("Op [" + opName + "] X argument uses leaked workspace pointer from workspace ["
+                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
+                }
+
+                if (ws.getGenerationId() != array.data().getGenerationId())
+                    throw new ND4JIllegalStateException("Op [" + opName + "] X argument uses outdated workspace pointer from workspace ["
+                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
+            }
+        }
+    }
+
+    protected void checkForWorkspaces(CustomOp op) {
+        for (val input: op.inputArguments())
+            checkWorkspace(op.opName(), input);
+
+        for (val output: op.outputArguments())
+            checkWorkspace(op.opName(), output);
+    }
+
     protected void checkForWorkspaces(Op op) {
         val x = op.x();
-        if (x != null && x.isAttached()) {
-            val ws = x.data().getParentWorkspace();
-
-            if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
-
-                if (!ws.isScopeActive()) {
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses leaked workspace pointer from workspace ["
-                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
-                }
-
-                if (ws.getGenerationId() != x.data().getGenerationId())
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses outdated workspace pointer from workspace ["
-                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
-            }
-
-        }
+        checkWorkspace(op.opName(), x);
 
         val y = op.y();
-        if (y != null && y.isAttached()) {
-            val ws = y.data().getParentWorkspace();
-
-            if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
-                if (!ws.isScopeActive()) {
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses leaked workspace pointer from workspace ["
-                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
-                }
-
-                if (ws.getGenerationId() != y.data().getGenerationId())
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses outdated workspace pointer from workspace ["
-                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
-            }
-        }
+        if (y != null)
+            checkWorkspace(op.opName(), y);
 
         val z = op.z();
-        if (z != null && z.isAttached()) {
-            val ws = z.data().getParentWorkspace();
-
-            if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
-                if (!ws.isScopeActive()) {
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses leaked workspace pointer from workspace ["
-                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
-                }
-
-                if (ws.getGenerationId() != z.data().getGenerationId())
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses outdated workspace pointer from workspace ["
-                            + ws.getId() + "]\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
-            }
-        }
+        if (z != null)
+            checkWorkspace(op.opName(), z);
     }
 
     private static List<String> allOpenWorkspaces(){
@@ -509,7 +496,57 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return System.nanoTime();
     }
 
+    public long profilingHookIn(CustomOp op) {
+        switch (profilingMode) {
+            case ALL:
+                OpProfiler.getInstance().processOpCall(op);
+                break;
+            case METHODS:
+                break;
+            case OPERATIONS:
+                OpProfiler.getInstance().processOpCall(op);
+                break;
+            case SCOPE_PANIC:
+                checkForWorkspaces(op);
+                return 0L;
+            case DISABLED:
+            default:
+                return 0L;
+        }
+
+        return System.nanoTime();
+    }
+
     public void profilingHookOut(Op op, long timeStart) {
+        switch (profilingMode) {
+            case ALL:
+                OpProfiler.getInstance().processStackCall(op, timeStart);
+                OpProfiler.getInstance().timeOpCall(op, timeStart);
+                break;
+            case METHODS:
+                OpProfiler.getInstance().processStackCall(op, timeStart);
+                break;
+            case OPERATIONS:
+                OpProfiler.getInstance().timeOpCall(op, timeStart);
+                break;
+            case NAN_PANIC:
+                OpExecutionerUtil.checkForNaN(op);
+                break;
+            case INF_PANIC:
+                OpExecutionerUtil.checkForInf(op);
+                break;
+            case ANY_PANIC:
+                OpExecutionerUtil.checkForNaN(op);
+                OpExecutionerUtil.checkForInf(op);
+                break;
+            case DISABLED:
+            default:
+                break;
+        }
+    }
+
+
+    public void profilingHookOut(CustomOp op, long timeStart) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processStackCall(op, timeStart);

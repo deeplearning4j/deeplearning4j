@@ -1639,6 +1639,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * @param op
      */
     public void exec(@NonNull CustomOp op) {
+        long st = profilingHookIn(op);
+
         if (op.numOutputArguments() == 0 && !op.isInplaceCall())
             throw new ND4JIllegalStateException("Op name " + op.opName() +  " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
 
@@ -1737,6 +1739,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
         }
+
+        profilingHookOut(op, st);
     }
 
     protected int[] getShapeFromPointer(IntPointer ptr) {

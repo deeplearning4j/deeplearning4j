@@ -6630,7 +6630,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
         *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        public native void setValueIn2DMatrix(float value, int diag, char direction);
+        public native void setValueInDiagMatrix(float value, int diag, char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
@@ -7726,7 +7726,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
         *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        public native void setValueIn2DMatrix(@Cast("const float16") short value, int diag, char direction);
+        public native void setValueInDiagMatrix(@Cast("const float16") short value, int diag, char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
@@ -8822,7 +8822,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
         *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        public native void setValueIn2DMatrix(double value, int diag, char direction);
+        public native void setValueInDiagMatrix(double value, int diag, char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
@@ -12144,6 +12144,12 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void permuteShapeBufferInPlace(IntBuffer shapeBuffer,IntBuffer rearrange,IntBuffer out);
     @Namespace("shape") public static native void permuteShapeBufferInPlace(int[] shapeBuffer,int[] rearrange,int[] out);
 
+// #ifdef __CUDACC__
+// #endif
+
+    @Namespace("shape") public static native void doPermuteShapeInfo(IntPointer shapeBuffer, @Const IntPointer rearrange);
+    @Namespace("shape") public static native void doPermuteShapeInfo(IntBuffer shapeBuffer, @Const IntBuffer rearrange);
+    @Namespace("shape") public static native void doPermuteShapeInfo(int[] shapeBuffer, @Const int[] rearrange);
 
 // #ifdef __CUDACC__
 // #endif
@@ -12172,6 +12178,7 @@ public static final int PREALLOC_SIZE = 33554432;
      * which will give us the ability to ierate along an element
      * wise stride.
      */
+
 // #ifdef __CUDACC__
 // #endif
     @Namespace("shape") public static native IntPointer createPermuteIndexes(int originalRank,IntPointer dimension,int dimensionLength);
@@ -13692,6 +13699,10 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #ifdef __CUDACC__
 // #endif
+
+// #ifdef __CUDACC__
+// #endif
+
 // #ifdef __CUDACC__
 // #endif
 
@@ -14526,6 +14537,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #else
 // #define PRINT_FIRST(...)    printf(__VA_ARGS__); fflush(stdout)
 // #endif
+
+// #define DEBUG_CALL(STREAM)      if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) { throw std::runtime_error(); }; }
+// #define DEBUG_KERNEL(STREAM, OP_NUM)       if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) {std::string tOp = "Kernel OpNum failed: [" + nd4j::StringUtils::valueToString<int>(OP_NUM) + std::string("]"); throw std::runtime_error(tOp.c_str()); }; }
 
 // #define EXTRACT(...) EXTRACT __VA_ARGS__ 
 // #define NOTHING_EXTRACT 
@@ -15633,8 +15647,19 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                       template struct ND4J_EXPORT __registratorSynonymDouble<NAME<double>>;
 //                                       template struct ND4J_EXPORT __registratorSynonymFloat<NAME<float>>;
 
-// #define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   DECLARE_OP_UNIQ(__COUNTER__, NAME, NIN, NOUT, INPLACEABLE)
-// #define DECLARE_OP_UNIQ(CTR, NAME, NIN, NOUT, INPLACEABLE)   template <typename T>
+
+// #if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__) || defined(__VSCODE__)
+// #define NOT_EXCLUDED(NAME) 1>0
+// #else
+// #define NOT_EXCLUDED(NAME) defined(LIBND4J_ALL_OPS) || defined(NAME)
+// #endif
+
+// #ifndef __JAVACPP_HACK__
+// #else
+// #define REGISTER(NAME)  
+// #endif
+
+// #define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   template <typename T>
 //                                                 class NAME: public nd4j::ops::DeclarableOp<T> {
 //                                                 public:
 //                                                     NAME();
@@ -15642,6 +15667,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 protected:
 //                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                 };
+//                                                 REGISTER(NAME)
 
 // #define DECLARE_BOOLEAN_OP(NAME, NIN, SCALAR)   template <typename T>
 //                                                 class NAME: public nd4j::ops::BooleanOp<T> {
@@ -15650,37 +15676,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 protected:
 //                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                 };
+//                                                 REGISTER(NAME)
 
 // #define BOOLEAN_OP_IMPL(NAME, NIN, SCALAR)   template <typename T>
 //                                                 NAME<T>::NAME() : nd4j::ops::BooleanOp<T>(#NAME, NIN, SCALAR) { };
 //                                                 template class ND4J_EXPORT NAME<float>;
 //                                                 template class ND4J_EXPORT NAME<float16>;
 //                                                 template class ND4J_EXPORT NAME<double>;
-// template <typename OpName>
-// struct __registratorFloat_##NAME {
-//     __registratorFloat_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
-//         OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());
-//     }
-// };
-// template <typename OpName>
-// struct __registratorHalf_##NAME {
-//     __registratorHalf_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
-//     }
-// };
-// template <typename OpName>
-// struct __registratorDouble_##NAME {
-//     __registratorDouble_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
-//     }
-// };
-//                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
-//                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
-//                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                                 template <typename T>
 //                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
@@ -15691,78 +15693,30 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                             protected:
 //                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                             };
+//                                                             REGISTER(NAME)
 
 // #define LIST_OP_IMPL(NAME, NIN, NOUT, TARGS, IARGS)         template <typename T>
 //                                                             NAME<T>::NAME() : nd4j::ops::DeclarableListOp<T>(NIN, NOUT, #NAME, TARGS, IARGS) { };
 //                                                             template class ND4J_EXPORT NAME<float>;
 //                                                             template class ND4J_EXPORT NAME<float16>;
 //                                                             template class ND4J_EXPORT NAME<double>;
-//                                                             template <typename OpName>
-//                                                             struct __registratorFloat_##NAME {
-//                                                                 __registratorFloat_##NAME() {
-//                                                                     OpName *ptr = new OpName();
-//                                                                     OpRegistrator::getInstance()->registerOperationFloat(ptr);
-//                                                                     OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());
-//                                                                 }
-//                                                             };
-//                                                             template <typename OpName>
-//                                                             struct __registratorHalf_##NAME {
-//                                                                 __registratorHalf_##NAME() {
-//                                                                     OpName *ptr = new OpName();
-//                                                                     OpRegistrator::getInstance()->registerOperationHalf(ptr);
-//                                                                 }
-//                                                             };
-//                                                             template <typename OpName>
-//                                                             struct __registratorDouble_##NAME {
-//                                                                 __registratorDouble_##NAME() {
-//                                                                     OpName *ptr = new OpName();
-//                                                                     OpRegistrator::getInstance()->registerOperationDouble(ptr);
-//                                                                 }
-//                                                             };
-//                                                             static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
-//                                                             static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
-//                                                             static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                                             template <typename T>
 //                                                             Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
-// #define DECLARE_LOGIC_OP(NAME)   template <typename T>
-//                                                 class NAME: public nd4j::ops::LogicOp<T> {
-//                                                 public:
-//                                                     NAME();
-//                                                 protected:
-//                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
-//                                                 };
+// #define DECLARE_LOGIC_OP(NAME)      template <typename T>
+//                                     class NAME: public nd4j::ops::LogicOp<T> {
+//                                     public:
+//                                         NAME();
+//                                     protected:
+//                                         Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
+//                                     };
+//                                     REGISTER(NAME)
 
 // #define LOGIC_OP_IMPL(NAME)     template <typename T>
 //                                 NAME<T>::NAME() : nd4j::ops::LogicOp<T>(#NAME) { };
 //                                 template class ND4J_EXPORT NAME<float>;
 //                                 template class ND4J_EXPORT NAME<float16>;
 //                                 template class ND4J_EXPORT NAME<double>;
-//                                 template <typename OpName>
-//                                 struct __registratorFloat_##NAME {
-//                                     __registratorFloat_##NAME() {
-//                                         OpName *ptr = new OpName();
-//                                         OpRegistrator::getInstance()->registerOperationFloat(ptr);
-//                                         OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());
-//                                     }
-//                                 };
-//                                 template <typename OpName>
-//                                 struct __registratorHalf_##NAME {
-//                                     __registratorHalf_##NAME() {
-//                                         OpName *ptr = new OpName();
-//                                         OpRegistrator::getInstance()->registerOperationHalf(ptr);
-//                                     }
-//                                 };
-//                                 template <typename OpName>
-//                                 struct __registratorDouble_##NAME {
-//                                     __registratorDouble_##NAME() {
-//                                         OpName *ptr = new OpName();
-//                                         OpRegistrator::getInstance()->registerOperationDouble(ptr);
-//                                     }
-//                                 };
-//                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
-//                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
-//                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                 template <typename T>
 //                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block) { return nd4j::ops::LogicOp<T>::validateAndExecute(block); };
 
@@ -15787,31 +15741,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                     }
 //                                                     return shapeList;
 //                                                 }
-// template <typename OpName>
-// struct __registratorFloat_##NAME {
-//     __registratorFloat_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
-//         OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());
-//     }
-// };
-// template <typename OpName>
-// struct __registratorHalf_##NAME {
-//     __registratorHalf_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
-//     }
-// };
-// template <typename OpName>
-// struct __registratorDouble_##NAME {
-//     __registratorDouble_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
-//     }
-// };
-//                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
-//                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
-//                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                                 template <typename T>
 //                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
@@ -15868,7 +15797,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                             protected:
 //                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                             };
-
+//                                                             REGISTER(NAME)
 
 // #define DIVERGENT_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)     template <typename T>
 //                                                             NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, true) { };
@@ -15885,31 +15814,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                 }
 //                                                                 return shapeList;
 //                                                             }
-// template <typename OpName>
-// struct __registratorFloat_##NAME {
-//     __registratorFloat_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
-//         OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());
-//     }
-// };
-// template <typename OpName>
-// struct __registratorHalf_##NAME {
-//     __registratorHalf_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
-//     }
-// };
-// template <typename OpName>
-// struct __registratorDouble_##NAME {
-//     __registratorDouble_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
-//     }
-// };
-//                                                             static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
-//                                                             static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
-//                                                             static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
 //                                                             template <typename T>
 //                                                             Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
@@ -15921,6 +15825,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 protected:
 //                                                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                                                 };
+//                                                                                 REGISTER(NAME)
 
 // #define CONFIGURABLE_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        template <typename T>
 //                                                                                 NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
@@ -15941,32 +15846,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                     }
 //                                                                                     return shapeList;
 //                                                                                 }
-// template <typename OpName>
-// struct __registratorFloat_##NAME {
-//     __registratorFloat_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
-//         OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());
-//     }
-// };
-// template <typename OpName>
-// struct __registratorHalf_##NAME {
-//     __registratorHalf_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
-//     }
-// };
-// template <typename OpName>
-// struct __registratorDouble_##NAME {
-//     __registratorDouble_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
-//     }
-// };
-//                                                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
-//                                                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
-//                                                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
-// 
 //                                                                                 template <typename T>
 //                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(Context<T>& block)
 
@@ -15977,37 +15856,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 protected:
 //                                                                                     Nd4jStatus validateAndExecute(Context<T>& block);
 //                                                                                 };
+//                                                                                 REGISTER(NAME)
 
 // #define REDUCTION_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           template <typename T>
 //                                                                                 NAME<T>::NAME() : nd4j::ops::DeclarableReductionOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
 //                                                                                 template class ND4J_EXPORT NAME<float>;
 //                                                                                 template class ND4J_EXPORT NAME<float16>;
 //                                                                                 template class ND4J_EXPORT NAME<double>;
-// template <typename OpName>
-// struct __registratorFloat_##NAME {
-//     __registratorFloat_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
-//         OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());
-//     }
-// };
-// template <typename OpName>
-// struct __registratorHalf_##NAME {
-//     __registratorHalf_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
-//     }
-// };
-// template <typename OpName>
-// struct __registratorDouble_##NAME {
-//     __registratorDouble_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
-//     }
-// };
-//                                                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
-//                                                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
-//                                                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                                                                 template <typename T>
 //                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
@@ -16020,38 +15875,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                     NAME();
 //                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block);
 //                                                                                 };
-
+//                                                                                 REGISTER(NAME)
 
 // #define CUSTOM_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)              template <typename T>
 //                                                                                 NAME<T>::NAME(): nd4j::ops::DeclarableCustomOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
 //                                                                                 template class ND4J_EXPORT NAME<float>;
 //                                                                                 template class ND4J_EXPORT NAME<float16>;
 //                                                                                 template class ND4J_EXPORT NAME<double>;
-// template <typename OpName>
-// struct __registratorFloat_##NAME {
-//     __registratorFloat_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationFloat(ptr);
-//         OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());
-//     }
-// };
-// template <typename OpName>
-// struct __registratorHalf_##NAME {
-//     __registratorHalf_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationHalf(ptr);
-//     }
-// };
-// template <typename OpName>
-// struct __registratorDouble_##NAME {
-//     __registratorDouble_##NAME() {
-//         OpName *ptr = new OpName();
-//         OpRegistrator::getInstance()->registerOperationDouble(ptr);
-//     }
-// };
-//                                                                                 static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
-//                                                                                 static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
-//                                                                                 static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
 //                                                                                 template <typename T>
 //                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
@@ -16857,6 +16687,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <map>
 // #include <mutex>
 // #include <ops/declarable/DeclarableOp.h>
+
+// handlers part
+// #include <cstdlib>
+// #include <csignal>
         /**
         *   This class provides runtime ops lookup, based on opName or opHash.
         *   To build lookup directory we use *_OP_IMPL macro, which puts static structs at compile time in .cpp files,
@@ -16871,6 +16705,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
 
             public static native OpRegistrator getInstance();
+
+            public static native void exitHandler();
+            public static native void sigIntHandler(int sig);
+            public static native void sigSegVHandler(int sig);
 
             
             public native @Cast("char*") String getAllCustomOperations();
@@ -16909,6 +16747,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native DoubleDeclarableOp getOperationDouble(@Cast("char*") String name);
             public native DoubleDeclarableOp getOperationDouble(@Cast("char*") BytePointer name);
             public native DoubleDeclarableOp getOperationDouble(@Cast("Nd4jIndex") long hash);
+
+            public native int numberOfOperations();
     }
 
 
@@ -16965,9 +16805,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         private native void allocate();
     }
 
-        // test ops, do not touch         // should become custom
-    
-        // logic ops
+        // logic ops 
 
 
         /**

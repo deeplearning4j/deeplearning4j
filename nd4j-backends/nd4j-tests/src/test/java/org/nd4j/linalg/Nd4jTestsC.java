@@ -6160,6 +6160,85 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testInconsistentOutput(){
+        INDArray in = Nd4j.rand(1, 802816);
+        INDArray W = Nd4j.rand(802816, 1);
+        INDArray b = Nd4j.create(1);
+        INDArray out = fwd(in, W, b);
+
+        for(int i=0;i<100;i++){
+            INDArray out2 = fwd(in, W, b);  //l.activate(inToLayer1, false, LayerWorkspaceMgr.noWorkspaces());
+            assertEquals("Failed at iteration [" + String.valueOf(i) + "]", out, out2);
+        }
+    }
+
+    @Test
+    public void test3D_create_1() {
+        val jArray = new float[2][3][4];
+
+        fillJvmArray3D(jArray);
+
+        val iArray = Nd4j.create(jArray);
+        val fArray = ArrayUtil.flatten(jArray);
+
+        assertArrayEquals(new int[]{2, 3, 4}, iArray.shape());
+
+        assertArrayEquals(fArray, iArray.data().asFloat(), 1e-5f);
+
+        int cnt = 0;
+        for (val f : fArray)
+            assertTrue("Failed for element [" + cnt++ +"]",f > 0.0f);
+    }
+
+
+    @Test
+    public void test4D_create_1() {
+        val jArray = new float[2][3][4][5];
+
+        fillJvmArray4D(jArray);
+
+        val iArray = Nd4j.create(jArray);
+        val fArray = ArrayUtil.flatten(jArray);
+
+        assertArrayEquals(new int[]{2, 3, 4, 5}, iArray.shape());
+
+        assertArrayEquals(fArray, iArray.data().asFloat(), 1e-5f);
+
+        int cnt = 0;
+        for (val f : fArray)
+            assertTrue("Failed for element [" + cnt++ +"]",f > 0.0f);
+    }
+
+
+    ///////////////////////////////////////////////////////
+    protected static void fillJvmArray3D(float[][][] arr) {
+        int cnt = 1;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    arr[i][j][k] = (float) cnt++;
+    }
+
+
+    protected static void fillJvmArray4D(float[][][][] arr) {
+        int cnt = 1;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        arr[i][j][k][m] = (float) cnt++;
+    }
+
+
+    private static INDArray fwd(INDArray input, INDArray W, INDArray b){
+        INDArray ret = Nd4j.createUninitialized(input.size(0), W.size(1));
+        input.mmuli(W, ret);
+        ret.addiRowVector(b);
+
+        return ret;
+    }
+
     @Override
     public char ordering() {
         return 'c';

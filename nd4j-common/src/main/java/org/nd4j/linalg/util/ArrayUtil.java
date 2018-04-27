@@ -20,6 +20,7 @@
 package org.nd4j.linalg.util;
 
 import com.google.common.primitives.Ints;
+import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.base.Preconditions;
 
@@ -1669,6 +1670,82 @@ public class ArrayUtil {
         return ret;
     }
 
+
+    public static float[] flatten(float[][][] arr) {
+        float[] ret = new float[arr.length * arr[0].length * arr[0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    ret[count++] = arr[i][j][k];
+                }
+        return ret;
+    }
+
+    public static double[] flatten(double[][][] arr) {
+        double[] ret = new double[arr.length * arr[0].length * arr[0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    ret[count++] = arr[i][j][k];
+                }
+        return ret;
+    }
+
+    public static int[] flatten(int[][][] arr) {
+        int[] ret = new int[arr.length * arr[0].length * arr[0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    ret[count++] = arr[i][j][k];
+                }
+        return ret;
+    }
+
+
+    public static float[] flatten(float[][][][] arr) {
+        float[] ret = new float[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        ret[count++] = arr[i][j][k][m];
+
+        return ret;
+    }
+
+    public static double[] flatten(double[][][][] arr) {
+        double[] ret = new double[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        ret[count++] = arr[i][j][k][m];
+
+        return ret;
+    }
+
+    public static int[] flatten(int[][][][] arr) {
+        int[] ret = new int[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[0].length; j++)
+                for (int k = 0; k < arr[0][0].length; k++)
+                    for (int m = 0; m < arr[0][0][0].length; m++)
+                        ret[count++] = arr[i][j][k][m];
+
+        return ret;
+    }
 
 
     public static int[] flatten(int[][] arr) {

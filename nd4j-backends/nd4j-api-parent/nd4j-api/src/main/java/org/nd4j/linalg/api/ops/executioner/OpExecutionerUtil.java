@@ -3,8 +3,10 @@ package org.nd4j.linalg.api.ops.executioner;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -118,6 +120,31 @@ public class OpExecutionerUtil {
         if (op.z() != null && !(op instanceof MatchCondition)) {
             checkForInf(op.z());
         }
+    }
+
+    public static void checkForInf(CustomOp op) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC
+                && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+            return;
+
+        for (val input: op.inputArguments())
+            checkForInf(input);
+
+        for (val output: op.outputArguments())
+            checkForInf(output);
+    }
+
+
+    public static void checkForNaN(CustomOp op) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC
+                && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+            return;
+
+        for (val input: op.inputArguments())
+            checkForNaN(input);
+
+        for (val output: op.outputArguments())
+            checkForNaN(output);
     }
 
     /** Can we do the transform op (X = Op(X,Y)) directly on the arrays without breaking them up into 1d tensors first? */

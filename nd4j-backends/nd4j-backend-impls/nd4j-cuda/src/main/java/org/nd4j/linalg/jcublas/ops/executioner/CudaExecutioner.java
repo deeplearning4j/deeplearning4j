@@ -2731,6 +2731,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         Nd4j.getExecutioner().commit();
+
+        long st = profilingHookIn(op);
+
         CudaContext context =(CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         //AtomicAllocator.getInstance().getFlowController().prepareActionAllWrite(op.outputArguments());
 
@@ -2839,6 +2842,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         //AtomicAllocator.getInstance().getFlowController().prepareActionAllWrite(op.outputArguments());
+
+        profilingHookOut(op, st);
     }
 
     @Override

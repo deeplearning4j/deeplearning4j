@@ -33,6 +33,44 @@ public class NDArrayUtilTest extends BaseNd4jTest {
         assertArrayEquals(new int[]{1, 4}, result.shape());
     }
 
+
+    @Test
+    public void testFlattenArray1() {
+        float[][][] arrX = new float[2][2][2];
+
+        float[] arrZ = ArrayUtil.flatten(arrX);
+
+        assertEquals(8, arrZ.length);
+    }
+
+    @Test
+    public void testFlattenArray2() {
+        float[][][] arrX = new float[5][4][3];
+
+        float[] arrZ = ArrayUtil.flatten(arrX);
+
+        assertEquals(60, arrZ.length);
+    }
+
+
+    @Test
+    public void testFlattenArray3() {
+        float[][][] arrX = new float[5][2][3];
+
+        float[] arrZ = ArrayUtil.flatten(arrX);
+
+        assertEquals(30, arrZ.length);
+    }
+
+    @Test
+    public void testFlattenArray4() {
+        float[][][][] arrX = new float[5][2][3][3];
+
+        float[] arrZ = ArrayUtil.flatten(arrX);
+
+        assertEquals(90, arrZ.length);
+    }
+
     @Override
     public char ordering() {
         return 'f';
