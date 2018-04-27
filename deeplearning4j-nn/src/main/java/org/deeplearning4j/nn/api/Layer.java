@@ -39,7 +39,7 @@ import java.util.Collection;
 public interface Layer extends Serializable, Cloneable, Model {
 
     enum Type {
-        FEED_FORWARD, RECURRENT, CONVOLUTIONAL, SUBSAMPLING, RECURSIVE, MULTILAYER, NORMALIZATION
+        FEED_FORWARD, RECURRENT, CONVOLUTIONAL, SUBSAMPLING, UPSAMPLING, RECURSIVE, MULTILAYER, NORMALIZATION
     }
 
     enum TrainingMode {
