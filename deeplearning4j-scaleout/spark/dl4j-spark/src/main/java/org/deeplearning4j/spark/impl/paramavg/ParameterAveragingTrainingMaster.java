@@ -147,7 +147,7 @@ public class ParameterAveragingTrainingMaster
         checkArgument(rddDataSetNumExamples > 0,
                         "Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
         checkArgument(averagingFrequency > 0, "Invalid input: averaging frequency must be >= 1");
-        checkArgument(aggregationDepth > 0, "Invalid input: tree aggregation depth must be >= 1");
+        checkArgument(aggregationDepth > 0, "Invalid input: tree aggregation channels must be >= 1");
 
         this.saveUpdater = saveUpdater;
         this.numWorkers = numWorkers;
@@ -998,10 +998,10 @@ public class ParameterAveragingTrainingMaster
          * <b>Note</b>: For large models trained with many partitions, increasing this number
          * will reduce the load on the driver and help prevent it from becoming a bottleneck.<br>
          *
-         * @param aggregationDepth RDD tree aggregation depth when averaging parameter updates.
+         * @param aggregationDepth RDD tree aggregation channels when averaging parameter updates.
          */
         public Builder aggregationDepth(int aggregationDepth) {
-            checkArgument(aggregationDepth > 0, "Invalid input: tree aggregation depth must be >= 1");
+            checkArgument(aggregationDepth > 0, "Invalid input: tree aggregation channels must be >= 1");
             this.aggregationDepth = aggregationDepth;
             return this;
         }

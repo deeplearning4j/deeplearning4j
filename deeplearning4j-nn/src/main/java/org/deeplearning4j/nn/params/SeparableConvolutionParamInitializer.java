@@ -74,7 +74,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
      * output maps for the given kernel size
      *
      * @param layerConf layer configuration of the separable conv2d layer
-     * @return number of parameters of the depth-wise convolution operation
+     * @return number of parameters of the channels-wise convolution operation
      */
     private int numDepthWiseParams(SeparableConvolution2D layerConf) {
         int[] kernel = layerConf.getKernelSize();
@@ -210,7 +210,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
 
     protected INDArray createDepthWiseWeightMatrix(NeuralNetConfiguration conf, INDArray weightView, boolean initializeParams) {
         /*
-         Create a 4d weight matrix of: (depth multiplier, num input channels, kernel height, kernel width)
+         Create a 4d weight matrix of: (channels multiplier, num input channels, kernel height, kernel width)
          Inputs to the convolution layer are: (batch size, num input feature maps, image height, image width)
          */
         SeparableConvolution2D layerConf =
@@ -241,7 +241,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
     protected INDArray createPointWiseWeightMatrix(NeuralNetConfiguration conf, INDArray weightView,
                                                    boolean initializeParams) {
         /*
-         Create a 4d weight matrix of: (num output channels, depth multiplier * num input channels,
+         Create a 4d weight matrix of: (num output channels, channels multiplier * num input channels,
          kernel height, kernel width)
          */
         SeparableConvolution2D layerConf =

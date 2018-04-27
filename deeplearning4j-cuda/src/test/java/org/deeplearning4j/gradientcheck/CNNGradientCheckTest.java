@@ -802,7 +802,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     INDArray out = zpl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
                     assertArrayEquals(expShape, out.shape());
 
-                    String msg = "minibatch=" + minibatchSize + ", depth=" + inputDepth + ", zeroPad = "
+                    String msg = "minibatch=" + minibatchSize + ", channels=" + inputDepth + ", zeroPad = "
                             + Arrays.toString(zeroPad);
 
                     if (PRINT_RESULTS) {
@@ -1140,7 +1140,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     INDArray out = cl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
                     assertArrayEquals(expShape, out.shape());
 
-                    String msg = "minibatch=" + minibatchSize + ", depth=" + inputDepth + ", zeroPad = "
+                    String msg = "minibatch=" + minibatchSize + ", channels=" + inputDepth + ", zeroPad = "
                             + Arrays.toString(crop);
 
                     if (PRINT_RESULTS) {

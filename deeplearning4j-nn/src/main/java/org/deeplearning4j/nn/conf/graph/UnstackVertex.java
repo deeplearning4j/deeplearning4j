@@ -147,9 +147,9 @@ public class UnstackVertex extends GraphVertex {
                     return InputType.recurrent(-1);
             }
         } else {
-            //CNN inputs... also check that the depth, width and heights match:
+            //CNN inputs... also check that the channels, width and heights match:
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
-            int fd = firstConv.getDepth();
+            int fd = firstConv.getChannels();
             int fw = firstConv.getWidth();
             int fh = firstConv.getHeight();
 
@@ -165,14 +165,14 @@ public class UnstackVertex extends GraphVertex {
 
                 InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
 
-                int od = otherConv.getDepth();
+                int od = otherConv.getChannels();
                 int ow = otherConv.getWidth();
                 int oh = otherConv.getHeight();
 
                 if (fw != ow || fh != oh) {
                     throw new InvalidInputTypeException(
                                     "Invalid input: UnstackVertex cannot merge CNN activations of different width/heights:"
-                                                    + "first [depth,width,height] = [" + fd + "," + fw + "," + fh
+                                                    + "first [channels,width,height] = [" + fd + "," + fw + "," + fh
                                                     + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
                 }
 
