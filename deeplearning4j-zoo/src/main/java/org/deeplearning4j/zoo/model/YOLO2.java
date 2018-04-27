@@ -79,7 +79,7 @@ public class YOLO2 extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = {3, 608, 608};
-    private int numLabels;
+    private int numClasses;
     @Builder.Default private IUpdater updater = new Adam(1e-3);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -169,7 +169,7 @@ public class YOLO2 extends ZooModel {
                 .addLayer("convolution2d_23",
                         new ConvolutionLayer.Builder(1,1)
                                 .nIn(1024)
-                                .nOut(nBoxes * (5 + numLabels))
+                                .nOut(nBoxes * (5 + numClasses))
                                 .weightInit(WeightInit.XAVIER)
                                 .stride(1,1)
                                 .convolutionMode(ConvolutionMode.Same)

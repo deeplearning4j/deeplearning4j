@@ -36,7 +36,7 @@ public class VGG19 extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
-    private int numLabels;
+    private int numClasses;
     @Builder.Default private IUpdater updater = new Nesterovs();
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -131,7 +131,7 @@ public class VGG19 extends ZooModel {
                                         .layer(21, new DenseLayer.Builder().nOut(4096).build())
                                         .layer(22, new OutputLayer.Builder(
                                                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).name("output")
-                                                                        .nOut(numLabels).activation(Activation.SOFTMAX) // radial basis function required
+                                                                        .nOut(numClasses).activation(Activation.SOFTMAX) // radial basis function required
                                                                         .build())
                                         .backprop(true).pretrain(false).setInputType(InputType
                                                         .convolutionalFlat(inputShape[2], inputShape[1], inputShape[0]))

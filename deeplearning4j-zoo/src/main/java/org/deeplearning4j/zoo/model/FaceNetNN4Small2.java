@@ -35,7 +35,7 @@ public class FaceNetNN4Small2 extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 96, 96};
-    private int numLabels;
+    private int numClasses;
     @Builder.Default private IUpdater updater = new Adam(0.1, 0.9, 0.999, 0.01);
     @Builder.Default private Activation transferFunction = Activation.RELU;
     @Builder.Default CacheMode cacheMode = CacheMode.DEVICE;
@@ -326,7 +326,7 @@ public class FaceNetNN4Small2 extends ZooModel {
                         .addVertex("embeddings", new L2NormalizeVertex(new int[] {}, 1e-6), "bottleneck")
                         .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
                                         .lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
-                                        .activation(Activation.SOFTMAX).nIn(128).nOut(numLabels).lambda(1e-4).alpha(0.9)
+                                        .activation(Activation.SOFTMAX).nIn(128).nOut(numClasses).lambda(1e-4).alpha(0.9)
                                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build(),
                                         "embeddings")
                         .setOutputs("lossLayer").backprop(true).pretrain(false)

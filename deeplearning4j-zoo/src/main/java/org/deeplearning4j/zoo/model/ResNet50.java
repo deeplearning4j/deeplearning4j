@@ -22,9 +22,9 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
  * Residual networks for deep learning.
- * https://arxiv.org/abs/1512.03385
  *
- * <p>ImageNet weights for this model are available and have been converted from https://github.com/fchollet/keras/tree/1.1.2/keras/applications.</p>
+ * <p>Paperp: https://arxiv.org/abs/1512.03385</p>
+ * <p>ImageNet weights for this model are available and have been converted from https://keras.io/applications/.</p>
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -34,7 +34,7 @@ public class ResNet50 extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
-    private int numLabels;
+    private int numClasses;
     @Builder.Default private IUpdater updater = new RmsProp(0.1, 0.96, 0.001);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -43,7 +43,7 @@ public class ResNet50 extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return "http://blob.deeplearning4j.org/models/resnet50_dl4j_inference.zip";
+            return "http://blob.deeplearning4j.org/models/resnet50_dl4j_inference.v2.zip";
         else
             return null;
     }
@@ -211,7 +211,7 @@ public class ResNet50 extends ZooModel {
                         // TODO add flatten/reshape layer here
                         .addLayer("output",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                                        .nOut(numLabels).activation(Activation.SOFTMAX).build(),
+                                                        .nOut(numClasses).activation(Activation.SOFTMAX).build(),
                                         "avgpool")
                         .setOutputs("output").backprop(true).pretrain(false);
 

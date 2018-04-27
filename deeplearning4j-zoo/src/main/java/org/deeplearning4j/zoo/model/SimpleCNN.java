@@ -2,7 +2,6 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -30,7 +29,7 @@ public class SimpleCNN extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 48, 48};
-    private int numLabels;
+    private int numClasses;
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -109,7 +108,7 @@ public class SimpleCNN extends ZooModel {
                                         // block 5
                                         .layer(28, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(256).build())
                                         .layer(29, new BatchNormalization.Builder().build())
-                                        .layer(30, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(numLabels)
+                                        .layer(30, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(numClasses)
                                                         .build())
                                         .layer(31, new GlobalPoolingLayer.Builder(PoolingType.AVG).build())
                                         .layer(32, new ActivationLayer.Builder().activation(Activation.SOFTMAX).build())

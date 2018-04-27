@@ -39,7 +39,7 @@ public class LeNet extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
-    private int numLabels;
+    private int numClasses;
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -92,7 +92,7 @@ public class LeNet extends ZooModel {
                         .layer(4, new DenseLayer.Builder().name("ffn1").activation(Activation.RELU).nOut(500).build())
                         // output
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).name("output")
-                                        .nOut(numLabels).activation(Activation.SOFTMAX) // radial basis function required
+                                        .nOut(numClasses).activation(Activation.SOFTMAX) // radial basis function required
                                         .build())
                         .setInputType(InputType.convolutionalFlat(inputShape[2], inputShape[1], inputShape[0]))
                         .backprop(true).pretrain(false).build();

@@ -40,7 +40,7 @@ public class Darknet19 extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = {3, 224, 224};
-    private int numLabels;
+    private int numClasses;
     @Builder.Default private IUpdater updater = new Nesterovs(1e-3, 0.9);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -116,7 +116,7 @@ public class Darknet19 extends ZooModel {
                 .addLayer("convolution2d_" + layerNumber,
                         new ConvolutionLayer.Builder(1,1)
                                 .nIn(1024)
-                                .nOut(numLabels)
+                                .nOut(numClasses)
                                 .weightInit(WeightInit.XAVIER)
                                 .stride(1,1)
                                 .convolutionMode(ConvolutionMode.Same)

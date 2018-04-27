@@ -43,7 +43,7 @@ public class AlexNet extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
-    private int numLabels;
+    private int numClasses;
     @Builder.Default private IUpdater updater = new Nesterovs(1e-2, 0.9);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -148,7 +148,7 @@ public class AlexNet extends ZooModel {
                         .build())
                 .layer(12, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .name("output")
-                        .nOut(numLabels)
+                        .nOut(numClasses)
                         .activation(Activation.SOFTMAX)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new GaussianDistribution(0, 0.005))
                         .biasInit(0.1)

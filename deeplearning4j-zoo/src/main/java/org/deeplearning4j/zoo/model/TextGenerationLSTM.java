@@ -21,7 +21,7 @@ import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
- * LSTM designed for text generation. Can be trained on a corpus of text. For this model, numLabels is
+ * LSTM designed for text generation. Can be trained on a corpus of text. For this model, numClasses is
  * used to input {@code totalUniqueCharacters} for the LSTM input layer.
  *
  * Architecture follows this implementation: https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py

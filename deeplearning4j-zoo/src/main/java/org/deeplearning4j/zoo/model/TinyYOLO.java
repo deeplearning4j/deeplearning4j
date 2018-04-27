@@ -79,7 +79,7 @@ public class TinyYOLO extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = {3, 416, 416};
-    private int numLabels;
+    private int numClasses;
     @Builder.Default private IUpdater updater = new Adam(1e-3);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -145,7 +145,7 @@ public class TinyYOLO extends ZooModel {
                 .addLayer("convolution2d_" + layerNumber,
                         new ConvolutionLayer.Builder(1,1)
                                 .nIn(1024)
-                                .nOut(nBoxes * (5 + numLabels))
+                                .nOut(nBoxes * (5 + numClasses))
                                 .weightInit(WeightInit.XAVIER)
                                 .stride(1,1)
                                 .convolutionMode(ConvolutionMode.Same)
