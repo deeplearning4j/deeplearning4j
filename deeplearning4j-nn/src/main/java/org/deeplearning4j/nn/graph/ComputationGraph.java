@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.graph;
 
-import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -52,11 +51,13 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -73,6 +74,7 @@ import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.util.DataSetUtils;
 import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
@@ -1529,6 +1531,61 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public INDArray[] output(boolean train, boolean clearInputs, INDArray... input){
         boolean detachedInputs = !clearInputs;  //If !clearInputs, then inputs should be detached (otherwise: will be out of scope)
         return outputOfLayersDetached(train, FwdPassType.STANDARD, getOutputLayerIndices(), input, null, null, clearInputs, detachedInputs);
+    }
+
+    /**
+     * Generate the output for all examples/batches in the input iterator, and concatenate them into a single array
+     * per network output
+     *
+     * @param iterator Data to pass through the network
+     * @return output for all examples in the iterator
+     */
+    public INDArray[] output(DataSetIterator iterator){
+        return output(new MultiDataSetIteratorAdapter(iterator));
+    }
+
+    /**
+     * Generate the output for all examples/batches in the input iterator, and concatenate them into a single array
+     * per network output
+     *
+     * @param iterator Data to pass through the network
+     * @return output for all examples in the iterator
+     */
+    public INDArray[] output(MultiDataSetIterator iterator){
+        List<INDArray[]> outputs = new ArrayList<>();
+        while(iterator.hasNext()){
+            MultiDataSet next = iterator.next();
+            INDArray[] out = output(false, next.getFeatures(), next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
+            outputs.add(out);
+        }
+        INDArray[][] arr = outputs.toArray(new INDArray[outputs.size()][0]);
+        return DataSetUtil.mergeFeatures(arr, null).getFirst();
+    }
+
+    /**
+     * Generate the output for all examples/batches in the input iterator, and concatenate them into a single array.
+     * Can only be used with ComputationGraphs with 1 output
+     *
+     * @param iterator Data to pass through the network
+     * @return output for all examples in the iterator
+     */
+    public INDArray outputSingle(DataSetIterator iterator){
+        Preconditions.checkArgument(numOutputArrays == 1, "Cannot use this method with nets that have more" +
+                " than 1 output array. This network has %s outputs", numOutputArrays);
+        return output(iterator)[0];
+    }
+
+    /**
+     * Generate the output for all examples/batches in the input iterator, and concatenate them into a single array.
+     * Can only be used with ComputationGraphs with 1 output
+     *
+     * @param iterator Data to pass through the network
+     * @return output for all examples in the iterator
+     */
+    public INDArray outputSingle(MultiDataSetIterator iterator){
+        Preconditions.checkArgument(numOutputArrays == 1, "Cannot use this method with nets that have more" +
+                " than 1 output array. This network has %s outputs", numOutputArrays);
+        return output(iterator)[0];
     }
 
 
@@ -3934,7 +3991,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Return the layer size (number of units) for the specified layer.
      * Note that the meaning of the "layer size" can depend on the type of layer. For example:<br>
      * - DenseLayer, OutputLayer, recurrent layers: number of units (nOut configuration option)<br>
-     * - ConvolutionLayer: the depth (number of channels)<br>
+     * - ConvolutionLayer: the channels (number of channels)<br>
      * - Subsampling layers, global pooling layers, etc: size of 0 is always returned<br>
      *
      * @param layer Index of the layer to get the size of. Must be in range 0 to nLayers-1 inclusive
@@ -3952,7 +4009,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Return the layer size (number of units) for the specified layer.
      * Note that the meaning of the "layer size" can depend on the type of layer. For example:<br>
      * - DenseLayer, OutputLayer, recurrent layers: number of units (nOut configuration option)<br>
-     * - ConvolutionLayer: the depth (number of channels)<br>
+     * - ConvolutionLayer: the channels (number of channels)<br>
      * - Subsampling layers, global pooling layers, etc: size of 0 is always returned<br>
      *
      * @param layerName Name of the layer to get the size of

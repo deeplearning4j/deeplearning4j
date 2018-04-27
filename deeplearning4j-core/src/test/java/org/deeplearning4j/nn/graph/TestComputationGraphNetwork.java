@@ -1421,4 +1421,29 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         }
         return input;
     }
+
+
+
+    @Test
+    public void testGraphOutputIterators(){
+
+        DataSet all = new IrisDataSetIterator(150,150).next();
+        DataSetIterator iter = new IrisDataSetIterator(5,150);
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .graphBuilder()
+                .addInputs("in")
+                .layer("layer", new OutputLayer.Builder().nIn(4).nOut(3).build(), "in")
+                .setOutputs("layer")
+                .build();
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+
+        INDArray outAll = cg.outputSingle(all.getFeatures());
+        INDArray outIter = cg.outputSingle(iter);
+
+        assertEquals(outAll, outIter);
+    }
 }

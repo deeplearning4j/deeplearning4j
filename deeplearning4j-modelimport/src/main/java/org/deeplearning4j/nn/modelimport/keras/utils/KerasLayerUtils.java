@@ -205,6 +205,8 @@ public class KerasLayerUtils {
             layer = new KerasLstm(layerConfig, enforceTrainingConfig, previousLayers);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SIMPLE_RNN())) {
             layer = new KerasSimpleRnn(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_3D())) {
+            layer = new KerasConvolution3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_2D())) {
             layer = new KerasConvolution2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DECONVOLUTION_2D())) {

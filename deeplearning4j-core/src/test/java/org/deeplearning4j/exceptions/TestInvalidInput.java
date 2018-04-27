@@ -101,7 +101,7 @@ public class TestInvalidInput extends BaseDL4JTest {
 
     @Test
     public void testInputNinMismatchConvolutional() {
-        //Rank 4 input, but input depth does not match nIn depth
+        //Rank 4 input, but input channels does not match nIn channels
 
         int h = 16;
         int w = 16;

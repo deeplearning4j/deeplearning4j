@@ -180,7 +180,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         // should be zero-copy; only possible exception being sometimes with the "identity" activation case
         INDArray delta2d = delta.reshape('c', new int[] {outDepth, miniBatch * outH * outW}); //Shape.newShapeNoCopy(delta,new int[]{outDepth,miniBatch*outH*outW},false);
 
-        //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
+        //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,channels,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(0,3,4,5,1,2)
         INDArray im2col2d = p.getSecond(); //Re-use im2col2d array from forward pass if available; recalculate if not
@@ -208,7 +208,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray eps6d = Shape.newShapeNoCopy(epsNext2d, new int[] {kW, kH, inDepth, outW, outH, miniBatch}, true);
 
         //Calculate epsilonNext by doing im2col reduction.
-        //Current col2im implementation expects input with order: [miniBatch,depth,kH,kW,outH,outW]
+        //Current col2im implementation expects input with order: [miniBatch,channels,kH,kW,outH,outW]
         //currently have [kH,kW,inDepth,outW,outH,miniBatch] -> permute first
         eps6d = eps6d.permute(5, 2, 1, 0, 4, 3);
         INDArray epsNextOrig = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {inDepth, miniBatch, inH, inW}, 'c');
@@ -276,9 +276,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             if (layerName == null)
                 layerName = "(not named)";
             throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer (layer name = " + layerName
-                            + ", layer index = " + index + "): input array depth does not match CNN layer configuration"
-                            + " (data input depth = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
-                            + Arrays.toString(input.shape()) + "; expected" + " input depth = " + inDepth + ") "
+                            + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
+                            + " (data input channels = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
+                            + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
                             + layerId());
         }
         int kH = weights.size(2);
@@ -339,7 +339,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             return new Pair<>(preOutput, i2d);
         }
 
-        //im2col in the required order: want [outW,outH,miniBatch,depthIn,kH,kW], but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
+        //im2col in the required order: want [outW,outH,miniBatch,depthIn,kH,kW], but need to input [miniBatch,channels,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(0,3,4,5,1,2)
         //Post reshaping: rows are such that minibatch varies slowest, outW fastest as we step through the rows post-reshape

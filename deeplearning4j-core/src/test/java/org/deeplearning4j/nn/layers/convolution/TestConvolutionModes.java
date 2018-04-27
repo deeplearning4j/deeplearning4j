@@ -324,7 +324,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
                                         ConvolutionLayer.class);
         assertEquals(2, it.getHeight());
         assertEquals(2, it.getWidth());
-        assertEquals(dOut, it.getDepth());
+        assertEquals(dOut, it.getChannels());
         int[] outSize = ConvolutionUtils.getOutputSize(inData, kernel, stride, padding, ConvolutionMode.Strict);
         assertEquals(2, outSize[0]);
         assertEquals(2, outSize[1]);
@@ -335,7 +335,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
                 dilation, ConvolutionMode.Truncate, dOut, -1, "layerName", ConvolutionLayer.class);
         assertEquals(2, it.getHeight());
         assertEquals(2, it.getWidth());
-        assertEquals(dOut, it.getDepth());
+        assertEquals(dOut, it.getChannels());
         outSize = ConvolutionUtils.getOutputSize(inData, kernel, stride, padding, ConvolutionMode.Truncate);
         assertEquals(2, outSize[0]);
         assertEquals(2, outSize[1]);
@@ -345,7 +345,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
                 dilation, ConvolutionMode.Same, dOut, -1, "layerName", ConvolutionLayer.class);
         assertEquals(3, it.getHeight());
         assertEquals(3, it.getWidth());
-        assertEquals(dOut, it.getDepth());
+        assertEquals(dOut, it.getChannels());
         outSize = ConvolutionUtils.getOutputSize(inData, kernel, stride, null, ConvolutionMode.Same);
         assertEquals(3, outSize[0]);
         assertEquals(3, outSize[1]);
@@ -387,7 +387,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
                 dilation, ConvolutionMode.Truncate, dOut, -1, "layerName", ConvolutionLayer.class);
         assertEquals(1, it.getHeight());
         assertEquals(1, it.getWidth());
-        assertEquals(dOut, it.getDepth());
+        assertEquals(dOut, it.getChannels());
         outSize = ConvolutionUtils.getOutputSize(inData, kernel, stride, padding, ConvolutionMode.Truncate);
         assertEquals(1, outSize[0]);
         assertEquals(1, outSize[1]);
@@ -397,7 +397,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
                 dilation, ConvolutionMode.Same, dOut, -1, "layerName", ConvolutionLayer.class);
         assertEquals(2, it.getHeight());
         assertEquals(2, it.getWidth());
-        assertEquals(dOut, it.getDepth());
+        assertEquals(dOut, it.getChannels());
         outSize = ConvolutionUtils.getOutputSize(inData, kernel, stride, null, ConvolutionMode.Same);
         assertEquals(2, outSize[0]);
         assertEquals(2, outSize[1]);

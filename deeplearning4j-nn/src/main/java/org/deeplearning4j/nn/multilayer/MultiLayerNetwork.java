@@ -2035,14 +2035,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Label the probabilities of the input
+     * Generate the output for all examples/batches in the input iterator, and concatenate them into a single array
      *
-     * @param iterator test data to evaluate
-     * @return a vector of probabilities
-     * given each label.
-     * <p>
-     * This is typically of the form:
-     * [0.5, 0.5] or some other probability distribution summing to one
+     * @param iterator Data to pass through the network
+     * @return output for all examples in the iterator
      */
     public INDArray output(DataSetIterator iterator, boolean train) {
         List<INDArray> outList = new ArrayList<>();
@@ -2060,6 +2056,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return Nd4j.concat(0, outList.toArray(new INDArray[outList.size()]));
     }
 
+    /**
+     * Generate the output for all examples/batches in the input iterator, and concatenate them into a single array
+     *
+     * @param iterator Data to pass through the network
+     * @return output for all examples in the iterator
+     */
     public INDArray output(DataSetIterator iterator) {
         return output(iterator, false);
     }
@@ -3312,7 +3314,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * Return the layer size (number of units) for the specified layer.
      * Note that the meaning of the "layer size" can depend on the type of layer. For example:<br>
      * - DenseLayer, OutputLayer, recurrent layers: number of units (nOut configuration option)<br>
-     * - ConvolutionLayer: the depth (number of channels)<br>
+     * - ConvolutionLayer: the channels (number of channels)<br>
      * - Subsampling layers, global pooling layers, etc: size of 0 is always returned<br>
      *
      * @param layer Index of the layer to get the size of. Must be in range 0 to nLayers-1 inclusive

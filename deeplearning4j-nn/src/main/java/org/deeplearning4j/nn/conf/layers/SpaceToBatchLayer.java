@@ -30,7 +30,6 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
 import java.util.Map;
@@ -114,7 +113,7 @@ public class SpaceToBatchLayer extends Layer {
         return InputType.convolutional(
                 (i.getHeight() + padding[0][0] + padding[0][1]) / blocks[0],
                 (i.getWidth()+ padding[1][0] + padding[1][1]) / blocks[1],
-                i.getDepth()
+                i.getChannels()
         );
     }
 

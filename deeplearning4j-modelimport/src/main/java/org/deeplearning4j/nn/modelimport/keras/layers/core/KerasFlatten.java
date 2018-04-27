@@ -77,11 +77,11 @@ public class KerasFlatten extends KerasLayer {
             switch (this.getDimOrder()) {
                 case NONE:
                 case THEANO:
-                    preprocessor = new CnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(), it.getDepth());
+                    preprocessor = new CnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(), it.getChannels());
                     break;
                 case TENSORFLOW:
                     preprocessor = new TensorFlowCnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(),
-                            it.getDepth());
+                            it.getChannels());
                     break;
                 default:
                     throw new InvalidKerasConfigurationException("Unknown Keras backend " + this.getDimOrder());

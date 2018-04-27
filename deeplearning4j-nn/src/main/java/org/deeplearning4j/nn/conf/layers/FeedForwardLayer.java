@@ -76,7 +76,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
             case CNN:
                 //CNN -> FF
                 InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-                return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getDepth());
+                return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getChannels());
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
         }
@@ -117,7 +117,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
 
         /**
          * Number of inputs for the layer (usually the size of the last layer). <br>
-         * Note that for Convolutional layers, this is the input depth, otherwise is the previous layer size.
+         * Note that for Convolutional layers, this is the input channels, otherwise is the previous layer size.
          *
          * @param nIn Number of inputs for the layer
          */
