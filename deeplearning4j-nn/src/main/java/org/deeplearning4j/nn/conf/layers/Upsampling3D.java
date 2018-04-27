@@ -44,6 +44,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Upsampling3D extends BaseUpsamplingLayer {
 
+    // TODO: make this an int[]
     protected int size;
 
     protected Upsampling3D(UpsamplingBuilder builder) {
@@ -86,16 +87,16 @@ public class Upsampling3D extends BaseUpsamplingLayer {
         int inChannels = i.getChannels();
 
         return InputType.convolutional3D(
-                size * inHeight, size * inWidth, size * inDepth, inChannels);
+                size * inDepth,size * inHeight, size * inWidth,  inChannels);
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
-            throw new IllegalStateException("Invalid input for Upsampling layer (layer name=\"" + getLayerName()
+            throw new IllegalStateException("Invalid input for Upsampling 3D layer (layer name=\"" + getLayerName()
                     + "\"): input is null");
         }
-        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreProcessorForInputTypeCnn3DLayers(inputType, getLayerName());
     }
 
     @Override

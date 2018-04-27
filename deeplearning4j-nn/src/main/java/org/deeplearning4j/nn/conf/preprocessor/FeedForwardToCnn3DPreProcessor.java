@@ -150,7 +150,7 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
                             + " = (d=" + numChannels + " * w=" + inputWidth + " * h=" + inputHeight + "), got "
                             + inputType);
                 }
-                return InputType.convolutional3D(inputHeight, inputWidth, inputDepth, numChannels);
+                return InputType.convolutional3D(inputDepth, inputHeight, inputWidth, numChannels);
             case CNN:
                 InputType.InputTypeConvolutional c2 = (InputType.InputTypeConvolutional) inputType;
 
@@ -159,7 +159,7 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
                             + "," + c2.getWidth() + "," + c2.getHeight() + ") but expected (" + numChannels
                             + "," + inputHeight + "," + inputWidth + ")");
                 }
-                return InputType.convolutional3D(c2.getHeight(), c2.getWidth(), 1, c2.getChannels());
+                return InputType.convolutional3D(1, c2.getHeight(), c2.getWidth(), c2.getChannels());
             case CNN3D:
                 InputType.InputTypeConvolutional3D c3 = (InputType.InputTypeConvolutional3D) inputType;
 

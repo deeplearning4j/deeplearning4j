@@ -102,7 +102,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                                 .inputPreProcessor(2,
                                                         new Cnn3DToFeedForwardPreProcessor(outDepth, outHeight, outWidth,
                                                         convNOut2, true))
-                                                .setInputType(InputType.convolutional3D(height, width, depth, convNIn)).build();
+                                                .setInputType(InputType.convolutional3D(depth, height, width, convNIn)).build();
 
                                         String json = conf.toJson();
                                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
