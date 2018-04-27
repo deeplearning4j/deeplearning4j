@@ -37,6 +37,7 @@ public class UNet extends ZooModel {
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 512, 512};
     private int numClasses;
+    @Builder.Default private WeightInit weightInit = WeightInit.RELU;
     @Builder.Default private IUpdater updater = new AdaGrad(1e-4);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -75,7 +76,7 @@ public class UNet extends ZooModel {
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(updater)
-                .weightInit(WeightInit.RELU)
+                .weightInit(weightInit)
                 .dist(new NormalDistribution(0.0, 0.5))
                 .l2(5e-5)
                 .miniBatch(true)

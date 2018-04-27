@@ -41,6 +41,7 @@ public class Darknet19 extends ZooModel {
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = {3, 224, 224};
     private int numClasses;
+    @Builder.Default private WeightInit weightInit = WeightInit.RELU;
     @Builder.Default private IUpdater updater = new Nesterovs(1e-3, 0.9);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -77,6 +78,7 @@ public class Darknet19 extends ZooModel {
         GraphBuilder graphBuilder = new NeuralNetConfiguration.Builder()
                 .seed(seed)
                 .updater(updater)
+                .weightInit(weightInit)
                 .l2(0.00001)
                 .activation(Activation.IDENTITY)
                 .cacheMode(cacheMode)

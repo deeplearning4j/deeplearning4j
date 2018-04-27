@@ -35,6 +35,7 @@ public class ResNet50 extends ZooModel {
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
     private int numClasses;
+    @Builder.Default private WeightInit weightInit = WeightInit.DISTRIBUTION;
     @Builder.Default private IUpdater updater = new RmsProp(0.1, 0.96, 0.001);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -159,7 +160,7 @@ public class ResNet50 extends ZooModel {
                         .activation(Activation.IDENTITY)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(updater)
-                        .weightInit(WeightInit.DISTRIBUTION)
+                        .weightInit(weightInit)
                         .dist(new NormalDistribution(0.0, 0.5))
                         .l1(1e-7)
                         .l2(5e-5)

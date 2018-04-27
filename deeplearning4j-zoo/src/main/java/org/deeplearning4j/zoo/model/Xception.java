@@ -38,6 +38,7 @@ public class Xception extends ZooModel {
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 299, 299};
     private int numClasses;
+    @Builder.Default private WeightInit weightInit = WeightInit.RELU;
     @Builder.Default private IUpdater updater = new AdaGrad(1e-4);
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -54,7 +55,7 @@ public class Xception extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return 2782932419L;
+            return 2782932419L; // TODO fix this
         else
             return 0L;
     }
@@ -82,8 +83,7 @@ public class Xception extends ZooModel {
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(updater)
-                .weightInit(WeightInit.RELU)
-                .dist(new NormalDistribution(0.0, 0.5))
+                .weightInit(weightInit)
                 .l2(5e-5)
                 .miniBatch(true)
                 .cacheMode(cacheMode)

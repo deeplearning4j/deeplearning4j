@@ -38,6 +38,7 @@ public class SqueezeNet extends ZooModel {
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 227, 227};
     private int numClasses;
+    @Builder.Default private WeightInit weightInit = WeightInit.RELU;
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -82,7 +83,7 @@ public class SqueezeNet extends ZooModel {
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(updater)
-                .weightInit(WeightInit.RELU)
+                .weightInit(weightInit)
                 .dist(new NormalDistribution(0.0, 0.5))
                 .l2(5e-5)
                 .miniBatch(true)
