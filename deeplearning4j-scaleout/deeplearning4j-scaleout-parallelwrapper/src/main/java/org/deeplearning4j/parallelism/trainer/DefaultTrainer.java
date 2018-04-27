@@ -12,7 +12,7 @@ import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -22,7 +22,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -228,8 +227,8 @@ public class DefaultTrainer extends Thread implements Trainer {
      * Good place to configure listeners and all such a things
      */
     protected void postInit() {
-        Collection<IterationListener> oldListeners = new ArrayList<>();
-        Collection<IterationListener> replicatedListeners = new ArrayList<>();
+        Collection<TrainingListener> oldListeners = new ArrayList<>();
+        Collection<TrainingListener> replicatedListeners = new ArrayList<>();
 
         if (parallelWrapper.getListeners() != null) {
             oldListeners.addAll(parallelWrapper.getListeners());
@@ -421,7 +420,7 @@ public class DefaultTrainer extends Thread implements Trainer {
         return true;
     }
 
-    protected static IterationListener cloneListener(IterationListener original) {
+    protected static TrainingListener cloneListener(TrainingListener original) {
         if (original instanceof RoutingIterationListener) {
             return ((RoutingIterationListener) original).clone();
         }
@@ -429,10 +428,10 @@ public class DefaultTrainer extends Thread implements Trainer {
     }
 
 
-    protected void configureListeners(String workerUUID, Collection<IterationListener> oldListeners,
-                    Collection<IterationListener> replicatedListeners) {
-        for (IterationListener listener : oldListeners) {
-            IterationListener l = cloneListener(listener);
+    protected void configureListeners(String workerUUID, Collection<TrainingListener> oldListeners,
+                    Collection<TrainingListener> replicatedListeners) {
+        for (TrainingListener listener : oldListeners) {
+            TrainingListener l = cloneListener(listener);
 
             if (l instanceof RoutingIterationListener) {
                 RoutingIterationListener rl = (RoutingIterationListener) l;

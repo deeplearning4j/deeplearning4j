@@ -30,7 +30,8 @@ import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.slf4j.Logger;
@@ -92,16 +93,16 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         this.model = model;
 
         // adjust UI listeners
-        AveragingIterationListener trainerListener = new AveragingIterationListener(this);
+        AveragingTrainingListener trainerListener = new AveragingTrainingListener(this);
         if (model instanceof MultiLayerNetwork) {
-            Collection<IterationListener> listeners = ((MultiLayerNetwork) model).getListeners();
-            Collection<IterationListener> newListeners = new LinkedList<>(listeners);
+            Collection<TrainingListener> listeners = ((MultiLayerNetwork) model).getListeners();
+            Collection<TrainingListener> newListeners = new LinkedList<>(listeners);
             newListeners.add(trainerListener);
             model.setListeners(newListeners);
 
         } else if (model instanceof ComputationGraph) {
-            Collection<IterationListener> listeners = ((ComputationGraph) model).getListeners();
-            Collection<IterationListener> newListeners = new LinkedList<>(listeners);
+            Collection<TrainingListener> listeners = ((ComputationGraph) model).getListeners();
+            Collection<TrainingListener> newListeners = new LinkedList<>(listeners);
             newListeners.add(trainerListener);
             model.setListeners(newListeners);
         }
@@ -308,17 +309,17 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
     }
 
     /**
-     * AveragingIterationListener is attached to the primary model within ParallelWrapper. It is invoked
+     * AveragingTrainingListener is attached to the primary model within ParallelWrapper. It is invoked
      * with each averaging step, and thus averaging is considered analogous to an iteration.
      * @param <T>
      */
-    private class AveragingIterationListener<T extends Model> implements IterationListener {
-        private final Logger log = LoggerFactory.getLogger(AveragingIterationListener.class);
+    private class AveragingTrainingListener<T extends Model> extends BaseTrainingListener {
+        private final Logger log = LoggerFactory.getLogger(AveragingTrainingListener.class);
         private IterationTerminationCondition terminationReason = null;
         private EarlyStoppingParallelTrainer<T> trainer;
 
         /** Default constructor printing every 10 iterations */
-        public AveragingIterationListener(EarlyStoppingParallelTrainer<T> trainer) {
+        public AveragingTrainingListener(EarlyStoppingParallelTrainer<T> trainer) {
             this.trainer = trainer;
         }
 

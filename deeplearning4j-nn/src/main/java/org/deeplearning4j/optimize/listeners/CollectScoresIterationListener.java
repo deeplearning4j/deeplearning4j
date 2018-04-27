@@ -1,7 +1,7 @@
 package org.deeplearning4j.optimize.listeners;
 
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
@@ -17,7 +17,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class CollectScoresIterationListener implements IterationListener {
+public class CollectScoresIterationListener extends BaseTrainingListener {
 
     private int frequency;
     private int iterationCount = 0;

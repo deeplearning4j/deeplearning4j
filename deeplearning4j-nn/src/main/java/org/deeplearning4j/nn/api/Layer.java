@@ -21,10 +21,10 @@ package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -132,17 +132,17 @@ public interface Layer extends Serializable, Cloneable, Model {
     /**
      * Get the iteration listeners for this layer.
      */
-    Collection<IterationListener> getListeners();
+    Collection<TrainingListener> getListeners();
 
     /**
      * Set the iteration listeners for this layer.
      */
-    void setListeners(IterationListener... listeners);
+    void setListeners(TrainingListener... listeners);
 
     /**
      * Set the iteration listeners for this layer.
      */
-    void setListeners(Collection<IterationListener> listeners);
+    void setListeners(Collection<TrainingListener> listeners);
 
     /**
      * Set the layer index.

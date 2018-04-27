@@ -597,7 +597,7 @@ var timed = function() {
                                             setTimeout(timed, 10000);
                                             $.notify({
                                                     	title: '<strong>No data available!</strong>',
-                                                    	message: 'Please check, if <strong>HistogramIterationListener</strong> was enabled.'
+                                                    	message: 'Please check, if <strong>HistogramTrainingListener</strong> was enabled.'
                                                     },{
                                                     	type: 'danger',
                                                     	placement: {
