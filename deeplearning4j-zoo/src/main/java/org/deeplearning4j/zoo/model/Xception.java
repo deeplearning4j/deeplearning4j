@@ -7,11 +7,9 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
-import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
 import org.deeplearning4j.zoo.PretrainedType;
@@ -21,9 +19,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.io.File;
-import java.io.IOException;
 
 /**
  * U-Net
