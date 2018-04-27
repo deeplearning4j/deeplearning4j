@@ -18,10 +18,12 @@
 package org.deeplearning4j.nn.modelimport.keras.configurations;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 
 import java.io.File;
@@ -56,6 +58,13 @@ public class KerasModelImportTest {
         assert (model != null);
     }
 
+    @Test
+    public void importN() throws Exception {
+        ComputationGraph model = KerasModelImport.importKerasModelAndWeights("/home/justin/Downloads/xception.h5");
+        ModelSerializer.writeModel(model, "/home/justin/Projects/xception_dl4j_inference.v1.zip", false);
+
+    }
+
     private MultiLayerNetwork loadModel(String modelJsonFilename, String modelWeightFilename)
             throws NullPointerException {
         ClassLoader classLoader = getClass().getClassLoader();
@@ -86,4 +95,6 @@ public class KerasModelImportTest {
 
         return model;
     }
+
+
 }

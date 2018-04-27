@@ -63,7 +63,7 @@ public class UNet extends ZooModel {
     public ComputationGraph init() {
         ComputationGraphConfiguration.GraphBuilder graph = graphBuilder();
 
-        graph.addInputs("input1").setInputTypes(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]));
+        graph.addInputs("input").setInputTypes(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]));
 
         ComputationGraphConfiguration conf = graph.build();
         ComputationGraph model = new ComputationGraph(conf);
