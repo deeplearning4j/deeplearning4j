@@ -453,7 +453,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     protected void checkForWorkspaces(Op op) {
         val x = op.x();
-        checkWorkspace(op.opName(), x);
+        if (x != null)
+            checkWorkspace(op.opName(), x);
 
         val y = op.y();
         if (y != null)
