@@ -1,5 +1,7 @@
 package org.nd4j.imports.converters;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -10,13 +12,9 @@ import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 import org.tensorflow.framework.OpDef;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -118,23 +116,40 @@ public class DifferentialFunctionClassHolder {
             add("ownName");
         }};
 
-        Reflections f = new Reflections(new ConfigurationBuilder().filterInputsBy(
-                new FilterBuilder().include(FilterBuilder.prefix("org.nd4j.*")).exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                //Exclude any not in the ops directory
-        )
 
-                .setUrls(ClasspathHelper.forPackage("org.nd4j")).setScanners(new SubTypesScanner()));
-
-        Set<Class<? extends DifferentialFunction>> clazzes = f.getSubTypesOf(DifferentialFunction.class);
+        //Scan classpath to find all DifferentialFunction instances, so tensorflow/onnx mappings can be made
+        //We're assuming here that all instances with such mappings are defined in ND4J
+        //As of 04/2018 all DifferentialFunction classes are defined in org.nd4j.linalg.api.ops - with the exception
+        // of ILossFunction instances, which don't have TF/Onnx import working anyway
+        ImmutableSet<ClassPath.ClassInfo> info;
+        try {
+            //Dependency note: this ClassPath class was added in Guava 14
+            info = com.google.common.reflect.ClassPath.from(DifferentialFunctionClassHolder.class.getClassLoader())
+                    .getTopLevelClassesRecursive("org.nd4j.linalg.api.ops");
+        } catch (IOException e){
+            //Should never happen
+            throw new RuntimeException(e);
+        }
 
         fieldsForFunction = new LinkedHashMap<>();
 
-        for (Class<? extends DifferentialFunction> clazz : clazzes) {
-            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface())
+        int count = 0;
+        for(ClassPath.ClassInfo c : info){
+            //Load method: Loads (but doesn't link or initialize) the class.
+            Class<?> clazz;
+            try{
+                clazz = Class.forName(c.getName());
+            } catch (ClassNotFoundException e){
+                //Should never happen as  this was found on the classpath
+                throw new RuntimeException(e);
+            }
+
+
+            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || !DifferentialFunction.class.isAssignableFrom(clazz))
                 continue;
 
             try {
-                DifferentialFunction node = clazz.newInstance();
+                DifferentialFunction node = (DifferentialFunction)clazz.newInstance();
                 val name = node.opName();
                 if(name == null)
                     continue;

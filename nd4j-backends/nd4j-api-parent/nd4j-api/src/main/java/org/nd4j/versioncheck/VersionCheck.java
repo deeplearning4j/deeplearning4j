@@ -2,16 +2,14 @@ package org.nd4j.versioncheck;
 
 import lombok.extern.slf4j.Slf4j;
 
-import org.reflections.Reflections;
-import org.reflections.scanners.ResourcesScanner;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
-
-
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * A runtime version check utility that does 2 things:<br>
@@ -29,6 +27,7 @@ public class VersionCheck {
      * warnings/errors. By default, the version check is unable.
      */
     public static final String VERSION_CHECK_PROPERTY = "org.nd4j.versioncheck";
+    public static final String GIT_PROPERTY_FILE_SUFFIX = "-git.properties";
 
     private static final String SCALA_210_SUFFIX = "_2.10";
     private static final String SCALA_211_SUFFIX = "_2.11";
@@ -203,14 +202,43 @@ public class VersionCheck {
     /**
      * @return A list of the property files containing the build/version info
      */
-    public static List<String> listGitPropertiesFiles() {
-        Reflections reflections = new Reflections(new ConfigurationBuilder().filterInputsBy(
-                new FilterBuilder().exclude(".*").include("/ai/skymind/*")).setScanners(new ResourcesScanner()));
-        Set<String> resources = reflections.getResources(Pattern.compile(".*-git.properties"));
+    public static List<URI> listGitPropertiesFiles() {
+        Enumeration<URL> roots;
+        try {
+            roots = VersionCheck.class.getClassLoader().getResources("ai/skymind/");
+        } catch (IOException e){
+            //Should never happen?
+            log.debug("Error listing resources for version check", e);
+            return Collections.emptyList();
+        }
 
-        List<String> out = new ArrayList<>(resources);
+        final List<URI> out = new ArrayList<>();
+        while(roots.hasMoreElements()){
+            URL u = roots.nextElement();
+
+            try {
+                URI uri = u.toURI();
+                try (FileSystem fileSystem = (uri.getScheme().equals("jar") ? FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap()) : null)) {
+                    Path myPath = Paths.get(uri);
+                    Files.walkFileTree(myPath, new SimpleFileVisitor<Path>() {
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                            URI fileUri = file.toUri();
+                            String s = fileUri.toString();
+                            if(s.endsWith(GIT_PROPERTY_FILE_SUFFIX)){
+                                out.add(fileUri);
+                            }
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
+                }
+            } catch (Exception e){
+                //log and skip
+                log.debug("Error finding/loading version check resources", e);
+            }
+        }
+
         Collections.sort(out);      //Equivalent to sorting by groupID and artifactID
-
         return out;
     }
 
@@ -223,13 +251,13 @@ public class VersionCheck {
         boolean datavecFound = false;
 
         List<VersionInfo> repState = new ArrayList<>();
-        for(String s : listGitPropertiesFiles()){
+        for(URI s : listGitPropertiesFiles()){
             VersionInfo grs;
 
             try{
                 grs = new VersionInfo(s);
             } catch (Exception e){
-                log.warn("Error reading property files for {}", s);
+                log.debug("Error reading property files for {}", s);
                 continue;
             }
             repState.add(grs);
