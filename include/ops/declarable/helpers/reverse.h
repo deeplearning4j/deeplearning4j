@@ -19,6 +19,11 @@ namespace helpers {
 	void reverseSequence(const NDArray<T>* input, const NDArray<T>* seqLengths, NDArray<T>* output, int seqDim, const int batchDim);
 
 
+	template<typename T>
+	void reverse(const NDArray<T>* input, NDArray<T>* output, const std::vector<int>* intArgs);
+
+    
+
 }
 }
 }

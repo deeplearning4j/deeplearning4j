@@ -17,9 +17,8 @@ namespace nd4j {
             NDArray<T>* ret = OUTPUT_VARIABLE(0);
 
 			x->repeat(block.getIArguments()->back(), *ret);
-			STORE_RESULT(*ret);
 
-			return ND4J_STATUS_OK;				
+			return Status::OK();
         }
 		
         DECLARE_SHAPE_FN(repeat) {                               

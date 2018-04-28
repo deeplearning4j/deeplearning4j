@@ -204,15 +204,40 @@ void reverseSequence(const NDArray<T>* input, const NDArray<T>* seqLengths, NDAr
 
 }
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+void reverse(const NDArray<T>* input, NDArray<T>* output, const std::vector<int>* intArgs) {
+
+    std::vector<int> dimensions = ShapeUtils<T>::evalDimsToExclude(input->rankOf(), *intArgs);
+
+    ResultSet<T>* listOut = NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions);
+    ResultSet<T>* listIn  = NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions);
+       
+    NDArray<T>* subArrIn  = nullptr;
+    NDArray<T>* subArrOut = nullptr;    
+
+    for(int i = 0; i < listIn->size(); ++i) {               // listIn->size() = listOut->size()
+        subArrIn   = listIn->at(i);
+        subArrOut  = listOut->at(i);        
+        helpers::reverseArray<T>(subArrIn->getBuffer(), subArrIn->getShapeInfo(), subArrOut->getBuffer(), subArrOut->getShapeInfo());
+    }
+
+    delete listOut;
+    delete listIn;
+}
 
 template void reverseSequence<float>(const NDArray<float>* input, const NDArray<float>* seqLengths, NDArray<float>* output, int seqDim, const int batchDim);
 template void reverseSequence<float16>(const NDArray<float16>* input, const NDArray<float16>* seqLengths, NDArray<float16>* output, int seqDim, const int batchDim);
 template void reverseSequence<double>(const NDArray<double>* input, const NDArray<double>* seqLengths, NDArray<double>* output, int seqDim, const int batchDim);
 
-
 template void reverseArray<float>(float *inArr, int *inShapeBuffer, float *outArr, int *outShapeBuffer, int numOfElemsToReverse);
 template void reverseArray<float16>(float16 *inArr, int *inShapeBuffer, float16 *outArr, int *outShapeBuffer, int numOfElemsToReverse);
 template void reverseArray<double>(double *inArr, int *inShapeBuffer, double *outArr, int *outShapeBuffer, int numOfElemsToReverse);
+
+template void reverse<float>(const NDArray<float>* input, NDArray<float>* output, const std::vector<int>* intArgs);
+template void reverse<float16>(const NDArray<float16>* input, NDArray<float16>* output, const std::vector<int>* intArgs);
+template void reverse<double>(const NDArray<double>* input, NDArray<double>* output, const std::vector<int>* intArgs);
+
 
 }
 }

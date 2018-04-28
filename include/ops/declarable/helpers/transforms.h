@@ -39,6 +39,28 @@ namespace helpers {
 
 	template<typename T>
 	void eye(NDArray<T>& output);
+
+	template<typename T>
+	void scatterUpdate(NDArray<T>& operand, NDArray<T>& updates, const std::vector<int>* intArgs);
+
+	template<typename T>
+	void mergeMaxIndex(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output);
+
+	template<typename T>
+	void mergeMax(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output);
+
+	template<typename T>
+	void mergeAvg(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output);
+
+	template<typename T>
+	void mergeAdd(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output);
+
+	template<typename T>
+	void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace);
+
+	template<typename T>
+	void clipByAveraged(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace);
+
 }
 }
 }
