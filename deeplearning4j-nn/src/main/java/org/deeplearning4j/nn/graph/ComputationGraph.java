@@ -2209,8 +2209,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         try{
-            boolean hitFrozen = false;
             for(int i=topologicalOrder.length-1; i>= 0; i--){
+                boolean hitFrozen = false;
                 GraphVertex current = vertices[topologicalOrder[i]];
                 int vIdx = current.getVertexIndex();
                 String vertexName = current.getVertexName();
