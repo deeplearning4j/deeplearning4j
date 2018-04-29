@@ -18,7 +18,7 @@ setup(name='jumpy',
       url='https://github.com/deeplearning4j/jumpy',
       license='Apache',
       setup_requires=['Cython'],
-      install_requires=['pyjnius'],
+      install_requires=['Cython', 'pyjnius', 'numpy'],
       extras_require={
           'visualize': ['pydot-ng'],
           'tests': ['pytest',
