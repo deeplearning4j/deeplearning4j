@@ -182,7 +182,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private transient int[] outputLayerIdxs;
 
     private NeuralNetConfiguration defaultConfiguration;
-    private Collection<TrainingListener> listeners = new ArrayList<>();
     private Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
 
@@ -2408,7 +2407,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 cg.getUpdater().setStateViewArray(updaterState.dup());
             }
         }
-        cg.listeners = this.listeners;
+        cg.trainingListeners = this.trainingListeners;
         for (int i = 0; i < topologicalOrder.length; i++) {
             if (!vertices[topologicalOrder[i]].hasLayer())
                 continue;
@@ -2448,7 +2447,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      */
     public void setListeners(Collection<TrainingListener> listeners) {
-        this.listeners = listeners;
+        this.trainingListeners = listeners;
         if (layers == null)
             init();
 
@@ -2489,20 +2488,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     @Override
     public void addListeners(TrainingListener... listeners) {
-        if (this.listeners == null) {
+        if (this.trainingListeners == null) {
             setListeners(listeners);
             return;
         }
 
-        for (TrainingListener listener : listeners) {
-            this.listeners.add(listener);
-            if (listener instanceof TrainingListener) {
-                this.trainingListeners.add((TrainingListener) listener);
-            }
-        }
-
         if (solver != null) {
-            solver.setListeners(this.listeners);
+            solver.setListeners(this.trainingListeners);
         }
     }
 
@@ -2510,7 +2502,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Get the trainingListeners for the ComputationGraph
      */
     public Collection<TrainingListener> getListeners() {
-        return listeners;
+        return trainingListeners;
     }
 
     /**
