@@ -69,7 +69,7 @@ import java.util.concurrent.TimeUnit;
  * @author Alex Black
  */
 @Slf4j
-public class CheckpointListener extends BaseTrainingListener {
+public class CheckpointListener extends BaseTrainingListener implements Serializable {
 
     private enum KeepMode {ALL, LAST, LAST_AND_EVERY};
     private static final String[] MODEL_TYPES = new String[]{"MultiLayerNetwork", "ComputationGraph", "Model"};

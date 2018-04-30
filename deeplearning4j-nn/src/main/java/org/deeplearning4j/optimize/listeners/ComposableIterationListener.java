@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,7 +31,7 @@ import java.util.Collection;
  * A group of listeners
  * @author Adam Gibson
  */
-public class ComposableIterationListener extends BaseTrainingListener {
+public class ComposableIterationListener extends BaseTrainingListener implements Serializable {
     private Collection<TrainingListener> listeners = new ArrayList<>();
 
     public ComposableIterationListener(TrainingListener... TrainingListener) {

@@ -2447,7 +2447,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      */
     public void setListeners(Collection<TrainingListener> listeners) {
-        this.trainingListeners = listeners;
         if (layers == null)
             init();
 
