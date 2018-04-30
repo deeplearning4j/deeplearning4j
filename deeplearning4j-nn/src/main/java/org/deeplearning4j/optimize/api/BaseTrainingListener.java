@@ -11,7 +11,7 @@ import java.util.Map;
  *
  * Extend this and selectively override the methods you will actually use.
  */
-public class BaseTrainingListener implements TrainingListener {
+public abstract class BaseTrainingListener implements TrainingListener {
 
     @Override
     public void onEpochStart(Model model) {
