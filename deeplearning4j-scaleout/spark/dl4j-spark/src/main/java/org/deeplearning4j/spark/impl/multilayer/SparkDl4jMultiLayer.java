@@ -39,10 +39,7 @@ import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateAggregateFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluationReduceFunction;
-import org.deeplearning4j.spark.impl.multilayer.scoring.FeedForwardWithKeyFunction;
-import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
-import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunction;
-import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreFlatMapFunction;
+import org.deeplearning4j.spark.impl.multilayer.scoring.*;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
@@ -434,7 +431,8 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @return             Network output given the input, by key
      */
     public <K> JavaPairRDD<K, INDArray> feedForwardWithKey(JavaPairRDD<K, INDArray> featuresData, int batchSize) {
-        return featuresData.mapPartitionsToPair(new FeedForwardWithKeyFunction<K>(sc.broadcast(network.params()),
+        return featuresData.mapToPair(new SingleToPairFunction<K>())
+                .mapPartitionsToPair(new FeedForwardWithKeyFunction<K>(sc.broadcast(network.params()),
                         sc.broadcast(conf.toJson()), batchSize));
     }
 
