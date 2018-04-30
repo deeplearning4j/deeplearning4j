@@ -214,7 +214,7 @@ public class NativeImageLoader extends BaseImageLoader {
 
         Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         if (image == null || image.empty()) {
-            PIX pix = pixReadMem(bytes, bytes.length);
+            PIX pix = pixReadMem(bytes, length);
             if (pix == null) {
                 throw new IOException("Could not decode image from input stream");
             }
@@ -227,9 +227,9 @@ public class NativeImageLoader extends BaseImageLoader {
     }
 
     /**
-     * Read the stream to the buffer, and return the number of
-     * @param is
-     * @return
+     * Read the stream to the buffer, and return the number of bytes read
+     * @param is Input stream to read
+     * @return   Pair with the buffer, and the number of bytes read
      * @throws IOException
      */
     private Pair<byte[],Integer> streamToBuffer(InputStream is) throws IOException {
@@ -279,10 +279,16 @@ public class NativeImageLoader extends BaseImageLoader {
 
     @Override
     public Image asImageMatrix(InputStream is) throws IOException {
-        byte[] bytes = IOUtils.toByteArray(is);
-        Mat image = imdecode(new Mat(bytes), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        Pair<byte[],Integer> pair = streamToBuffer(is);
+        byte[] bytes = pair.getFirst();
+        int length = pair.getSecond();
+        BytePointer bp = new BytePointer(length);
+        bp.put(bytes, 0, length);
+        Mat mat = new Mat(bp, false);
+
+        Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         if (image == null || image.empty()) {
-            PIX pix = pixReadMem(bytes, bytes.length);
+            PIX pix = pixReadMem(bytes, length);
             if (pix == null) {
                 throw new IOException("Could not decode image from input stream");
             }
@@ -451,10 +457,16 @@ public class NativeImageLoader extends BaseImageLoader {
     }
 
     public void asMatrixView(InputStream is, INDArray view) throws IOException {
-        byte[] bytes = IOUtils.toByteArray(is);
-        Mat image = imdecode(new Mat(bytes), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        Pair<byte[],Integer> pair = streamToBuffer(is);
+        byte[] bytes = pair.getFirst();
+        int length = pair.getSecond();
+        BytePointer bp = new BytePointer(length);
+        bp.put(bytes, 0, length);
+        Mat mat = new Mat(bp, false);
+
+        Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         if (image == null || image.empty()) {
-            PIX pix = pixReadMem(bytes, bytes.length);
+            PIX pix = pixReadMem(bytes, length);
             if (pix == null) {
                 throw new IOException("Could not decode image from input stream");
             }
@@ -612,10 +624,15 @@ public class NativeImageLoader extends BaseImageLoader {
      */
     public ImageWritable asWritable(File f) throws IOException {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
-            byte[] bytes = IOUtils.toByteArray(bis);
-            Mat image = imdecode(new Mat(bytes), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+            Pair<byte[],Integer> pair = streamToBuffer(bis);
+            byte[] bytes = pair.getFirst();
+            int length = pair.getSecond();
+            BytePointer bp = new BytePointer(length);
+            bp.put(bytes, 0, length);
+            Mat mat = new Mat(bp, false);
+            Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
             if (image == null || image.empty()) {
-                PIX pix = pixReadMem(bytes, bytes.length);
+                PIX pix = pixReadMem(bytes, length);
                 if (pix == null) {
                     throw new IOException("Could not decode image from input stream");
                 }

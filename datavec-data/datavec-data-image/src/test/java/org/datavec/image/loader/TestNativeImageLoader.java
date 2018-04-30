@@ -313,8 +313,6 @@ public class TestNativeImageLoader {
 
     @Test
     public void testBufferRealloc() throws Exception {
-        Nd4j.create(1);
-
         Field f = NativeImageLoader.class.getDeclaredField("buffer");
         f.setAccessible(true);
 
