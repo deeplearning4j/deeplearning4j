@@ -10,22 +10,20 @@ import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-import static org.nd4j.linalg.indexing.NDArrayIndex.point;
+import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
  * Bidirectional is a "wrapper" layer: it wraps any uni-directional RNN layer to make it bidirectional.<br>
@@ -210,18 +208,18 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public Collection<IterationListener> getListeners() {
+    public Collection<TrainingListener> getListeners() {
         return fwd.getListeners();
     }
 
     @Override
-    public void setListeners(IterationListener... listeners) {
+    public void setListeners(TrainingListener... listeners) {
         fwd.setListeners(listeners);
         bwd.setListeners(listeners);
     }
 
     @Override
-    public void addListeners(IterationListener... listener) {
+    public void addListeners(TrainingListener... listener) {
         fwd.addListeners(listener);
         bwd.addListeners(listener);
     }
@@ -420,7 +418,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<TrainingListener> listeners) {
         fwd.setListeners(listeners);
         bwd.setListeners(listeners);
     }
