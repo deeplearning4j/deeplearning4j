@@ -1217,6 +1217,11 @@ public class MultiLayerTest extends BaseDL4JTest {
         assertEquals(0, net.layerSize(1));
         assertEquals(30, net.layerSize(2));
         assertEquals(13, net.layerSize(3));
+
+        assertEquals(3, net.layerInputSize(0));
+        assertEquals(0, net.layerInputSize(1));
+        assertEquals(((FeedForwardLayer)net.getLayer(2).conf().getLayer()).getNIn(), net.layerInputSize(2));
+        assertEquals(30, net.layerInputSize(3));
     }
 
 
