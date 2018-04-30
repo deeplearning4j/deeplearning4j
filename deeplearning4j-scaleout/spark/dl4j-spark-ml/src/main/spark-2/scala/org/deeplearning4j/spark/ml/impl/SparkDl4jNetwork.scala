@@ -3,6 +3,7 @@ package org.deeplearning4j.spark.ml.impl
 import java.util
 
 import org.apache.spark.ml.param.ParamMap
+import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
