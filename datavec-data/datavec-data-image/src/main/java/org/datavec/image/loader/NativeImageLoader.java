@@ -16,10 +16,7 @@
 package org.datavec.image.loader;
 
 import org.apache.commons.io.IOUtils;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.Loader;
-import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
@@ -31,6 +28,7 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
@@ -47,6 +45,8 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * @author saudet
  */
 public class NativeImageLoader extends BaseImageLoader {
+    private static final int MIN_BUFFER_STEP_SIZE = 1024*1024;
+    private byte[] buffer;
 
     public static final String[] ALLOWED_FORMATS = {"bmp", "gif", "jpg", "jpeg", "jp2", "pbm", "pgm", "ppm", "pnm",
                     "png", "tif", "tiff", "exr", "webp", "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM",
@@ -205,8 +205,14 @@ public class NativeImageLoader extends BaseImageLoader {
 
     @Override
     public INDArray asMatrix(InputStream is) throws IOException {
-        byte[] bytes = IOUtils.toByteArray(is);
-        Mat image = imdecode(new Mat(bytes), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        Pair<byte[],Integer> pair = streamToBuffer(is);
+        byte[] bytes = pair.getFirst();
+        int length = pair.getSecond();
+        BytePointer bp = new BytePointer(length);
+        bp.put(bytes, 0, length);
+        Mat mat = new Mat(bp, false);
+
+        Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         if (image == null || image.empty()) {
             PIX pix = pixReadMem(bytes, bytes.length);
             if (pix == null) {
@@ -218,6 +224,50 @@ public class NativeImageLoader extends BaseImageLoader {
         INDArray a = asMatrix(image);
         image.deallocate();
         return a;
+    }
+
+    /**
+     * Read the stream to the buffer, and return the number of
+     * @param is
+     * @return
+     * @throws IOException
+     */
+    private Pair<byte[],Integer> streamToBuffer(InputStream is) throws IOException {
+        if(buffer == null){
+            buffer = IOUtils.toByteArray(is);
+            return new Pair<>(buffer, buffer.length);
+        } else {
+            int numReadTotal = is.read(buffer);
+            //Need to know if all data has been read.
+            //(a) if numRead < buffer.length - got everything
+            //(b) if numRead >= buffer.length: we MIGHT have got everything (exact right size buffer) OR we need more data
+
+            if(numReadTotal < buffer.length){
+                return new Pair<>(buffer, numReadTotal);
+            }
+
+            //Buffer is full; reallocate and keep reading
+            int numReadCurrent = numReadTotal;
+            while(numReadCurrent != -1){
+                byte[] oldBuffer = buffer;
+                if(oldBuffer.length == Integer.MAX_VALUE){
+                    throw new IllegalStateException("Cannot read more than Integer.MAX_VALUE bytes");
+                }
+                //Double buffer, but allocate at least 1MB more
+                long increase = Math.max(buffer.length, MIN_BUFFER_STEP_SIZE);
+                int newBufferLength = (int)Math.min(Integer.MAX_VALUE, buffer.length + increase);
+
+                buffer = new byte[newBufferLength];
+                System.arraycopy(oldBuffer, 0, buffer, 0, oldBuffer.length);
+                numReadCurrent = is.read(buffer, oldBuffer.length, buffer.length - oldBuffer.length);
+                if(numReadCurrent > 0){
+                    numReadTotal += numReadCurrent;
+                }
+            }
+
+            return new Pair<>(buffer, numReadTotal);
+        }
+
     }
 
     @Override
