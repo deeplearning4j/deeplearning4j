@@ -29,8 +29,8 @@ public class TestDownload {
 
         // iterate through each available model
         ZooModel[] models = new ZooModel[]{
-                LeNet.builder().numLabels(10).build(),
-                SimpleCNN.builder().numLabels(10).build()
+                LeNet.builder().numClasses(10).build(),
+                SimpleCNN.builder().numClasses(10).build()
         };
 
 

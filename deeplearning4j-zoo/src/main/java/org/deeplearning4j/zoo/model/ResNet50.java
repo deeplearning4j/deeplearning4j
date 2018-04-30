@@ -52,7 +52,7 @@ public class ResNet50 extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return 1982516793L;
+            return 1719840640;
         else
             return 0L;
     }

@@ -55,7 +55,7 @@ public class Xception extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return 2782932419L; // TODO fix this
+            return 2522279522L;
         else
             return 0L;
     }

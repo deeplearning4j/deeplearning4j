@@ -26,8 +26,9 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * An implementation of SqueezeNet. Touts similar accuracy to AlexNet with a fraction of the parameters.
  *
  * <p>Paper: https://arxiv.org/abs/1602.07360</p>
- * <p>ImageNet weights for this model are available and have been converted from https://github.com/rcmalli/keras-squeezenet/blob/master/keras_squeezenet/squeezenet.py.</p>
+ * <p>ImageNet weights for this model are available and have been converted from https://github.com/rcmalli/keras-squeezenet/.</p>
  *
+ * @note Pretrained ImageNet weights are "special". Output shape is (1,1000,1,1).
  * @author Justin Long (crockpotveggies)
  *
  */
@@ -55,7 +56,7 @@ public class SqueezeNet extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return 2782932419L;
+            return 1654817155L;
         else
             return 0L;
     }
@@ -122,10 +123,11 @@ public class SqueezeNet extends ZooModel {
                         .cudnnAlgoMode(cudnnAlgoMode).build(), "input")
                 .addLayer("conv10_act", new ActivationLayer(Activation.RELU), "conv10")
                 .addLayer("avg_pool", new GlobalPoolingLayer(PoolingType.AVG), "conv10_act")
-                .addLayer("predictions", new CnnLossLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX).build(), "avg_pool")
 
-                .setOutputs("predictions")
+                .addLayer("softmax", new ActivationLayer(Activation.SOFTMAX), "avg_pool")
+                .addLayer("loss", new LossLayer.Builder(LossFunctions.LossFunction.MCXENT).build(), "softmax")
+
+                .setOutputs("loss")
                 .backprop(true)
                 .pretrain(false);
 

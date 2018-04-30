@@ -41,7 +41,7 @@ public class TestImageNet {
     @Test
     public void testImageNetLabels() throws IOException {
         // set up model
-        ZooModel model = VGG19.builder().numLabels(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = VGG19.builder().numClasses(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -65,7 +65,7 @@ public class TestImageNet {
     @Test
     public void testDarknetLabels() throws IOException {
         // set up model
-        ZooModel model = Darknet19.builder().numLabels(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = Darknet19.builder().numClasses(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -87,7 +87,7 @@ public class TestImageNet {
         System.gc();
 
         // set up model
-        model = TinyYOLO.builder().numLabels(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
+        model = TinyYOLO.builder().numClasses(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -112,7 +112,7 @@ public class TestImageNet {
         System.gc();
 
             // set up model
-            model = YOLO2.builder().numLabels(1000).build(); //num labels doesn't matter since we're getting pretrained imagenet
+            model = YOLO2.builder().numClasses(1000).build(); //num labels doesn't matter since we're getting pretrained imagenet
             initializedModel = (ComputationGraph) model.initPretrained();
 
             // set up input and feedforward
