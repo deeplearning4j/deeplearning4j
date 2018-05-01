@@ -229,7 +229,7 @@ public class NativeBlasTests extends BaseNd4jTest {
         val A = Nd4j.linspace(1, 9, 9).reshape('c', 3, 3);
         val B = Nd4j.linspace(1, 3, 3).reshape('c', 3, 1);
 
-        val res = Nd4j.create(new int[] {1, 3}, 'c');
+        val res = Nd4j.create(new int[] {3, 1}, 'c');
 
         val matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
@@ -257,7 +257,7 @@ public class NativeBlasTests extends BaseNd4jTest {
         val A = Nd4j.linspace(1, 9, 9).reshape('c', 3, 3).dup('f');
         val B = Nd4j.linspace(1, 3, 3).reshape('c', 3, 1).dup('f');
 
-        val res = Nd4j.create(new int[] {1, 3}, 'f');
+        val res = Nd4j.create(new int[] {3, 1}, 'f');
 
         val matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)
@@ -287,7 +287,7 @@ public class NativeBlasTests extends BaseNd4jTest {
 
         val exp = A.mmul(B);
 
-        val res = Nd4j.create(new int[] {1, 4}, 'c');
+        val res = Nd4j.create(new int[] {4, 1}, 'c');
 
         val matmul = DynamicCustomOp.builder("matmul")
                 .addInputs(A, B)

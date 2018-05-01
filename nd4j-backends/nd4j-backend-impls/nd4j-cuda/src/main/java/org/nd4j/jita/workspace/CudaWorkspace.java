@@ -227,8 +227,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                 PagedPointer ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
 
-                if (initialize)
-                    Pointer.memset(ptr, 0, requiredMemory);
+                //if (initialize)
+                //    Pointer.memset(ptr, 0, requiredMemory);
 
                 return ptr;
             } else {

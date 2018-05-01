@@ -62,6 +62,9 @@ public class CudaTests extends BaseNd4jTest {
         if (!(Nd4j.getExecutioner() instanceof GridExecutioner))
             return;
 
+        val exp = Nd4j.create(128, 128).assign(2.0);
+        Nd4j.getExecutioner().commit();
+
         val arrayA = Nd4j.create(128, 128);
         val arrayB = Nd4j.create(128, 128);
         arrayA.muli(arrayB);
@@ -76,7 +79,7 @@ public class CudaTests extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
 
-        assertEquals(2.0f, arrayA.getFloat(0), 1e-5f);
+        assertEquals(exp, arrayA);
     }
 
 

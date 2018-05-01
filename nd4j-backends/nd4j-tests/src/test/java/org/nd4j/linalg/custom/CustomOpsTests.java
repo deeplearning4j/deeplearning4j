@@ -219,6 +219,32 @@ public class CustomOpsTests {
     }
 
     @Test
+    public void testMergeMaxMixedOrder_Subtract() {
+        val exp = Nd4j.create(new int[] {2, 2}, 'c').assign(5.0);
+        Nd4j.getExecutioner().commit();;
+
+        val array0 = Nd4j.create(new int[] {2, 2}, 'f'); //some random array with +ve numbers
+        val array1 = array0.dup('c').addi(5.0);
+
+        Nd4j.getExecutioner().commit();
+
+        assertEquals(exp, array1);
+    }
+
+    @Test
+    public void testMergeMaxSameOrder_Subtract() {
+        val exp = Nd4j.create(new int[] {2, 2}, 'c').assign(5.0);
+        Nd4j.getExecutioner().commit();;
+
+        val array0 = Nd4j.create(new int[] {2, 2}, 'c'); //some random array with +ve numbers
+        val array1 = array0.dup('c').addi(5);
+
+        Nd4j.getExecutioner().commit();
+
+        assertEquals(exp, array1);
+    }
+
+    @Test
     public void testMergeMaxMixedOrder() {
         val array0 = Nd4j.rand('f', 5, 2).addi(1); //some random array with +ve numbers
         val array1 = array0.dup().addi(5);

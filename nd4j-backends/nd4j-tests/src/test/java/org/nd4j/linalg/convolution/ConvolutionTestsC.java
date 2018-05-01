@@ -203,6 +203,8 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int[] padW = {0};
         Pooling2D.Pooling2DType[] types = new Pooling2D.Pooling2DType[]{Pooling2D.Pooling2DType.AVG, Pooling2D.Pooling2DType.PNORM, Pooling2D.Pooling2DType.MAX,};
 
+        int cnt = 0;
+
         for (Pooling2D.Pooling2DType type : types) {
             log.info("Trying pooling type: [{}]", type);
             for (int m : miniBatches) {
@@ -224,14 +226,18 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                             int padTop = pHTotal / 2;
                                             int padLeft = pWTotal / 2;
 
-                                            INDArray col = Nd4j.createUninitialized(new int[]{m, d, outSize[0], outSize[1], kh, kw}, 'c');
+                                            INDArray col = Nd4j.create(new int[]{m, d, outSize[0], outSize[1], kh, kw}, 'c');
                                             INDArray col2 = col.permute(0, 1, 4, 5, 2, 3);
+                                            //INDArray col = Nd4j.createUninitialized(new int[]{m, d, kh, kw, outSize[0], outSize[1]}, 'c');
+                                            //INDArray col2 = col;
 
                                             Convolution.im2col(in, kh, kw, sh, sw, padTop, padLeft, true, col2);
 
                                             INDArray col2d = col.reshape('c', m * d * outSize[0] * outSize[1], kh * kw);
 
-                                            INDArray output = Nd4j.create(m * d * outSize[0] * outSize[1]);
+                                            INDArray output = Nd4j.create(m, d, outSize[0], outSize[1]);
+
+
 
                                             INDArray reduced = null;
                                             switch (type) {
@@ -265,6 +271,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                                     break;
                                             }
 
+                                            reduced = reduced.reshape('c',m,d, outSize[0], outSize[1]);
 
                                             assertEquals("Failed opType: " + type, reduced, output);
                                         }

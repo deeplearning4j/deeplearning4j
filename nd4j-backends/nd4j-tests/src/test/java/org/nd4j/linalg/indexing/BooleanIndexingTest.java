@@ -531,7 +531,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(true);
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
         INDArray filtered = BooleanIndexing.chooseFrom(new INDArray[]{arr},Arrays.asList(2.0), Collections.emptyList(),new GreaterThan());
-        assertEquals(2,filtered.length());
+        assertEquals(4,filtered.length());
     }
 
 

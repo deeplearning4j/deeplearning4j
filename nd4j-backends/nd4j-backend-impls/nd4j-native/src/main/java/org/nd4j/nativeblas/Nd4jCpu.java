@@ -260,6 +260,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_segment_sum.class,
         float_segment_prod.class,
         float_segment_mean.class,
+        float_extract_image_patches.class,
         float_set_seed.class,
         float_get_seed.class,
         float_randomuniform.class,
@@ -581,6 +582,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_segment_sum.class,
         half_segment_prod.class,
         half_segment_mean.class,
+        half_extract_image_patches.class,
         half_set_seed.class,
         half_get_seed.class,
         half_randomuniform.class,
@@ -902,6 +904,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_segment_sum.class,
         double_segment_prod.class,
         double_segment_mean.class,
+        double_extract_image_patches.class,
         double_set_seed.class,
         double_get_seed.class,
         double_randomuniform.class,
@@ -31646,6 +31649,67 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public double_segment_mean() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+
+        /**
+         * extract_image_patches op - Extract patches from images and put them in the "depth" output dimension.
+         *
+         * input params:
+         *    0 - images tensor (4D)
+         *
+         * int params:
+         *    0 - ksize_rows
+         *    1 - ksize_cols
+         *    2 - strides_rows
+         *    3 - strides_cols
+         *    4 - rates_rows
+         *    5 - rates_cols
+         *    6 - padding_type - 0 - equiv 'VALID', 1 - 'SAME'
+         */
+        @Name("nd4j::ops::extract_image_patches<float>") public static class float_extract_image_patches extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_extract_image_patches(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_extract_image_patches(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_extract_image_patches position(long position) {
+                return (float_extract_image_patches)super.position(position);
+            }
+        
+                                                                                    public float_extract_image_patches() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::extract_image_patches<float16>") public static class half_extract_image_patches extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_extract_image_patches(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_extract_image_patches(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_extract_image_patches position(long position) {
+                return (half_extract_image_patches)super.position(position);
+            }
+        
+                                                                                    public half_extract_image_patches() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::extract_image_patches<double>") public static class double_extract_image_patches extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_extract_image_patches(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_extract_image_patches(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_extract_image_patches position(long position) {
+                return (double_extract_image_patches)super.position(position);
+            }
+        
+                                                                                    public double_extract_image_patches() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }

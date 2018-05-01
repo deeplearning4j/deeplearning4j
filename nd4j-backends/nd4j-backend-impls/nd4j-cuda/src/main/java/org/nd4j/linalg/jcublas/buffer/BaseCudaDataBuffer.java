@@ -258,8 +258,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.attached = true;
         this.parentWorkspace = workspace;
 
-        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                new AllocationShape(length, this.elementSize, dataType()), initialize);
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, this.elementSize, dataType()), initialize);
         this.length = length;
         //allocationPoint.attachBuffer(this);
         //this.elementSize = elementSize;

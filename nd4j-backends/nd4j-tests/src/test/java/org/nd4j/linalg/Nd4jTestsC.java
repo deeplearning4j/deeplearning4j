@@ -27,6 +27,7 @@ import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.LogSumExp;
 import org.nd4j.linalg.api.ops.impl.accum.Mmul;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
@@ -4348,25 +4349,51 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testDupDelayed() {
+        if (!(Nd4j.getExecutioner() instanceof GridExecutioner))
+            return;
+
+//        Nd4j.getExecutioner().commit();
+        val executioner = (GridExecutioner) Nd4j.getExecutioner();
+
+        log.info("Starting: -------------------------------");
+
+        //log.info("Point A: [{}]", executioner.getQueueLength());
+
         INDArray in = Nd4j.zeros(10);
 
         List<INDArray> out = new ArrayList<>();
         List<INDArray> comp = new ArrayList<>();
 
+        //log.info("Point B: [{}]", executioner.getQueueLength());
+        //log.info("\n\n");
+
         for (int i = 0; i < in.length(); i++) {
+//            log.info("Point C: [{}]", executioner.getQueueLength());
+
             in.putScalar(i, 1);
+
+//            log.info("Point D: [{}]", executioner.getQueueLength());
+
             out.add(in.dup());
+
+//            log.info("Point E: [{}]", executioner.getQueueLength());
+
+            //Nd4j.getExecutioner().commit();
             in.putScalar(i, 0);
+            //Nd4j.getExecutioner().commit();
+
+//            log.info("Point F: [{}]\n\n", executioner.getQueueLength());
         }
 
         for (int i = 0; i < in.length(); i++) {
             in.putScalar(i, 1);
             comp.add(Nd4j.create(in.data().dup()));
+            //Nd4j.getExecutioner().commit();
             in.putScalar(i, 0);
         }
 
         for (int i = 0; i < out.size(); i++) {
-            assertEquals(out.get(i), comp.get(i));
+            assertEquals("Failed at iteration: [" + i + "]", out.get(i), comp.get(i));
         }
     }
 
