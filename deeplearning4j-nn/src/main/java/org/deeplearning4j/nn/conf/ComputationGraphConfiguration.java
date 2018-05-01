@@ -269,7 +269,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * @throws IllegalStateException if configuration is not valid
      */
     public void validate() {
-        validate(false);
+        validate(false, false);
     }
 
     /**
@@ -280,15 +280,16 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      *                          it's output activations don't go anywhere
      * @throws IllegalStateException if configuration is not valid
      */
-    public void validate(boolean allowDisconnected){
+    public void validate(boolean allowDisconnected, boolean allowNoOutput){
 
         if (networkInputs == null || networkInputs.isEmpty()) {
-            throw new IllegalStateException(
-                            "Invalid configuration: network has no inputs. Use .addInputs(String...) to label (and give an ordering to) the network inputs");
+            throw new IllegalStateException( "Invalid configuration: network has no inputs. " +
+                    "Use .addInputs(String...) to label (and give an ordering to) the network inputs");
         }
-        if (networkOutputs == null || networkOutputs.isEmpty()) {
-            throw new IllegalStateException(
-                            "Invalid configuration: network has no outputs. Use .setOutput(String...) to specify (and give an ordering to) the output vertices");
+        if ((networkOutputs == null || networkOutputs.isEmpty()) && !allowNoOutput) {
+            throw new IllegalStateException("Invalid configuration: network has no outputs." +
+                    "Use .setOutput(String...) to specify (and give an ordering to) the output vertices, " +
+                    "or use allowNoOutputs(true) to disable this check");
         }
 
         //Check uniqueness of names for inputs, layers, GraphNodes
@@ -314,10 +315,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         //Check output names:
-        for (String s : networkOutputs) {
-            if (!vertices.containsKey(s)) {
-                throw new IllegalStateException(
-                                "Invalid configuration: Output name \"" + s + "\" is not a valid vertex");
+        if(networkOutputs != null) {
+            for (String s : networkOutputs) {
+                if (!vertices.containsKey(s)) {
+                    throw new IllegalStateException(
+                            "Invalid configuration: Output name \"" + s + "\" is not a valid vertex");
+                }
             }
         }
 
@@ -336,7 +339,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             disconnected.addAll(networkInputs);
             disconnected.addAll(vertices.keySet());
             disconnected.removeAll(seenAsInput);
-            if(!disconnected.isEmpty()){
+            if(!disconnected.isEmpty() && !allowNoOutput){  //If allowing no output: by definition we have disconnected vertices
                 throw new IllegalStateException("Invalid configuration: disconnected vertices found - " + disconnected
                         + ". Disconnected vertices are those that do not connect to either another vertex, and are also"
                         + " not a network output. To disable this error (i.e., allow network configurations with" +
@@ -589,6 +592,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected NeuralNetConfiguration.Builder globalConfiguration;
 
         protected boolean allowDisconnected = false;
+        protected boolean allowNoOutput = false;
 
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration) {
             this.globalConfiguration = globalConfiguration;
@@ -890,6 +894,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Used only during validation after building.<br>
+         * If true: don't throw an exception on configurations without any outputs. This is enabled by default
+         * to avoid creating invalid graphs, but can be disabled if required.<br>
+         * Most users can (and should) leave this as the default value of false.
+         *
+         * @param allowNoOutput Whether to allow no outputs, during validation
+         */
+        public GraphBuilder allowNoOutput(boolean allowNoOutput){
+            this.allowNoOutput = allowNoOutput;
+            return this;
+        }
+
+        /**
          * Create the ComputationGraphConfiguration from the Builder pattern
          */
         public ComputationGraphConfiguration build() {
@@ -937,7 +954,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             }
 
-            conf.validate(allowDisconnected); //throws exception for invalid configuration
+            conf.validate(allowDisconnected, allowNoOutput); //throws exception for invalid configuration
 
             //Automatically add preprocessors, set nIns for CNN->dense transitions, etc
             if (!networkInputTypes.isEmpty()) {

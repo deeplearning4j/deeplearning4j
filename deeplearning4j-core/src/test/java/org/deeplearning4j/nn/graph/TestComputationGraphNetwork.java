@@ -53,6 +53,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -1462,7 +1463,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     public void testComputationGraphConfgurationActivationTypes(){
 
         //Test for a simple net:
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.builder()
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
 
                 .graphBuilder()
                 .addInputs("in1", "in2")
@@ -1471,17 +1472,22 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .layer("2", new DenseLayer.Builder().nOut(8).build(), "in2")
                 .layer("3", new DenseLayer.Builder().nOut(7).build(), "0")
                 .layer("4", new DenseLayer.Builder().nOut(6).build(), "1", "2")
+                .allowNoOutput(true)
                 .build();
 
         Map<String,InputType> act = conf.getLayerActivationTypes(true,
                 InputType.feedForward(5), InputType.feedForward(6));
 
         Map<String, InputType> exp = new HashMap<>();
-        exp.put("0", new InputType.feedForward(10));
-        exp.put("1", new InputType.feedForward(9));
-        exp.put("2", new InputType.feedForward(8));
-        exp.put("3", new InputType.feedForward(7));
-        exp.put("4", new InputType.feedForward(6));
+        exp.put("in1", InputType.feedForward(5));
+        exp.put("in2", InputType.feedForward(6));
+        exp.put("0", InputType.feedForward(10));
+        exp.put("1", InputType.feedForward(9));
+        exp.put("1-merge", InputType.feedForward(5+6));
+        exp.put("2", InputType.feedForward(8));
+        exp.put("3", InputType.feedForward(7));
+        exp.put("4", InputType.feedForward(6));
+        exp.put("4-merge", InputType.feedForward(9+8));
 
         assertEquals(exp, act);
     }
