@@ -1449,6 +1449,68 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         incrementEpochCount();
     }
 
+    /**
+     * Calculate parameter gradients and input activation gradients given the input and labels
+     *
+     * @param features  Features for gradient calculation
+     * @param label     Labels for gradient
+     * @param fMask     Features mask array (may be null)
+     * @param labelMask Label mask array (may be null)
+     * @return A pair of gradient arrays: parameter gradients (in Gradient object) and input activation gradients
+     */
+    public Pair<Gradient,INDArray> calculateGradients(@NonNull INDArray features, @NonNull INDArray label,
+                                                      INDArray fMask, INDArray labelMask){
+        setInput(features);
+        setLabels(label);
+        setLayerMaskArrays(fMask, labelMask);
+
+        LayerWorkspaceMgr mgr;
+        if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+            mgr = LayerWorkspaceMgr.noWorkspaces();
+        } else {
+            mgr = LayerWorkspaceMgr.builder()
+                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_BP_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
+                    .build();
+
+            if(layerWiseConfigurations.getCacheMode() != null){
+                //For now: store cache mode activations in activations workspace
+                mgr.setWorkspace(ArrayType.FF_CACHE, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
+            }
+        }
+
+        //Calculate activations (which are stored in each layer, and used in backprop)
+        try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
+            //First: do a feed-forward through the network
+            //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
+            // need the input to the output layer to be set (such that backprop can be done)
+            List<INDArray> activations = ffToLayerActivationsInWs(layers.length - 2, FwdPassType.STANDARD, false, input, mask, fMask);
+            if (!trainingListeners.isEmpty()) {
+                //TODO: We possibly do want output layer activations in some cases here...
+                for (TrainingListener tl : trainingListeners) {
+                    tl.onForwardPass(this, activations);
+                }
+            }
+            INDArray inputToOutputLayer = activations.get(activations.size() - 1);
+            if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null) {
+                inputToOutputLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1)
+                        .preProcess(inputToOutputLayer, getInputMiniBatchSize(), mgr);
+                //Validate activations location
+            }
+            getOutputLayer().setInput(inputToOutputLayer, mgr);
+
+            Pair<Gradient,INDArray> p = calcBackpropGradients(null, true, false, true);
+            if(p.getSecond() != null){
+                p.setSecond( p.getSecond().detach());
+            }
+            return p;
+        }
+    }
+
     /** Calculate gradients and errors. Used in two places:
      * (a) backprop (for standard multi layer network learning)
      * (b) backpropGradient (layer method, for when MultiLayerNetwork is used as a layer)
@@ -1456,9 +1518,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param withOutputLayer if true: assume last layer is output layer, and calculate errors based on labels. In this
      *                        case, the epsilon input is not used (may/should be null).
      *                        If false: calculate backprop gradients
+     * @param returnInputActGrad If true: terun the input activation gradients (detached). False: don't return
      * @return Gradients and the error (epsilon) at the input
      */
-    protected Pair<Gradient, INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer, boolean tbptt) {
+    protected Pair<Gradient, INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer, boolean tbptt,
+                                                             boolean returnInputActGrad) {
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -1599,6 +1663,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         if (i > 0 && currPair.getSecond() != null){
                             validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), ArrayType.ACTIVATION_GRAD, i,
                                     true, "Backprop");
+                        }
+                    }
+
+                    if(i == 0 ){
+                        if(returnInputActGrad && currPair.getSecond() != null){
+                            currPair.setSecond(currPair.getSecond().detach());
+                        } else {
+                            currPair.setSecond(null);
                         }
                     }
 
@@ -2336,7 +2408,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             getOutputLayer().setInput(inputToOutputLayer, mgr);
             //Then: compute gradients
-            Pair<Gradient, INDArray> pair = calcBackpropGradients(null, true, false);
+            Pair<Gradient, INDArray> pair = calcBackpropGradients(null, true, false, false);
             this.gradient = (pair == null ? null : pair.getFirst());
 
             //Calculate score
@@ -2577,7 +2649,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (getOutputLayer() instanceof IOutputLayer)
             throw new UnsupportedOperationException("Cannot calculate gradients based on epsilon with OutputLayer");
 
-        return calcBackpropGradients(epsilon, false, false);
+        return calcBackpropGradients(epsilon, false, false, true);
     }
 
     @Override
