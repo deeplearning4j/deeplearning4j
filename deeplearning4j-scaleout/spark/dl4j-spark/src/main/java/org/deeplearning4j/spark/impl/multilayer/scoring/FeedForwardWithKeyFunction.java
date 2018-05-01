@@ -46,7 +46,7 @@ import java.util.List;
  * @author Alex Black
  */
 public class FeedForwardWithKeyFunction<K>
-                extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, Pair<INDArray,INDArray>>>, K, INDArray> {
+                extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>>, K, INDArray> {
 
     public FeedForwardWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
         super(new FeedForwardWithKeyFunctionAdapter<K>(params, jsonConfig, batchSize));
@@ -62,7 +62,7 @@ public class FeedForwardWithKeyFunction<K>
  * @author Alex Black
  */
 class FeedForwardWithKeyFunctionAdapter<K>
-                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, Pair<INDArray,INDArray>>>, Tuple2<K, INDArray>> {
+                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>>, Tuple2<K, INDArray>> {
 
     protected static Logger log = LoggerFactory.getLogger(FeedForwardWithKeyFunction.class);
 
@@ -83,7 +83,7 @@ class FeedForwardWithKeyFunctionAdapter<K>
 
 
     @Override
-    public Iterable<Tuple2<K, INDArray>> call(Iterator<Tuple2<K, Pair<INDArray,INDArray>>> iterator) throws Exception {
+    public Iterable<Tuple2<K, INDArray>> call(Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>> iterator) throws Exception {
         if (!iterator.hasNext()) {
             return Collections.emptyList();
         }
@@ -109,10 +109,10 @@ class FeedForwardWithKeyFunctionAdapter<K>
         boolean sizesDiffer = false;
         int tupleCount = 0;
         while (iterator.hasNext()) {
-            Tuple2<K, Pair<INDArray,INDArray>> t2 = iterator.next();
+            Tuple2<K, Tuple2<INDArray,INDArray>> t2 = iterator.next();
 
             if (firstShape == null) {
-                firstShape = t2._2().getFirst().shape();
+                firstShape = t2._2()._1().shape();
             } else if (!sizesDiffer) {
                 for (int i = 1; i < firstShape.length; i++) {
                     if (firstShape[i] != featuresList.get(tupleCount - 1).size(i)) {
@@ -121,10 +121,10 @@ class FeedForwardWithKeyFunctionAdapter<K>
                     }
                 }
             }
-            featuresList.add(t2._2().getFirst());
-            fMaskList.add(t2._2().getSecond());
+            featuresList.add(t2._2()._1());
+            fMaskList.add(t2._2()._2());
             keyList.add(t2._1());
-            origSizeList.add(t2._2().getFirst().size(0));
+            origSizeList.add(t2._2()._1().size(0));
             tupleCount++;
         }
 

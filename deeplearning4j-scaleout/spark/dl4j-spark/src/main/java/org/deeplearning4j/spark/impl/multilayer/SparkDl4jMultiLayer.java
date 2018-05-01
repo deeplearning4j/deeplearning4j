@@ -428,10 +428,24 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param featuresData Features data to feed through the network
      * @param batchSize    Batch size to use when doing feed forward operations
      * @param <K>          Type of data for key - may be anything
-     * @return             Network output given the input, by key
+     * @return Network output given the input, by key
      */
     public <K> JavaPairRDD<K, INDArray> feedForwardWithKey(JavaPairRDD<K, INDArray> featuresData, int batchSize) {
-        return featuresData.mapToPair(new SingleToPairFunction<K>())
+        return feedForwardWithMaskAndKey(featuresData.mapToPair(new SingleToPairFunction<K>()), batchSize);
+    }
+
+    /**
+     * Feed-forward the specified data (and optionally mask array), with the given keys. i.e., get the network
+     * output/predictions for the specified data
+     *
+     * @param featuresDataAndMask Features data to feed through the network. The Tuple2 is of the network input (features),
+     *                            and optionally the feature mask arrays
+     * @param batchSize           Batch size to use when doing feed forward operations
+     * @param <K>                 Type of data for key - may be anything
+     * @return Network output given the input (and optionally mask), by key
+     */
+    public <K> JavaPairRDD<K, INDArray> feedForwardWithMaskAndKey(JavaPairRDD<K, Tuple2<INDArray,INDArray>> featuresDataAndMask, int batchSize) {
+        return featuresDataAndMask
                 .mapPartitionsToPair(new FeedForwardWithKeyFunction<K>(sc.broadcast(network.params()),
                         sc.broadcast(conf.toJson()), batchSize));
     }
