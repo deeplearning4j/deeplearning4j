@@ -358,11 +358,24 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * See that method for details.
      */
     public void addPreProcessors(InputType... inputTypes) {
+        getLayerActivationTypes(true, inputTypes);
+    }
+
+    /**
+     * For the given input shape/type for the network, return a map of activation sizes for each layer and vertex
+     * in the graph. Note that this method can also add preprocessors if required (to handle transitions between some
+     * layer types such as convolutional -> dense, for example)
+     * @param addPreprocIfNecessary     If true: add any required preprocessors, in the process of calculating the layer
+     *                                  activation sizes
+     * @param inputTypes                Input types for the network
+     * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
+     */
+    public Map<String,InputType> getLayerActivationTypes(boolean addPreprocIfNecessary, InputType... inputTypes){
 
         if (inputTypes == null || inputTypes.length != networkInputs.size()) {
             throw new IllegalArgumentException(
-                            "Invalid number of InputTypes: cannot add preprocessors if number of InputType "
-                                            + "objects differs from number of network inputs");
+                    "Invalid number of InputTypes: cannot add preprocessors if number of InputType "
+                            + "objects differs from number of network inputs");
         }
 
         //Now: need to do essentially a forward pass through the network, to work out what type of preprocessors to add
@@ -395,7 +408,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 Layer l = lv.getLayerConf().getLayer();
 
                 //Preprocessors - add if necessary
-                if (lv.getPreProcessor() == null) {
+                if (lv.getPreProcessor() == null && addPreprocIfNecessary) {
                     //But don't override preprocessors that are manually defined; if none has been defined,
                     //add the appropriate preprocessor for this input type/layer combination
                     InputPreProcessor preproc = l.getPreProcessorForInputType(layerInput);
@@ -421,9 +434,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             }
 
             InputType outputFromVertex =
-                            gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
+                    gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
             vertexOutputs.put(s, outputFromVertex);
         }
+
+        return vertexOutputs;
     }
 
     private Map<String, List<String>> verticesOutputTo() {
