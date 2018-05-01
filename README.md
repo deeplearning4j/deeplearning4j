@@ -13,9 +13,10 @@ Native operations for nd4j. Build using cmake
 There's few additional arguments for `buildnativeoperations.sh` script you could use:
 
 ```bash
- -a // shortcut for -march/-mtune, i.e. -a native
+ -a XXXXXXXX// shortcut for -march/-mtune, i.e. -a native
  -b release OR -b debug // enables/desables debug builds. release is considered by default
- -cc // CUDA-only argument, builds only binaries for target GPU architecture. use this for fast builds
+ -j XX // this argument defines how many threads will be used to binaries on your box. i.e. -j 8 
+ -cc XX// CUDA-only argument, builds only binaries for target GPU architecture. use this for fast builds
 ```
 
 You can find the compute capability for your card [on the NVIDIA website here](https://developer.nvidia.com/cuda-gpus).

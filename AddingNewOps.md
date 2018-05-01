@@ -95,7 +95,9 @@ DECLARE_SHAPE_FN(tear) {
     auto inShape = inputShape->at(0);
 
     std::vector<int> dims(*block.getIArguments());
-    std::sort(dims.begin(), dims.end());
+    
+    if (dims.size() > 1)
+        std::sort(dims.begin(), dims.end());
 
     shape::TAD tad(inShape, dims.data(), (int) dims.size());
     tad.createTadOnlyShapeInfo();
@@ -104,8 +106,7 @@ DECLARE_SHAPE_FN(tear) {
     auto result = SHAPELIST();
     for (int e = 0; e < numTads; e++) {
         int *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(tad.tadOnlyShapeInfo), int);
-        memcpy(newShape, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+        COPY_SHAPE(tad.tadOnlyShapeInfo, newShape);
         result->push_back(newShape);
     }
 
@@ -180,6 +181,7 @@ We have number of utility macros, suitable for custom ops. Here they are:
 - **ALLOCATE**(...): this macro check if Workspace is available, and either uses Workspace or direct memory allocation if Workspace isn't available.
 - **RELEASE**(...): this macro is made to release memory allocated with **ALLOCATE()** macro.
 - **REQUIRE_TRUE**(...): this macro takes condition, and evaluates it. If evaluation doesn't end up as True - exception is raised, and specified message is printed out.
-- **LAMBDA_T**(X) and **LAMBDA_TT**(X, Y): lambda declaration for `NDArray::applyLambda` and `NDArray::applyPairwiseLambda` 
-
-
+- **LAMBDA_T**(X) and **LAMBDA_TT**(X, Y): lambda declaration for `NDArray::applyLambda` and `NDArray::applyPairwiseLambda`
+- **COPY_SHAPE**(SRC, TGT): this macro allocates memory for TGT pointer and copies shape from SRC pointer 
+- **ILAMBDA_T**(X) and **ILAMBDA_TT**(X, Y): lambda declaration for indexed lambdas, index argument is passed in as Nd4jIndex (aka **long long**)
+- **FORCEINLINE**: platform-specific definition for functions inlining

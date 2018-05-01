@@ -26,6 +26,7 @@ There's few additional arguments for `buildnativeoperations.sh` script you could
 ```bash
  -a // shortcut for -march/-mtune, i.e. -a native
  -b release OR -b debug // enables/desables debug builds. release is considered by default
+ -j XX // this argument defines how many threads will be used to binaries on your box. i.e. -j 8
  -cc // CUDA-only argument, builds only binaries for target GPU architecture. use this for fast builds
 ```
 
