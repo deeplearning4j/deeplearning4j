@@ -614,10 +614,11 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
     int dX = 1;
     int inY = 28;
     int inX = 28;
+    int channels = 3;
 
     bool isSameMode = true;
 
-    NDArray<double> x('c', {2, 1, inY, inX});
+    NDArray<double> x('c', {2, channels, inY, inX});    
     NDArrayFactory<double>::linspace(1, x);
 
     int oY, oX;
@@ -627,7 +628,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
     if (isSameMode)
         nd4j::ops::ConvolutionUtils<double>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
-    NDArray<double> im2col0('c', {2, 1, kY, kX, oY, oX});
+    NDArray<double> im2col0('c', {2, channels, kY, kX, oY, oX});
 
     std::vector<double> args2col({(double) kY, (double) kX, (double) sY, (double) sX, (double) pY, (double) pX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0, (double)0.0, (double) 0.});
     x.template applyTransform<simdOps::Im2col<double>>(&im2col0, args2col.data());
@@ -642,7 +643,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
 
 
     std::vector<double> args2im({ (double) sY, (double) sX, (double) pY, (double) pX, (double) inY, (double) inX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0});
-    NDArray<double> col2im0('c', {2, 1, inY, inX});
+    NDArray<double> col2im0('c', {2, channels, inY, inX});
     im2col0.template applyTransform<simdOps::Col2Im<double>>(&col2im0, args2im.data());
 
     nd4j::ops::col2im<double> op2im;
@@ -653,6 +654,118 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
     ASSERT_TRUE(col2im1->equalsTo(&col2im0));
 
     delete result2col;
+    delete result2im;
+}
+
+
+TEST_F(ConvolutionTests, Test_im2col_col2im_2) {
+    int kY = 5;
+    int kX = 5;
+    int sY = 1;
+    int sX = 1;
+    int pY = 0;
+    int pX = 0;
+    int dY = 1;
+    int dX = 1;
+    int inY = 28;
+    int inX = 28;
+    int channels = 3;
+
+    bool isSameMode = true;
+
+    NDArray<double> x('c', {2, channels, inY, inX});
+    NDArrayFactory<double>::linspace(1, x);
+
+    int oY, oX;
+
+    nd4j::ops::ConvolutionUtils<double>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+
+    if (isSameMode)
+        nd4j::ops::ConvolutionUtils<double>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+
+    NDArray<double> im2col0('c', {2, channels, oY, oX, kY, kX});
+    im2col0.permutei({0, 1, 4, 5, 2, 3});
+
+    std::vector<double> args2col({(double) kY, (double) kX, (double) sY, (double) sX, (double) pY, (double) pX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0, (double)0.0, (double) 0.});
+    x.template applyTransform<simdOps::Im2col<double>>(&im2col0, args2col.data());
+
+    nd4j::ops::im2col<double> op;
+    auto result2col = op.execute({&x}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+
+    auto im2col1 = result2col->at(0);
+
+    ASSERT_TRUE(im2col1->isSameShape(&im2col0));
+    ASSERT_TRUE(im2col1->equalsTo(&im2col0));
+
+
+    std::vector<double> args2im({ (double) sY, (double) sX, (double) pY, (double) pX, (double) inY, (double) inX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0});
+    NDArray<double> col2im0('c', {2, channels, inY, inX});
+    im2col0.template applyTransform<simdOps::Col2Im<double>>(&col2im0, args2im.data());
+
+    nd4j::ops::col2im<double> op2im;
+    auto result2im = op2im.execute({im2col1}, {}, {sY, sX, pY, pX, inY, inX, dY, dX, isSameMode ? 1 : 0});
+    auto col2im1 = result2im->at(0);
+
+    ASSERT_TRUE(col2im1->isSameShape(&col2im0));
+    ASSERT_TRUE(col2im1->equalsTo(&col2im0));
+
+    delete result2col;
+    delete result2im;
+}
+
+TEST_F(ConvolutionTests, Test_im2col_col2im_3) {
+    int kY = 5;
+    int kX = 5;
+    int sY = 1;
+    int sX = 1;
+    int pY = 0;
+    int pX = 0;
+    int dY = 1;
+    int dX = 1;
+    int inY = 28;
+    int inX = 28;
+    int channels = 3;
+
+    bool isSameMode = true;
+
+    NDArray<double> x('c', {2, channels, inY, inX});
+    NDArrayFactory<double>::linspace(1, x);
+
+    int oY, oX;
+
+    nd4j::ops::ConvolutionUtils<double>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+
+    if (isSameMode)
+        nd4j::ops::ConvolutionUtils<double>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+
+    NDArray<double> im2col0('c', {2, channels, oY, oX, kY, kX});
+    im2col0.permutei({0, 1, 4, 5, 2, 3});
+
+    NDArray<double> im2col1('c', {2, channels, oY, oX, kY, kX});
+    im2col1.permutei({0, 1, 4, 5, 2, 3});
+
+    std::vector<double> args2col({(double) kY, (double) kX, (double) sY, (double) sX, (double) pY, (double) pX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0, (double)0.0, (double) 0.});
+    x.template applyTransform<simdOps::Im2col<double>>(&im2col0, args2col.data());
+
+    nd4j::ops::im2col<double> op;
+    auto status = op.execute({&x}, {&im2col1}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, isSameMode ? 1 : 0});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_TRUE(im2col1.isSameShape(&im2col0));
+    ASSERT_TRUE(im2col1.equalsTo(&im2col0));
+
+
+    std::vector<double> args2im({ (double) sY, (double) sX, (double) pY, (double) pX, (double) inY, (double) inX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0});
+    NDArray<double> col2im0('c', {2, channels, inY, inX});
+    im2col0.template applyTransform<simdOps::Col2Im<double>>(&col2im0, args2im.data());
+
+    nd4j::ops::col2im<double> op2im;
+    auto result2im = op2im.execute({&im2col1}, {}, {sY, sX, pY, pX, inY, inX, dY, dX, isSameMode ? 1 : 0});
+    auto col2im1 = result2im->at(0);
+
+    ASSERT_TRUE(col2im1->isSameShape(&col2im0));
+    ASSERT_TRUE(col2im1->equalsTo(&col2im0));
+
     delete result2im;
 }
 

@@ -2471,8 +2471,6 @@ __host__ __device__
             }
             else
                 ret[i] = 0;
-
-
         }
     }
 

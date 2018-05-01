@@ -6,6 +6,7 @@
 #include <helpers/TAD.h>
 #include <types/float16.h>
 #include <loops/grid_shaped.h>
+#include <helpers/DebugHelper.h>
 
 
 #include <ops/meta_ops.h>
@@ -103,6 +104,7 @@ __device__ static inline void invertedMetaPairwiseShapedNumericGeneric(const int
 
         paramsPtr = (T *) params;
     }
+
     __syncthreads();
 
     functions::grid::GRIDShaped<T>::transformCuda(opTypeA, opNumA, opTypeB, opNumB, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, paramsPtr, nullptr, nullptr, nullptr);
@@ -218,6 +220,7 @@ namespace functions {
         __device__ void GRIDShaped<T>::transformCuda(int opTypeA, int opNumA, int opTypeB, int opNumB,  T *dx, int *xShapeBuffer, T *y, int *yShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
+
             __shared__ int xRank;
             __shared__ int yRank;
             __shared__ int resultRank;
@@ -250,10 +253,10 @@ namespace functions {
             }
             __syncthreads();
 
-            int xCoord[MAX_RANK];
-            int yCoord[MAX_RANK];
-
             if (dx == result) {
+                int xCoord[MAX_RANK];
+                int yCoord[MAX_RANK];
+
                 for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
                     _ind2subC(xRank, xShape, i, xCoord);
                     _ind2subC(yRank, yShape, i, yCoord);
@@ -262,7 +265,10 @@ namespace functions {
                     Nd4jIndex yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);
                     result[xOffset] = _invertedOpExecutorA(opTypeA, opNumA, opTypeB, opNumB, dx[xOffset], y[yOffset], extraParams); //OpType::op(dx[xOffset], y[yOffset], extraParams);
                 }
+
             } else {
+                int xCoord[MAX_RANK];
+                int yCoord[MAX_RANK];
                 int resultCoord[MAX_RANK];
 
                 for (Nd4jIndex i = tid; i < n; i += gridDim.x * blockDim.x) {
@@ -273,7 +279,7 @@ namespace functions {
                     Nd4jIndex xOffset = _getOffset(0, xShape, xStride, xCoord, xRank);
                     Nd4jIndex yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);
                     Nd4jIndex resultOffset = _getOffset(0, zShape, zStride, resultCoord, resultRank);
-                    result[resultOffset] = _invertedOpExecutorA(opTypeA, opNumA, opTypeB, opNumB, dx[xOffset], y[yOffset], extraParams); //OpType::op(dx[xOffset], y[yOffset], extraParams);
+                    result[0] = _invertedOpExecutorA(opTypeA, opNumA, opTypeB, opNumB, dx[xOffset], y[yOffset], extraParams); //OpType::op(dx[xOffset], y[yOffset], extraParams);
                 }
             }
         }
@@ -346,44 +352,23 @@ namespace functions {
 
         template <>
         void GRIDShaped<float>::execMetaPredicateShaped(cudaStream_t * stream, Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jIndex N, float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
-            invertedMetaPairwiseShapedNumericFloat<<<128, 1024, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
-/*
-            if (opTypeA == 2) {
-                if (opTypeB == 0) {
-#ifndef __CLION_IDE__
-                    DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB), float, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
-#endif
-                }
-            }
-            */
+            invertedMetaPairwiseShapedNumericFloat<<<128, 1024, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
+
+            DEBUG_KERNEL(stream, opNumA);
         }
 
         template <>
         void GRIDShaped<float16>::execMetaPredicateShaped(cudaStream_t * stream, Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jIndex N, float16 *dx, int *xShapeInfo, float16 *dy, int *yShapeInfo, float16 *dz, int *zShapeInfo, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB) {
-            invertedMetaPairwiseShapedNumericHalf<<<128, 1024, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
-/*
-            if (opTypeA == 2) {
-                if (opTypeB == 0) {
-#ifndef __CLION_IDE__
-                    DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB), float16, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
-#endif
-                }
-            }
-            */
+            invertedMetaPairwiseShapedNumericHalf<<<128, 1024, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
+
+            DEBUG_KERNEL(stream, opNumB);
         }
 
         template <>
         void GRIDShaped<double>::execMetaPredicateShaped(cudaStream_t * stream, Nd4jPointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, Nd4jIndex N, double *dx, int *xShapeInfo, double *dy, int *yShapeInfo, double *dz, int *zShapeInfo, double *extraA, double *extraB, double scalarA, double scalarB) {
-            invertedMetaPairwiseShapedNumericDouble<<<128, 1024, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
-/*
-            if (opTypeA == 2) {
-                if (opTypeB == 0) {
-#ifndef __CLION_IDE__
-                    DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB), double, OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS));
-#endif
-                }
-            }
-            */
+            invertedMetaPairwiseShapedNumericDouble<<<128, 1024, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
+
+            DEBUG_KERNEL(stream, opNumA);
         }
     }
 }

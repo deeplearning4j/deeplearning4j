@@ -80,9 +80,16 @@ namespace simdOps {
             __shared__ int strideY;
             __shared__ int strideX;
 
+			__shared__ int strideOB;
+            __shared__ int strideOC;
+            __shared__ int strideOY;
+            __shared__ int strideOX;
+
             __shared__ int length;
             __shared__ int kHEff;
             __shared__ int kWEff;
+			__shared__ bool fOrder;
+		
 
 			if (threadIdx.x == 0) {
 				kH = (int)extraParams[0];
@@ -108,11 +115,18 @@ namespace simdOps {
             	strideY = shape::stride(xShapeBuffer)[2];
             	strideX = shape::stride(xShapeBuffer)[3];
 
+				strideOB = shape::stride(resultShapeBuffer)[0];
+            	strideOC = shape::stride(resultShapeBuffer)[1];
+            	strideOY = shape::stride(resultShapeBuffer)[2];
+            	strideOX = shape::stride(resultShapeBuffer)[3];
+
             	length = shape::length(resultShapeBuffer);
 
 				//Replace kernel H/W with *effective* kernel H/W accounting for dilatyon
 				kHEff = kH + (kH-1)*(dH-1);
 				kWEff = kW + (kW-1)*(dW-1);
+
+				fOrder = shape::order(resultShapeBuffer) == 'f';
 /*
 				if (blockIdx.x == 0) {
 					printf("kH: %i; kW: %i; sH: %i; sW: %i; pH: %i; pW: %i; dH: %i; dW: %i; poolingMode: %i; extraParam0: %f;\n", kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, (float) extraParam0);
@@ -180,17 +194,26 @@ namespace simdOps {
     			    }
     			}
 
+				T res;
+
     			if (poolingMode == 0) {
-                    result[index] = sum;
+                    res = sum;
     			} else if (poolingMode == 1) {
     			    int divide_factor = pool_size;  //Case 0: exclude padding
     			    if ((int) extraParam0 == 1)     //Case 1: include padding
 					    divide_factor = kH * kW;
 
-    			    result[index] = sum / divide_factor;
+    			    res = sum / divide_factor;
     			} else if (poolingMode == 2) {
-                    result[index] = nd4j::math::nd4j_pow<T>(sum, (T) 1.0f / extraParam0);
+                    res = nd4j::math::nd4j_pow<T>(sum, (T) 1.0f / extraParam0);
     			}
+
+
+				if (!fOrder) {
+					result[index] = res;
+                } else {
+					result[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = res;
+                }
 /*
                 if (index >= 0 && index < 400000) {
     			    printf("index: %i; hstart: %i; hend: %i; wstart: %i; wend: %i; ph: %i; pw: %i; hstart_orig: %i; hend_orig: %i;\n", index, hstart, hend, wstart, wend, ph, pw, hSO, hEO);
@@ -220,28 +243,36 @@ namespace simdOps {
 			int poolingMode = (int)extraParams[9];
 			T extraParam0 = extraParams[10];
 
-			int kHEff = kH + (kH-1)*(dH-1);
-			int kWEff = kW + (kW-1)*(dW-1);
+            const int kHEff = kH + (kH-1)*(dH-1);
+            const int kWEff = kW + (kW-1)*(dW-1);
 
-			int batchSize = shape::sizeAt(xShapeBuffer, 0);
-			int inChannels = shape::sizeAt(xShapeBuffer, 1);
-			int outH = shape::sizeAt(resultShapeBuffer, 2);
-			int outW = shape::sizeAt(resultShapeBuffer, 3);
-			int inH = shape::sizeAt(xShapeBuffer, 2);
-			int inW = shape::sizeAt(xShapeBuffer, 3);
+			const int batchSize = shape::sizeAt(xShapeBuffer, 0);
+            const int inChannels = shape::sizeAt(xShapeBuffer, 1);
+            const int outH = shape::sizeAt(resultShapeBuffer, 2);
+            const int outW = shape::sizeAt(resultShapeBuffer, 3);
+            const int inH = shape::sizeAt(xShapeBuffer, 2);
+            const int inW = shape::sizeAt(xShapeBuffer, 3);
 
             int *strideIn = shape::stride(xShapeBuffer);
             int *strideOut = shape::stride(resultShapeBuffer);
 
+            const bool fOrder = shape::order(resultShapeBuffer) == 'f';
+            const Nd4jIndex zLength = shape::length(resultShapeBuffer);
+            const int zRank = shape::rank(resultShapeBuffer);
+
+            int indices[6];
+
             int idx = 0;
-//#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2) schedule(guided) shared(indices)
 			for(int k = 0; k < inChannels; k++)
 			{
 				for(int p = 0; p < batchSize; p++)
 				{
 					int xx, yy;
 					/* For all output pixels... */
-					T *ptr_output = result + p * strideOut[0] + k * strideOut[1];
+					const int _b = p * strideOut[0];
+					const int _k = k * strideOut[1];
+					T *ptr_output = result + _b + _k;
 					T *ptr_input = dx + p * strideIn[0] + k * strideIn[1];
 
 					for(yy = 0; yy < outH; yy++)
@@ -315,7 +346,12 @@ namespace simdOps {
                             } else if (poolingMode == 2)
 								res = nd4j::math::nd4j_pow<T>(res, (T) 1.0f / extraParam0);
 
-							*ptr_output++ = res;
+
+                            if (!fOrder) {
+                                *ptr_output++ = res;
+                            } else {
+								result[_b + _k + yy * strideOut[2] + xx * strideOut[3]] = res;
+                            }
 
 /*
                             nd4j_printf("index: %i; hstart: %i; hend: %i; wstart: %i; wend: %i; ph: %i; pw: %i; hstart_orig: %i; hend_orig: %i;\n", idx, hstart, hend, wstart, wend, yy, xx, hSO, hEO);
@@ -374,6 +410,11 @@ namespace simdOps {
 		}
 
 	};
+
+
+    FORCEINLINE bool is_a_ge_zero_and_a_lt_b(int a, int b) {
+        return static_cast<unsigned>(a) < static_cast<unsigned>(b);
+    }
 
 	template<typename T>
 	class 
@@ -500,82 +541,128 @@ namespace simdOps {
 			T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 
-			int kernelHeight = (int)extraParams[0];
-			int kernelWidth = (int)extraParams[1];
-			int strideY = (int)extraParams[2];
-			int strideX = (int)extraParams[3];
-			int padHeight = (int)extraParams[4];
-			int padWidth = (int)extraParams[5];
-			int dY = (int)extraParams[6];			//Dilation, height/y dimension
-			int dX = (int)extraParams[7];			//Dilation, width/x dimension
-			int kSize = kernelWidth * kernelHeight;
+			int kH = (int)extraParams[0];
+			int kW = (int)extraParams[1];
+			int sH = (int)extraParams[2];
+			int sW = (int)extraParams[3];
+			int pH = (int)extraParams[4];
+			int pW = (int)extraParams[5];
+			int dH = (int)extraParams[6];			//Dilation, height/y dimension
+			int dW = (int)extraParams[7];			//Dilation, width/x dimension
+			int kSize = kH * kW;
 
-			int *outShape = shape::shapeOf(resultShapeBuffer);
-			char resultOrder = shape::order(resultShapeBuffer);
-			int *outStride = shape::stride(resultShapeBuffer);
+            const int *outShape  = shape::shapeOf(resultShapeBuffer);
+            const char outOrder  = shape::order(resultShapeBuffer);
+            const int *outStride = shape::stride(resultShapeBuffer);
+            const int *inShape = shape::shapeOf(xShapeBuffer);
+            const int *inStride = shape::stride(xShapeBuffer);
 
-			int *inShape = shape::shapeOf(xShapeBuffer);
-			int *inStride = shape::stride(xShapeBuffer);
+            const int bS = inShape[0];
+            const int iC = inShape[1];
+            const int iH = inShape[2];
+            const int iW = inShape[3];
+            const int oH = outShape[4];
+            const int oW = outShape[5];
+            const int outStride0  = outStride[0];
+            const int outStride1  = outStride[1];
+            const int outStride2  = outStride[2];
+            const int outStride3  = outStride[3];
+            const int outStride4  = outStride[4];
+            const int outStride5  = outStride[5];
+            const int inStride0   = inStride[0];
+            const int inStride1   = inStride[1];
+            const int inStride2   = inStride[2];
+            const int inStride3   = inStride[3];
 
-			int samples = inShape[0];
-			int depth = inShape[1];
-			int height = inShape[2];
-			int width = inShape[3];
+            int inRowStart, inColStart, inRow, inCol;
+            T *in0, *in1;
 
+            T zeroPadVal = (T) 0.0f;
 
-			int strideex = inStride[0];
-			int stridech = inStride[1];
-			int strideh = inStride[2];
-			int stridew = inStride[3];
+            if (shape::order(xShapeBuffer) == 'c' &&  shape::order(resultShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(xShapeBuffer) && shape::strideDescendingCAscendingF(resultShapeBuffer)) {
 
-			int height_col = outShape[4];
-			int width_col = outShape[5];
+#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1, inRowStart, inColStart, inRow, inCol)
+                for (int b = 0; b < bS; b++) {
+                    in0 = dx + (b * inStride0);
+                    T *output = result + (b * outStride0);
 
-			int n = samples * depth * height_col * width_col;
+                    for (int channel = 0; channel < iC; ++channel, in0 += inStride1) {
 
-#pragma omp parallel for schedule(guided) proc_bind(close)
-			for (int index = 0; index < n; index++) {
-				int h_index = index / width_col;
-				int h_col = h_index % height_col;
-				int w_col = index % width_col;
+                        for (int kRow = 0; kRow < kH; kRow++) {
+                            inRowStart = -pH + kRow * dH;
 
-				int c_im = h_index / height_col;
-				int c_col = c_im * kSize;
+                            for (int kCol = 0; kCol < kW; kCol++) {
+                                inRow = inRowStart;
+                                inColStart = -pW + kCol * dW;
 
-				int depth_im = c_im % depth;
-				int num_im = c_im / depth;
-				int h_offset = h_col * strideY - padHeight;
-				int w_offset = w_col * strideX - padWidth;
+                                for (int outRow = 0; outRow < oH; ++outRow, inRow += sH) {
 
-				T* data_col_ptr = result;
+                                    if (!is_a_ge_zero_and_a_lt_b(inRow, iH))
+                                        for (int outCol = 0; outCol < oW; ++outCol, ++output) {
+                                            *output = zeroPadVal;
+                                        }
+                                    else {
+                                        inCol = inColStart;
+                                        in1 = in0 + inRow * inStride2;
 
-				int i_c = (c_col * height_col + h_col) * width_col + w_col;
-				data_col_ptr += (c_col * height_col + h_col) * width_col + w_col;
+                                        for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, ++output)
+                                            if (is_a_ge_zero_and_a_lt_b(inCol, iW))
+                                                *output = *(in1 + inCol * inStride3);
+                                            else
+                                                *output = zeroPadVal;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else {
 
-				T* data_im_ptr = dx;
+                T *out0, *out1, *out2, *out3, *out4;
+#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1, out0, out1, out2, out3, out4, inRowStart, inColStart, inRow, inCol)
+                for (int b = 0; b < bS; b++) {
+                    in0 = dx + (b * inStride0);
+                    out0  = result + b * outStride0;
 
-				data_im_ptr += num_im * strideex + depth_im * stridech + h_offset * strideh + w_offset*stridew;
+                    for (int channel = 0; channel < iC; ++channel, in0 += inStride1, out0+=outStride1) {
+                        out1 = out0;
 
-				for (int i = 0; i < kernelHeight; ++i) {
-					for (int j = 0; j < kernelWidth; ++j) {
-						int h_im = h_offset + i * dY;
-						int w_im = w_offset + j * dX;
-						int i_f = 0;
-						int i_c_temp = i_c;
-						for (int dim = 5; dim >= 0; dim--) {
-							i_f += (i_c_temp % outShape[dim])  * outStride[dim];
-							i_c_temp = i_c_temp / outShape[dim];
-						}
-						if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width){
-							result[i_f] = data_im_ptr[i * dY * strideh + j * dX * stridew];
-						} else result[i_f] = 0;
+                        for (int kRow = 0; kRow < kH; kRow++, out1 += outStride2) {
+                            out2 = out1;
+                            inRowStart = -pH + kRow * dH;
 
-						//result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
-						data_col_ptr += height_col * width_col;
-						i_c += height_col * width_col;
-					}
-				}
-			}
+                            for (int kCol = 0; kCol < kW; kCol++, out2 += outStride3) {
+                                out3 = out2;
+                                inRow = inRowStart;
+                                inColStart = -pW + kCol * dW;
+
+                                for (int outRow = 0; outRow < oH; ++outRow, inRow += sH, out3 += outStride4) {
+                                    out4 = out3;
+
+                                    if (!is_a_ge_zero_and_a_lt_b(inRow, iH))
+                                        for (int outCol = 0; outCol < oW; ++outCol, out4 += outStride5) {
+                                            *out4 = zeroPadVal;
+                                        }
+                                    else {
+                                        inCol = inColStart;
+                                        in1 = in0 +  inRow * inStride2;
+
+                                        for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, out4 += outStride5) {
+                                            if (is_a_ge_zero_and_a_lt_b(inCol, iW))
+                                                *out4 = *(in1 + inCol * inStride3);
+                                            else
+                                                *out4 = zeroPadVal;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+
 		}
 
 		op_def static T op(T d1, T *params) {
@@ -917,8 +1004,8 @@ namespace simdOps {
 			int *resultShapeBuffer,
 			T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
 
-            int *inShape = shape::shapeOf(xShapeBuffer);
-            int *inStride = shape::stride(xShapeBuffer);
+            const int *inShape = shape::shapeOf(xShapeBuffer);
+            const int *inStride = shape::stride(xShapeBuffer);
 
             int strideex = inStride[0];
             int stridech = inStride[1];
@@ -932,76 +1019,128 @@ namespace simdOps {
 
             // C
 
-            int strideY = (int)extraParams[0];
-			int strideX = (int)extraParams[1];
-            int padHeight = (int)extraParams[2];
-			int padWidth = (int)extraParams[3];
-            int imgHeight = (int)extraParams[4];
-            int imgWidth = (int)extraParams[5];
-			int dY = (int)extraParams[6];			//Dilation in height/y dimension
-            int dX = (int)extraParams[7];			//Dilation in width/x dimension
+            int sH = (int)extraParams[0];
+			int sW = (int)extraParams[1];
+            int pH = (int)extraParams[2];
+			int pW = (int)extraParams[3];
+            int iH = (int)extraParams[4];
+            int iW = (int)extraParams[5];
+			int dH = (int)extraParams[6];			//Dilation in height/y dimension
+            int dW = (int)extraParams[7];			//Dilation in width/x dimension
 
 
-            int *outShape = shape::shapeOf(resultShapeBuffer);
             char resultOrder = shape::order(resultShapeBuffer);
-            int *outStride = shape::stride(resultShapeBuffer);
 
-            int samples = outShape[0];
-            int depth = outShape[1];
-            int imgH = outShape[2];
-            int imgW = outShape[3];
+            const int *outShape = shape::shapeOf(resultShapeBuffer);
+            const int *outStride = shape::stride(resultShapeBuffer);
 
-            int height_col = inShape[4];//(imgHeight + 2 * padHeight - kernelHeight) / strideX + 1;
-            int width_col = inShape[5];//(imgWidth + 2 * padWidth - kernelWidth) / strideY + 1;
+            const int kH = inShape[2];
+            const int kW = inShape[3];
+            const int bS = outShape[0];
+            const int iC = outShape[1];
+            const int oH = inShape[4];                            // (iH + 2 * pH- kH) / sH + 1;
+            const int oW = inShape[5];                            // (iW + 2 * pW- kW) / sW + 1;
+            const int inStride0  = inStride[0];
+            const int inStride1  = inStride[1];
+            const int inStride2  = inStride[2];
+            const int inStride3  = inStride[3];
+            const int inStride4  = inStride[4];
+            const int inStride5  = inStride[5];
+            const int outStride0 = outStride[0];
+            const int outStride1 = outStride[1];
+            const int outStride2 = outStride[2];
+            const int outStride3 = outStride[3];
 
-            int n = samples * depth * imgHeight * imgWidth;
+            const int inStepOW = oW * inStride5;
+            int inRowStart, inColStart, inRow, inCol;
+            T *out0, *out1, *out2;
 
-            //Effective kernel size, accounting for dilation
-            int kEffectiveW = kernelWidth + (kernelWidth - 1) * (dX - 1);
-            int kEffectiveH = kernelHeight + (kernelHeight - 1) * (dY - 1);
+            if (shape::order(xShapeBuffer) == 'c' &&  shape::order(resultShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(xShapeBuffer) && shape::strideDescendingCAscendingF(resultShapeBuffer)) {
 
-#pragma omp parallel for schedule(guided) proc_bind(close)
-            for (int i = 0; i < n; i++) {
-                T val = 0;
-                int w_im = i % imgWidth + padWidth;
-                int h_im = (i / imgWidth) % imgHeight + padHeight;
-                int c_im = i / (imgWidth * imgHeight);
+#pragma omp parallel for schedule(guided) proc_bind(close) private(out0, out1, out2, inRowStart, inColStart, inRow, inCol)
+                for (int b = 0; b < bS; b++) {
+                    T *input = dx + (b * inStride0);
+                    out0 = result + (b * outStride0);
 
-                int num_im = c_im / depth;
-                int depth_im = c_im % depth;
+                    for (int channel = 0; channel < iC; ++channel, out0 += outStride1) {
 
-                // compute the start and end of the output
-                // These are the indexes for dimensions ??? in the 6d col matrix
-                int w_col_start = (w_im < kEffectiveW) ? 0 : (w_im - kEffectiveW) / strideX + 1;
-                int w_col_end = nd4j::math::nd4j_min<int>(w_im / strideX + 1, width_col);
+                        for (int kRow = 0; kRow < kH; ++kRow) {
+                            inRowStart = -pH + kRow * dH;
 
-                int h_col_start = (h_im < kEffectiveH) ? 0 : (h_im - kEffectiveH) / strideY + 1;
-                int h_col_end = nd4j::math::nd4j_min<int>(h_im / strideY + 1, height_col);
+                            for (int kCol = 0; kCol < kW; ++kCol) {
+                                inRow = inRowStart;
+                                inColStart = -pW + kCol * dW;
 
+                                for (int outRow = 0; outRow < oH; ++outRow, inRow += sH) {
 
-                //Iterate over col entries in the 6d array... these are added up
-                for (int h_col = h_col_start; h_col < h_col_end; h_col += 1) {
-                    for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
-                        int h_k = (h_im - h_col * strideY);
-                        int w_k = (w_im - w_col * strideX);
+                                    if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
+                                        input += inStepOW;
+                                    }
+                                    else {
+                                        inCol = inColStart;
+                                        out1 = out0 + inRow * outStride2;
 
-                        if(h_k % dY == 0 && w_k % dX == 0){
-                            h_k /= dY;
-                            w_k /= dX;
+                                        // if (channel == iC && is_a_ge_zero_and_a_lt_b(inCol, iW))
+                                        //     *(out1 + inCol * outStride3) = (T) 0.0f;
 
-                            int data_col_index = num_im * strideex + depth_im * stridech + h_k * stridekrow + w_k * stridekcol + h_col * striderow + w_col * stridecol;
-                            val += dx[data_col_index];
+                                        for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, input += inStride5) {
+                                            if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
+                                                out2 = out1 + inCol * outStride3;
+                                                *out2 += *input;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                int i_f = 0;
-                int i_c = i;
-                for (int dim = 3; dim >= 0; dim--)
-                {
-                    i_f += (i_c % outShape[dim])  * outStride[dim];
-                    i_c = i_c / outShape[dim];
+            }
+            else {
+
+                T *in0, *in1, *in2, *in3, *in4;
+#pragma omp parallel for schedule(guided) proc_bind(close) private(in0, in1, in2, in3, in4, out0, out1, out2, inRowStart, inColStart, inRow, inCol)
+                for (int b = 0; b < bS; b++) {
+                    out0 = result + (b * outStride0);
+                    in0 = dx + b * inStride0;
+
+                    for (int channel = 0; channel < iC; ++channel, out0+=outStride1, in0+=inStride1) {
+                        in1 = in0;
+
+                        for (int kRow = 0; kRow < kH; ++kRow, in1+=inStride2) {
+                            in2 = in1;
+                            inRowStart = -pH + kRow * dH;
+
+                            for (int kCol = 0; kCol < kW; ++kCol, in2+=inStride3) {
+                                in3 = in2;
+                                inRow = inRowStart;
+                                inColStart = -pW + kCol * dW;
+
+                                for (int outRow = 0; outRow < oH; ++outRow, inRow+=sH, in3+=inStride4) {
+                                    in4 = in3;
+
+                                    if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
+                                        in4 += inStepOW;
+                                    }
+                                    else {
+                                        inCol = inColStart;
+                                        out1 = out0 + inRow * outStride2;
+
+                                        // if (channel == iC && is_a_ge_zero_and_a_lt_b(inCol, iW))
+                                        //     *(out1 + inCol * outStride3) = (T) 0.0f;
+
+                                        for (int outCol = 0; outCol < oW; ++outCol, inCol+=sW, in4+=inStride5) {
+                                            if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
+                                                out2 = out1 + inCol * outStride3;
+                                                *out2 += *in4;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                result[i_f] += val;
             }
 
 		}

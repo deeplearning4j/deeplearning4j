@@ -32,5 +32,6 @@ compile_commands.json
 CPackConfig.cmake
 CPackSourceConfig.cmake
 target
+minifier
 tests_cpu/layers_tests/minifier
 tests_cpu/layers_tests/minifier.dSYM/

@@ -28,7 +28,7 @@ namespace nd4j {
             int dY = INT_ARG(6);			//Dilation, height/y dimension
             int dX = INT_ARG(7);			//Dilation, width/x dimension
             bool isSameMode = INT_ARG(8) > 0;
-            double zeroPadVal = 0.0;
+            T zeroPadVal = 0.0;
             if (block.getTArguments()->size() > 0)
                 zeroPadVal = T_ARG(0);
 

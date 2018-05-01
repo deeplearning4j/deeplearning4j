@@ -369,7 +369,7 @@ TEST_F(GraphTests, ReductionsTest1) {
         }
     }
 
-    auto z = new NDArray<float>('c', {1, 5});
+    auto z = new NDArray<float>('c', {5});
 
     graph->getVariableSpace()->putVariable(-1, x);
     graph->getVariableSpace()->putVariable(-2, z);
@@ -402,7 +402,7 @@ TEST_F(GraphTests, IndexReductionsTest1) {
         }
     }
 
-    auto z = new NDArray<float>('c', {1, 5});
+    auto z = new NDArray<float>('c', {5, 1});
 
     graph->getVariableSpace()->putVariable(-1, x);
     graph->getVariableSpace()->putVariable(-2, z);
@@ -1542,4 +1542,26 @@ TEST_F(GraphTests, Test_Inplace_Outputs_1) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
+}
+
+TEST_F(GraphTests, Test_Inplace_Outputs_2) {
+#ifndef __APPLE__
+    // we dont want testing this on apple. due to try/catch
+
+    NDArray<float> x('c', {2, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
+    NDArray<float> exp('c', {6}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
+    NDArray<float> z('c', {3, 3});
+
+    bool failed = false;
+    nd4j::ops::test_output_reshape<float> op;
+    try {
+        op.execute({&x}, {&z}, {}, {});
+
+    } catch (const std::runtime_error& e) {
+        failed = true;
+    }
+    
+    
+    ASSERT_TRUE(failed);
+#endif
 }

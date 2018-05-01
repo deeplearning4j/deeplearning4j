@@ -6378,22 +6378,33 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPoint
 	// we're using the same fake nodeId everywhere here
 
 	std::vector<nd4j::NDArray<T>*> inputs(numInputs);
-    std::vector<nd4j::NDArray<T>*> outputs;
+	std::vector<nd4j::NDArray<T>*> outputs(numOutputs);
 	std::vector<T> ttArgs(numTArgs);
 	std::vector<int> iiArgs(numIArgs);
 
-	// filling block now
+	// filling block now with inputs
 	for (int e = 0; e < numInputs; e++) {
 		auto buffer = (T *) inputBuffers[e];
 		auto shape = (int *) inputShapes[e];
 
-		// auto var = new Variable<T>(new NDArray<T>(buffer, shape));
-		// block.getVariables()->emplace_back(var);
-		auto array = new nd4j::NDArray<T>(buffer, shape);
-		//array->setSpecialBuffers( (T *) inputBuffers[e + numInputs],  (int *) inputShapes[e + numInputs]);
-
-		inputs[e] = array;
+		inputs[e] = new nd4j::NDArray<T>(buffer, shape);
 	}
+
+	// if not inplace - transferring output arrays
+
+	if (!isInplace)
+		for (int e = 0; e < numOutputs; e++) {
+			auto buffer = (T *) outputBuffers[e];
+
+			// we want to keep original output shape intact
+			auto shape = shape::copyShape((int *) outputShapes[e]);
+
+			auto array = new nd4j::NDArray<T>(buffer, shape);
+			outputs[e] = array;
+
+			// and we want to release shape copy once we're done
+			array->triggerAllocationFlag(false, true);
+		}
 
 	for (int e = 0; e < numIArgs; e++)
 		iiArgs[e] = iArgs[e];
@@ -6404,11 +6415,22 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPoint
 
 
 	// hypothetically at this point we have everything filled
-	auto result = op->execute(inputs, ttArgs, iiArgs, isInplace);
+	auto result = op->execute(inputs, outputs, ttArgs, iiArgs, isInplace);
+	//auto result = op->execute(inputs, ttArgs, iiArgs, isInplace);
 
-	if (result->status() != ND4J_STATUS_OK)
-		return result->status();
 
+	if (!isInplace)
+		for (int e = 0; e < numOutputs; e++) {
+			//shape::printShapeInfoLinear("JVM output shape", (int *) outputShapes[e]);
+			//shape::printShapeInfoLinear("C++ output shape", (int *) outputs[e]->shapeInfo());
+			//outputs[e]->printIndexedBuffer("C++ raw output");
+			//outputs[e]->printBuffer("C++ indexed output");
+
+			if (outputs[e]->ordering() != shape::order((int *) outputShapes[e]))
+				outputs[e]->streamline(shape::order((int *) outputShapes[e]));
+		}
+
+/*
     if (!isInplace) {
         if (result->size() != numOutputs) {
             return ND4J_STATUS_BAD_OUTPUT;
@@ -6417,20 +6439,32 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPoint
         for (int e = 0; e < numOutputs; e++) {
             auto buffer = (T *) outputBuffers[e];
             auto shape = (int *) outputShapes[e];
-            nd4j::NDArray <T> tmp(buffer, shape);
+            nd4j::NDArray<T> tmp(buffer, shape);
+
+            if (tmp.lengthOf() != result->at(e)->lengthOf()) {
+                nd4j_printf("Provided output array for [%s] has length of %i, but actual result has length of %i\n", op->getOpName()->c_str(), tmp.lengthOf(), result->at(e)->lengthOf());
+                return ND4J_STATUS_BAD_OUTPUT;
+            }
 
             tmp.assign(result->at(e));
         }
+    } else {
+        // if op is inplace, our ResultSet holds pointers
+        result->purge();
     }
 
-	delete result;
 
+    delete result;
 
-	for (auto ptr: inputs)
-		delete ptr;
+*/
 
+	for (auto v: inputs)
+		delete v;
 
-	return ND4J_STATUS_OK;
+	for (auto v: outputs)
+		delete v;
+
+	return Status::OK();
 }
 
 

@@ -1205,7 +1205,7 @@
                                       template struct ND4J_EXPORT __registratorSynonymFloat<NAME<float>>;
 
 
-#if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__)
+#if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__) || defined(__VSCODE__)
 #define NOT_EXCLUDED(NAME) 1>0
 #else
 #define NOT_EXCLUDED(NAME) defined(LIBND4J_ALL_OPS) || defined(NAME)
