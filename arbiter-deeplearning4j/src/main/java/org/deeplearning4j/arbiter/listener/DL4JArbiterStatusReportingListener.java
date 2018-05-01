@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.optimize.api.IterationListener;
 
 import java.util.List;
@@ -14,7 +15,7 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class DL4JArbiterStatusReportingListener implements IterationListener {
+public class DL4JArbiterStatusReportingListener extends BaseTrainingListener {
 
     private List<StatusListener> statusListeners;
     private CandidateInfo candidateInfo;
