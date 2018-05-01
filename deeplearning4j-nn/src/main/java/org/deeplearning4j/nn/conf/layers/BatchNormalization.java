@@ -11,7 +11,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -56,11 +56,11 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.normalization.BatchNormalization ret =
                         new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
-        ret.setListeners(iterationListeners);
+        ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

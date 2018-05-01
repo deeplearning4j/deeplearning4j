@@ -27,14 +27,16 @@ import java.io.Serializable;
  * Each iteration the listener is called, mainly used for debugging or visualizations
  * @author Adam Gibson
  *
+ * @deprecated Use {@link TrainingListener} instead
  */
-public interface IterationListener extends Serializable {
+@Deprecated
+public abstract class IterationListener extends BaseTrainingListener implements Serializable {
 
     /**
      * Event listener for each iteration
      * @param iteration the iteration
      * @param model the model iterating
      */
-    void iterationDone(Model model, int iteration, int epoch);
+    public abstract void iterationDone(Model model, int iteration, int epoch);
 
 }

@@ -7,11 +7,11 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Collection;
 import java.util.Map;
@@ -78,17 +78,17 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public Collection<IterationListener> getListeners() {
+    public Collection<TrainingListener> getListeners() {
         return underlying.getListeners();
     }
 
     @Override
-    public void setListeners(IterationListener... listeners) {
+    public void setListeners(TrainingListener... listeners) {
         underlying.setListeners(listeners);
     }
 
     @Override
-    public void addListeners(IterationListener... listener) {
+    public void addListeners(TrainingListener... listener) {
         underlying.addListeners(listener);
     }
 
@@ -248,7 +248,7 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<TrainingListener> listeners) {
         underlying.setListeners(listeners);
     }
 

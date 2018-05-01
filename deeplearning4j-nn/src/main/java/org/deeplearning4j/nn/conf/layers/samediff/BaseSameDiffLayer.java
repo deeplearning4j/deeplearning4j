@@ -2,22 +2,16 @@ package org.deeplearning4j.nn.conf.layers.samediff;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.samediff.SameDiffLayer;
-import org.deeplearning4j.nn.params.SameDiffParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.config.IUpdater;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -81,7 +75,7 @@ public abstract class BaseSameDiffLayer extends AbstractSameDiffLayer {
     //==================================================================================================================
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                                                        int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         SameDiffLayer ret = new SameDiffLayer(conf);
         ret.setIndex(layerIndex);

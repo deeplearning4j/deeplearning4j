@@ -13,7 +13,7 @@ import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
@@ -607,12 +607,12 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<TrainingListener> listeners) {
         // optional stuff actually
     }
 
     @Override
-    public void setListeners(StatsStorageRouter router, Collection<IterationListener> listeners) {
+    public void setListeners(StatsStorageRouter router, Collection<TrainingListener> listeners) {
         // optional stuff actually
     }
 

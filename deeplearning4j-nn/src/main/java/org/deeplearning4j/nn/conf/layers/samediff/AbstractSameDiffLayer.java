@@ -12,7 +12,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.SameDiffParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 
@@ -97,7 +97,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
     public abstract void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig);
 
     @Override
-    public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+    public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                                                                 int layerIndex, INDArray layerParamsView, boolean initializeParams);
 
     //==================================================================================================================
