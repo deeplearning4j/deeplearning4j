@@ -868,6 +868,7 @@ TEST_F(GraphTests, OutputValidation6) {
 }
 
 TEST_F(GraphTests, TestMultiOutput1) {
+    nd4j::ops::testop2i2o<float> op1;
     auto graph = new Graph<float>();
 
     auto x = new NDArray<float>('c', {5, 5});
@@ -886,7 +887,7 @@ TEST_F(GraphTests, TestMultiOutput1) {
     auto nodeB0 = new Node<float>(OpType_TRANSFORM, 0, 2, {-2}, {11});
     nodeB0->markInplace(false);
 
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("TestOp2i2o");
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat("testop2i2o");
 
     // this op will add 1.0 to first input, and 2.0 for second input
     auto nodeT = new Node<float>(OpType_CUSTOM, 0, 11, {1, 2}, {21, 31}, {}, 0.0f);
