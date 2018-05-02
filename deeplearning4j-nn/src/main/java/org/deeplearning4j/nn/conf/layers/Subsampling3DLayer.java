@@ -58,11 +58,11 @@ public class Subsampling3DLayer extends Layer {
     protected Subsampling3DLayer(BaseSubsamplingBuilder builder) {
         super(builder);
         this.poolingType = builder.poolingType;
-        if (builder.kernelSize.length != 2)
-            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
+        if (builder.kernelSize.length != 3)
+            throw new IllegalArgumentException("Kernel size must be length 3");
         this.kernelSize = builder.kernelSize;
-        if (builder.stride.length != 2)
-            throw new IllegalArgumentException("Invalid stride, must be length 2");
+        if (builder.stride.length != 3)
+            throw new IllegalArgumentException("Invalid stride, must be length 3");
         this.stride = builder.stride;
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
