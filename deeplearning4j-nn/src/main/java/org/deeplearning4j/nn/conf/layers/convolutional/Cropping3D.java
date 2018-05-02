@@ -81,7 +81,7 @@ public class Cropping3D extends NoParamLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
-            throw new IllegalStateException("Invalid input for 3D CNN layer (layer index = " + layerIndex
+            throw new IllegalStateException("Invalid input for 3D cropping layer (layer index = " + layerIndex
                     + ", layer name = \"" + getLayerName() + "\"): expect CNN3D input type with size > 0. Got: "
                     + inputType);
         }
@@ -95,9 +95,9 @@ public class Cropping3D extends NoParamLayer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        Preconditions.checkArgument(inputType != null, "Invalid input for Cropping3D layer (layer name=\""
-                + getLayerName() + "\"): InputType is null");
-        return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
+        Preconditions.checkArgument(inputType != null, "Invalid input for Cropping3D " +
+                "layer (layer name=\"" + getLayerName() + "\"): InputType is null");
+        return InputTypeUtil.getPreProcessorForInputTypeCnn3DLayers(inputType, getLayerName());
     }
 
     @Override
@@ -115,7 +115,10 @@ public class Cropping3D extends NoParamLayer {
         }
 
         /**
-         * @param cropping Cropping amount for top/bottom/left/right (in that order). Must be length 4 array.
+         * @param cropping Cropping amount, must be length 3 or 6 array, i.e. either
+         *                 crop depth, crop height, crop width or
+         *                 crop left depth, crop right depth, crop left height, crop right height, crop left width,
+         *                 crop right width
          */
         public Builder(@NonNull int[] cropping) {
             Preconditions.checkArgument(cropping.length == 6 || cropping.length == 3,

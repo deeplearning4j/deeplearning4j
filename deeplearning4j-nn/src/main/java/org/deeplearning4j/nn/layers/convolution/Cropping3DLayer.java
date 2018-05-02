@@ -41,7 +41,7 @@ public class Cropping3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public Type type() {
-        return Type.CONVOLUTIONAL;
+        return Type.CONVOLUTIONAL3D;
     }
 
     @Override

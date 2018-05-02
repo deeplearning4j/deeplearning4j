@@ -262,7 +262,7 @@ public abstract class InputType implements Serializable {
 
         @Override
         public String toString() {
-            return "InputTypeConvolutional3D(h=" + height + ",w=" + width + ",d=" + depth + ",c=" + channels + ")";
+            return "InputTypeConvolutional3D(d=" + depth + ",h=" + height + ",w=" + width + ",c=" + channels + ")";
         }
 
         @Override
