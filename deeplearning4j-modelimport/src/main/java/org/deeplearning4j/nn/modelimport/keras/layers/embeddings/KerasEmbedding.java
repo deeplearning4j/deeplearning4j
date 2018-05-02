@@ -80,7 +80,7 @@ public class KerasEmbedding extends KerasLayer {
         int[] inputShapeOld = this.inputShape;
         this.inputShape = new int[inputShapeOld.length + 1];
         this.inputShape[0] = inputShapeOld[0];
-        this.inputShape[1] = inputLength; //> 0 ? inputDim * inputLength : inputDim;
+        this.inputShape[1] = inputLength;
 
         this.hasZeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
         if (hasZeroMasking)

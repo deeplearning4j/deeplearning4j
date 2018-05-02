@@ -109,7 +109,12 @@ public class KerasInitilizationUtils {
             } else if (kerasInit.equals(conf.getINIT_ORTHOGONAL()) ||
                     kerasInit.equals(conf.getINIT_ORTHOGONAL_ALIAS())) {
                 if (kerasMajorVersion == 2) {
-                    double gain = (double) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN());
+                    double gain;
+                    try {
+                        gain = (double) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN());
+                    } catch (Exception e) {
+                        gain = (int) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN());
+                    }
                     dist = new OrthogonalDistribution(gain);
                 } else {
                     double scale = 1.1;
