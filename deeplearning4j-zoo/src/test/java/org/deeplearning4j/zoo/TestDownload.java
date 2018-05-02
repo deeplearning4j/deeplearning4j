@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.zoo.model.LeNet;
 import org.deeplearning4j.zoo.model.SimpleCNN;
+import org.deeplearning4j.zoo.model.UNet;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -30,7 +31,8 @@ public class TestDownload {
         // iterate through each available model
         ZooModel[] models = new ZooModel[]{
                 LeNet.builder().numClasses(10).build(),
-                SimpleCNN.builder().numClasses(10).build()
+                SimpleCNN.builder().numClasses(10).build(),
+                UNet.builder().numClasses(1).build()
         };
 
 

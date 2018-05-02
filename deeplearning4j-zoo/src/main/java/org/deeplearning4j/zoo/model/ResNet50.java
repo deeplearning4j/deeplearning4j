@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * @author Justin Long (crockpotveggies)
  */
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ResNet50 extends ZooModel {
@@ -37,7 +39,7 @@ public class ResNet50 extends ZooModel {
     private int numClasses;
     @Builder.Default private WeightInit weightInit = WeightInit.DISTRIBUTION;
     @Builder.Default private IUpdater updater = new RmsProp(0.1, 0.96, 0.001);
-    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 

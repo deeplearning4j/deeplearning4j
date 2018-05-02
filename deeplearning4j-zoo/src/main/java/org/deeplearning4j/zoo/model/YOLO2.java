@@ -3,6 +3,7 @@ package org.deeplearning4j.zoo.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -70,6 +71,7 @@ import static org.deeplearning4j.zoo.model.helper.DarknetHelper.addLayers;
  *
  * @author saudet
  */
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class YOLO2 extends ZooModel {
@@ -81,7 +83,7 @@ public class YOLO2 extends ZooModel {
     @Builder.Default private int[] inputShape = {3, 608, 608};
     private int numClasses;
     @Builder.Default private IUpdater updater = new Adam(1e-3);
-    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 

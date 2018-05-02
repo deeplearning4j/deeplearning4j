@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -25,11 +26,13 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * An implementation of U-Net, a deep learning network for image segmentation in Deeplearning4j. The u-net is convolutional network architecture for fast and precise segmentation of images. Up to now it has outperformed the prior best method (a sliding-window convolutional network) on the ISBI challenge for segmentation of neuronal structures in electron microscopic stacks.
  *
- * Paper: https://arxiv.org/abs/1505.04597
+ * <p>Paper: https://arxiv.org/abs/1505.04597</p>
+ * <p>Weights have been converted from a model trained on the DRIVE retinal dataset from https://github.com/orobix/retina-unet/</p>
  *
  * @author Justin Long (crockpotveggies)
  *
  */
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class UNet extends ZooModel {
@@ -39,18 +42,24 @@ public class UNet extends ZooModel {
     private int numClasses;
     @Builder.Default private WeightInit weightInit = WeightInit.RELU;
     @Builder.Default private IUpdater updater = new AdaGrad(1e-4);
-    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
-        return null;
+        if (pretrainedType == PretrainedType.RETINA)
+            return "http://blob.deeplearning4j.org/models/unet_dl4j_retina_inference.v1.zip";
+        else
+            return null;
     }
 
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
-        return 0L;
+        if (pretrainedType == PretrainedType.RETINA)
+            return 1654817155L;
+        else
+            return 0L;
     }
 
     @Override
