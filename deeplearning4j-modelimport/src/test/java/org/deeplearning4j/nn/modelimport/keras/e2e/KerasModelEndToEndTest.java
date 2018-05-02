@@ -304,6 +304,15 @@ public class KerasModelEndToEndTest {
     }
 
     /**
+     * SqueezeNet
+     */
+    @Test
+    public void importSqueezeNet() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/squeezenet/squeezenet.h5");
+    }
+
+
+    /**
      * MobileNet
      */
     @Test
