@@ -24,8 +24,11 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.DataSetUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -43,7 +46,7 @@ import java.util.List;
  * @author Alex Black
  */
 public class FeedForwardWithKeyFunction<K>
-                extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, INDArray>>, K, INDArray> {
+                extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>>, K, INDArray> {
 
     public FeedForwardWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
         super(new FeedForwardWithKeyFunctionAdapter<K>(params, jsonConfig, batchSize));
@@ -59,7 +62,7 @@ public class FeedForwardWithKeyFunction<K>
  * @author Alex Black
  */
 class FeedForwardWithKeyFunctionAdapter<K>
-                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, Tuple2<K, INDArray>> {
+                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>>, Tuple2<K, INDArray>> {
 
     protected static Logger log = LoggerFactory.getLogger(FeedForwardWithKeyFunction.class);
 
@@ -80,7 +83,7 @@ class FeedForwardWithKeyFunctionAdapter<K>
 
 
     @Override
-    public Iterable<Tuple2<K, INDArray>> call(Iterator<Tuple2<K, INDArray>> iterator) throws Exception {
+    public Iterable<Tuple2<K, INDArray>> call(Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>> iterator) throws Exception {
         if (!iterator.hasNext()) {
             return Collections.emptyList();
         }
@@ -98,6 +101,7 @@ class FeedForwardWithKeyFunctionAdapter<K>
         //We could handle that with mask arrays - but it gets messy. The approach used here is simpler but less efficient
 
         List<INDArray> featuresList = new ArrayList<>(batchSize);
+        List<INDArray> fMaskList = new ArrayList<>(batchSize);
         List<K> keyList = new ArrayList<>(batchSize);
         List<Integer> origSizeList = new ArrayList<>();
 
@@ -105,9 +109,10 @@ class FeedForwardWithKeyFunctionAdapter<K>
         boolean sizesDiffer = false;
         int tupleCount = 0;
         while (iterator.hasNext()) {
-            Tuple2<K, INDArray> t2 = iterator.next();
+            Tuple2<K, Tuple2<INDArray,INDArray>> t2 = iterator.next();
+
             if (firstShape == null) {
-                firstShape = t2._2().shape();
+                firstShape = t2._2()._1().shape();
             } else if (!sizesDiffer) {
                 for (int i = 1; i < firstShape.length; i++) {
                     if (firstShape[i] != featuresList.get(tupleCount - 1).size(i)) {
@@ -116,9 +121,10 @@ class FeedForwardWithKeyFunctionAdapter<K>
                     }
                 }
             }
-            featuresList.add(t2._2());
+            featuresList.add(t2._2()._1());
+            fMaskList.add(t2._2()._2());
             keyList.add(t2._1());
-            origSizeList.add(t2._2().size(0));
+            origSizeList.add(t2._2()._1().size(0));
             tupleCount++;
         }
 
@@ -134,6 +140,7 @@ class FeedForwardWithKeyFunctionAdapter<K>
             int nextIdx = currentArrayIndex;
             int examplesInBatch = 0;
             List<INDArray> toMerge = new ArrayList<>();
+            List<INDArray> toMergeMask = new ArrayList<>();
             firstShape = null;
             while (nextIdx < featuresList.size() && examplesInBatch < batchSize) {
                 if (firstShape == null) {
@@ -152,13 +159,17 @@ class FeedForwardWithKeyFunctionAdapter<K>
                     }
                 }
 
-                INDArray f = featuresList.get(nextIdx++);
+                INDArray f = featuresList.get(nextIdx);
+                INDArray fm = fMaskList.get(nextIdx);
+                nextIdx++;
                 toMerge.add(f);
+                toMergeMask.add(fm);
                 examplesInBatch += f.size(0);
             }
 
-            INDArray batchFeatures = Nd4j.concat(0, toMerge.toArray(new INDArray[toMerge.size()]));
-            INDArray out = network.output(batchFeatures, false);
+            Pair<INDArray,INDArray> p = DataSetUtil.mergeFeatures(toMerge.toArray(new INDArray[toMerge.size()]), toMergeMask.toArray(new INDArray[toMergeMask.size()]));
+//            INDArray batchFeatures = Nd4j.concat(0, toMerge.toArray(new INDArray[toMerge.size()]));
+            INDArray out = network.output(p.getFirst(), false, p.getSecond(), null);
 
             examplesInBatch = 0;
             for (int i = firstIdx; i < nextIdx; i++) {

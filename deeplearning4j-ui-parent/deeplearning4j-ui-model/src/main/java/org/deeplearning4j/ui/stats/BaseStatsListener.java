@@ -41,7 +41,7 @@ import java.util.*;
  * @author Alex Black
  */
 @Slf4j
-public abstract class BaseStatsListener extends BaseTrainingListener implements RoutingIterationListener {
+public abstract class BaseStatsListener implements RoutingIterationListener {
     public static final String TYPE_ID = "StatsListener";
 
     private enum StatType {

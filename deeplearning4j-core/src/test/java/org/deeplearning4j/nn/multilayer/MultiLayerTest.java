@@ -1217,6 +1217,11 @@ public class MultiLayerTest extends BaseDL4JTest {
         assertEquals(0, net.layerSize(1));
         assertEquals(30, net.layerSize(2));
         assertEquals(13, net.layerSize(3));
+
+        assertEquals(3, net.layerInputSize(0));
+        assertEquals(0, net.layerInputSize(1));
+        assertEquals(((FeedForwardLayer)net.getLayer(2).conf().getLayer()).getNIn(), net.layerInputSize(2));
+        assertEquals(30, net.layerInputSize(3));
     }
 
 
@@ -1245,5 +1250,46 @@ public class MultiLayerTest extends BaseDL4JTest {
         MultiLayerNetwork net2 = TestUtils.testModelSerialization(net);
         INDArray out2 = net2.output(ds.getFeatures());
         assertEquals(out, out2);
+    }
+
+
+    @Test
+    public void testInputActivationGradient(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .activation(Activation.TANH)
+                .list()
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray in = Nd4j.rand(1, 10);
+        INDArray label = Nd4j.rand(1, 10);
+
+        Pair<Gradient,INDArray> p = net.calculateGradients(in, label, null, null);
+
+        //Quick gradient check:
+        double eps = 1e-6;
+        double maxRelError = 1e-5;
+        for( int i=0; i<10; i++ ){
+            double orig = in.getDouble(i);
+            in.putScalar(i, orig + eps);
+            double scorePlus = net.score(new DataSet(in, label));
+            in.putScalar(i, orig - eps);
+            double scoreMinus = net.score(new DataSet(in, label));
+            in.putScalar(i, orig);
+
+            double expGrad = (scorePlus - scoreMinus) / (2.0 * eps);
+            double actGrad = p.getSecond().getDouble(i);
+
+            double relError = (Math.abs(expGrad - actGrad)) / (Math.abs(expGrad) + Math.abs(actGrad));
+
+            String str = i + " - " + relError + " - exp=" + expGrad + ", act=" + actGrad;
+            assertTrue(str, relError < maxRelError);
+        }
     }
 }
