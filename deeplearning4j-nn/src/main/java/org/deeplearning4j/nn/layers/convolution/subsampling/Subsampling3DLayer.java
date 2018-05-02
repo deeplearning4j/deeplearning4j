@@ -122,7 +122,7 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 strides[0], strides[1], strides[2],
                 pad[0], pad[1], pad[2],
                 convolutionMode == ConvolutionMode.Same ? 1 : 0,
-                1 // isNCDHW, i.e. channels first by default
+                0 // isNCDHW, i.e. channels first by default
         };
 
         String opName = layerConf().getPoolingType() == PoolingType.MAX ? "maxpool3dnew_bp" : "avgpool3dnew_bp";
@@ -191,7 +191,7 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 strides[0], strides[1], strides[2],
                 pad[0], pad[1], pad[2],
                 convolutionMode == ConvolutionMode.Same ? 1 : 0,
-                1 // isNCDHW, i.e. channels first by default
+                0 // isNCDHW, i.e. channels first by default
         };
 
         CustomOp op = DynamicCustomOp.builder(opName)
