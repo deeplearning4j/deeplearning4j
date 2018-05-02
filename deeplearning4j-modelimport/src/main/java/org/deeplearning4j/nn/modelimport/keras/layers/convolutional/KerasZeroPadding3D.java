@@ -49,8 +49,8 @@ public class KerasZeroPadding3D extends KerasLayer {
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         String paddingField = conf.getLAYER_FIELD_ZERO_PADDING();
-        ZeroPaddingLayer.Builder builder = new ZeroPaddingLayer.Builder(
-                getPaddingFromConfig(layerConfig, conf, paddingField,3))
+        int[] padding = getPaddingFromConfig(layerConfig, conf, paddingField,3);
+        ZeroPadding3DLayer.Builder builder = new ZeroPadding3DLayer.Builder(padding)
                 .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;

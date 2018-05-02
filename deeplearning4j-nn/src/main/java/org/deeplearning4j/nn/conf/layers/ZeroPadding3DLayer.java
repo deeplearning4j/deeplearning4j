@@ -141,6 +141,18 @@ public class ZeroPadding3DLayer extends Layer {
             this(padding, padding, padding, padding, padding, padding);
         }
 
+
+        /**
+         * Use same padding for left and right boundaries in depth, height and width.
+         *
+         * @param padDepth padding used for both depth boundaries
+         * @param padHeight padding used for both height boundaries
+         * @param padWidth padding used for both width boudaries
+         */
+        public Builder(int padDepth, int padHeight, int padWidth) {
+            this(padDepth, padDepth, padHeight, padHeight, padWidth, padWidth);
+        }
+
         /**
          * Explicit padding of left and right boundaries in depth, height and width dimensions
          *
@@ -158,7 +170,15 @@ public class ZeroPadding3DLayer extends Layer {
         }
 
         public Builder(int[] padding) {
-            this.padding = padding;
+            if (padding.length == 3) {
+                this.padding = new int[]{padding[0], padding[0], padding[1], padding[1], padding[2], padding[2]};
+            } else if (padding.length == 6) {
+                this.padding = padding;
+            } else if (padding.length == 1) {
+                this.padding = new int[]{padding[0], padding[0], padding[0], padding[0], padding[0], padding[0]};
+            } else {
+                throw new IllegalStateException("Padding length has to be either 1, 3 or 6, got " + padding.length);
+            }
         }
 
         @Override
