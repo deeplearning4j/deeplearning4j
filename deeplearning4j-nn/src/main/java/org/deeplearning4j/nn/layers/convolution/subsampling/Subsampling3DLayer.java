@@ -27,11 +27,14 @@ import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D;
@@ -107,20 +110,33 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                     outSize, new int[]{inD, inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
-            outSize = Convolution3DUtils.get3DOutputSize(
-                    input, kernel, strides, pad, convolutionMode, dilation, true);
         }
-        int outD = outSize[0];
-        int outH = outSize[1];
-        int outW = outSize[2];
 
-        int inputHeight = input().size(-2);
-        int inputWidth = input().size(-1);
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD,
+                miniBatch * inChannels * inD * inH * inW);
+        outEpsilon = outEpsilon.reshape('c', miniBatch, inChannels, inD, inH, inW);
+
+
+        int[] intArgs = new int[]{
+                kernel[0], kernel[1], kernel[2],
+                strides[0], strides[1], strides[2],
+                pad[0], pad[1], pad[2],
+                convolutionMode == ConvolutionMode.Same ? 1 : 0,
+                1 // isNCDHW, i.e. channels first by default
+        };
+
+        String opName = layerConf().getPoolingType() == PoolingType.MAX ? "maxpool3dnew_bp" : "avgpool3dnew_bp";
+
+        CustomOp op = DynamicCustomOp.builder(opName)
+                .addInputs(input, epsilon)
+                .addIntegerArguments(intArgs)
+                .addOutputs(outEpsilon)
+                .callInplace(false)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
         Gradient retGradient = new DefaultGradient();
-
-        INDArray outEpsilon = null;
-        // TODO: call dyn custom op.
-
         return new Pair<>(retGradient, outEpsilon);
     }
 
@@ -141,7 +157,7 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         }
 
         int miniBatch = input.size(0);
-        int inDepth = input.size(1);
+        int inChannels = input.size(1);
         int inD = input.size(2);
         int inH = input.size(3);
         int inW = input.size(4);
@@ -152,10 +168,10 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
+            int[] inShape = new int[]{inD, inH, inW};
             outSize = Convolution3DUtils.get3DOutputSize(
                     input, kernel, strides, null, convolutionMode, dilation, true);
-            pad = Convolution3DUtils.get3DSameModeTopLeftPadding(
-                    outSize, new int[]{inH, inW}, kernel, strides, dilation);
+            pad = Convolution3DUtils.get3DSameModeTopLeftPadding(outSize, inShape, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
             outSize = Convolution3DUtils.get3DOutputSize(
@@ -165,11 +181,27 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         int outH = outSize[1];
         int outW = outSize[2];
 
+        String opName = layerConf().getPoolingType() == PoolingType.MAX ? "maxpool3dnew" : "avgpool3dnew";
 
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
-                new int[]{miniBatch, inDepth, outH, outW}, 'c');
+                new int[]{miniBatch, inChannels, outD, outH, outW}, 'c');
 
-        // TODO: Call dynamic custom op
+        int[] intArgs = new int[]{
+                kernel[0], kernel[1], kernel[2],
+                strides[0], strides[1], strides[2],
+                pad[0], pad[1], pad[2],
+                convolutionMode == ConvolutionMode.Same ? 1 : 0,
+                1 // isNCDHW, i.e. channels first by default
+        };
+
+        CustomOp op = DynamicCustomOp.builder(opName)
+                .addInputs(input)
+                .addIntegerArguments(intArgs)
+                .addOutputs(output)
+                .callInplace(false)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
 
         return output;
     }
