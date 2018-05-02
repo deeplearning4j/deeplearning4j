@@ -6237,6 +6237,35 @@ public class Nd4jTestsC extends BaseNd4jTest {
             assertTrue("Failed for element [" + cnt++ +"]",f > 0.0f);
     }
 
+    @Test
+    public void testBroadcast_1() {
+        val array1 = Nd4j.linspace(1, 10, 10).reshape(5, 1, 2).broadcast(5, 4, 2);
+        val array2 = Nd4j.linspace(1, 20, 20).reshape(5, 4, 1).broadcast(5, 4, 2);
+        val exp = Nd4j.create(new float[] {2.0f, 3.0f, 3.0f, 4.0f, 4.0f, 5.0f, 5.0f, 6.0f, 8.0f, 9.0f, 9.0f, 10.0f, 10.0f, 11.0f, 11.0f, 12.0f, 14.0f, 15.0f, 15.0f, 16.0f, 16.0f, 17.0f, 17.0f, 18.0f, 20.0f, 21.0f, 21.0f, 22.0f, 22.0f, 23.0f, 23.0f, 24.0f, 26.0f, 27.0f, 27.0f, 28.0f, 28.0f, 29.0f, 29.0f, 30.0f});
+
+        array1.addi(array2);
+
+        assertEquals(exp, array1);
+    }
+
+    @Test
+    public void testMmulViews_1() {
+        val arrayX = Nd4j.linspace(1, 27, 27).reshape(3, 3, 3);
+
+        val arrayA = Nd4j.linspace(1, 9, 9).reshape(3, 3);
+
+        val arrayB = arrayX.dup('f');
+
+        val arraya = arrayX.slice(0);
+        val arrayb = arrayB.slice(0);
+
+        val exp = arrayA.mmul(arrayA);
+
+        assertEquals(exp, arraya.mmul(arrayA));
+        assertEquals(exp, arraya.mmul(arraya));
+
+        assertEquals(exp, arrayb.mmul(arrayb));
+    }
 
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
