@@ -72,7 +72,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                     for (int[] stride : strides) {
 
                                         int outDepth = mode == ConvolutionMode.Same ?
-                                                depth / stride[0] :(depth - kernel[0]) / stride[0] + 1;
+                                                depth / stride[0] : (depth - kernel[0]) / stride[0] + 1;
                                         int outHeight = mode == ConvolutionMode.Same ?
                                                 height / stride[1] : (height - kernel[1]) / stride[1] + 1;
                                         int outWidth = mode == ConvolutionMode.Same ?
@@ -101,7 +101,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                                                         .activation(Activation.SOFTMAX).nOut(finalNOut).build())
                                                 .inputPreProcessor(2,
                                                         new Cnn3DToFeedForwardPreProcessor(outDepth, outHeight, outWidth,
-                                                        convNOut2, true))
+                                                                convNOut2, true))
                                                 .setInputType(InputType.convolutional3D(depth, height, width, convNIn)).build();
 
                                         String json = conf.toJson();
@@ -137,6 +137,104 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    @Test
+    public void testCnn3DZeroPadding() {
+        Nd4j.getRandom().setSeed(42);
+
+        int depth = 4;
+        int height = 4;
+        int width = 4;
+
+
+        int[] minibatchSizes = {3};
+        int convNIn = 2;
+        int convNOut1 = 3;
+        int convNOut2 = 4;
+        int denseNOut = 5;
+        int finalNOut = 42;
+
+
+        int[] kernel = {2, 2, 2};
+        int[] zeroPadding = {1, 1, 2, 2, 3, 3};
+
+        Activation[] activations = {Activation.RELU};
+
+        ConvolutionMode[] modes = {ConvolutionMode.Truncate, ConvolutionMode.Same};
+
+        for (Activation afn : activations) {
+            for (int miniBatchSize : minibatchSizes) {
+                for (ConvolutionMode mode : modes) {
+
+                    int outDepth = mode == ConvolutionMode.Same ?
+                            depth : (depth - kernel[0])  + 1;
+                    int outHeight = mode == ConvolutionMode.Same ?
+                            height : (height - kernel[1]) + 1;
+                    int outWidth = mode == ConvolutionMode.Same ?
+                            width : (width - kernel[2]) + 1;
+
+                    outDepth += zeroPadding[0] + zeroPadding[1];
+                    outHeight += zeroPadding[2] + zeroPadding[3];
+                    outWidth += zeroPadding[4] + zeroPadding[5];
+
+                    INDArray input = Nd4j.rand(new int[]{miniBatchSize, convNIn, depth, height, width});
+                    INDArray labels = Nd4j.zeros(miniBatchSize, finalNOut);
+                    for (int i = 0; i < miniBatchSize; i++) {
+                        labels.putScalar(new int[]{i, i % finalNOut}, 1.0);
+                    }
+
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
+                            .dist(new NormalDistribution(0, 1))
+                            .list()
+                            .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(kernel)
+                                    .nIn(convNIn).nOut(convNOut1).hasBias(false)
+                                    .convolutionMode(mode).dataFormat(Convolution3D.DataFormat.NCDHW)
+                                    .build())
+                            .layer(1, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
+                                    .nIn(convNOut1).nOut(convNOut2).hasBias(false)
+                                    .convolutionMode(mode).dataFormat(Convolution3D.DataFormat.NCDHW)
+                                    .build())
+                            .layer(2, new ZeroPadding3DLayer.Builder(zeroPadding).build())
+                            .layer(3, new DenseLayer.Builder().nOut(denseNOut).build())
+                            .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nOut(finalNOut).build())
+                            .inputPreProcessor(3,
+                                    new Cnn3DToFeedForwardPreProcessor(outDepth, outHeight, outWidth,
+                                            convNOut2, true))
+                            .setInputType(InputType.convolutional3D(depth, height, width, convNIn)).build();
+
+                    String json = conf.toJson();
+                    MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
+                    assertEquals(conf, c2);
+
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
+
+                    String msg = "Minibatch size = " + miniBatchSize + ", activationFn=" + afn
+                            + ", kernel = " + Arrays.toString(kernel) + ", mode = " + mode.toString()
+                            + ", input depth " + depth + ", input height " + height
+                            + ", input width " + width;
+
+                    if (PRINT_RESULTS) {
+                        log.info(msg);
+                        for (int j = 0; j < net.getnLayers(); j++) {
+                            log.info("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                        }
+                    }
+
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS,
+                            DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS,
+                            RETURN_ON_FIRST_FAILURE, input, labels);
+
+                    assertTrue(msg, gradOK);
+
+                    TestUtils.testModelSerialization(net);
+                }
+
             }
         }
     }
