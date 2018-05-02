@@ -40,11 +40,13 @@ public class KerasPoolingUtils {
         PoolingType poolingType;
         if (className.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_2D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_1D()) ||
+                className.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_3D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D())) {
             poolingType = PoolingType.MAX;
         } else if (className.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_2D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_1D()) ||
+                className.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_3D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D())) {
             poolingType = PoolingType.AVG;
