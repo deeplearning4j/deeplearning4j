@@ -36,6 +36,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasBatchNo
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasGlobalPooling;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling2D;
+import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling3D;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
@@ -219,6 +220,9 @@ public class KerasLayerUtils {
             layer = new KerasAtrousConvolution1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D())) {
             layer = new KerasSeparableConvolution2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_3D()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_3D())) {
+            layer = new KerasPooling3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_2D()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_2D())) {
             layer = new KerasPooling2D(layerConfig, enforceTrainingConfig);
