@@ -18,6 +18,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 
+import static org.junit.Assert.assertEquals;
+
 public class TestParamAndGradientIterationListener extends BaseDL4JTest {
 
     @Test
@@ -45,6 +47,26 @@ public class TestParamAndGradientIterationListener extends BaseDL4JTest {
         for (int i = 0; i < 2; i++) {
             net.fit(iter);
         }
+
+
+    }
+
+
+    @Test
+    public void testMinibatchApplication() {
+        IrisDataSetIterator iter = new IrisDataSetIterator(30, 150);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().miniBatch(false)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(1e-5))
+                .list()
+                .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nIn(30).nOut(3).build())
+                .pretrain(false).backprop(true).build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(1,net.getInputMiniBatchSize());
 
 
     }
