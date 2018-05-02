@@ -54,7 +54,7 @@ public class KerasCropping1DTest {
     private void buildCroppingSingleDim1DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
             throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CROPPING_1D());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(conf.getLAYER_FIELD_CROPPING(), CROPPING);
