@@ -18,8 +18,12 @@ namespace nd4j {
             NDArray<T>* values = OUTPUT_VARIABLE(0);
             NDArray<T>* indeces = OUTPUT_VARIABLE(1);
             if (block.numI() > 0) {
+                if (block.numI() > 1) {
                 k = INT_ARG(0);
                 needSort = INT_ARG(1);
+                }
+                else 
+                    k = INT_ARG(0);
             }
 
             REQUIRE_TRUE(k <= x->sizeAt(-1), 0, "top_k: k should not be greater than last dimension");

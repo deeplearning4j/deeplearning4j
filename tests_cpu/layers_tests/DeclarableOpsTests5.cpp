@@ -820,6 +820,45 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test13) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, Test_TopK_0) {
+    NDArray<float> x('c', {2, 6}, {1.0f, 1.0f, 1.0f, 1.0f, 11.0f, 3.0f, 1.0f, 1.0f, 1.0f, 14.0f, 5.0f, 6.0f});
+    NDArray<float> expV('c', {2, 1}, {11.0f, 14.0f});
+    NDArray<float> expI('c', {2, 1}, {4.0f, 3.0f});
+
+    nd4j::ops::top_k<float> op;
+    auto result = op.execute({&x}, {}, {1, 0}); // without sorting
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    auto v = result->at(0);
+    auto i = result->at(1);
+/*
+    v->printShapeInfo("topK_0: shape v");
+    expV.printShapeInfo("topK_0: shape expV");
+
+    i->printShapeInfo("topK_0: shape I");
+    expI.printShapeInfo("topK_0: shape expI");
+
+    v->printIndexedBuffer("topK_0: v");
+    expV.printIndexedBuffer("topK_0: expV");
+    i->printIndexedBuffer("topK_0: i");
+    expI.printIndexedBuffer("topK_0: expI");
+*/
+
+    ASSERT_TRUE(expV.isSameShape(v));
+    ASSERT_TRUE(expV.equalsTo(v));
+
+    ASSERT_TRUE(expI.isSameShape(i));
+    ASSERT_TRUE(expI.equalsTo(i));
+    // repeat res again
+    for (int cases = 0; cases < 100; ++cases) {
+        op.execute({&x}, {v, i}, {}, {1, 0}); // without sorting
+    }
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Test_TopK_1) {
     NDArray<float> x('c', {2, 3}, {1.0f, 11.0f, 3.0f, 14.0f, 5.0f, 6.0f});
     NDArray<float> expV('c', {2, 1}, {11.0f, 14.0f});
@@ -851,7 +890,10 @@ TEST_F(DeclarableOpsTests5, Test_TopK_1) {
 
     ASSERT_TRUE(expI.isSameShape(i));
     ASSERT_TRUE(expI.equalsTo(i));
-
+    // repeat res again
+    for (int cases = 0; cases < 100; ++cases) {
+        op.execute({&x}, {v, i}, {}, {1, 0}); // without sorting
+    }
     delete result;
 }
 
