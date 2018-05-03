@@ -18,6 +18,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 
+import static org.junit.Assert.assertEquals;
+
 public class TestParamAndGradientIterationListener extends BaseDL4JTest {
 
     @Test
@@ -48,5 +50,8 @@ public class TestParamAndGradientIterationListener extends BaseDL4JTest {
 
 
     }
+
+
+
 
 }

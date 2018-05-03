@@ -51,7 +51,7 @@ import java.util.List;
  *
  */
 public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseOutputLayer>
-                extends BaseLayer<LayerConfT> implements Serializable, IOutputLayer {
+        extends BaseLayer<LayerConfT> implements Serializable, IOutputLayer {
 
     //current input and label matrices
     protected INDArray labels;
@@ -92,7 +92,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
                 layerConf().getActivationFn(), maskArray,false);
         score += fullNetworkL1 + fullNetworkL2;
-        score /= getInputMiniBatchSize();
+        if(conf().isMiniBatch())
+            score /= getInputMiniBatchSize();
 
         this.score = score;
 
@@ -113,8 +114,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
-                        lossFunction.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM),
-                                preOut, layerConf().getActivationFn(), maskArray);
+                lossFunction.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM),
+                        preOut, layerConf().getActivationFn(), maskArray);
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
@@ -363,9 +364,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             to.muli(maskArray);
         } else {
             throw new IllegalStateException("Invalid mask array: per-example masking should be a column vector, "
-                            + "per output masking arrays should be the same shape as the output/labels arrays. Mask shape: "
-                            + Arrays.toString(maskArray.shape()) + ", output shape: " + Arrays.toString(to.shape())
-                            + layerId());
+                    + "per output masking arrays should be the same shape as the output/labels arrays. Mask shape: "
+                    + Arrays.toString(maskArray.shape()) + ", output shape: " + Arrays.toString(to.shape())
+                    + layerId());
         }
     }
 
