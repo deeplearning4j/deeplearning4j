@@ -367,6 +367,17 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     /**
      * For the given input shape/type for the network, return a map of activation sizes for each layer and vertex
+     * in the graph. Note that this method will automatically add preprocessors if required, to handle (for example)
+     * the transition between CNN and dense layers.
+     * @param inputTypes                Input types for the network
+     * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
+     */
+    public Map<String,InputType> getLayerActivationTypes(InputType... inputTypes){
+        return getLayerActivationTypes(true, inputTypes);
+    }
+
+    /**
+     * For the given input shape/type for the network, return a map of activation sizes for each layer and vertex
      * in the graph. Note that this method can also add preprocessors if required (to handle transitions between some
      * layer types such as convolutional -> dense, for example)
      * @param addPreprocIfNecessary     If true: add any required preprocessors, in the process of calculating the layer
@@ -907,18 +918,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * For the given input shape/type for the (perhaps partially constructed) network configuration, return a map of
-         * activation sizes for each layer and vertex in the graph.<br>
-         * Note that the network configuration may be incomplete, but the inputs have been added to the layer already.
-         * @param inputTypes                Input types for the network
+         * For the (perhaps partially constructed) network configuration, return a map of activation sizes for each
+         * layer and vertex in the graph.<br>
+         * Note 1: The network configuration may be incomplete, but the inputs have been added to the layer already.<br>
+         * Note 2: To use this method, the network input types must have been set using {@link #setInputTypes(InputType...)}
+         * first
          * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
          */
-        public Map<String,InputType> getLayerActivationTypes(InputType... inputTypes){
+        public Map<String,InputType> getLayerActivationTypes(){
             Preconditions.checkArgument(networkInputs != null && networkInputs.size() > 0,
-                    "Cannot calculate activation types if no inputs have been set");
-            Preconditions.checkArgument(inputTypes != null && inputTypes.length == networkInputs.size(),
-                    "Number of input types passed to method (%s) does not match number of network inputs (%s)",
-                    (inputTypes == null ? null : inputTypes.length), (Object)networkInputs.size());
+                    "Cannot calculate activation types if no inputs have been set (use addInputs(String...))");
+            Preconditions.checkArgument(networkInputTypes != null && networkInputTypes.size() == networkInputs.size(),
+                    "Cannot calculate layer activation types if network if network input types have not" +
+                            "been set (use ");
 
             //Instantiate temporary ComputationGraphConfiguration and calculate output shapes
             ComputationGraphConfiguration conf;
@@ -936,7 +948,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         " ComputationGraphConfiguration failed", e);
             }
 
-            return conf.getLayerActivationTypes(true, inputTypes);
+            return conf.getLayerActivationTypes(true, networkInputTypes.toArray(new InputType[networkInputTypes.size()]));
         }
 
 

@@ -1472,13 +1472,13 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .layer("2", new DenseLayer.Builder().nOut(8).build(), "in2")
                 .layer("3", new DenseLayer.Builder().nOut(7).build(), "0")
                 .layer("4", new DenseLayer.Builder().nOut(6).build(), "1", "2")
+                .setInputTypes(InputType.feedForward(5), InputType.feedForward(6))
                 .allowNoOutput(true);
 
         ComputationGraphConfiguration conf = builder.build();
 
-        Map<String,InputType> actBuilder = builder.getLayerActivationTypes(InputType.feedForward(5), InputType.feedForward(6));
-        Map<String,InputType> actConf = conf.getLayerActivationTypes(true,
-                InputType.feedForward(5), InputType.feedForward(6));
+        Map<String,InputType> actBuilder = builder.getLayerActivationTypes();
+        Map<String,InputType> actConf = conf.getLayerActivationTypes(InputType.feedForward(5), InputType.feedForward(6));
 
         Map<String, InputType> exp = new HashMap<>();
         exp.put("in1", InputType.feedForward(5));
@@ -1494,6 +1494,4 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals(exp, actBuilder);
         assertEquals(exp, actConf);
     }
-
-
 }

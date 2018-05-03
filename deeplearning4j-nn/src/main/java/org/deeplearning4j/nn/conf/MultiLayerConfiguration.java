@@ -350,6 +350,27 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         return new NetworkMemoryReport(memoryReportMap, MultiLayerConfiguration.class, "MultiLayerNetwork", inputType);
     }
 
+    /**
+     * For the given input shape/type for the network, return a list of activation sizes for each layer in the network.<br>
+     * i.e., list.get(i) is the output activation sizes for layer i
+     * @param inputType Input type for the network
+     * @return A lits of activation types for the network, indexed by layer number
+     */
+    public List<InputType> getLayerActivationTypes(@NonNull InputType inputType){
+        List<InputType> out = new ArrayList<>();
+        int nLayers = confs.size();
+        for (int i = 0; i < nLayers; i++) {
+            InputPreProcessor preproc = getInputPreProcess(i);
+            if (preproc != null) {
+                inputType = preproc.getOutputType(inputType);
+            }
+
+            inputType = confs.get(i).getLayer().getOutputType(i, inputType);
+            out.add(inputType);
+        }
+        return out;
+    }
+
     @Data
     public static class Builder {
 
