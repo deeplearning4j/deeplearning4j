@@ -59,6 +59,39 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
     }
 
     @Test
+    public void testEmbeddingLongerSequencesForwardPass() {
+
+        int nClassesIn = 10;
+        int inputLength = 6;
+        int embeddingDim = 5;
+        int nOut = 4;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
+                .layer(new EmbeddingSequenceLayer.Builder().inputLength(inputLength)
+                        .hasBias(true).nIn(nClassesIn).nOut(embeddingDim).build())
+                .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).build()).pretrain(false).backprop(true)
+                .build();
+
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        int batchSize = 3;
+
+        INDArray inEmbedding = Nd4j.create(batchSize, inputLength);
+
+        Random r = new Random(12345);
+        for (int i = 0; i < batchSize; i++) {
+            int classIdx = r.nextInt(nClassesIn);
+            inEmbedding.putScalar(i, classIdx);
+        }
+
+        INDArray output = net.output(inEmbedding);
+
+        assert Arrays.equals(new int[] {batchSize, nOut, inputLength}, output.shape());
+    }
+
+    @Test
     public void testEmbeddingSingleSequenceForwardPass() {
         int nClassesIn = 10;
         int embeddingDim = 5;

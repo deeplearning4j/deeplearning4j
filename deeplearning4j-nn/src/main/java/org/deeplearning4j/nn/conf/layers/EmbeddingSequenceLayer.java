@@ -39,6 +39,7 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
     private EmbeddingSequenceLayer(Builder builder) {
         super(builder);
         this.hasBias = builder.hasBias;
+        this.inputLength = builder.inputLength;
         initializeConstraints(builder);
     }
 
