@@ -7,7 +7,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -80,24 +79,20 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         valueNet.setInput(input);
         valueNet.setLabels(labels[0]);
         valueNet.computeGradientAndScore();
-        Collection<IterationListener> valueIterationListeners = valueNet.getListeners();
+        Collection<TrainingListener> valueIterationListeners = valueNet.getListeners();
         if (valueIterationListeners != null && valueIterationListeners.size() > 0) {
-            for (IterationListener l : valueIterationListeners) {
-                if (l instanceof TrainingListener) {
-                    ((TrainingListener) l).onGradientCalculation(valueNet);
-                }
+            for (TrainingListener l : valueIterationListeners) {
+                    l.onGradientCalculation(valueNet);
             }
         }
 
         policyNet.setInput(input);
         policyNet.setLabels(labels[1]);
         policyNet.computeGradientAndScore();
-        Collection<IterationListener> policyIterationListeners = policyNet.getListeners();
+        Collection<TrainingListener> policyIterationListeners = policyNet.getListeners();
         if (policyIterationListeners != null && policyIterationListeners.size() > 0) {
-            for (IterationListener l : policyIterationListeners) {
-                if (l instanceof TrainingListener) {
-                    ((TrainingListener) l).onGradientCalculation(policyNet);
-                }
+            for (TrainingListener l : policyIterationListeners) {
+                l.onGradientCalculation(policyNet);
             }
         }
         return new Gradient[] {valueNet.gradient(), policyNet.gradient()};
@@ -110,9 +105,9 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         int valueEpochCount = valueConf.getEpochCount();
         valueNet.getUpdater().update(valueNet, gradient[0], valueIterationCount, valueEpochCount, batchSize, LayerWorkspaceMgr.noWorkspaces());
         valueNet.params().subi(gradient[0].gradient());
-        Collection<IterationListener> valueIterationListeners = valueNet.getListeners();
+        Collection<TrainingListener> valueIterationListeners = valueNet.getListeners();
         if (valueIterationListeners != null && valueIterationListeners.size() > 0) {
-            for (IterationListener listener : valueIterationListeners) {
+            for (TrainingListener listener : valueIterationListeners) {
                 listener.iterationDone(valueNet, valueIterationCount, valueEpochCount);
             }
         }
@@ -123,9 +118,9 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         int policyEpochCount = policyConf.getEpochCount();
         policyNet.getUpdater().update(policyNet, gradient[1], policyIterationCount, policyEpochCount, batchSize, LayerWorkspaceMgr.noWorkspaces());
         policyNet.params().subi(gradient[1].gradient());
-        Collection<IterationListener> policyIterationListeners = policyNet.getListeners();
+        Collection<TrainingListener> policyIterationListeners = policyNet.getListeners();
         if (policyIterationListeners != null && policyIterationListeners.size() > 0) {
-            for (IterationListener listener : policyIterationListeners) {
+            for (TrainingListener listener : policyIterationListeners) {
                 listener.iterationDone(policyNet, policyIterationCount, policyEpochCount);
             }
         }

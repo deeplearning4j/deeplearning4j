@@ -7,7 +7,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -72,12 +71,10 @@ public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IA
         cg.setInput(0, input);
         cg.setLabels(labels);
         cg.computeGradientAndScore();
-        Collection<IterationListener> iterationListeners = cg.getListeners();
+        Collection<TrainingListener> iterationListeners = cg.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {
-            for (IterationListener l : iterationListeners) {
-                if (l instanceof TrainingListener) {
-                    ((TrainingListener) l).onGradientCalculation(cg);
-                }
+            for (TrainingListener l : iterationListeners) {
+                l.onGradientCalculation(cg);
             }
         }
         return new Gradient[] {cg.gradient()};
@@ -95,9 +92,9 @@ public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IA
         int epochCount = cgConf.getEpochCount();
         cg.getUpdater().update(gradient[0], iterationCount, epochCount, batchSize, LayerWorkspaceMgr.noWorkspaces());
         cg.params().subi(gradient[0].gradient());
-        Collection<IterationListener> iterationListeners = cg.getListeners();
+        Collection<TrainingListener> iterationListeners = cg.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {
-            for (IterationListener listener : iterationListeners) {
+            for (TrainingListener listener : iterationListeners) {
                 listener.iterationDone(cg, iterationCount, epochCount);
             }
         }
