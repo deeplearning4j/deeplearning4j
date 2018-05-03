@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.databind.JsonNode;
@@ -567,6 +568,21 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         inputTypes);
     }
 
+    public ComputationGraphConfiguration addLayer(@NonNull String layerName, @NonNull Layer layer, String... inputs) {
+        addLayer(layerName, layer, null, inputs);
+    }
+
+    public ComputationGraphConfiguration addLayer(@NonNull String layerName, @NonNull Layer layer, InputPreProcessor preProcessor, String... inputs){
+        Preconditions.checkArgument(inputs != null && inputs.length > 0, "Inputs to layer \"%s\" cannot be null or empty", layerName);
+        Preconditions.checkArgument(!vertices.containsKey(layerName), "Vertex with name \"%s\" already exists", layerName);
+        vertices.put(layerName, new LayerVertex(layer));
+    }
+
+    public ComputationGraphConfiguration addVertex(@NonNull String vertexName, @NonNull GraphVertex vertex, String... inputs){
+        Preconditions.checkState(inputs != null && inputs.length > 0, "Inputs to vertex %s cannot be null or empty", vertexName);
+        Preconditions.checkArgument(!vertices.containsKey(vertexName), "Vertex with name \"%s\" already exists", vertexName);
+
+    }
 
     @Data
     public static class GraphBuilder {
