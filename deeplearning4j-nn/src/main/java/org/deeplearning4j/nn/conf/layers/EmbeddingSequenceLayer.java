@@ -34,7 +34,7 @@ import java.util.Map;
 public class EmbeddingSequenceLayer extends FeedForwardLayer {
 
     private int inputLength = 1; // By default only use one index to embed
-    private boolean hasBias = true;
+    private boolean hasBias = false;
 
     private EmbeddingSequenceLayer(Builder builder) {
         super(builder);

@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -123,7 +122,6 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         }
 
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
         int nOut = layerConf().getNOut();
         INDArray destination = workspaceMgr.createUninitialized(
@@ -131,6 +129,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         INDArray rows = Nd4j.pullRows(weights, destination, 1, indexes);
 
         if (hasBias()) {
+            INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
             rows.addiRowVector(bias);
         }
 
