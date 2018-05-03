@@ -1463,8 +1463,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     public void testComputationGraphConfgurationActivationTypes(){
 
         //Test for a simple net:
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
 
+        ComputationGraphConfiguration.GraphBuilder builder = new NeuralNetConfiguration.Builder()
                 .graphBuilder()
                 .addInputs("in1", "in2")
                 .layer("0", new DenseLayer.Builder().nOut(10).build(), "in1")
@@ -1472,10 +1472,12 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .layer("2", new DenseLayer.Builder().nOut(8).build(), "in2")
                 .layer("3", new DenseLayer.Builder().nOut(7).build(), "0")
                 .layer("4", new DenseLayer.Builder().nOut(6).build(), "1", "2")
-                .allowNoOutput(true)
-                .build();
+                .allowNoOutput(true);
 
-        Map<String,InputType> act = conf.getLayerActivationTypes(true,
+        ComputationGraphConfiguration conf = builder.build();
+
+        Map<String,InputType> actBuilder = builder.getLayerActivationTypes(InputType.feedForward(5), InputType.feedForward(6));
+        Map<String,InputType> actConf = conf.getLayerActivationTypes(true,
                 InputType.feedForward(5), InputType.feedForward(6));
 
         Map<String, InputType> exp = new HashMap<>();
@@ -1489,7 +1491,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         exp.put("4", InputType.feedForward(6));
         exp.put("4-merge", InputType.feedForward(9+8));
 
-        assertEquals(exp, act);
+        assertEquals(exp, actBuilder);
+        assertEquals(exp, actConf);
     }
 
 

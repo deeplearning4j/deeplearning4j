@@ -568,22 +568,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         inputTypes);
     }
 
-    public ComputationGraphConfiguration addLayer(@NonNull String layerName, @NonNull Layer layer, String... inputs) {
-        addLayer(layerName, layer, null, inputs);
-    }
-
-    public ComputationGraphConfiguration addLayer(@NonNull String layerName, @NonNull Layer layer, InputPreProcessor preProcessor, String... inputs){
-        Preconditions.checkArgument(inputs != null && inputs.length > 0, "Inputs to layer \"%s\" cannot be null or empty", layerName);
-        Preconditions.checkArgument(!vertices.containsKey(layerName), "Vertex with name \"%s\" already exists", layerName);
-        vertices.put(layerName, new LayerVertex(layer));
-    }
-
-    public ComputationGraphConfiguration addVertex(@NonNull String vertexName, @NonNull GraphVertex vertex, String... inputs){
-        Preconditions.checkState(inputs != null && inputs.length > 0, "Inputs to vertex %s cannot be null or empty", vertexName);
-        Preconditions.checkArgument(!vertices.containsKey(vertexName), "Vertex with name \"%s\" already exists", vertexName);
-
-    }
-
     @Data
     public static class GraphBuilder {
         protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
@@ -923,10 +907,40 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Create the ComputationGraphConfiguration from the Builder pattern
+         * For the given input shape/type for the (perhaps partially constructed) network configuration, return a map of
+         * activation sizes for each layer and vertex in the graph.<br>
+         * Note that the network configuration may be incomplete, but the inputs have been added to the layer already.
+         * @param inputTypes                Input types for the network
+         * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
          */
-        public ComputationGraphConfiguration build() {
+        public Map<String,InputType> getLayerActivationTypes(InputType... inputTypes){
+            Preconditions.checkArgument(networkInputs != null && networkInputs.size() > 0,
+                    "Cannot calculate activation types if no inputs have been set");
+            Preconditions.checkArgument(inputTypes != null && inputTypes.length == networkInputs.size(),
+                    "Number of input types passed to method (%s) does not match number of network inputs (%s)",
+                    (inputTypes == null ? null : inputTypes.length), (Object)networkInputs.size());
 
+            //Instantiate temporary ComputationGraphConfiguration and calculate output shapes
+            ComputationGraphConfiguration conf;
+            try{
+                conf = buildConfig();
+            } catch (Exception e){
+                throw new RuntimeException("Error calculating activation types for layers: error occured when constructing " +
+                        "temporary ComputationGraphConfiguration)", e);
+            }
+
+            try{
+                conf.validate(true, true);
+            } catch (Exception e){
+                throw new RuntimeException("Error calculating activation types for layers: validation of temporary" +
+                        " ComputationGraphConfiguration failed", e);
+            }
+
+            return conf.getLayerActivationTypes(true, inputTypes);
+        }
+
+
+        private ComputationGraphConfiguration buildConfig(){
             ComputationGraphConfiguration conf = new ComputationGraphConfiguration();
             conf.backprop = backprop;
             conf.pretrain = pretrain;
@@ -954,8 +968,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     lv.setPreProcessor(entry.getValue());
                 } else {
                     throw new IllegalStateException(
-                                    "Invalid configuration: InputPreProcessor defined for GraphVertex \""
-                                                    + entry.getKey() + "\", but this vertex is not a LayerVertex");
+                            "Invalid configuration: InputPreProcessor defined for GraphVertex \""
+                                    + entry.getKey() + "\", but this vertex is not a LayerVertex");
                 }
 
             }
@@ -970,6 +984,16 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             }
 
+            return conf;
+        }
+
+
+        /**
+         * Create the ComputationGraphConfiguration from the Builder pattern
+         */
+        public ComputationGraphConfiguration build() {
+
+            ComputationGraphConfiguration conf = buildConfig();
             conf.validate(allowDisconnected, allowNoOutput); //throws exception for invalid configuration
 
             //Automatically add preprocessors, set nIns for CNN->dense transitions, etc
