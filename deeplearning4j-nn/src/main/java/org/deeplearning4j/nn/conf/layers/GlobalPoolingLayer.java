@@ -45,7 +45,7 @@ public class GlobalPoolingLayer extends Layer {
     private PoolingType poolingType;
     private int[] poolingDimensions;
     private int pnorm;
-    private boolean collapseDimensions;
+    private boolean collapseDimensions = true;
 
     private GlobalPoolingLayer(Builder builder) {
         super(builder);

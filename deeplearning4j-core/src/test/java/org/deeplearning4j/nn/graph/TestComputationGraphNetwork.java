@@ -53,6 +53,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -1455,5 +1456,42 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         INDArray outIter = cg.outputSingle(iter);
 
         assertEquals(outAll, outIter);
+    }
+
+
+    @Test
+    public void testComputationGraphConfgurationActivationTypes(){
+
+        //Test for a simple net:
+
+        ComputationGraphConfiguration.GraphBuilder builder = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in1", "in2")
+                .layer("0", new DenseLayer.Builder().nOut(10).build(), "in1")
+                .layer("1", new DenseLayer.Builder().nOut(9).build(), "in1", "in2")
+                .layer("2", new DenseLayer.Builder().nOut(8).build(), "in2")
+                .layer("3", new DenseLayer.Builder().nOut(7).build(), "0")
+                .layer("4", new DenseLayer.Builder().nOut(6).build(), "1", "2")
+                .setInputTypes(InputType.feedForward(5), InputType.feedForward(6))
+                .allowNoOutput(true);
+
+        ComputationGraphConfiguration conf = builder.build();
+
+        Map<String,InputType> actBuilder = builder.getLayerActivationTypes();
+        Map<String,InputType> actConf = conf.getLayerActivationTypes(InputType.feedForward(5), InputType.feedForward(6));
+
+        Map<String, InputType> exp = new HashMap<>();
+        exp.put("in1", InputType.feedForward(5));
+        exp.put("in2", InputType.feedForward(6));
+        exp.put("0", InputType.feedForward(10));
+        exp.put("1", InputType.feedForward(9));
+        exp.put("1-merge", InputType.feedForward(5+6));
+        exp.put("2", InputType.feedForward(8));
+        exp.put("3", InputType.feedForward(7));
+        exp.put("4", InputType.feedForward(6));
+        exp.put("4-merge", InputType.feedForward(9+8));
+
+        assertEquals(exp, actBuilder);
+        assertEquals(exp, actConf);
     }
 }
