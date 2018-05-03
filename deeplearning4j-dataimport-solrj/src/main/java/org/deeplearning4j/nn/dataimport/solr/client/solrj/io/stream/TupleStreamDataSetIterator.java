@@ -11,6 +11,7 @@ import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.TupStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -51,14 +52,6 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
     private StreamContext streamContext;
     private TupleStream tupleStream;
     private Tuple tuple;
-
-    // TODO: replace this with https://issues.apache.org/jira/browse/SOLR-12036 equivalent when it's available
-    private static class DefaultStreamFactory extends StreamFactory {
-        public DefaultStreamFactory() {
-            withFunctionName("search", CloudSolrStream.class);
-            withFunctionName("tuple", TupStream.class);
-        }
-    }
 
     private static class CloseableStreamContext extends StreamContext implements Closeable {
         private SolrClientCache solrClientCache;
