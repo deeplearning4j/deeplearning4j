@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -25,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
 /**
@@ -34,15 +36,18 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
  */
 @Slf4j
 @Data
-@EqualsAndHashCode (callSuper = false)
+@EqualsAndHashCode(callSuper = false)
 public class KerasEmbedding extends KerasLayer {
 
     private final int NUM_TRAINABLE_PARAMS = 1;
     private boolean hasZeroMasking;
+    private int inputDim;
+    private int inputLength;
 
 
     /**
      * Pass through constructor for unit tests
+     *
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasEmbedding() throws UnsupportedKerasConfigurationException {
@@ -52,7 +57,7 @@ public class KerasEmbedding extends KerasLayer {
      * Constructor from parsed Keras layer configuration dictionary.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @throws InvalidKerasConfigurationException Invalid Keras config
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasEmbedding(Map<String, Object> layerConfig)
@@ -65,18 +70,15 @@ public class KerasEmbedding extends KerasLayer {
      *
      * @param layerConfig           dictionary containing Keras layer configuration
      * @param enforceTrainingConfig whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException Invalid Keras config
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasEmbedding(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
-        int inputDim = getInputDimFromConfig(layerConfig);
-        int[] inputShapeOld = this.inputShape;
-        this.inputShape = new int[inputShapeOld.length + 1];
-        this.inputShape[0] = inputShapeOld[0];
-        this.inputShape[1] = inputDim;
+        this.inputDim = getInputDimFromConfig(layerConfig);
+        this.inputLength = getInputLengthFromConfig(layerConfig);
 
         this.hasZeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
         if (hasZeroMasking)
@@ -94,11 +96,16 @@ public class KerasEmbedding extends KerasLayer {
         LayerConstraint embeddingConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_EMBEDDINGS_CONSTRAINT(), conf, kerasMajorVersion);
 
-        EmbeddingLayer.Builder builder = new EmbeddingLayer.Builder().name(this.layerName).nIn(inputDim)
-                .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout).activation(Activation.IDENTITY)
+        EmbeddingSequenceLayer.Builder builder = new EmbeddingSequenceLayer.Builder()
+                .name(this.layerName).nIn(inputDim)
+                .inputLength(inputLength)
+                .nOut(getNOutFromConfig(layerConfig, conf))
+                .dropOut(this.dropout).activation(Activation.IDENTITY)
                 .weightInit(weightInit)
                 .biasInit(0.0)
-                .l1(this.weightL1Regularization).l2(this.weightL2Regularization).hasBias(false);
+                .l1(this.weightL1Regularization)
+                .l2(this.weightL2Regularization)
+                .hasBias(false);
         if (distribution != null)
             builder.dist(distribution);
         if (embeddingConstraint != null)
@@ -107,12 +114,12 @@ public class KerasEmbedding extends KerasLayer {
     }
 
     /**
-     * Get DL4J DenseLayer.
+     * Get DL4J Embedding Sequence layer.
      *
-     * @return DenseLayer
+     * @return Embedding Sequence layer
      */
-    public EmbeddingLayer getEmbeddingLayer() {
-        return (EmbeddingLayer) this.layer;
+    public EmbeddingSequenceLayer getEmbeddingLayer() {
+        return (EmbeddingSequenceLayer) this.layer;
     }
 
     /**
@@ -169,7 +176,27 @@ public class KerasEmbedding extends KerasLayer {
     }
 
     /**
-     * Get Keras input shape from Keras layer configuration.
+     * Get Keras input length from Keras layer configuration. In Keras input_length, if present, denotes
+     * the number of indices to embed per mini-batch, i.e. input will be of of shape (mb, input_length)
+     * and (mb, 1) else.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return input length as int
+     */
+    private int getInputLengthFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_LENGTH()))
+            throw new InvalidKerasConfigurationException(
+                    "Keras Embedding layer config missing " + conf.getLAYER_FIELD_INPUT_LENGTH() + " field");
+        if (innerConfig.get(conf.getLAYER_FIELD_INPUT_LENGTH()) == null) {
+            return 1;
+        } else {
+            return (int) innerConfig.get(conf.getLAYER_FIELD_INPUT_LENGTH());
+        }
+    }
+
+    /**
+     * Get Keras input dimension from Keras layer configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration
      * @return input dim as int

@@ -15,8 +15,10 @@ import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.*;
@@ -69,7 +71,7 @@ public class SameDiffConv extends BaseSameDiffLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (nIn <= 0 || override) {
             InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-            this.nIn = c.getDepth();
+            this.nIn = c.getChannels();
         }
     }
 
@@ -91,13 +93,15 @@ public class SameDiffConv extends BaseSameDiffLayer {
 
     @Override
     public void initializeParameters(Map<String, INDArray> params) {
-        for(Map.Entry<String,INDArray> e : params.entrySet()){
-            if(ConvolutionParamInitializer.BIAS_KEY.equals(e.getKey())){
-                e.getValue().assign(0);
-            } else {
-                double fanIn = nIn * kernel[0] * kernel[1];
-                double fanOut = nOut * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
-                WeightInitUtil.initWeights(fanIn, fanOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            for (Map.Entry<String, INDArray> e : params.entrySet()) {
+                if (ConvolutionParamInitializer.BIAS_KEY.equals(e.getKey())) {
+                    e.getValue().assign(0);
+                } else {
+                    double fanIn = nIn * kernel[0] * kernel[1];
+                    double fanOut = nOut * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
+                    WeightInitUtil.initWeights(fanIn, fanOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+                }
             }
         }
     }

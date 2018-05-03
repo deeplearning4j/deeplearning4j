@@ -18,20 +18,21 @@
 
 package org.deeplearning4j.nn.layers;
 
+import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
@@ -43,11 +44,13 @@ import java.util.*;
 @NoArgsConstructor
 public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> implements Layer {
 
-    protected INDArray input, preOutput;
+    @Setter(AccessLevel.NONE)
+    protected INDArray input;
+    protected INDArray preOutput;
     protected NeuralNetConfiguration conf;
     protected INDArray dropoutMask;
     protected boolean dropoutApplied = false;
-    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
+    protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
     protected int index = 0;
     protected INDArray maskArray;
     protected MaskState maskState;
@@ -100,22 +103,9 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     public abstract Layer clone();
 
     @Override
-    public void setInput(INDArray input) {
-        this.input = input;
+    public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        this.input = workspaceMgr.leverageTo(ArrayType.INPUT, input);
         dropoutApplied = false;
-    }
-
-    @Override
-    public void migrateInput(){
-        if(input != null && input.isAttached()){
-            input = input.migrate(true);
-        }
-        if(preOutput != null && preOutput.isAttached()){
-            preOutput = preOutput.migrate(true);
-        }
-        if(maskArray != null && maskArray.isAttached()){
-            maskArray = maskArray.migrate(true);
-        }
     }
 
     @Override
@@ -130,65 +120,38 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
 
     @Override
-    public Collection<IterationListener> getListeners() {
-        return iterationListeners;
+    public Collection<TrainingListener> getListeners() {
+        return trainingListeners;
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    public void setListeners(Collection<TrainingListener> listeners) {
+        this.trainingListeners = listeners != null ? listeners : new ArrayList<TrainingListener>();
     }
 
     /**
-     * This method ADDS additional IterationListener to existing listeners
+     * This method ADDS additional TrainingListener to existing listeners
      *
      * @param listeners
      */
     @Override
-    public void addListeners(IterationListener... listeners) {
-        if (this.iterationListeners == null) {
+    public void addListeners(TrainingListener... listeners) {
+        if (this.trainingListeners == null) {
             setListeners(listeners);
             return;
         }
 
-        for (IterationListener listener : listeners)
-            iterationListeners.add(listener);
+        Collections.addAll(trainingListeners, listeners);
     }
 
     @Override
-    public void setListeners(IterationListener... listeners) {
+    public void setListeners(TrainingListener... listeners) {
         setListeners(Arrays.asList(listeners));
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported");
-    }
-
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return preOutput(x, training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
-        return activate(training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return activate(input, training == TrainingMode.TRAIN);
-    }
-
-    /**
-     * iterate one iteration of the network
-     *
-     * @param input  the input to iterate on
-     */
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -282,51 +245,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return Collections.emptyMap();
     }
 
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        if (x == null) {
-            throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
-        }
-        setInput(x);
-        return preOutput(training);
-    }
-
-
-    public abstract INDArray preOutput(boolean training);
-
     protected void applyMask(INDArray to) {
         to.muliColumnVector(maskArray);
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return activate(true);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return activate(training);
-    }
-
-    @Override
-    public INDArray activate() {
-        return activate(false);
-    }
-
-
-    /**
-     * Classify input
-     * @param x the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return preOutput(x, true);
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
+        return activate(training, workspaceMgr);
     }
 
     @Override
@@ -357,18 +283,10 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         maskState = null;
     }
 
-    protected void applyDropOutIfNecessary(boolean training){//} int iteration, int epoch) {
+    protected void applyDropOutIfNecessary(boolean training, LayerWorkspaceMgr workspaceMgr){
         if(training && !dropoutApplied && layerConf().getIDropout() != null ){
-            //TODO: Epoch + iteration counters...
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)) {
-                try (MemoryWorkspace ws = Nd4j.getWorkspaceManager()
-                        .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL)
-                        .notifyScopeBorrowed()) {
-                    input = layerConf().getIDropout().applyDropout(input, getIterationCount(), getEpochCount(), false);
-                }
-            } else {
-                input = layerConf().getIDropout().applyDropout(input, getIterationCount(), getEpochCount(), false);
-            }
+            input = layerConf().getIDropout().applyDropout(workspaceMgr.dup(ArrayType.INPUT, input, input.ordering()),
+                    getIterationCount(), getEpochCount(), true);
             dropoutApplied = true;
         }
     }
@@ -394,7 +312,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void fit(INDArray input) {
+    public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported");
     }
 
@@ -480,6 +398,18 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         if(layerConf().getConstraints() != null){
             for(LayerConstraint lc : layerConf().getConstraints()){
                 lc.applyConstraint(this, iteration, epoch);
+            }
+        }
+    }
+
+    public void assertInputSet(boolean backprop){
+        if(input == null){
+            if(backprop){
+                throw new IllegalStateException("Cannot perform backprop in layer " + getClass().getSimpleName()
+                        + ": layer input field is not set");
+            } else {
+                throw new IllegalStateException("Cannot perform forward pass in layer " + getClass().getSimpleName()
+                        + ": layer input field is not set");
             }
         }
     }

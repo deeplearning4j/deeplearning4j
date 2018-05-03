@@ -20,8 +20,9 @@ package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -43,27 +44,28 @@ public interface Model {
 
 
     /**
-     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      */
-    void setListeners(Collection<IterationListener> listeners);
+    void setListeners(Collection<TrainingListener> listeners);
 
 
     /**
-     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      */
-    void setListeners(IterationListener... listeners);
+    void setListeners(TrainingListener... listeners);
 
     /**
-     * This method ADDS additional IterationListener to existing listeners
+     * This method ADDS additional TrainingListener to existing listeners
      *
      * @param listener
      */
-    void addListeners(IterationListener... listener);
+    void addListeners(TrainingListener... listener);
 
 
     /**
      * All models have a fit method
      */
+    @Deprecated
     void fit();
 
     /**
@@ -88,7 +90,7 @@ public interface Model {
     /**
      * Update the score
      */
-    void computeGradientAndScore();
+    void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr);
 
     /**
      * Sets a rolling tally for the score. This is useful for mini batch learning when
@@ -148,14 +150,7 @@ public interface Model {
      * Fit the model to the given data
      * @param data the data to fit the model to
      */
-    void fit(INDArray data);
-
-
-    /**
-     * Run one iteration
-     * @param input the input to iterate on
-     */
-    void iterate(INDArray input);
+    void fit(INDArray data, LayerWorkspaceMgr workspaceMgr);
 
 
     /**

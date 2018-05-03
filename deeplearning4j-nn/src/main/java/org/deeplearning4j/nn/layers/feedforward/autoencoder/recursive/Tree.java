@@ -179,12 +179,12 @@ public class Tree implements Serializable {
     }
 
     /**
-     * Finds the depth of the tree.  The depth is defined as the length
+     * Finds the channels of the tree.  The channels is defined as the length
      * of the longest path from this node to a leaf node.  Leaf nodes
-     * have depth zero.  POS tags have depth 1. Phrasal nodes have
-     * depth &gt;= 2.
+     * have channels zero.  POS tags have channels 1. Phrasal nodes have
+     * channels &gt;= 2.
      *
-     * @return the depth
+     * @return the channels
      */
     public int depth() {
         if (isLeaf()) {

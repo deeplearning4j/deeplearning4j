@@ -12,7 +12,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -94,11 +94,11 @@ public class SubsamplingLayer extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                     boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer ret =
                         new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
-        ret.setListeners(iterationListeners);
+        ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -120,7 +120,7 @@ public class SubsamplingLayer extends Layer {
         }
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                        ((InputType.InputTypeConvolutional) inputType).getDepth(), layerIndex, getLayerName(),
+                        ((InputType.InputTypeConvolutional) inputType).getChannels(), layerIndex, getLayerName(),
                         SubsamplingLayer.class);
     }
 
@@ -166,7 +166,7 @@ public class SubsamplingLayer extends Layer {
 
         //During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
         int im2colSizePerEx =
-                        c.getDepth() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
+                        c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
 
         //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         int trainingWorkingSizePerEx = im2colSizePerEx;

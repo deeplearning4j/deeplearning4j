@@ -20,9 +20,10 @@ package org.deeplearning4j.optimize;
 
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.ConjugateGradient;
 import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.solvers.LineGradientDescent;
@@ -42,15 +43,15 @@ import java.util.List;
  */
 public class Solver {
     private NeuralNetConfiguration conf;
-    private Collection<IterationListener> listeners;
+    private Collection<TrainingListener> listeners;
     private Model model;
     private ConvexOptimizer optimizer;
     private StepFunction stepFunction;
 
-    public void optimize() {
+    public void optimize(LayerWorkspaceMgr workspaceMgr) {
         initOptimizer();
 
-        optimizer.optimize();
+        optimizer.optimize(workspaceMgr);
     }
 
     public void initOptimizer() {
@@ -83,7 +84,7 @@ public class Solver {
         return optimizer;
     }
 
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<TrainingListener> listeners) {
         this.listeners = listeners;
         if (optimizer != null)
             optimizer.setListeners(listeners);
@@ -92,19 +93,19 @@ public class Solver {
     public static class Builder {
         private NeuralNetConfiguration conf;
         private Model model;
-        private List<IterationListener> listeners = new ArrayList<>();
+        private List<TrainingListener> listeners = new ArrayList<>();
 
         public Builder configure(NeuralNetConfiguration conf) {
             this.conf = conf;
             return this;
         }
 
-        public Builder listener(IterationListener... listeners) {
+        public Builder listener(TrainingListener... listeners) {
             this.listeners.addAll(Arrays.asList(listeners));
             return this;
         }
 
-        public Builder listeners(Collection<IterationListener> listeners) {
+        public Builder listeners(Collection<TrainingListener> listeners) {
             this.listeners.addAll(listeners);
             return this;
         }

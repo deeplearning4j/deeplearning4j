@@ -77,17 +77,18 @@ public class KerasFlatten extends KerasLayer {
             switch (this.getDimOrder()) {
                 case NONE:
                 case THEANO:
-                    preprocessor = new CnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(), it.getDepth());
+                    preprocessor = new CnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(), it.getChannels());
                     break;
                 case TENSORFLOW:
                     preprocessor = new TensorFlowCnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(),
-                            it.getDepth());
+                            it.getChannels());
                     break;
                 default:
                     throw new InvalidKerasConfigurationException("Unknown Keras backend " + this.getDimOrder());
             }
         } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
-            preprocessor = new RnnToFeedForwardPreProcessor();
+            InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType[0];
+            preprocessor = new KerasFlattenRnnPreprocessor(it.getSize(), it.getTimeSeriesLength());
         } else if (inputType[0] instanceof InputType.InputTypeFeedForward) {
             // NOTE: The output of an embedding layer in DL4J is of feed-forward type. Only if an FF to RNN input
             // preprocessor is set or we explicitly provide 3D input data to start with, will the its output be set

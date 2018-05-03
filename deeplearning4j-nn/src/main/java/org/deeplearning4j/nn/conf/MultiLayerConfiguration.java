@@ -64,11 +64,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     @Getter
     @Setter
-    protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
+    protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.ENABLED;
 
     @Getter
     @Setter
-    protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+    protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
 
     @Getter
     @Setter
@@ -141,6 +141,13 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         try {
             conf = mapper.readValue(json, MultiLayerConfiguration.class);
         } catch (IOException e) {
+            //Check if this exception came from legacy legacy deserializer...
+            String msg = e.getMessage();
+            if(msg != null && msg.contains("legacy")){
+                throw new RuntimeException("Error deserializing MultiLayerConfiguration - configuration may have a custom " +
+                        "layer, vertex or preprocessor, in pre version 1.0.0-alpha JSON format. These layers can be " +
+                        "deserialized by first registering them with NeuralNetConfiguration.registerLegacyCustomClassesForJSON(Class...)", e);
+            }
             throw new RuntimeException(e);
         }
 
@@ -343,6 +350,27 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         return new NetworkMemoryReport(memoryReportMap, MultiLayerConfiguration.class, "MultiLayerNetwork", inputType);
     }
 
+    /**
+     * For the given input shape/type for the network, return a list of activation sizes for each layer in the network.<br>
+     * i.e., list.get(i) is the output activation sizes for layer i
+     * @param inputType Input type for the network
+     * @return A lits of activation types for the network, indexed by layer number
+     */
+    public List<InputType> getLayerActivationTypes(@NonNull InputType inputType){
+        List<InputType> out = new ArrayList<>();
+        int nLayers = confs.size();
+        for (int i = 0; i < nLayers; i++) {
+            InputPreProcessor preproc = getInputPreProcess(i);
+            if (preproc != null) {
+                inputType = preproc.getOutputType(inputType);
+            }
+
+            inputType = confs.get(i).getLayer().getOutputType(i, inputType);
+            out.add(inputType);
+        }
+        return out;
+    }
+
     @Data
     public static class Builder {
 
@@ -356,8 +384,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int tbpttBackLength = 20;
         protected InputType inputType;
 
-        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
-        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.ENABLED;
+        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
         protected CacheMode cacheMode = CacheMode.NONE;
 
         /**

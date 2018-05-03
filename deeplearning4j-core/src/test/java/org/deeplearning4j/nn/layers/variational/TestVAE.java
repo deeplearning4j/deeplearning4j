@@ -21,6 +21,7 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -132,7 +133,7 @@ public class TestVAE extends BaseDL4JTest {
         INDArray data = Nd4j.rand(1, inputSize);
 
 
-        net.fit(data);
+        net.pretrainLayer(0, data);
     }
 
 
@@ -159,8 +160,8 @@ public class TestVAE extends BaseDL4JTest {
         Map<String, INDArray> layerParams = layer.paramTable();
         Map<String, INDArray> layerGradViews = layer.getGradientViews();
 
-        layer.setInput(Nd4j.rand(3, 10));
-        layer.computeGradientAndScore();;
+        layer.setInput(Nd4j.rand(3, 10), LayerWorkspaceMgr.noWorkspaces());
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         Gradient g = layer.gradient();
         Map<String, INDArray> grads = g.gradientForVariable();
 
@@ -217,7 +218,7 @@ public class TestVAE extends BaseDL4JTest {
                         (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) net.getLayer(0);
 
         INDArray input = Nd4j.rand(3, 10);
-        net.pretrain(input);
+        net.pretrainLayer(0, input);
 
         //Get a snapshot of the pretrain params after fitting:
         Map<String, INDArray> layerParams = layer.paramTable();
@@ -349,7 +350,7 @@ public class TestVAE extends BaseDL4JTest {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
                 mln.initGradientsView();
-                mln.fit(data);
+                mln.pretrainLayer(0, data);
 
                 org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer =
                                 (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) mln.getLayer(0);
@@ -415,7 +416,7 @@ public class TestVAE extends BaseDL4JTest {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
                 mln.initGradientsView();
-                mln.fit(data);
+                mln.pretrainLayer(0, data);
 
                 org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer =
                                 (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) mln.getLayer(0);

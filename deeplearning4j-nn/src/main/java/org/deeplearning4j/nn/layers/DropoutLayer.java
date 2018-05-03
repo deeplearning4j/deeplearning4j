@@ -23,6 +23,8 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Created by davekale on 12/7/16.
@@ -53,10 +55,12 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     }
 
     @Override
-    public void fit(INDArray input) {}
+    public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        throw new UnsupportedOperationException("Not supported");
+    }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         INDArray delta = epsilon.dup();
 
         if (maskArray != null) {
@@ -68,23 +72,26 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     }
 
     @Override
-    public INDArray preOutput(boolean training) {
-        if (input == null) {
-            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
+
+        INDArray ret;
+        if(!training){
+            ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
+        } else {
+            if(layerConf().getIDropout() != null){
+                ret = layerConf().getIDropout().applyDropout(workspaceMgr.dup(ArrayType.ACTIVATIONS, input, input.ordering()),
+                        getIterationCount(), getEpochCount(), true);
+            } else {
+                ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
+            }
         }
-        applyDropOutIfNecessary(training);
 
         if (maskArray != null) {
-            input.muliColumnVector(maskArray);
+            ret.muliColumnVector(maskArray);
         }
 
-        return input;
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
-        INDArray z = preOutput(training);
-        return z;
+        return ret;
     }
 
     @Override

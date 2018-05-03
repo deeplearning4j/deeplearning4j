@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
+import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyGraphVertexDeserializerHelper;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
@@ -37,20 +38,8 @@ import java.io.Serializable;
  *
  * @author Alex Black
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = ElementWiseVertex.class, name = "ElementWiseVertex"),
-                @JsonSubTypes.Type(value = MergeVertex.class, name = "MergeVertex"),
-                @JsonSubTypes.Type(value = SubsetVertex.class, name = "SubsetVertex"),
-                @JsonSubTypes.Type(value = LayerVertex.class, name = "LayerVertex"),
-                @JsonSubTypes.Type(value = LastTimeStepVertex.class, name = "LastTimeStepVertex"),
-                @JsonSubTypes.Type(value = ReverseTimeSeriesVertex.class, name = "ReverseTimeSeriesVertex"),
-                @JsonSubTypes.Type(value = DuplicateToTimeSeriesVertex.class, name = "DuplicateToTimeSeriesVertex"),
-                @JsonSubTypes.Type(value = PreprocessorVertex.class, name = "PreprocessorVertex"),
-                @JsonSubTypes.Type(value = StackVertex.class, name = "StackVertex"),
-                @JsonSubTypes.Type(value = UnstackVertex.class, name = "UnstackVertex"),
-                @JsonSubTypes.Type(value = L2Vertex.class, name = "L2Vertex"),
-                @JsonSubTypes.Type(value = ScaleVertex.class, name = "ScaleVertex"),
-                @JsonSubTypes.Type(value = L2NormalizeVertex.class, name = "L2NormalizeVertex")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyGraphVertexDeserializerHelper.class)
 public abstract class GraphVertex implements Cloneable, Serializable {
 
     @Override

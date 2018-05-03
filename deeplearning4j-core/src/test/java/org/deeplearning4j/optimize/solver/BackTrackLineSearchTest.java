@@ -9,7 +9,8 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.solvers.BackTrackLineSearch;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
@@ -58,12 +59,12 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
 
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
+        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient(), LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(1.0, step, 1e-3);
     }
@@ -76,14 +77,14 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
 
         BackTrackLineSearch lineSearch =
                         new BackTrackLineSearch(layer, new NegativeDefaultStepFunction(), layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
+        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient(), LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(1.0, step, 1e-3);
     }
@@ -97,19 +98,19 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
         INDArray origGradient = layer.gradient().gradient().dup();
 
         NegativeDefaultStepFunction sf = new NegativeDefaultStepFunction();
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, sf, layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
+        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient(), LayerWorkspaceMgr.noWorkspacesImmutable());
         INDArray currParams = layer.params();
         sf.step(currParams, origGradient, step);
         layer.setParams(currParams);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
 
         score2 = layer.score();
 
@@ -125,21 +126,21 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.MCXENT);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
         INDArray origGradient = layer.gradient().gradient().dup();
 
         DefaultStepFunction sf = new DefaultStepFunction();
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, sf, layer.getOptimizer());
         double step = lineSearch.optimize(layer.params().dup(), layer.gradient().gradient().dup(),
-                        layer.gradient().gradient().dup());
+                        layer.gradient().gradient().dup(), LayerWorkspaceMgr.noWorkspacesImmutable());
 
         INDArray currParams = layer.params();
         sf.step(currParams, origGradient, step);
         layer.setParams(currParams);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score2 = layer.score();
 
         assertTrue("score1 = " + score1 + ", score2 = " + score2, score1 < score2);
@@ -171,7 +172,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.SIGMOID, optimizer));
         network.init();
-        IterationListener listener = new ScoreIterationListener(1);
+        TrainingListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
         double oldScore = network.score(data);
         for( int i=0; i<100; i++ ) {
@@ -189,7 +190,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         data.normalizeZeroMeanZeroUnitVariance();
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
         network.init();
-        IterationListener listener = new ScoreIterationListener(1);
+        TrainingListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
         double firstScore = network.score(data);
 
@@ -208,7 +209,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         data.normalizeZeroMeanZeroUnitVariance();
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
         network.init();
-        IterationListener listener = new ScoreIterationListener(1);
+        TrainingListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
         double oldScore = network.score(data);
 
@@ -227,7 +228,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
         network.init();
-        IterationListener listener = new ScoreIterationListener(1);
+        TrainingListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
 
         for( int i=0; i<100; i++ ) {

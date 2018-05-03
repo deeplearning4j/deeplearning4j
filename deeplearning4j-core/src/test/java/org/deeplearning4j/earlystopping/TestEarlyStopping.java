@@ -239,7 +239,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                                         .iterationTerminationConditions(
                                                         new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
                                                         new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
-                                        //.scoreCalculator(new DataSetLossCalculator(irisIter, true))   //No score calculator in this test (don't need score)
+                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true))
                                         .modelSaver(saver).build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf, net, irisIter);

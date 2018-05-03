@@ -23,6 +23,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 import java.util.List;
@@ -233,8 +235,8 @@ public class TestVariableLengthTS extends BaseDL4JTest {
             FeedForwardToRnnPreProcessor temp = new FeedForwardToRnnPreProcessor();
             INDArray l0Before = activations2.get(1);
             INDArray l1Before = activations2.get(2);
-            INDArray l0After = temp.preProcess(l0Before, nExamples);
-            INDArray l1After = temp.preProcess(l1Before, nExamples);
+            INDArray l0After = temp.preProcess(l0Before, nExamples, LayerWorkspaceMgr.noWorkspaces());
+            INDArray l1After = temp.preProcess(l1Before, nExamples, LayerWorkspaceMgr.noWorkspaces());
 
             for (int j = 0; j < nExamples; j++) {
                 for (int k = 0; k < nIn; k++) {
@@ -564,8 +566,8 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                 inMaskReverseExp.putColumn(i, inMask.getColumn(inMask.size(1) - i - 1));
             }
 
-            INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in);
-            INDArray inMaskReverse = TimeSeriesUtils.reverseTimeSeriesMask(inMask);
+            INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
+            INDArray inMaskReverse = TimeSeriesUtils.reverseTimeSeriesMask(inMask, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
 
             assertEquals(inReverseExp, inReverse);
             assertEquals(inMaskReverseExp, inMaskReverse);

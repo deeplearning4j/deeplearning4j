@@ -18,7 +18,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.*;
@@ -147,7 +147,7 @@ public class ParameterAveragingTrainingMaster
         checkArgument(rddDataSetNumExamples > 0,
                         "Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
         checkArgument(averagingFrequency > 0, "Invalid input: averaging frequency must be >= 1");
-        checkArgument(aggregationDepth > 0, "Invalid input: tree aggregation depth must be >= 1");
+        checkArgument(aggregationDepth > 0, "Invalid input: tree aggregation channels must be >= 1");
 
         this.saveUpdater = saveUpdater;
         this.numWorkers = numWorkers;
@@ -620,12 +620,12 @@ public class ParameterAveragingTrainingMaster
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<TrainingListener> listeners) {
         setListeners(null, listeners);
     }
 
     @Override
-    public void setListeners(StatsStorageRouter statsStorage, Collection<IterationListener> listeners) {
+    public void setListeners(StatsStorageRouter statsStorage, Collection<TrainingListener> listeners) {
         this.statsStorage = statsStorage;
         this.listeners = listeners;
     }
@@ -998,10 +998,10 @@ public class ParameterAveragingTrainingMaster
          * <b>Note</b>: For large models trained with many partitions, increasing this number
          * will reduce the load on the driver and help prevent it from becoming a bottleneck.<br>
          *
-         * @param aggregationDepth RDD tree aggregation depth when averaging parameter updates.
+         * @param aggregationDepth RDD tree aggregation channels when averaging parameter updates.
          */
         public Builder aggregationDepth(int aggregationDepth) {
-            checkArgument(aggregationDepth > 0, "Invalid input: tree aggregation depth must be >= 1");
+            checkArgument(aggregationDepth > 0, "Invalid input: tree aggregation channels must be >= 1");
             this.aggregationDepth = aggregationDepth;
             return this;
         }

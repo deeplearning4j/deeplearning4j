@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn.graph;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -35,6 +34,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -48,10 +48,12 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -123,8 +125,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals(activations.size(),feedForward.size());
         assertEquals(activations.get("outputLayer"),feedForward.get(feedForward.size() - 1));
 
-        val graphForward = graph.feedForward(ds.getFeatureMatrix(),0,false);
-        val networkForward =  net.feedForwardToLayer(0,ds.getFeatureMatrix(),false);
+        Map<String,INDArray> graphForward = graph.feedForward(ds.getFeatureMatrix(),0,false);
+        List<INDArray> networkForward =  net.feedForwardToLayer(0,ds.getFeatureMatrix(),false);
         assertEquals(graphForward.get("firstLayer"),networkForward.get(1));
     }
 
@@ -691,7 +693,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
             s.feedForward(new INDArray[]{inData}, true, false); //FF without clearing inputs as we need them later
 
             org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
-            Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null);
+            ol.setLabels(outData);
+            Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null, LayerWorkspaceMgr.noWorkspaces());
 
             INDArray olEpsilon = olPairStd.getSecond();
 
@@ -750,7 +753,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
             // Compute Gradient
             Gradient gradient = graph.backpropGradient(error);
-            graph.getUpdater().update(gradient, 0, 0, minibatch);
+            graph.getUpdater().update(gradient, 0, 0, minibatch, LayerWorkspaceMgr.noWorkspaces());
 
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }
@@ -1338,10 +1341,20 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals(30, net.layerSize(2));
         assertEquals(13, net.layerSize(3));
 
+        assertEquals(3, net.layerInputSize(0));
+        assertEquals(0, net.layerInputSize(1));
+        assertEquals(((FeedForwardLayer)net.getLayer(2).conf().getLayer()).getNIn(), net.layerInputSize(2));
+        assertEquals(30, net.layerInputSize(3));
+
         assertEquals(6, net.layerSize("0"));
         assertEquals(0, net.layerSize("1"));
         assertEquals(30, net.layerSize("2"));
         assertEquals(13, net.layerSize("3"));
+
+        assertEquals(3, net.layerInputSize("0"));
+        assertEquals(0, net.layerInputSize("1"));
+        assertEquals(((FeedForwardLayer)net.getLayer(2).conf().getLayer()).getNIn(), net.layerInputSize("2"));
+        assertEquals(30, net.layerInputSize("3"));
     }
 
     @Test
@@ -1371,5 +1384,114 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraph net2 = TestUtils.testModelSerialization(net);
         INDArray out2 = net2.outputSingle(ds.getFeatures());
         assertEquals(out, out2);
+    }
+
+    @Test
+    public void scaleVertexGraphTest() {
+        final double scaleFactor = 2;
+        final double[] inputArr = new double[]{-2, -1, 0, 1, 2};//IntStream.rangeClosed(-2, 2).mapToDouble(i -> i).toArray();
+        final double[] expected = new double[inputArr.length];  //DoubleStream.of(inputArr).map(i -> i * scaleFactor).toArray();
+        for( int i=0; i<expected.length; i++ ){
+            expected[i] = inputArr[i] * scaleFactor;
+        }
+
+        final INDArray input = getInputArray4d(inputArr); // Replacing this line with the line below is enough to make test pass
+        //final INDArray input = Nd4j.create(new double[][]{inputArr});
+
+        final String inputName = "input";
+        final String outputName = "output";
+        final String scaleName = "scale";
+        final ComputationGraph graph = new ComputationGraph(new NeuralNetConfiguration.Builder()
+                //.inferenceWorkspaceMode(WorkspaceMode.NONE)
+                .graphBuilder()
+                .addInputs(inputName)
+                .setOutputs(outputName)
+                .setInputTypes(InputType.inferInputType(input))
+                .addVertex(scaleName, new ScaleVertex(scaleFactor), inputName)
+                .addLayer(outputName, new OutputLayer.Builder()
+                        .activation(new ActivationIdentity())
+                        .nOut(input.length())
+                        .biasInit(0)
+                        .build(), scaleName)
+                .build());
+        graph.init();
+
+        //graph.fit(new DataSet(input, Nd4j.ones(input.length()))); // Does not help
+        //graph.feedForward(new INDArray[] {input}, false); // Uncommenting this line is enough to make test pass
+
+        //Hack output layer to be identity mapping
+        graph.getOutputLayer(0).setParam("W", Nd4j.eye(input.length()));
+        graph.getOutputLayer(0).setParam("b", Nd4j.zeros(input.length()));
+        assertEquals("Incorrect output", Nd4j.create(expected), graph.outputSingle(input));
+    }
+
+    private static INDArray getInputArray4d(double[] inputArr) {
+        final INDArray input = Nd4j.create(1, 1, inputArr.length, 1);
+        for (int i = 0; i < input.length(); i++) {
+            input.putScalar(new int[]{0, 0, i, 0}, inputArr[i]);
+        }
+        return input;
+    }
+
+
+
+    @Test
+    public void testGraphOutputIterators(){
+
+        DataSet all = new IrisDataSetIterator(150,150).next();
+        DataSetIterator iter = new IrisDataSetIterator(5,150);
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .graphBuilder()
+                .addInputs("in")
+                .layer("layer", new OutputLayer.Builder().nIn(4).nOut(3).build(), "in")
+                .setOutputs("layer")
+                .build();
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+
+        INDArray outAll = cg.outputSingle(all.getFeatures());
+        INDArray outIter = cg.outputSingle(iter);
+
+        assertEquals(outAll, outIter);
+    }
+
+
+    @Test
+    public void testComputationGraphConfgurationActivationTypes(){
+
+        //Test for a simple net:
+
+        ComputationGraphConfiguration.GraphBuilder builder = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in1", "in2")
+                .layer("0", new DenseLayer.Builder().nOut(10).build(), "in1")
+                .layer("1", new DenseLayer.Builder().nOut(9).build(), "in1", "in2")
+                .layer("2", new DenseLayer.Builder().nOut(8).build(), "in2")
+                .layer("3", new DenseLayer.Builder().nOut(7).build(), "0")
+                .layer("4", new DenseLayer.Builder().nOut(6).build(), "1", "2")
+                .setInputTypes(InputType.feedForward(5), InputType.feedForward(6))
+                .allowNoOutput(true);
+
+        ComputationGraphConfiguration conf = builder.build();
+
+        Map<String,InputType> actBuilder = builder.getLayerActivationTypes();
+        Map<String,InputType> actConf = conf.getLayerActivationTypes(InputType.feedForward(5), InputType.feedForward(6));
+
+        Map<String, InputType> exp = new HashMap<>();
+        exp.put("in1", InputType.feedForward(5));
+        exp.put("in2", InputType.feedForward(6));
+        exp.put("0", InputType.feedForward(10));
+        exp.put("1", InputType.feedForward(9));
+        exp.put("1-merge", InputType.feedForward(5+6));
+        exp.put("2", InputType.feedForward(8));
+        exp.put("3", InputType.feedForward(7));
+        exp.put("4", InputType.feedForward(6));
+        exp.put("4-merge", InputType.feedForward(9+8));
+
+        assertEquals(exp, actBuilder);
+        assertEquals(exp, actConf);
     }
 }

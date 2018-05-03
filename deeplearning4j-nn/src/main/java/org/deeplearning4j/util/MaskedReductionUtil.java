@@ -159,7 +159,7 @@ public class MaskedReductionUtil {
 
     public static INDArray maskedPoolingConvolution(PoolingType poolingType, INDArray toReduce, INDArray mask,
                     boolean alongHeight, int pnorm) {
-        // [minibatch, depth, h=1, w=X] or [minibatch, depth, h=X, w=1] data
+        // [minibatch, channels, h=1, w=X] or [minibatch, channels, h=X, w=1] data
         // with a mask array of shape [minibatch, X]
 
         //If masking along height: broadcast dimensions are [0,2]
@@ -210,7 +210,7 @@ public class MaskedReductionUtil {
     public static INDArray maskedPoolingEpsilonCnn(PoolingType poolingType, INDArray input, INDArray mask,
                     INDArray epsilon2d, boolean alongHeight, int pnorm) {
 
-        // [minibatch, depth, h=1, w=X] or [minibatch, depth, h=X, w=1] data
+        // [minibatch, channels, h=1, w=X] or [minibatch, channels, h=X, w=1] data
         // with a mask array of shape [minibatch, X]
 
         //If masking along height: broadcast dimensions are [0,2]
@@ -247,7 +247,7 @@ public class MaskedReductionUtil {
                     return out;
                 }
 
-                //Note that with CNNs, current design is restricted to [minibatch, depth, 1, W] ot [minibatch, depth, H, 1]
+                //Note that with CNNs, current design is restricted to [minibatch, channels, 1, W] ot [minibatch, channels, H, 1]
                 INDArray nEachTimeSeries = mask.sum(1); //[minibatchSize,tsLength] -> [minibatchSize,1]
                 Nd4j.getExecutioner().exec(new BroadcastDivOp(out, nEachTimeSeries, out, 0));
 

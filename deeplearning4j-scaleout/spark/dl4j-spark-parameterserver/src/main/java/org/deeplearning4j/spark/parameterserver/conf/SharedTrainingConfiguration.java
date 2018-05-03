@@ -19,7 +19,7 @@ public class SharedTrainingConfiguration implements Serializable {
     protected VoidConfiguration voidConfiguration;
 
     @Builder.Default
-    protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
+    protected WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default
     protected int prefetchSize = 2;
     @Builder.Default

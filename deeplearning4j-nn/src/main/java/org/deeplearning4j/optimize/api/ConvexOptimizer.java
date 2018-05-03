@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
@@ -49,7 +50,7 @@ public interface ConvexOptimizer extends Serializable {
 
     void setUpdaterComputationGraph(ComputationGraphUpdater updater);
 
-    void setListeners(Collection<IterationListener> listeners);
+    void setListeners(Collection<TrainingListener> listeners);
 
     /**
      * This method specifies GradientsAccumulator instance to be used for updates sharing across multiple models
@@ -78,14 +79,14 @@ public interface ConvexOptimizer extends Serializable {
      * The gradient and score for this optimizer
      * @return the gradient and score for this optimizer
      */
-    Pair<Gradient, Double> gradientAndScore();
+    Pair<Gradient, Double> gradientAndScore(LayerWorkspaceMgr workspaceMgr);
 
     /**
      * Calls optimize
      * @return whether the convex optimizer
      * converted or not
      */
-    boolean optimize();
+    boolean optimize(LayerWorkspaceMgr workspaceMgr);
 
 
     /**
@@ -125,7 +126,7 @@ public interface ConvexOptimizer extends Serializable {
      * @param batchSize batchSize for update
      * @paramType paramType to update
      */
-    void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize);
+    void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, LayerWorkspaceMgr workspaceMgr);
 
     /**
      * Check termination conditions

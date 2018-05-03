@@ -9,7 +9,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
@@ -33,7 +34,7 @@ import java.util.UUID;
 /**
  * @author raver119@gmail.com
  */
-public class ConvolutionalIterationListener implements IterationListener {
+public class ConvolutionalIterationListener extends BaseTrainingListener {
 
     private enum Orientation {
         LANDSCAPE, PORTRAIT
@@ -95,7 +96,7 @@ public class ConvolutionalIterationListener implements IterationListener {
             UIServer.getInstance().attach((StatsStorage) ssr);
         }
 
-        System.out.println("ConvolutionIterationListener path: " + path);
+        System.out.println("ConvolutionTrainingListener path: " + path);
     }
 
     /**
@@ -116,7 +117,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                 MultiLayerNetwork l = (MultiLayerNetwork) model;
                 for (Layer layer : l.getLayers()) {
                     if (layer.type() == Layer.Type.CONVOLUTIONAL) {
-                        INDArray output = layer.activate();
+                        INDArray output = layer.activate(layer.input(), true, LayerWorkspaceMgr.noWorkspaces());
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
                             INDArray inputs = layer.input();
@@ -141,7 +142,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                 ComputationGraph l = (ComputationGraph) model;
                 for (Layer layer : l.getLayers()) {
                     if (layer.type() == Layer.Type.CONVOLUTIONAL) {
-                        INDArray output = layer.activate();
+                        INDArray output = layer.activate(layer.input(), true, LayerWorkspaceMgr.noWorkspaces());
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
                             INDArray inputs = layer.input();

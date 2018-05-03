@@ -31,8 +31,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -106,7 +107,7 @@ public class BarnesHutTsne implements Model {
     private INDArray gains;
     private INDArray yIncs;
     private int vpTreeWorkers;
-    protected transient IterationListener iterationListener;
+    protected transient TrainingListener TrainingListener;
     protected WorkspaceMode workspaceMode;
     protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
             .initialSize(0).overallocationLimit(0.3).policyLearning(LearningPolicy.FIRST_LOOP)
@@ -127,7 +128,7 @@ public class BarnesHutTsne implements Model {
     public BarnesHutTsne(int numDimensions, String simiarlityFunction, double theta, boolean invert, int maxIter,
                          double realMin, double initialMomentum, double finalMomentum, double momentum,
                          int switchMomentumIteration, boolean normalize, int stopLyingIteration, double tolerance,
-                         double learningRate, boolean useAdaGrad, double perplexity, IterationListener iterationListener,
+                         double learningRate, boolean useAdaGrad, double perplexity, TrainingListener TrainingListener,
                          double minGain,int vpTreeWorkers) {
         this.maxIter = maxIter;
         this.realMin = realMin;
@@ -145,7 +146,7 @@ public class BarnesHutTsne implements Model {
         this.numDimensions = numDimensions;
         this.simiarlityFunction = simiarlityFunction;
         this.theta = theta;
-        this.iterationListener = iterationListener;
+        this.TrainingListener = TrainingListener;
         this.invert = invert;
         this.vpTreeWorkers = vpTreeWorkers;
     }
@@ -312,7 +313,7 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void addListeners(IterationListener... listener) {
+    public void addListeners(TrainingListener... listener) {
         // no-op
     }
 
@@ -483,22 +484,22 @@ public class BarnesHutTsne implements Model {
     }
 
     /**
-     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      *
      * @param listeners
      */
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<org.deeplearning4j.optimize.api.TrainingListener> listeners) {
 
     }
 
     /**
-     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      *
      * @param listeners
      */
     @Override
-    public void setListeners(IterationListener... listeners) {
+    public void setListeners(TrainingListener... listeners) {
 
     }
 
@@ -539,8 +540,8 @@ public class BarnesHutTsne implements Model {
                         vals.divi(12);
 
 
-                    if (iterationListener != null) {
-                        iterationListener.iterationDone(this, i, 0);
+                    if (TrainingListener != null) {
+                        TrainingListener.iterationDone(this, i, 0);
                     }
 
 
@@ -709,7 +710,7 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
 
     }
 
@@ -753,10 +754,15 @@ public class BarnesHutTsne implements Model {
         throw new UnsupportedOperationException();
     }
 
-    @Override
+
     public void fit(INDArray data) {
         this.x = data;
         fit();
+    }
+
+    @Override
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr){
+        fit(data);
     }
 
     /**
@@ -769,11 +775,6 @@ public class BarnesHutTsne implements Model {
         this.x = data;
         this.numDimensions = nDims;
         fit();
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-
     }
 
     @Override

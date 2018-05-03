@@ -3,6 +3,7 @@ package org.deeplearning4j.datasets.datavec;
 
 import com.google.common.io.Files;
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.records.metadata.RecordMetaData;
@@ -19,6 +20,7 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -515,9 +517,9 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         f1.mkdirs();
         f2.mkdirs();
 
-        writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
+        TestUtils.writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
                         new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
-        writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
+        TestUtils.writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
                         new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
 
 
@@ -569,9 +571,9 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         f1.mkdirs();
         f2.mkdirs();
 
-        writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
+        TestUtils.writeStreamToFile(new File(FilenameUtils.concat(f1.getPath(), "Zico_0001.jpg")),
                         new ClassPathResource("lfwtest/Zico/Zico_0001.jpg").getInputStream());
-        writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
+        TestUtils.writeStreamToFile(new File(FilenameUtils.concat(f2.getPath(), "Ziwang_Xu_0001.jpg")),
                         new ClassPathResource("lfwtest/Ziwang_Xu/Ziwang_Xu_0001.jpg").getInputStream());
 
         int outputNum = 2;
@@ -620,14 +622,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
         assertEquals(expLabels, d1.getLabels());
         assertEquals(expLabels, d2.getLabels());
     }
-
-
-    private static void writeStreamToFile(File out, InputStream is) throws IOException {
-        byte[] b = IOUtils.toByteArray(is);
-        try (OutputStream os = new BufferedOutputStream(new FileOutputStream(out))) {
-            os.write(b);
-        }
-    }
+    
 
 
 
@@ -747,5 +742,42 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
     private static List<Writable> l(Writable... in){
         return Arrays.asList(in);
+    }
+
+
+
+    @Test
+    public void testExcludeStringColCSV() throws Exception {
+        File csvFile = temporaryFolder.newFile();
+
+        StringBuilder sb = new StringBuilder();
+        for(int i=1; i<=10; i++ ){
+            if(i > 1){
+                sb.append("\n");
+            }
+            sb.append("skip_").append(i).append(",").append(i).append(",").append(i + 0.5);
+        }
+        FileUtils.writeStringToFile(csvFile, sb.toString());
+
+        RecordReader rr = new CSVRecordReader();
+        rr.initialize(new FileSplit(csvFile));
+
+        RecordReaderMultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(10)
+                .addReader("rr", rr)
+                .addInput("rr", 1, 1)
+                .addOutput("rr", 2, 2)
+                .build();
+
+        INDArray expFeatures = Nd4j.linspace(1,10,10).transpose();
+        INDArray expLabels = Nd4j.linspace(1,10,10).addi(0.5).transpose();
+
+        MultiDataSet mds = rrmdsi.next();
+        assertFalse(rrmdsi.hasNext());
+
+        assertEquals(expFeatures, mds.getFeatures(0));
+        assertEquals(expLabels, mds.getLabels(0));
+
+
+
     }
 }

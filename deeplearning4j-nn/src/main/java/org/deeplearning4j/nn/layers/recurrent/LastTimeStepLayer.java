@@ -10,6 +10,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -40,7 +42,7 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         INDArray newEps = Nd4j.create(origOutputShape, 'f');
         if(lastTimeStepIdxs == null){
             //no mask case
@@ -54,59 +56,18 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
                 newEps.put(arr, epsilon.getRow(i));
             }
         }
-        return underlying.backpropGradient(newEps);
-    }
-
-
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return getLastStep(underlying.preOutput(x));
+        return underlying.backpropGradient(newEps, workspaceMgr);
     }
 
     @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return getLastStep(underlying.preOutput(x, training));
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return getLastStep(underlying.activate(training, workspaceMgr), workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
     @Override
-    public INDArray activate(TrainingMode training) {
-        return getLastStep(underlying.activate(training));
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return getLastStep(underlying.activate(input, training));
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return getLastStep(underlying.activate(x, training));
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
-        return getLastStep(underlying.activate(training));
-    }
-
-    @Override
-    public INDArray activate(INDArray input, boolean training) {
-        INDArray a = underlying.activate(input, training);
-        return getLastStep(a);
-    }
-
-    @Override
-    public INDArray activate() {
-        return getLastStep(underlying.activate());
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        return getLastStep(underlying.activate(input));
-    }
-
-    @Override
-    public void migrateInput() {
-        underlying.migrateInput();
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        INDArray a = underlying.activate(input, training, workspaceMgr);
+        return getLastStep(a, workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
 
@@ -119,7 +80,7 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
     }
 
 
-    private INDArray getLastStep(INDArray in){
+    private INDArray getLastStep(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType){
         if(in.rank() != 3){
             throw new IllegalArgumentException("Expected rank 3 input with shape [minibatch, layerSize, tsLength]. Got " +
                     "rank " + in.rank() + " with shape " + Arrays.toString(in.shape()));
@@ -127,7 +88,7 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
         origOutputShape = in.shape();
 
         INDArray mask = underlying.getMaskArray();
-        Pair<INDArray,int[]> p = TimeSeriesUtils.pullLastTimeSteps(in, mask);
+        Pair<INDArray,int[]> p = TimeSeriesUtils.pullLastTimeSteps(in, mask, workspaceMgr, arrayType);
         lastTimeStepIdxs = p.getSecond();
         return p.getFirst();
     }

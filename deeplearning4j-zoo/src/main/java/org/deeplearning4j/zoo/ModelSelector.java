@@ -14,11 +14,11 @@ import java.util.Map;
 public class ModelSelector {
 
     public static Map<ZooType, ZooModel> select(ZooType zooType) {
-        return select(zooType, 1, 123,  WorkspaceMode.SEPARATE);
+        return select(zooType, 1, 123,  WorkspaceMode.ENABLED);
     }
 
     public static Map<ZooType, ZooModel> select(ZooType zooType, int numLabels) {
-        return select(zooType, numLabels, 123, WorkspaceMode.SEPARATE);
+        return select(zooType, numLabels, 123, WorkspaceMode.ENABLED);
     }
 
     public static Map<ZooType, ZooModel> select(ZooType zooType, int numLabels, WorkspaceMode workspaceMode) {
@@ -26,7 +26,7 @@ public class ModelSelector {
     }
 
     public static Map<ZooType, ZooModel> select(ZooType zooType, int numLabels, int seed) {
-        return select(zooType, numLabels, seed, WorkspaceMode.SEPARATE);
+        return select(zooType, numLabels, seed, WorkspaceMode.ENABLED);
     }
 
     /**
@@ -46,7 +46,7 @@ public class ModelSelector {
     }
 
     public static Map<ZooType, ZooModel> select(ZooType... zooTypes) {
-        return select(0, 123, WorkspaceMode.SEPARATE, zooTypes);
+        return select(0, 123, WorkspaceMode.ENABLED, zooTypes);
     }
 
     /**

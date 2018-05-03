@@ -7,8 +7,9 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -52,53 +53,18 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return underlying.backpropGradient(epsilon);
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        return underlying.backpropGradient(epsilon, workspaceMgr);
     }
 
     @Override
-    public INDArray preOutput(INDArray x) {
-        return underlying.preOutput(x);
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return underlying.activate(training, workspaceMgr);
     }
 
     @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return underlying.preOutput(x, training);
-    }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
-        return underlying.activate(training);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return underlying.activate(input, training);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return underlying.preOutput(x, training);
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
-        return underlying.activate(training);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, boolean training) {
-        return underlying.activate(input, training);
-    }
-
-    @Override
-    public INDArray activate() {
-        return underlying.activate();
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        return underlying.activate(input);
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return underlying.activate(input, training, workspaceMgr);
     }
 
     @Override
@@ -112,17 +78,17 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public Collection<IterationListener> getListeners() {
+    public Collection<TrainingListener> getListeners() {
         return underlying.getListeners();
     }
 
     @Override
-    public void setListeners(IterationListener... listeners) {
+    public void setListeners(TrainingListener... listeners) {
         underlying.setListeners(listeners);
     }
 
     @Override
-    public void addListeners(IterationListener... listener) {
+    public void addListeners(TrainingListener... listener) {
         underlying.addListeners(listener);
     }
 
@@ -147,8 +113,8 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public void computeGradientAndScore() {
-        underlying.computeGradientAndScore();
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
+        underlying.computeGradientAndScore(workspaceMgr);
     }
 
     @Override
@@ -192,13 +158,8 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public void fit(INDArray data) {
-        underlying.fit(data);
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-        underlying.iterate(input);
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
+        underlying.fit(data, workspaceMgr);
     }
 
     @Override
@@ -287,7 +248,7 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<TrainingListener> listeners) {
         underlying.setListeners(listeners);
     }
 
@@ -322,8 +283,8 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public void setInput(INDArray input) {
-        underlying.setInput(input);
+    public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        underlying.setInput(input, workspaceMgr);
     }
 
     @Override

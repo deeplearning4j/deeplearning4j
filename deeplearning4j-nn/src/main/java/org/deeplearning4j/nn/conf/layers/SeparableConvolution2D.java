@@ -7,17 +7,12 @@ import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
-import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer;
-import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.params.SeparableConvolutionParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
@@ -28,13 +23,13 @@ import java.util.*;
  * Separable convolutions split a regular convolution operation into two
  * simpler operations, which are usually computationally more efficient.
  *
- * The first step in a separable convolution is a depth-wise convolution, which
- * operates on each of the input maps separately. A depth multiplier is used to
+ * The first step in a separable convolution is a channels-wise convolution, which
+ * operates on each of the input maps separately. A channels multiplier is used to
  * specify the number of outputs per input map in this step. This convolution
  * is carried out with the specified kernel sizes, stride and padding values.
  *
  * The second step is a point-wise operation, in which the intermediary outputs
- * of the depth-wise convolution are mapped to the desired number of feature
+ * of the channels-wise convolution are mapped to the desired number of feature
  * maps, by using a 1x1 convolution.
  *
  * The result of chaining these two operations will result in a tensor of the
@@ -53,7 +48,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
     /**
      * SeparableConvolution2D layer
      * nIn in the input layer is the number of channels
-     * nOut is the number of filters to be used in the net or in other words the depth
+     * nOut is the number of filters to be used in the net or in other words the channels
      * The builder specifies the filter/kernel size, the stride and padding
      * The pooling layer takes the kernel size
      */
@@ -140,13 +135,13 @@ public class SeparableConvolution2D extends ConvolutionLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("SeparableConvolution2D", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer ret =
                 new org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer(conf);
-        ret.setListeners(iterationListeners);
+        ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -194,10 +189,10 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         }
 
         /**
-         * Set depth multiplier of depth-wise step in separable convolution
+         * Set channels multiplier of channels-wise step in separable convolution
          *
          * @param depthMultiplier integer value, for each input map we get depthMultipler
-         *                        outputs in depth-wise step.
+         *                        outputs in channels-wise step.
          * @return Builder
          */
         public  Builder depthMultiplier(int depthMultiplier) {

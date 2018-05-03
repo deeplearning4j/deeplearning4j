@@ -28,14 +28,14 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
 import java.util.Map;
 
 /**
- * Space to depth utility layer configuration for convolutional input types.
+ * Space to channels utility layer configuration for convolutional input types.
  * <p>
  * This operation takes 4D array in, in either NCHW or NHWC format, and moves data from spatial dimensions (HW)
  * to channels (C) for given blockSize
@@ -77,12 +77,12 @@ public class SpaceToDepthLayer extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<IterationListener> iterationListeners,
+                                                       Collection<TrainingListener> trainingListeners,
                                                        int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.SpaceToDepth ret =
                 new org.deeplearning4j.nn.layers.convolution.SpaceToDepth(conf);
-        ret.setListeners(iterationListeners);
+        ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -105,12 +105,12 @@ public class SpaceToDepthLayer extends Layer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
-            throw new IllegalStateException("Invalid input for space to depth layer (layer name=\"" + getLayerName()
+            throw new IllegalStateException("Invalid input for space to channels layer (layer name=\"" + getLayerName()
                     + "\"): Expected CNN input, got " + inputType);
         }
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         return InputType.convolutional(
-                i.getHeight() / blockSize, i.getWidth() / blockSize, i.getDepth() * blockSize * blockSize
+                i.getHeight() / blockSize, i.getWidth() / blockSize, i.getChannels() * blockSize * blockSize
         );
     }
 
@@ -128,7 +128,7 @@ public class SpaceToDepthLayer extends Layer {
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
-            throw new IllegalStateException("Invalid input for space to depth layer (layer name=\"" + getLayerName()
+            throw new IllegalStateException("Invalid input for space to channels layer (layer name=\"" + getLayerName()
                     + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());

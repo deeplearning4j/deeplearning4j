@@ -52,26 +52,6 @@ public class TestCustomLayers extends BaseDL4JTest {
 
     @Test
     public void testJsonMultiLayerNetwork() {
-        //First: Ensure that the CustomLayer class is registered
-        ObjectMapper mapper = NeuralNetConfiguration.mapper();
-
-        AnnotatedClass ac = AnnotatedClass.construct(Layer.class,
-                        mapper.getSerializationConfig().getAnnotationIntrospector(), null);
-        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac,
-                        mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
-        Set<Class<?>> registeredSubtypes = new HashSet<>();
-        boolean found = false;
-        for (NamedType nt : types) {
-            System.out.println(nt);
-            //            registeredSubtypes.add(nt.getType());
-            if (nt.getType() == CustomLayer.class)
-                found = true;
-        }
-
-        assertTrue("CustomLayer: not registered with NeuralNetConfiguration mapper", found);
-
-        //Second: let's create a MultiLayerCofiguration with one, and check JSON and YAML config actually works...
-
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().list()
                                         .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
@@ -142,24 +122,6 @@ public class TestCustomLayers extends BaseDL4JTest {
 
     @Test
     public void testCustomOutputLayerMLN() {
-        //First: Ensure that the CustomOutputLayer class is registered
-        ObjectMapper mapper = NeuralNetConfiguration.mapper();
-
-        AnnotatedClass ac = AnnotatedClass.construct(Layer.class,
-                        mapper.getSerializationConfig().getAnnotationIntrospector(), null);
-        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac,
-                        mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
-        Set<Class<?>> registeredSubtypes = new HashSet<>();
-        boolean found = false;
-        for (NamedType nt : types) {
-            System.out.println(nt);
-            //            registeredSubtypes.add(nt.getType());
-            if (nt.getType() == CustomOutputLayer.class)
-                found = true;
-        }
-
-        assertTrue("CustomOutputLayer: not registered with NeuralNetConfiguration mapper", found);
-
         //Second: let's create a MultiLayerCofiguration with one, and check JSON and YAML config actually works...
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().seed(12345).list()

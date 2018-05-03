@@ -49,6 +49,9 @@ public class KerasActivationUtils {
             dl4jActivation = new ActivationSoftSign();
         } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_RELU())) {
             dl4jActivation = new ActivationReLU();
+        } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_RELU6())) {
+            // TODO: map to relu6
+            dl4jActivation = new ActivationReLU();
         } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_ELU())) {
             dl4jActivation = new ActivationELU();
         } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_SELU())) {

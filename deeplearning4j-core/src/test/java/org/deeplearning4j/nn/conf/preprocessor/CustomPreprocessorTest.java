@@ -25,24 +25,6 @@ public class CustomPreprocessorTest extends BaseDL4JTest {
 
     @Test
     public void testCustomPreprocessor() {
-        //First: Ensure that the CustomLayer class is registered
-        ObjectMapper mapper = NeuralNetConfiguration.mapper();
-
-        AnnotatedClass ac = AnnotatedClass.construct(InputPreProcessor.class,
-                        mapper.getSerializationConfig().getAnnotationIntrospector(), null);
-        Collection<NamedType> types = mapper.getSubtypeResolver().collectAndResolveSubtypes(ac,
-                        mapper.getSerializationConfig(), mapper.getSerializationConfig().getAnnotationIntrospector());
-        boolean found = false;
-        for (NamedType nt : types) {
-            //            System.out.println(nt);
-            if (nt.getType() == MyCustomPreprocessor.class) {
-                found = true;
-                break;
-            }
-        }
-
-        assertTrue("MyCustomPreprocessor: not registered with NeuralNetConfiguration mapper", found);
-
         //Second: let's create a MultiLayerCofiguration with one, and check JSON and YAML config actually works...
         MultiLayerConfiguration conf =
                         new NeuralNetConfiguration.Builder().list()

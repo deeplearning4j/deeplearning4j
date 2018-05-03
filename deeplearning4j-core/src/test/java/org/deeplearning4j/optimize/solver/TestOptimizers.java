@@ -15,8 +15,9 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.ConjugateGradient;
 import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.solvers.LineGradientDescent;
@@ -197,7 +198,7 @@ public class TestOptimizers extends BaseDL4JTest {
         org.nd4j.linalg.api.rng.distribution.Distribution dist =
                         new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -10, 10);
         Model m = new SphereFunctionModel(nDimensions, dist, conf);
-        m.computeGradientAndScore();
+        m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         double scoreBefore = m.score();
         assertTrue(!Double.isNaN(scoreBefore) && !Double.isInfinite(scoreBefore));
         if (PRINT_OPT_RESULTS) {
@@ -210,9 +211,9 @@ public class TestOptimizers extends BaseDL4JTest {
 
         opt.setupSearchState(m.gradientAndScore());
         for( int i=0; i<100; i++ ) {
-            opt.optimize();
+            opt.optimize(LayerWorkspaceMgr.noWorkspaces());
         }
-        m.computeGradientAndScore();
+        m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         double scoreAfter = m.score();
 
         assertTrue(!Double.isNaN(scoreAfter) && !Double.isInfinite(scoreAfter));
@@ -287,14 +288,14 @@ public class TestOptimizers extends BaseDL4JTest {
 
             Model m = new SphereFunctionModel(100, dist, conf);
             if (i == 0) {
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
                 for( int j=0; j<100; j++ ) {
-                    opt.optimize();
+                    opt.optimize(LayerWorkspaceMgr.noWorkspaces());
                 }
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
             }
@@ -328,7 +329,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
 
         @Override
-        public void computeGradientAndScore() {
+        public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
             // Gradients: d(x^2)/dx = 2x
             INDArray gradient = parameters.mul(2);
             Gradient g = new DefaultGradient();
@@ -359,7 +360,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setListeners(IterationListener... listeners) {
+        public void setListeners(TrainingListener... listeners) {
 
         }
 
@@ -369,7 +370,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
 
         }
 
@@ -424,13 +425,13 @@ public class TestOptimizers extends BaseDL4JTest {
             Model m = new RastriginFunctionModel(10, conf);
             int nParams = m.numParams();
             if (i == 0) {
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
                 opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {1, nParams}, 'c'), true);
-                opt.optimize();
-                m.computeGradientAndScore();
+                opt.optimize(LayerWorkspaceMgr.noWorkspaces());
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
             }
@@ -475,7 +476,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
 
         @Override
-        public void computeGradientAndScore() {
+        public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
             //Gradient decomposes due to sum, so:
             //d(x^2 - 10*cos(2*Pi*x))/dx
             // = 2x + 20*pi*sin(2*Pi*x)
@@ -496,6 +497,11 @@ public class TestOptimizers extends BaseDL4JTest {
 
                 @Override
                 public double getValue() {
+                    return 0;
+                }
+
+                @Override
+                public double epsThreshold() {
                     return 0;
                 }
 
@@ -548,7 +554,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setListeners(IterationListener... listeners) {
+        public void setListeners(TrainingListener... listeners) {
 
         }
 
@@ -558,7 +564,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
 
         }
 
@@ -608,12 +614,12 @@ public class TestOptimizers extends BaseDL4JTest {
 
             Model m = new RosenbrockFunctionModel(100, conf);
             if (i == 0) {
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
-                opt.optimize();
-                m.computeGradientAndScore();
+                opt.optimize(LayerWorkspaceMgr.noWorkspaces());
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[i] = m.score();
                 assertTrue("NaN or infinite score: " + scores[i],
                                 !Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
@@ -661,7 +667,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void computeGradientAndScore() {
+        public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
             int nDims = parameters.length();
             INDArray gradient = Nd4j.zeros(nDims);
             double x0 = parameters.getDouble(0);
@@ -692,6 +698,11 @@ public class TestOptimizers extends BaseDL4JTest {
 
                 @Override
                 public double getValue() {
+                    return 0;
+                }
+
+                @Override
+                public double epsThreshold() {
                     return 0;
                 }
 
@@ -746,7 +757,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setListeners(IterationListener... listeners) {
+        public void setListeners(TrainingListener... listeners) {
 
         }
 
@@ -756,7 +767,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
 
         }
 
@@ -793,7 +804,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void addListeners(IterationListener... listener) {
+        public void addListeners(TrainingListener... listener) {
             // no-op
         }
 
@@ -806,27 +817,12 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public INDArray preOutput(INDArray x, TrainingMode training) {
-            return null;
-        }
-
-        @Override
-        public INDArray activate(TrainingMode training) {
-            return null;
-        }
-
-        @Override
-        public INDArray activate(INDArray input, TrainingMode training) {
-            return null;
-        }
-
-        @Override
         public int getIndex() {
             return 0;
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
 
         }
 
@@ -843,7 +839,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setListeners(IterationListener... listeners) {
+        public void setListeners(TrainingListener... listeners) {
 
         }
 
@@ -853,17 +849,12 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public INDArray preOutput(INDArray x, boolean training) {
+        public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
             return null;
         }
 
         @Override
-        public INDArray activate(boolean training) {
-            return null;
-        }
-
-        @Override
-        public INDArray activate(INDArray input, boolean training) {
+        public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
             return null;
         }
 
@@ -888,7 +879,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void computeGradientAndScore() {
+        public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
             throw new UnsupportedOperationException("Ensure you implement this function.");
         }
 
@@ -913,18 +904,13 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void fit(INDArray data) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void iterate(INDArray input) {
+        public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public Pair<Gradient, Double> gradientAndScore() {
-            computeGradientAndScore();
+            computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
             return new Pair<>(gradient(), score());
         }
 
@@ -999,22 +985,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray preOutput(INDArray x) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray activate() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray activate(INDArray input) {
+        public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr mgr) {
             throw new UnsupportedOperationException();
         }
 
@@ -1029,12 +1000,12 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public Collection<IterationListener> getListeners() {
+        public Collection<TrainingListener> getListeners() {
             return null;
         }
 
         @Override
-        public void setListeners(Collection<IterationListener> listeners) {
+        public void setListeners(Collection<TrainingListener> listeners) {
             throw new UnsupportedOperationException();
         }
 
@@ -1092,11 +1063,6 @@ public class TestOptimizers extends BaseDL4JTest {
 
         @Override
         public void setEpochCount(int epochCount) {
-
-        }
-
-        @Override
-        public void migrateInput() {
 
         }
     }

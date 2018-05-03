@@ -115,9 +115,9 @@ public class TestRnnLayers extends BaseDL4JTest {
 
 
             List<Triple<Integer,Integer,Boolean>> expected = Arrays.asList(
-                    new Triple<>(0, 0, false),
-                    new Triple<>(1, 0, false),
-                    new Triple<>(2, 0, false));
+                    new Triple<>(0, 0, true),
+                    new Triple<>(1, 0, true),
+                    new Triple<>(2, 0, true));
 
             assertEquals(s, expected, cd.getAllCalls());
         }
