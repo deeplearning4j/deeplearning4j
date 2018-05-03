@@ -29,9 +29,12 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+
+import static org.nd4j.linalg.api.shape.Shape.hasDefaultStridesForShape;
 
 /**
  * Embedding layer for sequences: feed-forward layer that expects fixed-length number (inputLength) of integers/indices
@@ -57,19 +60,23 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         INDArray z = preOutput(true, workspaceMgr);
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst();
 
+        int inputLength = layerConf().getInputLength();
+        int numSamples = input.rows();
+        int nOut = layerConf().getNOut();
+        delta = delta.permute(2, 0, 1);
+        delta = delta.reshape(inputLength * numSamples, nOut);
+        
         if (maskArray != null) {
-            INDArray maskDelta = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.shape(), 'c');
+            INDArray maskDelta = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.shape(), 'f');
             delta = Broadcast.mul(delta, maskArray, maskDelta, 0, 2);
         }
 
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
-        int rows = input.rows();
-        int[] indexes = new int[rows * input.columns()];
-        for (int i = 0; i < indexes.length; i++) {
-            indexes[i] = input.getInt(i % rows, i / rows);
-        }
+        if (!hasDefaultStridesForShape(input))
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
+        int[] indexes = input.data().asInt();
 
         ScatterUpdate op = new ScatterUpdate(weightGradients, delta, indexes, WEIGHT_DIM, ScatterUpdate.UpdateOp.ADD);
         Nd4j.getExecutioner().exec(op);
@@ -101,7 +108,11 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         int nIn = layerConf().getNIn();
         int numRows = input.rows();
         int inputLength = layerConf().getInputLength();
-        int[] indexes = new int[numRows * inputLength];
+        if (!hasDefaultStridesForShape(input))
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
+
+        int[] indexes = input.data().asInt();
+
         for (int i = 0; i < indexes.length; i++) {
             indexes[i] = input.getInt(i % numRows, i / numRows);
             if (indexes[i] < 0 || indexes[i] >= nIn) {
@@ -114,18 +125,19 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
-        INDArray destination = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.size(0), weights.size(1));
+        int nOut = layerConf().getNOut();
+        INDArray destination = workspaceMgr.createUninitialized(
+                ArrayType.ACTIVATIONS, numRows * inputLength, nOut);
         INDArray rows = Nd4j.pullRows(weights, destination, 1, indexes);
 
-        int nOut = layerConf().getNOut();
-        int[] shape = new int[] {numRows, nOut, inputLength};
+        int[] shape = new int[]{inputLength, numRows, nOut};
         INDArray ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, rows.reshape('c', shape));
 
         if (hasBias()) {
             ret.addiRowVector(bias);
         }
 
-        return ret;
+        return ret.permute(1, 2, 0);
     }
 
     @Override
