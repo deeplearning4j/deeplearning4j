@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -84,7 +85,8 @@ public class Subsampling3DLayer extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                                                       Collection<TrainingListener> iterationListeners,
+                                                       int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling3DLayer ret =
                 new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling3DLayer(conf);
