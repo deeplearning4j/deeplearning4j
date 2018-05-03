@@ -21,7 +21,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.layers.{ OutputLayer => JOutputLayer }
 import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
-import org.deeplearning4j.optimize.api.IterationListener
+import org.deeplearning4j.optimize.api.TrainingListener
 import org.deeplearning4j.scalnet.layers.core.{ Node, OutputLayer }
 import org.deeplearning4j.scalnet.logging.Logging
 import org.nd4j.linalg.api.ndarray.INDArray
@@ -99,7 +99,7 @@ trait Model extends Logging {
     * @param nbEpoch   number of epochs to train
     * @param listeners callbacks for monitoring training
     */
-  def fit(iter: DataSetIterator, nbEpoch: Int, listeners: List[IterationListener]): Unit = {
+  def fit(iter: DataSetIterator, nbEpoch: Int, listeners: List[TrainingListener]): Unit = {
     model.setListeners(listeners.asJavaCollection)
     for (epoch <- 0 until nbEpoch) {
       logger.info("Epoch " + epoch)
@@ -113,7 +113,7 @@ trait Model extends Logging {
     * @param nbEpoch    number of epochs to train
     * @param listeners  callbacks for monitoring training
     */
-  def fit(dataset: DataSet, nbEpoch: Int, listeners: List[IterationListener]): Unit = {
+  def fit(dataset: DataSet, nbEpoch: Int, listeners: List[TrainingListener]): Unit = {
     model.setListeners(listeners.asJavaCollection)
     for (epoch <- 0 until nbEpoch) {
       logger.info("Epoch " + epoch)
