@@ -172,14 +172,7 @@ public class Keras2ModelConfigurationTest {
 
     @Test
     public void embeddingConcatTest() throws Exception {
-        String modelPath = "/configs/keras2/model_concat_embedding_sequences_tf_keras_2.json";
-
-        ClassPathResource configResource = new ClassPathResource(modelPath, classLoader);
-        ComputationGraphConfiguration config =
-                new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).inputShape(new int[]{10, 100}).buildModel().getComputationGraphConfiguration();
-        ComputationGraph model = new ComputationGraph(config);
-        model.init();
+        runModelConfigTest("/configs/keras2/model_concat_embedding_sequences_tf_keras_2.json");
     }
 
 

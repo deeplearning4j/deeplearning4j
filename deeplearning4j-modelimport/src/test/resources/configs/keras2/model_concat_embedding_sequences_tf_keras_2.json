@@ -9,7 +9,7 @@
           "dtype": "int32",
           "batch_input_shape": [
             null,
-            100
+            10
           ],
           "name": "word_ids",
           "sparse": false
@@ -30,7 +30,7 @@
           },
           "name": "embedding_1",
           "dtype": "float32",
-          "output_dim": 100,
+          "output_dim": 10,
           "trainable": true,
           "embeddings_regularizer": null,
           "input_dim": 4014,
@@ -126,10 +126,12 @@
               "recurrent_activation": "hard_sigmoid",
               "trainable": true,
               "recurrent_initializer": {
-                "class_name": "Orthogonal",
+                "class_name": "VarianceScaling",
                 "config": {
+                  "distribution": "uniform",
+                  "scale": 1,
                   "seed": null,
-                  "gain": 1
+                  "mode": "fan_avg"
                 }
               },
               "use_bias": true,
