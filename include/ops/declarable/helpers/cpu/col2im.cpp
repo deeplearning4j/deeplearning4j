@@ -42,6 +42,8 @@ namespace nd4j {
                 int inRowStart, inColStart, inRow, inCol;
                 T *out0, *out1, *out2;
 
+                memset(out, 0, shape::length(outShapeInfo) * sizeof(T));
+
                 if (shape::order(inShapeInfo) == 'c' &&  shape::order(outShapeInfo) == 'c' && shape::strideDescendingCAscendingF(inShapeInfo) && shape::strideDescendingCAscendingF(outShapeInfo)) {
 
 #pragma omp parallel for schedule(guided) proc_bind(close) private(out0, out1, out2, inRowStart, inColStart, inRow, inCol)
@@ -66,9 +68,6 @@ namespace nd4j {
                                         else {
                                             inCol = inColStart;
                                             out1 = out0 + inRow * outStride2;
-
-                                            // if (channel == iC && is_a_ge_zero_and_a_lt_b(inCol, iW))
-                                            //     *(out1 + inCol * outStride3) = (T) 0.0f;
 
                                             for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, input += inStride5) {
                                                 if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
@@ -112,9 +111,6 @@ namespace nd4j {
                                         else {
                                             inCol = inColStart;
                                             out1 = out0 + inRow * outStride2;
-
-                                            // if (channel == iC && is_a_ge_zero_and_a_lt_b(inCol, iW))
-                                            //     *(out1 + inCol * outStride3) = (T) 0.0f;
 
                                             for (int outCol = 0; outCol < oW; ++outCol, inCol+=sW, in4+=inStride5) {
                                                 if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
