@@ -14,6 +14,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -98,9 +99,47 @@ public class OCNNOutputLayerTest {
                 + ",=" + "sigmoid" + ", doLearningFirst=" + doLearningFirst;
         assertTrue(msg, gradOK);
 
-    
-        INDArray output = network.output(arr);
+
+
+    }
+
+    @Test
+    public void testOutput() {
+        DataSetIterator dataSetIterator = new IrisDataSetIterator(150,150);
+        DataSet ds = dataSetIterator.next();
+        NormalizerStandardize normalizerStandardize = new NormalizerStandardize();
+        normalizerStandardize.fit(dataSetIterator);
+        dataSetIterator.reset();
+        dataSetIterator.setPreProcessor(normalizerStandardize);
+
+        int numHidden = 2;
+        int nIn = 4;
+        boolean doLearningFirst = true;
+        MultiLayerConfiguration configuration = new NeuralNetConfiguration.Builder()
+                .seed(42).miniBatch(false)
+                .list(new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder().nIn(4)
+                        .nu(0.002)
+                        .nOut(2)
+                        .hiddenLayerSize(numHidden).build())
+                .build();
+        MultiLayerNetwork network = new MultiLayerNetwork(configuration);
+        network.init();
+
+        DataSet next = dataSetIterator.next();
+        INDArray arr = next.getFeatureMatrix();
+        normalizerStandardize.transform(arr);
+        network.setInput(arr);
+        ds = new DataSet(arr.getRows(0,101),next.getLabels());
+        network.setLabels(next.getLabels());
+        network.setListeners(new ScoreIterationListener(1));
+
+        for (int j = 0; j < 1000; j++) {
+            network.fit(ds);
+        }
+
+        INDArray output = network.output(arr.getRows(ArrayUtil.range(102,149)));
         System.out.println(output);
     }
+
 
 }
