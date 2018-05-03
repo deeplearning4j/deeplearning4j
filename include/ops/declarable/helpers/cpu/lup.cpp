@@ -25,15 +25,17 @@ namespace helpers {
     void invertLowerMatrix(NDArray<T>* inputMatrix, NDArray<T>* invertedMatrix) {
         int n = inputMatrix->rows();
         invertedMatrix->assign(T(0.0));
-
+#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 0; i < n; i++)
             (*invertedMatrix)(i, i) = T(1.0);
 
         if (inputMatrix->isIdentityMatrix()) return;
 
+#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 1; i < n; i++)
             (*invertedMatrix)(i, i - 1) = -(*inputMatrix)(i, i - 1);
 
+#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 2; i < n; i++) {
             for (int j = i - 2; j > -1; --j) 
                 for (int k = 0; k < i; k++) 
@@ -54,11 +56,15 @@ namespace helpers {
             return;
         }
 
+#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 0; i < n; i++)
             (*invertedMatrix)(i, i)  /= (*inputMatrix)(i, i);
 
+#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = 0; i < n - 1; i++)
             (*invertedMatrix)(i, i + 1) -= (*inputMatrix)(i, i + 1) * (*invertedMatrix)(i + 1, i + 1) / (*inputMatrix)(i, i);
+
+#pragma omp parallel for if(n > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int i = n - 2; i > - 1; i--) {
             for (int j = i + 2; j < n; j++) 
                 for (int k = i; k < n; k++) 
@@ -77,14 +83,17 @@ namespace helpers {
         const int columnNum = input->columns();
 
         T determinant = (T)1.0;
-        std::unique_ptr<NDArray<T>> compoundMatrix(new NDArray<T>(*input)); // copy
+        std::unique_ptr<NDArray<T>> compoundMatrix(input->dup()); // copy
         std::unique_ptr<NDArray<T>> permutationMatrix(NDArrayFactory<T>::createUninitialized(input)); //put identity
         permutationMatrix->setIdentity();
 
+        T pivotValue; // = T(0.0);
+        int pivot; // = -1;
+        int swapCount = 0;
 //#pragma omp parallel for if(rowNum > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for(int i = 0; i < rowNum; i++ ) {
-            T pivotValue = T(0.0);
-            int pivot = -1;
+            pivotValue = T(0.0);
+            pivot = -1;
 
             for(int rowCounter = i; rowCounter < rowNum; rowCounter++ ) {
                 if(nd4j::math::nd4j_abs((*compoundMatrix)(rowCounter, i)) > pivotValue ) {
@@ -96,17 +105,24 @@ namespace helpers {
             if( pivotValue != T(0.0) ) {
                 swapRows(compoundMatrix.get(), pivot, i);
                 swapRows(permutationMatrix.get(), pivot, i);
+                swapCount++;
                 for( int j = i + 1; j < rowNum; j++ ) {
                     (*compoundMatrix)(j, i) /= (*compoundMatrix)(i, i);
-                    for( int k = i + 1; k < rowNum; k++ ) 
-                        (*compoundMatrix)(j, k) -= (*compoundMatrix)(j, i) * (*compoundMatrix)(i, k);
+                    for( int k = i + 1; k < rowNum; k++ ) {
+                        T arg = (*compoundMatrix)(j, i) * (*compoundMatrix)(i, k);
+                        (*compoundMatrix)(j, k) -= arg;
+                    }
                 }
-
             }
         }
-
-        for (int e = 0; e < rowNum; e++)
+        nd4j_printf("Pivot: %i, Pivot value: %f.\n", pivot, pivotValue);
+//#pragma omp parallel for
+// if(rowNum > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+        for (int e = 0; e < rowNum; e++) {
+            nd4j_printf("Compound matrix diag %i %f.\n", e, (*compoundMatrix)(e, e));
             determinant *= (*compoundMatrix)(e, e);
+        }
+        if (0 == swapCount % 2) determinant = -determinant;
 
         if (compound != nullptr)
             *compound = *compoundMatrix;
@@ -130,8 +146,8 @@ namespace helpers {
         std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
 //#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < output->lengthOf(); e++) {
-            for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-                (*matrix)(row++) = (*input)(k);
+            for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
+                (*matrix)(row) = (*input)(k);
             }
 
             (*output)(e) = lup(matrix.get(), (NDArray<T>*)nullptr, (NDArray<T>*)nullptr);
@@ -158,6 +174,8 @@ namespace helpers {
         std::unique_ptr<NDArray<T>> upperMatrix(new NDArray<T>({n, n}));
 
         for (int e = 0; e < totalCount; e++) {
+            if (e)
+                matrix->assign((T)0.0);
 
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
                 (*matrix)(row++) = (*input)(k);
@@ -188,7 +206,6 @@ namespace helpers {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
                 (*output)(k) = (*matrix)(row++);
             }
-            matrix->assign((T)0.0);
         }
 
         return ND4J_STATUS_OK;
