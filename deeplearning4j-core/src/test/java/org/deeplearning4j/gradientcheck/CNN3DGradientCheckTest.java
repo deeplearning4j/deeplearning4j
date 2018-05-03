@@ -267,7 +267,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
 
         for (Activation afn : activations) {
             for (int miniBatchSize : minibatchSizes) {
-                for (Subsampling3DLayer.PoolingType pool: poolModes) {
+                for (Subsampling3DLayer.PoolingType pool : poolModes) {
                     for (ConvolutionMode mode : modes) {
 
                         int outDepth = mode == ConvolutionMode.Same ?
@@ -329,6 +329,96 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
 
                         TestUtils.testModelSerialization(net);
                     }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testCnn3DUpsampling() {
+        Nd4j.getRandom().setSeed(42);
+
+        int depth = 4;
+        int height = 4;
+        int width = 4;
+
+
+        int[] minibatchSizes = {3};
+        int convNIn = 2;
+        int convNOut = 4;
+        int denseNOut = 5;
+        int finalNOut = 42;
+
+
+        int[] upsamplingSize = {2, 2, 2};
+
+        Activation[] activations = {Activation.RELU};
+
+
+        ConvolutionMode[] modes = {ConvolutionMode.Truncate, ConvolutionMode.Same};
+
+        for (Activation afn : activations) {
+            for (int miniBatchSize : minibatchSizes) {
+                for (ConvolutionMode mode : modes) {
+
+                    int outDepth = mode == ConvolutionMode.Same ?
+                            depth : (depth - upsamplingSize[0]) + 1;
+                    int outHeight = mode == ConvolutionMode.Same ?
+                            height : (height - upsamplingSize[1]) + 1;
+                    int outWidth = mode == ConvolutionMode.Same ?
+                            width : (width - upsamplingSize[2]) + 1;
+
+
+                    INDArray input = Nd4j.rand(new int[]{miniBatchSize, convNIn, depth, height, width});
+                    INDArray labels = Nd4j.zeros(miniBatchSize, finalNOut);
+                    for (int i = 0; i < miniBatchSize; i++) {
+                        labels.putScalar(new int[]{i, i % finalNOut}, 1.0);
+                    }
+
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
+                            .dist(new NormalDistribution(0, 1))
+                            .list()
+                            .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
+                                    .nIn(convNIn).nOut(convNOut).hasBias(false)
+                                    .convolutionMode(mode).dataFormat(Convolution3D.DataFormat.NCDHW)
+                                    .build())
+                            .layer(1, new Upsampling3D.Builder(upsamplingSize[0]).build())
+                            .layer(2, new DenseLayer.Builder().nOut(denseNOut).build())
+                            .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nOut(finalNOut).build())
+                            .inputPreProcessor(2,
+                                    new Cnn3DToFeedForwardPreProcessor(outDepth, outHeight, outWidth,
+                                            convNOut, true))
+                            .setInputType(InputType.convolutional3D(depth, height, width, convNIn)).build();
+
+                    String json = conf.toJson();
+                    MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
+                    assertEquals(conf, c2);
+
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
+
+                    String msg = "Minibatch size = " + miniBatchSize + ", activationFn=" + afn
+                            + ", kernel = " + Arrays.toString(upsamplingSize) + ", mode = " + mode.toString()
+                            + ", input depth " + depth + ", input height " + height
+                            + ", input width " + width;
+
+                    if (PRINT_RESULTS) {
+                        log.info(msg);
+                        for (int j = 0; j < net.getnLayers(); j++) {
+                            log.info("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                        }
+                    }
+
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS,
+                            DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS,
+                            RETURN_ON_FIRST_FAILURE, input, labels);
+
+                    assertTrue(msg, gradOK);
+
+                    TestUtils.testModelSerialization(net);
+
                 }
             }
         }

@@ -79,7 +79,7 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        // TODO: we assume NCDHW order here, as upsampling layers currently don't know about dim ordering
+        // Assumes NCDHW order
         int miniBatch = input.size(0);
         int inChannels = input.size(1);
         int inD = input.size(2);
@@ -95,7 +95,6 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         Gradient gradient = new DefaultGradient();
 
-        // TODO: upsampling3d_bp doesn't exist yet
         CustomOp op = DynamicCustomOp.builder("upsampling3d_bp")
                 .addIntegerArguments(size)
                 .addInputs(forwardOutput, epsilon)
@@ -141,14 +140,13 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
                 new int[]{miniBatch, inChannels, outD, outH, outW}, 'c');
 
-        // TODO: get 3D version going
-        Upsampling upsampling = Upsampling.sameDiffBuilder()
-                .inPlace(false)
-                .inputArrays(new INDArray[]{input})
-                .outputs(new INDArray[]{reshapedOutput})
-                .scaleFactor(size)
-                .build();
 
+        CustomOp upsampling = DynamicCustomOp.builder("upsampling3d_bp")
+                .addIntegerArguments(size)
+                .addInputs(input)
+                .addOutputs(reshapedOutput)
+                .callInplace(false)
+                .build();
         Nd4j.getExecutioner().exec(upsampling);
 
         return reshapedOutput;
