@@ -25,6 +25,8 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -32,8 +34,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -406,7 +406,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public String toString() {
         return getClass().getName() + "{" + "conf=" + conf + ", dropoutMask=" + dropoutMask + ", score=" + score
-                        + ", optimizer=" + optimizer + ", listeners=" + iterationListeners + '}';
+                        + ", optimizer=" + optimizer + ", listeners=" + trainingListeners + '}';
     }
 
     @Override
@@ -444,7 +444,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             }
 
             INDArray paramsView = Nd4j.create(1, totalParams);
-            layer = clone.getLayer().instantiate(clone, iterationListeners, this.index, paramsView, true);
+            layer = clone.getLayer().instantiate(clone, trainingListeners, this.index, paramsView, true);
 
             layer.setParam(DefaultParamInitializer.WEIGHT_KEY, w.transpose().dup());
             layer.setParam(DefaultParamInitializer.BIAS_KEY, newB);

@@ -19,7 +19,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -215,7 +215,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
         model.init();
 
-        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
+        model.setListeners(Arrays.asList((TrainingListener) new ScoreIterationListener(listenerFreq)));
 
         model.fit(cifar);
 

@@ -20,11 +20,11 @@ package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Collection;
 import java.util.Map;
@@ -44,22 +44,22 @@ public interface Model {
 
 
     /**
-     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      */
-    void setListeners(Collection<IterationListener> listeners);
+    void setListeners(Collection<TrainingListener> listeners);
 
 
     /**
-     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      */
-    void setListeners(IterationListener... listeners);
+    void setListeners(TrainingListener... listeners);
 
     /**
-     * This method ADDS additional IterationListener to existing listeners
+     * This method ADDS additional TrainingListener to existing listeners
      *
      * @param listener
      */
-    void addListeners(IterationListener... listener);
+    void addListeners(TrainingListener... listener);
 
 
     /**
