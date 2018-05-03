@@ -133,7 +133,7 @@ public class KerasReshape extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras Flatten layer accepts only one input (received " + inputType.length + ")");
+                    "Keras Reshape layer accepts only one input (received " + inputType.length + ")");
         ReshapePreprocessor reshape = (ReshapePreprocessor) getInputPreprocessor(inputType);
         return reshape.getOutputType(inputType[0]);
     }
