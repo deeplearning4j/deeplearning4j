@@ -35,7 +35,7 @@ import sun.plugin.dom.exception.InvalidStateException;
 import java.util.Arrays;
 
 /**
- * Permute preprocessor
+ * Preprocessor to permute input data according to specified permutation indices.
  *
  * @author Max Pumperla
  */
@@ -45,13 +45,10 @@ import java.util.Arrays;
 public class PermutePreprocessor extends BaseInputPreProcessor {
 
     private int[] permutationIndices;
-    private int[] inverseIndices = null;
-    private InputType type;
     private boolean hasLeadingDimension = false;
 
-    public PermutePreprocessor(int[] permutationIndices, InputType inputType) {
+    public PermutePreprocessor(int[] permutationIndices) {
         this.permutationIndices = permutationIndices;
-        this.type = inputType;
     }
 
 
@@ -82,22 +79,10 @@ public class PermutePreprocessor extends BaseInputPreProcessor {
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
-        if (!Arrays.equals(permutationIndices, output.shape())) {
-            throw new IllegalStateException("Unexpected output shape" + Arrays.toString(output.shape())
-                    + " (expected to be " + Arrays.toString(permutationIndices) + ")");
-        }
         if (output.ordering() != 'c' || !Shape.hasDefaultStridesForShape(output)) {
             output = workspaceMgr.dup(ArrayType.ACTIVATIONS, output, 'c');
         }
-        if (inverseIndices == null) {
-            INDArray inIndices = Nd4j.create(permutationIndices);
-            INDArray outIndices = Nd4j.zerosLike(inIndices);
-            DynamicCustomOp invert = DynamicCustomOp.builder("invert_permutation")
-                    .addInputs(inIndices)
-                    .addOutputs(outIndices).build();
-        }
-
-        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, output.permute(inverseIndices));
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, output.permute(permutationIndices));
 
     }
 
@@ -105,7 +90,7 @@ public class PermutePreprocessor extends BaseInputPreProcessor {
     public InputType getOutputType(InputType inputType) throws InvalidInputTypeException {
         if (inputType instanceof InputType.InputTypeConvolutional) {
             InputType.InputTypeConvolutional it = (InputType.InputTypeConvolutional) inputType;
-            return inputType; // TODO: permute convolution input
+            return InputType.convolutional(it.getWidth(), it.getHeight(), it.getChannels());
         } else if (inputType instanceof InputType.InputTypeRecurrent) {
             InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType;
             return InputType.recurrent(it.getTimeSeriesLength(), it.getSize());

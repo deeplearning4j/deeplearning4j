@@ -100,11 +100,11 @@ public class KerasReshape extends KerasLayer {
         if (inputType[0] instanceof InputType.InputTypeConvolutional) {
             InputType.InputTypeConvolutional it = (InputType.InputTypeConvolutional) inputType[0];
             switch (this.getDimOrder()) {
-                case NONE:
                 case THEANO:
                     int[] inputShapeTh = new int[]{it.getHeight(), it.getWidth(), it.getChannels()};
                     preprocessor = new ReshapePreprocessor(inputShapeTh, this.targetShape);
                     break;
+                case NONE: // TF is now the default
                 case TENSORFLOW:
                     int[] inputShapeTf = new int[]{it.getWidth(), it.getChannels(), it.getHeight()};
                     preprocessor = new ReshapePreprocessor(inputShapeTf, this.targetShape);

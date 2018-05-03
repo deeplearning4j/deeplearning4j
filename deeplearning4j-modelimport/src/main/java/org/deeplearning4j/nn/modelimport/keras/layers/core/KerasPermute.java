@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -88,11 +89,42 @@ public class KerasPermute extends KerasLayer {
      * @see InputPreProcessor
      */
     @Override
-    public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
+    public InputPreProcessor getInputPreprocessor(InputType... inputType) throws
+            InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Reshape layer accepts only one input (received " + inputType.length + ")");
-        return new PermutePreprocessor(permutationIndices, inputType[0]);
+        InputPreProcessor preprocessor = null;
+        if (inputType[0] instanceof InputType.InputTypeConvolutional) {
+            switch (this.getDimOrder()) {
+                case THEANO:
+                    if (Arrays.equals(permutationIndices, new int[]{1, 3, 2})) // channels first, swapping H and W.
+                        preprocessor = new PermutePreprocessor(permutationIndices);
+                    else
+                        throw new InvalidKerasConfigurationException("Attempting to permute dimensions other than" +
+                                "spatial dimensions (height and width), got " + Arrays.toString(permutationIndices));
+                    break;
+                case NONE: // TF by default
+                case TENSORFLOW:
+                    if (Arrays.equals(permutationIndices, new int[]{2, 1, 3})) // channels last, swapping H and W
+                        preprocessor = new PermutePreprocessor(new int[]{1, 3, 2}); // DL4J is channels first
+                    else
+                        throw new InvalidKerasConfigurationException("Attempting to permute dimensions other than" +
+                                "spatial dimensions (height and width) in Permute layer, got "
+                                + Arrays.toString(permutationIndices));
+            }
+        } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
+            if (Arrays.equals(permutationIndices, new int[] {2, 1}))
+                preprocessor = new PermutePreprocessor(permutationIndices);
+            else
+                throw new InvalidKerasConfigurationException("For RNN type input data, permutation dims have to be" +
+                        "(2, 1) in Permute layer, got " + Arrays.toString(permutationIndices));
+        } else if (inputType[0] instanceof InputType.InputTypeFeedForward) {
+            preprocessor = null;
+        } else {
+            throw new InvalidKerasConfigurationException("Input type not supported: " + inputType[0]);
+        }
+        return preprocessor;
     }
 
     /**
