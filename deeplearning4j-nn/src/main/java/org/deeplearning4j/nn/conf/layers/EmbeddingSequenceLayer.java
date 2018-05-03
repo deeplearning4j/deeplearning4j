@@ -18,35 +18,36 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Embedding layer: feed-forward layer that expects single integers per example as input (class numbers, in range 0 to numClass-1)
- * as input. This input has shape [numExamples,1] instead of [numExamples,numClasses] for the equivalent one-hot representation.
- * Mathematically, EmbeddingLayer is equivalent to using a DenseLayer with a one-hot representation for the input; however,
- * it can be much more efficient with a large number of classes (as a dense layer + one-hot input does a matrix multiply
- * with all but one value being zero).<br>
+ * Embedding layer for sequences: feed-forward layer that expects fixed-length number (inputLength) of integers/indices
+ * per example as input, ranged from 0 to numClasses - 1. This input thus has shape [numExamples, inputLength].
+ * The output of this layer is 3D, namely of shape [numExamples, nOut, inputLength].
  * <b>Note</b>: can only be used as the first layer for a network<br>
  * <b>Note 2</b>: For a given example index i, the output is activationFunction(weights.getRow(i) + bias), hence the
- * weight rows can be considered a vector/embedding for each example.
+ * weight rows can be considered a vector/embedding of each index.
  *
- * @author Alex Black
+ * @author Max Pumperla
  */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class EmbeddingLayer extends FeedForwardLayer {
-    private boolean hasBias = true; //Default for pre-0.9.2 implementations
+public class EmbeddingSequenceLayer extends FeedForwardLayer {
 
-    private EmbeddingLayer(Builder builder) {
+    private int inputLength = 1; // By default only use one index to embed
+    private boolean hasBias = false;
+
+    private EmbeddingSequenceLayer(Builder builder) {
         super(builder);
         this.hasBias = builder.hasBias;
+        this.inputLength = builder.inputLength;
         initializeConstraints(builder);
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf);
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingSequenceLayer ret =
+                new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingSequenceLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -57,30 +58,36 @@ public class EmbeddingLayer extends FeedForwardLayer {
     }
 
     @Override
+    public InputType getOutputType(int layerIndex, InputType inputType) {
+        if (inputType == null || inputType.getType() != InputType.Type.FF) {
+            throw new IllegalStateException("Invalid input for Embedding layer (layer index = " + layerIndex
+                    + ", layer name = \"" + getLayerName() + "\"): expect FFN input type. Got: "
+                    + inputType);
+        }
+        return InputType.recurrent(nOut, inputLength);
+    }
+
+    @Override
     public ParamInitializer initializer() {
         return DefaultParamInitializer.getInstance();
     }
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        //Basically a dense layer, but no dropout is possible here, and no epsilons
         InputType outputType = getOutputType(-1, inputType);
 
         int actElementsPerEx = outputType.arrayElementsPerExample();
         int numParams = initializer().numParams(this);
         int updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
-        //Embedding layer does not use caching.
-        //Inference: no working memory - just activations (pullRows)
-        //Training: preout op, the only in-place ops on epsilon (from layer above) + assign ops
-
-        return new LayerMemoryReport.Builder(layerName, EmbeddingLayer.class, inputType, outputType)
-                        .standardMemory(numParams, updaterStateSize).workingMemory(0, 0, 0, actElementsPerEx)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+        return new LayerMemoryReport.Builder(layerName, EmbeddingSequenceLayer.class, inputType, outputType)
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, 0, 0, actElementsPerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
-    public boolean hasBias(){
+    public boolean hasBias() {
         return hasBias;
     }
 
@@ -88,21 +95,34 @@ public class EmbeddingLayer extends FeedForwardLayer {
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
         private boolean hasBias = false;
+        private int inputLength = 1;
 
         /**
          * If true: include bias parameters in the layer. False (default): no bias.
          *
          * @param hasBias If true: include bias parameters in this layer
          */
-        public Builder hasBias(boolean hasBias){
+        public Builder hasBias(boolean hasBias) {
             this.hasBias = hasBias;
             return this;
         }
 
+        /**
+         * Set input sequence length for this embedding layer.
+         *
+         * @param inputLength input sequence length
+         * @return Builder
+         */
+        public Builder inputLength(int inputLength) {
+            this.inputLength = inputLength;
+            return this;
+        }
+
+
         @Override
         @SuppressWarnings("unchecked")
-        public EmbeddingLayer build() {
-            return new EmbeddingLayer(this);
+        public EmbeddingSequenceLayer build() {
+            return new EmbeddingSequenceLayer(this);
         }
     }
 }

@@ -27,12 +27,14 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Random;
 
 import static org.deeplearning4j.gradientcheck.GradientCheckUtil.checkGradients;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -50,6 +52,73 @@ public class GradientCheckTests extends BaseDL4JTest {
     static {
         Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
+
+    @Test
+    public void testMinibatchApplication() {
+        IrisDataSetIterator iter = new IrisDataSetIterator(30, 150);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().miniBatch(false)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new NoOp())
+                .list()
+                .layer(0,
+                        new DenseLayer.Builder().nIn(4).nOut(3)
+                                .weightInit(WeightInit.DISTRIBUTION)
+                                .dist(new NormalDistribution(0, 1))
+                                .activation(Activation.TANH)
+                                .build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nIn(3).nOut(3).build())
+                .pretrain(false).backprop(true).build();
+
+        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+        mln.init();
+
+        assertEquals(1,mln.getInputMiniBatchSize());
+
+        DataNormalization scaler = new NormalizerMinMaxScaler();
+        scaler.fit(iter);
+        iter.setPreProcessor(scaler);
+        DataSet ds = iter.next();
+
+        boolean doLearningFirst = true;
+        String outputActivation = "tanh";
+        String afn = outputActivation;
+        String lf = "negativeloglikelihood";
+        if (doLearningFirst) {
+            //Run a number of iterations of learning
+            mln.setInput(ds.getFeatures());
+            mln.setLabels(ds.getLabels());
+            mln.computeGradientAndScore();
+            double scoreBefore = mln.score();
+            for (int j = 0; j < 10; j++)
+                mln.fit(ds);
+            mln.computeGradientAndScore();
+            double scoreAfter = mln.score();
+            //Can't test in 'characteristic mode of operation' if not learning
+            String msg = "testMinibatchApplication() - score did not (sufficiently) decrease during learning - activationFn="
+                    + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
+                    + ", doLearningFirst=" + doLearningFirst + " (before=" + scoreBefore
+                    + ", scoreAfter=" + scoreAfter + ")";
+        }
+
+        if (PRINT_RESULTS) {
+            System.out.println("testMinibatchApplication() - activationFn=" + afn + ", lossFn="
+                    + lf + ", outputActivation=" + outputActivation + ", doLearningFirst="
+                    + doLearningFirst);
+            for (int j = 0; j < mln.getnLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, ds.getFeatureMatrix(), ds.getLabels());
+
+        String msg = "testMinibatchApplication() - activationFn=" + afn + ", lossFn=" + lf
+                + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst;
+        assertTrue(msg, gradOK);
+    }
+
+
+
 
     @Test
     public void testGradientMLP2LayerIrisSimple() {

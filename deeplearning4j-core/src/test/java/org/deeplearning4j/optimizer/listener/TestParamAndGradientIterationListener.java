@@ -9,7 +9,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ParamAndGradientIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -17,6 +17,8 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestParamAndGradientIterationListener extends BaseDL4JTest {
 
@@ -36,7 +38,7 @@ public class TestParamAndGradientIterationListener extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        IterationListener listener = ParamAndGradientIterationListener.builder().outputToFile(true)
+        TrainingListener listener = ParamAndGradientIterationListener.builder().outputToFile(true)
                         .file(new File(System.getProperty("java.io.tmpdir") + "/paramAndGradTest.txt"))
                         .outputToConsole(true).outputToLogger(false).iterations(2).printHeader(true).printMean(false)
                         .printMinMax(false).printMeanAbsValue(true).delimiter("\t").build();
@@ -48,5 +50,8 @@ public class TestParamAndGradientIterationListener extends BaseDL4JTest {
 
 
     }
+
+
+
 
 }

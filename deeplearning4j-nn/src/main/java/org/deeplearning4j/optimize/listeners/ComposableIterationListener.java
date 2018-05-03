@@ -19,8 +19,10 @@
 package org.deeplearning4j.optimize.listeners;
 
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,20 +31,20 @@ import java.util.Collection;
  * A group of listeners
  * @author Adam Gibson
  */
-public class ComposableIterationListener implements IterationListener {
-    private Collection<IterationListener> listeners = new ArrayList<>();
+public class ComposableIterationListener extends BaseTrainingListener implements Serializable {
+    private Collection<TrainingListener> listeners = new ArrayList<>();
 
-    public ComposableIterationListener(IterationListener... iterationListener) {
-        listeners.addAll(Arrays.asList(iterationListener));
+    public ComposableIterationListener(TrainingListener... TrainingListener) {
+        listeners.addAll(Arrays.asList(TrainingListener));
     }
 
-    public ComposableIterationListener(Collection<IterationListener> listeners) {
+    public ComposableIterationListener(Collection<TrainingListener> listeners) {
         this.listeners = listeners;
     }
 
     @Override
     public void iterationDone(Model model, int iteration, int epoch) {
-        for (IterationListener listener : listeners)
+        for (TrainingListener listener : listeners)
             listener.iterationDone(model, iteration, epoch);
     }
 }

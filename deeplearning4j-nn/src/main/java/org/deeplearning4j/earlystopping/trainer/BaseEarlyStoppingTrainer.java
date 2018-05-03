@@ -27,7 +27,6 @@ import org.deeplearning4j.earlystopping.termination.IterationTerminationConditio
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -38,7 +37,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**Base/abstract class for conducting early stopping training locally (single machine).<br>
  * Can be used to train a {@link MultiLayerNetwork} or a {@link ComputationGraph} via early stopping
@@ -289,7 +291,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
 
     //Trigger epoch listener methods manually - these won't be triggered due to not calling fit(DataSetIterator) etc
     protected void triggerEpochListeners(boolean epochStart, Model model, int epochNum){
-        Collection<IterationListener> listeners;
+        Collection<TrainingListener> listeners;
         if(model instanceof MultiLayerNetwork){
             MultiLayerNetwork n = ((MultiLayerNetwork) model);
             listeners = n.getListeners();
@@ -303,13 +305,11 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
         }
 
         if(listeners != null && !listeners.isEmpty()){
-            for(IterationListener l : listeners){
-                if(l instanceof TrainingListener){
-                    if(epochStart){
-                        ((TrainingListener) l).onEpochStart(model);
-                    } else {
-                        ((TrainingListener) l).onEpochEnd(model);
-                    }
+            for (TrainingListener l : listeners) {
+                if (epochStart) {
+                    l.onEpochStart(model);
+                } else {
+                    l.onEpochEnd(model);
                 }
             }
         }
