@@ -58,6 +58,16 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
     }
 
     @Override
+    public InputType getOutputType(int layerIndex, InputType inputType) {
+        if (inputType == null || inputType.getType() != InputType.Type.FF) {
+            throw new IllegalStateException("Invalid input for Embedding layer (layer index = " + layerIndex
+                    + ", layer name = \"" + getLayerName() + "\"): expect FFN input type. Got: "
+                    + inputType);
+        }
+        return InputType.recurrent(nOut, inputLength);
+    }
+
+    @Override
     public ParamInitializer initializer() {
         return DefaultParamInitializer.getInstance();
     }
