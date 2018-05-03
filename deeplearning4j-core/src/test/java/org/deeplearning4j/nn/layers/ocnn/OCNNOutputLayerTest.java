@@ -60,6 +60,7 @@ public class OCNNOutputLayerTest {
         INDArray arr = next.getFeatureMatrix();
         normalizerStandardize.transform(arr);
         network.setInput(arr);
+        ds = new DataSet(arr,next.getLabels());
         network.setLabels(next.getLabels());
 
         if (doLearningFirst) {
@@ -96,6 +97,10 @@ public class OCNNOutputLayerTest {
         String msg = "testLayer() - activationFn=" + "relu" + ", lossFn=" + "ocnn"
                 + ",=" + "sigmoid" + ", doLearningFirst=" + doLearningFirst;
         assertTrue(msg, gradOK);
+
+    
+        INDArray output = network.output(arr);
+        System.out.println(output);
     }
 
 }

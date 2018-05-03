@@ -53,7 +53,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray delta = pair.getSecond();
         //2
         INDArray w = getParamWithNoise(W_KEY, true, workspaceMgr);
-         //4 x 2
+        //4 x 2
         INDArray v = getParamWithNoise(V_KEY,true,workspaceMgr);
         //4 x 150
         INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{w.length(), delta.length()}, 'f');
@@ -113,19 +113,24 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         return new Pair<>(gradient, delta);
     }
 
-
-
+    @Override
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        this.input = input;
+        return doOutput(training,workspaceMgr);
+    }
 
     /**{@inheritDoc}
      */
     @Override
     public double f1Score(INDArray examples, INDArray labels) {
-        return super.f1Score(examples, labels);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray labelProbabilities(INDArray examples) {
-        return super.labelProbabilities(examples);
+        //LayerWorkspaceMgr.noWorkspacesImmutable()
+        this.input = examples;
+        return doOutput(false,LayerWorkspaceMgr.noWorkspacesImmutable()).subi(getParam(R_KEY));
     }
 
     public INDArray getInput() {
@@ -208,7 +213,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
             double rSum = getParam(R_KEY).getDouble(0);
             double nuDiv = (1 / ocnnOutputLayer.getNu()) * rMean;
             double lastTerm = -rSum;
-           return (wSum + vSum + nuDiv + lastTerm);
+            return (wSum + vSum + nuDiv + lastTerm);
         }
 
         @Override

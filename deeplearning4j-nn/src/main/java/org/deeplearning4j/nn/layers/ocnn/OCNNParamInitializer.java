@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn.layers.ocnn;
 
+import static  org.nd4j.linalg.indexing.NDArrayIndex.*;
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -12,6 +14,11 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
+/**
+ * Param initializer for {@link OCNNOutputLayer}
+ *
+ * @author Adam Gibson
+ */
 public class OCNNParamInitializer extends DefaultParamInitializer {
 
     private final static OCNNParamInitializer INSTANCE = new OCNNParamInitializer();
@@ -44,7 +51,6 @@ public class OCNNParamInitializer extends DefaultParamInitializer {
         org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = ( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) layer;
         int nIn = ocnnOutputLayer.getNIn();
         int hiddenLayer = ocnnOutputLayer.getHiddenSize();
-        int nOut = ocnnOutputLayer.getNOut();
 
         int firstLayerWeightLength =  hiddenLayer;
         int secondLayerLength = nIn * hiddenLayer;
@@ -83,15 +89,17 @@ public class OCNNParamInitializer extends DefaultParamInitializer {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         int nIn = ocnnOutputLayer.getNIn();
         int hiddenLayer = ocnnOutputLayer.getHiddenSize();
-        int nOut = ocnnOutputLayer.getNOut();
 
         int firstLayerWeightLength =  hiddenLayer;
         int secondLayerLength = nIn * hiddenLayer;
         int rLength = 1;
-        INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, firstLayerWeightLength)).reshape(1,hiddenLayer);
-        INDArray weightsTwoView = paramsView.get(NDArrayIndex.point(0),
-                NDArrayIndex.interval(firstLayerWeightLength,firstLayerWeightLength + secondLayerLength)).reshape('f',nIn,hiddenLayer);
-        INDArray rView = paramsView.get(NDArrayIndex.point(0),NDArrayIndex.point(paramsView.length() - rLength));
+        INDArray weightView = paramsView.get(point(0),interval(0, firstLayerWeightLength))
+                .reshape(1,hiddenLayer);
+        INDArray weightsTwoView = paramsView.get(point(0),
+                NDArrayIndex.interval(firstLayerWeightLength,
+                        firstLayerWeightLength + secondLayerLength))
+                .reshape('f',nIn,hiddenLayer);
+        INDArray rView = paramsView.get(point(0),point(paramsView.length() - rLength));
 
 
         INDArray paramViewPut = createWeightMatrix(conf, weightView, initializeParams);
@@ -113,17 +121,18 @@ public class OCNNParamInitializer extends DefaultParamInitializer {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         int nIn = ocnnOutputLayer.getNIn();
         int hiddenLayer = ocnnOutputLayer.getHiddenSize();
-        int nOut = ocnnOutputLayer.getNOut();
 
         int firstLayerWeightLength =  hiddenLayer;
         int secondLayerLength = nIn * hiddenLayer;
 
-        INDArray weightView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, firstLayerWeightLength)).reshape('f',1,hiddenLayer);
-        INDArray weightsTwoView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(firstLayerWeightLength,firstLayerWeightLength + secondLayerLength))
+        INDArray weightView = gradientView.get(point(0),interval(0, firstLayerWeightLength))
+                .reshape('f',1,hiddenLayer);
+        INDArray vView = gradientView.get(point(0),
+                NDArrayIndex.interval(firstLayerWeightLength,firstLayerWeightLength + secondLayerLength))
                 .reshape('f',nIn,hiddenLayer);
         params.put(W_KEY, weightView);
-        params.put(V_KEY,weightsTwoView);
-        params.put(R_KEY,gradientView.get(NDArrayIndex.point(0),NDArrayIndex.point(gradientView.length() - 1)));
+        params.put(V_KEY,vView);
+        params.put(R_KEY,gradientView.get(point(0),point(gradientView.length() - 1)));
         return params;
 
     }
