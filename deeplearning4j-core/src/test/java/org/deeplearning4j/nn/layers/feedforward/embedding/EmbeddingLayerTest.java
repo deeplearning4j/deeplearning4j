@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -16,9 +17,11 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -53,6 +56,54 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 assertArrayEquals(new int[]{1, 5}, bias.shape());
             }
         }
+    }
+
+    @Test
+    public void testEmbeddingSingleSequenceForwardPass() {
+        int nClassesIn = 10;
+        int embeddingDim = 5;
+        int nOut = 4;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
+                .layer(new EmbeddingSequenceLayer.Builder().inputLength(1)
+                        .hasBias(true).nIn(nClassesIn).nOut(embeddingDim).build())
+                .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).build()).pretrain(false).backprop(true)
+                .build();
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
+                .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build())
+                .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).build()).pretrain(false).backprop(true)
+                .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+        net.init();
+        net2.init();
+
+        net2.setParams(net.params().dup());
+
+        int batchSize = 3;
+        INDArray inEmbedding = Nd4j.create(batchSize, 1);
+        INDArray inOneHot = Nd4j.create(batchSize, nClassesIn, 1);
+
+        Random r = new Random(12345);
+        for (int i = 0; i < batchSize; i++) {
+            int classIdx = r.nextInt(nClassesIn);
+            inEmbedding.putScalar(i, classIdx);
+            inOneHot.putScalar(new int[] {i, classIdx, 1}, 1.0);
+        }
+
+        List<INDArray> activationsDense = net2.feedForward(inOneHot, false);
+        List<INDArray> activationEmbedding = net.feedForward(inEmbedding, false);
+
+        INDArray actD1 = activationsDense.get(1);
+        INDArray actE1 = activationEmbedding.get(1).reshape(batchSize, embeddingDim);
+        assertEquals(actD1, actE1);
+
+
+        INDArray actD2 = activationsDense.get(2);
+        INDArray actE2 = activationEmbedding.get(2).reshape(batchSize, nOut);
+        assertEquals(actD2, actE2);
     }
 
     @Test

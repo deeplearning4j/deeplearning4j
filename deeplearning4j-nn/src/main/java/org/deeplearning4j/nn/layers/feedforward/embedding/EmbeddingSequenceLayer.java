@@ -65,7 +65,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         int nOut = layerConf().getNOut();
         delta = delta.permute(2, 0, 1);
         delta = delta.reshape(inputLength * numSamples, nOut);
-        
+
         if (maskArray != null) {
             INDArray maskDelta = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.shape(), 'f');
             delta = Broadcast.mul(delta, maskArray, maskDelta, 0, 2);
@@ -130,14 +130,16 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
                 ArrayType.ACTIVATIONS, numRows * inputLength, nOut);
         INDArray rows = Nd4j.pullRows(weights, destination, 1, indexes);
 
-        int[] shape = new int[]{inputLength, numRows, nOut};
-        INDArray ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, rows.reshape('c', shape));
-
         if (hasBias()) {
-            ret.addiRowVector(bias);
+            rows.addiRowVector(bias);
         }
 
-        return ret.permute(1, 2, 0);
+
+        int[] shape = new int[]{inputLength, numRows, nOut};
+        INDArray ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, rows.reshape('c', shape));
+        ret = ret.permute(1, 2 , 0);
+
+        return ret;
     }
 
     @Override
