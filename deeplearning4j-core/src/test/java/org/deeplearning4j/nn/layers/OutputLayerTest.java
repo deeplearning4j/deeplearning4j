@@ -31,7 +31,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -42,7 +43,6 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Collections;
 import java.util.Random;
@@ -68,7 +68,7 @@ public class OutputLayerTest extends BaseDL4JTest {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         OutputLayer l = (OutputLayer) conf.getLayer().instantiate(conf,
-                        Collections.<IterationListener>singletonList(new ScoreIterationListener(1)), 0, params, true);
+                        Collections.<TrainingListener>singletonList(new ScoreIterationListener(1)), 0, params, true);
         params = l.params();
         l.setParams(params);
         assertEquals(params, l.params());

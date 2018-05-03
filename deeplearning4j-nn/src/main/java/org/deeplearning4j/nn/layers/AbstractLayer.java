@@ -18,19 +18,22 @@
 
 package org.deeplearning4j.nn.layers;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.*;
 
@@ -47,7 +50,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     protected NeuralNetConfiguration conf;
     protected INDArray dropoutMask;
     protected boolean dropoutApplied = false;
-    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
+    protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
     protected int index = 0;
     protected INDArray maskArray;
     protected MaskState maskState;
@@ -117,33 +120,32 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
 
     @Override
-    public Collection<IterationListener> getListeners() {
-        return iterationListeners;
+    public Collection<TrainingListener> getListeners() {
+        return trainingListeners;
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    public void setListeners(Collection<TrainingListener> listeners) {
+        this.trainingListeners = listeners != null ? listeners : new ArrayList<TrainingListener>();
     }
 
     /**
-     * This method ADDS additional IterationListener to existing listeners
+     * This method ADDS additional TrainingListener to existing listeners
      *
      * @param listeners
      */
     @Override
-    public void addListeners(IterationListener... listeners) {
-        if (this.iterationListeners == null) {
+    public void addListeners(TrainingListener... listeners) {
+        if (this.trainingListeners == null) {
             setListeners(listeners);
             return;
         }
 
-        for (IterationListener listener : listeners)
-            iterationListeners.add(listener);
+        Collections.addAll(trainingListeners, listeners);
     }
 
     @Override
-    public void setListeners(IterationListener... listeners) {
+    public void setListeners(TrainingListener... listeners) {
         setListeners(Arrays.asList(listeners));
     }
 

@@ -9,7 +9,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.data.BatchAndExportDataSetsFunction;
 import org.deeplearning4j.spark.data.BatchAndExportMultiDataSetsFunction;
@@ -60,7 +60,7 @@ public abstract class BaseTrainingMaster<R extends TrainingResult, W extends Tra
     protected StatsStorageRouter statsStorage;
 
     //Listeners etc
-    protected Collection<IterationListener> listeners;
+    protected Collection<TrainingListener> listeners;
 
 
     protected Repartition repartition;

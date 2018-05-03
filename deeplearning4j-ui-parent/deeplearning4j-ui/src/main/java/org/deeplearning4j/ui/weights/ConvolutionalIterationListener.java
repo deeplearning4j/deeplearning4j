@@ -9,14 +9,14 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ import java.util.UUID;
 /**
  * @author raver119@gmail.com
  */
-public class ConvolutionalIterationListener implements IterationListener {
+public class ConvolutionalIterationListener extends BaseTrainingListener {
 
     private enum Orientation {
         LANDSCAPE, PORTRAIT
@@ -96,7 +96,7 @@ public class ConvolutionalIterationListener implements IterationListener {
             UIServer.getInstance().attach((StatsStorage) ssr);
         }
 
-        System.out.println("ConvolutionIterationListener path: " + path);
+        System.out.println("ConvolutionTrainingListener path: " + path);
     }
 
     /**

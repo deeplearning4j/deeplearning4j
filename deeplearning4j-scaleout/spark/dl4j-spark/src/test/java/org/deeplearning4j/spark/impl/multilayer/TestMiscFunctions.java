@@ -5,8 +5,7 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.LossFunctionWrapper;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -28,10 +27,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import scala.Tuple2;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -77,12 +73,67 @@ public class TestMiscFunctions extends BaseSparkTest {
             count += exampleCount;
         }
 
+//        JavaPairRDD<Integer, INDArray> rdd = sc.parallelizePairs(mapFeatures);
         JavaPairRDD<Integer, INDArray> rdd = sc.parallelizePairs(mapFeatures);
 
         SparkDl4jMultiLayer multiLayer = new SparkDl4jMultiLayer(sc, net, null);
         Map<Integer, INDArray> map = multiLayer.feedForwardWithKey(rdd, 16).collectAsMap();
 
         for (int i = 0; i < expected.size(); i++) {
+            INDArray exp = expected.get(i);
+            INDArray act = map.get(i);
+
+            assertEquals(exp, act);
+        }
+    }
+
+    @Test
+    public void testFeedForwardWithKeyInputMask() {
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                .list()
+                .layer( new LSTM.Builder().nIn(4).nOut(3).build())
+                .layer(new GlobalPoolingLayer(PoolingType.AVG))
+                .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3)
+                        .activation(Activation.SOFTMAX).build())
+                .build();
+
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        List<org.nd4j.linalg.dataset.DataSet> ds = Arrays.asList(
+                new org.nd4j.linalg.dataset.DataSet(Nd4j.rand(new int[]{1, 4, 5}), Nd4j.create(new double[]{1,1,1,0,0})),
+                new org.nd4j.linalg.dataset.DataSet(Nd4j.rand(new int[]{1, 4, 5}), Nd4j.create(new double[]{1,1,1,1,0})),
+                new org.nd4j.linalg.dataset.DataSet(Nd4j.rand(new int[]{1, 4, 5}), Nd4j.create(new double[]{1,1,1,1,1}))
+        );
+
+
+        Map<Integer,INDArray> expected = new HashMap<>();
+        List<Tuple2<Integer, Tuple2<INDArray,INDArray>>> mapFeatures = new ArrayList<>();
+        int count = 0;
+        int arrayCount = 0;
+        Random r = new Random(12345);
+
+
+        int i=0;
+        for(org.nd4j.linalg.dataset.DataSet d : ds){
+
+            INDArray f = d.getFeatures();
+            INDArray fm = d.getFeaturesMaskArray();
+
+            mapFeatures.add(new Tuple2<>(i, new Tuple2<>(f, fm)));
+
+            INDArray out = net.output(f, false, fm, null);
+            expected.put(i++, out);
+        }
+
+        JavaPairRDD<Integer, Tuple2<INDArray,INDArray>> rdd = sc.parallelizePairs(mapFeatures);
+
+        SparkDl4jMultiLayer multiLayer = new SparkDl4jMultiLayer(sc, net, null);
+        Map<Integer, INDArray> map = multiLayer.feedForwardWithMaskAndKey(rdd, 16).collectAsMap();
+
+        for (i = 0; i < expected.size(); i++) {
             INDArray exp = expected.get(i);
             INDArray act = map.get(i);
 
