@@ -17,7 +17,7 @@
  */
 package org.deeplearning4j.nn.modelimport.keras.layers.embeddings;
 
-import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -38,7 +38,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class KerasEmbeddingTest {
 
-    private final String LAYER_NAME = "embedding_layer";
+    private final String LAYER_NAME = "embedding_sequence_layer";
     private final String INIT_KERAS = "glorot_normal";
     private final int[] INPUT_SHAPE = new int[]{100, 20};
     private static final boolean[] MASK_ZERO = new boolean[]{false, true};
@@ -97,7 +97,7 @@ public class KerasEmbeddingTest {
         assertEquals(kerasEmbedding.getNumParams(), 1);
         assertEquals(kerasEmbedding.isHasZeroMasking(), maskZero);
 
-        EmbeddingLayer layer = kerasEmbedding.getEmbeddingLayer();
+        EmbeddingSequenceLayer layer = kerasEmbedding.getEmbeddingLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         return kerasEmbedding;
     }

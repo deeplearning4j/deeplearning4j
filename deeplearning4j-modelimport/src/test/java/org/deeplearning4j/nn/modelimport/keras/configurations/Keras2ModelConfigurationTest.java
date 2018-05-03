@@ -169,6 +169,13 @@ public class Keras2ModelConfigurationTest {
         runModelConfigTest("configs/keras2/simple_add_tf_keras_2.json");
     }
 
+
+    @Test
+    public void embeddingConcatTest() throws Exception {
+        runModelConfigTest("/configs/keras2/model_concat_embedding_sequences_tf_keras_2.json");
+    }
+
+
     private void runSequentialConfigTest(String path) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         MultiLayerConfiguration config =
@@ -185,6 +192,5 @@ public class Keras2ModelConfigurationTest {
                         .enforceTrainingConfig(true).buildModel().getComputationGraphConfiguration();
         ComputationGraph model = new ComputationGraph(config);
         model.init();
-//        System.out.println(model.summary());
     }
 }
