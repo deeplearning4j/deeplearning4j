@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import sun.plugin.dom.exception.InvalidStateException;
 
 import java.util.Arrays;
 
@@ -45,11 +46,12 @@ public class PermutePreprocessor extends BaseInputPreProcessor {
 
     private int[] permutationIndices;
     private int[] inverseIndices = null;
-    private int[] outShape;
+    private InputType type;
     private boolean hasLeadingDimension = false;
 
-    public PermutePreprocessor(int[] permutationIndices) {
+    public PermutePreprocessor(int[] permutationIndices, InputType inputType) {
         this.permutationIndices = permutationIndices;
+        this.type = inputType;
     }
 
 
@@ -75,7 +77,6 @@ public class PermutePreprocessor extends BaseInputPreProcessor {
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
         }
         INDArray output = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.permute(this.permutationIndices));
-        outShape = output.shape();
         return output;
     }
 
@@ -102,16 +103,16 @@ public class PermutePreprocessor extends BaseInputPreProcessor {
 
     @Override
     public InputType getOutputType(InputType inputType) throws InvalidInputTypeException {
-        switch (outShape.length) {
-            case 2:
-                return InputType.feedForward(outShape[1]);
-            case 3:
-                return InputType.recurrent(outShape[1]);
-            case 4:
-                return InputType.convolutional(outShape[1], outShape[2], outShape[3]);
-            default:
-                throw new UnsupportedOperationException(
-                        "Cannot infer input type for reshape array " + Arrays.toString(outShape));
+        if (inputType instanceof InputType.InputTypeConvolutional) {
+            InputType.InputTypeConvolutional it = (InputType.InputTypeConvolutional) inputType;
+            return inputType; // TODO: permute convolution input
+        } else if (inputType instanceof InputType.InputTypeRecurrent) {
+            InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType;
+            return InputType.recurrent(it.getTimeSeriesLength(), it.getSize());
+        } else if (inputType instanceof InputType.InputTypeFeedForward) {
+            return inputType;
+        } else {
+            throw new InvalidStateException("Unsupported Input type " + inputType);
         }
     }
 }

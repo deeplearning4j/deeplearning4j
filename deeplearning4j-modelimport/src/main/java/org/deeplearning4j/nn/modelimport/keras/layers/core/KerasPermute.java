@@ -92,7 +92,7 @@ public class KerasPermute extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Reshape layer accepts only one input (received " + inputType.length + ")");
-        return new PermutePreprocessor(permutationIndices);
+        return new PermutePreprocessor(permutationIndices, inputType[0]);
     }
 
     /**
@@ -107,7 +107,7 @@ public class KerasPermute extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Permute layer accepts only one input (received " + inputType.length + ")");
-        ReshapePreprocessor reshape = (ReshapePreprocessor) getInputPreprocessor(inputType);
+        PermutePreprocessor reshape = (PermutePreprocessor) getInputPreprocessor(inputType);
         return reshape.getOutputType(inputType[0]);
     }
 }
