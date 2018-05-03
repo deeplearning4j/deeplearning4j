@@ -5,7 +5,6 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -73,12 +72,10 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
         mln.setInput(input);
         mln.setLabels(labels);
         mln.computeGradientAndScore();
-        Collection<IterationListener> iterationListeners = mln.getListeners();
+        Collection<TrainingListener> iterationListeners = mln.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {
-            for (IterationListener l : iterationListeners) {
-                if (l instanceof TrainingListener) {
-                    ((TrainingListener) l).onGradientCalculation(mln);
-                }
+            for (TrainingListener l : iterationListeners) {
+                l.onGradientCalculation(mln);
             }
         }
         //System.out.println("SCORE: " + mln.score());
@@ -95,9 +92,9 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
         int epochCount = mlnConf.getEpochCount();
         mln.getUpdater().update(mln, gradient[0], iterationCount, epochCount, batchSize, LayerWorkspaceMgr.noWorkspaces());
         mln.params().subi(gradient[0].gradient());
-        Collection<IterationListener> iterationListeners = mln.getListeners();
+        Collection<TrainingListener> iterationListeners = mln.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {
-            for (IterationListener listener : iterationListeners) {
+            for (TrainingListener listener : iterationListeners) {
                 listener.iterationDone(mln, iterationCount, epochCount);
             }
         }

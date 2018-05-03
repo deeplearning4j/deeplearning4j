@@ -13,7 +13,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.rl4j.util.Constants;
 import org.nd4j.linalg.activations.Activation;
@@ -96,7 +96,7 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
         int numHiddenNodes;
         double l2;
         IUpdater updater;
-        IterationListener[] listeners;
+        TrainingListener[] listeners;
         boolean useLSTM;
     }
 
