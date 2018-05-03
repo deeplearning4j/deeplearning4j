@@ -47,6 +47,19 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
+        <!-- start: temporary addition - TODO: remove it -->
+        <repository>
+            <id>apache-nexus-snapshots</id>
+            <name>Apache Nexus Snapshots</name>
+            <url>https://repository.apache.org/content/groups/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <!--   end: temporary addition - TODO: remove it -->
     </repositories>
 
     <prerequisites>
@@ -79,7 +92,7 @@
         <typesafe.config.version>1.3.0</typesafe.config.version>
         <lombok.version>1.16.20</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
-        <lucene-solr.version>7.2.1</lucene-solr.version> <!-- TODO: change to 7.3.0 once it's released -->
+        <lucene-solr.version>7.4.0-SNAPSHOT</lucene-solr.version> <!-- TODO: change to 7.4.0 once it's released -->
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>
