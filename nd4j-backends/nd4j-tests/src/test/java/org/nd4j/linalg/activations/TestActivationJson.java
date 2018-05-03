@@ -52,20 +52,20 @@ public class TestActivationJson extends BaseNd4jTest {
                         new ActivationRReLU(0.25, 0.5), new ActivationSigmoid(), new ActivationSoftmax(),
                         new ActivationSoftPlus(), new ActivationSoftSign(), new ActivationTanH()};
 
-        String[][] expectedFields = new String[][] {{}, //Cube
-                        {"alpha"}, //ELU
-                        {}, //Hard sigmoid
-                        {}, //Hard TanH
-                        {}, //Identity
-                        {"alpha"}, //Leaky Relu
-                        {}, //rational tanh
-                        {}, //relu
-                        {"l", "u"}, //rrelu
-                        {}, //sigmoid
-                        {}, //Softmax
-                        {}, //Softplus
-                        {}, //Softsign
-                        {} //Tanh
+        String[][] expectedFields = new String[][] {{"@class"}, //Cube
+                        {"@class", "alpha"}, //ELU
+                        {"@class"}, //Hard sigmoid
+                        {"@class"}, //Hard TanH
+                        {"@class"}, //Identity
+                        {"@class", "alpha"}, //Leaky Relu
+                        {"@class"}, //rational tanh
+                        {"@class"}, //relu
+                        {"@class", "l", "u"}, //rrelu
+                        {"@class"}, //sigmoid
+                        {"@class"}, //Softmax
+                        {"@class"}, //Softplus
+                        {"@class"}, //Softsign
+                        {"@class"} //Tanh
 
         };
 
@@ -74,9 +74,8 @@ public class TestActivationJson extends BaseNd4jTest {
             System.out.println(asJson);
 
             JsonNode node = mapper.readTree(asJson);
-            JsonNode content = node.elements().next();
 
-            Iterator<String> fieldNamesIter = content.fieldNames();
+            Iterator<String> fieldNamesIter = node.fieldNames();
             List<String> actualFieldsByName = new ArrayList<>();
             while (fieldNamesIter.hasNext()) {
                 actualFieldsByName.add(fieldNamesIter.next());
@@ -97,8 +96,5 @@ public class TestActivationJson extends BaseNd4jTest {
             IActivation act = mapper.readValue(asJson, IActivation.class);
             assertEquals(activations[i], act);
         }
-
     }
-
-
 }
