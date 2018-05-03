@@ -82,7 +82,7 @@ public class MergeVertex extends BaseGraphVertex {
             //No-op case
             int[] shape = inputs[0].shape();
             forwardPassShapes = new int[][] {Arrays.copyOf(shape, shape.length)};
-            return inputs[0];
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, inputs[0]);
         }
 
         forwardPassShapes = new int[inputs.length][0];
@@ -120,7 +120,7 @@ public class MergeVertex extends BaseGraphVertex {
 
         if (forwardPassShapes.length == 1) {
             //No op case
-            return new Pair<>(null, new INDArray[] {epsilon});
+            return new Pair<>(null, new INDArray[] {workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilon)});
         }
 
         //Split the epsilons in the opposite way that the activations were merged
