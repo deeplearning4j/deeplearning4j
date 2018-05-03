@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -16,7 +17,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.io.File;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class OCNNOutputLayerTest {
@@ -104,7 +108,7 @@ public class OCNNOutputLayerTest {
     }
 
     @Test
-    public void testOutput() {
+    public void testOutput() throws Exception {
         DataSetIterator dataSetIterator = new IrisDataSetIterator(150,150);
         DataSet ds = dataSetIterator.next();
         NormalizerStandardize normalizerStandardize = new NormalizerStandardize();
@@ -139,6 +143,12 @@ public class OCNNOutputLayerTest {
 
         INDArray output = network.output(arr.getRows(ArrayUtil.range(102,149)));
         System.out.println(output);
+        File tmpFile = new File("tmp-ocnn-zip");
+        tmpFile.deleteOnExit();
+        ModelSerializer.writeModel(network,tmpFile,true);
+
+        MultiLayerNetwork loaded = ModelSerializer.restoreMultiLayerNetwork(tmpFile);
+        assertNotNull(loaded);
     }
 
 

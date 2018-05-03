@@ -12,6 +12,9 @@ import org.deeplearning4j.nn.conf.layers.LayerValidation;
 import org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonCreator;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collection;
 import java.util.Map;
@@ -32,6 +35,7 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
+@JsonIgnoreProperties("lossFn")
 public class OCNNOutputLayer extends BaseOutputLayer {
     //embedded hidden layer size
     //aka "K"
@@ -46,8 +50,11 @@ public class OCNNOutputLayer extends BaseOutputLayer {
 
     }
 
-
-
+    @JsonCreator
+    public OCNNOutputLayer(@JsonProperty("hiddenSize") int hiddenSize,@JsonProperty("nu") double nu) {
+        this.hiddenSize = hiddenSize;
+        this.nu = nu;
+    }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
