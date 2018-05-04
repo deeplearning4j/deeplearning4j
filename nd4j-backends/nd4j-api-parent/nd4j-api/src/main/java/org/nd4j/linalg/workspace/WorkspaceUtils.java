@@ -31,7 +31,9 @@ public class WorkspaceUtils {
             List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
             List<String> workspaces = new ArrayList<>(l.size());
             for (MemoryWorkspace ws : l) {
-                workspaces.add(ws.getId());
+                if(ws.isScopeActive()) {
+                    workspaces.add(ws.getId());
+                }
             }
             throw new ND4JWorkspaceException(msg + " - Open/active workspaces: " + workspaces);
         }
