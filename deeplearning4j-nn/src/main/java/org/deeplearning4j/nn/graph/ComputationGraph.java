@@ -2109,9 +2109,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             //Close all open workspaces... usually this list will be empty, but not if an exception is thrown
             //Though if stopIndex < numLayers, some might still be open
             for(MemoryWorkspace ws : openActivationsWorkspaces.keySet()){
-                ws.close();
+                while (ws.isScopeActive()) {
+                    //Edge case here: seems that scoping out can increase the tagScope of the current WS
+                    //and if we hit an exception during forward pass, we aren't guaranteed to call close a sufficient
+                    // number of times to actually close it, in all cases
+                    ws.close();
+                }
             }
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
+
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at end of call to outputOfLayersDetached");
         }
 
         return outputs;
