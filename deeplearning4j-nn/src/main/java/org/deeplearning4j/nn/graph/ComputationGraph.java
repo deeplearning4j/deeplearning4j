@@ -430,7 +430,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 //        }
 
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
-//        topologicalOrder = topologicalSortOrder();
         Indexes indexes = calculateIndexes();
         topologicalOrder = indexes.getTopologicalSortOrder();
 
@@ -462,11 +461,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (; i < configuration.getNetworkInputs().size(); i++) {
             numParamsForVertex[i] = 0; //No parameters for input vertices
         }
-        for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
-            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
+        for(; i<topologicalOrder.length; i++ ){
+            String name = indexes.getIdxToName().get(i);
+            org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
             numParamsForVertex[i] = n.numParams(true);
             numParams += numParamsForVertex[i];
-            i++;
         }
 
         boolean initializeParams;
@@ -516,9 +515,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         List<Layer> tempLayerList = new ArrayList<>();
         defaultConfiguration.clearVariables();
         List<String> variables = defaultConfiguration.variables(false);
-        for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
-            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
-            String name = nodeEntry.getKey();
+        i = configuration.getNetworkInputs().size();
+        for(; i<topologicalOrder.length; i++ ){
+            String name = indexes.getIdxToName().get(i);
+            org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
+
             GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
                     initializeParams);
 
