@@ -95,14 +95,15 @@ namespace nd4j {
                                         0.0,
                                         columns->getBuffer(), n);
 
-                ConvolutionUtils<T>::_col2vol(columns->getBuffer(),
-                                              nOutputPlane, outputDepth, outputHeight, outputWidth,
-                                              inputDepth, inputHeight, inputWidth,
-                                              kT, kH, kW,
-                                              pT, pH, pW,
-                                              dT, dH, dW,
-                                              dilationT,  dilationH,  dilationW,
-                                              tadOut->getBuffer());
+                // ConvolutionUtils<T>::_col2vol(columns->getBuffer(),
+                //                               nOutputPlane, outputDepth, outputHeight, outputWidth,
+                //                               inputDepth, inputHeight, inputWidth,
+                //                               kT, kH, kW,
+                //                               pT, pH, pW,
+                //                               dT, dH, dW,
+                //                               dilationT,  dilationH,  dilationW,
+                //                               tadOut->getBuffer());
+                ConvolutionUtils<T>::col2vol(*columns, *tadOut, dT, dH, dW, pT, pH, pW, dilationT, dilationH, dilationW);
 
 
                 const int m_ = nOutputPlane;
@@ -240,14 +241,15 @@ namespace nd4j {
                 auto tadNext = tadsNext->at(e);
                 auto tadOutput = tadsOutput->at(e);
 
-                ConvolutionUtils<T>::_vol2col(
-                        tadNext->getBuffer(),
-                        nOutputPlane, outputDepth, outputHeight, outputWidth,
-                        kT, kH, kW,
-                        pT, pH, pW,
-                        dT, dH, dW,
-                        dilationT,  dilationH,  dilationW,
-                        gradColumns->getBuffer());
+                // ConvolutionUtils<T>::_vol2col(
+                //         tadNext->getBuffer(),
+                //         nOutputPlane, outputDepth, outputHeight, outputWidth,
+                //         kT, kH, kW,
+                //         pT, pH, pW,
+                //         dT, dH, dW,
+                //         dilationT,  dilationH,  dilationW,
+                //         gradColumns->getBuffer());
+                ConvolutionUtils<T>::vol2col(*tadNext, *gradColumns, dT, dH, dW, pT, pH, pW, dilationT, dilationH, dilationW);
 
                 const long m = weights->shapeOf()[0];
                 const long n = gradColumns->shapeOf()[1];
@@ -339,16 +341,16 @@ namespace nd4j {
                 auto tadInput = tadsInput->at(e);
                 auto tadEpsilon = tadsEpsilon->at(e);
 
-                ConvolutionUtils<T>::_vol2col(
-                        tadEpsilon->getBuffer(), nOutputPlane,
-                        outputDepth, outputHeight, outputWidth,
-                        kT, kH, kW,
-                        pT, pH, pW,
-                        dT, dH, dW,
-                        dilationT,  dilationH,  dilationW,
-                        columns->getBuffer()
-                );
-
+                // ConvolutionUtils<T>::_vol2col(
+                //         tadEpsilon->getBuffer(), nOutputPlane,
+                //         outputDepth, outputHeight, outputWidth,
+                //         kT, kH, kW,
+                //         pT, pH, pW,
+                //         dT, dH, dW,
+                //         dilationT,  dilationH,  dilationW,
+                //         columns->getBuffer()
+                // );
+                ConvolutionUtils<T>::vol2col(*tadEpsilon, *columns, dT, dH, dW, pT, pH, pW, dilationT, dilationH, dilationW);
                 const Nd4jIndex n = columns->shapeOf()[0];   // nOutputPlane * kt * kh * kw
                 const Nd4jIndex m = tadInput->shapeOf()[0];   // nInputPlane
                 const Nd4jIndex k = columns->shapeOf()[1];

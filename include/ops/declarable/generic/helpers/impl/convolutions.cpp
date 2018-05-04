@@ -8,36 +8,6 @@
 namespace nd4j {
 namespace ops  {
 
-//////////////////////////////////////////////////////////////////////////
-        template<typename T>
-        void ConvolutionUtils<T>::_im2col(const T* data_im, const int channels,
-                                const int height, const int width, const int kernel_h, const int kernel_w,
-                                const int pad_h, const int pad_w,
-                                const int stride_h, const int stride_w,
-                                const int dilation_h, const int dilation_w,
-                                T* data_col) {
-            const int height_col = (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
-            const int width_col = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
-            const int channels_col = channels * kernel_h * kernel_w;
-
-            for (int c_col = 0; c_col < channels_col; ++c_col) {
-                int w_offset = c_col % kernel_w;
-                int h_offset = (c_col / kernel_w) % kernel_h;
-                int c_im = c_col / kernel_h / kernel_w;
-
-                for (int h_col = 0; h_col < height_col; ++h_col) {
-                    for (int w_col = 0; w_col < width_col; ++w_col) {
-                        int h_im = h_col * stride_h - pad_h + h_offset * dilation_h;
-                        int w_im = w_col * stride_w - pad_w + w_offset * dilation_w;
-
-                        data_col[(c_col * height_col + h_col) * width_col + w_col] = (h_im >= (int) 0 && w_im >= (int) 0 && h_im < height &&
-                                                                                      w_im < width) ?
-                                                                                     data_im[(c_im * height + h_im) * width +
-                                                                                             w_im] : (T) 0.f;
-                    }
-                }
-            }
-        }
 
 //////////////////////////////////////////////////////////////////////////
         template<typename T>
@@ -77,99 +47,6 @@ namespace ops  {
             pW = ((oW - 1) * sW + eKW - iW) / 2;
 
         }
-
-//////////////////////////////////////////////////////////////////////////
-        template<typename T>
-        void ConvolutionUtils<T>::vol2col(NDArray<T>& vol, NDArray<T>& col,
-                                          const int colD, const int colH, const int colW, 
-                                          const int kD,   const int kH,   const int kW, 
-                                          const int sD,   const int sH,   const int sW,
-                                          const int pD,   const int pH,   const int pW,  
-                                          const int dD,   const int dH,   const int dW ) {
-
-            T* volBuff = vol.getBuffer();
-            T* colBuff = col.getBuffer();
-
-            int volC = vol.sizeAt(0);
-            int volD = vol.sizeAt(1);
-            int volH = vol.sizeAt(2);
-            int volW = vol.sizeAt(3);
-
-            int c, d, h, w;    
-            int outDim = volC * kD * kH * kW;
-            
-            for (c = 0; c < outDim; ++c) {
-                
-                int w_offset = c % kW;
-                int h_offset = (c / kW) % kH;
-                int d_offset = (c / kW / kH) % kD;
-                int c_vol = c / kD / kH / kW;
-                
-                for (d = 0; d < colD; ++d) {
-                    for (h = 0; h < colH; ++h) {
-                        for (w = 0; w < colW; ++w) {
-                            
-                            int d_pad = d * sD - pD + d_offset * dD;
-                            int h_pad = h * sH - pH + h_offset * dH;
-                            int w_pad = w * sW - pW + w_offset * dW;
-                            
-                            if (d_pad >= 0 && d_pad < volD && h_pad >= 0 && h_pad < volH && w_pad >= 0 && w_pad < volW)
-                                colBuff[((c * colD + d) * colH + h) * colW + w] = volBuff[((c_vol * volD + d_pad) * volH + h_pad) * volW + w_pad];
-                            else
-                                colBuff[((c * colD + d) * colH + h) * colW + w] = 0;
-                        }
-                    }
-                }
-            }
-        }
-
-//////////////////////////////////////////////////////////////////////////
-        template<typename T>
-        void ConvolutionUtils<T>::col2vol(NDArray<T>& col, NDArray<T>& vol, 
-                                          const int colD, const int colH, const int colW, 
-                                          const int kD, const int kH, const int kW, 
-                                          const int sD, const int sH, const int sW, 
-                                          const int pD, const int pH, const int pW, 
-                                          const int dD, const int dH, const int dW) {
-            
-            T* colBuff = col.getBuffer();
-            T* volBuff = vol.getBuffer();            
-
-            int volC = vol.sizeAt(0);
-            int volD = vol.sizeAt(1);
-            int volH = vol.sizeAt(2);
-            int volW = vol.sizeAt(3);
-
-            int c, t, h, w;
-            memset(volBuff, 0, sizeof(T) * volC * volD * volH * volW);
-
-            int effkD = kD; // + (kD - 1) * (dD - 1);
-            int effkH = kH; // + (kH - 1) * (dH - 1);
-            int effkW = kW; // + (kW - 1) * (dW - 1);            
-
-            int inDim = volC * effkD * effkH * effkW;
-            for (c = 0; c < inDim; ++c) {
-                
-                int w_offset = c % effkW;
-                int h_offset = (c / effkW) % effkH;
-                int t_offset = (c / (effkW * effkH)) % effkD;
-                int c_vol = c / (effkD * effkH * effkW);
-
-                for (t = 0; t < colD; ++t) {
-                    for (h = 0; h < colH; ++h) {
-                        for (w = 0; w < colW; ++w) {
-                
-                            int t_pad = t * sD - pD + t_offset * dD;
-                            int h_pad = h * sH - pH + h_offset * dH;
-                            int w_pad = w * sW - pW + w_offset * dW;
-                
-                            if (t_pad >= 0 && t_pad < volD && h_pad >= 0 && h_pad < volH && w_pad >= 0 && w_pad < volW)
-                                volBuff[((c_vol * volD + t_pad) * volH + h_pad) * volW + w_pad] += colBuff[((c * colD + t) * colH + h) * colW + w];
-                        }
-                    }
-                }
-            }
-        }        
 
 //////////////////////////////////////////////////////////////////////////
         template<typename T>
@@ -266,76 +143,6 @@ namespace ops  {
 
         }
 
-//////////////////////////////////////////////////////////////////////////
-        template<typename T>
-        void ConvolutionUtils<T>::_vol2col(const T *data_vol, const int channels, const int depth, const int height, const int width, const int kD, const int kH, const int kW, const int pT, const int pH, const int pW, const int dT, const int dH, const int dW, const int dilationT, const int dilationH, const int dilationW, T *data_col) {
-            int c, t, h, w;
-            int depth_col  = (depth  + 2 * pT - (dilationT * (kD - 1) + 1)) / dT + 1;
-            int height_col = (height + 2 * pH - (dilationH * (kH - 1) + 1)) / dH + 1;
-            int width_col  = (width  + 2 * pW - (dilationW * (kW - 1) + 1)) / dW + 1;
-            int channels_col = channels * kD * kH * kW;
-            for (c = 0; c < channels_col; ++c)
-            {
-                int w_offset = c % kW;
-                int h_offset = (c / kW) % kH;
-                int t_offset = (c / kW / kH) % kD;
-                int c_vol = c / kD / kH / kW;
-                for (t = 0; t < depth_col; ++t)
-                {
-                    for (h = 0; h < height_col; ++h)
-                    {
-                        for (w = 0; w < width_col; ++w)
-                        {
-                            int t_pad = t * dT - pT + t_offset * dilationT;
-                            int h_pad = h * dH - pH + h_offset * dilationH;
-                            int w_pad = w * dW - pW + w_offset * dilationW;
-                            if (t_pad >= 0 && t_pad < depth &&
-                                h_pad >= 0 && h_pad < height &&
-                                w_pad >= 0 && w_pad < width)
-                                data_col[((c * depth_col + t) * height_col + h) * width_col + w] =
-                                        data_vol[((c_vol * depth + t_pad) * height + h_pad) * width + w_pad];
-                            else
-                                data_col[((c * depth_col + t) * height_col + h) * width_col + w] = 0;
-                        }
-                    }
-                }
-            }
-        }
-
-//////////////////////////////////////////////////////////////////////////
-        template<typename T>
-        void ConvolutionUtils<T>::_col2vol(const T* data_col, const int channels, const int depth, const int height, const int width, const int out_depth, const int out_height, const int out_width, const int kD, const int kH, const int kW, const int pT, const int pH, const int pW, const int dT, const int dH, const int dW, const int dilationT, const int dilationH, const int dilationW, T* data_vol) {
-            int c, t, h, w;
-            memset(data_vol, 0, sizeof(T) * depth * height * width * channels);
-            int depth_col  = out_depth;
-            int height_col = out_height;
-            int width_col  = out_width;
-            int channels_col = channels * kD * kH * kW;
-            for (c = 0; c < channels_col; ++c)
-            {
-                int w_offset = c % kW;
-                int h_offset = (c / kW) % kH;
-                int t_offset = (c / kW / kH) % kD;
-                int c_vol = c / kD / kH / kW;
-                for (t = 0; t < depth_col; ++t)
-                {
-                    for (h = 0; h < height_col; ++h)
-                    {
-                        for (w = 0; w < width_col; ++w)
-                        {
-                            int t_pad = t * dT - pT + t_offset * dilationT;
-                            int h_pad = h * dH - pH + h_offset * dilationH;
-                            int w_pad = w * dW - pW + w_offset * dilationW;
-                            if (t_pad >= 0 && t_pad < depth &&
-                                h_pad >= 0 && h_pad < height &&
-                                w_pad >= 0 && w_pad < width)
-                                data_vol[((c_vol * depth + t_pad) * height + h_pad) * width + w_pad] +=
-                                        data_col[((c * depth_col + t) * height_col + h) * width_col + w];
-                        }
-                    }
-                }
-            }
-        }
 
 //////////////////////////////////////////////////////////////////////////
         template<typename T>
@@ -1586,6 +1393,316 @@ void ConvolutionUtils<T>::sconv2d(const std::vector<NDArray<T>*>& inArrs, NDArra
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+// [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
+template <typename T>
+void ConvolutionUtils<T>::vol2col(NDArray<T>& volume, NDArray<T>& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+
+    const int bS = volume.sizeAt(0);
+    const int iC = volume.sizeAt(1);
+    const int iD = volume.sizeAt(2);
+    const int iH = volume.sizeAt(3);
+    const int iW = volume.sizeAt(4);
+    const int kD = columns.sizeAt(2);
+    const int kH = columns.sizeAt(3);
+    const int kW = columns.sizeAt(4);
+    const int oD = columns.sizeAt(5);
+    const int oH = columns.sizeAt(6);
+    const int oW = columns.sizeAt(7);
+    const int colStride0 = columns.stridesOf()[0];
+    const int colStride1 = columns.stridesOf()[1];
+    const int colStride2 = columns.stridesOf()[2];
+    const int colStride3 = columns.stridesOf()[3];
+    const int colStride4 = columns.stridesOf()[4];
+    const int colStride5 = columns.stridesOf()[5];
+    const int colStride6 = columns.stridesOf()[6];
+    const int colStride7 = columns.stridesOf()[7];  
+    const int volStride0 = volume.stridesOf()[0];
+    const int volStride1 = volume.stridesOf()[1];
+    const int volStride2 = volume.stridesOf()[2];
+    const int volStride3 = volume.stridesOf()[3];
+    const int volStride4 = volume.stridesOf()[4];    
+    
+    T* vol = volume.getBuffer();
+    T* col = columns.getBuffer();
+
+    const T* vol0End = vol + volStride1 * iC;
+    const int kDepEnd = -pD + kD * dD;
+    const int kRowEnd = -pH + kH * dH;
+    const int kColEnd = -pW + kW * dW;
+    const int oHW = oH * oW;
+    const int volDepEnd = oD * sD;
+    const int volRowEnd = oH * sH;
+    const int volColEnd = oW * sW;
+
+    T *vol0, *vol1, *vol2, *col0;
+
+    if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo())) {
+
+#pragma omp parallel for if(bS > Environment::getInstance()->elementwiseThreshold()) schedule(static) proc_bind(close) private(vol0, vol1, vol2, col0)
+        for (int b = 0; b < bS; b++) {            
+            col0 = col + (b * colStride0);                        
+
+            for (vol0 = vol + (b * volStride0); vol0 < (b * volStride0) + vol0End; vol0 += volStride1) { 
+
+               for (int kDep = -pD; kDep < kDepEnd; kDep+=dD) { 
+
+                    for (int kRow = -pH; kRow < kRowEnd; kRow+=dH) {
+
+                        for (int kCol = -pW; kCol < kColEnd; kCol+=dW) {
+                                
+                            for (int volDep = kDep; volDep < kDep + volDepEnd; volDep+=sD) {
+
+                                if(static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD)) {                                
+                                    for (T* colStart = col0; col0 < colStart + oHW; ++col0)                                        
+                                            *col0 = 0.;                       
+                                }
+                                else {
+                                    vol1 = vol0 + volDep * volStride2;
+
+                                    for (int volRow = kRow; volRow < kRow + volRowEnd; volRow+=sH) {
+
+                                        if (static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH)) {                                        
+                                            for (T* colStart = col0; col0 < colStart + oW; ++col0) 
+                                                *col0 = 0.;
+                                        }
+                                        else {                                            
+                                            vol2 = vol1 + volRow * volStride3;
+
+                                            for (int volCol = kCol; volCol < kCol + volColEnd; volCol+=sW, ++col0) 
+                                                if (static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))                                                
+                                                    *col0 = 0.;                                                    
+                                                else 
+                                                    *col0 = *(vol2 + volCol * volStride4);                
+                                        }        
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        const int col5End = oH * colStride6;
+        const int col6End = oW * colStride7;
+        T *col1, *col2, *col3, *col4, *col5, *col6;
+#pragma omp parallel for if(bS > Environment::getInstance()->elementwiseThreshold()) schedule(static) proc_bind(close) private(vol0, vol1, vol2, col0, col1, col2, col3, col4, col5, col6)
+          for (int b = 0; b < bS; b++) {            
+            col0 = col + (b * colStride0);                        
+            
+            for (vol0 = vol + (b * volStride0); vol0 < (b * volStride0) + vol0End; vol0+=volStride1, col0+=colStride1) { 
+                col1 = col0;
+
+                for (int kDep = -pD; kDep < kDepEnd; kDep+=dD, col1+=colStride2) { 
+                    col2 = col1;                    
+                    
+                    for (int kRow = -pH; kRow < kRowEnd; kRow+=dH, col2+=colStride3) {                        
+                        col3 = col2;                        
+
+                        for (int kCol = -pW; kCol < kColEnd; kCol+=dW, col3+=colStride4) {                        
+                            col4 = col3;                            
+                                
+                            for (int volDep = kDep; volDep < kDep + volDepEnd; volDep+=sD, col4+=colStride5) {                            
+                                col5 = col4;
+
+                                if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD)) {
+                                    for (; col5 < col4 + col5End; col5+=colStride6) {                                        
+                                        for (col6 = col5; col6 < col5 + col6End; col6+=colStride7) 
+                                            *col6 = 0.;
+                                    }
+                                }
+                                else {
+                                    vol1 = vol0 + volDep * volStride2;
+
+                                    for (int volRow = kRow; volRow < kRow + volRowEnd; volRow+=sH, col5+=colStride6) {                                    
+                                        col6 = col5;                                        
+
+                                        if (static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH)) {
+                                            for (; col6 < col5 + col6End; col6+=colStride7) 
+                                               *col6 = 0.;                                         
+                                        }
+                                        else {                                            
+                                            vol2 = vol1 + volRow * volStride3;
+
+                                            for (int volCol = kCol; volCol < kCol + volColEnd; volCol+=sW, col6+=colStride7)                                             
+                                                if (static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW)) 
+                                                    *col6 = 0.;                                                     
+                                                else 
+                                                    *col6 = *(vol2 + volCol * volStride4);
+                                        }        
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }  
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to [bS, iC, iD, iH, iW]
+template <typename T>
+void ConvolutionUtils<T>::col2vol(NDArray<T>& columns, NDArray<T>& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+
+    const int bS = volume.sizeAt(0);
+    const int iC = volume.sizeAt(1);
+    const int iD = volume.sizeAt(2);
+    const int iH = volume.sizeAt(3);
+    const int iW = volume.sizeAt(4);
+    const int kD = columns.sizeAt(2);
+    const int kH = columns.sizeAt(3);
+    const int kW = columns.sizeAt(4);
+    const int oD = columns.sizeAt(5);
+    const int oH = columns.sizeAt(6);
+    const int oW = columns.sizeAt(7);
+    const int colStride0 = columns.stridesOf()[0];
+    const int colStride1 = columns.stridesOf()[1];
+    const int colStride2 = columns.stridesOf()[2];
+    const int colStride3 = columns.stridesOf()[3];
+    const int colStride4 = columns.stridesOf()[4];
+    const int colStride5 = columns.stridesOf()[5];
+    const int colStride6 = columns.stridesOf()[6];
+    const int colStride7 = columns.stridesOf()[7];  
+    const int volStride0 = volume.stridesOf()[0];
+    const int volStride1 = volume.stridesOf()[1];
+    const int volStride2 = volume.stridesOf()[2];
+    const int volStride3 = volume.stridesOf()[3];
+    const int volStride4 = volume.stridesOf()[4];    
+    
+    T* vol = volume.getBuffer();
+    T* col = columns.getBuffer();
+
+    const T* vol0End = vol + volStride1 * iC;
+    const int kDepEnd = -pD + kD * dD;
+    const int kRowEnd = -pH + kH * dH;
+    const int kColEnd = -pW + kW * dW;
+    const int colStepOH = oH * colStride6;
+    const int colStepOW = oW * colStride7;
+    const int volDepEnd = oD * sD;
+    const int volRowEnd = oH * sH;
+    const int volColEnd = oW * sW;
+
+    T *vol0, *vol1, *vol2, *vol3, *col0;    
+
+    if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo())) {
+
+#pragma omp parallel for if(bS > Environment::getInstance()->elementwiseThreshold()) schedule(static) proc_bind(close) private(vol0, vol1, vol2, vol3, col0)
+        for (int b = 0; b < bS; b++) {            
+            col0 = col + (b * colStride0);                        
+
+            for (vol0 = vol + (b * volStride0); vol0 < (b * volStride0) + vol0End; vol0 += volStride1) { 
+
+               for (int kDep = -pD; kDep < kDepEnd; kDep+=dD) { 
+
+                    for (int kRow = -pH; kRow < kRowEnd; kRow+=dH) {
+
+                        for (int kCol = -pW; kCol < kColEnd; kCol+=dW) {
+                                
+                            for (int volDep = kDep; volDep < kDep + volDepEnd; volDep+=sD) {
+
+                                if(static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD)) {                            
+                                    col0 += colStepOH;
+                                }
+                                else {
+                                    vol1 = vol0 + volDep * volStride2;
+
+                                    for (int volRow = kRow; volRow < kRow + volRowEnd; volRow+=sH) {
+
+                                        if (static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH)) {                                        
+                                            col0 += colStepOW;           
+                                        }
+                                        else {                                            
+                                            vol2 = vol1 + volRow * volStride3;
+
+                                            if(kDep == -pD &&  kRow == -pH && kCol == -pW) {        // first pass
+                                                for (int volCol = kCol; volCol < kCol + volColEnd; volCol+=sW, col0+=colStride7) 
+                                                    if (static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) 
+                                                        *(vol2 + volCol * volStride4) = *col0;                                                        
+                                            }
+                                            else {
+                                                for (int volCol = kCol; volCol < kCol + volColEnd; volCol+=sW, col0+=colStride7) {
+                                                    if (static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) {
+                                                        vol3 = vol2 + volCol * volStride4;
+                                                        *vol3 += *col0;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        const int col5End = oH * colStride6;
+        const int col6End = oW * colStride7;
+        T *col1, *col2, *col3, *col4, *col5, *col6;
+#pragma omp parallel for if(bS > Environment::getInstance()->elementwiseThreshold()) schedule(static) proc_bind(close) private(vol0, vol1, vol2, col0, col1, col2, col3, col4, col5, col6)
+          for (int b = 0; b < bS; b++) {            
+            col0 = col + (b * colStride0);                        
+            
+            for (vol0 = vol + (b * volStride0); vol0 < (b * volStride0) + vol0End; vol0+=volStride1, col0+=colStride1) { 
+                col1 = col0;
+
+                for (int kDep = -pD; kDep < kDepEnd; kDep+=dD, col1+=colStride2) { 
+                    col2 = col1;                    
+                    
+                    for (int kRow = -pH; kRow < kRowEnd; kRow+=dH, col2+=colStride3) {                        
+                        col3 = col2;                        
+
+                        for (int kCol = -pW; kCol < kColEnd; kCol+=dW, col3+=colStride4) {                        
+                            col4 = col3;                            
+                                
+                            for (int volDep = kDep; volDep < kDep + volDepEnd; volDep+=sD, col4+=colStride5) {                            
+                                col5 = col4;
+
+                                if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD)) {
+                                    col5 += colStepOH;
+                                }
+                                else {
+                                    vol1 = vol0 + volDep * volStride2;
+
+                                    for (int volRow = kRow; volRow < kRow + volRowEnd; volRow+=sH, col5+=colStride6) {                                    
+                                        col6 = col5;                                        
+
+                                        if (static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH)) {
+                                            col6 += colStepOW;
+                                        }
+                                        else {                                            
+                                            vol2 = vol1 + volRow * volStride3;
+
+                                            if(kDep == -pD &&  kRow == -pH && kCol == -pW) {        // first pass
+                                                for (int volCol = kCol; volCol < kCol + volColEnd; volCol+=sW, col6+=colStride7) 
+                                                    if (static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) 
+                                                        *(vol2 + volCol * volStride4) = *col6;
+                                            }
+                                            else {
+                                                for (int volCol = kCol; volCol < kCol + volColEnd; volCol+=sW, col6+=colStride7) {
+                                                    if (static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) {
+                                                        vol3 = vol2 + volCol * volStride4;
+                                                        *vol3 += *col6;   
+                                                    }
+                                                }
+                                            }
+                                        }        
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }  
+    }
+}
 template class ND4J_EXPORT ConvolutionUtils<float>;
 template class ND4J_EXPORT ConvolutionUtils<float16>;
 template class ND4J_EXPORT ConvolutionUtils<double>;

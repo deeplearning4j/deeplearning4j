@@ -16,7 +16,6 @@ namespace nd4j {
             // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
             template <typename T>
             void _im2col(nd4j::graph::LaunchContext& context, T *out, T *in, int *zShape, int *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, T zeroPadVal) {
-                int kSize = kH * kW;
 
                 const int *outShape  = shape::shapeOf(zShape);
                 const char outOrder  = shape::order(zShape);
@@ -40,37 +39,38 @@ namespace nd4j {
                 const int inStride1   = inStride[1];
                 const int inStride2   = inStride[2];
                 const int inStride3   = inStride[3];
-                
-                int inRowStart, inColStart, inRow, inCol;
+
+                const T* in0End = in + inStride1 * iC;
+                const int kRowEnd = -pH + kH * dH;
+                const int kColEnd = -pW + kW * dW;
+                const int oHW = oH * oW;
+                const int inRowEnd = oH * sH;
+                const int inColEnd = oW * sW;
+                                
                 T *in0, *in1;
 
                 if (shape::order(xShape) == 'c' &&  shape::order(zShape) == 'c' && shape::strideDescendingCAscendingF(xShape) && shape::strideDescendingCAscendingF(zShape)) {
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1, inRowStart, inColStart, inRow, inCol)
+#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1)
                     for (int b = 0; b < bS; b++) {
-                        in0 = in + (b * inStride0);
                         T *output = out + (b * outStride0);                        
 
-                        for (int channel = 0; channel < iC; ++channel, in0 += inStride1) { 
+                        for (in0 = in + (b * inStride0); in0 < (b * inStride0) + in0End; in0 += inStride1) {
 
-                            for (int kRow = 0; kRow < kH; kRow++) {
-                                inRowStart = -pH + kRow * dH; 
+                            for (int kRow = -pH; kRow < kRowEnd; kRow+=dH) {
 
-                                for (int kCol = 0; kCol < kW; kCol++) {                                    
-                                    inRow = inRowStart;                                    
-                                    inColStart = -pW + kCol * dW;
+                                for (int kCol = -pW; kCol < kColEnd; kCol+=dW) {
 
-                                    for (int outRow = 0; outRow < oH; ++outRow, inRow += sH) {                                        
+                                    for (int inRow = kRow; inRow < kRow + inRowEnd; inRow+=sH) {
 
-                                        if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) 
-                                            for (int outCol = 0; outCol < oW; ++outCol, ++output) {
+                                        if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
+                                            for (T* outStart = output; output < outStart + oW; ++output) 
                                                 *output = zeroPadVal;
                                         } 
-                                        else {
-                                            inCol = inColStart;
+                                        else {                                            
                                             in1 = in0 + inRow * inStride2;
 
-                                            for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, ++output) 
+                                            for (int inCol = kCol; inCol < kCol + inColEnd; inCol+=sW, ++output)
                                                 if (is_a_ge_zero_and_a_lt_b(inCol, iW)) 
                                                     *output = *(in1 + inCol * inStride3);                                                
                                                 else 
@@ -83,43 +83,37 @@ namespace nd4j {
                     }
                 } 
                 else {
-                    
+                    const int col4End = oW * outStride5;
                     T *out0, *out1, *out2, *out3, *out4;
-#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1, out0, out1, out2, out3, out4, inRowStart, inColStart, inRow, inCol)
-                    for (int b = 0; b < bS; b++) {
-                        in0 = in + (b * inStride0);
+#pragma omp parallel for private(in0, in1, out0, out1, out2, out3, out4)
+                    for (int b = 0; b < bS; b++) {                        
                         out0  = out + b * outStride0;
 
-                        for (int channel = 0; channel < iC; ++channel, in0 += inStride1, out0+=outStride1) {
+                        for (in0 = in + (b * inStride0); in0 < (b * inStride0) + in0End; in0+=inStride1, out0+=outStride1) {                        
                             out1 = out0;
 
-                            for (int kRow = 0; kRow < kH; kRow++, out1 += outStride2) {
+                            for (int kRow = -pH; kRow < kRowEnd; kRow+=dH, out1+=outStride2) {
                                 out2 = out1;
-                                inRowStart = -pH + kRow * dH; 
 
-                                for (int kCol = 0; kCol < kW; kCol++, out2 += outStride3) {
-                                    out3 = out2;
-                                    inRow = inRowStart;                                    
-                                    inColStart = -pW + kCol * dW;
+                                for (int kCol = -pW; kCol < kColEnd; kCol+=dW, out2+=outStride3) {
+                                    out3 = out2;                                    
 
-                                    for (int outRow = 0; outRow < oH; ++outRow, inRow += sH, out3 += outStride4) {
+                                    for (int inRow = kRow; inRow < kRow + inRowEnd; inRow+=sH, out3+=outStride4) {
                                         out4 = out3;
 
-                                        if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) 
-                                            for (int outCol = 0; outCol < oW; ++outCol, out4 += outStride5) {
-                                                *out4 = zeroPadVal;
+                                        if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
+                                            for (; out4 < out3 + col4End; out4+=outStride5) 
+                                               *out4 = 0.;                                                                             
                                         } 
-                                        else {
-                                            inCol = inColStart;
+                                        else {                                            
                                             in1 = in0 +  inRow * inStride2;
 
-                                            for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, out4 += outStride5) {
+                                            for (int inCol = kCol; inCol < kCol + inColEnd; inCol+=sW, out4+=outStride5)
                                                 if (is_a_ge_zero_and_a_lt_b(inCol, iW)) 
                                                     *out4 = *(in1 + inCol * inStride3);
                                                 else 
-                                                    *out4 = zeroPadVal;
-                                            }
-                                        }                                        
+                                                    *out4 = zeroPadVal;                                            
+                                        }          
                                     }
                                 }
                             }

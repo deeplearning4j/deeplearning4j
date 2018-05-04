@@ -14,7 +14,7 @@ using namespace nd4j::graph;
 
 class PlaygroundTests : public testing::Test {
 public:
-    int numIterations = 10;
+    int numIterations = 3;
     int poolSize = 10;
 
     PlaygroundTests() {
@@ -298,7 +298,7 @@ TEST_F(PlaygroundTests, Test_Profile_2) {
     Environment::getInstance()->setProfiling(true);
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
 
-    auto profile = GraphProfilingHelper<float>::profile(graph, 1000);
+    auto profile = GraphProfilingHelper<float>::profile(graph, 2);
     profile->printOut();
 
     delete graph;
@@ -309,7 +309,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     
     int bS=16, iH=224,iW=224,  iC=3,oC=3,  kH=11,kW=11,  sH=4,sW=4,  pH=2,pW=2,  dH=1,dW=1;    
     int        oH=55, oW=55;
-    int iterations = 5;
+    int iterations = 1;
 
     NDArray<float> input('c', {bS, iC, iH, iW});
     NDArray<float> output('c', {bS, iC, kH, kW, oH, oW});
