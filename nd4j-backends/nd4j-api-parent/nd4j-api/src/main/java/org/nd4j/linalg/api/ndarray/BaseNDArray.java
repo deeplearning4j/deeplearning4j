@@ -4190,8 +4190,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         long prod = ArrayUtil.prodLong(shape);
 
-        if (prod != this.lengthLong())
-            throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.lengthLong() + "]");
+        if (prod != this.lengthLong()){
+            throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.lengthLong() + "]. Original shape: "+Arrays.toList(this.shape())+" New Shape: "+Arrays.toList(newShape));
+        }
 
 
 
