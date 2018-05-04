@@ -1100,6 +1100,27 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 //        if (topologicalOrder != null)
 //            return topologicalOrder;
 
+
+        //Get cached topological sort order from config, if present
+        if(configuration.getTopologicalOrder() != null && configuration.getTopologicalOrderStr() != null){
+            int[] t = configuration.getTopologicalOrder();
+            List<String> s = configuration.getTopologicalOrderStr();
+            Map<String,Integer> m1 = new HashMap<>();
+            Map<Integer,String> m2 = new HashMap<>();
+            for( int i=0; i<t.length; i++ ){
+                m1.put(s.get(i), t[i]);
+                m2.put(t[i], s.get(i));
+            }
+
+            System.out.println("RETURNING CACHED TOPO SORT");
+            return Indexes.builder()
+                    .topologicalSortOrder(t)
+                    .nameToIdx(m1)
+                    .idxToName(m2)
+                    .build();
+        }
+
+
         //https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
         Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getVertices();
         List<String> networkInputNames = configuration.getNetworkInputs();
@@ -1196,6 +1217,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 + "cycle includes vertex \"" + vertexNamesMap.get(entry.getKey())
                                 + "\")");
         }
+
+        //Store:
+
+        List<String> s = new ArrayList<>(out.length);
+        for( int idx : out){
+            s.add(vertexNamesMap.get(idx));
+        }
+
+        configuration.setTopologicalOrder(out);
+        configuration.setTopologicalOrderStr(s);
 
 //        return out;
         return Indexes.builder()
