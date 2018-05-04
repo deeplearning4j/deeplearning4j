@@ -23,21 +23,22 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.PermutePreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Imports Reshape layer from Keras
+ * Imports Permute layer from Keras
  *
  * @author Max Pumperla
  */
-public class KerasReshape extends KerasLayer {
+public class KerasPermute extends KerasLayer {
 
-    private int[] targetShape;
+    private int[] permutationIndices;
 
 
     /**
@@ -47,7 +48,7 @@ public class KerasReshape extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasReshape(Map<String, Object> layerConfig)
+    public KerasPermute(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
@@ -60,24 +61,19 @@ public class KerasReshape extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasReshape(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasPermute(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        String targetShape = "target_shape";
-        if (innerConfig.containsKey(targetShape)) {
+        String permutationInfo = "dims";
+        if (innerConfig.containsKey(permutationInfo)) {
             @SuppressWarnings("unchecked")
-            List<Integer> targetShapeList = (List<Integer>) innerConfig.get(targetShape);
-            this.targetShape = ArrayUtil.toArray(targetShapeList);
+            List<Integer> targetShapeList = (List<Integer>) innerConfig.get(permutationInfo);
+            this.permutationIndices = ArrayUtil.toArray(targetShapeList);
         }
 
     }
 
-    /**
-     * Whether this Keras layer maps to a DL4J InputPreProcessor.
-     *
-     * @return true
-     */
     @Override
     public boolean isInputPreProcessor() {
         return true;
@@ -89,35 +85,43 @@ public class KerasReshape extends KerasLayer {
      * @param inputType Array of InputTypes
      * @return DL4J InputPreProcessor
      * @throws InvalidKerasConfigurationException Invalid Keras config
-     * @see org.deeplearning4j.nn.conf.InputPreProcessor
+     * @see InputPreProcessor
      */
     @Override
-    public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
+    public InputPreProcessor getInputPreprocessor(InputType... inputType) throws
+            InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Reshape layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preprocessor = null;
         if (inputType[0] instanceof InputType.InputTypeConvolutional) {
-            InputType.InputTypeConvolutional it = (InputType.InputTypeConvolutional) inputType[0];
             switch (this.getDimOrder()) {
                 case THEANO:
-                    int[] inputShapeTh = new int[]{it.getHeight(), it.getWidth(), it.getChannels()};
-                    preprocessor = new ReshapePreprocessor(inputShapeTh, this.targetShape);
+                    if (Arrays.equals(permutationIndices, new int[]{1, 3, 2})) // channels first, swapping H and W.
+                        preprocessor = new PermutePreprocessor(permutationIndices);
+                    else
+                        throw new InvalidKerasConfigurationException("Attempting to permute dimensions other than" +
+                                "spatial dimensions (height and width), got " + Arrays.toString(permutationIndices));
                     break;
-                case NONE: // TF is now the default
+                case NONE: // TF by default
                 case TENSORFLOW:
-                    int[] inputShapeTf = new int[]{it.getWidth(), it.getChannels(), it.getHeight()};
-                    preprocessor = new ReshapePreprocessor(inputShapeTf, this.targetShape);
-
+                    if (Arrays.equals(permutationIndices, new int[]{2, 1, 3})) // channels last, swapping H and W
+                        preprocessor = new PermutePreprocessor(new int[]{1, 3, 2}); // DL4J is channels first
+                    else
+                        throw new InvalidKerasConfigurationException("Attempting to permute dimensions other than" +
+                                "spatial dimensions (height and width) in Permute layer, got "
+                                + Arrays.toString(permutationIndices));
             }
         } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
-            InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType[0];
-            int[] inputShape = new int[]{it.getSize(), it.getTimeSeriesLength()};
-            preprocessor = new ReshapePreprocessor(inputShape, this.targetShape);
+            if (Arrays.equals(permutationIndices, new int[] {2, 1}))
+                preprocessor = new PermutePreprocessor(permutationIndices);
+            else
+                throw new InvalidKerasConfigurationException("For RNN type input data, permutation dims have to be" +
+                        "(2, 1) in Permute layer, got " + Arrays.toString(permutationIndices));
         } else if (inputType[0] instanceof InputType.InputTypeFeedForward) {
-            InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
-            int[] inputShape = new int[]{it.getSize()};
-            preprocessor = new ReshapePreprocessor(inputShape, this.targetShape);
+            preprocessor = null;
+        } else {
+            throw new InvalidKerasConfigurationException("Input type not supported: " + inputType[0]);
         }
         return preprocessor;
     }
@@ -133,8 +137,8 @@ public class KerasReshape extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras Reshape layer accepts only one input (received " + inputType.length + ")");
-        ReshapePreprocessor reshape = (ReshapePreprocessor) getInputPreprocessor(inputType);
+                    "Keras Permute layer accepts only one input (received " + inputType.length + ")");
+        PermutePreprocessor reshape = (PermutePreprocessor) getInputPreprocessor(inputType);
         return reshape.getOutputType(inputType[0]);
     }
 }

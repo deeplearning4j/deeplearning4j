@@ -1121,13 +1121,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             if(temp != null){
                 //Should only be non-null on exception
-                temp.close();
+                while(temp.isScopeActive()){
+                    //For safety, should should never occur in theory: a single close() call may not be sufficient, if
+                    // workspace scope was borrowed and not properly closed when exception occurred
+                    temp.close();
+                }
             }
 
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
-        }
 
-        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
+        }
 
         return input;
     }
