@@ -47,8 +47,8 @@ public class KerasReshapeTest {
 
     @Test
     public void testReshapeLayer() throws Exception {
-        buildLReshapeLayer(conf1, keras1);
-        buildLReshapeLayer(conf2, keras2);
+        buildReshapeLayer(conf1, keras1);
+        buildReshapeLayer(conf2, keras2);
     }
 
     @Test
@@ -57,17 +57,17 @@ public class KerasReshapeTest {
         testDynamicMinibatches(conf2, keras2);
     }
 
-    private void buildLReshapeLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    private void buildReshapeLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         int[] targetShape = new int[]{10, 5};
         List<Integer> targetShapeList = new ArrayList<>();
         targetShapeList.add(targetShape[0]);
         targetShapeList.add(targetShape[1]);
-        ReshapePreprocessor preProcessor = getReshapePreProcesser(conf, kerasVersion, targetShapeList);
+        ReshapePreprocessor preProcessor = getReshapePreProcessor(conf, kerasVersion, targetShapeList);
         assertEquals(preProcessor.getTargetShape()[0], targetShape[0]);
         assertEquals(preProcessor.getTargetShape()[1], targetShape[1]);
     }
 
-    private ReshapePreprocessor getReshapePreProcesser(KerasLayerConfiguration conf, Integer kerasVersion,
+    private ReshapePreprocessor getReshapePreProcessor(KerasLayerConfiguration conf, Integer kerasVersion,
                                                        List<Integer> targetShapeList)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> layerConfig = new HashMap<>();
@@ -86,7 +86,7 @@ public class KerasReshapeTest {
 
     private void testDynamicMinibatches(KerasLayerConfiguration conf, Integer kerasVersion) throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         List<Integer> targetShape = Collections.singletonList(20);
-        ReshapePreprocessor preprocessor = getReshapePreProcesser(conf, kerasVersion, targetShape);
+        ReshapePreprocessor preprocessor = getReshapePreProcessor(conf, kerasVersion, targetShape);
         INDArray r1 = preprocessor.preProcess(Nd4j.zeros(10, 20), 10, LayerWorkspaceMgr.noWorkspaces());
         INDArray r2 = preprocessor.preProcess(Nd4j.zeros(5, 20), 5, LayerWorkspaceMgr.noWorkspaces());
         Assert.assertArrayEquals(r2.shape(), new int[]{5, 20});

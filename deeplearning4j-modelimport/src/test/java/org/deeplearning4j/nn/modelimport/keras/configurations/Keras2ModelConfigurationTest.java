@@ -165,6 +165,12 @@ public class Keras2ModelConfigurationTest {
     }
 
     @Test
+    public void permuteRetinaUnet() throws Exception {
+        runModelConfigTest("configs/keras2/permute_retina_unet.json");
+    }
+
+
+    @Test
     public void simpleAddLayerTest() throws Exception {
         runModelConfigTest("configs/keras2/simple_add_tf_keras_2.json");
     }
