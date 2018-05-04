@@ -1697,11 +1697,12 @@ public class Nd4j {
     }
 
     /**
-     * Sort an ndarray along a particular dimension
+     * Sort an ndarray along a particular dimension.<br>
+     * Note that the input array is modified in-place.
      *
      * @param ndarray   the ndarray to sort
      * @param dimension the dimension to sort
-     * @return the indices and the sorted ndarray
+     * @return the indices and the sorted ndarray (the original array, modified in-place)
      */
     public static INDArray[] sortWithIndices(INDArray ndarray, int dimension, boolean ascending) {
         INDArray indices = Nd4j.create(ndarray.shape());
@@ -1804,7 +1805,8 @@ public class Nd4j {
     }
 
     /**
-     * Sort an ndarray along a particular dimension
+     * Sort an ndarray along a particular dimension<br>
+     * Note that the input array is modified in-place.
      *
      * @param ndarray   the ndarray to sort
      * @param dimension the dimension to sort
@@ -1812,29 +1814,6 @@ public class Nd4j {
      */
     public static INDArray sort(INDArray ndarray, int dimension, boolean ascending) {
         return getNDArrayFactory().sort(ndarray, !ascending, dimension);
-        /*
-        for (int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
-            INDArray vec = ndarray.vectorAlongDimension(i, dimension);
-            double[] data = new double[vec.length()];
-            for (int j = 0; j < vec.length(); j++) {
-                data[j] = vec.getDouble(j);
-            }
-
-            Arrays.sort(data);
-
-            if (ascending)
-                for (int j = 0; j < vec.length(); j++)
-                    vec.putScalar(j, data[j]);
-            else {
-                int count = data.length - 1;
-                for (int j = 0; j < vec.length(); j++) {
-                    vec.putScalar(j, data[count--]);
-                }
-            }
-
-        }
-
-        return ndarray;*/
     }
 
     /**Sort (shuffle) the rows of a 2d array according to the value at a specified column.

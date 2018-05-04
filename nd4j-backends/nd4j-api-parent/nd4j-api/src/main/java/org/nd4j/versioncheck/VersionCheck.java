@@ -2,10 +2,8 @@ package org.nd4j.versioncheck;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -34,16 +32,13 @@ public class VersionCheck {
     private static final String SPARK_1_VER_STRING = "spark_1";
     private static final String SPARK_2_VER_STRING = "spark_2";
 
-    private static final String UNKNOWN_VERSION = "(Unknown, pre-0.9.1)";
-    private static final String UNKNOWN_VERSION_2 = "(Unknown)";
+    private static final String UNKNOWN_VERSION = "(Unknown)";
 
     private static final String DL4J_GROUPID = "org.deeplearning4j";
     private static final String DL4J_ARTIFACT = "deeplearning4j-nn";
-    private static final String DL4J_CLASS = "org.deeplearning4j.nn.conf.MultiLayerConfiguration";
 
     private static final String DATAVEC_GROUPID = "org.datavec";
     private static final String DATAVEC_ARTIFACT = "datavec-api";
-    private static final String DATAVEC_CLASS = "org.datavec.api.writable.DoubleWritable";
 
     private static final String ND4J_GROUPID = "org.nd4j";
 
@@ -111,10 +106,10 @@ public class VersionCheck {
             boolean datavecViaClass = false;
             for(VersionInfo vi : dependencies ){
                 if(DL4J_GROUPID.equals(vi.getGroupId()) && DL4J_ARTIFACT.equals(vi.getArtifactId())
-                        && (UNKNOWN_VERSION.equals(vi.getBuildVersion()) || UNKNOWN_VERSION_2.equals(vi.getBuildVersion()))){
+                        && (UNKNOWN_VERSION.equals(vi.getBuildVersion()))){
                     dl4jViaClass = true;
                 } else if(DATAVEC_GROUPID.equals(vi.getGroupId()) && DATAVEC_ARTIFACT.equals(vi.getArtifactId())
-                        && (UNKNOWN_VERSION.equals(vi.getBuildVersion()) || UNKNOWN_VERSION_2.equals(vi.getBuildVersion()))){
+                        && (UNKNOWN_VERSION.equals(vi.getBuildVersion()))){
                     datavecViaClass = true;
                 }
             }
@@ -149,12 +144,7 @@ public class VersionCheck {
             log.warn("*** ND4J VERSION CHECK FAILED - INCOMPATIBLE VERSIONS FOUND ***");
             log.warn("Incompatible versions (different version number) of DL4J, ND4J, RL4J, DataVec, Arbiter are unlikely to function correctly");
             logVersions = true;
-        } else if(foundVersions.size() == 1 && foundVersions.contains(UNKNOWN_VERSION)){
-            log.warn("*** ND4J VERSION CHECK FAILED - COULD NOT INFER VERSIONS ***");
-            log.warn("Incompatible versions (different version number) of DL4J, ND4J, RL4J, DataVec, Arbiter are unlikely to function correctly");
-            logVersions = true;
         }
-
 
         //Also: check for mixed scala versions - but only for our dependencies... These are in the artifact ID,
         // scored like dl4j-spack_2.10 and deeplearning4j-ui_2.11
@@ -271,31 +261,6 @@ public class VersionCheck {
             }
         }
 
-        //Note that if NO git.properties files were found, it's still possible that the DL4J/DataVec versions found
-        // by their class names are correct. Consequently, only call them "pre-0.9.1" if we can be sure that's the case,
-        // otherwise just call them "Unknown"
-        String unknownVersionString = repState.size() == 0 ? UNKNOWN_VERSION_2 : UNKNOWN_VERSION;
-
-        if(!dl4jFound){
-            //See if pre-0.9.1 DL4J is present on classpath;
-            if(classExists(DL4J_CLASS)){
-                List<VersionInfo> temp = new ArrayList<>();
-                temp.add(new VersionInfo(DL4J_GROUPID, DL4J_ARTIFACT, unknownVersionString));
-                temp.addAll(repState);
-                repState = temp;
-            }
-        }
-
-        if(!datavecFound){
-            //See if pre-0.9.1 DataVec is present on classpath
-            if(classExists(DATAVEC_CLASS)){
-                List<VersionInfo> temp = new ArrayList<>();
-                temp.add(new VersionInfo(DATAVEC_GROUPID, DATAVEC_ARTIFACT, unknownVersionString));
-                temp.addAll(repState);
-                repState = temp;
-            }
-        }
-
         if(classExists(ND4J_JBLAS_CLASS)){
             //nd4j-jblas is ancient and incompatible
             log.error("Found incompatible/obsolete backend and version (nd4j-jblas) on classpath. ND4J is unlikely to"
@@ -307,7 +272,6 @@ public class VersionCheck {
             log.error("Found incompatible/obsolete library Canova on classpath. ND4J is unlikely to"
                     + " function correctly with this library on the classpath.");
         }
-
 
         return repState;
     }
