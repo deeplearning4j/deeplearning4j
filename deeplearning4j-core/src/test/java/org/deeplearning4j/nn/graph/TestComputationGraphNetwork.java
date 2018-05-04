@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.util.GraphIndices;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -1519,14 +1520,19 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         ComputationGraph cg = new ComputationGraph(conf);
         cg.init();
+
+        GraphIndices indices = cg.calculateIndices();
+
         int[] order = cg.topologicalSortOrder();
+        List<String> strOrder = cg.getConfiguration().getTopologicalOrderStr();
         INDArray[] out1 = cg.output(in);
 
         //Check it's the same after loading:
-        System.out.println("-----------");
         ComputationGraph cg2 = TestUtils.testModelSerialization(cg);
         int[] order2 = cg2.topologicalSortOrder();
+        List<String> strOrder2 = cg.getConfiguration().getTopologicalOrderStr();
         assertArrayEquals(order, order2);
+        assertEquals(strOrder, strOrder2);
 
         INDArray[] out2 = cg2.output(in);
         assertArrayEquals(out1, out2);
@@ -1540,47 +1546,51 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         cg3.setParams(cg2.params());
 
         int[] order3 = cg3.topologicalSortOrder();
+        List<String> strOrder3 = cg.getConfiguration().getTopologicalOrderStr();
         INDArray[] out3 = cg3.output(in);
         assertArrayEquals(order, order3);
+        assertEquals(strOrder, strOrder3);
         assertArrayEquals(out1, out3);
 
 
-//        //Now, change the order, and ensure the net is the same... note that we can do [l0, l1, l2] in any order
-//
-//        List<List<String>> someValidOrders = new ArrayList<>();
-//        List<int[]> someValidOrderIdxs = new ArrayList<>();
-//        someValidOrders.add(Arrays.asList("in1", "in2", "l0", "l1", "l2", "l3", "l4", "l5", "l6", "l7"));
-//        someValidOrderIdxs.add(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
-//        someValidOrders.add(Arrays.asList("in1", "in2", "l1", "l0", "l2", "l3", "l4", "l5", "l6", "l7"));
-//        someValidOrderIdxs.add(new int[]{0, 1, 3, 2, 4, 5, 6, 7, 8, 9});
-//        someValidOrders.add(Arrays.asList("in1", "in2", "l2", "l1", "l0", "l3", "l4", "l5", "l6", "l7"));
-//        someValidOrderIdxs.add(new int[]{0, 1, 4, 3, 2, 5, 6, 7, 8, 9});
-//        someValidOrders.add(Arrays.asList("in1", "in2", "l2", "l5", "l0", "l1", "l3", "l4", "l7", "l6"));
-//        someValidOrderIdxs.add(new int[]{0, 1, 4, 7, 2, 3, 5, 6, 9, 8});
-//
-//        for( int i=0; i<someValidOrders.size(); i++ ){
-//            List<String> l = someValidOrders.get(i);
-//            int[] arr = someValidOrderIdxs.get(i);
-//
-//            ComputationGraphConfiguration conf2 = conf.clone();
-//            conf2.setTopologicalOrderStr(l);
-//            conf2.setTopologicalOrder(arr);
-//
-//            ComputationGraph g = new ComputationGraph(conf2);
-//            g.setParamTable(cg.paramTable());
-//            g.init();
-//            int[] origOrder = g.topologicalSortOrder();
-//
-//            INDArray[] out4 = g.output(in);
-//            assertArrayEquals(out1, out4);
-//
-//            ComputationGraph g2 = TestUtils.testModelSerialization(g);
-//            int[] loadedOrder = g2.topologicalSortOrder();
-//
-//            assertArrayEquals(origOrder, loadedOrder);
-//
-//            INDArray[] out5 = g.output(in);
-//            assertArrayEquals(out1, out5);
-//        }
+        //Now, change the order, and ensure the net is the same... note that we can do [l0, l1, l2] in any order
+        List<List<String>> someValidOrders = new ArrayList<>();
+        someValidOrders.add(Arrays.asList("in1", "in2", "l0", "l1-merge", "l1", "l2", "l3", "l4", "l5", "l6-merge", "l6", "l7"));
+        someValidOrders.add(Arrays.asList("in1", "in2", "l1-merge", "l1", "l0", "l2", "l3", "l4", "l5", "l6-merge", "l6", "l7"));
+        someValidOrders.add(Arrays.asList("in1", "in2", "l2", "l1-merge", "l1", "l0", "l3", "l4", "l5", "l6-merge", "l6", "l7"));
+        someValidOrders.add(Arrays.asList("in1", "in2", "l2", "l5", "l0", "l1-merge", "l1", "l3", "l4", "l7", "l6-merge", "l6"));
+
+        for(List<String> l : someValidOrders){
+            assertEquals(strOrder.size(), l.size());
+        }
+
+        for( int i=0; i<someValidOrders.size(); i++ ){
+            List<String> l = someValidOrders.get(i);
+            int[] arr = new int[l.size()];
+            int j=0;
+            for(String s : l){
+                arr[j++] = indices.getNameToIdx().get(s);
+            }
+
+            ComputationGraphConfiguration conf2 = conf.clone();
+            conf2.setTopologicalOrderStr(l);
+            conf2.setTopologicalOrder(arr);
+
+            ComputationGraph g = new ComputationGraph(conf2);
+            g.init();
+            g.setParamTable(cg.paramTable());
+            int[] origOrder = g.topologicalSortOrder();
+
+            INDArray[] out4 = g.output(in);
+            assertArrayEquals(out1, out4);
+
+            ComputationGraph g2 = TestUtils.testModelSerialization(g);
+            int[] loadedOrder = g2.topologicalSortOrder();
+
+            assertArrayEquals(origOrder, loadedOrder);
+
+            INDArray[] out5 = g.output(in);
+            assertArrayEquals(out1, out5);
+        }
     }
 }

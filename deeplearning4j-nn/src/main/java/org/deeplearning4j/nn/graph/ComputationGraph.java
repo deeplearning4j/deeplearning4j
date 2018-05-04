@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
+import org.deeplearning4j.nn.graph.util.GraphIndices;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
@@ -154,6 +155,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * (and hence also backward pass, which is the opposite to this) is conducted in the network.
      */
     protected int[] topologicalOrder;
+
+    protected GraphIndices graphIndices;
+
     /**
      * A list of layers. Each of these layers is present in a GraphVertex, but are here for easy reference.
      * This array also defines the order in which the getLayer(int) method returns layers.
@@ -430,8 +434,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 //        }
 
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
-        Indexes indexes = calculateIndexes();
-        topologicalOrder = indexes.getTopologicalSortOrder();
+        GraphIndices indices = calculateIndices();
+        topologicalOrder = indices.getTopologicalSortOrder();
 
         //Initialization: create the GraphVertex objects, based on configuration structure
         Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
@@ -462,7 +466,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             numParamsForVertex[i] = 0; //No parameters for input vertices
         }
         for(; i<topologicalOrder.length; i++ ){
-            String name = indexes.getIdxToName().get(i);
+            String name = indices.getIdxToName().get(i);
             org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
             numParamsForVertex[i] = n.numParams(true);
             numParams += numParamsForVertex[i];
@@ -517,7 +521,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         List<String> variables = defaultConfiguration.variables(false);
         i = configuration.getNetworkInputs().size();
         for(; i<topologicalOrder.length; i++ ){
-            String name = indexes.getIdxToName().get(i);
+            String name = indices.getIdxToName().get(i);
             org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
 
             GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
@@ -544,20 +548,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             vertices[vertexNumber++] = gv;
         }
         layers = tempLayerList.toArray(new Layer[numLayers]);
-
-        /////////////////////
-        if(!allNamesReverse.equals(indexes.getNameToIdx())){
-            throw new RuntimeException();
-        }
-
-        //Also validate Vertex[]:
-        for( int x=0; x<vertices.length; x++ ){
-            String name = vertices[x].getVertexName();
-            String expName = indexes.getIdxToName().get(x);
-            Preconditions.checkState(expName.equals(name), "%s - %s, %s", x, expName, name);
-        }
-
-        /////////////////////
 
         //Create the lookup table, so we can find vertices easily by name
         verticesMap = new HashMap<>();
@@ -673,6 +663,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             if (!initCalled)
                 init();
 
+            GraphIndices indices = calculateIndices();
+
             //Go through layers, and work out total number of parameters. Then allocate full parameters array
             int numParams = 0;
             int[] numParamsForVertex = new int[topologicalOrder.length];
@@ -681,12 +673,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 numParamsForVertex[i] = 0; //No parameters for input vertices
             }
             Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
-            for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap
-                    .entrySet()) {
-                org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
+            for (; i < topologicalOrder.length; i++) {
+                String name = indices.getIdxToName().get(i);
+                org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
                 numParamsForVertex[i] = n.numParams(true);
                 numParams += numParamsForVertex[i];
-                i++;
             }
 
             if(numParams > 0) {
@@ -1075,14 +1066,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         clearLayersStates();
     }
 
-    @Data
-    @AllArgsConstructor
-    @Builder
-    private static class Indexes {
-        private int[] topologicalSortOrder;
-        private Map<String,Integer> nameToIdx;
-        private Map<Integer,String> idxToName;
-    }
+
 
     /**
      * Calculate a topological sort order for the vertices in the graph.
@@ -1094,12 +1078,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Specifically, gradients/params/forward pass are executed on vertex[topologicalSortOrder[i]], for i=0..nVertices-1
      */
     public int[] topologicalSortOrder() {
-        return calculateIndexes().topologicalSortOrder;
+        return calculateIndices().getTopologicalSortOrder();
     }
 
-    public Indexes calculateIndexes(){
-//        if (topologicalOrder != null)
-//            return topologicalOrder;
+    public GraphIndices calculateIndices(){
+        if(graphIndices != null)
+            return graphIndices;
 
 
         //Get cached topological sort order from config, if present
@@ -1113,12 +1097,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 m2.put(t[i], s.get(i));
             }
 
-            System.out.println("RETURNING CACHED TOPO SORT");
-            return Indexes.builder()
+            graphIndices = GraphIndices.builder()
                     .topologicalSortOrder(t)
                     .nameToIdx(m1)
                     .idxToName(m2)
                     .build();
+            return graphIndices;
         }
 
 
@@ -1229,12 +1213,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         configuration.setTopologicalOrder(out);
         configuration.setTopologicalOrderStr(s);
 
-//        return out;
-        return Indexes.builder()
+        graphIndices = GraphIndices.builder()
                 .topologicalSortOrder(out)
                 .nameToIdx(vertexNamesMap2)
                 .idxToName(vertexNamesMap)
                 .build();
+        return graphIndices;
     }
 
     @Override
@@ -3046,8 +3030,24 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void setParamTable(Map<String, INDArray> paramTable) {
-        throw new UnsupportedOperationException("Not implemented");
+    public void setParamTable(@NonNull Map<String, INDArray> paramTable) {
+        Preconditions.checkArgument(paramTable.keySet().equals(paramTable().keySet()), "Cannot set param table: parameter set keys are not equal");
+        Map<String,INDArray> current = paramTable();
+        //Check shapes before doing partial assigment to avoid leaving net in incorrect state
+        for(String s : current.keySet()){
+            INDArray arrCurrent = current.get(s);
+            INDArray arrNew = paramTable.get(s);
+            int[] shapeCurrent = arrCurrent.shape();
+            int[] shapeNew = arrNew.shape();
+            Preconditions.checkState(Arrays.equals(shapeCurrent, shapeNew), "Cannot set parameters: shape array for " +
+                    "parameter \"%s\" does not match existing shape: parameter shape = %s, new param shape = %s", s, shapeCurrent, arrNew);
+        }
+
+        for(String s : current.keySet()) {
+            INDArray arrCurrent = current.get(s);
+            INDArray arrNew = paramTable.get(s);
+            arrCurrent.assign(arrNew);
+        }
     }
 
     @Override
