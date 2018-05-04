@@ -432,7 +432,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             try {
                 String sparkIp = InetAddress.getByName(System.getenv("SPARK_PUBLIC_DNS")).getHostAddress();
                 voidConfiguration.setControllerAddress(sparkIp);
-            } catch(UnknownHostException e) { }
+            } catch (UnknownHostException e) {
+            }
         }
 
         // next step - is to get ip address that matches specific network mask
@@ -1212,9 +1213,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach,
-                            storageLevel, true, repartitionStrategy, repartition, threshold, minThreshold,
-                            thresholdStep, stepTrigger, stepDelay, shakeFrequency, batchSize, debugLongerIterations,
-                            numWorkersPerNode);
+                            storageLevel, collectTrainingStats, repartitionStrategy, repartition, threshold,
+                            minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, batchSize,
+                            debugLongerIterations, numWorkersPerNode);
             if (transport != null)
                 master.transport = this.transport;
 

@@ -238,13 +238,16 @@ public class KerasModelUtils {
                         // next line will throw an HDF5 group error. This is inessential, as the model still
                         // runs, but might lead to confusion to end users. So we try to catch this here.
                         // TODO: find a better way to do this
+                        String emptyWeightsWarning = "No HDF5 group with weights found for layer with name "
+                                + layerName  + ", continuing import.";
                         if (layerName.contains("dense") || layerName.contains("conv") || layerName.contains("lstm")
                                 || layerName.contains("rnn") || layerName.contains("gru")
                                 || layerName.contains("embedding") || layerName.contains("batch")
                                 || layerName.contains("locally") || layerName.contains("bidirectional")) {
-                            if (!layerName.contains("pad") && !layerName.contains("block")) {
+                            try {
                                 layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
-                            } else {
+                            } catch (Exception e){
+                                log.warn(emptyWeightsWarning);
                                 layerParamNames = Collections.emptyList();
                             }
                         } else {

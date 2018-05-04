@@ -201,6 +201,8 @@ public class DefaultParamInitializer implements ParamInitializer {
             return ((DenseLayer)layer).hasBias();
         } else if(layer instanceof EmbeddingLayer){
             return ((EmbeddingLayer)layer).hasBias();
+        }  else if(layer instanceof EmbeddingSequenceLayer){
+            return ((EmbeddingSequenceLayer)layer).hasBias();
         }
         return true;
     }

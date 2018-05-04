@@ -304,6 +304,15 @@ public class KerasModelEndToEndTest {
     }
 
     /**
+     * SqueezeNet
+     */
+    @Test
+    public void importSqueezeNet() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/squeezenet/squeezenet.h5");
+    }
+
+
+    /**
      * MobileNet
      */
     @Test
@@ -336,6 +345,8 @@ public class KerasModelEndToEndTest {
         ComputationGraph graph = importFunctionalModelH5Test(
                 "modelimport/keras/examples/xception/xception_tf_keras_2.h5", inputShape);
     }
+
+
 
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
         return importFunctionalModelH5Test(modelPath, null);

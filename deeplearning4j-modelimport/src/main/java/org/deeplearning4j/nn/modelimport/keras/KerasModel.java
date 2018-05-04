@@ -253,7 +253,7 @@ public class KerasModel {
             InputType outputType;
             if (layer instanceof KerasInput) {
                 if (inputShape != null) {
-                    layer.inputShape =inputShape;
+                    layer.inputShape = inputShape;
                 }
                 outputType = layer.getOutputType();
                 this.truncatedBPTT = ((KerasInput) layer).getTruncatedBptt();
