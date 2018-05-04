@@ -18,9 +18,7 @@
 
 package org.deeplearning4j.nn.graph;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -432,7 +430,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 //        }
 
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
-        topologicalOrder = topologicalSortOrder();
+//        topologicalOrder = topologicalSortOrder();
+        Indexes indexes = calculateIndexes();
+        topologicalOrder = indexes.getTopologicalSortOrder();
 
         //Initialization: create the GraphVertex objects, based on configuration structure
         Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
@@ -544,6 +544,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
         layers = tempLayerList.toArray(new Layer[numLayers]);
 
+        /////////////////////
+        if(!allNamesReverse.equals(indexes.getNameToIdx())){
+            throw new RuntimeException();
+        }
+
+        //Also validate Vertex[]:
+        for( int x=0; x<vertices.length; x++ ){
+            String name = vertices[x].getVertexName();
+            String expName = indexes.getIdxToName().get(x);
+            Preconditions.checkState(expName.equals(name), "%s - %s, %s", x, expName, name);
+        }
+
+        /////////////////////
 
         //Create the lookup table, so we can find vertices easily by name
         verticesMap = new HashMap<>();
@@ -1061,6 +1074,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         clearLayersStates();
     }
 
+    @Data
+    @AllArgsConstructor
+    @Builder
+    private static class Indexes {
+        private int[] topologicalSortOrder;
+        private Map<String,Integer> nameToIdx;
+        private Map<Integer,String> idxToName;
+    }
+
     /**
      * Calculate a topological sort order for the vertices in the graph.
      * Note that this is used for
@@ -1071,8 +1093,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Specifically, gradients/params/forward pass are executed on vertex[topologicalSortOrder[i]], for i=0..nVertices-1
      */
     public int[] topologicalSortOrder() {
-        if (topologicalOrder != null)
-            return topologicalOrder;
+        return calculateIndexes().topologicalSortOrder;
+    }
+
+    public Indexes calculateIndexes(){
+//        if (topologicalOrder != null)
+//            return topologicalOrder;
 
         //https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
         Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getVertices();
@@ -1171,7 +1197,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 + "\")");
         }
 
-        return out;
+//        return out;
+        return Indexes.builder()
+                .topologicalSortOrder(out)
+                .nameToIdx(vertexNamesMap2)
+                .idxToName(vertexNamesMap)
+                .build();
     }
 
     @Override
