@@ -30,10 +30,11 @@ public class TestInstantiation {
 
     @Test
     public void testMultipleCnnTraining() throws Exception {
+        int numClasses = 10;
         ZooModel[] models = new ZooModel[]{
-                Darknet19.builder().numClasses(10).build(),
-                TinyYOLO.builder().numClasses(10).build(),
-                YOLO2.builder().numClasses(10).build()
+                Darknet19.builder().numClasses(numClasses).build(),
+                TinyYOLO.builder().numClasses(numClasses).build(),
+                YOLO2.builder().numClasses(numClasses).build()
         };
 
         for(int i = 0; i < models.length; i++) {
@@ -42,7 +43,6 @@ public class TestInstantiation {
             log.info("Testing training on zoo model " + modelName);
             int gridWidth = -1;
             int gridHeight = -1;
-            int numClasses = 10;
             if (modelName.equals("TinyYOLO") || modelName.equals("YOLO2")) {
                 int[] inputShapes = model.metaData().getInputShape()[0];
                 gridWidth = DarknetHelper.getGridWidth(inputShapes);
