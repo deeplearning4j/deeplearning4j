@@ -31,6 +31,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
     private static ActivationReLU activationReLU = new ActivationReLU();
     private ILossFunction lossFunction;
+
     public OCNNOutputLayer(NeuralNetConfiguration conf) {
         super(conf);
         this.lossFunction = new OCNNLossFunction();
@@ -44,20 +45,57 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         ocnnOutputLayer.setLossFn(this.lossFunction);
     }
 
+    @Override
+    public INDArray getLabels() {
+        return super.getLabels();
+    }
+
+    @Override
+    public void setLabels(INDArray labels) {
+        //no-op
+    }
+
+
+    /** Compute score after labels and input have been set.
+     * @param fullNetworkL1 L1 regularization term for the entire network
+     * @param fullNetworkL2 L2 regularization term for the entire network
+     * @param training whether score should be calculated at train or test time (this affects things like application of
+     *                 dropout, etc)
+     * @return score (loss function)
+     */
+    @Override
+    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        if (input == null)
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
+        INDArray preOut = preOutput2d(training, workspaceMgr);
+
+        ILossFunction lossFunction = layerConf().getLossFn();
+
+        double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
+                layerConf().getActivationFn(), maskArray,false);
+        score += fullNetworkL1 + fullNetworkL2;
+        if(conf().isMiniBatch())
+            score /= getInputMiniBatchSize();
+
+        this.score = score;
+
+        return score;
+    }
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr), workspaceMgr); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         //150
+       int inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
         INDArray delta = pair.getSecond();
         //2
         INDArray w = getParamWithNoise(W_KEY, true, workspaceMgr);
         //4 x 2
         INDArray v = getParamWithNoise(V_KEY,true,workspaceMgr);
         //4 x 150
-        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{w.length(), delta.length()}, 'f');
-        epsilonNext = w.reshape(w.length(),1).mmuli(delta.reshape(1,delta.length()), epsilonNext).transpose();
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{inputShape, delta.length()}, 'f');
+        epsilonNext = epsilonNext.assign(delta.broadcast(epsilonNext.shape())).transpose();
 
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
         // So this is instead done in MultiLayerNetwork/CompGraph backprop methods
@@ -133,9 +171,6 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         return doOutput(false,LayerWorkspaceMgr.noWorkspacesImmutable()).subi(getParam(R_KEY));
     }
 
-    public INDArray getInput() {
-        return input;
-    }
 
     @Override
     public Layer.Type type() {
@@ -167,6 +202,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray act2d = layerConf().getActivationFn().getActivation(first, training);
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,input.size(0));
         act2d.mmuli(w.reshape(w.length()), output);
+        this.labels = output;
         return output;
     }
 

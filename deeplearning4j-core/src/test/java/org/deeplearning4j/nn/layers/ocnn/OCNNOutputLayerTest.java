@@ -4,10 +4,12 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -50,16 +52,15 @@ public class OCNNOutputLayerTest {
         boolean doLearningFirst = true;
         MultiLayerConfiguration configuration = new NeuralNetConfiguration.Builder()
                 .seed(42).updater(new NoOp()).miniBatch(false)
-                .list(new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder().nIn(4)
+                .list(new DenseLayer.Builder().activation(new ActivationIdentity()).nIn(4).nOut(4).build(),
+                        new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder().nIn(4)
                         .nu(0.002)
-                        .nOut(2)
                         .hiddenLayerSize(numHidden).build())
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(configuration);
         network.init();
 
-        int expectedLength = numHidden +  (numHidden * nIn) + 1;
-        assertEquals(expectedLength,network.params().length());
+
 
         DataSet next = dataSetIterator.next();
         INDArray arr = next.getFeatureMatrix();
@@ -121,7 +122,8 @@ public class OCNNOutputLayerTest {
         boolean doLearningFirst = true;
         MultiLayerConfiguration configuration = new NeuralNetConfiguration.Builder()
                 .seed(42).miniBatch(false)
-                .list(new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder().nIn(4)
+                .list(new DenseLayer.Builder().activation(new ActivationIdentity()).nIn(4).nOut(4).build(),
+                        new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder().nIn(4)
                         .nu(0.002)
                         .nOut(2)
                         .hiddenLayerSize(numHidden).build())

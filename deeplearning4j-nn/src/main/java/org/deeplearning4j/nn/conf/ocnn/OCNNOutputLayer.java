@@ -21,7 +21,7 @@ import java.util.Map;
 
 /**
  * An implementation of one class neural networks from:
- * https://arxiv.org/pdf/1707.02131.pdf
+ * https://arxiv.org/pdf/1802.06360.pdf
  *
  * The one class neural network approach is an extension of the standard output layer
  * with a single set of weights, an activation function, and a bias to:
@@ -71,6 +71,12 @@ public class OCNNOutputLayer extends BaseOutputLayer {
     }
 
     @Override
+    public int getNOut() {
+        //we don't change number of outputs here
+        return 1;
+    }
+
+    @Override
     public ParamInitializer initializer() {
         return OCNNParamInitializer.getInstance();
     }
@@ -99,6 +105,11 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         public Builder hiddenLayerSize(int hiddenLayerSize) {
             this.hiddenLayerSize = hiddenLayerSize;
             return this;
+        }
+
+        @Override
+        public Builder nOut(int nOut) {
+            throw new UnsupportedOperationException("Unable to specify number of outputs with ocnn. Outputs are fixed to 1.");
         }
 
         @Override
