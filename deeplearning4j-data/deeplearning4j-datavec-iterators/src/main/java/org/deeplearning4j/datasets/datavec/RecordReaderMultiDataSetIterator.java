@@ -845,7 +845,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
          * @param numClasses Total number of classes
          */
         public Builder addInputOneHot(String readerName, int column, int numClasses) {
-            inputs.add(new SubsetDetails(readerName, false, true, numClasses, column, -1));
+            inputs.add(new SubsetDetails(readerName, false, true, numClasses, column, column));
             return this;
         }
 
@@ -879,7 +879,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
          * @param numClasses Number of classes
          */
         public Builder addOutputOneHot(String readerName, int column, int numClasses) {
-            outputs.add(new SubsetDetails(readerName, false, true, numClasses, column, -1));
+            outputs.add(new SubsetDetails(readerName, false, true, numClasses, column, column));
             return this;
         }
 

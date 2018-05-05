@@ -385,7 +385,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         INDArray prevAct = toCOrder(prevOutputActivations);
         INDArray prevMemCell = toCOrder(prevMemCellState);
 
-        INDArray outputActivations = Nd4j.createUninitialized(
+        INDArray outputActivations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
                         new int[] {timeSeriesLength, miniBatchSize, hiddenLayerSize * (BIDIRECTIONAL ? 2 : 1)}, 'c');
         INDArray finalMemCellState = Nd4j.createUninitialized(
                         new int[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');

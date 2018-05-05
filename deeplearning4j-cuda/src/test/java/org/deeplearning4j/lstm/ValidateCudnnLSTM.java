@@ -1,5 +1,6 @@
 package org.deeplearning4j.lstm;
 
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -267,61 +268,71 @@ public class ValidateCudnnLSTM {
     @Test
     public void validateImplMultiLayerRnnTimeStep() throws Exception {
 
-        Nd4j.getRandom().setSeed(12345);
-        int minibatch = 10;
-        int inputSize = 3;
-        int lstmLayerSize = 4;
-        int timeSeriesLength = 3;
-        int tbpttLength = 5;
-        int nOut = 2;
+        for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.NONE, WorkspaceMode.ENABLED}) {
+            Nd4j.getRandom().setSeed(12345);
+            int minibatch = 10;
+            int inputSize = 3;
+            int lstmLayerSize = 4;
+            int timeSeriesLength = 3;
+            int tbpttLength = 5;
+            int nOut = 2;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
-                        .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
-                        .cacheMode(CacheMode.NONE).seed(12345L)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2)).list()
-                        .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)
-                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
-                        .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
-                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
-                        .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
-                        .pretrain(false).backprop(true).backpropType(BackpropType.TruncatedBPTT)
-                        .tBPTTLength(tbpttLength).build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
+                    .inferenceWorkspaceMode(WorkspaceMode.NONE).trainingWorkspaceMode(WorkspaceMode.NONE)
+                    .cacheMode(CacheMode.NONE).seed(12345L)
+                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2)).list()
+                    .layer(0, new LSTM.Builder().nIn(inputSize).nOut(lstmLayerSize)
+                            .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                    .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
+                            .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                    .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                            .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
+                    .pretrain(false).backprop(true).backpropType(BackpropType.TruncatedBPTT)
+                    .tBPTTLength(tbpttLength).build();
 
-        MultiLayerNetwork mln1 = new MultiLayerNetwork(conf.clone());
-        mln1.init();
+            MultiLayerNetwork mln1 = new MultiLayerNetwork(conf.clone());
+            mln1.init();
 
-        MultiLayerNetwork mln2 = new MultiLayerNetwork(conf.clone());
-        mln2.init();
+            MultiLayerNetwork mln2 = new MultiLayerNetwork(conf.clone());
+            mln2.init();
 
 
-        assertEquals(mln1.params(), mln2.params());
+            assertEquals(mln1.params(), mln2.params());
 
-        Field f = org.deeplearning4j.nn.layers.recurrent.LSTM.class.getDeclaredField("helper");
-        f.setAccessible(true);
+            Field f = org.deeplearning4j.nn.layers.recurrent.LSTM.class.getDeclaredField("helper");
+            f.setAccessible(true);
 
-        Layer l0 = mln1.getLayer(0);
-        Layer l1 = mln1.getLayer(1);
-        f.set(l0, null);
-        f.set(l1, null);
-        assertNull(f.get(l0));
-        assertNull(f.get(l1));
+            Layer l0 = mln1.getLayer(0);
+            Layer l1 = mln1.getLayer(1);
+            f.set(l0, null);
+            f.set(l1, null);
+            assertNull(f.get(l0));
+            assertNull(f.get(l1));
 
-        l0 = mln2.getLayer(0);
-        l1 = mln2.getLayer(1);
-        assertTrue(f.get(l0) instanceof CudnnLSTMHelper);
-        assertTrue(f.get(l1) instanceof CudnnLSTMHelper);
+            l0 = mln2.getLayer(0);
+            l1 = mln2.getLayer(1);
+            assertTrue(f.get(l0) instanceof CudnnLSTMHelper);
+            assertTrue(f.get(l1) instanceof CudnnLSTMHelper);
 
-        Random r = new Random(12345);
-        for (int x = 0; x < 5; x++) {
-            INDArray input = Nd4j.rand(new int[] {minibatch, inputSize, timeSeriesLength});
+            Random r = new Random(12345);
+            for (int x = 0; x < 5; x++) {
+                INDArray input = Nd4j.rand(new int[]{minibatch, inputSize, timeSeriesLength});
 
-            INDArray step1 = mln1.rnnTimeStep(input);
-            INDArray step2 = mln2.rnnTimeStep(input);
+                INDArray step1 = mln1.rnnTimeStep(input);
+                INDArray step2 = mln2.rnnTimeStep(input);
 
-            assertEquals("Step: " + x, step1, step2);
+                assertEquals("Step: " + x, step1, step2);
+            }
+
+            assertEquals(mln1.params(), mln2.params());
+
+            //Also check fit (mainly for workspaces sanity check):
+            INDArray in = Nd4j.rand(new int[]{minibatch, inputSize, 3 * tbpttLength});
+            INDArray label = TestUtils.randomOneHotTimeSeries(minibatch, nOut, 3 * tbpttLength);
+            for( int i=0; i<3; i++ ){
+                mln1.fit(in, label);
+                mln2.fit(in, label);
+            }
         }
-
-        assertEquals(mln1.params(), mln2.params());
     }
 }
