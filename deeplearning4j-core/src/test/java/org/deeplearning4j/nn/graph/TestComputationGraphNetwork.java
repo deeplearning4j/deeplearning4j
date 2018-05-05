@@ -1589,7 +1589,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
             assertArrayEquals(origOrder, loadedOrder);
 
-            INDArray[] out5 = g.output(in);
+            INDArray[] out5 = g2.output(in);
             assertArrayEquals(out1, out5);
         }
     }

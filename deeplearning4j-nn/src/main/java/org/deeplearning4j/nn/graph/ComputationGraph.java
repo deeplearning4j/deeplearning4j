@@ -155,7 +155,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * (and hence also backward pass, which is the opposite to this) is conducted in the network.
      */
     protected int[] topologicalOrder;
-
+    /**
+     * Topological sort and vertex index/name + name/index mapping
+     */
     protected GraphIndices graphIndices;
 
     /**
@@ -1081,6 +1083,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return calculateIndices().getTopologicalSortOrder();
     }
 
+    /**
+     * Calculate the indices needed for the network:<br>
+     * (a) topological sort order<br>
+     * (b) Map: vertex index -> vertex name<br>
+     * (c) Map: vertex name -> vertex index<br>
+     *
+     * @return Calculated indices
+     */
     public GraphIndices calculateIndices(){
         if(graphIndices != null)
             return graphIndices;
@@ -1203,13 +1213,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 + "\")");
         }
 
-        //Store:
-
+        //Store: the topological sort order in the configuraation... this is to ensure that when the config is
+        // deserialized, it has exactly the same topological sort order on all platforms
         List<String> s = new ArrayList<>(out.length);
         for( int idx : out){
             s.add(vertexNamesMap.get(idx));
         }
-
         configuration.setTopologicalOrder(out);
         configuration.setTopologicalOrderStr(s);
 

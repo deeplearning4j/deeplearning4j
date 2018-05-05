@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.Map;
 
 /**
- * Simple helper class for ComputationGraph topological sort
+ * Simple helper class for ComputationGraph topological sort and vertex index/name + name/index mapping
  *
  * @author Alex Black
  */
