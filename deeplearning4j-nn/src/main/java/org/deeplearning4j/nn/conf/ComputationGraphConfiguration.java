@@ -101,6 +101,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     //Counter for the number of epochs completed so far. Used for per-epoch schedules
     protected int epochCount = 0;
 
+    protected int[] topologicalOrder;
+    protected List<String> topologicalOrderStr;
 
     /**
      * @return JSON representation of configuration
