@@ -43,7 +43,7 @@ public class TestInstantiation {
             int gridWidth = -1;
             int gridHeight = -1;
             int numClasses = 10;
-            if (modelName == "TinyYOLO" || modelName == "YOLO2") {
+            if (modelName.equals("TinyYOLO") || modelName.equals("YOLO2")) {
                 int[] inputShapes = model.metaData().getInputShape()[0];
                 gridWidth = DarknetHelper.getGridWidth(inputShapes);
                 gridHeight = DarknetHelper.getGridHeight(inputShapes);
