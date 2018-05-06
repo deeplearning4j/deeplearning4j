@@ -86,11 +86,12 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for 
+#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
-            ResultSet<T>* listOfTensors = NDArrayFactory<T>::allTensorsAlongDimension(input, restDims);
-            ResultSet<T>* listOfOutTensors = NDArrayFactory<T>::allTensorsAlongDimension(output, restDims);
+
+            std::unique_ptr<ResultSet<T>> listOfTensors( NDArrayFactory<T>::allTensorsAlongDimension(input, restDims) );
+            std::unique_ptr<ResultSet<T>> listOfOutTensors( NDArrayFactory<T>::allTensorsAlongDimension(output, restDims) );
 
             int numOfClasses = output->sizeAt(0); // number of classes
             std::vector<std::pair<NDArray<T>*, int>> outputs(numOfClasses);
@@ -111,8 +112,6 @@ namespace helpers {
                     minT->assign(listOfTensors->at(i));
                 }
             }
-            delete listOfTensors;
-            delete listOfOutTensors;
         }
     }
 
@@ -142,7 +141,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for
+#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
             ResultSet<T>* listOfTensors = NDArrayFactory<T>::allTensorsAlongDimension(input, restDims);
@@ -200,7 +199,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for
+#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
             ResultSet<T>* listOfTensors = NDArrayFactory<T>::allTensorsAlongDimension(input, restDims);
@@ -249,7 +248,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
-#pragma omp parallel for
+#pragma omp parallel for if(input->rankOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
             ResultSet<T>* listOfTensors = NDArrayFactory<T>::allTensorsAlongDimension(input, restDims);

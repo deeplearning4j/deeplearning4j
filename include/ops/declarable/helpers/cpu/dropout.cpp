@@ -31,15 +31,13 @@ namespace helpers {
         
             bool fit = true;
 
-            for( int i = 0; i < dims.size(); i++ ) {
+#pragma omp parallel
+            for( int i = 0; fit && (i < dims.size()); i++ ) {
                 dims[i] = (*reduceShape)(i);
-                for (int e = 0; e < input->rankOf(); ++e)
+                for (int e = 0; fit && (e < input->rankOf()); ++e)
                     if (input->sizeAt(e) % dims[i]) {
                         fit = false;
-                        break;
                     }
-        
-                if(!fit) break;
             }
         
             // check dims to fit input

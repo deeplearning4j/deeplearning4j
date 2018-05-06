@@ -15,12 +15,10 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
             int numZeros = 0;
-//            for (int e = 0; e < input->lengthOf(); e++)
-//                if ((*input)(e) == T(0))
-//                    numZeros++;
-            T sum = input->template reduceNumber<simdOps::SquaredNorm<T>>();//((T)(0) + numZeros) / input->lengthOf();
+
+            T sum = input->template reduceNumber<simdOps::SquaredNorm<T>>();
             sum /= 2;
-            output->putScalar(0, sum);
+            (*output)(0) = sum;
 
             return ND4J_STATUS_OK;
         }

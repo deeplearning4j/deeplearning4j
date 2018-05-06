@@ -13,7 +13,7 @@ namespace helpers {
     void confusionFunctor(NDArray<T>* labels, NDArray<T>* predictions, NDArray<T>* weights, NDArray<T>* output) {
         std::unique_ptr<ResultSet<T>> arrs(NDArrayFactory<T>::allTensorsAlongDimension(output, {1}));
 
-#pragma omp parallel for            
+#pragma omp parallel for if(labels->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)                    
         for (int j = 0; j < labels->lengthOf(); ++j){
             Nd4jIndex label = (*labels)(j);
             Nd4jIndex pred = (*predictions)(j);

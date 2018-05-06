@@ -19,8 +19,6 @@ void diagFunctor(const NDArray<T>* input, NDArray<T>* output) {
 
     const int inLength = input->lengthOf();    
 
-    //utput->assign((T)0.);
-
 #pragma omp parallel for if(inLength > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
     for(int i = 0; i < inLength; ++i)
         (*output)(i * (inLength + 1)) = (*input)(i);

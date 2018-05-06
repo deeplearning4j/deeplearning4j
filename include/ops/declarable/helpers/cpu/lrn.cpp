@@ -49,7 +49,7 @@ namespace helpers {
         std::unique_ptr<NDArray<T>> sumPart(activitySqr->dup('c'));
 
         input->template applyPairwiseTransform<simdOps::Multiply<T>>(input, activitySqr.get(), nullptr);
-#pragma omp parallel for
+#pragma omp parallel for if (halfDepth + 1 > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
         for (int i = 1; i < halfDepth + 1; i++) {
             IndicesList indA({NDIndex::all(), NDIndex::interval(i, channel), NDIndex::all(), NDIndex::all()});
             IndicesList indB({NDIndex::all(), NDIndex::interval(0, channel - i), NDIndex::all(), NDIndex::all()});

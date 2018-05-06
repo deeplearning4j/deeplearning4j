@@ -49,15 +49,16 @@ namespace helpers {
             }
         }
 
-
+#pragma omp parallel for if(values->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < values->lengthOf(); e++) {
-            values->putScalar(e, valuesVector[e]);
+            (*values)(e) = valuesVector[e];
             if (counts != nullptr) 
-                counts->putScalar(e, countsMap[valuesVector[e]]);
+                (*counts)(e) = countsMap[valuesVector[e]];
         }
 
+#pragma omp parallel for if(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < indices->lengthOf(); e++) {
-            indices->putScalar(e, indicesMap[(*input)(e)]);
+            (*indices)(e) = indicesMap[(*input)(e)];
         }
 
         return ND4J_STATUS_OK;

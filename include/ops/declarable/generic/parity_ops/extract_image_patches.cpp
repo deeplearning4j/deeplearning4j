@@ -70,22 +70,5 @@ namespace nd4j {
 
             return SHAPELIST(outputShape);
         }
-/*
-Status GetWindowedOutputSizeVerboseV2(int64 input_size, int64 filter_size,
-                                      int64 dilation_rate = 1, int64 stride,
-                                      Padding padding_type, int64* output_size,
-                                      int64* padding_before,
-                                      int64* padding_after) {
-  if (stride <= 0) {
-    return errors::InvalidArgument("Stride must be > 0, but got ", stride);
-  }
-
-
-  // See also the parallel implementation in GetWindowedOutputSizeFromDimsV2.
-  int64 effective_filter_size = (filter_size - 1) * dilation_rate + 1;
-
-  return Status::OK();
-}
-*/
     }
 }
