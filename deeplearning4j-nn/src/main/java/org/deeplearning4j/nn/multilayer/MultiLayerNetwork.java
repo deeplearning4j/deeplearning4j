@@ -41,6 +41,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
+import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -2495,7 +2496,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return
      */
     public Layer getOutputLayer() {
-        return getLayers()[getLayers().length - 1];
+        Layer ret = getLayers()[getLayers().length - 1];
+        if (ret instanceof FrozenLayerWithBackprop) {
+            ret = ((FrozenLayerWithBackprop) ret).getInsideLayer();
+        }
+        return ret;
     }
 
 

@@ -41,6 +41,7 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
+import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -1283,10 +1284,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             int outNum = 0;
             for (String s : configuration.getNetworkOutputs()) {
                 GraphVertex gv = verticesMap.get(s);
-                gv.getLayer().setMaskArray((labelMaskArrays == null) ? null : labelMaskArrays[outNum++]);
+                Layer vertexLayer = gv.getLayer();
+                if (vertexLayer instanceof FrozenLayerWithBackprop) {
+                    vertexLayer = ((FrozenLayerWithBackprop) vertexLayer).getInsideLayer();
+                }
+                vertexLayer.setMaskArray((labelMaskArrays == null) ? null : labelMaskArrays[outNum++]);
 
                 try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
-                    score += ((IOutputLayer) gv.getLayer()).computeScore(l1, l2, true, workspaceMgr);
+                    score += ((IOutputLayer) vertexLayer).computeScore(l1, l2, true, workspaceMgr);
                 }
 
                 //Only want to add l1/l2 once...
@@ -2330,8 +2335,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     //(b) it's a normal layer, but it has been marked as an output layer for use in external errors - for reinforcement learning, for example
 
                     int thisOutputNumber = configuration.getNetworkOutputs().indexOf(current.getVertexName());
-                    if (current.getLayer() instanceof IOutputLayer) {
-                        IOutputLayer outputLayer = (IOutputLayer) current.getLayer();
+                    Layer currentLayer = current.getLayer();
+                    if (currentLayer instanceof FrozenLayerWithBackprop) {
+                        currentLayer = ((FrozenLayerWithBackprop) currentLayer).getInsideLayer();
+                    }
+                    if (currentLayer instanceof IOutputLayer) {
+                        IOutputLayer outputLayer = (IOutputLayer) currentLayer;
 
                         INDArray currLabels = labels[thisOutputNumber];
                         outputLayer.setLabels(currLabels);

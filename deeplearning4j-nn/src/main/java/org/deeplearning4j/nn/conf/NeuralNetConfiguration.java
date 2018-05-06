@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -1076,6 +1077,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 configureLayer(((FrozenLayer) layer).getLayer());
             }
 
+            if (layer instanceof FrozenLayerWithBackprop) {
+                configureLayer(((FrozenLayerWithBackprop) layer).getLayer());
+            }
+
             return conf;
         }
 
@@ -1097,6 +1102,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
             if (layer instanceof FrozenLayer) {
                 copyConfigToLayer(layerName, ((FrozenLayer) layer).getLayer());
+            }
+
+            if (layer instanceof FrozenLayerWithBackprop) {
+                copyConfigToLayer(layerName, ((FrozenLayerWithBackprop) layer).getLayer());
             }
 
             if (layer instanceof Bidirectional) {
