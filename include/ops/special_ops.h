@@ -580,80 +580,90 @@ namespace simdOps {
                 const int oHW = oH * oW;
                 const int inRowEnd = oH * sH;
                 const int inColEnd = oW * sW;
-                
+
+				int inRowStart, inColStart, inRow, inCol;
                 T *in0, *in1;
 
                 if (shape::order(xShapeBuffer) == 'c' &&  shape::order(resultShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(xShapeBuffer) && shape::strideDescendingCAscendingF(resultShapeBuffer)) {
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1)
-                    for (int b = 0; b < bS; b++) {
-                        T *output = result + (b * outStride0);                        
+#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1, inRowStart, inColStart, inRow, inCol)
+					for (int b = 0; b < bS; b++) {
+						in0 = dx + (b * inStride0);
+						T *output = result + (b * outStride0);
 
-                        for (in0 = dx + (b * inStride0); in0 < (b * inStride0) + in0End; in0 += inStride1) {
+						for (int channel = 0; channel < iC; ++channel, in0 += inStride1) {
 
-                            for (int kRow = -pH; kRow < kRowEnd; kRow+=dH) {
+							for (int kRow = 0; kRow < kH; kRow++) {
+								inRowStart = -pH + kRow * dH;
 
-                                for (int kCol = -pW; kCol < kColEnd; kCol+=dW) {
+								for (int kCol = 0; kCol < kW; kCol++) {
+									inRow = inRowStart;
+									inColStart = -pW + kCol * dW;
 
-                                    for (int inRow = kRow; inRow < kRow + inRowEnd; inRow+=sH) {
+									for (int outRow = 0; outRow < oH; ++outRow, inRow += sH) {
 
-                                        if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
-                                            for (T* outStart = output; output < outStart + oW; ++output) 
-                                                *output = zeroPadVal;
-                                        } 
-                                        else {                                            
-                                            in1 = in0 + inRow * inStride2;
+										if (!is_a_ge_zero_and_a_lt_b(inRow, iH))
+											for (int outCol = 0; outCol < oW; ++outCol, ++output) {
+												*output = zeroPadVal;
+											}
+										else {
+											inCol = inColStart;
+											in1 = in0 + inRow * inStride2;
 
-                                            for (int inCol = kCol; inCol < kCol + inColEnd; inCol+=sW, ++output)
-                                                if (is_a_ge_zero_and_a_lt_b(inCol, iW)) 
-                                                    *output = *(in1 + inCol * inStride3);                                                
-                                                else 
-                                                    *output = zeroPadVal;                                            
-                                        }        
-                                    }
-                                }
-                            }
-                        }
-                    }
+											for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, ++output)
+												if (is_a_ge_zero_and_a_lt_b(inCol, iW))
+													*output = *(in1 + inCol * inStride3);
+												else
+													*output = zeroPadVal;
+										}
+									}
+								}
+							}
+						}
+					}
                 } 
                 else {
-                    const int col4End = oW * outStride5;
-                    T *out0, *out1, *out2, *out3, *out4;
-#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1, out0, out1, out2, out3, out4)
-                    for (int b = 0; b < bS; b++) {                        
-                        out0  = result + b * outStride0;
+					T *out0, *out1, *out2, *out3, *out4;
+#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1, out0, out1, out2, out3, out4, inRowStart, inColStart, inRow, inCol)
+					for (int b = 0; b < bS; b++) {
+						in0 = dx + (b * inStride0);
+						out0  = result + b * outStride0;
 
-                        for (in0 = dx + (b * inStride0); in0 < (b * inStride0) + in0End; in0+=inStride1, out0+=outStride1) {                        
-                            out1 = out0;
+						for (int channel = 0; channel < iC; ++channel, in0 += inStride1, out0+=outStride1) {
+							out1 = out0;
 
-                            for (int kRow = -pH; kRow < kRowEnd; kRow+=dH, out1+=outStride2) {                            
-                                out2 = out1;
+							for (int kRow = 0; kRow < kH; kRow++, out1 += outStride2) {
+								out2 = out1;
+								inRowStart = -pH + kRow * dH;
 
-                                for (int kCol = -pW; kCol < kColEnd; kCol+=dW, out2+=outStride3) {                                
-                                    out3 = out2;                                    
+								for (int kCol = 0; kCol < kW; kCol++, out2 += outStride3) {
+									out3 = out2;
+									inRow = inRowStart;
+									inColStart = -pW + kCol * dW;
 
-                                    for (int inRow = kRow; inRow < kRow + inRowEnd; inRow+=sH, out3+=outStride4) {                                    
-                                        out4 = out3;
+									for (int outRow = 0; outRow < oH; ++outRow, inRow += sH, out3 += outStride4) {
+										out4 = out3;
 
-                                        if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
-                                            for (; out4 < out3 + col4End; out4+=outStride5) 
-                                               *out4 = 0.;                                                                             
-                                        } 
-                                        else {                                            
-                                            in1 = in0 +  inRow * inStride2;
+										if (!is_a_ge_zero_and_a_lt_b(inRow, iH))
+											for (int outCol = 0; outCol < oW; ++outCol, out4 += outStride5) {
+												*out4 = zeroPadVal;
+											}
+										else {
+											inCol = inColStart;
+											in1 = in0 +  inRow * inStride2;
 
-                                            for (int inCol = kCol; inCol < kCol + inColEnd; inCol+=sW, out4+=outStride5)                                            
-                                                if (is_a_ge_zero_and_a_lt_b(inCol, iW)) 
-                                                    *out4 = *(in1 + inCol * inStride3);
-                                                else 
-                                                    *out4 = zeroPadVal;                                            
-                                        }          
-                                    }
-                                }
-                            }
-                        }
-                    }
-
+											for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, out4 += outStride5) {
+												if (is_a_ge_zero_and_a_lt_b(inCol, iW))
+													*out4 = *(in1 + inCol * inStride3);
+												else
+													*out4 = zeroPadVal;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
                 }
 
 		}
@@ -1035,42 +1045,43 @@ namespace simdOps {
             const int kColEnd = -pW + kW * dW;
             const int inRowEnd = oH * sH;
             const int inColEnd = oW * sW;
-            
+
+            int inRowStart, inColStart, inRow, inCol;
             T *out0, *out1, *out2;
+
+            memset(result, 0, shape::length(resultShapeBuffer) * sizeof(T));
 
                 if (shape::order(xShapeBuffer) == 'c' &&  shape::order(resultShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(xShapeBuffer) && shape::strideDescendingCAscendingF(resultShapeBuffer)) {
 
-#pragma omp parallel for schedule(guided) proc_bind(close) private(out0, out1, out2)
+#pragma omp parallel for schedule(guided) proc_bind(close) private(out0, out1, out2, inRowStart, inColStart, inRow, inCol)
                     for (int b = 0; b < bS; b++) {
                         T *input = dx + (b * inStride0);
-                        
-                        for (out0 = result + (b * outStride0); out0 < (b * outStride0) + out0End; out0 += outStride1) {
+                        out0 = result + (b * outStride0);
 
-                            for (int kRow = -pH; kRow < kRowEnd; kRow+=dH) {                               
-                                
-                                for (int kCol = -pW; kCol < kColEnd; kCol+=dW) {
-                
-                                    for (int inRow = kRow; inRow < kRow + inRowEnd; inRow+=sH) {                                    
-                                        
+                        for (int channel = 0; channel < iC; ++channel, out0 += outStride1) {
+
+                            for (int kRow = 0; kRow < kH; ++kRow) {
+                                inRowStart = -pH + kRow * dH;
+
+                                for (int kCol = 0; kCol < kW; ++kCol) {
+                                    inRow = inRowStart;
+                                    inColStart = -pW + kCol * dW;
+
+                                    for (int outRow = 0; outRow < oH; ++outRow, inRow += sH) {
+
                                         if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
                                             input += inStepOW;
-                                        } 
-                                        else {                                            
+                                        }
+                                        else {
+                                            inCol = inColStart;
                                             out1 = out0 + inRow * outStride2;
 
-                                            if(kRow == -pH && kCol == -pW) { 		// first pass
-                                            	for (int inCol = kCol; inCol < kCol + inColEnd; inCol+=sW, input += inStride5)
-                                                	if (is_a_ge_zero_and_a_lt_b(inCol, iW))
-                                                    	*(out1 + inCol * outStride3) = *input;
+                                            for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, input += inStride5) {
+                                                if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
+                                                    out2 = out1 + inCol * outStride3;
+                                                    *out2 += *input;
+                                                }
                                             }
-                                            else {
-                                            	for (int inCol = kCol; inCol < kCol + inColEnd; inCol+=sW, input += inStride5) {                                            
-                                                	if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
-                                                    	out2 = out1 + inCol * outStride3;
-                                                    	*out2 += *input;                                                    
-                                                	}
-                                            	}
-                                        	}	
                                         }
                                     }
                                 }
@@ -1079,42 +1090,40 @@ namespace simdOps {
                     }
                 } 
                 else {
-                    
+
                     T *in0, *in1, *in2, *in3, *in4;
-#pragma omp parallel for schedule(guided) proc_bind(close) private(in0, in1, in2, in3, in4, out0, out1, out2)
-                    for (int b = 0; b < bS; b++) {                                                
+#pragma omp parallel for schedule(guided) proc_bind(close) private(in0, in1, in2, in3, in4, out0, out1, out2, inRowStart, inColStart, inRow, inCol)
+                    for (int b = 0; b < bS; b++) {
+                        out0 = result + (b * outStride0);
                         in0 = dx + b * inStride0;
 
-                        for (out0 = result + (b * outStride0); out0 < (b * outStride0) + out0End; out0+=outStride1, in0+=inStride1) {
+                        for (int channel = 0; channel < iC; ++channel, out0+=outStride1, in0+=inStride1) {
                             in1 = in0;
 
-                            for (int kRow = -pH; kRow < kRowEnd; kRow+=dH, in1+=inStride2) {                            
+                            for (int kRow = 0; kRow < kH; ++kRow, in1+=inStride2) {
                                 in2 = in1;
-                                
-                                for (int kCol = -pW; kCol < kColEnd; kCol+=dW, in2+=inStride3) {                                
-                                    in3 = in2;
+                                inRowStart = -pH + kRow * dH;
 
-                                    for (int inRow = kRow; inRow < kRow + inRowEnd; inRow+=sH, in3+=inStride4) {                                    
+                                for (int kCol = 0; kCol < kW; ++kCol, in2+=inStride3) {
+                                    in3 = in2;
+                                    inRow = inRowStart;
+                                    inColStart = -pW + kCol * dW;
+
+                                    for (int outRow = 0; outRow < oH; ++outRow, inRow+=sH, in3+=inStride4) {
                                         in4 = in3;
 
                                         if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
                                             in4 += inStepOW;
-                                        } 
-                                        else {                                            
+                                        }
+                                        else {
+                                            inCol = inColStart;
                                             out1 = out0 + inRow * outStride2;
 
-                                            if(kRow == -pH && kCol == -pW) { 		// first pass
-                                            	for (int inCol = kCol; inCol < kCol + inColEnd; inCol+=sW, in4+=inStride5) 
-                                                	if (is_a_ge_zero_and_a_lt_b(inCol, iW)) 
-                                                    	*(out1 + inCol * outStride3) = *in4;
-                                            }
-                                            else {
-                                            	for (int inCol = kCol; inCol < kCol + inColEnd; inCol+=sW, in4+=inStride5) {                                            
-                                                	if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
-                                                    	out2 = out1 + inCol * outStride3;
-                                                    	*out2 += *in4;
-                                                	}
-                                            	}
+                                            for (int outCol = 0; outCol < oW; ++outCol, inCol+=sW, in4+=inStride5) {
+                                                if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
+                                                    out2 = out1 + inCol * outStride3;
+                                                    *out2 += *in4;
+                                                }
                                             }
                                         }
                                     }

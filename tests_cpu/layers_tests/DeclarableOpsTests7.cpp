@@ -14,6 +14,7 @@
 using namespace nd4j;
 using namespace nd4j::graph;
 
+
 class DeclarableOpsTests7 : public testing::Test {
 public:
 
