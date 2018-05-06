@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.FrozenLayer;
+import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -217,7 +218,12 @@ public class LayerVertex extends BaseGraphVertex {
             }
         }
 
-        if (!(layer instanceof IOutputLayer)) {
+        Layer resolvedLayer = layer;
+        if (layer instanceof FrozenLayerWithBackprop) {
+            resolvedLayer = ((FrozenLayerWithBackprop) layer).getInsideLayer();
+        }
+
+        if (!(resolvedLayer instanceof IOutputLayer)) {
             if (epsilon == null) {
                 return false;
             }
