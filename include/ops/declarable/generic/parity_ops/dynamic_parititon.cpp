@@ -1,5 +1,5 @@
 //
-//  @author @shugeo <sgazeos@gmail.com>
+//  @author GS <sgazeos@gmail.com>
 //
 
 #include <op_boilerplate.h>
