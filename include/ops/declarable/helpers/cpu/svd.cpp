@@ -382,9 +382,9 @@ void SVD<T>::calcSingVals(const NDArray<T>& col0, const NDArray<T>& diag, const 
     
         if (col0(k) == (T)0. || curLen==1) {
     
-            singVals(k) = k==0 ? col0(0) : diag(k);
+            singVals(k) = k==0 ? col0(0.) : diag(k);
             mus(k) = 0.;
-            shifts(k) = k==0 ? col0(0) : diag(k);
+            shifts(k) = k==0 ? col0(0.) : diag(k);
             continue;
         } 
     

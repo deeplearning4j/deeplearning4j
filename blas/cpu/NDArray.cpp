@@ -2705,15 +2705,64 @@ bool NDArray<T>::isUnitary() {
     ////////////////////////////////////////////////////////////////////////
     // operator returns sub-array with buffer pointing at this->_buffer + certain offset
     template<typename T>
+    NDArray<T> NDArray<T>::operator()(const int* idx, bool keepUnitiesInShape)  const {
+        
+        const int rank = rankOf();
+        int *newShape;
+        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(rank), int);
+        memcpy(newShape, _shapeInfo, shape::shapeInfoByteLength(rank));
+        newShape[shape::shapeInfoLength(rank) - 2] = -1;
+
+        int *shapeOf = shape::shapeOf(newShape);
+        int *stridesOf = shape::stride(newShape);
+
+        Nd4jIndex offset = 0;
+        int first, last;
+        for (int d = 0; d < rank; ++d) {
+            // building new shape first
+            if (idx[2*d] != idx[2*d+1]) {
+
+                first = idx[2*d]   >= 0 ? idx[2*d]   : idx[2*d]   + sizeAt(d) + 1;
+                last  = idx[2*d+1] >= 0 ? idx[2*d+1] : idx[2*d+1] + sizeAt(d) + 1;
+
+                shapeOf[d] = last - first;
+                // for offset we're taking only the first index
+                offset += first * stridesOf[d];
+            }
+        }
+
+        NDArray<T> result(_buffer + offset, newShape, _workspace);
+        result._isShapeAlloc = true;
+
+        if(!keepUnitiesInShape) {
+            // check whether units are present in newShape, if yes then remove them by applying corresponding reshape
+            // for example if result has shape {1,a,1,b} then after reshaping it acquire new shape {a,b}
+            std::vector<int> nonUnitDims;
+            for(int i = 0; i < result.rankOf(); ++i)
+                if(newShape[i+1] != 1)
+                    nonUnitDims.push_back(newShape[i+1]);
+
+            if(nonUnitDims.size() != result.rankOf())
+                result.reshapei(nonUnitDims);
+        }
+
+        return result;
+    }
+    
+
+    ////////////////////////////////////////////////////////////////////////
+    // operator returns sub-array with buffer pointing at this->_buffer + certain offset
+    template<typename T>
     NDArray<T> NDArray<T>::operator()(const Intervals& idx, bool keepUnitiesInShape)  const {
 
-        if (idx.size() != this->rankOf())
+        const int rank = rankOf();
+        if (idx.size() != rank)
             throw "NDArray::operator(Intervals): number of indices should match the rank of array!";
 
         int *newShape;
-        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), int);
-        memcpy(newShape, this->_shapeInfo, shape::shapeInfoByteLength(this->rankOf()));
-        newShape[shape::shapeInfoLength(this->rankOf()) - 2] = -1;
+        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(rank), int);
+        memcpy(newShape, _shapeInfo, shape::shapeInfoByteLength(rank));
+        newShape[shape::shapeInfoLength(rank) - 2] = -1;
 
         int *shapeOf = shape::shapeOf(newShape);
         int *stridesOf = shape::stride(newShape);
@@ -2725,8 +2774,8 @@ bool NDArray<T>::isUnitary() {
             if (!idx[d].empty()) {
                 if (idx[d].size() != 2)
                     throw "NDArray::operator(Intervals): the interval must contain only two numbers {first, last} !";
-                first = idx[d][0] >= 0 ? idx[d][0] : idx[d][0] + this->sizeAt(d) + 1;
-                last  = idx[d][1] >= 0 ? idx[d][1] : idx[d][1] + this->sizeAt(d) + 1;
+                first = idx[d][0] >= 0 ? idx[d][0] : idx[d][0] + sizeAt(d) + 1;
+                last  = idx[d][1] >= 0 ? idx[d][1] : idx[d][1] + sizeAt(d) + 1;
 
                 shapeOf[d] = last - first;
                 // for offset we're taking only the first index
@@ -2734,7 +2783,7 @@ bool NDArray<T>::isUnitary() {
             }
         }
 
-        NDArray<T> result(this->_buffer + offset, newShape, this->_workspace);
+        NDArray<T> result(_buffer + offset, newShape, _workspace);
         result._isShapeAlloc = true;
 
         if(!keepUnitiesInShape) {

@@ -747,6 +747,14 @@ namespace nd4j {
         NDArray<T> operator()(const Intervals& idx, bool keepUnitiesInShape = false)  const;
 
         /**
+        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *        when (dimStart == dimEnd) then whole range will be used for current dimension 
+        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
+        */
+        NDArray<T> operator()(const int* idx, bool keepUnitiesInShape = false)  const;
+
+        /**
         *  addition operator: array + other
         *  other - input array to add
         */

@@ -206,14 +206,30 @@ namespace nd4j {
         #endif
 
         /**
-         * Upsampling implementation, based on pytorch
-         *
-         * IArgs map:
-         * IArgs[0] - scale factor
+         * Expected input: 4D array
+         * 
+         * IntArgs:
+         * 0: scale factor for rows (height)
+         * 1: scale factor for columns (width)
+         * 2: data format: 0 NHWC (default), 1 NCHW
          */
         #if NOT_EXCLUDED(OP_upsampling2d)
-        DECLARE_CUSTOM_OP(upsampling2d, 1, 1, false, 0, 1);
-        DECLARE_CUSTOM_OP(upsampling2d_bp, 2, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(upsampling2d, 1, 1, false, 0, 2);
+        DECLARE_CUSTOM_OP(upsampling2d_bp, 2, 1, false, 0, 0);
+        #endif
+
+        /**
+         * Expected input: 4D array
+         * 
+         * IntArgs:
+         * 0: scale factor for depth
+         * 1: scale factor for rows (height)
+         * 2: scale factor for columns (width)
+         * 3: data format: 0 NDHWC (default), 1 NCDHW
+         */
+        #if NOT_EXCLUDED(OP_upsampling3d)
+        DECLARE_CUSTOM_OP(upsampling3d, 1, 1, false, 0, 3);
+        DECLARE_CUSTOM_OP(upsampling3d_bp, 2, 1, false, 0, 0);    
         #endif
 
         /**

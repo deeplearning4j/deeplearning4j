@@ -168,7 +168,7 @@ void reverseSequence(const NDArray<T>* input, const NDArray<T>* seqLengths, NDAr
         if((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
             output->assign(input);
         else
-            helpers::reverseArray<T>(const_cast<NDArray<T>*>(input)->getBuffer(), const_cast<NDArray<T>*>(input)->getShapeInfo(), output->getBuffer(), output->getShapeInfo(), (int)(*seqLengths)(0));
+            helpers::reverseArray<T>(const_cast<NDArray<T>*>(input)->getBuffer(), const_cast<NDArray<T>*>(input)->getShapeInfo(), output->getBuffer(), output->getShapeInfo(), (int)(*seqLengths)(0.));
     }
     else {
             

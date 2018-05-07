@@ -23,24 +23,24 @@ NDArray<T> Householder<T>::evalHHmatrix(const NDArray<T>& x) {
 	T coeff;
 	T normX = x.template reduceNumber<simdOps::Norm2<T>>();		
 	
-	if(normX*normX - x(0)*x(0) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
+	if(normX*normX - x(0.)*x(0.) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
 
-		normX = x(0); 
+		normX = x(0.); 
 		coeff = (T)0.;		
 		w = (T)0.;
 		
 	} 	
 	else {
 		
-		if(x(0) >= (T)0.)
+		if(x(0.) >= (T)0.)
 			normX = -normX;									// choose opposite sign to lessen roundoff error
 		
-		T u0 = x(0) - normX;
+		T u0 = x(0.) - normX;
 		coeff = -u0 / normX;				
 		w.assign(x / u0);		
 	}
 	
-	w(0) = (T)1.;
+	w(0.) = (T)1.;
 	wT.assign(&w);
 	
 	NDArray<T> identity(x.ordering(), {(int)x.lengthOf(), (int)x.lengthOf()}, x.getWorkspace());					 
@@ -63,18 +63,18 @@ void Householder<T>::evalHHmatrixData(const NDArray<T>& x, NDArray<T>& tail, T& 
 
 	normX = x.template reduceNumber<simdOps::Norm2<T>>();		
 		
-	if(normX*normX - x(0)*x(0) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
+	if(normX*normX - x(0.)*x(0.) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
 
-		normX = x(0);
+		normX = x(0.);
 		coeff = (T)0.;		
 		tail = (T)0.;		
 	}
 	else {
 		
-		if(x(0) >= (T)0.)
+		if(x(0.) >= (T)0.)
 			normX = -normX;									// choose opposite sign to lessen roundoff error
 		
-		T u0 = x(0) - normX;
+		T u0 = x(0.) - normX;
 		coeff = -u0 / normX;				
 
 		if(x.isRowVector())

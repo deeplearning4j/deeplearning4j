@@ -386,7 +386,7 @@ void gather(NDArray<T>* input, const NDArray<T>* indices, NDArray<T>* output, co
             shape::TAD tad(input->getShapeInfo(), dimensions.data(), dimensions.size());
             tad.createTadOnlyShapeInfo();
             tad.createOffsets();
-            NDArray<T> tadArr(input->getBuffer() + tad.tadOffsets[(int)(*indices)(0)], tad.tadOnlyShapeInfo);
+            NDArray<T> tadArr(input->getBuffer() + tad.tadOffsets[(int)(*indices)(0.)], tad.tadOnlyShapeInfo);
             output->assign(&tadArr);
         }
         else if (input->rankOf() == 1 && indices->isVector()) {

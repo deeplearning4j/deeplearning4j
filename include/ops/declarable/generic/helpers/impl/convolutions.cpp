@@ -1358,8 +1358,8 @@ void ConvolutionUtils<T>::sconv2d(const std::vector<NDArray<T>*>& inArrs, NDArra
 
     NDArray<T> *input        = inArrs[0];                                           // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     NDArray<T> *weightsDepth = inArrs[1];                                           // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    NDArray<T> *weightsPoint = inArrs[2];                                                     // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
-    NDArray<T> *bias         = inArrs[3];                                                     // [oC], oC = iC*mC if weightsPoint=nullptr
+    NDArray<T> *weightsPoint = inArrs[2];                                           // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
+    NDArray<T> *bias         = inArrs[3];                                           // [oC], oC = iC*mC if weightsPoint=nullptr
     
     // output is [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)
 
@@ -1392,6 +1392,7 @@ void ConvolutionUtils<T>::sconv2d(const std::vector<NDArray<T>*>& inArrs, NDArra
         delete outputDepth;
     }
 }
+
 
 //////////////////////////////////////////////////////////////////////////
 // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
@@ -1733,6 +1734,157 @@ void ConvolutionUtils<T>::col2vol(NDArray<T>& columns, NDArray<T>& volume, const
             }
         }  
     }
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void ConvolutionUtils<T>::upsampling2d(const NDArray<T>& input, NDArray<T>& output, const int factorH, const int factorW, const bool isNCHW) {
+    // input  has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC) 
+    // output has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
+    
+    int indIn[8]  = {0,0,  0,0,  0,0,  0,0};
+    int indOut[8] = {0,0,  0,0,  0,0,  0,0};
+    const int dimIH = isNCHW ? 2 : 1;    
+    const int j0 = 2*dimIH;
+    const int j1 = j0+1, j2 = j0+2, j3 = j0+3;
+    const int size0 = input.sizeAt(dimIH) * input.sizeAt(dimIH+1);
+    // const int size1 = factorH * factorW;
+
+#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
+    for(int ih = 0; ih < input.sizeAt(dimIH); ++ih) {
+        for(int iw = 0; iw < input.sizeAt(dimIH+1); ++iw) {
+            indIn[j0] = ih; indIn[j1] = ih+1; 
+            indIn[j2] = iw; indIn[j3] = iw+1; 
+
+// #pragma omp parallel for if(size1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indOut) 
+            for(int fh = 0; fh < factorH; ++fh) {
+                for(int fw = 0; fw < factorW; ++fw) {
+                    
+                    indOut[j0] = ih * factorH + fh; indOut[j1] = indOut[j0] + 1; 
+                    indOut[j2] = iw * factorW + fw; indOut[j3] = indOut[j2] + 1;                     
+                    output(indOut).assign(input(indIn));
+                }
+            }
+        }
+    }
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void ConvolutionUtils<T>::upsampling3d(const NDArray<T>& input, NDArray<T>& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
+    // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC) 
+    // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
+    int indIn[10]  = {0,0,  0,0,  0,0,  0,0,  0,0};
+    int indOut[10] = {0,0,  0,0,  0,0,  0,0,  0,0};
+    const int dimID = isNCDHW ? 2 : 1;    
+    const int j0 = 2*dimID;
+    const int j1 = j0+1, j2 = j0+2, j3 = j0+3, j4 = j0+4, j5 = j0+5;;
+    const int size0 = input.sizeAt(dimID) * input.sizeAt(dimID+1) * input.sizeAt(dimID+2);
+    // const int size1 = factorD * factorH * factorW;
+
+#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
+    for(int id = 0; id < input.sizeAt(dimID); ++id) {
+        for(int ih = 0; ih < input.sizeAt(dimID+1); ++ih) {
+            for(int iw = 0; iw < input.sizeAt(dimID+2); ++iw) {
+                indIn[j0] = id; indIn[j1] = id+1;
+                indIn[j2] = ih; indIn[j3] = ih+1;
+                indIn[j4] = iw; indIn[j5] = iw+1;
+
+// #pragma omp parallel for if(size1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indOut) 
+            for(int fd = 0; fd < factorD; ++fd) {
+                for(int fh = 0; fh < factorH; ++fh) {
+                    for(int fw = 0; fw < factorW; ++fw) {
+                            indOut[j0] = id * factorD + fd; indOut[j1] = indOut[j0] + 1; 
+                            indOut[j2] = ih * factorH + fh; indOut[j3] = indOut[j2] + 1; 
+                            indOut[j4] = iw * factorW + fw; indOut[j5] = indOut[j4] + 1;                     
+                            output(indOut).assign(input(indIn));
+                        }
+                    }
+                }
+            }
+        }
+    }    
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void ConvolutionUtils<T>::upsampling2dBP(const NDArray<T>& gradO, NDArray<T>& gradI, const bool isNCHW) {
+    // gradO has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
+    // gradI has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)     
+    int indIn[8]  = {0,0,  0,0,  0,0,  0,0};
+    int indOut[8] = {0,0,  0,0,  0,0,  0,0};
+    const int dimIH = isNCHW ? 2 : 1;    
+    const int factorH = gradO.sizeAt(dimIH)   / gradI.sizeAt(dimIH);
+    const int factorW = gradO.sizeAt(dimIH+1) / gradI.sizeAt(dimIH+1);
+    const int j0 = 2*dimIH;
+    const int j1 = j0+1, j2 = j0+2, j3 = j0+3;
+    const int size0 = gradI.sizeAt(dimIH) * gradI.sizeAt(dimIH+1);
+
+#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2) firstprivate(indIn, indOut) 
+    for(int ih = 0; ih < gradI.sizeAt(dimIH); ++ih) {
+        for(int iw = 0; iw < gradI.sizeAt(dimIH+1); ++iw) {
+            indIn[j0] = ih; indIn[j1] = ih+1; 
+            indIn[j2] = iw; indIn[j3] = iw+1; 
+            NDArray<T> subGradI = gradI(indIn);
+
+            for(int fh = 0; fh < factorH; ++fh) {
+                for(int fw = 0; fw < factorW; ++fw) {                    
+                    indOut[j0] = ih * factorH + fh; indOut[j1] = indOut[j0] + 1; 
+                    indOut[j2] = iw * factorW + fw; indOut[j3] = indOut[j2] + 1;                     
+                    if(!fh && !fw)
+                        subGradI.assign(gradO(indOut));
+                    else
+                        subGradI += gradO(indOut);
+                }
+            }
+        }
+    }
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void ConvolutionUtils<T>::upsampling3dBP(const NDArray<T>& gradO, NDArray<T>& gradI, const bool isNCDHW) {
+    // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC) 
+    // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
+    int indIn[10]  = {0,0,  0,0,  0,0,  0,0,  0,0};
+    int indOut[10] = {0,0,  0,0,  0,0,  0,0,  0,0};
+    const int dimID = isNCDHW ? 2 : 1;
+    const int factorD = gradO.sizeAt(dimID)   / gradI.sizeAt(dimID);
+    const int factorH = gradO.sizeAt(dimID+1) / gradI.sizeAt(dimID+1);
+    const int factorW = gradO.sizeAt(dimID+2) / gradI.sizeAt(dimID+2);
+    const int j0 = 2*dimID;
+    const int j1 = j0+1, j2 = j0+2, j3 = j0+3, j4 = j0+4, j5 = j0+5;;
+    const int size0 = gradI.sizeAt(dimID) * gradI.sizeAt(dimID+1) * gradI.sizeAt(dimID+2);
+
+#pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(3) firstprivate(indOut, indIn) 
+    for(int id = 0; id < gradI.sizeAt(dimID); ++id) {
+        for(int ih = 0; ih < gradI.sizeAt(dimID+1); ++ih) {
+            for(int iw = 0; iw < gradI.sizeAt(dimID+2); ++iw) {
+                indIn[j0] = id; indIn[j1] = id+1;
+                indIn[j2] = ih; indIn[j3] = ih+1;
+                indIn[j4] = iw; indIn[j5] = iw+1;
+                NDArray<T> subGradI = gradI(indIn);
+
+            for(int fd = 0; fd < factorD; ++fd) {
+                for(int fh = 0; fh < factorH; ++fh) {
+                    for(int fw = 0; fw < factorW; ++fw) {
+                            indOut[j0] = id * factorD + fd; indOut[j1] = indOut[j0] + 1; 
+                            indOut[j2] = ih * factorH + fh; indOut[j3] = indOut[j2] + 1; 
+                            indOut[j4] = iw * factorW + fw; indOut[j5] = indOut[j4] + 1;                     
+                            if(!fd && !fh && !fw)
+                                subGradI.assign(gradO(indOut));
+                            else
+                                subGradI += gradO(indOut);
+                        }
+                    }
+                }
+            }
+        }
+    }    
 }
 template class ND4J_EXPORT ConvolutionUtils<float>;
 template class ND4J_EXPORT ConvolutionUtils<float16>;
