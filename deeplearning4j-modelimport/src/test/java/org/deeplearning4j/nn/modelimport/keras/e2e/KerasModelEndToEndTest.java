@@ -288,6 +288,30 @@ public class KerasModelEndToEndTest {
     }
 
     /**
+     * Functional LSTM test
+     */
+    @Test
+    public void importFunctionalLstmTfKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/functional_lstm/lstm_functional_tf_keras_2.h5";
+
+        // No training enabled
+        ComputationGraph graphNoTrain = importFunctionalModelH5Test(modelPath, null, false);
+        System.out.println(graphNoTrain.summary());
+
+        // Training enabled
+        ComputationGraph graph = importFunctionalModelH5Test(modelPath, null, true);
+        System.out.println(graph.summary());
+
+        // Make predictions
+        int miniBatch = 32;
+        INDArray input = Nd4j.ones(miniBatch, 4, 10);
+        INDArray[] out = graph.output(input);
+
+        // Fit model
+        graph.fit(new INDArray[] {input}, out);
+    }
+
+    /**
      * U-Net
      */
     @Test
