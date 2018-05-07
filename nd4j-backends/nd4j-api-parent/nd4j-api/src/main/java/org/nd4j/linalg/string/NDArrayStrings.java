@@ -116,7 +116,7 @@ public class NDArrayStrings {
 
     private String format(INDArray arr, int offset, boolean summarize) {
         int rank = arr.rank();
-        if (arr.isScalar() && rank == 0) {
+        if (arr.isScalar()) {
             //true scalar i.e shape = [] not legacy which is [1,1]
             if (arr instanceof IComplexNDArray) {
                 return ((IComplexNDArray) arr).getComplex(0).toString();
@@ -164,7 +164,7 @@ public class NDArrayStrings {
                     //hack fix for slice issue with 'f' order
                     if (arr.ordering() == 'f' && arr.rank() > 2 && arr.size(arr.rank() - 1) == 1) {
                         sb.append(format(arr.dup('c').slice(i), offset, summarize));
-                    } else if(arr.rank() <= 1) {
+                    } else if(arr.rank() <= 1 || arr.length() == 1) {
                         sb.append(format(Nd4j.scalar(arr.getDouble(0)),offset,summarize));
                     }
                     else {

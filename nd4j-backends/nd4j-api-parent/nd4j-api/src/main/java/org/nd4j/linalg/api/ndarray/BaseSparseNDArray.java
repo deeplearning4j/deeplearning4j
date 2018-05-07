@@ -83,6 +83,20 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
 
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    @Override
+    public boolean isColumnVectorOrScalar() {
+        return isColumnVector() || isScalar();
+    }
+
+    @Override
+    public boolean isRowVectorOrScalar() {
+        return isRowVector() || isScalar();
+    }
 
     @Override
     public INDArray get(INDArray indices) {

@@ -6243,6 +6243,15 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, array1);
     }
 
+
+    @Test
+    public void testAddiColumnEdge(){
+        INDArray arr1 = Nd4j.create(1, 5);
+        arr1.addiColumnVector(Nd4j.ones(1));
+        assertEquals(Nd4j.ones(1,5), arr1);
+    }
+
+
     @Test
     public void testMmulViews_1() {
         val arrayX = Nd4j.linspace(1, 27, 27).reshape(3, 3, 3);

@@ -1782,7 +1782,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         } else if (Shape.rank(javaShapeInformation) == 1) {
             return shapeOf().getInt(0) == 1;
         } else if (Shape.rank(javaShapeInformation) == 2) {
-            return shapeOf().getInt(0) == 1 && shapeOf().getInt(1) == 1;
+            return shapeOf().getInt(0) == 1 && shapeOf().getInt(1) == 1 || length() == 1;
         }
 
         else
@@ -2492,10 +2492,38 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
         Nd4j.getCompressor().autoDecompress(this);
+       if(columnVector.isScalar()) {
+           switch (operation) {
+               case 'a':
+                   addi(columnVector.getDouble(0));
+                   break;
+               case 'p':
+                   assign(columnVector.getDouble(0));
+                   break;
+               case 's':
+                   subi(columnVector.getDouble(0));
+                   break;
+               case 'm':
+                   muli(columnVector.getDouble(0));
+                   break;
+               case 'd':
+                   divi(columnVector.getDouble(0));
+                   break;
+               case 'h':
+                   rsubi(columnVector.getDouble(0));
+                   break;
+               case 't':
+                   rdivi(columnVector.getDouble(0));
+                   break;
+
+           }
+
+           return this;
+       }
         //Input validation: require (a) columnVector to actually be a column vector, and (b) this.size(0) to match columnVector.size(0)
-        if (!columnVector.isColumnVector() || this.size(0) != columnVector.size(0)) {
+        if (!columnVector.isColumnVector() || this.size(0) != columnVector.size(0) || columnVector.length() <= 1) {
             throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape())
-                    + ", row vector shape =" + Arrays.toString(columnVector.shape()) + ")");
+                    + ", column vector shape =" + Arrays.toString(columnVector.shape()) + ")");
         }
 
         if (columnVector.data().sameUnderlyingData(data()))
@@ -2621,8 +2649,38 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected INDArray doRowWise(INDArray rowVector, final char operation) {
         Nd4j.getCompressor().autoDecompress(this);
 
+
+        if(rowVector.isScalar()) {
+            switch (operation) {
+                case 'a':
+                    addi(rowVector.getDouble(0));
+                    break;
+                case 'p':
+                    assign(rowVector.getDouble(0));
+                    break;
+                case 's':
+                    subi(rowVector.getDouble(0));
+                    break;
+                case 'm':
+                    muli(rowVector.getDouble(0));
+                    break;
+                case 'd':
+                    divi(rowVector.getDouble(0));
+                    break;
+                case 'h':
+                    rsubi(rowVector.getDouble(0));
+                    break;
+                case 't':
+                    rdivi(rowVector.getDouble(0));
+                    break;
+
+            }
+
+            return this;
+        }
+
         //Input validation: require (a) rowVector to actually be a row vector, and (b) this.size(1) to match rowVector.size(1)
-        if (!rowVector.isRowVector() ||this.rank() > 1 && rowVector.rank() > 1 &&  this.size(1) != rowVector.size(1)) {
+        if (!rowVector.isRowVector() || this.rank() > 1 && rowVector.rank() > 1 &&  this.size(1) != rowVector.size(1) || rowVector.length() <= 1) {
             throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape())
                     + ", row vector shape =" + Arrays.toString(rowVector.shape()) + ")");
         }
@@ -5313,6 +5371,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public boolean isColumnVector() {
         return rank() == 2 && columns() == 1 && length() > 1;
+    }
+
+    @Override
+    public boolean isColumnVectorOrScalar() {
+        return isColumnVector() || isScalar();
+    }
+
+    @Override
+    public boolean isRowVectorOrScalar() {
+        return isRowVector() || isScalar();
     }
 
     /**

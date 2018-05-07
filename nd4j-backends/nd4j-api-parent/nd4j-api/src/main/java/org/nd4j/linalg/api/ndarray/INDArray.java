@@ -2401,6 +2401,20 @@ public interface INDArray extends Serializable {
     boolean isRowVector();
 
     /**
+     * Returns true if the number of columns is 1
+     *
+     * @return true if the number of columns is 1
+     */
+    boolean isColumnVectorOrScalar();
+
+    /**
+     * Returns true if the number of rows is 1
+     *
+     * @return true if the number of rows is 1
+     */
+    boolean isRowVectorOrScalar();
+
+    /**
      * Returns true if this ndarray is a vector
      *
      * @return whether this ndarray is a vector
