@@ -4,7 +4,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
+import org.deeplearning4j.nn.conf.layers.RnnLossLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -25,6 +28,8 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLossUtils.mapLo
 public class KerasLoss extends KerasLayer {
 
     private final String KERAS_CLASS_NAME_LOSS = "Loss";
+    private LossFunctions.LossFunction loss;
+
 
     /**
      * Constructor from layer name and input shape.
@@ -58,7 +63,6 @@ public class KerasLoss extends KerasLayer {
         this.dimOrder = DimOrder.NONE;
         this.inboundLayerNames = new ArrayList<>();
         this.inboundLayerNames.add(inboundLayerName);
-        LossFunctions.LossFunction loss;
         try {
             loss = mapLossFunction(kerasLoss, conf);
         } catch (UnsupportedKerasConfigurationException e) {
@@ -67,7 +71,6 @@ public class KerasLoss extends KerasLayer {
             log.warn("Unsupported Keras loss function. Replacing with MSE.");
             loss = LossFunctions.LossFunction.SQUARED_LOSS;
         }
-        this.layer = new LossLayer.Builder(loss).name(layerName).build();
     }
 
     /**
@@ -75,8 +78,20 @@ public class KerasLoss extends KerasLayer {
      *
      * @return LossLayer
      */
-    public LossLayer getLossLayer() {
-        return (LossLayer) this.layer;
+    public FeedForwardLayer getLossLayer(InputType type) throws UnsupportedKerasConfigurationException {
+        if (type instanceof InputType.InputTypeFeedForward) {
+            this.layer = new LossLayer.Builder(loss).name(this.layerName).build();
+        }
+        else if (type instanceof  InputType.InputTypeRecurrent) {
+            this.layer = new RnnLossLayer.Builder(loss).name(this.layerName).build();
+        }
+        else if (type instanceof InputType.InputTypeConvolutional) {
+            this.layer = new CnnLossLayer.Builder(loss).name(this.layerName).build();
+        } else {
+            throw new UnsupportedKerasConfigurationException("Unsupported output layer type"
+                    + "got : " + type.toString());
+        }
+        return (FeedForwardLayer) this.layer;
     }
 
     /**
@@ -87,10 +102,11 @@ public class KerasLoss extends KerasLayer {
      * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
-    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException,
+    UnsupportedKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Loss layer accepts only one input (received " + inputType.length + ")");
-        return this.getLossLayer().getOutputType(-1, inputType[0]);
+        return this.getLossLayer(inputType[0]).getOutputType(-1, inputType[0]);
     }
 }

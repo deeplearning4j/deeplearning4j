@@ -288,6 +288,15 @@ public class KerasModelEndToEndTest {
     }
 
     /**
+     * U-Net
+     */
+    @Test
+    public void importUnetTfKeras2() throws Exception {
+        importFunctionalModelH5Test(
+                "modelimport/keras/examples/unet/unet_keras_2_tf.h5", null, true);
+    }
+
+    /**
      * ResNet50
      */
     @Test
@@ -329,7 +338,8 @@ public class KerasModelEndToEndTest {
     @Ignore
     // Takes unreasonably long, but works
     public void importInception() throws Exception {
-        ComputationGraph graph = importFunctionalModelH5Test("modelimport/keras/examples/inception/inception_v3_complete.h5");
+        ComputationGraph graph = importFunctionalModelH5Test(
+                "modelimport/keras/examples/inception/inception_v3_complete.h5");
         INDArray input = Nd4j.ones(10, 3, 299, 299);
         graph.output(input);
         System.out.println(graph.summary());
@@ -343,23 +353,22 @@ public class KerasModelEndToEndTest {
     public void importXception() throws Exception {
         int[] inputShape = new int[]{299, 299, 3};
         ComputationGraph graph = importFunctionalModelH5Test(
-                "modelimport/keras/examples/xception/xception_tf_keras_2.h5", inputShape);
+                "modelimport/keras/examples/xception/xception_tf_keras_2.h5", inputShape, false);
     }
-
 
 
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
-        return importFunctionalModelH5Test(modelPath, null);
+        return importFunctionalModelH5Test(modelPath, null, false);
     }
 
-    private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape) throws Exception {
+    private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape, boolean train) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
         File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(false);
+                .enforceTrainingConfig(train);
         if (inputShape != null) {
             builder.inputShape(inputShape);
         }
