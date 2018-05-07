@@ -1,13 +1,15 @@
 package org.deeplearning4j;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.util.CuDNNValidation;
+import org.deeplearning4j.util.CuDNNValidationUtil;
 import org.junit.Test;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationELU;
@@ -22,9 +24,11 @@ import org.nd4j.linalg.schedule.ScheduleType;
 import org.nd4j.linalg.schedule.StepSchedule;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-public class ValidateCuDNN {
+@Slf4j
+public class ValidateCuDNN extends BaseDL4JTest {
 
     @Test
     public void validateConvLayers(){
@@ -102,29 +106,59 @@ public class ValidateCuDNN {
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(multiLayerConfiguration);
+            net.init();
 
 
             Nd4j.getRandom().setSeed(12345);
+            INDArray features = Nd4j.rand(new int[]{32, channels, imageHeight, imageWidth});
             INDArray labels = Nd4j.rand(32, numClasses);
             Nd4j.getExecutioner().exec(new IsMax(labels, 1));
 
-            List<CuDNNValidation.TestCase> testCaseList = new ArrayList<>();
-            testCaseList.add(CuDNNValidation.TestCase.builder()
+            List<Class<?>> classesToTest = new ArrayList<>();
+            classesToTest.add(ConvolutionLayer.class);
+            classesToTest.add(org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class);
+            classesToTest.add(org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization.class);
+            classesToTest.add(org.deeplearning4j.nn.layers.normalization.BatchNormalization.class);
+
+            List<CuDNNValidationUtil.TestCase> testCaseList = new ArrayList<>();
+
+            for(Class<?> c : classesToTest){
+                String name = "WS=" + wsm + ", testCudnnFor=" + c.getSimpleName();
+                testCaseList.add(CuDNNValidationUtil.TestCase.builder()
+                        .testName(name)
+                        .allowCudnnHelpersForClasses(Collections.<Class<?>>singletonList(c))
+                        .testForward(true)
+                        .testScore(true)
+                        .testBackward(true)
+                        .trainFirst(false)
+                        .features(features)
+                        .labels(labels)
+                        .build());
+            }
+            testCaseList.add(CuDNNValidationUtil.TestCase.builder()
+                    .testName("WS=" + wsm + ", ALL CLASSES")
+                    .allowCudnnHelpersForClasses(classesToTest)
                     .testForward(true)
                     .testScore(true)
                     .testBackward(true)
                     .trainFirst(false)
+                    .features(features)
+                    .labels(labels)
                     .build());
 
-//            testCaseList.add(CuDNNValidation.TestCase.builder()
+
+
+
+//            testCaseList.add(CuDNNValidationUtil.TestCase.builder()
 //                    .testForward(true)
 //                    .testScore(true)
 //                    .testBackward(true)
 //                    .trainFirst(true)
 //                    .build());
 
-            for(CuDNNValidation.TestCase tc : testCaseList){
-                CuDNNValidation.validateMLN(net, tc);
+            for(CuDNNValidationUtil.TestCase tc : testCaseList){
+                log.info("Running test: " + tc.getTestName());
+                CuDNNValidationUtil.validateMLN(net, tc);
             }
         }
     }
