@@ -158,8 +158,12 @@ public class KerasModel {
         prepareLayers((List<Object>) layerLists.get((config.getModelFieldLayers())));
 
         /* Import training configuration. */
-        if (trainingJson != null && enforceTrainingConfig)
-            importTrainingConfiguration(trainingJson);
+        if (enforceTrainingConfig) {
+            if (trainingJson != null)
+                importTrainingConfiguration(trainingJson);
+            else throw new UnsupportedKerasConfigurationException("If enforceTrainingConfig is true, a training " +
+                    "configuration object (JSON) has to be provided.");
+        }
 
         /* Infer output types for each layer. */
         inferOutputTypes(inputShape);
