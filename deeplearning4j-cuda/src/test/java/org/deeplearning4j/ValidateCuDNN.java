@@ -248,6 +248,65 @@ public class ValidateCuDNN extends BaseDL4JTest {
         validateLayers(net, classesToTest, fShape, lShape);
     }
 
+    @Test
+    public void validateConvLayersLRN() {
+        Nd4j.getRandom().setSeed(12345);
+
+        int numClasses = 10;
+        //imageHeight,imageWidth,channels
+        int imageHeight = 240;
+        int imageWidth = 240;
+        int channels = 3;
+        IActivation activation = new ActivationIdentity();
+        MultiLayerConfiguration multiLayerConfiguration = new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.XAVIER).seed(42)
+                .activation(new ActivationELU())
+                .updater(Nesterovs.builder()
+                        .momentum(0.9)
+                        .learningRateSchedule(new StepSchedule(
+                                ScheduleType.EPOCH,
+                                1e-2,
+                                0.1,
+                                20)).build()).list(
+                        new Convolution2D.Builder().nOut(96)
+                                .kernelSize(11, 11).biasInit(0.0)
+                                .stride(4, 4).build(),
+                        new ActivationLayer.Builder().activation(activation).build(),
+                        new LocalResponseNormalization.Builder()
+                                .alpha(1e-3).beta(0.75).k(2)
+                                .n(5).build(),
+                        new Pooling2D.Builder()
+                                .poolingType(SubsamplingLayer.PoolingType.MAX)
+                                .kernelSize(3, 3).stride(2, 2)
+                                .build(),
+                        new Convolution2D.Builder().nOut(256)
+                                .kernelSize(5, 5).padding(2, 2)
+                                .biasInit(0.0)
+                                .stride(1, 1).build(),
+                        new ActivationLayer.Builder().activation(activation).build(),
+                        new OutputLayer.Builder().activation(new ActivationSoftmax())
+                                .lossFunction(new LossNegativeLogLikelihood())
+                                .nOut(numClasses)
+                                .biasInit(0.0)
+                                .build())
+                .setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, channels))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(multiLayerConfiguration);
+        net.init();
+
+        int[] fShape = new int[]{32, channels, imageHeight, imageWidth};
+        int[] lShape = new int[]{32, numClasses};
+
+        List<Class<?>> classesToTest = new ArrayList<>();
+        classesToTest.add(ConvolutionLayer.class);
+        classesToTest.add(org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class);
+        classesToTest.add(org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization.class);
+        classesToTest.add(org.deeplearning4j.nn.layers.normalization.BatchNormalization.class);
+
+        validateLayers(net, classesToTest, fShape, lShape);
+    }
+
 
     public static void validateLayers(MultiLayerNetwork net, List<Class<?>> classesToTest, int[] fShape, int[] lShape) {
 
