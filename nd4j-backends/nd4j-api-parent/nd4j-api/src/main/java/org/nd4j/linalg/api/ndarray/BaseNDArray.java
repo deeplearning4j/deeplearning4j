@@ -5296,7 +5296,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean isSquare() {
-
         return isMatrix() && rows() == columns();
     }
 
@@ -5305,7 +5304,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isRowVector() {
-        return (rank() == 2 && rows() == 1) || rank() == 1;
+        return (rank() == 2 && rows() == 1) && length() > 1 || rank() == 1 && length() > 1;
     }
 
     /**
@@ -5313,7 +5312,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isColumnVector() {
-        return rank() == 2 && columns() == 1;
+        return rank() == 2 && columns() == 1 && length() > 1;
     }
 
     /**

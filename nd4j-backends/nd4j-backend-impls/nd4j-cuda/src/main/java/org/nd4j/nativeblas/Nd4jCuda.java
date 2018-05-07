@@ -15648,15 +15648,48 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                       template struct ND4J_EXPORT __registratorSynonymFloat<NAME<float>>;
 
 
-// #if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__)
+// #if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__) || defined(__VSCODE__)
 // #define NOT_EXCLUDED(NAME) 1>0
 // #else
 // #define NOT_EXCLUDED(NAME) defined(LIBND4J_ALL_OPS) || defined(NAME)
 // #endif
 
-// #ifndef __JAVACPP_HACK__
+// #ifdef __JAVACPP_HACK__
+// #define REGISTER_H(NAME)
+// #elif defined(LIBND4J_ALL_OPS)
 // #else
-// #define REGISTER(NAME)  
+// #define REGISTER_H(NAME)  template <typename OpName>
+//                         struct __registratorFloat_##NAME {
+//                             __registratorFloat_##NAME() {
+//                                 OpName *ptr = new OpName();
+//                                 OpRegistrator::getInstance()->registerOperationFloat(ptr);
+//                                 OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());
+//                             }
+//                         };
+//                         template <typename OpName>
+//                         struct __registratorHalf_##NAME {
+//                             __registratorHalf_##NAME() {
+//                                 OpName *ptr = new OpName();
+//                                 OpRegistrator::getInstance()->registerOperationHalf(ptr);
+//                             }
+//                         };
+//                         template <typename OpName>
+//                         struct __registratorDouble_##NAME {
+//                             __registratorDouble_##NAME() {
+//                                 OpName *ptr = new OpName();
+//                                 OpRegistrator::getInstance()->registerOperationDouble(ptr);
+//                             }
+//                         };
+//                         static nd4j::ops::__registratorFloat_##NAME<NAME<float>> zzz_register_opf_##NAME;
+//                         static nd4j::ops::__registratorHalf_##NAME<NAME<float16>> zzz_register_oph_##NAME;
+//                         static nd4j::ops::__registratorDouble_##NAME<NAME<double>> zzz_register_opd_##NAME;
+// #endif
+
+// #ifdef __JAVACPP_HACK__
+// #define REGISTER_C(NAME)
+// #elif defined(LIBND4J_ALL_OPS)
+// #else
+// #define REGISTER_C(NAME)
 // #endif
 
 // #define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)   template <typename T>
@@ -15667,7 +15700,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 protected:
 //                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                 };
-//                                                 REGISTER(NAME)
+//                                                 REGISTER_H(NAME)
 
 // #define DECLARE_BOOLEAN_OP(NAME, NIN, SCALAR)   template <typename T>
 //                                                 class NAME: public nd4j::ops::BooleanOp<T> {
@@ -15676,10 +15709,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 protected:
 //                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                 };
-//                                                 REGISTER(NAME)
+//                                                 REGISTER_H(NAME)
 
 // #define BOOLEAN_OP_IMPL(NAME, NIN, SCALAR)   template <typename T>
 //                                                 NAME<T>::NAME() : nd4j::ops::BooleanOp<T>(#NAME, NIN, SCALAR) { };
+//                                                 REGISTER_C(NAME)
 //                                                 template class ND4J_EXPORT NAME<float>;
 //                                                 template class ND4J_EXPORT NAME<float16>;
 //                                                 template class ND4J_EXPORT NAME<double>;
@@ -15693,13 +15727,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                             protected:
 //                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                             };
-//                                                             REGISTER(NAME)
+//                                                             REGISTER_H(NAME)
 
 // #define LIST_OP_IMPL(NAME, NIN, NOUT, TARGS, IARGS)         template <typename T>
 //                                                             NAME<T>::NAME() : nd4j::ops::DeclarableListOp<T>(NIN, NOUT, #NAME, TARGS, IARGS) { };
 //                                                             template class ND4J_EXPORT NAME<float>;
 //                                                             template class ND4J_EXPORT NAME<float16>;
 //                                                             template class ND4J_EXPORT NAME<double>;
+//                                                             REGISTER_C(NAME)
 //                                                             template <typename T>
 //                                                             Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
@@ -15710,13 +15745,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                     protected:
 //                                         Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                     };
-//                                     REGISTER(NAME)
+//                                     REGISTER_H(NAME)
 
 // #define LOGIC_OP_IMPL(NAME)     template <typename T>
 //                                 NAME<T>::NAME() : nd4j::ops::LogicOp<T>(#NAME) { };
 //                                 template class ND4J_EXPORT NAME<float>;
 //                                 template class ND4J_EXPORT NAME<float16>;
 //                                 template class ND4J_EXPORT NAME<double>;
+//                                 REGISTER_C(NAME)
 //                                 template <typename T>
 //                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block) { return nd4j::ops::LogicOp<T>::validateAndExecute(block); };
 
@@ -15727,6 +15763,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 template class ND4J_EXPORT NAME<float>;
 //                                                 template class ND4J_EXPORT NAME<float16>;
 //                                                 template class ND4J_EXPORT NAME<double>;
+//                                                 REGISTER_C(NAME)
 //                                                 template <typename T>
 //                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
 //                                                     auto shapeList = SHAPELIST();
@@ -15797,13 +15834,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                             protected:
 //                                                                 Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                             };
-//                                                             REGISTER(NAME)
+//                                                             REGISTER_H(NAME)
 
 // #define DIVERGENT_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)     template <typename T>
 //                                                             NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, true) { };
 //                                                             template class ND4J_EXPORT NAME<float>;
 //                                                             template class ND4J_EXPORT NAME<float16>;
 //                                                             template class ND4J_EXPORT NAME<double>;
+//                                                             REGISTER_C(NAME)
 //                                                             template <typename T>
 //                                                             nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
 //                                                                 auto shapeList = SHAPELIST();
@@ -15825,13 +15863,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 protected:
 //                                                                                     Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block);
 //                                                                                 };
-//                                                                                 REGISTER(NAME)
+//                                                                                 REGISTER_H(NAME)
 
 // #define CONFIGURABLE_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)        template <typename T>
 //                                                                                 NAME<T>::NAME() : nd4j::ops::DeclarableOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
 //                                                                                 template class ND4J_EXPORT NAME<float>;
 //                                                                                 template class ND4J_EXPORT NAME<float16>;
 //                                                                                 template class ND4J_EXPORT NAME<double>;
+//                                                                                 REGISTER_C(NAME)
 //                                                                                 template <typename T>
 //                                                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
 //                                                                                     auto shapeList = SHAPELIST();
@@ -15856,13 +15895,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 protected:
 //                                                                                     Nd4jStatus validateAndExecute(Context<T>& block);
 //                                                                                 };
-//                                                                                 REGISTER(NAME)
+//                                                                                 REGISTER_H(NAME)
 
 // #define REDUCTION_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)           template <typename T>
 //                                                                                 NAME<T>::NAME() : nd4j::ops::DeclarableReductionOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
 //                                                                                 template class ND4J_EXPORT NAME<float>;
 //                                                                                 template class ND4J_EXPORT NAME<float16>;
 //                                                                                 template class ND4J_EXPORT NAME<double>;
+//                                                                                 REGISTER_C(NAME)
 //                                                                                 template <typename T>
 //                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
@@ -15875,13 +15915,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                     NAME();
 //                                                                                     nd4j::ShapeList* calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block);
 //                                                                                 };
-//                                                                                 REGISTER(NAME)
+//                                                                                 REGISTER_H(NAME)
 
 // #define CUSTOM_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)              template <typename T>
 //                                                                                 NAME<T>::NAME(): nd4j::ops::DeclarableCustomOp<T>(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS) { };
 //                                                                                 template class ND4J_EXPORT NAME<float>;
 //                                                                                 template class ND4J_EXPORT NAME<float16>;
 //                                                                                 template class ND4J_EXPORT NAME<double>;
+//                                                                                 REGISTER_C(NAME)
 //                                                                                 template <typename T>
 //                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 

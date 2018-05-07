@@ -27,6 +27,20 @@ public class ShapeTests extends BaseNd4jTest {
 
 
     @Test
+    public void testRowColVectorVsScalar() {
+        INDArray arr = Nd4j.create(2);
+        assertTrue(arr.isRowVector());
+        INDArray colVector = arr.reshape(2,1);
+        assertTrue(colVector.isColumnVector());
+        assertFalse(arr.isScalar());
+        assertFalse(colVector.isScalar());
+
+        INDArray arr3 = Nd4j.scalar(1.0);
+        assertFalse(arr3.isColumnVector());
+        assertFalse(arr3.isRowVector());
+   }
+
+    @Test
     public void testSixteenZeroOne() {
         INDArray baseArr = Nd4j.linspace(1, 16, 16).reshape(2, 2, 2, 2);
         assertEquals(4, baseArr.tensorssAlongDimension(0, 1));
