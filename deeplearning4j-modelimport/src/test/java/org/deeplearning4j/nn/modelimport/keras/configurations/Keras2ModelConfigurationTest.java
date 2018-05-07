@@ -160,6 +160,11 @@ public class Keras2ModelConfigurationTest {
     }
 
     @Test
+    public void flattenConv1DTfTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/flatten_conv1d_tf_keras_2.json");
+    }
+
+    @Test
     public void embeddingLSTMMaskZeroTest() throws Exception {
         runModelConfigTest("configs/keras2/embedding_lstm_calculator.json");
     }

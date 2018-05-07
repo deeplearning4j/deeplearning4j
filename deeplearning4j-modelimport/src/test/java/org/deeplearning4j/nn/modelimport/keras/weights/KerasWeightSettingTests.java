@@ -123,7 +123,7 @@ public class KerasWeightSettingTests {
         int mb = 42;
         int kernel = 3;
 
-        INDArray input = Nd4j.zeros(mb, 1, inputLength);
+        INDArray input = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(input);
         assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength - kernel + 1});
     }
@@ -172,7 +172,7 @@ public class KerasWeightSettingTests {
         assert (embeddingWeightShape[0] == nIn);
         assert (embeddingWeightShape[1] == outputDim);
 
-        INDArray inEmbedding = Nd4j.zeros(mb, 1, inputLength);
+        INDArray inEmbedding = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(inEmbedding);
         assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength});
 
@@ -197,7 +197,7 @@ public class KerasWeightSettingTests {
         assert (embeddingWeightShape[0] == nIn);
         assert (embeddingWeightShape[1] == outputDim);
 
-        INDArray inEmbedding = Nd4j.zeros(mb, 1, inputLength);
+        INDArray inEmbedding = Nd4j.zeros(mb,  inputLength);
         INDArray output = model.output(inEmbedding);
         assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength - kernel + 1});
 
