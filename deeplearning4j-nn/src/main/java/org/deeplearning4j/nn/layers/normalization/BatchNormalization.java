@@ -121,6 +121,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, shape, gamma, dGammaView, dBetaView,
                             layerConf.getEps(), workspaceMgr);
             if (ret != null) {
+                ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
+                ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
                 return ret;
             }
         }

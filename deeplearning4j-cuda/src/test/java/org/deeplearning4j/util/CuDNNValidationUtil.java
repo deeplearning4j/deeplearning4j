@@ -1,11 +1,12 @@
 package org.deeplearning4j.util;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.LocalResponseNormalization;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -48,6 +49,16 @@ public class CuDNNValidationUtil {
         assertNotNull(t.getAllowCudnnHelpersForClasses());
         assertFalse(t.getAllowCudnnHelpersForClasses().isEmpty());
 
+        //Don't allow fallback:
+        for(Layer l : netOrig.getLayers()){
+            org.deeplearning4j.nn.conf.layers.Layer lConf = l.conf().getLayer();
+            if(lConf instanceof ConvolutionLayer){
+                ((ConvolutionLayer) lConf).setCudnnAllowFallback(false);
+            } else if(lConf instanceof SubsamplingLayer){
+                ((SubsamplingLayer) lConf).setCudnnAllowFallback(false);
+            }
+        }
+
 
         MultiLayerNetwork net1NoCudnn = new MultiLayerNetwork(netOrig.getLayerWiseConfigurations().clone());
         net1NoCudnn.init();
@@ -74,19 +85,20 @@ public class CuDNNValidationUtil {
         if(t.isTestForward()){
             Preconditions.checkNotNull(t.getFeatures(), "Features are not set (null)");
 
-            for(boolean train : new boolean[]{false, true}) {
-            assertEquals(net1NoCudnn.params(), net2With.params());
+            for (boolean train : new boolean[]{false, true}) {
+                assertEquals(net1NoCudnn.params(), net2With.params());
                 String s = t.getTestName() + " - " + (train ? "Train: " : "Test: ");
                 List<INDArray> ff1 = net1NoCudnn.feedForward(t.getFeatures(), train);
                 List<INDArray> ff2 = net2With.feedForward(t.getFeatures(), train);
                 List<String> paramKeys = new ArrayList<>(net1NoCudnn.paramTable().keySet());
                 Collections.sort(paramKeys);
-                for(String p : paramKeys){
-                   INDArray p1 = net1NoCudnn.getParam(p);
-                   INDArray p2 = net2With.getParam(p);
-                   INDArray re = relError(p1, p2, MIN_ABS_ERROR);
+                for (String p : paramKeys) {
+                    INDArray p1 = net1NoCudnn.getParam(p);
+                    INDArray p2 = net2With.getParam(p);
+                    INDArray re = relError(p1, p2, MIN_ABS_ERROR);
                     double maxRE = re.maxNumber().doubleValue();
-                    if(maxRE >= MAX_REL_ERROR){
+                    if (maxRE >= MAX_REL_ERROR) {
+                        System.out.println("Failed param values");
                         System.out.println(p1);
                         System.out.println(p2);
                     }
@@ -133,8 +145,42 @@ public class CuDNNValidationUtil {
         }
 
         if(t.isTestBackward()) {
+            Preconditions.checkNotNull(t.getFeatures(), "Features are not set (null)");
+            Preconditions.checkNotNull(t.getLabels(), "Labels are not set (null)");
             log.info("Validation - checking backward pass");
 
+            //Check gradients
+            net1NoCudnn.setInput(t.getFeatures());
+            net1NoCudnn.setLabels(t.getLabels());
+
+            net2With.setInput(t.getFeatures());
+            net2With.setLabels(t.getLabels());
+
+            net1NoCudnn.computeGradientAndScore();
+            net2With.computeGradientAndScore();
+
+            List<String> paramKeys = new ArrayList<>(net1NoCudnn.paramTable().keySet());
+            Collections.sort(paramKeys);
+            for(String p : paramKeys){
+                INDArray g1 = net1NoCudnn.gradient().gradientForVariable().get(p);
+                INDArray g2 = net2With.gradient().gradientForVariable().get(p);
+
+                if(g1 == null || g2 == null){
+                    throw new RuntimeException("Null gradients");
+                }
+
+                INDArray re = relError(g1, g2, MIN_ABS_ERROR);
+                double maxRE = re.maxNumber().doubleValue();
+                if (maxRE >= MAX_REL_ERROR) {
+                    System.out.println("Failed param values");
+                    System.out.println(Arrays.toString(g1.dup().data().asFloat()));
+                    System.out.println(Arrays.toString(g2.dup().data().asFloat()));
+                }
+                assertTrue("Gradients are not equal: " + p, maxRE < MAX_REL_ERROR);
+            }
+
+
+            //Finally, compare training curves:
 
         }
     }
@@ -193,7 +239,7 @@ public class CuDNNValidationUtil {
         return Math.abs(d1-d2) / (Math.abs(d1) + Math.abs(d2));
     }
 
-    private static INDArray relError(INDArray a1, INDArray a2, double minAbsError){
+    private static INDArray relError(@NonNull INDArray a1, @NonNull INDArray a2, double minAbsError){
         long numNaN1 = Nd4j.getExecutioner().exec(new MatchCondition(a1, Conditions.isNan()), Integer.MAX_VALUE).getInt(0);
         long numNaN2 = Nd4j.getExecutioner().exec(new MatchCondition(a2, Conditions.isNan()), Integer.MAX_VALUE).getInt(0);
         Preconditions.checkState(numNaN1 == 0, "Array 1 has NaNs");
