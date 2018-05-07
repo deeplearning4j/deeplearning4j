@@ -27,7 +27,7 @@ public class LossUtil {
     public static void applyMask(INDArray to, INDArray mask) {
         //Two possibilities exist: it's *per example* masking, or it's *per output* masking
         //These cases have different mask shapes. Per example: column vector. Per output: same shape as score array
-        if (mask.isColumnVector()) {
+        if (mask.isColumnVectorOrScalar()) {
             to.muliColumnVector(mask);
         } else if (Arrays.equals(to.shape(), mask.shape())) {
             to.muli(mask);
