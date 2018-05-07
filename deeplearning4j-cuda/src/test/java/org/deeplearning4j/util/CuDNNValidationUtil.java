@@ -59,18 +59,18 @@ public class CuDNNValidationUtil {
 
 
         if(t.isTrainFirst()){
+            Preconditions.checkState(t.getData() != null, "Test data iterator is ");
             log.info("Validation - training first...");
             log.info("*** NOT YET IMPLEMENTED***");
 
-            //TODO
+
         }
 
         if(t.isTestForward()){
             Preconditions.checkNotNull(t.getFeatures(), "Features are not set (null)");
-            log.info("Validation - checking forward pass");
 
             for(boolean train : new boolean[]{false, true}) {
-                String tr = train ? "Train: " : "Test: ";
+                String s = t.getTestName() + " - " + (train ? "Train: " : "Test: ");
                 List<INDArray> ff1 = net.feedForward(t.getFeatures(), train);
                 List<INDArray> ff2 = net2.feedForward(t.getFeatures(), train);
                 for( int i=0; i<ff1.size(); i++ ){
@@ -82,7 +82,7 @@ public class CuDNNValidationUtil {
 
                     INDArray relError = relError(arr1, arr2, MIN_ABS_ERROR);
                     double maxRE = relError.maxNumber().doubleValue();
-                    assertTrue(tr + layerName + " - max RE: " + maxRE, maxRE < MAX_REL_ERROR);
+                    assertTrue(s + layerName + " - max RE: " + maxRE, maxRE < MAX_REL_ERROR);
                     log.info("Forward pass, max relative error: " + layerName + " - " + maxRE);
                 }
 
@@ -90,8 +90,8 @@ public class CuDNNValidationUtil {
                 INDArray out2 = net2.output(t.getFeatures(), train);
                 INDArray relError = relError(out1, out2, MIN_ABS_ERROR);
                 double maxRE = relError.maxNumber().doubleValue();
-                log.info("Output, max relative error: " + maxRE);
-                assertTrue(tr + "Max RE: " + maxRE, maxRE < MAX_REL_ERROR);
+                log.info(s + "Output, max relative error: " + maxRE);
+                assertTrue(s + "Max RE: " + maxRE, maxRE < MAX_REL_ERROR);
             }
         }
 
