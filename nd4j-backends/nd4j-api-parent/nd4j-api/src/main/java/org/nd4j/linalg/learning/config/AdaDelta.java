@@ -62,7 +62,7 @@ public class AdaDelta implements IUpdater {
 
     @Override
     public boolean hasLearningRate() {
-        return true;
+        return false;
     }
 
     @Override
