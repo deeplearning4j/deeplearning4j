@@ -543,7 +543,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             //Create parameters array, if required
             boolean initializeParams;
             if (parameters != null) {
-                if (!parameters.isRowVector())
+                if (!parameters.isRowVectorOrScalar())
                     throw new IllegalArgumentException("Invalid parameters: should be a row vector");
                 if (parameters.length() != paramLength)
                     throw new IllegalArgumentException("Invalid parameters: expected length " + paramLength
@@ -1903,7 +1903,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public int[] predict(INDArray d) {
         INDArray output = output(d, Layer.TrainingMode.TEST);
         int[] ret = new int[d.size(0)];
-        if (d.isRowVector())
+        if (d.isRowVectorOrScalar())
             ret[0] = Nd4j.getBlasWrapper().iamax(output);
         else {
             for (int i = 0; i < ret.length; i++)

@@ -204,7 +204,7 @@ public class VpTreeNodeTest {
     public static INDArray generateNaturalsMatrix(int nrows, int ncols) {
         INDArray col = Nd4j.arange(0, nrows).transpose();
         INDArray points = Nd4j.zeros(nrows, ncols);
-        if (points.isColumnVector())
+        if (points.isColumnVectorOrScalar())
             points = col.dup();
         else {
             for (int i = 0; i < ncols; i++)
