@@ -51,6 +51,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -2548,6 +2549,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     public Layer getLayer(int i) {
+        Preconditions.checkArgument(i >= 0 && i < layers.length, "Invalid layer index: layer index must be 0" +
+                " to %s (inclusive), got index %s", layers.length-1, i);
         return layers[i];
     }
 
