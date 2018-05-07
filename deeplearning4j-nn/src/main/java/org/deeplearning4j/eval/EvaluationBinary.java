@@ -61,7 +61,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
      */
     public EvaluationBinary(INDArray decisionThreshold) {
         if (decisionThreshold != null) {
-            if (!decisionThreshold.isRowVector()) {
+            if (!decisionThreshold.isRowVectorOrScalar()) {
                 throw new IllegalArgumentException(
                                 "Decision threshold array must be a row vector; got array with shape "
                                                 + Arrays.toString(decisionThreshold.shape()));

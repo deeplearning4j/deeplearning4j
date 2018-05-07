@@ -476,7 +476,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         boolean initializeParams;
         if (parameters != null) {
-            if (!parameters.isRowVector())
+            if (!parameters.isRowVectorOrScalar())
                 throw new IllegalArgumentException("Invalid parameters: should be a row vector");
             if (parameters.length() != numParams)
                 throw new IllegalArgumentException("Invalid parameters: expected length " + numParams + ", got length "
