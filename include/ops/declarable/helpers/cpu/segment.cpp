@@ -274,7 +274,21 @@ namespace helpers {
         }
     }
 
+    template <typename T>
+    bool segmentIndicesValidate(NDArray<T>* indices, T& expected, T& output) {
+            T val = (*indices)(0);
+            for (int e = 1; e < indices->lengthOf(); e++) {
+                output = (*indices)(e);
+                if (val > output) 
+                    return false;
+                val = (*indices)(e);
+            }
+            return true;
+    }
 
+    template bool segmentIndicesValidate(NDArray<float>* indices, float& expected, float& output);
+    template bool segmentIndicesValidate(NDArray<float16>* indices, float16& expected, float16& output);
+    template bool segmentIndicesValidate(NDArray<double>* indices, double& expected, double& output);
 
     template void segmentMaxFunctor<float>(NDArray<float>* input, NDArray<float>* indices, NDArray<float>* output);
     template void segmentMaxFunctor<float16>(NDArray<float16>* input, NDArray<float16>* , NDArray<float16>* output);

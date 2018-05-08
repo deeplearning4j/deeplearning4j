@@ -3,7 +3,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/sequence_mask.h>
 
 namespace nd4j {
     namespace ops {
@@ -29,11 +29,9 @@ namespace nd4j {
             }
             else
                 maxInd = static_cast<Nd4jIndex>(max);
-            for (Nd4jIndex i = 0; i < maxInd; i++) {
-                for(Nd4jIndex k = 0; k < input->lengthOf(); k++)
-                if (i < static_cast<int>((*input)(k)))
-                    (*output)(k * maxInd + i) = T(1.0);
-            }
+
+            helpers::sequenceMask(input, output, maxInd);
+
             return ND4J_STATUS_OK;
         }
 

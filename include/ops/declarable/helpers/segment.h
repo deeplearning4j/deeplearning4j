@@ -12,6 +12,9 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
+    bool segmentIndicesValidate(NDArray<T>* indices, T& expected, T& output);
+
+    template <typename T>
     void segmentMaxFunctor(NDArray<T>* input, NDArray<T>* indices, NDArray<T>* output);
 
     template <typename T>
