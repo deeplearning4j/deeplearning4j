@@ -62,7 +62,7 @@ public class LabelGeneratorTest {
             rr.initialize(new FileSplit(f));
 
             List<String> labelsAct = rr.getLabels();
-            List<String> labelsExp = Arrays.asList("m.0", "m.1", "m.2");
+            List<String> labelsExp = Arrays.asList(dirPrefix + "0", dirPrefix + "1", dirPrefix + "2");
             assertEquals(labelsExp, labelsAct);
 
             int expCount = numDirs * filesPerDir;
@@ -74,5 +74,4 @@ public class LabelGeneratorTest {
             assertEquals(expCount, actCount);
         }
     }
-
 }
