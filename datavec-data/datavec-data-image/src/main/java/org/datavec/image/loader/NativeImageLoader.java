@@ -28,7 +28,6 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
@@ -46,7 +45,8 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  */
 public class NativeImageLoader extends BaseImageLoader {
     private static final int MIN_BUFFER_STEP_SIZE = 1024*1024;
-    private byte[] buffer;
+    private byte[] buffer = null;
+    private Mat bufferMat = null;
 
     public static final String[] ALLOWED_FORMATS = {"bmp", "gif", "jpg", "jpeg", "jp2", "pbm", "pgm", "ppm", "pnm",
                     "png", "tif", "tiff", "exr", "webp", "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM",
@@ -205,16 +205,10 @@ public class NativeImageLoader extends BaseImageLoader {
 
     @Override
     public INDArray asMatrix(InputStream is) throws IOException {
-        Pair<byte[],Integer> pair = streamToBuffer(is);
-        byte[] bytes = pair.getFirst();
-        int length = pair.getSecond();
-        BytePointer bp = new BytePointer(length);
-        bp.put(bytes, 0, length);
-        Mat mat = new Mat(bp, false);
-
+        Mat mat = streamToMat(is);
         Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         if (image == null || image.empty()) {
-            PIX pix = pixReadMem(bytes, length);
+            PIX pix = pixReadMem(mat.data(), mat.cols());
             if (pix == null) {
                 throw new IOException("Could not decode image from input stream");
             }
@@ -229,13 +223,14 @@ public class NativeImageLoader extends BaseImageLoader {
     /**
      * Read the stream to the buffer, and return the number of bytes read
      * @param is Input stream to read
-     * @return   Pair with the buffer, and the number of bytes read
+     * @return Mat with the buffer data as a row vector
      * @throws IOException
      */
-    private Pair<byte[],Integer> streamToBuffer(InputStream is) throws IOException {
+    private Mat streamToMat(InputStream is) throws IOException {
         if(buffer == null){
             buffer = IOUtils.toByteArray(is);
-            return new Pair<>(buffer, buffer.length);
+            bufferMat = new Mat(buffer);
+            return bufferMat;
         } else {
             int numReadTotal = is.read(buffer);
             //Need to know if all data has been read.
@@ -243,7 +238,9 @@ public class NativeImageLoader extends BaseImageLoader {
             //(b) if numRead >= buffer.length: we MIGHT have got everything (exact right size buffer) OR we need more data
 
             if(numReadTotal < buffer.length){
-                return new Pair<>(buffer, numReadTotal);
+                bufferMat.data().put(buffer, 0, numReadTotal);
+                bufferMat.cols(numReadTotal);
+                return bufferMat;
             }
 
             //Buffer is full; reallocate and keep reading
@@ -265,7 +262,8 @@ public class NativeImageLoader extends BaseImageLoader {
                 }
             }
 
-            return new Pair<>(buffer, numReadTotal);
+            bufferMat = new Mat(buffer);
+            return bufferMat;
         }
 
     }
@@ -279,16 +277,10 @@ public class NativeImageLoader extends BaseImageLoader {
 
     @Override
     public Image asImageMatrix(InputStream is) throws IOException {
-        Pair<byte[],Integer> pair = streamToBuffer(is);
-        byte[] bytes = pair.getFirst();
-        int length = pair.getSecond();
-        BytePointer bp = new BytePointer(length);
-        bp.put(bytes, 0, length);
-        Mat mat = new Mat(bp, false);
-
+        Mat mat = streamToMat(is);
         Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         if (image == null || image.empty()) {
-            PIX pix = pixReadMem(bytes, length);
+            PIX pix = pixReadMem(mat.data(), mat.cols());
             if (pix == null) {
                 throw new IOException("Could not decode image from input stream");
             }
@@ -457,16 +449,10 @@ public class NativeImageLoader extends BaseImageLoader {
     }
 
     public void asMatrixView(InputStream is, INDArray view) throws IOException {
-        Pair<byte[],Integer> pair = streamToBuffer(is);
-        byte[] bytes = pair.getFirst();
-        int length = pair.getSecond();
-        BytePointer bp = new BytePointer(length);
-        bp.put(bytes, 0, length);
-        Mat mat = new Mat(bp, false);
-
+        Mat mat = streamToMat(is);
         Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
         if (image == null || image.empty()) {
-            PIX pix = pixReadMem(bytes, length);
+            PIX pix = pixReadMem(mat.data(), mat.cols());
             if (pix == null) {
                 throw new IOException("Could not decode image from input stream");
             }
@@ -624,15 +610,10 @@ public class NativeImageLoader extends BaseImageLoader {
      */
     public ImageWritable asWritable(File f) throws IOException {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
-            Pair<byte[],Integer> pair = streamToBuffer(bis);
-            byte[] bytes = pair.getFirst();
-            int length = pair.getSecond();
-            BytePointer bp = new BytePointer(length);
-            bp.put(bytes, 0, length);
-            Mat mat = new Mat(bp, false);
+            Mat mat = streamToMat(bis);
             Mat image = imdecode(mat, CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
             if (image == null || image.empty()) {
-                PIX pix = pixReadMem(bytes, length);
+                PIX pix = pixReadMem(mat.data(), mat.cols());
                 if (pix == null) {
                     throw new IOException("Could not decode image from input stream");
                 }

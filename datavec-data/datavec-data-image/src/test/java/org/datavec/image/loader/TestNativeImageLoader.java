@@ -314,16 +314,20 @@ public class TestNativeImageLoader {
     @Test
     public void testBufferRealloc() throws Exception {
         Field f = NativeImageLoader.class.getDeclaredField("buffer");
+        Field m = NativeImageLoader.class.getDeclaredField("bufferMat");
         f.setAccessible(true);
+        m.setAccessible(true);
 
         File f1 = new ClassPathResource("voc/2007/JPEGImages/000005.jpg").getFile();
         File f2 = new ClassPathResource("voc/2007/JPEGImages/000007.jpg").getFile();
 
         //Start with a large buffer
         byte[] buffer = new byte[20*1024*1024];
+        Mat bufferMat = new Mat(buffer);
 
         NativeImageLoader loader = new NativeImageLoader(28, 28, 1);
         f.set(loader, buffer);
+        m.set(loader, bufferMat);
 
         INDArray img1LargeBuffer = loader.asMatrix(f1);
         INDArray img2LargeBuffer = loader.asMatrix(f2);
@@ -352,13 +356,16 @@ public class TestNativeImageLoader {
 
         //Assign much too small buffer:
         buffer = new byte[10];
+        bufferMat = new Mat(buffer);
         f.set(loader, buffer);
+        m.set(loader, bufferMat);
         INDArray img1SmallBuffer1 = loader.asMatrix(f1);
         INDArray img1SmallBuffer2 = loader.asMatrix(f1);
         assertEquals(img1LargeBuffer, img1SmallBuffer1);
         assertEquals(img1LargeBuffer, img1SmallBuffer2);
 
         f.set(loader, buffer);
+        m.set(loader, bufferMat);
         INDArray img2SmallBuffer1 = loader.asMatrix(f2);
         INDArray img2SmallBuffer2 = loader.asMatrix(f2);
         assertEquals(img2LargeBuffer, img2SmallBuffer1);
@@ -368,8 +375,10 @@ public class TestNativeImageLoader {
         try(InputStream is = new FileInputStream(f1)){
             byte[] temp = IOUtils.toByteArray(is);
             buffer = new byte[temp.length];
+            bufferMat = new Mat(buffer);
         }
         f.set(loader, buffer);
+        m.set(loader, bufferMat);
 
         INDArray img1ExactBuffer = loader.asMatrix(f1);
         assertEquals(img1LargeBuffer, img1ExactBuffer);
