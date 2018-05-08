@@ -22,6 +22,11 @@ import org.datavec.api.writable.Writable;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Simple function used in AnalyzeSpark.getUnique
+ *
+ * @author Alex Black
+ */
 public class UniqueMergeFunction implements Function2<Map<String, Set<Writable>>, Map<String, Set<Writable>>, Map<String, Set<Writable>>> {
     @Override
     public Map<String, Set<Writable>> call(Map<String, Set<Writable>> v1, Map<String, Set<Writable>> v2) throws Exception {

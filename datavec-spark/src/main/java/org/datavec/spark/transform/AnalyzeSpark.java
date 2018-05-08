@@ -303,8 +303,8 @@ public class AnalyzeSpark {
     }
 
     /**
-     * Get a list of unique values from the specified column.
-     * For sequence data, use {@link #getUniqueSequence(String, Schema, JavaRDD)}
+     * Get a list of unique values from the specified columns.
+     * For sequence data, use {@link #getUniqueSequence(List, Schema, JavaRDD)}
      *
      * @param columnName    Name of the column to get unique values from
      * @param schema        Data schema
@@ -347,6 +347,20 @@ public class AnalyzeSpark {
                     JavaRDD<List<List<Writable>>> sequenceData) {
         JavaRDD<List<Writable>> flattenedSequence = sequenceData.flatMap(new SequenceFlatMapFunction());
         return getUnique(columnName, schema, flattenedSequence);
+    }
+
+    /**
+     * Get a list of unique values from the specified columns of a sequence
+     *
+     * @param columnNames     Name of the columns to get unique values from
+     * @param schema          Data schema
+     * @param sequenceData    Sequence data to get unique values from
+     * @return
+     */
+    public static Map<String,List<Writable>> getUniqueSequence(List<String> columnNames, Schema schema,
+                                                   JavaRDD<List<List<Writable>>> sequenceData) {
+        JavaRDD<List<Writable>> flattenedSequence = sequenceData.flatMap(new SequenceFlatMapFunction());
+        return getUnique(columnNames, schema, flattenedSequence);
     }
 
     /**

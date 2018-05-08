@@ -27,14 +27,4 @@ public class LocalTransformProcessRecordReader extends TransformProcessRecordRea
     public LocalTransformProcessRecordReader(RecordReader recordReader, TransformProcess transformProcess) {
         super(recordReader, transformProcess);
     }
-
-//    @Override
-//    public List<List<Writable>> next(int num) {
-//        return LocalTransformExecutor.execute(recordReader.next(num),transformProcess);
-//    }
-//
-//    @Override
-//    public List<Writable> next() {
-//        return LocalTransformExecutor.execute(Collections.singletonList(recordReader.next()),transformProcess).get(0);
-//    }
 }
