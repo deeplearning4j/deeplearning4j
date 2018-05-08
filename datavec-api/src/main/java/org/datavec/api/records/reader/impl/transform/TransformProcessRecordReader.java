@@ -13,8 +13,10 @@ import org.datavec.api.writable.Writable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * This wraps a {@link RecordReader}
@@ -56,12 +58,19 @@ public class TransformProcessRecordReader implements RecordReader {
 
     @Override
     public boolean batchesSupported() {
-        return recordReader.batchesSupported();
+        return true;
     }
 
     @Override
     public List<List<Writable>> next(int num) {
-        throw new UnsupportedOperationException();
+        if(!hasNext())
+            throw new NoSuchElementException("No next element");
+
+        List<List<Writable>> out = new ArrayList<>();
+        for( int i=0; i<num && hasNext(); i++ ){
+            out.add(next());
+        }
+        return out;
     }
 
     /**
