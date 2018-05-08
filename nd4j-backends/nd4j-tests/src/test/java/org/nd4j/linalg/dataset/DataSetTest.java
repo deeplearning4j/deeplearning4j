@@ -63,7 +63,38 @@ public class DataSetTest extends BaseNd4jTest {
         assertEquals(15, count);
         iter.reset();
         assertTrue(iter.hasNext());
+    }
 
+    @Test
+    public void  testViewIterator2(){
+
+        INDArray f = Nd4j.linspace(1,100,100).reshape('c', 10, 10);
+        DataSet ds = new DataSet(f, f);
+        DataSetIterator iter = new ViewIterator(ds, 1);
+        for( int i=0; i<10; i++ ){
+            assertTrue(iter.hasNext());
+            DataSet d = iter.next();
+            INDArray exp = f.getRow(i);
+            assertEquals(exp, d.getFeatures());
+            assertEquals(exp, d.getLabels());
+        }
+        assertFalse(iter.hasNext());
+    }
+
+    @Test
+    public void  testViewIterator3(){
+
+        INDArray f = Nd4j.linspace(1,100,100).reshape('c', 10, 10);
+        DataSet ds = new DataSet(f, f);
+        DataSetIterator iter = new ViewIterator(ds, 6);
+        DataSet d1 = iter.next();
+        DataSet d2 = iter.next();
+        assertFalse(iter.hasNext());
+        INDArray e1 = f.get(NDArrayIndex.interval(0,6), NDArrayIndex.all());
+        INDArray e2 = f.get(NDArrayIndex.interval(6,10), NDArrayIndex.all());
+
+        assertEquals(e1, d1.getFeatures());
+        assertEquals(e2, d2.getFeatures());
     }
 
 

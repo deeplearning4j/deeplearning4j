@@ -98,10 +98,8 @@ public class ViewIterator implements DataSetIterator {
 
     @Override
     public DataSet next() {
-        //only loop to the end
-        if (cursor + batch() > numExamples())
-            cursor = cursor() + batch() - numExamples();
-        DataSet next = (DataSet) data.getRange(cursor, cursor + batch());
+        int last = Math.min(numExamples(), cursor() + batch());
+        DataSet next = (DataSet) data.getRange(cursor, last);
         if (preProcessor != null)
             preProcessor.preProcess(next);
         cursor += batch();

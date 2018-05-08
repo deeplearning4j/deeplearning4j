@@ -6299,6 +6299,47 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, arrayX);
     }
 
+
+    @Test
+    public void testMeshGrid(){
+
+        INDArray x1 = Nd4j.create(new double[]{1,2,3,4});
+        INDArray y1 = Nd4j.create(new double[]{5,6,7});
+
+        INDArray expX = Nd4j.create(new double[][]{
+                {1,2,3,4},
+                {1,2,3,4},
+                {1,2,3,4}});
+        INDArray expY = Nd4j.create(new double[][]{
+                {5,5,5,5},
+                {6,6,6,6},
+                {7,7,7,7}});
+        INDArray[] exp = new INDArray[]{expX, expY};
+
+        INDArray[] out1 = Nd4j.meshgrid(x1, y1);
+        assertArrayEquals(out1, exp);
+
+        INDArray[] out2 = Nd4j.meshgrid(x1.transpose(), y1.transpose());
+        assertArrayEquals(out2, exp);
+
+        INDArray[] out3 = Nd4j.meshgrid(x1, y1.transpose());
+        assertArrayEquals(out3, exp);
+
+        INDArray[] out4 = Nd4j.meshgrid(x1.transpose(), y1);
+        assertArrayEquals(out4, exp);
+
+        //Test views:
+        INDArray x2 = Nd4j.create(1,9).get(NDArrayIndex.all(), NDArrayIndex.interval(1,2,7, true))
+                .assign(x1);
+        INDArray y2 = Nd4j.create(1,7).get(NDArrayIndex.all(), NDArrayIndex.interval(1,2,5, true))
+                .assign(y1);
+
+        INDArray[] out5 = Nd4j.meshgrid(x2, y2);
+        assertArrayEquals(out5, exp);
+    }
+
+
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;

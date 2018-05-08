@@ -5353,6 +5353,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public boolean isVectorOrScalar() {
+        return isVector() || isScalar();
+    }
+
+    @Override
     public boolean isSquare() {
         return isMatrix() && rows() == columns();
     }

@@ -34,6 +34,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -50,6 +51,7 @@ import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
 import org.nd4j.linalg.api.ndarray.*;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -1964,6 +1966,40 @@ public class Nd4j {
      */
     public static INDArray linspace(float lower, float upper, int num) {
         return linspace((double) lower, (double) upper, num);
+    }
+
+    /**
+     * Meshgrid op. Returns a pair of arrays where values are broadcast on a 2d grid.<br>
+     * For example, if x = [1,2,3,4] and y = [5,6,7], then:<br>
+     * out[0] =<br>
+     * [1,2,3,4]<br>
+     * [1,2,3,4]<br>
+     * [1,2,3,4]<br>
+     * <br>
+     * out[1] =<br>
+     * [5,5,5,5]<br>
+     * [6,6,6,6]<br>
+     * [7,7,7,7]<br>
+     * <br>
+     *
+     * @param x X array input
+     * @param y Y array input
+     * @return INDArray[] of length 2, shape [y.length, x.length]
+     */
+    public static INDArray[] meshgrid(@NonNull INDArray x, @NonNull INDArray y){
+        Preconditions.checkArgument(x.isVectorOrScalar(), "X must be a vector");
+        Preconditions.checkArgument(y.isVectorOrScalar(), "Y must be a vector");
+
+        INDArray xOut = Nd4j.createUninitialized(y.length(), x.length());
+        INDArray yOut = Nd4j.createUninitialized(y.length(), x.length());
+
+        CustomOp op = DynamicCustomOp.builder("meshgrid")
+                .addInputs(x, y)
+                .addOutputs(xOut, yOut)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+
+        return new INDArray[]{xOut, yOut};
     }
 
 

@@ -1632,6 +1632,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public boolean isVectorOrScalar() {
+        return isVector() || isScalar();
+    }
+
+    @Override
     public boolean isSquare() {
 
         return isMatrix() && rows() == columns();

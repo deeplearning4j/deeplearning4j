@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
@@ -51,7 +52,28 @@ import org.nd4j.linalg.util.ArrayUtil;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseDataBuffer implements DataBuffer {
+
+    /**
+     * To specify the maximum number of elements to print when using DataBuffer.toString().
+     * Use -1 to print all elements (i.e., no limit)
+     */
+    public static String TO_STRING_MAX_ELEMENTS = "org.nd4j.databuffer.tostring.maxelements";
+    private static int TO_STRING_MAX;
+    static {
+        String s = System.getProperty(TO_STRING_MAX_ELEMENTS);
+        if(s != null ){
+            try {
+                TO_STRING_MAX = Integer.parseInt(s);
+            } catch (NumberFormatException e){
+                log.warn("Invalid value for key {}: \"{}\"", TO_STRING_MAX_ELEMENTS, s);
+                TO_STRING_MAX = 1000;
+            }
+        } else {
+            TO_STRING_MAX = 1000;
+        }
+    }
 
     protected Type type;
     protected long length;
@@ -78,8 +100,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient Long trackingPoint;
 
     protected transient boolean constant = false;
-
-    private static Logger log = LoggerFactory.getLogger(BaseDataBuffer.class);
 
     public BaseDataBuffer() {}
 
@@ -1431,10 +1451,23 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public String toString() {
         StringBuilder ret = new StringBuilder();
         ret.append("[");
-        for (int i = 0; i < length(); i++) {
+
+        int max;
+        if (TO_STRING_MAX >= 0) {
+            max = (int)Math.min(length(), TO_STRING_MAX);
+        } else {
+            max = (int)Math.min(length(), Integer.MAX_VALUE);
+        }
+
+        for (int i = 0; i < max; i++) {
             ret.append(getNumber(i));
-            if (i < length() - 1)
+            if (i < max - 1)
                 ret.append(",");
+        }
+        if(max < length()){
+            ret.append(",<")
+                    .append(length()-max)
+                    .append(" more elements>");
         }
         ret.append("]");
 
