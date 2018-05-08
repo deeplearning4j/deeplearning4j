@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.conf.ocnn;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -11,7 +8,10 @@ import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.conf.layers.LayerValidation;
 import org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -43,30 +43,41 @@ public class OCNNOutputLayer extends BaseOutputLayer {
 
     private double nu = 0.04;
 
+    private IActivation activation;
+
     public OCNNOutputLayer(Builder builder) {
         super(builder);
         this.hiddenSize = builder.hiddenLayerSize;
         this.nu = builder.nu;
+        this.activation = builder.activation;
 
     }
 
     @JsonCreator
-    public OCNNOutputLayer(@JsonProperty("hiddenSize") int hiddenSize,@JsonProperty("nu") double nu) {
+    public OCNNOutputLayer(@JsonProperty("hiddenSize") int hiddenSize,@JsonProperty("nu") double nu,@JsonProperty("activation") IActivation activation) {
         this.hiddenSize = hiddenSize;
         this.nu = nu;
+        this.activation = activation;
+    }
+
+    @Override
+    public ILossFunction getLossFn() {
+        return lossFn;
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("OCNNOutputLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
-        Layer ret = new org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer(conf);
+        org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer ret = new org.deeplearning4j.nn.layers.ocnn.OCNNOutputLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
         ret.setConf(conf);
+        ret.setActivation(getActivation());
+
         return ret;
     }
 
@@ -96,9 +107,14 @@ public class OCNNOutputLayer extends BaseOutputLayer {
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
         protected  int hiddenLayerSize;
         protected  double nu = 0.04;
-
+        protected IActivation activation = new ActivationIdentity();
         public Builder nu(double nu) {
             this.nu = nu;
+            return this;
+        }
+
+        public Builder activation(IActivation activation) {
+            this.activation = activation;
             return this;
         }
 

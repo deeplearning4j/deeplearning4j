@@ -19,6 +19,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseOutputLayer extends FeedForwardLayer {
+
     protected ILossFunction lossFn;
     protected boolean hasBias = true;
 

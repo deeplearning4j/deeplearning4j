@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.layers.ocnn;
 
 
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -11,6 +13,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -28,8 +31,13 @@ import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.W_KEY;
  * @author Adam Gibson
  */
 public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer> {
+    @Setter
+    @Getter
+    private  IActivation activation = new ActivationReLU();
+    private  static IActivation relu = new ActivationReLU();
+    private INDArray firstDerivVBroadcast, secondDerivVBroadcast;
 
-    private static ActivationReLU activationReLU = new ActivationReLU();
+
     private ILossFunction lossFunction;
 
     public OCNNOutputLayer(NeuralNetConfiguration conf) {
@@ -83,16 +91,17 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
     }
 
     @Override
+    public boolean needsLabels() {
+        return false;
+    }
+
+    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr), workspaceMgr); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         //150
        int inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
         INDArray delta = pair.getSecond();
-        //2
-        INDArray w = getParamWithNoise(W_KEY, true, workspaceMgr);
-        //4 x 2
-        INDArray v = getParamWithNoise(V_KEY,true,workspaceMgr);
         //4 x 150
         INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{inputShape, delta.length()}, 'f');
         epsilonNext = epsilonNext.assign(delta.broadcast(epsilonNext.shape())).transpose();
@@ -115,8 +124,11 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         double oneDivNu = 1.0 / layerConf().getNu();
         INDArray xTimesV = input.mmul(getParam(V_KEY));
         INDArray derivW = layerConf().getActivationFn()
-                .getActivation(xTimesV.dup(),true).negi()
+                .getActivation(xTimesV.dup(),true).negi();
+        derivW = delta.isRowVector() ? derivW
                 .muliRowVector(delta).mean(0)
+                .muli(oneDivNu).addi(getParam(W_KEY)) : derivW
+                .muli(delta).mean(0)
                 .muli(oneDivNu).addi(getParam(W_KEY));
         gradient.setGradientFor(W_KEY,gradientViews.get(W_KEY).assign(derivW));
 
@@ -124,9 +136,12 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
         INDArray firstVertDerivV =  layerConf().getActivationFn()
                 .backprop(xTimesV.dup(),Nd4j.scalar(1.0))
-                .getFirst().muliRowVector(getParam(W_KEY).neg())
-                .muliRowVector(delta)
-                .reshape('f',input.size(0),1,layerConf().getHiddenSize());
+                .getFirst().muliRowVector(getParam(W_KEY).neg());
+        firstVertDerivV = delta.isRowVector() ?
+                firstVertDerivV .muliRowVector(delta)
+                .reshape('f',input.size(0),1,layerConf().getHiddenSize()) :
+                firstVertDerivV.muli(delta)
+                        .reshape('f',input.size(0),1,layerConf().getHiddenSize());
         INDArray secondTermDerivV = input.reshape('f',
                 input.size(0),getParam(V_KEY).size(0),1);
 
@@ -135,8 +150,18 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
             shape[i] = Math.max(firstVertDerivV.size(i),secondTermDerivV.size(i));
         }
 
-        INDArray mulResult = firstVertDerivV.broadcast(shape)
-                .muli(secondTermDerivV.broadcast(shape));
+        if(firstDerivVBroadcast == null || !Shape.shapeEquals(firstDerivVBroadcast.shape(),shape)) {
+            firstDerivVBroadcast = Nd4j.createUninitialized(shape);
+        }
+
+
+        if(secondDerivVBroadcast == null  || !Shape.shapeEquals(secondDerivVBroadcast.shape(),shape)) {
+            secondDerivVBroadcast = Nd4j.createUninitialized(shape);
+        }
+
+
+        INDArray mulResult = firstVertDerivV.broadcast(firstDerivVBroadcast)
+                .muli(secondTermDerivV.broadcast(secondDerivVBroadcast));
 
         INDArray derivV = mulResult
                 .mean(0).muli(oneDivNu).addi(getParam(V_KEY));
@@ -166,9 +191,17 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
     @Override
     public INDArray labelProbabilities(INDArray examples) {
-        //LayerWorkspaceMgr.noWorkspacesImmutable()
-        this.input = examples;
-        return doOutput(false,LayerWorkspaceMgr.noWorkspacesImmutable()).subi(getParam(R_KEY));
+        float[] decision = examples.data().asFloat();
+        for(int i = 0; i < decision.length; i++) {
+            if(decision[i] < 0) {
+                decision[i] = 0.0f;
+            }
+            else {
+                decision[i] = 1.0f;
+            }
+        }
+
+        return Nd4j.create(decision);
     }
 
 
@@ -244,7 +277,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
             double wSum = Transforms.pow(getParam(W_KEY),2).sumNumber().doubleValue() * 0.5;
             double vSum = Transforms.pow(getParam(V_KEY),2).sumNumber().doubleValue() * 0.5;
             org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = (org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf().getLayer();
-            INDArray rMeanSub  = activationReLU.getActivation(getParam(R_KEY).sub(preOutput),true);
+            INDArray rMeanSub  = relu.getActivation(getParam(R_KEY).sub(preOutput),true);
             double rMean = rMeanSub.meanNumber().doubleValue();
             double rSum = getParam(R_KEY).getDouble(0);
             double nuDiv = (1 / ocnnOutputLayer.getNu()) * rMean;
@@ -261,7 +294,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         @Override
         public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
             INDArray preAct = getParam(R_KEY).sub(preOutput);
-            INDArray target =   activationReLU.backprop(preAct.dup(),Nd4j.scalar(1.0)).getFirst();
+            INDArray target =   relu.backprop(getParam(R_KEY).sub(preOutput),Nd4j.ones(preAct.shape())).getFirst();
             return target;
         }
 

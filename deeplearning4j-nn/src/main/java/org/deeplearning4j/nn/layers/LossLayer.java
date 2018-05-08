@@ -356,6 +356,11 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         return labels;
     }
 
+    @Override
+    public boolean needsLabels() {
+        return true;
+    }
+
     public void setLabels(INDArray labels) {
         this.labels = labels;
     }

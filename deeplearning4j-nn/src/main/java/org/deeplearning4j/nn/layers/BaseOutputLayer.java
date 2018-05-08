@@ -100,6 +100,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         return score;
     }
 
+    @Override
+    public boolean needsLabels() {
+        return true;
+    }
+
     /**Compute the score for each example individually, after labels and input have been set.
      *
      * @param fullNetworkL1 L1 regularization term for the entire network (or, 0.0 to not include regularization)
