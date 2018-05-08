@@ -34,7 +34,8 @@ public class ParentPathLabelGenerator implements PathLabelGenerator {
     @Override
     public Writable getLabelForPath(String path) {
         // Label is in the directory
-        return new Text(FilenameUtils.getBaseName(new File(path).getParent()));
+        String dirName = FilenameUtils.getName(new File(path).getParent());
+        return new Text(dirName);
     }
 
     @Override
