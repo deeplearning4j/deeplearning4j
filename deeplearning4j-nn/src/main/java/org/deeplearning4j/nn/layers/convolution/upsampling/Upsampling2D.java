@@ -86,7 +86,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int size = getSize();
+        int[] size = getSize();
 
         INDArray reshapedEpsilon =  workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
@@ -94,8 +94,11 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         Gradient gradient = new DefaultGradient();
 
+        int[] intArgs = new int[] {size[0], size[1], 1}; // 1 is for NCHW
+
+
         CustomOp op = DynamicCustomOp.builder("upsampling_bp")
-                .addIntegerArguments(size)
+                .addIntegerArguments(intArgs)
                 .addInputs(forwardOutput, epsilon)
                 .addOutputs(reshapedEpsilon)
                 .callInplace(false)
@@ -105,7 +108,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         return new Pair<>(gradient, reshapedEpsilon);
     }
 
-    protected int getSize(){
+    protected int[] getSize(){
         return layerConf().getSize();
     }
 
@@ -129,19 +132,20 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int size = getSize();
-        int outH = inH * size;
-        int outW = inW * size;
+        int[] size = getSize();
+        int outH = inH * size[0];
+        int outW = inW * size[1];
 
         INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[]{miniBatch, inDepth, outH, outW}, 'c');
 
-        Upsampling upsampling = Upsampling.sameDiffBuilder()
-                .inPlace(false)
-                .inputArrays(new INDArray[]{input})
-                .outputs(new INDArray[]{reshapedOutput})
-                .scaleFactor(size)
-                .build();
+        int[] intArgs = new int[] {size[0], size[1], 1}; // 1 is for NCHW
 
+        CustomOp upsampling = DynamicCustomOp.builder("upsampling2d")
+                .addIntegerArguments(intArgs)
+                .addInputs(input)
+                .addOutputs(reshapedOutput)
+                .callInplace(false)
+                .build();
         Nd4j.getExecutioner().exec(upsampling);
 
         return reshapedOutput;

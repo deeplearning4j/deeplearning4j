@@ -61,7 +61,7 @@ public class Upsampling1D extends Upsampling2D {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        int size = ((BaseUpsamplingLayer) layerConf()).getSize();
+        int[] size = ((BaseUpsamplingLayer) layerConf()).getSize();
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
         // we replicate the error term times "size" so that backprop works properly on it
         epsilon = epsilon.repeat(3, size);
@@ -83,8 +83,10 @@ public class Upsampling1D extends Upsampling2D {
                 forwardOutput.size(0), forwardOutput.size(1), forwardOutput.size(2), 1);
         forwardOutput = forwardOutput.repeat(3, size);
 
+        int[] intArgs = new int[] {size[0], 1}; // 1 is for NCHW
+
         CustomOp op = DynamicCustomOp.builder("upsampling_bp")
-                .addIntegerArguments(size)
+                .addIntegerArguments(intArgs)
                 .addInputs(forwardOutput, epsilon)
                 .addOutputs(reshapedEpsilon)
                 .callInplace(false)
@@ -97,11 +99,11 @@ public class Upsampling1D extends Upsampling2D {
         input = originalInput;
 
         // Since we aggregate the gradient across "size" slices, we need to normalize afterwards.
-        return new Pair<>(gradient, reshapedEpsilon.divi(size));
+        return new Pair<>(gradient, reshapedEpsilon.divi(size[0]));
     }
 
     @Override
-    protected int getSize(){
+    protected int[] getSize(){
         return ((org.deeplearning4j.nn.conf.layers.Upsampling1D)conf.getLayer()).getSize();
     }
 

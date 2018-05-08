@@ -256,27 +256,22 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
         int denseNOut = 5;
         int finalNOut = 42;
 
-
         int[] kernel = {2, 2, 2};
 
         Activation[] activations = {Activation.RELU};
 
-        Subsampling3DLayer.PoolingType[] poolModes = {Subsampling3DLayer.PoolingType.MAX, Subsampling3DLayer.PoolingType.AVG};
+        Subsampling3DLayer.PoolingType[] poolModes = {Subsampling3DLayer.PoolingType.AVG};
 
-        ConvolutionMode[] modes = {ConvolutionMode.Truncate, ConvolutionMode.Same};
+        ConvolutionMode[] modes = {ConvolutionMode.Truncate};
 
         for (Activation afn : activations) {
             for (int miniBatchSize : minibatchSizes) {
                 for (Subsampling3DLayer.PoolingType pool : poolModes) {
                     for (ConvolutionMode mode : modes) {
 
-                        int outDepth = mode == ConvolutionMode.Same ?
-                                depth : (depth - kernel[0]) + 1;
-                        int outHeight = mode == ConvolutionMode.Same ?
-                                height : (height - kernel[1]) + 1;
-                        int outWidth = mode == ConvolutionMode.Same ?
-                                width : (width - kernel[2]) + 1;
-
+                        int outDepth = depth / kernel[0];
+                        int outHeight = height / kernel[1];
+                        int outWidth = width / kernel[2];
 
                         INDArray input = Nd4j.rand(new int[]{miniBatchSize, convNIn, depth, height, width});
                         INDArray labels = Nd4j.zeros(miniBatchSize, finalNOut);
@@ -285,7 +280,8 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                         }
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
+                                .updater(new NoOp())
+                                .weightInit(WeightInit.XAVIER)
                                 .dist(new NormalDistribution(0, 1))
                                 .list()
                                 .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
@@ -352,22 +348,18 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
 
         int[] upsamplingSize = {2, 2, 2};
 
-        Activation[] activations = {Activation.RELU};
+        Activation[] activations = {Activation.SIGMOID};
 
 
-        ConvolutionMode[] modes = {ConvolutionMode.Truncate, ConvolutionMode.Same};
+        ConvolutionMode[] modes = {ConvolutionMode.Truncate};
 
         for (Activation afn : activations) {
             for (int miniBatchSize : minibatchSizes) {
                 for (ConvolutionMode mode : modes) {
 
-                    int outDepth = mode == ConvolutionMode.Same ?
-                            depth : (depth - upsamplingSize[0]) + 1;
-                    int outHeight = mode == ConvolutionMode.Same ?
-                            height : (height - upsamplingSize[1]) + 1;
-                    int outWidth = mode == ConvolutionMode.Same ?
-                            width : (width - upsamplingSize[2]) + 1;
-
+                    int outDepth =  depth * upsamplingSize[0];
+                    int outHeight = height * upsamplingSize[1];
+                    int outWidth = width * upsamplingSize[2];
 
                     INDArray input = Nd4j.rand(new int[]{miniBatchSize, convNIn, depth, height, width});
                     INDArray labels = Nd4j.zeros(miniBatchSize, finalNOut);

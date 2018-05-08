@@ -86,7 +86,9 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(3);
         int inW = input.size(4);
 
-        int size = getSize();
+        int[] size = getSize();
+
+        int[] intArgs = new int[] {size[0], size[1], size[2], 1}; // 1 is channels first
 
         INDArray reshapedEpsilon = workspaceMgr.createUninitialized(
                 ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inChannels, inD, inH, inW}, 'c');
@@ -96,7 +98,7 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         Gradient gradient = new DefaultGradient();
 
         CustomOp op = DynamicCustomOp.builder("upsampling3d_bp")
-                .addIntegerArguments(size)
+                .addIntegerArguments(intArgs)
                 .addInputs(forwardOutput, epsilon)
                 .addOutputs(reshapedEpsilon)
                 .callInplace(false)
@@ -106,7 +108,7 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         return new Pair<>(gradient, reshapedEpsilon);
     }
 
-    protected int getSize() {
+    protected int[] getSize() {
         return layerConf().getSize();
     }
 
@@ -132,17 +134,19 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(3);
         int inW = input.size(4);
 
-        int size = getSize();
-        int outD = inD * size;
-        int outH = inH * size;
-        int outW = inW * size;
+        int[] size = getSize();
+        int outD = inD * size[0];
+        int outH = inH * size[1];
+        int outW = inW * size[2];
+
+        int[] intArgs = new int[] {size[0], size[1], size[2], 1}; // 1 is channels first
 
         INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
                 new int[]{miniBatch, inChannels, outD, outH, outW}, 'c');
 
 
-        CustomOp upsampling = DynamicCustomOp.builder("upsampling3d_bp")
-                .addIntegerArguments(size)
+        CustomOp upsampling = DynamicCustomOp.builder("upsampling3d")
+                .addIntegerArguments(intArgs)
                 .addInputs(input)
                 .addOutputs(reshapedOutput)
                 .callInplace(false)

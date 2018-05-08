@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -44,7 +45,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Upsampling2D extends BaseUpsamplingLayer {
 
-    protected int size;
+    protected int[] size;
 
     protected Upsampling2D(UpsamplingBuilder builder) {
         super(builder);
@@ -59,10 +60,10 @@ public class Upsampling2D extends BaseUpsamplingLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D ret =
-                        new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D(conf);
+                new org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -76,21 +77,21 @@ public class Upsampling2D extends BaseUpsamplingLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Upsampling 2D layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                    + "\"): Expected CNN input, got " + inputType);
         }
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         int inHeight = i.getHeight();
         int inWidth = i.getWidth();
         int inDepth = i.getChannels();
 
-        return InputType.convolutional(size * inHeight, size * inWidth, inDepth);
+        return InputType.convolutional(size[0] * inHeight, size[1] * inWidth, inDepth);
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Upsampling 2D layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+                    + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
@@ -101,7 +102,8 @@ public class Upsampling2D extends BaseUpsamplingLayer {
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        int im2colSizePerEx = c.getChannels() * outputType.getHeight() * outputType.getWidth() * size;
+        int im2colSizePerEx = c.getChannels() * outputType.getHeight() * outputType.getWidth()
+                * size[0] * size[1] * size[2];
 
         // Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         int trainingWorkingSizePerEx = im2colSizePerEx;
@@ -111,10 +113,10 @@ public class Upsampling2D extends BaseUpsamplingLayer {
         }
 
         return new LayerMemoryReport.Builder(layerName, Upsampling2D.class, inputType, outputType)
-                        .standardMemory(0, 0) //No params
-                        .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+                .standardMemory(0, 0) //No params
+                .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
 
@@ -122,15 +124,28 @@ public class Upsampling2D extends BaseUpsamplingLayer {
     public static class Builder extends UpsamplingBuilder<Builder> {
 
         public Builder(int size) {
-            super(size);
+            super(new int[]{size, size});
         }
 
         /**
-         * Upsampling size
+         * Upsampling size int, used for both height and width
          *
-         * @param size    upsampling size in height and width dimensions
+         * @param size upsampling size in height and width dimensions
          */
         public Builder size(int size) {
+
+            this.size = new int[]{size, size};
+            return this;
+        }
+
+
+        /**
+         * Upsampling size array
+         *
+         * @param size upsampling size in height and width dimensions
+         */
+        public Builder size(int[] size) {
+            Preconditions.checkArgument(size.length == 2);
 
             this.size = size;
             return this;

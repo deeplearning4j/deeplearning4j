@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -45,8 +46,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Upsampling3D extends BaseUpsamplingLayer {
 
-    // TODO: make this an int[]
-    protected int size;
+    protected int[] size;
 
     protected Upsampling3D(UpsamplingBuilder builder) {
         super(builder);
@@ -55,8 +55,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
 
     @Override
     public Upsampling3D clone() {
-        Upsampling3D clone = (Upsampling3D) super.clone();
-        return clone;
+        return (Upsampling3D) super.clone();
     }
 
     @Override
@@ -88,7 +87,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
         int inChannels = i.getChannels();
 
         return InputType.convolutional3D(
-                size * inDepth,size * inHeight, size * inWidth,  inChannels);
+                size[0] * inDepth,size[1] * inHeight, size[2] * inWidth,  inChannels);
     }
 
     @Override
@@ -108,7 +107,7 @@ public class Upsampling3D extends BaseUpsamplingLayer {
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
         int im2colSizePerEx = c.getChannels() & outputType.getDepth() * outputType.getHeight()
-                * outputType.getWidth() * size;
+                * outputType.getWidth() * size[0] * size[1] * size[2];
 
         // Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         int trainingWorkingSizePerEx = im2colSizePerEx;
@@ -129,16 +128,27 @@ public class Upsampling3D extends BaseUpsamplingLayer {
     public static class Builder extends UpsamplingBuilder<Builder> {
 
         public Builder(int size) {
-            super(size);
+            super(new int[] {size, size, size});
         }
 
         /**
-         * Upsampling size
+         * Upsampling size as int, so same upsampling size is used for depth, width and height
          *
          * @param size upsampling size in height, width and depth dimensions
          */
         public Builder size(int size) {
 
+            this.size = new int[] {size, size, size};
+            return this;
+        }
+
+        /**
+         * Upsampling size as int, so same upsampling size is used for depth, width and height
+         *
+         * @param size upsampling size in height, width and depth dimensions
+         */
+        public Builder size(int[] size) {
+            Preconditions.checkArgument(size.length == 3);
             this.size = size;
             return this;
         }
