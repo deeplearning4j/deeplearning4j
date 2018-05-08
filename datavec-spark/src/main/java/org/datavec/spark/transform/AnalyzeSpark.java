@@ -45,6 +45,8 @@ import org.datavec.spark.transform.analysis.seqlength.SequenceLengthAnalysisAddF
 import org.datavec.spark.transform.analysis.seqlength.SequenceLengthAnalysisCounter;
 import org.datavec.spark.transform.analysis.seqlength.SequenceLengthAnalysisMergeFunction;
 import org.datavec.spark.transform.analysis.string.StringAnalysisCounter;
+import org.datavec.spark.transform.analysis.unique.UniqueAddFunction;
+import org.datavec.spark.transform.analysis.unique.UniqueMergeFunction;
 import org.datavec.spark.transform.filter.FilterWritablesBySchemaFunction;
 import org.datavec.spark.transform.misc.ColumnToKeyPairTransform;
 import org.datavec.spark.transform.misc.SumLongsFunction2;
@@ -313,6 +315,24 @@ public class AnalyzeSpark {
         int colIdx = schema.getIndexOfColumn(columnName);
         JavaRDD<Writable> ithColumn = data.map(new SelectColumnFunction(colIdx));
         return ithColumn.distinct().collect();
+    }
+
+    /**
+     * Get a list of unique values from the specified column.
+     * For sequence data, use {@link #getUniqueSequence(String, Schema, JavaRDD)}
+     *
+     * @param columnNames   Names of the column to get unique values from
+     * @param schema        Data schema
+     * @param data          Data to get unique values from
+     * @return              List of unique values, for each of the specified columns
+     */
+    public static Map<String,List<Writable>> getUnique(List<String> columnNames, Schema schema, JavaRDD<List<Writable>> data){
+        Map<String,Set<Writable>> m = data.aggregate(null, new UniqueAddFunction(columnNames, schema), new UniqueMergeFunction());
+        Map<String,List<Writable>> out = new HashMap<>();
+        for(String s : m.keySet()){
+            out.put(s, new ArrayList<>(m.get(s)));
+        }
+        return out;
     }
 
     /**
