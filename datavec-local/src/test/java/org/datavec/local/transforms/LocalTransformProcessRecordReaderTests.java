@@ -1,13 +1,19 @@
 package org.datavec.local.transforms;
 
+import org.datavec.api.records.Record;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.impl.collection.CollectionRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.inmemory.InMemorySequenceRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.transform.TransformProcess;
+import org.datavec.api.transform.condition.ConditionOp;
+import org.datavec.api.transform.condition.column.CategoricalColumnCondition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.LongWritable;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
@@ -55,6 +61,61 @@ public class LocalTransformProcessRecordReaderTests {
         List<List<Writable>> next = transformProcessSequenceRecordReader.sequenceRecord();
         assertEquals(2, next.get(0).size());
 
+    }
+
+
+    @Test
+    public void testLocalFilter(){
+
+        List<List<Writable>> in = new ArrayList<>();
+        in.add(Arrays.asList(new Text("Keep"), new IntWritable(0)));
+        in.add(Arrays.asList(new Text("Remove"), new IntWritable(1)));
+        in.add(Arrays.asList(new Text("Keep"), new IntWritable(2)));
+        in.add(Arrays.asList(new Text("Remove"), new IntWritable(3)));
+
+        Schema s = new Schema.Builder()
+                .addColumnCategorical("cat", "Keep", "Remove")
+                .addColumnInteger("int")
+                .build();
+
+        TransformProcess tp = new TransformProcess.Builder(s)
+                .filter(new CategoricalColumnCondition("cat", ConditionOp.Equal, "Remove"))
+                .build();
+
+        RecordReader rr = new CollectionRecordReader(in);
+        LocalTransformProcessRecordReader ltprr = new LocalTransformProcessRecordReader(rr, tp);
+
+        List<List<Writable>> out = new ArrayList<>();
+        while(ltprr.hasNext()){
+            out.add(ltprr.next());
+        }
+
+        List<List<Writable>> exp = Arrays.asList(in.get(0), in.get(2));
+
+        assertEquals(exp, out);
+
+        //Check reset:
+        ltprr.reset();
+        out.clear();
+        while(ltprr.hasNext()){
+            out.add(ltprr.next());
+        }
+        assertEquals(exp, out);
+
+
+        //Also test Record method:
+        List<Record> rl = new ArrayList<>();
+        rr.reset();
+        while(rr.hasNext()){
+            rl.add(rr.nextRecord());
+        }
+        List<Record> exp2 = Arrays.asList(rl.get(0), rl.get(2));
+
+        List<Record> act = new ArrayList<>();
+        ltprr.reset();
+        while(ltprr.hasNext()){
+            act.add(ltprr.nextRecord());
+        }
     }
 
 }

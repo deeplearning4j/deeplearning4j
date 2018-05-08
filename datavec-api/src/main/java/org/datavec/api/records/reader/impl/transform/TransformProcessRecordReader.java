@@ -7,6 +7,7 @@ import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
 
@@ -30,6 +31,14 @@ import java.util.NoSuchElementException;
 public class TransformProcessRecordReader implements RecordReader {
     protected RecordReader recordReader;
     protected TransformProcess transformProcess;
+
+    //Cached/prefetched values, in case of filtering
+    protected Record next;
+
+    public TransformProcessRecordReader(RecordReader recordReader, TransformProcess transformProcess){
+        this.recordReader = recordReader;
+        this.transformProcess = transformProcess;
+    }
 
     /**
      * Called once at initialization.
@@ -80,7 +89,12 @@ public class TransformProcessRecordReader implements RecordReader {
      */
     @Override
     public List<Writable> next() {
-        return transformProcess.execute(recordReader.next());
+        if(!hasNext()){ //Also triggers prefetch
+            throw new NoSuchElementException("No next element");
+        }
+        List<Writable> out = next.getRecord();
+        next = null;
+        return out;
     }
 
     /**
@@ -90,7 +104,24 @@ public class TransformProcessRecordReader implements RecordReader {
      */
     @Override
     public boolean hasNext() {
-        return recordReader.hasNext();
+        if(next != null){
+            return true;
+        }
+        if(!recordReader.hasNext()){
+            return false;
+        }
+
+        //Prefetch, until we find one that isn't filtered out - or we run out of data
+        while(next == null && recordReader.hasNext()){
+            Record r = recordReader.nextRecord();
+            List<Writable> temp = transformProcess.execute(r.getRecord());
+            if(temp == null){
+                continue;
+            }
+            next = new org.datavec.api.records.impl.Record(temp, r.getMetaData());
+        }
+
+        return next != null;
     }
 
     /**
@@ -110,6 +141,7 @@ public class TransformProcessRecordReader implements RecordReader {
      */
     @Override
     public void reset() {
+        next = null;
         recordReader.reset();
     }
 
@@ -140,8 +172,12 @@ public class TransformProcessRecordReader implements RecordReader {
      */
     @Override
     public Record nextRecord() {
-        Record next = recordReader.nextRecord();
-        return new org.datavec.api.records.impl.Record(transformProcess.execute(next.getRecord()), next.getMetaData());
+        if(!hasNext()){ //Also triggers prefetch
+            throw new NoSuchElementException("No next element");
+        }
+        Record toRet = next;
+        next = null;
+        return toRet;
     }
 
     /**
