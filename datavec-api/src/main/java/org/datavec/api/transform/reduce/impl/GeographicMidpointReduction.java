@@ -24,6 +24,7 @@ import org.datavec.api.transform.reduce.AggregableColumnReduction;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.base.Preconditions;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collections;
@@ -148,6 +149,9 @@ public class GeographicMidpointReduction implements AggregableColumnReduction {
             double latDeg = Double.parseDouble(split[0]);
             double longDeg = Double.parseDouble(split[1]);
 
+            Preconditions.checkState(latDeg >= -90.0 && latDeg <= 90.0, "Invalid latitude: must be -90 to -90. Got: %s", latDeg);
+            Preconditions.checkState(latDeg >= -180.0 && latDeg <= 180.0, "Invalid longitude: must be -180 to -180. Got: %s", longDeg);
+
             double lat = latDeg * PI_180;
             double lng = longDeg * PI_180;
 
@@ -181,6 +185,9 @@ public class GeographicMidpointReduction implements AggregableColumnReduction {
 
             double latDeg = latRad / PI_180;
             double longDeg = longRad / PI_180;
+
+            Preconditions.checkState(!Double.isNaN(latDeg), "Final latitude is NaN");
+            Preconditions.checkState(!Double.isNaN(longDeg), "Final longitude is NaN");
 
             String str = latDeg + delim + longDeg;
             return Collections.<Writable>singletonList(new Text(str));
