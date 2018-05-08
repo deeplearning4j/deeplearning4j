@@ -259,6 +259,15 @@ public class Preconditions {
     /**
      * See {@link #checkState(boolean, String, Object...)}
      */
+    public static void checkState(boolean b, String msg, double arg1) {
+        if (!b) {
+            throwStateEx(msg, arg1);
+        }
+    }
+
+    /**
+     * See {@link #checkState(boolean, String, Object...)}
+     */
     public static void checkState(boolean b, String msg, Object arg1) {
         if (!b) {
             throwStateEx(msg, arg1);
@@ -278,6 +287,15 @@ public class Preconditions {
      * See {@link #checkState(boolean, String, Object...)}
      */
     public static void checkState(boolean b, String msg, long arg1, long arg2) {
+        if (!b) {
+            throwStateEx(msg, arg1, arg2);
+        }
+    }
+
+    /**
+     * See {@link #checkState(boolean, String, Object...)}
+     */
+    public static void checkState(boolean b, String msg, double arg1, double arg2) {
         if (!b) {
             throwStateEx(msg, arg1, arg2);
         }
@@ -313,6 +331,15 @@ public class Preconditions {
     /**
      * See {@link #checkState(boolean, String, Object...)}
      */
+    public static void checkState(boolean b, String msg, double arg1, double arg2, double arg3) {
+        if (!b) {
+            throwStateEx(msg, arg1, arg2, arg3);
+        }
+    }
+
+    /**
+     * See {@link #checkState(boolean, String, Object...)}
+     */
     public static void checkState(boolean b, String msg, Object arg1, Object arg2, Object arg3) {
         if (!b) {
             throwStateEx(msg, arg1, arg2, arg3);
@@ -332,6 +359,15 @@ public class Preconditions {
      * See {@link #checkState(boolean, String, Object...)}
      */
     public static void checkState(boolean b, String msg, long arg1, long arg2, long arg3, long arg4) {
+        if (!b) {
+            throwStateEx(msg, arg1, arg2, arg3, arg4);
+        }
+    }
+
+    /**
+     * See {@link #checkState(boolean, String, Object...)}
+     */
+    public static void checkState(boolean b, String msg, double arg1, double arg2, double arg3, double arg4) {
         if (!b) {
             throwStateEx(msg, arg1, arg2, arg3, arg4);
         }
@@ -425,6 +461,15 @@ public class Preconditions {
     /**
      * See {@link #checkNotNull(Object, String, Object...)}
      */
+    public static void checkNotNull(Object o, String msg, double arg1) {
+        if (o == null) {
+            throwNullPointerEx(msg, arg1);
+        }
+    }
+
+    /**
+     * See {@link #checkNotNull(Object, String, Object...)}
+     */
     public static void checkNotNull(Object o, String msg, Object arg1) {
         if (o == null) {
             throwNullPointerEx(msg, arg1);
@@ -444,6 +489,15 @@ public class Preconditions {
      * See {@link #checkNotNull(Object, String, Object...)}
      */
     public static void checkNotNull(Object o, String msg, long arg1, long arg2) {
+        if (o == null) {
+            throwNullPointerEx(msg, arg1, arg2);
+        }
+    }
+
+    /**
+     * See {@link #checkNotNull(Object, String, Object...)}
+     */
+    public static void checkNotNull(Object o, String msg, double arg1, double arg2) {
         if (o == null) {
             throwNullPointerEx(msg, arg1, arg2);
         }
@@ -479,6 +533,15 @@ public class Preconditions {
     /**
      * See {@link #checkNotNull(Object, String, Object...)}
      */
+    public static void checkNotNull(Object o, String msg, double arg1, double arg2, double arg3) {
+        if (o == null) {
+            throwNullPointerEx(msg, arg1, arg2, arg3);
+        }
+    }
+
+    /**
+     * See {@link #checkNotNull(Object, String, Object...)}
+     */
     public static void checkNotNull(Object o, String msg, Object arg1, Object arg2, Object arg3) {
         if (o == null) {
             throwNullPointerEx(msg, arg1, arg2, arg3);
@@ -498,6 +561,15 @@ public class Preconditions {
      * See {@link #checkNotNull(Object, String, Object...)}
      */
     public static void checkNotNull(Object o, String msg, long arg1, long arg2, long arg3, long arg4) {
+        if (o == null) {
+            throwNullPointerEx(msg, arg1, arg2, arg3, arg4);
+        }
+    }
+
+    /**
+     * See {@link #checkNotNull(Object, String, Object...)}
+     */
+    public static void checkNotNull(Object o, String msg, double arg1, double arg2, double arg3, double arg4) {
         if (o == null) {
             throwNullPointerEx(msg, arg1, arg2, arg3, arg4);
         }
