@@ -30,6 +30,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Random;
 
@@ -101,6 +102,52 @@ public class TestNativeImageLoader {
         assertEquals(32, mat.cols());
         assertEquals(32, mat.rows());
         assertEquals(CV_8UC4, mat.type());
+
+        int w4 = 100, h4 = 238, ch4 = 1, pages = 1;
+        String path2MitosisFile = "/testimages2/mitosis.tif";
+        NativeImageLoader loader5 = new NativeImageLoader(h4, w4, ch4, NativeImageLoader.MultiPageMode.FIRST);
+        INDArray array6 = null;
+        try {
+            array6 = loader5.asMatrix(
+						new ClassPathResource(path2MitosisFile).getFile());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        assertEquals(4, array6.rank());
+        assertEquals(pages, array6.size(0));
+        assertEquals(ch4, array6.size(1));
+        assertEquals(h4, array6.size(2));
+        assertEquals(w4, array6.size(3));
+
+        int ch5 = 4, pages1 = 1;
+        NativeImageLoader loader6 = new NativeImageLoader(h4, w4, ch5, NativeImageLoader.MultiPageMode.CHANNELS);
+        INDArray array7 = null;
+        try {
+            array7 = loader6.asMatrix(
+                  new ClassPathResource(path2MitosisFile).getFile());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        assertEquals(4, array7.rank());
+        assertEquals(pages1, array7.size(0));
+        assertEquals(ch5, array7.size(1));
+        assertEquals(h4, array7.size(2));
+        assertEquals(w4, array7.size(3));
+
+        int ch6 = 1, pages2 = 4;
+        NativeImageLoader loader7 = new NativeImageLoader(h4, w4, ch6, NativeImageLoader.MultiPageMode.MINIBATCH);
+        INDArray array8 = null;
+        try {
+            array8 = loader7.asMatrix(
+                  new ClassPathResource(path2MitosisFile).getFile());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        assertEquals(4, array8.rank());
+        assertEquals(pages2, array8.size(0));
+        assertEquals(ch6, array8.size(1));
+        assertEquals(h4, array8.size(2));
+        assertEquals(w4, array8.size(3));
     }
 
     @Test
