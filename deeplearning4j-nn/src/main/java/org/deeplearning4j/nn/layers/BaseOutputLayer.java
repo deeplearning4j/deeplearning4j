@@ -358,7 +358,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     protected void applyMask(INDArray to) {
         //For output layers: can be either per-example masking, or per-
-        if (maskArray.isColumnVector()) {
+        if (maskArray.isColumnVectorOrScalar()) {
             to.muliColumnVector(maskArray);
         } else if (Arrays.equals(to.shape(), maskArray.shape())) {
             to.muli(maskArray);

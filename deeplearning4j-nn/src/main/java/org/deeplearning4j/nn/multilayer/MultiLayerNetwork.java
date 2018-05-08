@@ -51,6 +51,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -543,7 +544,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             //Create parameters array, if required
             boolean initializeParams;
             if (parameters != null) {
-                if (!parameters.isRowVector())
+                if (!parameters.isRowVectorOrScalar())
                     throw new IllegalArgumentException("Invalid parameters: should be a row vector");
                 if (parameters.length() != paramLength)
                     throw new IllegalArgumentException("Invalid parameters: expected length " + paramLength
@@ -1903,7 +1904,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public int[] predict(INDArray d) {
         INDArray output = output(d, Layer.TrainingMode.TEST);
         int[] ret = new int[d.size(0)];
-        if (d.isRowVector())
+        if (d.isRowVectorOrScalar())
             ret[0] = Nd4j.getBlasWrapper().iamax(output);
         else {
             for (int i = 0; i < ret.length; i++)
@@ -2548,6 +2549,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     public Layer getLayer(int i) {
+        Preconditions.checkArgument(i >= 0 && i < layers.length, "Invalid layer index: layer index must be 0" +
+                " to %s (inclusive), got index %s", layers.length-1, i);
         return layers[i];
     }
 

@@ -128,7 +128,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         //        input2d.mmul(W).addiRowVector(b)));
         INDArray act2d = layerConf().getActivationFn().getActivation(input2d.mmul(W).addiRowVector(b), training);
         if (maskArray != null) {
-            if(!maskArray.isColumnVector() || Arrays.equals(maskArray.shape(), act2d.shape())){
+            if(!maskArray.isColumnVectorOrScalar() || Arrays.equals(maskArray.shape(), act2d.shape())){
                 //Per output masking
                 act2d.muli(maskArray);
             } else {

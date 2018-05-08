@@ -34,6 +34,10 @@ public class KerasWeightSettingTests {
                 importConv2D(conv2dPath);
                 log.info("***** Successfully imported " + conv2dPath);
 
+                String conv2dReshapePath = "weights/conv2d_reshape_" + backend + "_" + version + ".h5";
+                importConv2DReshape(conv2dReshapePath);
+                log.info("***** Successfully imported " + conv2dReshapePath);
+
                 if (version == 2) {
                     String conv1dFlattenPath = "weights/embedding_conv1d_flatten_" + backend + "_" + version + ".h5";
                     importConv1DFlatten(conv1dFlattenPath);
@@ -115,6 +119,20 @@ public class KerasWeightSettingTests {
     }
 
 
+    private static void importConv2DReshape(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+
+
+        int nOut = 12;
+        int mb = 10;
+        ;
+        int[] inShape = new int[]{5, 5, 5};
+        INDArray input = Nd4j.zeros(mb, inShape[0], inShape[1], inShape[2]);
+        INDArray output = model.output(input);
+        assert Arrays.equals(output.shape(), new int[]{mb, nOut});
+
+    }
+
     private static void importConv1DFlatten(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
 
@@ -123,7 +141,7 @@ public class KerasWeightSettingTests {
         int mb = 42;
         int kernel = 3;
 
-        INDArray input = Nd4j.zeros(mb, 1, inputLength);
+        INDArray input = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(input);
         assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength - kernel + 1});
     }
@@ -172,7 +190,7 @@ public class KerasWeightSettingTests {
         assert (embeddingWeightShape[0] == nIn);
         assert (embeddingWeightShape[1] == outputDim);
 
-        INDArray inEmbedding = Nd4j.zeros(mb, 1, inputLength);
+        INDArray inEmbedding = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(inEmbedding);
         assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength});
 
@@ -197,7 +215,7 @@ public class KerasWeightSettingTests {
         assert (embeddingWeightShape[0] == nIn);
         assert (embeddingWeightShape[1] == outputDim);
 
-        INDArray inEmbedding = Nd4j.zeros(mb, 1, inputLength);
+        INDArray inEmbedding = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(inEmbedding);
         assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength - kernel + 1});
 

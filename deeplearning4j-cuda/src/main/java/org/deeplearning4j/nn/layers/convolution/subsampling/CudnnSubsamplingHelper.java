@@ -110,6 +110,10 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
             return null;
         }
 
+        //We require the output as one of the arguments for backprop here
+        //TODO we could add cache mode support here somehow...
+        INDArray reduced = activate(input, true, kernel, strides, pad, poolingType, convolutionMode, dilation, workspaceMgr);
+
         int miniBatch = input.size(0);
         int depth = input.size(1);
 
@@ -164,8 +168,6 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         int[] dstStride = outEpsilon.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
-
-        INDArray reduced = Nd4j.createUninitialized(new int[] {miniBatch, depth, outH, outW}, 'c');
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(input, epsilon, reduced, outEpsilon);
