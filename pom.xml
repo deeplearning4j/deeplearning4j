@@ -103,7 +103,7 @@
         <opencsv.version>2.3</opencsv.version>
         <tdigest.version>3.2</tdigest.version>
         <jtransforms.version>3.1</jtransforms.version>
-        <eclipse.collections.version>9.1.0</eclipse.collections.version>
+        <fastutil.version>6.5.7</fastutil.version>
     </properties>
 
     <repositories>
