@@ -439,3 +439,184 @@ TEST_F(RNGTests, Test_ExponentialDistribution_2) {
 
     delete result;
 }
+
+namespace nd4j {
+    namespace tests {
+        static void fillList(Nd4jIndex seed, int numberOfArrays, std::vector<int> &shape, std::vector<NDArray<double> *> &list, nd4j::random::RandomBuffer *rng) {
+            NativeOps ops;
+            ops.refreshBuffer(nullptr, seed, reinterpret_cast<Nd4jPointer>(rng));
+            
+            for (int i = 0; i < numberOfArrays; i++) {
+                auto array = new NDArray<double>('c', shape);
+
+                nd4j::ops::randomuniform<double> op;
+                op.execute(rng, {array}, {array}, {0.0, 1.0}, {}, true);
+
+                list.emplace_back(array);
+            }
+        };
+    }
+}
+
+TEST_F(RNGTests, Test_Reproducibility_9) { 
+    NativeOps ops;
+    Nd4jIndex seed = 123;
+
+    std::vector<int> shape = {32, 3, 28, 28};
+    const int bufferSize = 10000;
+    int64_t buffer[bufferSize];
+
+    auto rng = (nd4j::random::RandomBuffer *) ops.initRandom(nullptr, seed, bufferSize, buffer);
+
+    const int length = 4000000;
+    int *arrayE = new int[length];
+    int *arrayT = new int[length];
+
+    for (int e = 0; e < length; e++)
+        arrayE[e] = rng->relativeInt(e);
+
+    rng->rewindH(static_cast<Nd4jIndex>(length));
+
+    ops.refreshBuffer(nullptr, seed, reinterpret_cast<Nd4jPointer>(rng));
+
+    for (int e = 0; e < length; e++)
+        arrayT[e] = rng->relativeInt(e);
+
+    rng->rewindH(static_cast<Nd4jIndex>(length));
+    
+    for (int e = 0; e < length; e++)
+        if (arrayE[e] != arrayT[e]) {
+            nd4j_printf("Failed at index[%i]\n", e);
+            ASSERT_TRUE(false);
+        }
+
+    delete[] arrayE;
+    delete[] arrayT;
+
+    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
+}
+
+TEST_F(RNGTests, Test_Reproducibility_8) { 
+    NativeOps ops;
+    Nd4jIndex seed = 123;
+
+    std::vector<int> shape = {32, 3, 28, 28};
+    const int bufferSize = 10000;
+    int64_t buffer[bufferSize];
+
+    auto rng = (nd4j::random::RandomBuffer *) ops.initRandom(nullptr, seed, bufferSize, buffer);
+
+    const int length = 4000000;
+    int *arrayE = new int[length];
+    int *arrayT = new int[length];
+
+    for (int e = 0; e < length; e++)
+        arrayE[e] = static_cast<int>(rng->relativeT<float>(e));
+
+    rng->rewindH(static_cast<Nd4jIndex>(length));
+
+    ops.refreshBuffer(nullptr, seed, reinterpret_cast<Nd4jPointer>(rng));
+
+    for (int e = 0; e < length; e++)
+        arrayT[e] = static_cast<int>(rng->relativeT<float>(e));
+
+    rng->rewindH(static_cast<Nd4jIndex>(length));
+    
+    for (int e = 0; e < length; e++)
+        if (arrayE[e] != arrayT[e]) {
+            nd4j_printf("Failed at index[%i]\n", e);
+            ASSERT_TRUE(false);
+        }
+
+    delete[] arrayE;
+    delete[] arrayT;
+
+    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
+}
+
+TEST_F(RNGTests, Test_Reproducibility_1) {
+    NativeOps ops;
+    Nd4jIndex seed = 123;
+
+    std::vector<int> shape = {32, 3, 28, 28};
+    const int bufferSize = 10000;
+    int64_t buffer[bufferSize];
+
+    auto rng = (nd4j::random::RandomBuffer *) ops.initRandom(nullptr, seed, bufferSize, buffer);
+
+
+    std::vector<NDArray<double> *> expList;
+    nd4j::tests::fillList(seed, 10, shape, expList, rng);
+
+    for (int e = 0; e < 2; e++) {
+        std::vector<NDArray<double> *> trialList;
+        nd4j::tests::fillList(seed, 10, shape, trialList, rng);
+
+        for (int a = 0; a < expList.size(); a++) {
+            auto arrayE = expList[a];
+            auto arrayT = trialList[a];
+
+            bool t = arrayE->equalsTo(arrayT);
+            if (!t) {
+                nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
+                ASSERT_TRUE(false);
+            }
+
+            delete arrayT;
+        }
+    }
+
+    for (auto v: expList)
+            delete v;
+
+    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
+}
+
+TEST_F(RNGTests, Test_Reproducibility_2) {
+    NativeOps ops;
+    Nd4jIndex seed = 123;
+
+    std::vector<int> shape = {32, 3, 64, 64};
+    const int bufferSize = 10000;
+    int64_t buffer[bufferSize];
+
+    auto rng = (nd4j::random::RandomBuffer *) ops.initRandom(nullptr, seed, bufferSize, buffer);
+
+    std::vector<NDArray<double> *> expList;
+    nd4j::tests::fillList(seed, 10, shape, expList, rng);
+
+    for (int e = 0; e < 2; e++) {
+        std::vector<NDArray<double> *> trialList;
+        nd4j::tests::fillList(seed, 10, shape, trialList, rng);
+
+        for (int a = 0; a < expList.size(); a++) {
+            auto arrayE = expList[a];
+            auto arrayT = trialList[a];
+
+            bool t = arrayE->equalsTo(arrayT);
+            if (!t) {
+                nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
+
+                for (Nd4jIndex f = 0; f < arrayE->lengthOf(); f++) {
+                    double x = arrayE->getIndexedScalar(f);
+                    double y = arrayT->getIndexedScalar(f);
+
+                    if (nd4j::math::nd4j_re(x, y) > 0.1) {
+                        nd4j_printf("E[%lld] %f != T[%lld] %f\n", (long long) f, (float) x, (long long) f, (float) y);
+                        throw "boom";
+                    }
+                }
+
+                // just breaker, since test failed
+                ASSERT_TRUE(false);
+            }
+
+            delete arrayT;
+        }
+    }
+
+    for (auto v: expList)
+            delete v;
+
+    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
+}

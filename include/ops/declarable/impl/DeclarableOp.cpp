@@ -512,8 +512,23 @@ namespace nd4j {
             return this->execute(ins, ous, tas, ias, isInplace);
         }
 
+        template<typename T>
+        Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace) {
+            std::vector<NDArray<T>*> ins(inputs);
+            std::vector<NDArray<T>*> ous(outputs);
+            std::vector<T> tas(tArgs);
+            std::vector<int> ias(iArgs);
+            return this->execute(rng, ins, ous, tas, ias, isInplace);
+        }
+
         template <typename T>
         Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs, std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace) {
+            // TODO: nullptr here might be replaced
+            return execute(nullptr, inputs, outputs, tArgs, iArgs, isInplace);
+        }
+
+        template <typename T>
+        Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs, std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace) {
             VariableSpace<T> variableSpace;
             FlowPath fp;
             variableSpace.setFlowPath(&fp);
@@ -540,7 +555,11 @@ namespace nd4j {
 
             Context<T> block(1, &variableSpace, false);
             block.fillInputs(in);
-            block.markInplace(isInplace);            
+            block.markInplace(isInplace);    
+
+            // we need this line for tests basically
+            if (rng != nullptr)
+                block.setRNG(rng);        
 
             for (int e = 0; e < tArgs.size(); e++)
                 block.getTArguments()->emplace_back(tArgs.at(e));

@@ -82,6 +82,9 @@ template<typename T>
         math_def inline T nd4j_min(T val1, T val2);
 
 		template<typename T>
+		math_def inline T nd4j_re(T val1, T val2);
+
+		template<typename T>
         math_def inline T nd4j_rint(T val1);
 
 		template<typename T>
@@ -663,6 +666,14 @@ template<typename T>
         math_def inline int nd4j_pow<int>(int val, int val2) {
 			return powf((float) val, (float) val2);
 		}
+
+		template<typename T>
+		math_def inline T nd4j_re(T val1, T val2) {
+			if (val1 == (T) 0.0f && val2 == (T) 0.0f)
+				return (T) 0.0f;
+
+			return nd4j_abs<T>(val1 - val2) / (nd4j_abs<T>(val1) + nd4j_abs<T>(val2));
+        }
 
 		template<>
         math_def inline float16 nd4j_round<float16>(float16 val) {

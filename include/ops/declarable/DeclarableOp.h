@@ -144,9 +144,11 @@ namespace nd4j {
 
             nd4j::ResultSet<T>* execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
             Nd4jStatus execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
+            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
 
             nd4j::ResultSet<T>* execute(std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
             Nd4jStatus execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
+            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
 
             // There methods provide various validation options
             Nd4jStatus validateNonEmptyInput(Context<T>& block);

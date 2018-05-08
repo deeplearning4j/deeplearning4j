@@ -936,6 +936,77 @@ namespace simdOps {
 
 
 	template<typename T>
+	class RelativeError {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_re<T>(d1, params[0]);
+		}
+
+		op_def static T op(T d1, T d2) {
+			return nd4j::math::nd4j_re<T>(d1, d2);
+		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			return nd4j::math::nd4j_re<T>(d1, d2);
+		}
+
+		op_def static T op(T d1) {
+			return (T) 0.0f;
+		}
+	};
+
+	template<typename T>
+	class BinaryRelativeError {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T d2 = params[0];
+			T threshold = params[1];
+			return nd4j::math::nd4j_re<T>(d1, d2) > threshold ? (T) 1.0f : (T) 0.0f;
+ 		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			T threshold = params[0];
+			return nd4j::math::nd4j_re<T>(d1, d2) > threshold ? (T) 1.0f : (T) 0.0f;
+		}
+
+		op_def static T op(T d1) {
+			return (T) 0.0f;
+		}
+	};
+
+	template<typename T>
+	class BinaryMinimumAbsoluteRelativeError {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T d2 = params[0];
+			T thresholdRelative = params[1];
+			T thresholdAbsolute = params[2];
+			return nd4j::math::nd4j_re<T>(d1, d2) > thresholdRelative ? (nd4j::math::nd4j_abs<T>(d1 - d2) < thresholdAbsolute ? (T) 0.0f : (T) 1.0f) : (T) 0.0f;
+ 		}
+
+		op_def static T op(T d1, T d2, T *params) {
+			T thresholdRelative = params[0];
+			T thresholdAbsolute = params[1];
+			return nd4j::math::nd4j_re<T>(d1, d2) > thresholdRelative ? (nd4j::math::nd4j_abs<T>(d1 - d2) < thresholdAbsolute ? (T) 0.0f : (T) 1.0f) : (T) 0.0f;
+		}
+
+		op_def static T op(T d1) {
+			return (T) 0.0f;
+		}
+	};
+
+
+
+	template<typename T>
 	class Pow {
 	public:
 		no_op_exec_special

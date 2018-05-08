@@ -5,6 +5,7 @@
 #ifndef LIBND4J_HELPER_GENERATOR_H
 #define LIBND4J_HELPER_GENERATOR_H
 
+#include <op_boilerplate.h>
 #include <pointercast.h>
 #include <dll.h>
 
@@ -128,17 +129,11 @@ namespace nd4j {
                 this->devBuffer = buffer;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            inline uint64_t *getBuffer() {
+            inline _CUDA_HD uint64_t *getBuffer() {
                 return this->buffer;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            inline uint64_t *getDeviceBuffer() {
+            inline _CUDA_HD uint64_t *getDeviceBuffer() {
                 return this->devBuffer;
             }
 
@@ -157,60 +152,37 @@ namespace nd4j {
             }
 #endif
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            inline Nd4jIndex getSize() {
+            inline _CUDA_HD Nd4jIndex getSize() {
                 return this->size;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            inline Nd4jIndex getSeed() {
+            inline _CUDA_HD Nd4jIndex getSeed() {
                 return this->seed;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            void setSeed(Nd4jIndex seed) {
+            void _CUDA_HD setSeed(Nd4jIndex seed) {
                 this->seed = seed;
                 this->amplifier = seed;
+                this->generation = 1;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            Nd4jIndex getAllocatedSize() {
+            Nd4jIndex _CUDA_HD getAllocatedSize() {
                 return this->size * sizeof(double);
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            inline Nd4jIndex getOffset() {
+            inline _CUDA_HD Nd4jIndex getOffset() {
                 return this->currentPosition;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            void setOffset(Nd4jIndex offset) {
+            void _CUDA_HD setOffset(Nd4jIndex offset) {
                 this->currentPosition = offset;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            void reSeed(Nd4jIndex amplifier) {
+            void _CUDA_HD reSeed(Nd4jIndex amplifier) {
                 this->amplifier = amplifier;
             }
 
-#ifdef __CUDACC__
-            __device__
-#endif
-            inline uint64_t getElement(Nd4jIndex position) {
+            inline _CUDA_D uint64_t getElement(Nd4jIndex position) {
 
                 Nd4jIndex actualPosition = this->getOffset() + position;
                 Nd4jIndex tempGen = generation;
@@ -247,10 +219,7 @@ namespace nd4j {
                 return ret;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            uint64_t next64(uint64_t shiftedSeed) {
+            uint64_t _CUDA_HD next64(uint64_t shiftedSeed) {
                 const uint64_t s0 = (uint64_t) shiftedSeed;
                 uint64_t s1 = (uint64_t) shiftedSeed % MAX_INT + 11;
                 uint64_t r0, r1;
@@ -262,26 +231,17 @@ namespace nd4j {
                 return r0 + r1;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            static inline uint64_t rotl(const uint64_t x, int k) {
+            static _CUDA_HD inline uint64_t rotl(const uint64_t x, int k) {
                 return (x << k) | (x >> (64 - k));
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            uint64_t static inline safeShift(uint64_t x, uint64_t y) {
+            uint64_t static _CUDA_HD inline safeShift(uint64_t x, uint64_t y) {
                 if (y != 0 && x > MAX_UINT / y) {
                     return x / y + 11;
                 } else return (x * y) + 11;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            uint64_t seedConv(Nd4jIndex seed) {
+            uint64_t _CUDA_HD seedConv(Nd4jIndex seed) {
                 uint64_t x = (uint64_t) seed;
                 uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
                 z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
@@ -289,17 +249,11 @@ namespace nd4j {
                 return z ^ (z >> 31);
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            void incrementGeneration() {
+            void _CUDA_HD incrementGeneration() {
                 this->generation++;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            Nd4jIndex getNextIndex() {
+            Nd4jIndex _CUDA_HD getNextIndex() {
                 currentPosition++;
                 if (currentPosition >= size) {
                     currentPosition = 0;
@@ -310,10 +264,7 @@ namespace nd4j {
                 return ret;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            uint64_t getNextElement() {
+            uint64_t _CUDA_HD getNextElement() {
                 // TODO: proper implementation needed here
                 return generation == 1 ? buffer[getNextIndex()] : buffer[getNextIndex()]  * generation;
             }
@@ -382,23 +333,16 @@ namespace nd4j {
                 this->setOffset(newPos);
             }
 
-
             /**
- * This method returns random int in range [0..MAX_INT]
- * @return
- */
-#ifdef __CUDACC__
-            __device__
-#endif
-            int nextInt() {
+            * This method returns random int in range [0..MAX_INT]
+            * @return
+            */
+            int _CUDA_D nextInt() {
                 int r = (int) nextUInt();
                 return r < 0 ? -1 * r : r;
             };
 
-#ifdef __CUDACC__
-            __device__
-#endif
-            uint64_t nextUInt() {
+            uint64_t _CUDA_D nextUInt() {
                 return getNextElement();
             }
 
@@ -407,10 +351,7 @@ namespace nd4j {
              * @param to
              * @return
              */
-#ifdef __CUDACC__
-            __device__
-#endif
-            int nextInt(int to) {
+            int _CUDA_D nextInt(int to) {
                 int r = nextInt();
                 int m = to - 1;
                 if ((to & m) == 0)  // i.e., bound is a power of 2
@@ -429,10 +370,7 @@ namespace nd4j {
              * @param to
              * @return
              */
-#ifdef __CUDACC__
-            __device__
-#endif
-            int nextInt(int from, int to) {
+            int _CUDA_D nextInt(int from, int to) {
                 if (from == 0)
                     return nextInt(to);
 
@@ -445,10 +383,7 @@ namespace nd4j {
              * @return
              */
             template<typename T>
-#ifdef __CUDACC__
-            __device__
-#endif
-            T nextMaxT() {
+            _CUDA_D T nextMaxT() {
                 T rnd = (T) getNextElement();
                 return rnd < 0 ? -1 * rnd : rnd;
             }
@@ -459,10 +394,7 @@ namespace nd4j {
              * @return
              */
             template<typename T>
-#ifdef __CUDACC__
-            __device__
-#endif
-            T nextT() {
+            _CUDA_D T nextT() {
                 return (T) nextUInt() / (T) MAX_UINT;
             }
 
@@ -472,10 +404,7 @@ namespace nd4j {
              * @return
              */
             template<typename T>
-#ifdef __CUDACC__
-            __device__
-#endif
-            T nextT(T to) {
+            _CUDA_D T nextT(T to) {
                 if (to == (T) 1.0f)
                     return nextT<T>();
 
@@ -489,29 +418,18 @@ namespace nd4j {
              * @return
              */
             template<typename T>
-#ifdef __CUDACC__
-            __device__
-#endif
-            T inline nextT(T from, T to) {
+            _CUDA_D T inline nextT(T from, T to) {
                 return from + (nextT<T>() * (to - from));
             }
 
-
-#ifdef __CUDACC__
-            __device__
-#endif
-            inline uint64_t relativeUInt(Nd4jIndex index) {
+            inline _CUDA_D uint64_t relativeUInt(Nd4jIndex index) {
                 return getElement(index);
             }
 
             /**
              *  relative methods are made as workaround for lock-free concurrent execution
              */
-
-#ifdef __CUDACC__
-            __device__
-#endif
-            int inline relativeInt(Nd4jIndex index) {
+            inline int _CUDA_D relativeInt(Nd4jIndex index) {
                 return (int) (relativeUInt(index) % ((unsigned int) MAX_INT + 1));
             }
 
@@ -522,10 +440,7 @@ namespace nd4j {
              * @param to
              * @return
              */
-#ifdef __CUDACC__
-            __device__
-#endif
-            int inline relativeInt(Nd4jIndex index, int to) {
+            inline int _CUDA_D relativeInt(Nd4jIndex index, int to) {
                 int rel = relativeInt(index);
                 return rel % to;
             }
@@ -538,10 +453,7 @@ namespace nd4j {
              * @param from
              * @return
              */
-#ifdef __CUDACC__
-            __device__
-#endif
-            int relativeInt(Nd4jIndex index, int from, int to) {
+            inline _CUDA_D int relativeInt(Nd4jIndex index, int from, int to) {
                 if (from == 0)
                     return relativeInt(index, to);
 
@@ -566,10 +478,7 @@ namespace nd4j {
 
             */
             template <typename T>
-#ifdef __CUDACC__
-    __device__
-#endif
-            T relativeT(Nd4jIndex index) {
+            inline _CUDA_D T relativeT(Nd4jIndex index) {
                 if (sizeof(T) < 4) {
                     // FIXME: this is fast hack for short types, like fp16. This should be improved.
                     return (T)((float) relativeUInt(index) / (float) MAX_UINT);
@@ -585,10 +494,7 @@ namespace nd4j {
  */
 
             template<typename T>
-#ifdef __CUDACC__
-            __device__
-#endif
-            T relativeT(Nd4jIndex index, T to) {
+            _CUDA_D T relativeT(Nd4jIndex index, T to) {
                 if (to == (T) 1.0f)
                     return relativeT<T>(index);
 
@@ -604,10 +510,7 @@ namespace nd4j {
  * @return
  */
             template<typename T>
-#ifdef __CUDACC__
-            __device__
-#endif
-            T relativeT(Nd4jIndex index, T from, T to) {
+            _CUDA_D T relativeT(Nd4jIndex index, T from, T to) {
                 return from + (relativeT<T>(index) * (to - from));
             }
 
@@ -622,48 +525,31 @@ namespace nd4j {
 
         public:
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            IGenerator(nd4j::random::RandomBuffer *buffer) {
+            _CUDA_HD IGenerator(nd4j::random::RandomBuffer *buffer) {
                 this->limit = buffer->getSize();
                 this->buffer = (uint64_t *) buffer->getBuffer();
                 this->realBuffer = buffer;
                 this->seed = buffer->getSeed();
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            RandomBuffer *getBuffer() {
+
+            _CUDA_HD RandomBuffer *getBuffer() {
                 return realBuffer;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            void setOffset(Nd4jIndex offset) {
+            _CUDA_HD void setOffset(Nd4jIndex offset) {
                 this->realBuffer->setOffset(offset);
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            Nd4jIndex getElementAbsolute(Nd4jIndex position) {
+            _CUDA_HD Nd4jIndex getElementAbsolute(Nd4jIndex position) {
                 return buffer[position];
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            Nd4jIndex getElementRelative(Nd4jIndex position) {
+            _CUDA_HD Nd4jIndex getElementRelative(Nd4jIndex position) {
                 return buffer[realBuffer->getOffset() + position];
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            virtual void refreshBuffer() = 0;
+            virtual _CUDA_HD void refreshBuffer() = 0;
         };
 
 
@@ -672,10 +558,7 @@ namespace nd4j {
         protected:
             uint64_t state[2];
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            static inline uint64_t rotl(const uint64_t x, int k) {
+            static inline _CUDA_HD uint64_t rotl(const uint64_t x, int k) {
                 return (x << k) | (x >> (64 - k));
             }
 
@@ -683,10 +566,7 @@ namespace nd4j {
              * This method returns 64 random bits
              * @return
              */
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            uint64_t next64() {
+            uint64_t _CUDA_HD next64() {
                 const uint64_t s0 = state[0];
                 uint64_t s1 = state[1];
                 const uint64_t result = s0 + s1;
@@ -698,10 +578,7 @@ namespace nd4j {
                 return result;
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            uint64_t seedConv(Nd4jIndex seed) {
+            uint64_t _CUDA_HD seedConv(Nd4jIndex seed) {
                 uint64_t x = (uint64_t) seed;
                 uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
                 z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
@@ -709,10 +586,7 @@ namespace nd4j {
                 return z ^ (z >> 31);
             }
 
-#ifdef __CUDACC__
-            __host__
-#endif
-            void jump(void) {
+            void _CUDA_H jump(void) {
                 static const uint64_t JUMP[] = { 0xbeac0467eba5facb, 0xd86b048b86aa9922 };
 
                 uint64_t s0 = 0;
@@ -731,19 +605,15 @@ namespace nd4j {
             }
 
         public:
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            Xoroshiro128(nd4j::random::RandomBuffer *buffer) : IGenerator(buffer) {
+            _CUDA_HD Xoroshiro128(nd4j::random::RandomBuffer *buffer) : IGenerator(buffer) {
                 //
             }
 
-#ifdef __CUDACC__
-            __host__ __device__
-#endif
-            void refreshBuffer() {
+            _CUDA_HD void refreshBuffer() {
                 state[0] = seedConv(this->seed);
                 state[1] = seedConv(this->seed * 119 + 3);
+
+                int fd = 3 + 3;
 
                 for (Nd4jIndex i = 0; i < limit; i++) {
                     buffer[i] = next64();
