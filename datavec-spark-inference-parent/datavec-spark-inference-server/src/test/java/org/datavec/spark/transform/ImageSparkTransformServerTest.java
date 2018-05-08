@@ -117,6 +117,19 @@ public class ImageSparkTransformServerTest {
         System.out.println(batchResult);
     }
 
+    @Test
+    public void testImageServerSingleMultipart() throws Exception {
+        JsonNode jsonNode = Unirest.post("http://localhost:9060/transformimage")
+                .header("accept", "application/json")
+                .field("file1", new ClassPathResource("testimages/class0/0.jpg").getFile())
+                .asJson().getBody();
+
+
+        INDArray result = getNDArray(jsonNode);
+        assertEquals(1, result.size(0));
+
+        System.out.println(result);
+    }
 
     public INDArray getNDArray(JsonNode node) throws IOException {
         return Nd4jBase64.fromBase64(node.getObject().getString("ndarray"));
