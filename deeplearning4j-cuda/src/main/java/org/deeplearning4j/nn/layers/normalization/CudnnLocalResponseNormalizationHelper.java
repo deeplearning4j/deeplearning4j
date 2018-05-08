@@ -128,9 +128,9 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
 
         Gradient retGradient = new DefaultGradient();
 
-        if (!Shape.strideDescendingCAscendingF(epsilon)) {
+        if (!Shape.hasDefaultStridesForShape(epsilon)) {
             // apparently not supported by cuDNN
-            epsilon = epsilon.dup();
+            epsilon = epsilon.dup('c');
         }
 
         int[] srcStride = input.stride();
@@ -178,6 +178,10 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
         int inDepth = input.size(1);
         int inH = input.size(2);
         int inW = input.size(3);
+
+        if(!Shape.hasDefaultStridesForShape(input)){
+            input = input.dup('c');
+        }
 
         int[] srcStride = input.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
