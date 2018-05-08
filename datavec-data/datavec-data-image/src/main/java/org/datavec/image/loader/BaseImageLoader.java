@@ -48,6 +48,7 @@ public abstract class BaseImageLoader implements Serializable {
     protected int channels = -1;
     protected boolean centerCropIfNeeded = false;
     protected ImageTransform imageTransform = null;
+    protected NativeImageLoader.MultiPageMode multiPageMode = null;
 
     public String[] getAllowedFormats() {
         return ALLOWED_FORMATS;
