@@ -117,9 +117,8 @@ public class ValidateCuDNN extends BaseDL4JTest {
         classesToTest.add(org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization.class);
         classesToTest.add(org.deeplearning4j.nn.layers.normalization.BatchNormalization.class);
 
-        validateLayers(net, classesToTest, fShape, lShape);
+        validateLayers(net, classesToTest, true, fShape, lShape);
     }
-
 
     @Test
     public void validateConvLayersSimple() {
@@ -189,11 +188,12 @@ public class ValidateCuDNN extends BaseDL4JTest {
         classesToTest.add(ConvolutionLayer.class);
         classesToTest.add(org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class);
 
-        validateLayers(net, classesToTest, fShape, lShape);
+        validateLayers(net, classesToTest, true, fShape, lShape);
     }
 
     @Test
     public void validateConvLayersSimpleBN() {
+        //Test ONLY BN - no other CuDNN functionality (i.e., DL4J impls for everything else)
         Nd4j.getRandom().setSeed(12345);
 
         int numClasses = 10;
@@ -241,15 +241,14 @@ public class ValidateCuDNN extends BaseDL4JTest {
         int[] lShape = new int[]{32, numClasses};
 
         List<Class<?>> classesToTest = new ArrayList<>();
-        classesToTest.add(ConvolutionLayer.class);
-        classesToTest.add(org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class);
         classesToTest.add(org.deeplearning4j.nn.layers.normalization.BatchNormalization.class);
 
-        validateLayers(net, classesToTest, fShape, lShape);
+        validateLayers(net, classesToTest, false, fShape, lShape);
     }
 
     @Test
     public void validateConvLayersLRN() {
+        //Test ONLY LRN - no other CuDNN functionality (i.e., DL4J impls for everything else)
         Nd4j.getRandom().setSeed(12345);
 
         int numClasses = 10;
@@ -299,16 +298,12 @@ public class ValidateCuDNN extends BaseDL4JTest {
         int[] lShape = new int[]{32, numClasses};
 
         List<Class<?>> classesToTest = new ArrayList<>();
-        classesToTest.add(ConvolutionLayer.class);
-        classesToTest.add(org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class);
         classesToTest.add(org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization.class);
-        classesToTest.add(org.deeplearning4j.nn.layers.normalization.BatchNormalization.class);
 
-        validateLayers(net, classesToTest, fShape, lShape);
+        validateLayers(net, classesToTest, false, fShape, lShape);
     }
 
-
-    public static void validateLayers(MultiLayerNetwork net, List<Class<?>> classesToTest, int[] fShape, int[] lShape) {
+    public static void validateLayers(MultiLayerNetwork net, List<Class<?>> classesToTest, boolean testAllCudnnPresent, int[] fShape, int[] lShape) {
 
         for (WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.NONE, WorkspaceMode.ENABLED}) {
 
@@ -322,6 +317,15 @@ public class ValidateCuDNN extends BaseDL4JTest {
 
             List<CuDNNValidationUtil.TestCase> testCaseList = new ArrayList<>();
 
+            List<DataSet> dataSets = new ArrayList<>();
+            for (int i = 0; i < 6; i++) {
+                INDArray f = Nd4j.rand(fShape);
+                INDArray l = Nd4j.rand(lShape);
+                Nd4j.getExecutioner().exec(new IsMax(l, 1));
+                dataSets.add(new DataSet(f, l));
+            }
+            DataSetIterator iter = new ExistingDataSetIterator(dataSets);
+
             for (Class<?> c : classesToTest) {
                 String name = "WS=" + wsm + ", testCudnnFor=" + c.getSimpleName();
                 testCaseList.add(CuDNNValidationUtil.TestCase.builder()
@@ -330,44 +334,27 @@ public class ValidateCuDNN extends BaseDL4JTest {
                         .testForward(true)
                         .testScore(true)
                         .testBackward(true)
+                        .testTraining(true)
                         .trainFirst(false)
                         .features(features)
                         .labels(labels)
+                        .data(iter)
                         .build());
             }
-            testCaseList.add(CuDNNValidationUtil.TestCase.builder()
-                    .testName("WS=" + wsm + ", ALL CLASSES")
-                    .allowCudnnHelpersForClasses(classesToTest)
-                    .testForward(true)
-                    .testScore(true)
-                    .testBackward(true)
-                    .trainFirst(false)
-                    .features(features)
-                    .labels(labels)
-                    .build());
 
-
-            List<DataSet> dataSets = new ArrayList<>();
-            for (int i = 0; i < 6; i++) {
-                INDArray f = Nd4j.rand(fShape);
-                INDArray l = Nd4j.rand(lShape);
-                Nd4j.getExecutioner().exec(new IsMax(labels, 1));
-                dataSets.add(new DataSet(f, l));
+            if(testAllCudnnPresent) {
+                testCaseList.add(CuDNNValidationUtil.TestCase.builder()
+                        .testName("WS=" + wsm + ", ALL CLASSES")
+                        .allowCudnnHelpersForClasses(classesToTest)
+                        .testForward(true)
+                        .testScore(true)
+                        .testBackward(true)
+                        .trainFirst(false)
+                        .features(features)
+                        .labels(labels)
+                        .data(iter)
+                        .build());
             }
-            DataSetIterator iter = new ExistingDataSetIterator(dataSets);
-
-
-            testCaseList.add(CuDNNValidationUtil.TestCase.builder()
-                    .testName("WS=" + wsm + ", All cases, train first")
-                    .allowCudnnHelpersForClasses(classesToTest)
-                    .testForward(true)
-                    .testScore(true)
-                    .testBackward(true)
-                    .trainFirst(true)
-                    .features(features)
-                    .labels(labels)
-                    .data(iter)
-                    .build());
 
             for (CuDNNValidationUtil.TestCase tc : testCaseList) {
                 log.info("Running test: " + tc.getTestName());

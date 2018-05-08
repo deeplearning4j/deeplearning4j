@@ -90,7 +90,7 @@ public class CuDNNValidationUtil {
 
             for (boolean train : new boolean[]{false, true}) {
                 assertEquals(net1NoCudnn.params(), net2With.params());
-                String s = t.getTestName() + " - " + (train ? "Train: " : "Test: ");
+                String s = "Feed forward test - " + t.getTestName() + " - " + (train ? "Train: " : "Test: ");
                 List<INDArray> ff1 = net1NoCudnn.feedForward(t.getFeatures(), train);
                 List<INDArray> ff2 = net2With.feedForward(t.getFeatures(), train);
                 List<String> paramKeys = new ArrayList<>(net1NoCudnn.paramTable().keySet());
@@ -224,7 +224,7 @@ public class CuDNNValidationUtil {
                     double re = relError(d1, d2);
                     String msg = "Scores at iteration " + j + " - relError = " + re + ", score1 = " + d1 + ", score2 = " + d2;
                     assertTrue(msg, re < MAX_REL_ERROR);
-                    //System.out.println("j=" + j + ", d1 = " + d1 + ", d2 = " + d2);
+                    System.out.println("j=" + j + ", d1 = " + d1 + ", d2 = " + d2);
                 }
             }
         }
