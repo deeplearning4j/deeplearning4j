@@ -31,11 +31,10 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.transform.MathFunction;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.util.ClassPathResource;
-import org.datavec.api.util.ClassPathResourceTest;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 

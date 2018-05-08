@@ -16,25 +16,16 @@
 
 package org.datavec.api.records.reader.impl;
 
-import org.datavec.api.records.SequenceRecord;
-import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.records.reader.impl.csv.CSVNLinesSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
-import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVVariableSlidingWindowRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.split.InputSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.writable.WritableType;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.net.URI;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 

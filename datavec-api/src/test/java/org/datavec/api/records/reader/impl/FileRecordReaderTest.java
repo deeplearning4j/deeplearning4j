@@ -23,7 +23,7 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -64,9 +64,9 @@ public class FileRecordReaderTest {
 
 
         URI[] arr = new URI[3];
-        arr[0] = new org.datavec.api.util.ClassPathResource("csvsequence_0.txt").getFile().toURI();
-        arr[1] = new org.datavec.api.util.ClassPathResource("csvsequence_1.txt").getFile().toURI();
-        arr[2] = new org.datavec.api.util.ClassPathResource("csvsequence_2.txt").getFile().toURI();
+        arr[0] = new ClassPathResource("csvsequence_0.txt").getFile().toURI();
+        arr[1] = new ClassPathResource("csvsequence_1.txt").getFile().toURI();
+        arr[2] = new ClassPathResource("csvsequence_2.txt").getFile().toURI();
 
         InputSplit is = new CollectionInputSplit(Arrays.asList(arr));
         rr.initialize(is);

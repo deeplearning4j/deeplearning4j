@@ -17,6 +17,9 @@
 package org.datavec.image.recordreader;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.io.labels.PathMultiLabelGenerator;
@@ -50,6 +53,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseImageRecordReader extends BaseRecordReader {
     protected Iterator<File> iter;
     protected Configuration conf;
@@ -69,6 +73,8 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     protected Map<String, String> fileNameMap = new LinkedHashMap<>();
     protected String pattern; // Pattern to split and segment file name, pass in regex
     protected int patternPosition = 0;
+    @Getter @Setter
+    protected boolean logLabelCountOnInit = true;
 
     public final static String HEIGHT = NAME_SPACE + ".height";
     public final static String WIDTH = NAME_SPACE + ".width";
@@ -132,6 +138,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 }
                 labels.clear();
                 labels.addAll(labelsSet);
+                if(logLabelCountOnInit) {
+                    log.info("ImageRecordReader: {} label classes inferred using label generator {}", labelsSet.size(), labelGenerator.getClass().getSimpleName());
+                }
             }
             iter = new FileFromPathIterator(inputSplit.locationsPathIterator()); //This handles randomization internally if necessary
         } else
