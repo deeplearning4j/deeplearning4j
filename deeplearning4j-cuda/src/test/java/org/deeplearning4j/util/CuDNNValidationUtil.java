@@ -6,6 +6,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.listeners.CollectScoresListener;
+import org.eclipse.collections.impl.list.mutable.primitive.DoubleArrayList;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
@@ -39,6 +41,7 @@ public class CuDNNValidationUtil {
         @Builder.Default private boolean testForward = true;
         @Builder.Default private boolean testScore = true;
         @Builder.Default private boolean testBackward = true;
+        @Builder.Default private boolean testTraining = true;
         @Builder.Default private boolean trainFirst = false;
         INDArray features;
         INDArray labels;
@@ -183,10 +186,47 @@ public class CuDNNValidationUtil {
                 }
                 assertTrue("Gradients are not equal: " + p, maxRE < MAX_REL_ERROR);
             }
+        }
 
+        if(t.isTestTraining()){
+            Preconditions.checkNotNull(t.getData(), "DataSetIterator is not set (null)");
+            log.info("Testing run-to-run consistency of training with CuDNN");
 
-            //Finally, compare training curves:
+            net2With = new MultiLayerNetwork(netOrig.getLayerWiseConfigurations().clone());
+            net2With.init();
+            net2With.params().assign(netOrig.params());
+            log.info("Removing all except for specified CuDNN helpers from network copy 2: " + t.getAllowCudnnHelpersForClasses());
+            removeHelpers(net2With.getLayers(), t.getAllowCudnnHelpersForClasses());
 
+            CollectScoresListener listener = new CollectScoresListener(1);
+            net2With.setListeners(listener);
+            net2With.fit(t.getData());
+
+            for( int i=0; i<2; i++ ) {
+
+                net2With = new MultiLayerNetwork(netOrig.getLayerWiseConfigurations().clone());
+                net2With.init();
+                net2With.params().assign(netOrig.params());
+                log.info("Removing all except for specified CuDNN helpers from network copy 2: " + t.getAllowCudnnHelpersForClasses());
+                removeHelpers(net2With.getLayers(), t.getAllowCudnnHelpersForClasses());
+
+                CollectScoresListener listener2 = new CollectScoresListener(1);
+                net2With.setListeners(listener2);
+                net2With.fit(t.getData());
+
+                DoubleArrayList listOrig = listener.getListScore();
+                DoubleArrayList listNew = listener2.getListScore();
+
+                assertEquals(listOrig.size(), listNew.size());
+                for (int j = 0; j < listOrig.size(); j++) {
+                    double d1 = listOrig.get(j);
+                    double d2 = listNew.get(j);
+                    double re = relError(d1, d2);
+                    String msg = "Scores at iteration " + j + " - relError = " + re + ", score1 = " + d1 + ", score2 = " + d2;
+                    assertTrue(msg, re < MAX_REL_ERROR);
+                    //System.out.println("j=" + j + ", d1 = " + d1 + ", d2 = " + d2);
+                }
+            }
         }
     }
 
