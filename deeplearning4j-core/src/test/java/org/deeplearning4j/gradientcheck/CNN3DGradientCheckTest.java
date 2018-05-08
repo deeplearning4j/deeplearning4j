@@ -59,7 +59,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
         int[][] kernels = {{2, 2, 2}};
         int[][] strides = {{1, 1, 1}};
 
-        Activation[] activations = {Activation.RELU};
+        Activation[] activations = {Activation.SIGMOID};
 
         ConvolutionMode[] modes = {ConvolutionMode.Truncate, ConvolutionMode.Same};
 
@@ -162,7 +162,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
         int[] kernel = {2, 2, 2};
         int[] zeroPadding = {1, 1, 2, 2, 3, 3};
 
-        Activation[] activations = {Activation.RELU};
+        Activation[] activations = {Activation.SIGMOID};
 
         ConvolutionMode[] modes = {ConvolutionMode.Truncate, ConvolutionMode.Same};
 
@@ -258,7 +258,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
 
         int[] kernel = {2, 2, 2};
 
-        Activation[] activations = {Activation.RELU};
+        Activation[] activations = {Activation.SIGMOID};
 
         Subsampling3DLayer.PoolingType[] poolModes = {Subsampling3DLayer.PoolingType.AVG};
 
@@ -436,7 +436,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
         int[] kernel = {1, 1, 1};
         int[] cropping = {0, 0, 1, 1, 2, 2};
 
-        Activation[] activations = {Activation.RELU};
+        Activation[] activations = {Activation.SIGMOID};
 
         ConvolutionMode[] modes = {ConvolutionMode.Same};
 
