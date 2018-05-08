@@ -9,12 +9,16 @@ import org.datavec.api.transform.TransformProcess;
 import org.datavec.image.transform.ImageTransformProcess;
 import org.datavec.spark.transform.model.*;
 import play.Mode;
+import play.mvc.Http;
 import play.routing.RoutingDsl;
 import play.server.Server;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
+import static play.mvc.Controller.request;
 import static play.mvc.Results.*;
 
 /**
@@ -53,7 +57,6 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                     + "to /transformprocess");
         }
 
-        //return the host information for a given id
         routingDsl.GET("/transformprocess").routeTo(FunctionUtil.function0((() -> {
             try {
                 if (transform == null)
@@ -66,7 +69,6 @@ public class ImageSparkTransformServer extends SparkTransformServer {
             }
         })));
 
-        //return the host information for a given id
         routingDsl.POST("/transformprocess").routeTo(FunctionUtil.function0((() -> {
             try {
                 ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(getJsonText());
@@ -79,7 +81,6 @@ public class ImageSparkTransformServer extends SparkTransformServer {
             }
         })));
 
-        //return the host information for a given id
         routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
             try {
                 SingleImageRecord record = objectMapper.readValue(getJsonText(), SingleImageRecord.class);
@@ -92,12 +93,56 @@ public class ImageSparkTransformServer extends SparkTransformServer {
             }
         })));
 
-        //return the host information for a given id
+        routingDsl.POST("/transformincrementalimage").routeTo(FunctionUtil.function0((() -> {
+            try {
+                Http.MultipartFormData body = request().body().asMultipartFormData();
+                List<Http.MultipartFormData.FilePart> files = body.getFiles();
+                if (files.size() == 0 || files.get(0).getFile() == null) {
+                    return badRequest();
+                }
+
+                File file = files.get(0).getFile();
+                SingleImageRecord record = new SingleImageRecord(file.toURI());
+
+                return ok(objectMapper.writeValueAsString(transformIncrementalArray(record))).as(contentType);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return internalServerError();
+            }
+        })));
+
         routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
             try {
                 BatchImageRecord batch = objectMapper.readValue(getJsonText(), BatchImageRecord.class);
                 if (batch == null)
                     return badRequest();
+                return ok(objectMapper.writeValueAsString(transformArray(batch))).as(contentType);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return internalServerError();
+            }
+        })));
+
+        routingDsl.POST("/transformimage").routeTo(FunctionUtil.function0((() -> {
+            try {
+                Http.MultipartFormData body = request().body().asMultipartFormData();
+                List<Http.MultipartFormData.FilePart> files = body.getFiles();
+                if (files.size() == 0) {
+                    return badRequest();
+                }
+
+                List<SingleImageRecord> records = new ArrayList<>();
+
+                for (Http.MultipartFormData.FilePart filePart : files) {
+                    File file = filePart.getFile();
+                    if (file != null) {
+                        SingleImageRecord record = new SingleImageRecord(file.toURI());
+                        records.add(record);
+                    }
+                }
+
+                BatchImageRecord batch = new BatchImageRecord(records);
+
                 return ok(objectMapper.writeValueAsString(transformArray(batch))).as(contentType);
             } catch (Exception e) {
                 e.printStackTrace();
