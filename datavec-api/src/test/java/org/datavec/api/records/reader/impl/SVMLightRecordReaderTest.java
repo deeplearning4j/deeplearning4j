@@ -18,22 +18,19 @@ package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
-import org.datavec.api.records.reader.impl.misc.LibSvmRecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
-import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
-import org.datavec.api.records.writer.impl.misc.SVMLightRecordWriter;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.IOException;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
 import static org.datavec.api.records.reader.impl.misc.SVMLightRecordReader.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for VMLightRecordReader. Replaces reader tests in

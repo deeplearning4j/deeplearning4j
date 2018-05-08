@@ -19,8 +19,8 @@ package org.datavec.api.records.reader.impl;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import static org.junit.Assert.assertEquals;
 

@@ -26,13 +26,13 @@ import org.apache.spark.input.PortableDataStream;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.functions.data.FilesAsBytesFunction;
 import org.datavec.spark.functions.data.RecordReaderBytesFunction;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.nio.file.Files;

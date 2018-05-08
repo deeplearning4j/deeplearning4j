@@ -1,12 +1,12 @@
 package org.datavec.spark.transform;
 
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.transform.ImageTransformProcess;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchImageRecord;
 import org.datavec.spark.transform.model.SingleImageRecord;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.serde.base64.Nd4jBase64;
 
 import java.io.File;
