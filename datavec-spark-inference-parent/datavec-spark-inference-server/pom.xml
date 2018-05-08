@@ -94,11 +94,6 @@
             <artifactId>datavec-data-image</artifactId>
             <version>${parent.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-local</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
 
     </dependencies>
 </project>
