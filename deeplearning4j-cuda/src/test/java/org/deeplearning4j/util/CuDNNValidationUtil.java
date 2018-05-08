@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
@@ -7,7 +8,6 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.CollectScoresListener;
-import org.eclipse.collections.impl.list.mutable.primitive.DoubleArrayList;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
