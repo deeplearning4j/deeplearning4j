@@ -29,7 +29,9 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.rng.NativeRandom;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -1348,6 +1350,38 @@ public class RandomTests extends BaseNd4jTest {
         val array = dist.sample(new int[] {6, 9});
 
         log.info("Array: {}", array);
+    }
+
+    @Test
+    public void reproducabilityTest(){
+
+        int numBatches = 1;
+
+        for( int t=0; t<10; t++ ) {
+            System.out.println(t);
+            numBatches = t;
+
+            List<INDArray> initial = getList(numBatches);
+
+            for (int i = 0; i < 10; i++) {
+                List<INDArray> list = getList(numBatches);
+                assertEquals(initial, list);
+            }
+
+        }
+    }
+
+    private List<INDArray> getList(int numBatches){
+        Nd4j.getRandom().setSeed(12345);
+        List<INDArray> out = new ArrayList<>();
+//        int numBatches = 32; //passes with 1 or 2
+        int channels = 3;
+        int imageHeight = 64;
+        int imageWidth = 64;
+        for (int i = 0; i < numBatches; i++) {
+            out.add(Nd4j.rand(new int[]{32, channels, imageHeight, imageWidth}));
+        }
+        return out;
     }
 
     @Override

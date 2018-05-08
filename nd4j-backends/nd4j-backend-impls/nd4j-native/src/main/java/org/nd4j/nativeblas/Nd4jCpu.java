@@ -132,6 +132,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_col2im.class,
         float_upsampling2d.class,
         float_upsampling2d_bp.class,
+        float_upsampling3d.class,
+        float_upsampling3d_bp.class,
         float_conv3d.class,
         float_conv3d_bp.class,
         float_ismax.class,
@@ -454,6 +456,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_col2im.class,
         half_upsampling2d.class,
         half_upsampling2d_bp.class,
+        half_upsampling3d.class,
+        half_upsampling3d_bp.class,
         half_conv3d.class,
         half_conv3d_bp.class,
         half_ismax.class,
@@ -776,6 +780,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_col2im.class,
         double_upsampling2d.class,
         double_upsampling2d_bp.class,
+        double_upsampling3d.class,
+        double_upsampling3d_bp.class,
         double_conv3d.class,
         double_conv3d_bp.class,
         double_ismax.class,
@@ -7443,6 +7449,19 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx);
 
         /**
+        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *        when (dimStart == dimEnd) then whole range will be used for current dimension 
+        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
+        */
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const IntPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const IntPointer idx);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const IntBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const IntBuffer idx);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const int[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const int[] idx);
+
+        /**
         *  addition operator: array + other
         *  other - input array to add
         */
@@ -8539,6 +8558,19 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx);
 
         /**
+        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *        when (dimStart == dimEnd) then whole range will be used for current dimension 
+        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
+        */
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const IntPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const IntPointer idx);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const IntBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const IntBuffer idx);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const int[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const int[] idx);
+
+        /**
         *  addition operator: array + other
         *  other - input array to add
         */
@@ -9633,6 +9665,19 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */
         public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx);
+
+        /**
+        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the sub-arrays to point on, idx has form {dim0Start,dim0End,  dim1Start,dim1End, ....} and length (2 * this->rankOf())
+        *        when (dimStart == dimEnd) then whole range will be used for current dimension 
+        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
+        */
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const IntPointer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const IntPointer idx);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const IntBuffer idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const IntBuffer idx);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const int[] idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const int[] idx);
 
         /**
         *  addition operator: array + other
@@ -11698,6 +11743,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #ifndef LIBND4J_HELPER_GENERATOR_H
 // #define LIBND4J_HELPER_GENERATOR_H
 
+// #include <op_boilerplate.h>
 // #include <pointercast.h>
 // #include <dll.h>
 
@@ -11748,75 +11794,41 @@ public static final long MAX_UINT = MAX_UINT();
             public RandomBuffer(@Cast("Nd4jIndex") long seed, @Cast("Nd4jIndex") long size, @Cast("uint64_t*") long[] buffer) { super((Pointer)null); allocate(seed, size, buffer); }
             private native void allocate(@Cast("Nd4jIndex") long seed, @Cast("Nd4jIndex") long size, @Cast("uint64_t*") long[] buffer);
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("uint64_t*") LongPointer getBuffer();
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("uint64_t*") LongPointer getDeviceBuffer();
 
 // #ifdef __CUDACC__
 // #endif
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("Nd4jIndex") long getSize();
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("Nd4jIndex") long getSeed();
 
-// #ifdef __CUDACC__
-// #endif
             public native void setSeed(@Cast("Nd4jIndex") long seed);
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("Nd4jIndex") long getAllocatedSize();
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("Nd4jIndex") long getOffset();
 
-// #ifdef __CUDACC__
-// #endif
             public native void setOffset(@Cast("Nd4jIndex") long offset);
 
-// #ifdef __CUDACC__
-// #endif
             public native void reSeed(@Cast("Nd4jIndex") long amplifier);
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("uint64_t") long getElement(@Cast("Nd4jIndex") long position);
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("uint64_t") long next64(@Cast("uint64_t") long shiftedSeed);
 
-// #ifdef __CUDACC__
-// #endif
             public static native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, int k);
 
-// #ifdef __CUDACC__
-// #endif
             public static native @Cast("uint64_t") long safeShift(@Cast("uint64_t") long x, @Cast("uint64_t") long y);
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("uint64_t") long seedConv(@Cast("Nd4jIndex") long seed);
 
-// #ifdef __CUDACC__
-// #endif
             public native void incrementGeneration();
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("Nd4jIndex") long getNextIndex();
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("uint64_t") long getNextElement();
 
 
@@ -11829,17 +11841,12 @@ public static final long MAX_UINT = MAX_UINT();
 // #endif
             public native void rewindH(@Cast("Nd4jIndex") long numberOfElements);
 
-
             /**
- * This method returns random int in range [0..MAX_INT]
- * @return
- */
-// #ifdef __CUDACC__
-// #endif
+            * This method returns random int in range [0..MAX_INT]
+            * @return
+            */
             public native int nextInt();
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("uint64_t") long nextUInt();
 
             /**
@@ -11847,8 +11854,6 @@ public static final long MAX_UINT = MAX_UINT();
              * @param to
              * @return
              */
-// #ifdef __CUDACC__
-// #endif
             public native int nextInt(int to);
 
             /**
@@ -11857,8 +11862,6 @@ public static final long MAX_UINT = MAX_UINT();
              * @param to
              * @return
              */
-// #ifdef __CUDACC__
-// #endif
             public native int nextInt(int from, int to);
 
 
@@ -11886,17 +11889,11 @@ public static final long MAX_UINT = MAX_UINT();
              * @return
              */
 
-
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("uint64_t") long relativeUInt(@Cast("Nd4jIndex") long index);
 
             /**
              *  relative methods are made as workaround for lock-free concurrent execution
              */
-
-// #ifdef __CUDACC__
-// #endif
             public native int relativeInt(@Cast("Nd4jIndex") long index);
 
             /**
@@ -11906,8 +11903,6 @@ public static final long MAX_UINT = MAX_UINT();
              * @param to
              * @return
              */
-// #ifdef __CUDACC__
-// #endif
             public native int relativeInt(@Cast("Nd4jIndex") long index, int to);
 
             /**
@@ -11918,8 +11913,6 @@ public static final long MAX_UINT = MAX_UINT();
              * @param from
              * @return
              */
-// #ifdef __CUDACC__
-// #endif
             public native int relativeInt(@Cast("Nd4jIndex") long index, int from, int to);
 
             /**
@@ -11965,27 +11958,15 @@ public static final long MAX_UINT = MAX_UINT();
             public IGenerator(Pointer p) { super(p); }
         
 
-// #ifdef __CUDACC__
-// #endif
 
-// #ifdef __CUDACC__
-// #endif
             public native RandomBuffer getBuffer();
 
-// #ifdef __CUDACC__
-// #endif
             public native void setOffset(@Cast("Nd4jIndex") long offset);
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("Nd4jIndex") long getElementAbsolute(@Cast("Nd4jIndex") long position);
 
-// #ifdef __CUDACC__
-// #endif
             public native @Cast("Nd4jIndex") long getElementRelative(@Cast("Nd4jIndex") long position);
 
-// #ifdef __CUDACC__
-// #endif
             public native void refreshBuffer();
         }
 
@@ -11996,13 +11977,9 @@ public static final long MAX_UINT = MAX_UINT();
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public Xoroshiro128(Pointer p) { super(p); }
         
-// #ifdef __CUDACC__
-// #endif
             public Xoroshiro128(RandomBuffer buffer) { super((Pointer)null); allocate(buffer); }
             private native void allocate(RandomBuffer buffer);
 
-// #ifdef __CUDACC__
-// #endif
             public native void refreshBuffer();
         }
     
@@ -17210,6 +17187,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatBuffer tArgs, @StdVector IntBuffer iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(@ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @StdVector int[] iArgs);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatPointer tArgs, @StdVector IntPointer iArgs);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatBuffer tArgs, @StdVector IntBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector FloatBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef FloatNDArrayVector inputs, @ByRef FloatNDArrayVector outputs, @StdVector float[] tArgs, @StdVector int[] iArgs);
 
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef FloatContext block);
@@ -17301,6 +17284,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @StdVector IntBuffer iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(@ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortPointer tArgs, @StdVector IntPointer iArgs);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @StdVector IntBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector ShortBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef HalfNDArrayVector inputs, @ByRef HalfNDArrayVector outputs, @Cast("float16*") @StdVector short[] tArgs, @StdVector int[] iArgs);
 
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef HalfContext block);
@@ -17392,6 +17381,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs);
             public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
             public native @Cast("Nd4jStatus") int execute(@ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @StdVector int[] iArgs);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoublePointer tArgs, @StdVector IntPointer iArgs);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector DoubleBuffer tArgs, @StdVector IntBuffer iArgs);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @StdVector int[] iArgs, @Cast("bool") boolean isInplace/*=false*/);
+            public native @Cast("Nd4jStatus") int execute(RandomBuffer rng, @ByRef DoubleNDArrayVector inputs, @ByRef DoubleNDArrayVector outputs, @StdVector double[] tArgs, @StdVector int[] iArgs);
 
             // There methods provide various validation options
             public native @Cast("Nd4jStatus") int validateNonEmptyInput(@ByRef DoubleContext block);
@@ -23592,10 +23587,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * Upsampling implementation, based on pytorch
-         *
-         * IArgs map:
-         * IArgs[0] - scale factor
+         * Expected input: 4D array
+         * 
+         * IntArgs:
+         * 0: scale factor for rows (height)
+         * 1: scale factor for columns (width)
+         * 2: data format: 0 NHWC (default), 1 NCHW
          */
 //         #if NOT_EXCLUDED(OP_upsampling2d)
         @Name("nd4j::ops::upsampling2d<float>") public static class float_upsampling2d extends FloatDeclarableCustomOp {
@@ -23688,6 +23685,108 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
+//         #endif
+
+        /**
+         * Expected input: 4D array
+         * 
+         * IntArgs:
+         * 0: scale factor for depth
+         * 1: scale factor for rows (height)
+         * 2: scale factor for columns (width)
+         * 3: data format: 0 NDHWC (default), 1 NCDHW
+         */
+//         #if NOT_EXCLUDED(OP_upsampling3d)
+        @Name("nd4j::ops::upsampling3d<float>") public static class float_upsampling3d extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_upsampling3d(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_upsampling3d(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_upsampling3d position(long position) {
+                return (float_upsampling3d)super.position(position);
+            }
+        
+                                                                                    public float_upsampling3d() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::upsampling3d<float16>") public static class half_upsampling3d extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_upsampling3d(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_upsampling3d(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_upsampling3d position(long position) {
+                return (half_upsampling3d)super.position(position);
+            }
+        
+                                                                                    public half_upsampling3d() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::upsampling3d<double>") public static class double_upsampling3d extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_upsampling3d(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_upsampling3d(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_upsampling3d position(long position) {
+                return (double_upsampling3d)super.position(position);
+            }
+        
+                                                                                    public double_upsampling3d() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+        @Name("nd4j::ops::upsampling3d_bp<float>") public static class float_upsampling3d_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_upsampling3d_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_upsampling3d_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_upsampling3d_bp position(long position) {
+                return (float_upsampling3d_bp)super.position(position);
+            }
+        
+                                                                                    public float_upsampling3d_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::upsampling3d_bp<float16>") public static class half_upsampling3d_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_upsampling3d_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_upsampling3d_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_upsampling3d_bp position(long position) {
+                return (half_upsampling3d_bp)super.position(position);
+            }
+        
+                                                                                    public half_upsampling3d_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::upsampling3d_bp<double>") public static class double_upsampling3d_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_upsampling3d_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_upsampling3d_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_upsampling3d_bp position(long position) {
+                return (double_upsampling3d_bp)super.position(position);
+            }
+        
+                                                                                    public double_upsampling3d_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }    
 //         #endif
 
         /**

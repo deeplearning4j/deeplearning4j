@@ -6271,6 +6271,18 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, arrayb.mmul(arrayb));
     }
 
+
+    @Test
+    public void testRelativeError_1() throws Exception {
+        val arrayX = Nd4j.create(10, 10);
+        val arrayY = Nd4j.ones(10, 10);
+        val exp = Nd4j.ones(10, 10);
+
+        Nd4j.getExecutioner().exec(new BinaryRelativeError(arrayX, arrayY, arrayX, 0.1));
+
+        assertEquals(exp, arrayX);
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
