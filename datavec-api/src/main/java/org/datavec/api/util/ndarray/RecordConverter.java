@@ -17,13 +17,13 @@
 package org.datavec.api.util.ndarray;
 
 import com.google.common.base.Preconditions;
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import lombok.NonNull;
 import org.datavec.api.timeseries.util.TimeSeriesWritableUtils;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
-import org.eclipse.collections.impl.list.mutable.primitive.DoubleArrayList;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -192,7 +192,7 @@ public class RecordConverter {
         if(toConcat != null){
             return Nd4j.concat(0, toConcat.toArray(new INDArray[toConcat.size()]));
         } else {
-            return Nd4j.create(list.toArray(), new int[]{list.size(), 1});
+            return Nd4j.create(list.toArray(new double[list.size()]), new int[]{list.size(), 1});
         }
     }
 
