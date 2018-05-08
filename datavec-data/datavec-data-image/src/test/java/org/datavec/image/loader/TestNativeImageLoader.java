@@ -15,17 +15,22 @@
  */
 package org.datavec.image.loader;
 
+import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.data.ImageWritable;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.lept.*;
@@ -304,6 +309,79 @@ public class TestNativeImageLoader {
         assertEquals(1, array1.size(1));
         assertEquals(h1, array1.size(2));
         assertEquals(w1, array1.size(3));
+    }
+
+    @Test
+    public void testBufferRealloc() throws Exception {
+        Field f = NativeImageLoader.class.getDeclaredField("buffer");
+        Field m = NativeImageLoader.class.getDeclaredField("bufferMat");
+        f.setAccessible(true);
+        m.setAccessible(true);
+
+        File f1 = new ClassPathResource("voc/2007/JPEGImages/000005.jpg").getFile();
+        File f2 = new ClassPathResource("voc/2007/JPEGImages/000007.jpg").getFile();
+
+        //Start with a large buffer
+        byte[] buffer = new byte[20*1024*1024];
+        Mat bufferMat = new Mat(buffer);
+
+        NativeImageLoader loader = new NativeImageLoader(28, 28, 1);
+        f.set(loader, buffer);
+        m.set(loader, bufferMat);
+
+        INDArray img1LargeBuffer = loader.asMatrix(f1);
+        INDArray img2LargeBuffer = loader.asMatrix(f2);
+
+        //Check multiple reads:
+        INDArray img1LargeBuffer2 = loader.asMatrix(f1);
+        INDArray img1LargeBuffer3 = loader.asMatrix(f1);
+        assertEquals(img1LargeBuffer2, img1LargeBuffer3);
+
+        INDArray img2LargeBuffer2 = loader.asMatrix(f1);
+        INDArray img2LargeBuffer3 = loader.asMatrix(f1);
+        assertEquals(img2LargeBuffer2, img2LargeBuffer3);
+
+        //Clear the buffer and re-read:
+        f.set(loader, null);
+        INDArray img1NoBuffer1 = loader.asMatrix(f1);
+        INDArray img1NoBuffer2 = loader.asMatrix(f1);
+        assertEquals(img1LargeBuffer, img1NoBuffer1);
+        assertEquals(img1LargeBuffer, img1NoBuffer2);
+
+        f.set(loader, null);
+        INDArray img2NoBuffer1 = loader.asMatrix(f2);
+        INDArray img2NoBuffer2 = loader.asMatrix(f2);
+        assertEquals(img2LargeBuffer, img2NoBuffer1);
+        assertEquals(img2LargeBuffer, img2NoBuffer2);
+
+        //Assign much too small buffer:
+        buffer = new byte[10];
+        bufferMat = new Mat(buffer);
+        f.set(loader, buffer);
+        m.set(loader, bufferMat);
+        INDArray img1SmallBuffer1 = loader.asMatrix(f1);
+        INDArray img1SmallBuffer2 = loader.asMatrix(f1);
+        assertEquals(img1LargeBuffer, img1SmallBuffer1);
+        assertEquals(img1LargeBuffer, img1SmallBuffer2);
+
+        f.set(loader, buffer);
+        m.set(loader, bufferMat);
+        INDArray img2SmallBuffer1 = loader.asMatrix(f2);
+        INDArray img2SmallBuffer2 = loader.asMatrix(f2);
+        assertEquals(img2LargeBuffer, img2SmallBuffer1);
+        assertEquals(img2LargeBuffer, img2SmallBuffer2);
+
+        //Assign an exact buffer:
+        try(InputStream is = new FileInputStream(f1)){
+            byte[] temp = IOUtils.toByteArray(is);
+            buffer = new byte[temp.length];
+            bufferMat = new Mat(buffer);
+        }
+        f.set(loader, buffer);
+        m.set(loader, bufferMat);
+
+        INDArray img1ExactBuffer = loader.asMatrix(f1);
+        assertEquals(img1LargeBuffer, img1ExactBuffer);
     }
 
 }
