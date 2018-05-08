@@ -64,7 +64,7 @@ public class Upsampling1D extends Upsampling2D {
         int[] size = ((BaseUpsamplingLayer) layerConf()).getSize();
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
         // we replicate the error term times "size" so that backprop works properly on it
-        epsilon = epsilon.repeat(3, size);
+        epsilon = epsilon.repeat(3, size[0]);
 
         INDArray originalInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
@@ -78,16 +78,11 @@ public class Upsampling1D extends Upsampling2D {
         INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
 
-        INDArray forwardOutput  = preOutput(true, true, LayerWorkspaceMgr.noWorkspaces());
-        forwardOutput = forwardOutput.reshape(
-                forwardOutput.size(0), forwardOutput.size(1), forwardOutput.size(2), 1);
-        forwardOutput = forwardOutput.repeat(3, size);
-
-        int[] intArgs = new int[] {size[0], 1}; // 1 is for NCHW
+        int[] intArgs = new int[] {1}; // 1 is for NCHW
 
         CustomOp op = DynamicCustomOp.builder("upsampling_bp")
                 .addIntegerArguments(intArgs)
-                .addInputs(forwardOutput, epsilon)
+                .addInputs(input, epsilon)
                 .addOutputs(reshapedEpsilon)
                 .callInplace(false)
                 .build();

@@ -115,7 +115,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
     public static class Builder extends UpsamplingBuilder<Builder> {
 
         public Builder(int size) {
-            super(new int[] {size});
+            super(new int[] {size, size});
         }
 
         /**
@@ -125,7 +125,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
          */
         public Builder size(int size) {
 
-            this.size = new int[] {size};
+            this.size = new int[] {size, size};
             return this;
         }
 
@@ -136,7 +136,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
          */
         public Builder size(int[] size) {
             Preconditions.checkArgument(size.length == 1);
-            this.size = size;
+            this.size = new int[] {size[0], size[0]}; // Since this is 2D under the hood, we need to hide this.
             return this;
         }
 

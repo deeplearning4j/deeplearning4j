@@ -86,20 +86,17 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(3);
         int inW = input.size(4);
 
-        int[] size = getSize();
-
-        int[] intArgs = new int[] {size[0], size[1], size[2], 1}; // 1 is channels first
+        int[] intArgs = new int[] {1}; // 1 is channels first
 
         INDArray reshapedEpsilon = workspaceMgr.createUninitialized(
                 ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inChannels, inD, inH, inW}, 'c');
 
-        INDArray forwardOutput = preOutput(true, true, workspaceMgr);
 
         Gradient gradient = new DefaultGradient();
 
         CustomOp op = DynamicCustomOp.builder("upsampling3d_bp")
                 .addIntegerArguments(intArgs)
-                .addInputs(forwardOutput, epsilon)
+                .addInputs(input, epsilon)
                 .addOutputs(reshapedEpsilon)
                 .callInplace(false)
                 .build();

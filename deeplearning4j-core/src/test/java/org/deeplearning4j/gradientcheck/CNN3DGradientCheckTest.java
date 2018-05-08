@@ -48,7 +48,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
         int[] widths = {6};
 
 
-        int[] minibatchSizes = {2, 3};
+        int[] minibatchSizes = {3};
         int convNIn = 2;
         int convNOut1 = 3;
         int convNOut2 = 4;
@@ -56,8 +56,8 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
         int finalNOut = 42;
 
 
-        int[][] kernels = {{1, 1, 1}, {2, 2, 2}};
-        int[][] strides = {{1, 1, 1}, {2, 2, 2}};
+        int[][] kernels = {{2, 2, 2}};
+        int[][] strides = {{1, 1, 1}};
 
         Activation[] activations = {Activation.RELU};
 
@@ -334,9 +334,9 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
     public void testCnn3DUpsampling() {
         Nd4j.getRandom().setSeed(42);
 
-        int depth = 4;
-        int height = 4;
-        int width = 4;
+        int depth = 2;
+        int height = 2;
+        int width = 2;
 
 
         int[] minibatchSizes = {3};
