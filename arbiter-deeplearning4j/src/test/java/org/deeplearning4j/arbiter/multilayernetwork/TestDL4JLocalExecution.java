@@ -22,7 +22,9 @@ import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
+import org.deeplearning4j.arbiter.layers.OCNNLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
+import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
@@ -46,6 +48,7 @@ import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -181,8 +184,7 @@ public class TestDL4JLocalExecution {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                         .l2(new ContinuousParameterSpace(0.0001, 0.01))
-                        .addLayer(
-                                        new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
+                        .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
                                                         .activation(new DiscreteParameterSpace<>(Activation.RELU,
                                                                         Activation.TANH))
                                                         .build(),
@@ -218,6 +220,65 @@ public class TestDL4JLocalExecution {
                         new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
 
         runner.execute();
+        System.out.println("----- COMPLETE -----");
+    }
+
+
+    @Test
+    public void testOcnn() {
+        Map<String, Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
+
+
+        //Define: network config (hyperparameter space)
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
+                .l2(new ContinuousParameterSpace(0.0001, 0.01))
+                .addLayer(
+                        new DenseLayerSpace.Builder().nOut(new IntegerParameterSpace(250, 500))
+                                .activation(new DiscreteParameterSpace<>(Activation.RELU,
+                                        Activation.TANH))
+                                .build(),
+                        new IntegerParameterSpace(1, 2), true) //1-2 identical layers (except nIn)
+                .addLayer(new OCNNLayerSpace.Builder().nu(new ContinuousParameterSpace(0.0001, 0.1))
+                        .numHidden(new DiscreteParameterSpace<Integer>(784 / 2,784 / 4))
+                        .activation(Activation.HARDSIGMOID)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .setInputType(InputType.convolutionalFlat(28,28,1))
+                .pretrain(false).backprop(true).build();
+
+        //Define configuration:
+
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
+        DataProvider dataProvider = new DataSetIteratorFactoryProvider();
+
+
+        String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterDL4JTest3\\").getAbsolutePath();
+
+        File f = new File(modelSavePath);
+        if (f.exists())
+            f.delete();
+        f.mkdir();
+        f.deleteOnExit();
+        if (!f.exists())
+            throw new RuntimeException();
+
+        OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
+                .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(new TestSetLossScoreFunction())
+                .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                        new MaxCandidatesCondition(100))
+                .build();
+
+
+        //candidate generation: uncomment execute if you want to run
+        IOptimizationRunner runner = new LocalOptimizationRunner(configuration,
+                new MultiLayerNetworkTaskCreator(new ClassificationEvaluator()));
+
+        Candidate candidate = candidateGenerator.getCandidate();
+
+        // runner.execute();
         System.out.println("----- COMPLETE -----");
     }
 }
