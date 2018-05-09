@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.distribution.TruncatedNormalDistribution;
 import org.deeplearning4j.nn.conf.graph.L2NormalizeVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -91,7 +92,7 @@ public class InceptionResNetV1 extends ZooModel {
                         .activation(Activation.RELU)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(updater)
-                        .weightInit(new NormalDistribution(0.0, 0.5))
+                        .weightInit(new TruncatedNormalDistribution(0.0, 0.5))
                         .l2(5e-5)
                         .miniBatch(true)
                         .cacheMode(cacheMode)
