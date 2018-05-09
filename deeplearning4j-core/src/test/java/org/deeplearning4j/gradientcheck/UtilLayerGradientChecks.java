@@ -5,13 +5,16 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -23,7 +26,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.assertTrue;
 
@@ -162,5 +165,51 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                 }
             }
         }
+    }
+
+
+    @Test
+    public void testFrozenWithBackprop(){
+
+        for( int minibatch : new int[]{1,5}) {
+
+            MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .updater(Updater.NONE)
+                    .list()
+                    .layer(new DenseLayer.Builder().nIn(10).nOut(10)
+                            .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())
+                    .layer(new FrozenLayerWithBackprop(new DenseLayer.Builder().nIn(10).nOut(10)
+                            .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build()))
+                    .layer(new FrozenLayerWithBackprop(
+                            new DenseLayer.Builder().nIn(10).nOut(10).activation(Activation.TANH)
+                                    .weightInit(WeightInit.XAVIER).build()))
+                    .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                            .activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
+                    .build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf2);
+            net.init();
+
+            INDArray in = Nd4j.rand(minibatch, 10);
+            INDArray labels = TestUtils.randomOneHot(minibatch, 10);
+
+            Set<String> excludeParams = new HashSet<>();
+            excludeParams.addAll(Arrays.asList("1_W", "1_b", "2_W", "2_b"));
+
+            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, null, null,
+                    false, -1, excludeParams);
+            assertTrue(gradOK);
+
+
+            //Test ComputationGraph equivalent:
+            ComputationGraph g = net.toComputationGraph();
+
+            boolean gradOKCG = GradientCheckUtil.checkGradients(g, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in}, new INDArray[]{labels},
+                    null, null, excludeParams);
+            assertTrue(gradOKCG);
+        }
+
     }
 }
