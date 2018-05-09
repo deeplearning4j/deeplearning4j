@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -33,28 +34,18 @@ import java.util.Random;
 /**
  * Created by Kirill Lebedev (drlebedev.com) on 8/31/2015.
  */
+@Slf4j
 public class GravesLSTMOutputTest extends BaseDL4JTest {
 
     private static int nIn = 20;
     private static int layerSize = 15;
     private static int window = 300;
     private static INDArray data;
-    private static Logger log;
     private static Type type;
 
     @BeforeClass
     public static void setUp() {
-        type = Nd4j.dataType();
-        DataTypeUtil.setDTypeForContext(Type.FLOAT);
-        log = LoggerFactory.getLogger(GravesLSTMOutputTest.class);
         data = getData();
-    }
-
-    @AfterClass
-    public static void tearDown() {
-        data = null;
-        log = null;
-        DataTypeUtil.setDTypeForContext(type);
     }
 
     @Test

@@ -889,8 +889,8 @@ public class EvalTest extends BaseDL4JTest {
         apply(e, 3, c2, c0); //Predicted class 2 when actually class 0, 3 times
         apply(e, 2, c0, c1); //Predicted class 0 when actually class 1, 2 times
 
-        String s1 = "Predictions labeled as 0 classified by model as 2: 3 times";
-        String s2 = "Predictions labeled as 1 classified by model as 0: 2 times";
+        String s1 = " 0 0 3 | 0 = 0";   //First row: predicted 2, actual 0 - 3 times
+        String s2 = " 2 0 0 | 1 = 1";   //Second row: predicted 0, actual 1 - 2 times
 
         String stats = e.stats();
         assertTrue(stats, stats.contains(s1));
@@ -1201,5 +1201,54 @@ public class EvalTest extends BaseDL4JTest {
         assertEquals(ePosClass1_nOut2.recall(EvaluationAveraging.Macro), ePosClassNull_nOut1.recall(), 1e-6);
         assertEquals(ePosClass1_nOut2.precision(EvaluationAveraging.Macro), ePosClassNull_nOut1.precision(), 1e-6);
         assertEquals(ePosClass1_nOut2.f1(EvaluationAveraging.Macro), ePosClassNull_nOut1.f1(), 1e-6);
+    }
+
+
+    @Test
+    public void testConfusionMatrixString(){
+
+        Evaluation e = new Evaluation(Arrays.asList("a","b","c"));
+
+        INDArray class0 = Nd4j.create(new double[]{1,0,0});
+        INDArray class1 = Nd4j.create(new double[]{0,1,0});
+        INDArray class2 = Nd4j.create(new double[]{0,0,1});
+
+        //Predicted class 0, actual class 1 x2
+        e.eval(class0, class1);
+        e.eval(class0, class1);
+
+        e.eval(class2, class2);
+        e.eval(class2, class2);
+        e.eval(class2, class2);
+
+        String s = e.confusionMatrix();
+//        System.out.println(s);
+
+        String exp =
+                " 0 1 2\n" +
+                "-------\n" +
+                " 0 2 0 | 0 = a\n" +    //0 predicted as 1, 2 times
+                " 0 0 0 | 1 = b\n" +
+                " 0 0 3 | 2 = c\n" +    //2 predicted as 2, 3 times
+        "\nConfusion matrix format: Actual (rowClass) predicted as (columnClass) N times";
+
+        assertEquals(exp, s);
+
+        System.out.println("============================");
+        System.out.println(e.stats());
+
+        System.out.println("\n\n\n\n");
+
+        //Test with 21 classes (> threshold)
+        e = new Evaluation();
+        class0 = Nd4j.create(1, 31);
+        class0.putScalar(0, 1);
+
+        e.eval(class0, class0);
+        System.out.println(e.stats());
+
+        System.out.println("\n\n\n\n");
+        System.out.println(e.stats(false, true));
+
     }
 }

@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
@@ -23,7 +24,9 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -38,6 +41,10 @@ public class ModelSerializer {
 
     public static final String UPDATER_BIN = "updaterState.bin";
     public static final String NORMALIZER_BIN = "normalizer.bin";
+    public static final String CONFIGURATION_JSON = "configuration.json";
+    public static final String COEFFICIENTS_BIN = "coefficients.bin";
+    public static final String NO_PARAMS_MARKER = "noParams.marker";
+    public static final String PREPROCESSOR_BIN = "preprocessor.bin";
 
     private ModelSerializer() {}
 
@@ -117,12 +124,12 @@ public class ModelSerializer {
         } else if (model instanceof ComputationGraph) {
             json = ((ComputationGraph) model).getConfiguration().toJson();
         }
-        ZipEntry config = new ZipEntry("configuration.json");
+        ZipEntry config = new ZipEntry(CONFIGURATION_JSON);
         zipfile.putNextEntry(config);
         zipfile.write(json.getBytes());
 
         // Save parameters as binary
-        ZipEntry coefficients = new ZipEntry("coefficients.bin");
+        ZipEntry coefficients = new ZipEntry(COEFFICIENTS_BIN);
         zipfile.putNextEntry(coefficients);
         DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile));
         INDArray params = model.params();
@@ -133,7 +140,7 @@ public class ModelSerializer {
                 dos.flush();
             }
         } else {
-            ZipEntry noParamsMarker = new ZipEntry("noParams.marker");
+            ZipEntry noParamsMarker = new ZipEntry(NO_PARAMS_MARKER);
             zipfile.putNextEntry(noParamsMarker);
         }
 
@@ -204,7 +211,7 @@ public class ModelSerializer {
         DataSetPreProcessor preProcessor = null;
 
 
-        ZipEntry config = zipFile.getEntry("configuration.json");
+        ZipEntry config = zipFile.getEntry(CONFIGURATION_JSON);
         if (config != null) {
             //restoring configuration
 
@@ -223,7 +230,7 @@ public class ModelSerializer {
         }
 
 
-        ZipEntry coefficients = zipFile.getEntry("coefficients.bin");
+        ZipEntry coefficients = zipFile.getEntry(COEFFICIENTS_BIN);
         if (coefficients != null ) {
             if(coefficients.getSize() > 0) {
                 InputStream stream = zipFile.getInputStream(coefficients);
@@ -233,7 +240,7 @@ public class ModelSerializer {
                 dis.close();
                 gotCoefficients = true;
             } else {
-                ZipEntry noParamsMarker = zipFile.getEntry("noParams.marker");
+                ZipEntry noParamsMarker = zipFile.getEntry(NO_PARAMS_MARKER);
                 gotCoefficients = (noParamsMarker != null);
             }
         }
@@ -250,7 +257,7 @@ public class ModelSerializer {
             }
         }
 
-        ZipEntry prep = zipFile.getEntry("preprocessor.bin");
+        ZipEntry prep = zipFile.getEntry(PREPROCESSOR_BIN);
         if (prep != null) {
             InputStream stream = zipFile.getInputStream(prep);
             ObjectInputStream ois = new ObjectInputStream(stream);
@@ -530,7 +537,7 @@ public class ModelSerializer {
         DataSetPreProcessor preProcessor = null;
 
 
-        ZipEntry config = zipFile.getEntry("configuration.json");
+        ZipEntry config = zipFile.getEntry(CONFIGURATION_JSON);
         if (config != null) {
             //restoring configuration
 
@@ -549,7 +556,7 @@ public class ModelSerializer {
         }
 
 
-        ZipEntry coefficients = zipFile.getEntry("coefficients.bin");
+        ZipEntry coefficients = zipFile.getEntry(COEFFICIENTS_BIN);
         if (coefficients != null) {
             if(coefficients.getSize() > 0) {
                 InputStream stream = zipFile.getInputStream(coefficients);
@@ -559,7 +566,7 @@ public class ModelSerializer {
                 dis.close();
                 gotCoefficients = true;
             } else {
-                ZipEntry noParamsMarker = zipFile.getEntry("noParams.marker");
+                ZipEntry noParamsMarker = zipFile.getEntry(NO_PARAMS_MARKER);
                 gotCoefficients = (noParamsMarker != null);
             }
         }
@@ -577,7 +584,7 @@ public class ModelSerializer {
             }
         }
 
-        ZipEntry prep = zipFile.getEntry("preprocessor.bin");
+        ZipEntry prep = zipFile.getEntry(PREPROCESSOR_BIN);
         if (prep != null) {
             InputStream stream = zipFile.getInputStream(prep);
             ObjectInputStream ois = new ObjectInputStream(stream);
@@ -735,6 +742,119 @@ public class ModelSerializer {
             if (tempFile != null) {
                 tempFile.delete();
             }
+        }
+    }
+
+    /**
+     * Add an object to the (already existing) model file using Java Object Serialization. Objects can be restored
+     * using {@link #getObjectFromFile(File, String)}
+     * @param f   File to add the object to
+     * @param key Key to store the object under
+     * @param o   Object to store using Java object serialization
+     */
+    public static void addObjectToFile(@NonNull File f, @NonNull String key, @NonNull Object o){
+        Preconditions.checkState(f.exists(), "File must exist: %s", f);
+        Preconditions.checkArgument(!(UPDATER_BIN.equalsIgnoreCase(key) || NORMALIZER_BIN.equalsIgnoreCase(key)
+                || CONFIGURATION_JSON.equalsIgnoreCase(key) || COEFFICIENTS_BIN.equalsIgnoreCase(key)
+                || NO_PARAMS_MARKER.equalsIgnoreCase(key) || PREPROCESSOR_BIN.equalsIgnoreCase(key)),
+                "Invalid key: Key is reserved for internal use: \"%s\"", key);
+        File tempFile = null;
+        try {
+            // copy existing model to temporary file
+            tempFile = File.createTempFile("tempcopy", "temp");
+            tempFile.deleteOnExit();
+            Files.copy(f, tempFile);
+            try (ZipFile zipFile = new ZipFile(tempFile);
+                 ZipOutputStream writeFile =
+                         new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(f)))) {
+                // roll over existing files within model, and copy them one by one
+                Enumeration<? extends ZipEntry> entries = zipFile.entries();
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = entries.nextElement();
+
+                    log.debug("Copying: {}", entry.getName());
+
+                    InputStream is = zipFile.getInputStream(entry);
+
+                    ZipEntry wEntry = new ZipEntry(entry.getName());
+                    writeFile.putNextEntry(wEntry);
+
+                    IOUtils.copy(is, writeFile);
+                }
+
+                //Add new object:
+                ZipEntry entry = new ZipEntry("objects/" + key);
+                writeFile.putNextEntry(entry);
+                try(ObjectOutputStream oos = new ObjectOutputStream(writeFile)){
+                    oos.writeObject(o);
+                }
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        } finally {
+            if (tempFile != null) {
+                tempFile.delete();
+            }
+        }
+    }
+
+    /**
+     * Get an object with the specified key from the model file, that was previously added to the file using
+     * {@link #addObjectToFile(File, String, Object)}
+     *
+     * @param f   model file to add the object to
+     * @param key Key for the object
+     * @param <T> Type of the object
+     * @return The serialized object
+     * @see #listObjectsInFile(File)
+     */
+    public static <T> T getObjectFromFile(@NonNull File f, @NonNull String key){
+        Preconditions.checkState(f.exists(), "File must exist: %s", f);
+        Preconditions.checkArgument(!(UPDATER_BIN.equalsIgnoreCase(key) || NORMALIZER_BIN.equalsIgnoreCase(key)
+                        || CONFIGURATION_JSON.equalsIgnoreCase(key) || COEFFICIENTS_BIN.equalsIgnoreCase(key)
+                        || NO_PARAMS_MARKER.equalsIgnoreCase(key) || PREPROCESSOR_BIN.equalsIgnoreCase(key)),
+                "Invalid key: Key is reserved for internal use: \"%s\"", key);
+
+        try {
+            ZipFile zipFile = new ZipFile(f);
+            ZipEntry entry = zipFile.getEntry("objects/" + key);
+            if(entry == null){
+                throw new IllegalStateException("No object with key \"" + key + "\" found");
+            }
+
+            try(ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(zipFile.getInputStream(entry)))){
+                return (T)ois.readObject();
+            }
+        } catch (IOException | ClassNotFoundException e){
+            throw new RuntimeException("Error reading object (key = " + key + ") from file " + f, e);
+        }
+    }
+
+    /**
+     * List the keys of all objects added using the method {@link #addObjectToFile(File, String, Object)}
+     * @param f File previously created with ModelSerializer
+     * @return List of keys that can be used with {@link #getObjectFromFile(File, String)}
+     */
+    public static List<String> listObjectsInFile(@NonNull File f){
+        Preconditions.checkState(f.exists(), "File must exist: %s", f);
+
+        List<String> out = new ArrayList<>();
+        try {
+            ZipFile zipFile = new ZipFile(f);
+            ZipEntry entry = zipFile.getEntry("objects");
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            while(entries.hasMoreElements()){
+                ZipEntry e = entries.nextElement();
+                String name = e.getName();
+                if(!e.isDirectory() && name.startsWith("objects/")){
+                    String s = name.substring(8);
+                    out.add(s);
+                }
+            }
+
+            return out;
+        } catch (IOException e){
+            throw new RuntimeException(e);
         }
     }
 

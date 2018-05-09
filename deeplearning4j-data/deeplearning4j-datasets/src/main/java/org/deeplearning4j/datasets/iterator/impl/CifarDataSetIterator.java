@@ -84,9 +84,28 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      */
     public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numPossibleLables,
                     ImageTransform imageTransform, boolean useSpecialPreProcessCifar, boolean train) {
+        this(batchSize, numExamples, imgDim, numPossibleLables, imageTransform, useSpecialPreProcessCifar,
+                train, System.currentTimeMillis(), true);
+    }
+
+    /**
+     * Create Cifar data specific iterator
+     *
+     * @param batchSize      the batch size of the examples
+     * @param imgDim         an array of height, width and channels
+     * @param numExamples    the overall number of examples
+     * @param imageTransform the transformation to apply to the images
+     * @param useSpecialPreProcessCifar use Zagoruyko's preprocess for Cifar
+     * @param train          true if use training set and false for test
+     * @param rngSeed        Seed for RNG repeatability
+     * @param randomize      If true: randomize the iteration order of the images
+     */
+    public CifarDataSetIterator(int batchSize, int numExamples, int[] imgDim, int numPossibleLables,
+                                ImageTransform imageTransform, boolean useSpecialPreProcessCifar,
+                                boolean train, long rngSeed, boolean randomize) {
         super(null, batchSize, 1, numExamples);
         this.loader = new CifarLoader(imgDim[0], imgDim[1], imgDim[2], imageTransform, train,
-                        useSpecialPreProcessCifar);
+                        useSpecialPreProcessCifar, null, rngSeed, randomize);
         int totalExamples = train ? CifarLoader.NUM_TRAIN_IMAGES : CifarLoader.NUM_TEST_IMAGES;
         this.numExamples = numExamples > totalExamples ? totalExamples : numExamples;
         this.numPossibleLabels = numPossibleLables;

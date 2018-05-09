@@ -1,4 +1,4 @@
-package org.deeplearning4j;
+package org.deeplearning4j.zoo;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
@@ -22,7 +22,7 @@ public class BaseDL4JTest {
      * Override this to set the datatype of the tests defined in the child class
      */
     public DataBuffer.Type getDataType(){
-        return DataBuffer.Type.DOUBLE;
+        return DataBuffer.Type.FLOAT;
     }
 
     @Before

@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
  * @author Justin Long (crockpotveggies)
  */
 @Slf4j
-public class TestImageNet {
+public class TestImageNet extends BaseDL4JTest {
 
     @Test
     public void testImageNetLabels() throws IOException {
