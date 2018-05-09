@@ -36,6 +36,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.normalization.KerasBatchNo
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasGlobalPooling;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling2D;
+import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling3D;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
@@ -219,6 +220,9 @@ public class KerasLayerUtils {
             layer = new KerasAtrousConvolution1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D())) {
             layer = new KerasSeparableConvolution2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_3D()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_3D())) {
+            layer = new KerasPooling3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_2D()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE_POOLING_2D())) {
             layer = new KerasPooling2D(layerConfig, enforceTrainingConfig);
@@ -236,6 +240,8 @@ public class KerasLayerUtils {
             layer = new KerasEmbedding(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_INPUT())) {
             layer = new KerasInput(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_PERMUTE())) {
+            layer = new KerasPermute(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MERGE())) {
             layer = new KerasMerge(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ADD()) ||
@@ -261,10 +267,14 @@ public class KerasLayerUtils {
             layer = new KerasZeroPadding1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_2D())) {
             layer = new KerasZeroPadding2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ZERO_PADDING_3D())) {
+            layer = new KerasZeroPadding3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_1D())) {
             layer = new KerasUpsampling1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_2D())) {
             layer = new KerasUpsampling2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_3D())) {
+            layer = new KerasCropping3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_2D())) {
             layer = new KerasCropping2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_1D())) {

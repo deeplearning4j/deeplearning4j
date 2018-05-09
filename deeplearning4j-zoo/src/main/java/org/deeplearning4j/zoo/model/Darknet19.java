@@ -1,13 +1,11 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -17,11 +15,11 @@ import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.impl.ActivationLReLU;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import static org.deeplearning4j.zoo.model.helper.DarknetHelper.*;
+import static org.deeplearning4j.zoo.model.helper.DarknetHelper.addLayers;
 
 /**
  * Darknet19
@@ -38,25 +36,18 @@ import static org.deeplearning4j.zoo.model.helper.DarknetHelper.*;
  * @author saudet
  */
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Darknet19 extends ZooModel {
 
-    private int[] inputShape = {3, 224, 224};
-    private int numLabels;
-    private long seed;
-    private WorkspaceMode workspaceMode;
-    private ConvolutionLayer.AlgoMode cudnnAlgoMode;
-
-    public Darknet19(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.ENABLED);
-    }
-
-    public Darknet19(int numLabels, long seed, WorkspaceMode workspaceMode) {
-        this.numLabels = numLabels;
-        this.seed = seed;
-        this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
-                        : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
-    }
+    @Builder.Default private long seed = 1234;
+    @Builder.Default private int[] inputShape = {3, 224, 224};
+    private int numClasses;
+    @Builder.Default private WeightInit weightInit = WeightInit.RELU;
+    @Builder.Default private IUpdater updater = new Nesterovs(1e-3, 0.9);
+    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
+    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
@@ -81,11 +72,6 @@ public class Darknet19 extends ZooModel {
     }
 
     @Override
-    public ZooType zooType() {
-        return ZooType.DARKNET19;
-    }
-
-    @Override
     public Class<? extends Model> modelType() {
         return ComputationGraph.class;
     }
@@ -93,9 +79,11 @@ public class Darknet19 extends ZooModel {
     public ComputationGraphConfiguration conf() {
         GraphBuilder graphBuilder = new NeuralNetConfiguration.Builder()
                 .seed(seed)
-                .updater(new Nesterovs(0.001, 0.9))
+                .updater(updater)
+                .weightInit(weightInit)
                 .l2(0.00001)
                 .activation(Activation.IDENTITY)
+                .cacheMode(cacheMode)
                 .trainingWorkspaceMode(workspaceMode)
                 .inferenceWorkspaceMode(workspaceMode)
                 .cudnnAlgoMode(cudnnAlgoMode)
@@ -132,7 +120,7 @@ public class Darknet19 extends ZooModel {
                 .addLayer("convolution2d_" + layerNumber,
                         new ConvolutionLayer.Builder(1,1)
                                 .nIn(1024)
-                                .nOut(numLabels)
+                                .nOut(numClasses)
                                 .weightInit(WeightInit.XAVIER)
                                 .stride(1,1)
                                 .convolutionMode(ConvolutionMode.Same)

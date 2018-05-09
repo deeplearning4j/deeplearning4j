@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
@@ -91,6 +92,10 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     private INDArray computeBackpropGradientAndScore(LayerWorkspaceMgr workspaceMgr, boolean scoreOnly){
         assertInputSet(true);
+        Preconditions.checkState(labels != null, "Cannot calculate gradients/score: labels are null");
+        Preconditions.checkState(labels.rank() == 4, "Expected rank 4 labels array with shape [minibatch, 4+numClasses, h, w]" +
+                " but got rank %s labels array with shape %s", labels.rank(), labels.shape());
+
         double lambdaCoord = layerConf().getLambdaCoord();
         double lambdaNoObj = layerConf().getLambdaNoObj();
 

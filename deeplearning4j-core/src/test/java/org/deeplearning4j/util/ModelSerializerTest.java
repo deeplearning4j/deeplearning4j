@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -386,5 +387,54 @@ public class ModelSerializerTest extends BaseDL4JTest {
         Pair<ComputationGraph,Normalizer> pair = ModelSerializer.restoreComputationGraphAndNormalizer(new FileInputStream(tempFile), true);
         assertEquals(net.params(), pair.getFirst().params());
         assertNotNull(pair.getSecond());
+    }
+
+
+    @Test
+    public void testPutGetObject() throws Exception {
+
+        int nIn = 5;
+        int nOut = 6;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01)
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new OutputLayer.Builder().nIn(nIn).nOut(nOut).build(), "in")
+                .setOutputs("0")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        File tempFile = tempDir.newFile();
+        ModelSerializer.writeModel(net, tempFile, true);
+
+
+        List<String> toWrite = Arrays.asList("zero", "one", "two");
+        ModelSerializer.addObjectToFile(tempFile, "myLabels", toWrite);
+        List<String> restored = ModelSerializer.getObjectFromFile(tempFile, "myLabels");
+        assertEquals(toWrite, restored);
+
+
+        Map<String,Object> someOtherData = new HashMap<>();
+        someOtherData.put("x", new float[]{0,1,2});
+        someOtherData.put("y",Nd4j.linspace(1,10,10));
+
+        ModelSerializer.addObjectToFile(tempFile, "otherData.bin", someOtherData);
+
+        Map<String,Object> dataRestored = ModelSerializer.getObjectFromFile(tempFile, "otherData.bin");
+        assertEquals(someOtherData.keySet(), dataRestored.keySet());
+        assertArrayEquals((float[])someOtherData.get("x"), (float[])dataRestored.get("x"), 0f);
+        assertEquals(someOtherData.get("y"), dataRestored.get("y"));
+
+
+        List<String> entries = ModelSerializer.listObjectsInFile(tempFile);
+        assertEquals(2, entries.size());
+        System.out.println(entries);
+        assertTrue(entries.contains("myLabels"));
+        assertTrue(entries.contains("otherData.bin"));
+
+        ComputationGraph restoredNet = ModelSerializer.restoreComputationGraph(tempFile);
+        assertEquals(net.params(), restoredNet.params());
     }
 }

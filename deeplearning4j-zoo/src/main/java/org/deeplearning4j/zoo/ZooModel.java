@@ -48,7 +48,7 @@ public abstract class ZooModel<T> implements InstantiableModel {
      * @return
      * @throws IOException
      */
-    public Model initPretrained(PretrainedType pretrainedType) throws IOException {
+    public <M extends Model> M initPretrained(PretrainedType pretrainedType) throws IOException {
         String remoteUrl = pretrainedUrl(pretrainedType);
         if (remoteUrl == null)
             throw new UnsupportedOperationException(
@@ -83,9 +83,9 @@ public abstract class ZooModel<T> implements InstantiableModel {
         }
 
         if (modelType() == MultiLayerNetwork.class) {
-            return ModelSerializer.restoreMultiLayerNetwork(cachedFile);
+            return (M) ModelSerializer.restoreMultiLayerNetwork(cachedFile);
         } else if (modelType() == ComputationGraph.class) {
-            return ModelSerializer.restoreComputationGraph(cachedFile);
+            return (M) ModelSerializer.restoreComputationGraph(cachedFile);
         } else {
             throw new UnsupportedOperationException(
                             "Pretrained models are only supported for MultiLayerNetwork and ComputationGraph.");

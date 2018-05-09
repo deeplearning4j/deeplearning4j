@@ -50,22 +50,22 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     void initializeHelper() {
-        try {
-            helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnBatchNormalizationHelper")
-                            .asSubclass(BatchNormalizationHelper.class).newInstance();
-            log.debug("CudnnBatchNormalizationHelper successfully initialized");
-            if (!helper.checkSupported(layerConf().getEps())) {
-                helper = null;
-            }
-        } catch (Throwable t) {
-            if (!(t instanceof ClassNotFoundException)) {
-                log.warn("Could not initialize CudnnBatchNormalizationHelper", t);
-            } else {
-                Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
-                if (p.getProperty("backend").equals("CUDA")) {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if("CUDA".equalsIgnoreCase(backend)) {
+            try {
+                helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnBatchNormalizationHelper")
+                        .asSubclass(BatchNormalizationHelper.class).newInstance();
+                log.debug("CudnnBatchNormalizationHelper successfully initialized");
+                if (!helper.checkSupported(layerConf().getEps())) {
+                    helper = null;
+                }
+            } catch (Throwable t) {
+                if (!(t instanceof ClassNotFoundException)) {
+                    log.warn("Could not initialize CudnnBatchNormalizationHelper", t);
+                } else {
                     OneTimeLogger.info(log, "cuDNN not found: "
-                                    + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                                    + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
+                            + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
                 }
             }
         }
@@ -121,6 +121,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, shape, gamma, dGammaView, dBetaView,
                             layerConf.getEps(), workspaceMgr);
             if (ret != null) {
+                ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
+                ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
                 return ret;
             }
         }

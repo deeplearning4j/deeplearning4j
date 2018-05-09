@@ -121,83 +121,179 @@ public class FineTuneConfiguration {
 
         }
 
+        /**
+         * Activation function / neuron non-linearity
+         */
         public Builder activation(IActivation activationFn) {
             this.activation = activationFn;
             return this;
         }
 
+        /**
+         * Activation function / neuron non-linearity
+         */
         public Builder activation(Activation activation) {
             this.activation = activation.getActivationFunction();
             return this;
         }
 
+        /**
+         * Weight initialization scheme
+         *
+         * @see org.deeplearning4j.nn.weights.WeightInit
+         */
         public Builder weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
             return this;
         }
 
+        /**
+         * Set weight initialization scheme to random sampling via the specified distribution.<br>
+         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}
+         *
+         * @param distribution Distribution to use for weight initialization
+         */
+        public Builder weightInit(Distribution distribution){
+            weightInit(WeightInit.DISTRIBUTION);
+            return dist(distribution);
+        }
+
+        /**
+         * Constant for bias initialization. Default: 0.0
+         *
+         * @param biasInit Constant for bias initialization
+         */
         public Builder biasInit(double biasInit) {
             this.biasInit = biasInit;
             return this;
         }
 
+        /**
+         * Distribution to sample initial weights from. Used in conjunction with .weightInit(WeightInit.DISTRIBUTION)
+         *
+         * @see #weightInit(Distribution)
+         */
         public Builder dist(Distribution dist) {
             this.dist = dist;
             return this;
         }
 
+        /**
+         * L1 regularization coefficient for the weights
+         */
         public Builder l1(double l1) {
             this.l1 = l1;
             return this;
         }
 
+        /**
+         * L2 regularization coefficient for the weights
+         */
         public Builder l2(double l2) {
             this.l2 = l2;
             return this;
         }
 
+        /**
+         * L1 regularization coefficient for the bias parameters
+         */
         public Builder l1Bias(double l1Bias) {
             this.l1Bias = l1Bias;
             return this;
         }
 
+        /**
+         * L2 regularization coefficient for the bias parameters
+         */
         public Builder l2Bias(double l2Bias) {
             this.l2Bias = l2Bias;
             return this;
         }
 
+        /**
+         * Set the dropout
+         *
+         * @param dropout Dropout, such as {@link Dropout}, {@link org.deeplearning4j.nn.conf.dropout.GaussianDropout},
+         *                {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise} etc
+         */
         public Builder dropout(IDropout dropout) {
             this.dropout = Optional.ofNullable(dropout);
             return this;
         }
 
-        public Builder dropOut(double dropout){
-            if(dropout == 0.0){
+        /**
+         * Dropout probability. This is the probability of <it>retaining</it> each input activation value for a layer.
+         * dropOut(x) will keep an input activation with probability x, and set to 0 with probability 1-x.<br>
+         * dropOut(0.0) is a special value / special case - when set to 0.0., dropout is disabled (not applied). Note
+         * that a dropout value of 1.0 is functionally equivalent to no dropout: i.e., 100% probability of retaining
+         * each input activation.<br>
+         * <p>
+         * Note 1: Dropout is applied at training time only - and is automatically not applied at test time
+         * (for evaluation, etc)<br>
+         * Note 2: This sets the probability per-layer. Care should be taken when setting lower values for
+         * complex networks (too much information may be lost with aggressive (very low) dropout values).<br>
+         * Note 3: Frequently, dropout is not applied to (or, has higher retain probability for) input (first layer)
+         * layers. Dropout is also often not applied to output layers. This needs to be handled MANUALLY by the user
+         * - set .dropout(0) on those layers when using global dropout setting.<br>
+         * Note 4: Implementation detail (most users can ignore): DL4J uses inverted dropout, as described here:
+         * <a href="http://cs231n.github.io/neural-networks-2/">http://cs231n.github.io/neural-networks-2/</a>
+         * </p>
+         *
+         * @param inputRetainProbability Dropout probability (probability of retaining each input activation value for a layer)
+         * @see #dropout(IDropout)
+         */
+        public Builder dropOut(double inputRetainProbability){
+            if(inputRetainProbability == 0.0){
                 return dropout(null);
             }
-            return dropout(new Dropout(dropout));
+            return dropout(new Dropout(inputRetainProbability));
         }
 
+        /**
+         * Set the weight noise (such as {@link org.deeplearning4j.nn.conf.weightnoise.DropConnect} and
+         * {@link org.deeplearning4j.nn.conf.weightnoise.WeightNoise})
+         *
+         * @param weightNoise Weight noise instance to use
+         */
         public Builder weightNoise(IWeightNoise weightNoise) {
             this.weightNoise = Optional.ofNullable(weightNoise);
             return this;
         }
 
+        /**
+         * Gradient updater configuration. For example, {@link org.nd4j.linalg.learning.config.Adam}
+         * or {@link org.nd4j.linalg.learning.config.Nesterovs}
+         *
+         * @param updater Updater to use
+         */
         public Builder updater(IUpdater updater) {
             this.updater = updater;
             return this;
         }
 
+        /**
+         * @deprecated Use {@link #updater(IUpdater)}
+         */
         @Deprecated
         public Builder updater(Updater updater) {
             return updater(updater.getIUpdaterWithDefaultConfig());
         }
 
+        /**
+         * Gradient updater configuration, for the biases only. If not set, biases will use the updater as
+         * set by {@link #updater(IUpdater)}
+         *
+         * @param biasUpdater Updater to use for bias parameters
+         */
         public Builder biasUpdater(IUpdater biasUpdater) {
             this.biasUpdater = biasUpdater;
             return this;
         }
 
+        /**
+         * Whether scores and gradients should be divided by the minibatch size.<br>
+         * Most users should leave this ast he default value of true.
+         */
         public Builder miniBatch(boolean miniBatch) {
             this.miniBatch = miniBatch;
             return this;
@@ -208,11 +304,19 @@ public class FineTuneConfiguration {
             return this;
         }
 
+        /**
+         * RNG seed for reproducibility
+         * @param seed RNG seed to use
+         */
         public Builder seed(long seed) {
             this.seed = seed;
             return this;
         }
 
+        /**
+         * RNG seed for reproducibility
+         * @param seed RNG seed to use
+         */
         public Builder seed(int seed){
             return seed((long)seed);
         }
@@ -232,26 +336,55 @@ public class FineTuneConfiguration {
             return this;
         }
 
+        /**
+         * Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
+         * See {@link GradientNormalization} for details
+         *
+         * @param gradientNormalization Type of normalization to use. Defaults to None.
+         * @see GradientNormalization
+         */
         public Builder gradientNormalization(GradientNormalization gradientNormalization) {
             this.gradientNormalization = Optional.ofNullable(gradientNormalization);
             return this;
         }
 
+        /**
+         * Threshold for gradient normalization, only used for GradientNormalization.ClipL2PerLayer,
+         * GradientNormalization.ClipL2PerParamType, and GradientNormalization.ClipElementWiseAbsoluteValue<br>
+         * Not used otherwise.<br>
+         * L2 threshold for first two types of clipping, or absolute value threshold for last type of clipping
+         */
         public Builder gradientNormalizationThreshold(double gradientNormalizationThreshold) {
             this.gradientNormalizationThreshold = gradientNormalizationThreshold;
             return this;
         }
 
+        /**
+         * Sets the convolution mode for convolutional layers, which impacts padding and output sizes.
+         * See {@link ConvolutionMode} for details. Defaults to ConvolutionMode.TRUNCATE<br>
+         * @param convolutionMode Convolution mode to use
+         */
         public Builder convolutionMode(ConvolutionMode convolutionMode) {
             this.convolutionMode = convolutionMode;
             return this;
         }
 
+        /**
+         * Sets the cuDNN algo mode for convolutional layers, which impacts performance and memory usage of cuDNN.
+         * See {@link ConvolutionLayer.AlgoMode} for details.  Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
+         */
         public Builder cudnnAlgoMode(ConvolutionLayer.AlgoMode cudnnAlgoMode) {
             this.cudnnAlgoMode = cudnnAlgoMode;
             return this;
         }
 
+        /**
+         * Set constraints to be applied to all layers. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all parameters of all layers
+         */
         public Builder constraints(List<LayerConstraint> constraints) {
             this.constraints = Optional.ofNullable(constraints);
             return this;
@@ -267,26 +400,69 @@ public class FineTuneConfiguration {
             return this;
         }
 
+        /**
+         * The type of backprop. Default setting is used for most networks (MLP, CNN etc),
+         * but optionally truncated BPTT can be used for training recurrent neural networks.
+         * If using TruncatedBPTT make sure you set both tBPTTForwardLength() and tBPTTBackwardLength()
+         *
+         * @param backpropType Type of backprop. Default: BackpropType.Standard
+         */
         public Builder backpropType(BackpropType backpropType) {
             this.backpropType = backpropType;
             return this;
         }
 
+        /**
+         * When doing truncated BPTT: how many steps of forward pass should we do
+         * before doing (truncated) backprop?<br>
+         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
+         * Typically tBPTTForwardLength parameter is same as the tBPTTBackwardLength parameter,
+         * but may be larger than it in some circumstances (but never smaller)<br>
+         * Ideally your training data time series length should be divisible by this
+         * This is the k1 parameter on pg23 of
+         * http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
+         *
+         * @param tbpttFwdLength Forward length > 0, >= backwardLength
+         */
         public Builder tbpttFwdLength(int tbpttFwdLength) {
             this.tbpttFwdLength = tbpttFwdLength;
             return this;
         }
 
+        /**
+         * When doing truncated BPTT: how many steps of backward should we do?<br>
+         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
+         * This is the k2 parameter on pg23 of
+         * http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
+         *
+         * @param tbpttBackLength <= forwardLength
+         */
         public Builder tbpttBackLength(int tbpttBackLength) {
             this.tbpttBackLength = tbpttBackLength;
             return this;
         }
 
+        /**
+         * This method defines Workspace mode being used during training:
+         * NONE: workspace won't be used
+         * ENABLED: workspaces will be used for training (reduced memory and better performance)
+         *
+         * @param trainingWorkspaceMode Workspace mode for training
+         * @return Builder
+         */
         public Builder trainingWorkspaceMode(WorkspaceMode trainingWorkspaceMode) {
             this.trainingWorkspaceMode = trainingWorkspaceMode;
             return this;
         }
 
+        /**
+         * This method defines Workspace mode being used during inference:<br>
+         * NONE: workspace won't be used<br>
+         * ENABLED: workspaces will be used for inference (reduced memory and better performance)
+         *
+         * @param inferenceWorkspaceMode Workspace mode for inference
+         * @return Builder
+         */
         public Builder inferenceWorkspaceMode(WorkspaceMode inferenceWorkspaceMode) {
             this.inferenceWorkspaceMode = inferenceWorkspaceMode;
             return this;

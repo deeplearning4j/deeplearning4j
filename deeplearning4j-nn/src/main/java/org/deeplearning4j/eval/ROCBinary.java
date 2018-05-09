@@ -94,7 +94,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
                 //If mask array is present, pull out the non-masked rows only
                 INDArray m;
                 boolean perExampleMasking = false;
-                if (maskArray.isColumnVector()) {
+                if (maskArray.isColumnVectorOrScalar()) {
                     //Per-example masking
                     m = maskArray;
                     perExampleMasking = true;

@@ -74,22 +74,22 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     void initializeHelper() {
-        try {
-            helper = Class.forName("org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper")
-                            .asSubclass(ConvolutionHelper.class).newInstance();
-            log.debug("CudnnConvolutionHelper successfully initialized");
-            if (!helper.checkSupported()) {
-                helper = null;
-            }
-        } catch (Throwable t) {
-            if (!(t instanceof ClassNotFoundException)) {
-                log.warn("Could not initialize CudnnConvolutionHelper", t);
-            } else {
-                Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
-                if (p.getProperty("backend").equals("CUDA")) {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if("CUDA".equalsIgnoreCase(backend)) {
+            try {
+                helper = Class.forName("org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper")
+                        .asSubclass(ConvolutionHelper.class).newInstance();
+                log.debug("CudnnConvolutionHelper successfully initialized");
+                if (!helper.checkSupported()) {
+                    helper = null;
+                }
+            } catch (Throwable t) {
+                if (!(t instanceof ClassNotFoundException)) {
+                    log.warn("Could not initialize CudnnConvolutionHelper", t);
+                } else {
                     OneTimeLogger.info(log, "cuDNN not found: "
-                                    + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                                    + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
+                            + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
                 }
             }
         }
@@ -211,8 +211,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Current col2im implementation expects input with order: [miniBatch,channels,kH,kW,outH,outW]
         //currently have [kH,kW,inDepth,outW,outH,miniBatch] -> permute first
         eps6d = eps6d.permute(5, 2, 1, 0, 4, 3);
-//        INDArray epsNextOrig = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {inDepth, miniBatch, inH, inW}, 'c');
-        INDArray epsNextOrig = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {inDepth, miniBatch, inH, inW}, 'c');
+        INDArray epsNextOrig = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {inDepth, miniBatch, inH, inW}, 'c');
 
         //Note: we are execute col2im in a way that the output array should be used in a stride 1 muli in the layer below... (same strides as zs/activations)
         INDArray epsNext = epsNextOrig.permute(1, 0, 2, 3);

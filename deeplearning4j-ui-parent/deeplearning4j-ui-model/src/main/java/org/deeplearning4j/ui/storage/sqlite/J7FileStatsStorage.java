@@ -1,8 +1,8 @@
 package org.deeplearning4j.ui.storage.sqlite;
 
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import lombok.NonNull;
 import org.deeplearning4j.api.storage.*;
-import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
@@ -574,7 +574,7 @@ public class J7FileStatsStorage implements StatsStorage {
             while (rs.next()) {
                 list.add(rs.getLong(1));
             }
-            return list.toArray();
+            return list.toLongArray();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

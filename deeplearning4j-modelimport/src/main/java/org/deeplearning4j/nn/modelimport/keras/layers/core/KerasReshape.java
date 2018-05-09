@@ -99,16 +99,20 @@ public class KerasReshape extends KerasLayer {
         InputPreProcessor preprocessor = null;
         if (inputType[0] instanceof InputType.InputTypeConvolutional) {
             InputType.InputTypeConvolutional it = (InputType.InputTypeConvolutional) inputType[0];
+            int[] inputShape = new int[] {it.getChannels(), it.getHeight(), it.getWidth()};
             switch (this.getDimOrder()) {
-                case NONE:
-                case THEANO:
-                    int[] inputShapeTh = new int[]{it.getHeight(), it.getWidth(), it.getChannels()};
-                    preprocessor = new ReshapePreprocessor(inputShapeTh, this.targetShape);
+                case THEANO: // Theano is channels first
+                    if (this.kerasMajorVersion == 1) {
+                        targetShape = new int[] {targetShape[1], targetShape[0], targetShape[2]};
+                    }
+                    preprocessor = new ReshapePreprocessor(inputShape, targetShape);
                     break;
+                case NONE: // TF is now the default, channels last
                 case TENSORFLOW:
-                    int[] inputShapeTf = new int[]{it.getWidth(), it.getChannels(), it.getHeight()};
-                    preprocessor = new ReshapePreprocessor(inputShapeTf, this.targetShape);
-
+                    if (inputShape[0] != targetShape[0]) {
+                        targetShape = new int[] {targetShape[2], targetShape[0], targetShape[1]};
+                    }
+                    preprocessor = new ReshapePreprocessor(inputShape, targetShape);
             }
         } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
             InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType[0];
@@ -133,7 +137,7 @@ public class KerasReshape extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras Flatten layer accepts only one input (received " + inputType.length + ")");
+                    "Keras Reshape layer accepts only one input (received " + inputType.length + ")");
         ReshapePreprocessor reshape = (ReshapePreprocessor) getInputPreprocessor(inputType);
         return reshape.getOutputType(inputType[0]);
     }

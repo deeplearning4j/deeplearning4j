@@ -120,6 +120,7 @@ public class KerasModelBuilder implements Cloneable, Closeable {
 
     public KerasModelBuilder weightsHdf5Filename(String weightsHdf5Filename) {
         this.weightsArchive = new Hdf5Archive(weightsHdf5Filename);
+        this.weightsRoot = config.getTrainingWeightsRoot();
         return this;
     }
 
@@ -143,7 +144,8 @@ public class KerasModelBuilder implements Cloneable, Closeable {
         return sequentialModel;
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         if (trainingArchive != null && trainingArchive != weightsArchive) {
             trainingArchive.close();
             trainingArchive = null;

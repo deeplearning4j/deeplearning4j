@@ -1,12 +1,11 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -17,6 +16,7 @@ import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.AdaDelta;
+import org.nd4j.linalg.learning.config.IUpdater;
 
 /**
  * A simple convolutional network for generic image classification.
@@ -25,25 +25,17 @@ import org.nd4j.linalg.learning.config.AdaDelta;
  * @author Justin Long (crockpotveggies)
  */
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class SimpleCNN extends ZooModel {
 
-    private int[] inputShape = new int[] {3, 48, 48};
-    private int numLabels;
-    private long seed;
-    private WorkspaceMode workspaceMode;
-    private ConvolutionLayer.AlgoMode cudnnAlgoMode;
-
-    public SimpleCNN(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.ENABLED);
-    }
-
-    public SimpleCNN(int numLabels, long seed, WorkspaceMode workspaceMode) {
-        this.numLabels = numLabels;
-        this.seed = seed;
-        this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
-                        : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
-    }
+    @Builder.Default private long seed = 1234;
+    @Builder.Default private int[] inputShape = new int[] {3, 48, 48};
+    private int numClasses;
+    @Builder.Default private IUpdater updater = new AdaDelta();
+    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
+    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
@@ -56,23 +48,22 @@ public class SimpleCNN extends ZooModel {
     }
 
     @Override
-    public ZooType zooType() {
-        return ZooType.SIMPLECNN;
-    }
-
-    @Override
     public Class<? extends Model> modelType() {
         return MultiLayerNetwork.class;
     }
 
     public MultiLayerConfiguration conf() {
         MultiLayerConfiguration conf =
-                        new NeuralNetConfiguration.Builder().trainingWorkspaceMode(workspaceMode)
-                                        .inferenceWorkspaceMode(workspaceMode).seed(seed)
-                                        .activation(Activation.IDENTITY).weightInit(WeightInit.RELU)
+                        new NeuralNetConfiguration.Builder().seed(seed)
+                                        .activation(Activation.IDENTITY)
+                                        .weightInit(WeightInit.RELU)
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .updater(new AdaDelta())
-                                        .convolutionMode(ConvolutionMode.Same).list()
+                                        .updater(updater)
+                                        .cacheMode(cacheMode)
+                                        .trainingWorkspaceMode(workspaceMode)
+                                        .inferenceWorkspaceMode(workspaceMode)
+                                        .convolutionMode(ConvolutionMode.Same)
+                                        .list()
                                         // block 1
                                         .layer(0, new ConvolutionLayer.Builder(new int[] {7, 7}).name("image_array")
                                                         .nIn(inputShape[0]).nOut(16).build())
@@ -119,7 +110,7 @@ public class SimpleCNN extends ZooModel {
                                         // block 5
                                         .layer(28, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(256).build())
                                         .layer(29, new BatchNormalization.Builder().build())
-                                        .layer(30, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(numLabels)
+                                        .layer(30, new ConvolutionLayer.Builder(new int[] {3, 3}).nOut(numClasses)
                                                         .build())
                                         .layer(31, new GlobalPoolingLayer.Builder(PoolingType.AVG).build())
                                         .layer(32, new ActivationLayer.Builder().activation(Activation.SOFTMAX).build())

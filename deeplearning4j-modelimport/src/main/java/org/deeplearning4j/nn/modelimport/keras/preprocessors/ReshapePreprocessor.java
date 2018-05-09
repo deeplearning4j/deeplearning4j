@@ -92,6 +92,8 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             if(input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input)){
                 input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
             }
+            int[] shp =  inputShape;
+            int[] outShp = targetShape;
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.reshape(this.targetShape));
         } else {
             throw new IllegalStateException("Input shape " + Arrays.toString(input.shape())
@@ -126,8 +128,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             case 3:
                 return InputType.recurrent(shape[1]);
             case 4:
-                // TODO: make sure to cover TF/NHWC and TH/NCHW orderings
-                return InputType.convolutional(shape[1], shape[2], shape[3]);
+                return InputType.convolutional(shape[2], shape[3], shape[1]);
             default:
                 throw new UnsupportedOperationException(
                         "Cannot infer input type for reshape array " + Arrays.toString(shape));

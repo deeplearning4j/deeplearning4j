@@ -105,7 +105,6 @@
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
         <guava.version>20.0</guava.version>
         <threadly.version>4.10.0</threadly.version>
-        <eclipse.collections.version>8.2.0</eclipse.collections.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>

@@ -259,7 +259,7 @@ public abstract class BaseWrapperLayer implements Layer {
 
     @Override
     public int getIndex() {
-        return 0;
+        return underlying.getIndex();
     }
 
     @Override

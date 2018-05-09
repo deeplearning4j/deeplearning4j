@@ -149,7 +149,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
         if (maskArray != null) {
             //2 options: per-output masking, or
-            if (maskArray.isColumnVector()) {
+            if (maskArray.isColumnVectorOrScalar()) {
                 //Per-example masking
                 l = l.mulColumnVector(maskArray);
             } else {
@@ -170,7 +170,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             //Calculate bit-mask over each entry - whether that entry is in the current bin or not
             INDArray currBinBitMask = geqBinLower.muli(ltBinUpper);
             if (maskArray != null) {
-                if (maskArray.isColumnVector()) {
+                if (maskArray.isColumnVectorOrScalar()) {
                     currBinBitMask.muliColumnVector(maskArray);
                 } else {
                     currBinBitMask.muli(maskArray);
