@@ -41,7 +41,7 @@ public class TestImageNet {
     @Test
     public void testImageNetLabels() throws IOException {
         // set up model
-        ZooModel model = new VGG19(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = VGG19.builder().numClasses(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -65,7 +65,7 @@ public class TestImageNet {
     @Test
     public void testDarknetLabels() throws IOException {
         // set up model
-        ZooModel model = new Darknet19(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = Darknet19.builder().numClasses(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -87,7 +87,7 @@ public class TestImageNet {
         System.gc();
 
         // set up model
-        model = new TinyYOLO(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
+        model = TinyYOLO.builder().numClasses(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -96,7 +96,7 @@ public class TestImageNet {
         scaler = new ImagePreProcessingScaler(0, 1);
         scaler.transform(image);
         INDArray outputs = initializedModel.outputSingle(image);
-        List<DetectedObject> objs = YoloUtils.getPredictedObjects(Nd4j.create(TinyYOLO.priorBoxes), outputs, 0.6, 0.4);
+        List<DetectedObject> objs = YoloUtils.getPredictedObjects(Nd4j.create(((TinyYOLO) model).getPriorBoxes()), outputs, 0.6, 0.4);
         assertEquals(1, objs.size());
 
         // check output labels of result
@@ -111,18 +111,18 @@ public class TestImageNet {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
-        // set up model
-        model = new YOLO2(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
-        initializedModel = (ComputationGraph) model.initPretrained();
+            // set up model
+            model = YOLO2.builder().numClasses(1000).build(); //num labels doesn't matter since we're getting pretrained imagenet
+            initializedModel = (ComputationGraph) model.initPretrained();
 
-        // set up input and feedforward
-        loader = new NativeImageLoader(608, 608, 3, new ColorConversionTransform(COLOR_BGR2RGB));
-        image = loader.asMatrix(classloader.getResourceAsStream("goldenretriever.jpg"));
-        scaler = new ImagePreProcessingScaler(0, 1);
-        scaler.transform(image);
-        outputs = initializedModel.outputSingle(image);
-        objs = YoloUtils.getPredictedObjects(Nd4j.create(TinyYOLO.priorBoxes), outputs, 0.6, 0.4);
-        assertEquals(1, objs.size());
+            // set up input and feedforward
+            loader = new NativeImageLoader(608, 608, 3, new ColorConversionTransform(COLOR_BGR2RGB));
+            image = loader.asMatrix(classloader.getResourceAsStream("goldenretriever.jpg"));
+            scaler = new ImagePreProcessingScaler(0, 1);
+            scaler.transform(image);
+            outputs = initializedModel.outputSingle(image);
+            objs = YoloUtils.getPredictedObjects(Nd4j.create(((YOLO2) model).getPriorBoxes()), outputs, 0.6, 0.4);
+            assertEquals(1, objs.size());
 
         // check output labels of result
         labels = new COCOLabels();

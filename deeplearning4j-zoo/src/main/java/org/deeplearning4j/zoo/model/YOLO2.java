@@ -1,17 +1,17 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.SpaceToDepthLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -23,8 +23,9 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.IUpdater;
 
-import static org.deeplearning4j.zoo.model.helper.DarknetHelper.*;
+import static org.deeplearning4j.zoo.model.helper.DarknetHelper.addLayers;
 
 /**
  * YOLOv2
@@ -71,33 +72,25 @@ import static org.deeplearning4j.zoo.model.helper.DarknetHelper.*;
  * @author saudet
  */
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class YOLO2 extends ZooModel {
 
-    public static int nBoxes = 5;
-    public static double[][] priorBoxes = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
+    @Builder.Default @Getter private int nBoxes = 5;
+    @Builder.Default @Getter private double[][] priorBoxes = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
 
-    private int[] inputShape = {3, 608, 608};
-    private int numLabels;
-    private long seed;
-    private WorkspaceMode workspaceMode;
-    private ConvolutionLayer.AlgoMode cudnnAlgoMode;
-
-    public YOLO2(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.ENABLED);
-    }
-
-    public YOLO2(int numLabels, long seed, WorkspaceMode workspaceMode) {
-        this.numLabels = numLabels;
-        this.seed = seed;
-        this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
-                        : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
-    }
+    @Builder.Default private long seed = 1234;
+    @Builder.Default private int[] inputShape = {3, 608, 608};
+    private int numClasses;
+    @Builder.Default private IUpdater updater = new Adam(1e-3);
+    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
+    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return "http://blob.deeplearning4j.org/models/yolo2_dl4j_inference.v1.zip";
+            return "http://blob.deeplearning4j.org/models/yolo2_dl4j_inference.v2.zip";
         else
             return null;
     }
@@ -105,14 +98,9 @@ public class YOLO2 extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return 1357637732L;
+            return 3583899975L;
         else
             return 0L;
-    }
-
-    @Override
-    public ZooType zooType() {
-        return ZooType.YOLO2;
     }
 
     @Override
@@ -128,9 +116,10 @@ public class YOLO2 extends ZooModel {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                 .gradientNormalizationThreshold(1.0)
-                .updater(new Adam.Builder().learningRate(1e-3).build())
+                .updater(updater)
                 .l2(0.00001)
                 .activation(Activation.IDENTITY)
+                .cacheMode(cacheMode)
                 .trainingWorkspaceMode(workspaceMode)
                 .inferenceWorkspaceMode(workspaceMode)
                 .cudnnAlgoMode(cudnnAlgoMode)
@@ -182,12 +171,13 @@ public class YOLO2 extends ZooModel {
                 .addLayer("convolution2d_23",
                         new ConvolutionLayer.Builder(1,1)
                                 .nIn(1024)
-                                .nOut(nBoxes * (5 + numLabels))
+                                .nOut(nBoxes * (5 + numClasses))
                                 .weightInit(WeightInit.XAVIER)
                                 .stride(1,1)
                                 .convolutionMode(ConvolutionMode.Same)
                                 .weightInit(WeightInit.RELU)
                                 .activation(Activation.IDENTITY)
+                                .cudnnAlgoMode(cudnnAlgoMode)
                                 .build(),
                         "activation_22")
                 .addLayer("outputs",
