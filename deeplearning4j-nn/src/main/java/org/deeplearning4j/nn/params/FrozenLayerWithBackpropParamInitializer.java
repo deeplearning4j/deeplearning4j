@@ -34,8 +34,8 @@ public class FrozenLayerWithBackpropParamInitializer implements ParamInitializer
     @Override
     public int numParams(Layer layer) {
         FrozenLayerWithBackprop fl = (FrozenLayerWithBackprop) layer;
-        ParamInitializer initializer = fl.getLayer().initializer();
-        return initializer.numParams(fl.getLayer());
+        ParamInitializer initializer = fl.getUnderlying().initializer();
+        return initializer.numParams(fl.getUnderlying());
     }
 
     @Override
@@ -66,7 +66,7 @@ public class FrozenLayerWithBackpropParamInitializer implements ParamInitializer
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         FrozenLayerWithBackprop fl = (FrozenLayerWithBackprop) conf.getLayer();
-        Layer innerLayer = fl.getLayer();
+        Layer innerLayer = fl.getUnderlying();
         ParamInitializer initializer = innerLayer.initializer();
         conf.setLayer(innerLayer);
         Map<String, INDArray> m = initializer.init(conf, paramsView, initializeParams);
@@ -78,7 +78,7 @@ public class FrozenLayerWithBackpropParamInitializer implements ParamInitializer
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         FrozenLayerWithBackprop fl = (FrozenLayerWithBackprop) conf.getLayer();
-        Layer innerLayer = fl.getLayer();
+        Layer innerLayer = fl.getUnderlying();
         ParamInitializer initializer = innerLayer.initializer();
         conf.setLayer(innerLayer);
         Map<String, INDArray> m = initializer.getGradientsFromFlattened(conf, gradientView);

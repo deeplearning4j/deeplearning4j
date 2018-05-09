@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers.misc;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -8,6 +9,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.FrozenLayerParamInitializer;
 import org.deeplearning4j.nn.params.FrozenLayerWithBackpropParamInitializer;
@@ -24,31 +26,23 @@ import java.util.List;
  * 
  * Created by Ugljesa Jovanovic (jovanovic.ugljesa@gmail.com) on 06/05/2018.
  */
-@EqualsAndHashCode
-public class FrozenLayerWithBackprop extends Layer {
-
-    @Getter
-    protected Layer layer;
-
-    private FrozenLayerWithBackprop(Builder builder) {
-        super(builder);
-        this.layer = builder.layer;
-    }
+@Data
+public class FrozenLayerWithBackprop extends BaseWrapperLayer {
 
     public FrozenLayerWithBackprop(@JsonProperty("layer") Layer layer) {
-        this.layer = layer;
+        super(layer);
     }
 
     public NeuralNetConfiguration getInnerConf(NeuralNetConfiguration conf) {
         NeuralNetConfiguration nnc = conf.clone();
-        nnc.setLayer(layer);
+        nnc.setLayer(underlying);
         return nnc;
     }
 
     @Override
     public Layer clone() {
         FrozenLayerWithBackprop l = (FrozenLayerWithBackprop) super.clone();
-        l.layer = layer.clone();
+        l.underlying = underlying.clone();
         return l;
     }
 
@@ -58,7 +52,7 @@ public class FrozenLayerWithBackprop extends Layer {
                     boolean initializeParams) {
 
         //Need to be able to instantiate a layer, from a config - for JSON -> net type situations
-        org.deeplearning4j.nn.api.Layer underlying = layer.instantiate(getInnerConf(conf), trainingListeners,
+        org.deeplearning4j.nn.api.Layer underlying = getUnderlying().instantiate(getInnerConf(conf), trainingListeners,
                         layerIndex, layerParamsView, initializeParams);
 
         NeuralNetConfiguration nncUnderlying = underlying.conf();
@@ -85,22 +79,6 @@ public class FrozenLayerWithBackprop extends Layer {
     public ParamInitializer initializer() {
         return FrozenLayerWithBackpropParamInitializer.getInstance();
     }
-
-    @Override
-    public InputType getOutputType(int layerIndex, InputType inputType) {
-        return layer.getOutputType(layerIndex, inputType);
-    }
-
-    @Override
-    public void setNIn(InputType inputType, boolean override) {
-        layer.setNIn(inputType, override);
-    }
-
-    @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        return layer.getPreProcessorForInputType(inputType);
-    }
-
     @Override
     public double getL1ByParam(String paramName) {
         return 0;
@@ -122,34 +100,14 @@ public class FrozenLayerWithBackprop extends Layer {
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
-        return layer.getMemoryReport(inputType);
-    }
-
-    @Override
     public void setLayerName(String layerName) {
         super.setLayerName(layerName);
-        layer.setLayerName(layerName);
+        underlying.setLayerName(layerName);
     }
 
     @Override
     public void setConstraints(List<LayerConstraint> constraints){
         this.constraints = constraints;
-        this.layer.setConstraints(constraints);
-    }
-
-    public static class Builder extends Layer.Builder<Builder> {
-        private Layer layer;
-
-        public Builder layer(Layer layer) {
-            this.layer = layer;
-            return this;
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public FrozenLayerWithBackprop build() {
-            return new FrozenLayerWithBackprop(this);
-        }
+        this.underlying.setConstraints(constraints);
     }
 }

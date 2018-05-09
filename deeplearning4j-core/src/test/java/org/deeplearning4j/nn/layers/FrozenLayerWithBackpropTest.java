@@ -103,14 +103,12 @@ public class FrozenLayerWithBackpropTest extends BaseDL4JTest {
 
         ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(12345).graphBuilder()
                 .addInputs("in")
-                .addLayer("0", new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop.Builder()
-                        .layer(new DenseLayer.Builder().nIn(10).nOut(10).activation(Activation.TANH)
-                                .weightInit(WeightInit.XAVIER).build())
-                        .build(), "in")
-                .addLayer("1", new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop.Builder()
-                        .layer(new DenseLayer.Builder().nIn(10).nOut(10).activation(Activation.TANH)
-                                .weightInit(WeightInit.XAVIER).build())
-                        .build(), "0")
+                .addLayer("0", new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
+                        new DenseLayer.Builder().nIn(10).nOut(10).activation(Activation.TANH)
+                                .weightInit(WeightInit.XAVIER).build()), "in")
+                .addLayer("1", new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
+                        new DenseLayer.Builder().nIn(10).nOut(10).activation(Activation.TANH)
+                                .weightInit(WeightInit.XAVIER).build()), "0")
                 .addLayer("2", new OutputLayer.Builder(
                                 LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10)
                                 .nOut(10).build(),

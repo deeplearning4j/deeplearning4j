@@ -1078,7 +1078,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             }
 
             if (layer instanceof FrozenLayerWithBackprop) {
-                configureLayer(((FrozenLayerWithBackprop) layer).getLayer());
+                configureLayer(((FrozenLayerWithBackprop) layer).getUnderlying());
             }
 
             return conf;
@@ -1105,7 +1105,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             }
 
             if (layer instanceof FrozenLayerWithBackprop) {
-                copyConfigToLayer(layerName, ((FrozenLayerWithBackprop) layer).getLayer());
+                copyConfigToLayer(layerName, ((FrozenLayerWithBackprop) layer).getUnderlying());
             }
 
             if (layer instanceof Bidirectional) {

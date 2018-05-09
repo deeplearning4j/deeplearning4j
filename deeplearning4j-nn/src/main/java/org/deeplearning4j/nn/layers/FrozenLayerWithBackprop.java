@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -31,9 +32,8 @@ import java.util.Map;
  */
 
 @Slf4j
-public class FrozenLayerWithBackprop implements Layer {
+public class FrozenLayerWithBackprop extends BaseWrapperLayer {
 
-    private Layer insideLayer;
     private boolean logUpdate = false;
     private boolean logFit = false;
     private boolean logTestMode = false;
@@ -42,20 +42,13 @@ public class FrozenLayerWithBackprop implements Layer {
     private Gradient zeroGradient;
 
     public FrozenLayerWithBackprop(final Layer insideLayer) {
-        this.insideLayer = insideLayer;
+        super(insideLayer);
         this.zeroGradient = new DefaultGradient(insideLayer.params());
     }
 
-    @Override
-    public void setCacheMode(CacheMode mode) {
-        // no-op
-    }
-
-
-
     protected String layerId() {
-        String name = insideLayer.conf().getLayer().getLayerName();
-        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + insideLayer.getIndex() + ")";
+        String name = underlying.conf().getLayer().getLayerName();
+        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + underlying.getIndex() + ")";
     }
 
     @Override
@@ -69,63 +62,32 @@ public class FrozenLayerWithBackprop implements Layer {
     }
 
     @Override
-    public Type type() {
-        return insideLayer.type();
-    }
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        INDArray backpropEpsilon = insideLayer.backpropGradient(epsilon, workspaceMgr).getSecond();
+        INDArray backpropEpsilon = underlying.backpropGradient(epsilon, workspaceMgr).getSecond();
         //backprop might have already changed the gradient view (like BaseLayer and BaseOutputLayer do)
         //so we want to put it back to zeroes
-        INDArray gradientView = insideLayer.getGradientsViewArray();
-        INDArray zeroArray = Nd4j.zeros(gradientView.shape());
-        if (!gradientView.equalsWithEps(zeroArray, 0)) {
-            gradientView.assign(zeroArray);
+        INDArray gradientView = underlying.getGradientsViewArray();
+        if(gradientView != null){
+            gradientView.assign(0);
         }
         return new Pair<>(zeroGradient, backpropEpsilon);
     }
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);
-        return insideLayer.activate(false, workspaceMgr);
+        return underlying.activate(false, workspaceMgr);
     }
 
     @Override
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);
-        return insideLayer.activate(input, false, workspaceMgr);
-    }
-
-    @Override
-    public Layer transpose() {
-        return new FrozenLayerWithBackprop(insideLayer.transpose());
+        return underlying.activate(input, false, workspaceMgr);
     }
 
     @Override
     public Layer clone() {
         OneTimeLogger.info(log, "Frozen layers are cloned as their original versions.");
-        return new FrozenLayerWithBackprop(insideLayer.clone());
-    }
-
-    @Override
-    public Collection<TrainingListener> getListeners() {
-        return insideLayer.getListeners();
-    }
-
-    @Override
-    public void setListeners(TrainingListener... listeners) {
-        insideLayer.setListeners(listeners);
-    }
-
-    /**
-     * This method ADDS additional TrainingListener to existing listeners
-     *
-     * @param listener
-     */
-    @Override
-    public void addListeners(TrainingListener... listener) {
-        insideLayer.addListeners(listener);
+        return new FrozenLayerWithBackprop(underlying.clone());
     }
 
     @Override
@@ -156,59 +118,19 @@ public class FrozenLayerWithBackprop implements Layer {
     }
 
     @Override
-    public double score() {
-        return insideLayer.score();
-    }
-
-    @Override
     public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (!logGradient) {
             OneTimeLogger.info(log,
                             "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
             logGradient = true;
         }
-        insideLayer.score();
+        underlying.score();
         //no op
     }
 
     @Override
-    public void accumulateScore(double accum) {
-        insideLayer.accumulateScore(accum);
-    }
-
-    @Override
-    public INDArray params() {
-        return insideLayer.params().dup();
-    }
-
-    @Override
-    public int numParams() {
-        return insideLayer.numParams();
-    }
-
-    @Override
-    public int numParams(boolean backwards) {
-        return insideLayer.numParams(backwards);
-    }
-
-    @Override
-    public void setParams(INDArray params) {
-        insideLayer.setParams(params);
-    }
-
-    @Override
-    public void setParamsViewArray(INDArray params) {
-        insideLayer.setParamsViewArray(params);
-    }
-
-    @Override
-    public INDArray getGradientsViewArray() {
-        return insideLayer.getGradientsViewArray();
-    }
-
-    @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
-        insideLayer.setBackpropGradientsViewArray(gradients);
+        underlying.setBackpropGradientsViewArray(gradients);
         if (!logGradient) {
             OneTimeLogger.info(log,
                             "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
@@ -226,167 +148,8 @@ public class FrozenLayerWithBackprop implements Layer {
     }
 
     @Override
-    public Gradient gradient() {
-        return insideLayer.gradient();
-    }
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return insideLayer.gradientAndScore();
-    }
-
-    @Override
-    public int batchSize() {
-        return insideLayer.batchSize();
-    }
-
-    @Override
-    public NeuralNetConfiguration conf() {
-        return insideLayer.conf();
-    }
-
-    @Override
-    public void setConf(NeuralNetConfiguration conf) {
-        insideLayer.setConf(conf);
-    }
-
-    @Override
-    public INDArray input() {
-        return insideLayer.input();
-    }
-
-    @Override
-    public void validateInput() {
-        insideLayer.validateInput();
-    }
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        return insideLayer.getOptimizer();
-    }
-
-    @Override
-    public INDArray getParam(String param) {
-        return insideLayer.getParam(param);
-    }
-
-    @Override
-    public void initParams() {
-        insideLayer.initParams();
-    }
-
-    @Override
-    public Map<String, INDArray> paramTable() {
-        return insideLayer.paramTable();
-    }
-
-    @Override
-    public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
-        return insideLayer.paramTable(backpropParamsOnly);
-    }
-
-    @Override
-    public void setParamTable(Map<String, INDArray> paramTable) {
-        insideLayer.setParamTable(paramTable);
-    }
-
-    @Override
-    public void setParam(String key, INDArray val) {
-        insideLayer.setParam(key, val);
-    }
-
-    @Override
-    public void clear() {
-        insideLayer.clear();
-    }
-
-    @Override
     public void applyConstraints(int iteration, int epoch) {
         //No-op
-    }
-
-    /**
-     * Init the model
-     */
-    @Override
-    public void init() {
-
-    }
-
-    @Override
-    public void setListeners(Collection<TrainingListener> listeners) {
-        insideLayer.setListeners(listeners);
-    }
-
-    @Override
-    public void setIndex(int index) {
-        insideLayer.setIndex(index);
-    }
-
-    @Override
-    public int getIndex() {
-        return insideLayer.getIndex();
-    }
-
-    @Override
-    public int getIterationCount() {
-        return insideLayer.getIterationCount();
-    }
-
-    @Override
-    public int getEpochCount() {
-        return insideLayer.getEpochCount();
-    }
-
-    @Override
-    public void setIterationCount(int iterationCount) {
-        insideLayer.setIterationCount(iterationCount);
-    }
-
-    @Override
-    public void setEpochCount(int epochCount) {
-        insideLayer.setEpochCount(epochCount);
-    }
-
-    @Override
-    public void setInput(INDArray input, LayerWorkspaceMgr layerWorkspaceMgr) {
-        insideLayer.setInput(input, layerWorkspaceMgr);
-    }
-
-    @Override
-    public void setInputMiniBatchSize(int size) {
-        insideLayer.setInputMiniBatchSize(size);
-    }
-
-    @Override
-    public int getInputMiniBatchSize() {
-        return insideLayer.getInputMiniBatchSize();
-    }
-
-    @Override
-    public void setMaskArray(INDArray maskArray) {
-        insideLayer.setMaskArray(maskArray);
-    }
-
-    @Override
-    public INDArray getMaskArray() {
-        return insideLayer.getMaskArray();
-    }
-
-    @Override
-    public boolean isPretrainLayer() {
-        return insideLayer.isPretrainLayer();
-    }
-
-    @Override
-    public void clearNoiseWeightParams() {
-        insideLayer.clearNoiseWeightParams();
-    }
-
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        return insideLayer.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
     }
 
     public void logTestMode(boolean training) {
@@ -414,7 +177,7 @@ public class FrozenLayerWithBackprop implements Layer {
     }
 
     public Layer getInsideLayer() {
-        return insideLayer;
+        return underlying;
     }
 }
 

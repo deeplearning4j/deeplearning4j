@@ -201,6 +201,8 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                     false, -1, excludeParams);
             assertTrue(gradOK);
 
+            TestUtils.testModelSerialization(net);
+
 
             //Test ComputationGraph equivalent:
             ComputationGraph g = net.toComputationGraph();
@@ -209,6 +211,8 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in}, new INDArray[]{labels},
                     null, null, excludeParams);
             assertTrue(gradOKCG);
+
+            TestUtils.testModelSerialization(g);
         }
 
     }
