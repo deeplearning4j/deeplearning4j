@@ -351,7 +351,7 @@ public class GradientCheckUtil {
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
                                          INDArray[] labels, INDArray[] fMask, INDArray[] lMask) {
         return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs,
-                labels, fMask, lMask);
+                labels, fMask, lMask, null);
     }
 
     public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
