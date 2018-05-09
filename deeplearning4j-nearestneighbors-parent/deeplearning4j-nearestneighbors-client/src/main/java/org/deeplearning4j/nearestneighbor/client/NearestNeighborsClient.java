@@ -29,6 +29,10 @@ public class NearestNeighborsClient {
     @Getter
     protected String authToken;
 
+    public NearestNeighborsClient(String url){
+        this(url, null);
+    }
+
     static {
         // Only one time
         Unirest.setObjectMapper(new ObjectMapper() {

@@ -144,8 +144,8 @@ public class NearestNeighborsServer {
                 if (record == null)
                     return badRequest(Json.toJson(Collections.singletonMap("status", "invalid json passed.")));
 
-                NearstNeighborsResults results =
-                                NearstNeighborsResults.builder().results(nearestNeighbor.search()).build();
+                NearestNeighborsResults results =
+                                NearestNeighborsResults.builder().results(nearestNeighbor.search()).build();
 
 
                 return ok(Json.toJson(results));
