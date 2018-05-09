@@ -1359,7 +1359,7 @@ template<typename T>
         int idx[MAX_RANK];
         shape::ind2subC(rankOf(), shapeOf(), i, idx);
         Nd4jIndex offset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
-        return _buffer[offset];        
+        return _buffer[offset];
     }    
 }
 

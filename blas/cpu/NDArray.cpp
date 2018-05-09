@@ -1865,11 +1865,25 @@ NDArray<T> NDArray<T>::tile(const std::vector<int>& reps) const {
 
     // fill newBuff, loop through all elements of newBuff 
     // looping through _buffer goes automatically by means of getSubArrayIndex applying
-    for(int i=0;  i<result.lengthOf(); ++i)        
-        result(i) = (*this)(shape::subArrayIndex(result._shapeInfo, _shapeInfo, i));
+    const auto resultLen = result.lengthOf();
+    if(result.ordering() == 'c') {           //  ews == 1 always here 
+#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        for(int i=0;  i<resultLen; ++i)
+            newBuff[i] = (*this)(shape::subArrayIndex(newShapeInfo, _shapeInfo, i));
+    }
+    else {
+        int idx[MAX_RANK];
+        auto resultShape   = result.shapeOf();
+        auto resultStrides = result.stridesOf();
+        const auto resultRank = result.rankOf();
+#pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
+        for(int i=0;  i<resultLen; ++i) {
+            shape::ind2subC(resultRank, resultShape, i, idx);
+            newBuff[ shape::getOffset(0, resultShape, resultStrides, idx, resultRank) ] = (*this)(shape::subArrayIndex(newShapeInfo, _shapeInfo, i));
+        }
+    }
               
     return result;
-    
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1887,8 +1901,30 @@ void NDArray<T>::tile(const std::vector<int>& reps, NDArray<T>& target) const {
 
     // fill newBuff, loop through all elements of newBuff 
     // looping through _buffer goes automatically by means of getSubArrayIndex applying
-    for(int i=0;  i<target.lengthOf(); ++i)        
-        target.putIndexedScalar(i, this->getIndexedScalar(ShapeUtils<T>::getSubArrayIndex(target._shapeInfo, _shapeInfo, i)));
+    const int ews = target.ews();
+    const int targetLen = target.lengthOf();
+    T* targetBuff = target.getBuffer();
+    if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here 
+#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) 
+        for(int i=0;  i<targetLen; ++i)
+            targetBuff[i] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+    }
+    else if(target.ordering() == 'c' && ews > 1) {
+#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        for(int i=0;  i<targetLen; ++i)
+            targetBuff[i*ews] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));   
+    }
+    else {
+        int idx[MAX_RANK];
+        auto targetShape     = target.shapeOf();
+        auto targetStrides   = target.stridesOf();
+        const auto targetRank = target.rankOf();
+#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
+        for(int i=0;  i<targetLen; ++i) {
+            shape::ind2subC(targetRank, targetShape, i, idx);
+            targetBuff[ shape::getOffset(0, targetShape, targetStrides, idx, targetRank) ] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1903,8 +1939,30 @@ void NDArray<T>::tile(NDArray<T>& target) const {
 
     // fill newBuff, loop through all elements of newBuff 
     // looping through _buffer goes automatically by means of getSubArrayIndex applying
-    for(int i=0;  i<target.lengthOf(); ++i)        
-        target.putIndexedScalar(i, this->getIndexedScalar(ShapeUtils<T>::getSubArrayIndex(target._shapeInfo, _shapeInfo, i)));
+    const int ews = target.ews();
+    const int targetLen = target.lengthOf();
+    T* targetBuff = target.getBuffer();
+    if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here 
+#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        for(int i=0;  i<targetLen; ++i)
+            targetBuff[i] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+    }
+    else if(target.ordering() == 'c' && ews > 1) {
+#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        for(int i=0;  i<targetLen; ++i)
+            targetBuff[i*ews] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));   
+    }
+    else {
+        int idx[MAX_RANK];
+        auto targetShape     = target.shapeOf();
+        auto targetStrides   = target.stridesOf();
+        const auto targetRank = target.rankOf();
+#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
+        for(int i=0;  i<targetLen; ++i) {
+            shape::ind2subC(targetRank, targetShape, i, idx);
+            targetBuff[ shape::getOffset(0, targetShape, targetStrides, idx, targetRank) ] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
+        }
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -515,3 +515,35 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
     nd4j_printf("C-order  time: %lld us;\n", outerTime / iterations);
     nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);    
 }
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, ndarray_tile_test1) {
+
+    NDArray<float> x('c', {20, 30});
+    NDArray<float> exp('c', {2,40,60});
+
+    auto timeStart = std::chrono::system_clock::now();
+    NDArray<float> tiled = x.tile({2,2,2});
+    auto timeEnd = std::chrono::system_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+    nd4j_printf("c-order time: %d;\n", time);
+    
+    ASSERT_TRUE(tiled.isSameShape(&exp)); 
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, ndarray_tile_test2) {
+
+    NDArray<float> x('f', {20, 30});
+    NDArray<float> exp('f', {2,40,60});
+
+    auto timeStart = std::chrono::system_clock::now();
+    NDArray<float> tiled = x.tile({2,2,2});
+    auto timeEnd = std::chrono::system_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+    nd4j_printf("f-order time: %d;\n", time);
+    
+    ASSERT_TRUE(tiled.isSameShape(&exp)); 
+}

@@ -4952,16 +4952,19 @@ __host__ __device__
 // return absolute index of array min, min is sub-array of max, index to be returned is min's index and corresponds to maxIdx of max array 
 INLINEDEF Nd4jIndex subArrayIndex(const int* maxShapeInfo, const int* minShapeInfo, const int maxIdx) {
 
-    int *idxPerRank = new int[maxShapeInfo[0]];
-    ind2subC(maxShapeInfo[0], const_cast<int*>(maxShapeInfo)+1, const_cast<int&>(maxIdx), idxPerRank);    
+    const int rankMax = maxShapeInfo[0];
+    const int rankMin = minShapeInfo[0];
+
+    auto* idxPerRank = new int[rankMax];
+    ind2subC(rankMax, const_cast<int*>(maxShapeInfo)+1, const_cast<int&>(maxIdx), idxPerRank);    
 
     Nd4jIndex minIdx = 0;
-    for(int i = 0; i < minShapeInfo[0]; ++i) {
-        if(minShapeInfo[minShapeInfo[0] - i] == 1 || idxPerRank[maxShapeInfo[0] - i - 1] == 0)
+    for(int i = 0; i < rankMin; ++i) {
+        if(minShapeInfo[rankMin - i] == 1 || idxPerRank[rankMax - i - 1] == 0)
             continue;
-        if(idxPerRank[maxShapeInfo[0] - i - 1] >= minShapeInfo[minShapeInfo[0] - i])
-            idxPerRank[maxShapeInfo[0] - i - 1] %= minShapeInfo[minShapeInfo[0] - i];
-        minIdx += idxPerRank[maxShapeInfo[0] - i - 1] * stride(const_cast<int*>(minShapeInfo))[minShapeInfo[0] - i - 1];
+        if(idxPerRank[rankMax - i - 1] >= minShapeInfo[rankMin - i])
+            idxPerRank[rankMax - i - 1] %= minShapeInfo[rankMin - i];
+        minIdx += idxPerRank[rankMax - i - 1] * stride(const_cast<int*>(minShapeInfo))[rankMin - i - 1];
     }
 
     delete[] idxPerRank;
