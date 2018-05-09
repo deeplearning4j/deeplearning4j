@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -14,14 +14,14 @@ import java.util.Map;
 import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getPaddingFromConfig;
 
 /**
- * Imports a Keras ZeroPadding 1D layer.
+ * Imports a Keras Cropping 3D layer.
  *
  * @author Max Pumperla
  */
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class KerasZeroPadding1D extends KerasLayer {
+public class KerasCropping3D extends KerasLayer {
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -30,7 +30,7 @@ public class KerasZeroPadding1D extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasZeroPadding1D(Map<String, Object> layerConfig)
+    public KerasCropping3D(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
@@ -43,25 +43,24 @@ public class KerasZeroPadding1D extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasZeroPadding1D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasCropping3D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        String paddingField = conf.getLAYER_FIELD_ZERO_PADDING();
-
-        ZeroPadding1DLayer.Builder builder = new ZeroPadding1DLayer.Builder(
-                getPaddingFromConfig(layerConfig, conf, paddingField, 1))
+        String croppingField = conf.getLAYER_FIELD_CROPPING();
+        int[] cropping = getPaddingFromConfig(layerConfig, conf, croppingField, 3);
+        Cropping3D.Builder builder = new Cropping3D.Builder(cropping)
                 .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;
     }
 
     /**
-     * Get DL4J ZeroPadding1DLayer.
+     * Get DL4J Cropping3D layer.
      *
-     * @return ZeroPadding1DLayer
+     * @return Cropping3D layer
      */
-    public ZeroPadding1DLayer getZeroPadding1DLayer() {
-        return (ZeroPadding1DLayer) this.layer;
+    public Cropping3D getCropping3DLayer() {
+        return (Cropping3D) this.layer;
     }
 
     /**
@@ -75,7 +74,7 @@ public class KerasZeroPadding1D extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras ZeroPadding layer accepts only one input (received " + inputType.length + ")");
-        return this.getZeroPadding1DLayer().getOutputType(-1, inputType[0]);
+                    "Keras Cropping 3D layer accepts only one input (received " + inputType.length + ")");
+        return this.getCropping3DLayer().getOutputType(-1, inputType[0]);
     }
 }

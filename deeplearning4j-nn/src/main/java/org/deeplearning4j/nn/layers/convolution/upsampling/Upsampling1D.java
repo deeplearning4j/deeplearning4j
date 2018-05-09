@@ -61,10 +61,10 @@ public class Upsampling1D extends Upsampling2D {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        int size = ((BaseUpsamplingLayer) layerConf()).getSize();
+        int[] size = ((BaseUpsamplingLayer) layerConf()).getSize();
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
         // we replicate the error term times "size" so that backprop works properly on it
-        epsilon = epsilon.repeat(3, size);
+        epsilon = epsilon.repeat(3, size[0]);
 
         INDArray originalInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
@@ -78,14 +78,11 @@ public class Upsampling1D extends Upsampling2D {
         INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
 
-        INDArray forwardOutput  = preOutput(true, true, LayerWorkspaceMgr.noWorkspaces());
-        forwardOutput = forwardOutput.reshape(
-                forwardOutput.size(0), forwardOutput.size(1), forwardOutput.size(2), 1);
-        forwardOutput = forwardOutput.repeat(3, size);
+        int[] intArgs = new int[] {1}; // 1 is for NCHW
 
         CustomOp op = DynamicCustomOp.builder("upsampling_bp")
-                .addIntegerArguments(size)
-                .addInputs(forwardOutput, epsilon)
+                .addIntegerArguments(intArgs)
+                .addInputs(input, epsilon)
                 .addOutputs(reshapedEpsilon)
                 .callInplace(false)
                 .build();
@@ -97,11 +94,11 @@ public class Upsampling1D extends Upsampling2D {
         input = originalInput;
 
         // Since we aggregate the gradient across "size" slices, we need to normalize afterwards.
-        return new Pair<>(gradient, reshapedEpsilon.divi(size));
+        return new Pair<>(gradient, reshapedEpsilon.divi(size[0]));
     }
 
     @Override
-    protected int getSize(){
+    protected int[] getSize(){
         return ((org.deeplearning4j.nn.conf.layers.Upsampling1D)conf.getLayer()).getSize();
     }
 

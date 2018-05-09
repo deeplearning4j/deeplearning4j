@@ -48,7 +48,7 @@ public class KerasZeroPadding1DTest {
 
     private void buildZeroPadding1DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_ZERO_PADDING_1D());
         Map<String, Object> config = new HashMap<>();
         String layerName = "zero_padding_1D_layer";
         config.put(conf.getLAYER_FIELD_NAME(), layerName);

@@ -17,11 +17,13 @@
  */
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
-import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasZeroPadding2D;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasCropping2D;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasCropping3D;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -33,60 +35,62 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Max Pumperla
  */
-public class KerasZeroPadding2DTest {
+public class KerasCropping3DTest {
 
-    private final String LAYER_NAME = "zero_padding_2D_layer";
-    private final int[] ZERO_PADDING = new int[]{2, 3};
+    private final String LAYER_NAME = "cropping_3D_layer";
+    private final int[] CROPPING = new int[]{2, 3, 5};
 
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testZeroPadding2DLayer() throws Exception {
+    public void testCropping3DLayer() throws Exception {
         Integer keras1 = 1;
-        buildZeroPadding2DLayer(conf1, keras1);
+        buildCropping3DLayer(conf1, keras1);
         Integer keras2 = 2;
-        buildZeroPadding2DLayer(conf2, keras2);
-        buildZeroPaddingSingleDim2DLayer(conf1, keras1);
-        buildZeroPaddingSingleDim2DLayer(conf2, keras2);
+        buildCropping3DLayer(conf2, keras2);
+        buildCroppingSingleDim3DLayer(conf1, keras1);
+        buildCroppingSingleDim3DLayer(conf2, keras2);
     }
 
 
-    private void buildZeroPadding2DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
+    private void buildCropping3DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
             throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_ZERO_PADDING_2D());
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CROPPING_3D());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         ArrayList padding = new ArrayList<Integer>() {{
-            for (int i : ZERO_PADDING) add(i);
+            for (int i : CROPPING) add(i);
         }};
-        config.put(conf.getLAYER_FIELD_ZERO_PADDING(), padding);
+        config.put(conf.getLAYER_FIELD_CROPPING(), padding);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        ZeroPaddingLayer layer = new KerasZeroPadding2D(layerConfig).getZeroPadding2DLayer();
+        Cropping3D layer = new KerasCropping3D(layerConfig).getCropping3DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
-        assertEquals(ZERO_PADDING[0], layer.getPadding()[0]);
-        assertEquals(ZERO_PADDING[0], layer.getPadding()[1]);
-        assertEquals(ZERO_PADDING[1], layer.getPadding()[2]);
-        assertEquals(ZERO_PADDING[1], layer.getPadding()[3]);
+        assertEquals(CROPPING[0], layer.getCropping()[0]);
+        assertEquals(CROPPING[0], layer.getCropping()[1]);
+        assertEquals(CROPPING[1], layer.getCropping()[2]);
+        assertEquals(CROPPING[1], layer.getCropping()[3]);
+        assertEquals(CROPPING[2], layer.getCropping()[4]);
+        assertEquals(CROPPING[2], layer.getCropping()[5]);
 
     }
 
-    private void buildZeroPaddingSingleDim2DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
+    private void buildCroppingSingleDim3DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
             throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_ZERO_PADDING_2D());
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CROPPING_3D());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        config.put(conf.getLAYER_FIELD_ZERO_PADDING(), ZERO_PADDING[0]);
+        config.put(conf.getLAYER_FIELD_CROPPING(), CROPPING[0]);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        ZeroPaddingLayer layer = new KerasZeroPadding2D(layerConfig).getZeroPadding2DLayer();
+        Cropping3D layer = new KerasCropping3D(layerConfig).getCropping3DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
-        assertEquals(ZERO_PADDING[0], layer.getPadding()[0]);
-        assertEquals(ZERO_PADDING[0], layer.getPadding()[1]);
+        assertEquals(CROPPING[0], layer.getCropping()[0]);
+        assertEquals(CROPPING[0], layer.getCropping()[1]);
     }
 }

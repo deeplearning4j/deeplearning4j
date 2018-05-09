@@ -25,38 +25,36 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
-
 
 import java.util.Arrays;
 
 
 /**
- * 2D Upsampling layer.
+ * 3D Upsampling layer.
  * <p>
- * Used for upsampling a 2D convolution
+ * Used for upsampling a 3D convolution
  *
  * @author Max Pumperla
  */
 @Slf4j
-public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layers.Upsampling2D> {
+public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layers.Upsampling3D> {
 
 
-    public Upsampling2D(NeuralNetConfiguration conf) {
+    public Upsampling3D(NeuralNetConfiguration conf) {
         super(conf);
     }
 
-    public Upsampling2D(NeuralNetConfiguration conf, INDArray input) {
+    public Upsampling3D(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
 
@@ -81,19 +79,22 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
+        // Assumes NCDHW order
         int miniBatch = input.size(0);
-        int inDepth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        int inChannels = input.size(1);
+        int inD = input.size(2);
+        int inH = input.size(3);
+        int inW = input.size(4);
 
-        INDArray reshapedEpsilon =  workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
+        int[] intArgs = new int[] {1}; // 1 is channels first
+
+        INDArray reshapedEpsilon = workspaceMgr.createUninitialized(
+                ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inChannels, inD, inH, inW}, 'c');
+
 
         Gradient gradient = new DefaultGradient();
 
-        int[] intArgs = new int[] {1}; // 1 is for NCHW
-
-
-        CustomOp op = DynamicCustomOp.builder("upsampling_bp")
+        CustomOp op = DynamicCustomOp.builder("upsampling3d_bp")
                 .addIntegerArguments(intArgs)
                 .addInputs(input, epsilon)
                 .addOutputs(reshapedEpsilon)
@@ -104,7 +105,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         return new Pair<>(gradient, reshapedEpsilon);
     }
 
-    protected int[] getSize(){
+    protected int[] getSize() {
         return layerConf().getSize();
     }
 
@@ -112,10 +113,11 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         assertInputSet(false);
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        if (input.rank() != 4) {
+        if (input.rank() != 5) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                    + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
-                    + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
+                    + " array as input to Upsampling3DLayer with shape " + Arrays.toString(input.shape())
+                    + ". Expected rank 5 array with shape "
+                    + "[minibatchSize, channels, inputDepth, inputHeight, inputWidth]. "
                     + layerId());
         }
 
@@ -124,19 +126,23 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         }
 
         int miniBatch = input.size(0);
-        int inDepth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        int inChannels = input.size(1);
+        int inD = input.size(2);
+        int inH = input.size(3);
+        int inW = input.size(4);
 
         int[] size = getSize();
-        int outH = inH * size[0];
-        int outW = inW * size[1];
+        int outD = inD * size[0];
+        int outH = inH * size[1];
+        int outW = inW * size[2];
 
-        INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[]{miniBatch, inDepth, outH, outW}, 'c');
+        int[] intArgs = new int[] {size[0], size[1], size[2], 1}; // 1 is channels first
 
-        int[] intArgs = new int[] {size[0], size[1], 1}; // 1 is for NCHW
+        INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
+                new int[]{miniBatch, inChannels, outD, outH, outW}, 'c');
 
-        CustomOp upsampling = DynamicCustomOp.builder("upsampling2d")
+
+        CustomOp upsampling = DynamicCustomOp.builder("upsampling3d")
                 .addIntegerArguments(intArgs)
                 .addInputs(input)
                 .addOutputs(reshapedOutput)
@@ -158,7 +164,8 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         INDArray z = preOutput(training, false, workspaceMgr);
 
         // we do cache only if cache workspace exists. Skip otherwise
-        if (training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE) && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE)) {
+        if (training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE)
+                && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE)) {
             try (MemoryWorkspace wsB = workspaceMgr.notifyScopeBorrowed(ArrayType.FF_CACHE)) {
                 preOutput = z.unsafeDuplication();
             }
@@ -173,7 +180,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Layer clone() {
-        return new Upsampling2D(conf.clone());
+        return new Upsampling3D(conf.clone());
     }
 
     @Override

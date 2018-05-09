@@ -85,33 +85,33 @@ public class InputTypeUtil {
         }
 
         InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
+        int inDepth = i.getDepth();
         int inHeight = i.getHeight();
         int inWidth = i.getWidth();
-        int inDepth = i.getDepth();
 
-        int padH = (padding == null ? 0 : padding[0]);
-        int padW = (padding == null ? 0 : padding[1]);
-        int padD = (padding == null ? 0 : padding[2]);
+        int padD = (padding == null ? 0 : padding[0]);
+        int padH = (padding == null ? 0 : padding[1]);
+        int padW = (padding == null ? 0 : padding[2]);
 
-        int kH = kernelSize[0];
-        int kW = kernelSize[1];
-        int kD = kernelSize[2];
+        int kD = kernelSize[0];
+        int kH = kernelSize[1];
+        int kW = kernelSize[2];
 
 
         if(dilation[0] != 1){
             //Use *effective* kernel size, accounting for dilation
-            kH = kH + (kH-1)*(dilation[0]-1);
+            kD = kD + (kD-1)*(dilation[0]-1);
         }
         if(dilation[1] != 1){
-            kW = kW + (kW-1)*(dilation[1]-1);
+            kH = kH + (kH-1)*(dilation[1]-1);
         }
         if(dilation[2] != 1){
-            kD = kD + (kD-1)*(dilation[2]-1);
+            kW = kW + (kW-1)*(dilation[2]-1);
         }
 
-        int sH = stride[0];
+        int sD = stride[0];
+        int sH = stride[1];
         int sW = stride[1];
-        int sD = stride[1];
 
         if (sH <= 0 || sW <= 0 || sD <= 0) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, sH <= 0)
@@ -195,17 +195,17 @@ public class InputTypeUtil {
             }
         } else if (convolutionMode == ConvolutionMode.Same) {
 
+            int outD = (int) Math.ceil(inDepth / ((double) sD));
             int outH = (int) Math.ceil(inHeight / ((double) sH));
             int outW = (int) Math.ceil(inWidth / ((double) sW));
-            int outD = (int) Math.ceil(inDepth / ((double) sD));
 
-            return InputType.convolutional3D(outH, outW, outD, outputChannels);
+            return InputType.convolutional3D(outD, outH, outW, outputChannels);
         }
 
+        int dOut = (inDepth - kD + 2 * padD) / sD + 1;
         int hOut = (inHeight - kH + 2 * padH) / sH + 1;
         int wOut = (inWidth - kW + 2 * padW) / sW + 1;
-        int dOut = (inDepth - kD + 2 * padD) / sD + 1;
-        return InputType.convolutional3D(hOut, wOut, dOut, outputChannels);
+        return InputType.convolutional3D(dOut, hOut, wOut, outputChannels);
     }
 
 
