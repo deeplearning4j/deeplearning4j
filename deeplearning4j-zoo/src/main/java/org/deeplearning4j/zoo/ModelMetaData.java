@@ -6,6 +6,8 @@ import lombok.Getter;
 /**
  * Metadata describing a model, including input shapes. This is helpful for instantiating
  * the model programmatically and ensuring appropriate inputs are used.
+ *
+ * @deprecated As of May 10, 2018. Will be removed in v1.1. Getters are now available on the inputShape from the ZooModel implementation.
  */
 @Getter
 @AllArgsConstructor

@@ -70,8 +70,7 @@ public class AlexNet extends ZooModel {
         double nonZeroBias = 1;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
-                        .weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0.0, 0.01))
+                        .weightInit(new NormalDistribution(0.0, 0.01))
                         .activation(Activation.RELU)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(updater)
