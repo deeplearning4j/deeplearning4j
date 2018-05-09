@@ -92,6 +92,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     //What to output from the precision/recall function when we encounter an edge case
     protected static final double DEFAULT_EDGE_VALUE = 0.0;
 
+    protected static final int CONFUSION_PRINT_MAX_CLASSES = 20;
+
     protected Integer binaryPositiveClass = 1;  //Used *only* for binary classification; default value here to 1 for legacy JSON loading
     protected final int topN;
     protected int topNCorrectCount = 0;
@@ -579,6 +581,21 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return A (multi-line) String with accuracy, precision, recall, f1 score etc
      */
     public String stats(boolean suppressWarnings) {
+        return stats(suppressWarnings, numClasses() <= CONFUSION_PRINT_MAX_CLASSES, numClasses() > CONFUSION_PRINT_MAX_CLASSES);
+    }
+
+    /**
+     * Method to obtain the classification report as a String
+     *
+     * @param suppressWarnings whether or not to output warnings related to the evaluation results
+     * @param includeConfusion whether the confusion matrix should be included it the returned stats or not
+     * @return A (multi-line) String with accuracy, precision, recall, f1 score etc
+     */
+    public String stats(boolean suppressWarnings, boolean includeConfusion){
+        return stats(suppressWarnings, includeConfusion, false);
+    }
+
+    private String stats(boolean suppressWarnings, boolean includeConfusion, boolean logConfusionSizeWarning){
         String actual, predicted;
         StringBuilder builder = new StringBuilder().append("\n");
         StringBuilder warnings = new StringBuilder();
@@ -591,17 +608,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         List<Integer> falsePositivesWarningClasses = new ArrayList<>();
         List<Integer> falseNegativesWarningClasses = new ArrayList<>();
         for (Integer clazz : classes) {
-            actual = resolveLabelForClass(clazz);
-            //Output confusion matrix
-            for (Integer clazz2 : classes) {
-                int count = confusion().getCount(clazz, clazz2);
-                if (count != 0) {
-                    predicted = resolveLabelForClass(clazz2);
-                    builder.append(String.format("Predictions labeled as %s classified by model as %s: %d times%n", actual,
-                                    predicted, count));
-                }
-            }
-
             //Output possible warnings regarding precision/recall calculation
             if (!suppressWarnings && truePositives.getCount(clazz) == 0) {
                 if (falsePositives.getCount(clazz) == 0) {
@@ -612,6 +618,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 }
             }
         }
+
         if (!falsePositivesWarningClasses.isEmpty()) {
             warningHelper(warnings, falsePositivesWarningClasses, "precision");
         }
@@ -619,16 +626,13 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             warningHelper(warnings, falseNegativesWarningClasses, "recall");
         }
 
-        builder.append("\n");
-        builder.append(warnings);
-
         int nClasses = confusion.getClasses().size();
         DecimalFormat df = new DecimalFormat("0.0000");
         double acc = accuracy();
         double precisionMacro = precision(EvaluationAveraging.Macro);
         double recallMacro = recall(EvaluationAveraging.Macro);
         double f1Macro = f1(EvaluationAveraging.Macro);
-        builder.append("\n==========================Scores========================================");
+        builder.append("\n========================Evaluation Metrics========================");
         builder.append("\n # of classes:    ").append(nClasses);
         builder.append("\n Accuracy:        ").append(format(df, acc));
         if (topN > 1) {
@@ -679,8 +683,71 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         //Note that we could report micro-averaged too - but these are the same as accuracy
         //"Note that for “micro”-averaging in a multiclass setting with all labels included will produce equal precision, recall and F,"
         //http://scikit-learn.org/stable/modules/model_evaluation.html
-        builder.append("\n========================================================================");
+
+        builder.append("\n\n");
+        builder.append(warnings);
+
+        if(includeConfusion){
+            builder.append("\n=========================Confusion Matrix=========================\n");
+            builder.append(confusionMatrix());
+        } else if(logConfusionSizeWarning){
+            builder.append("\n\nNote: Confusion matrix not generated due to space requirements for ")
+                    .append(nClasses).append(" classes.\n")
+                    .append("Use stats(false,true) to generate anyway");
+        }
+
+        builder.append("\n==================================================================");
         return builder.toString();
+    }
+
+    /**
+     * Get the confusion matrix as a String
+     * @return Confusion matrix as a String
+     */
+    public String confusionMatrix(){
+        int nClasses = numClasses();
+
+        //First: work out the maximum count
+        List<Integer> classes = confusion.getClasses();
+        int maxCount = 1;
+        for (Integer i : classes) {
+            for (Integer j : classes) {
+                int count = confusion().getCount(i, j);
+                maxCount = Math.max(maxCount, count);
+            }
+        }
+        maxCount = Math.max(maxCount, nClasses);    //Include this as header might be bigger than actual values
+
+        int numDigits = (int)Math.ceil(Math.log10(maxCount));
+        if(numDigits < 1)
+            numDigits = 1;
+        String digitFormat = "%" + (numDigits+1) + "d";
+
+        StringBuilder sb = new StringBuilder();
+        //Build header:
+        for( int i=0; i<nClasses; i++ ){
+            sb.append(String.format(digitFormat, i));
+        }
+        sb.append("\n");
+        int numDividerChars = (numDigits+1) * nClasses + 1;
+        for( int i=0; i<numDividerChars; i++ ){
+            sb.append("-");
+        }
+        sb.append("\n");
+
+        //Build each row:
+        for( int actual=0; actual<nClasses; actual++){
+            String actualName = resolveLabelForClass(actual);
+            for( int predicted=0; predicted<nClasses; predicted++){
+                int count = confusion.getCount(actual, predicted);
+                sb.append(String.format(digitFormat, count));
+            }
+            sb.append(" | ").append(actual).append(" = ").append(actualName).append("\n");
+        }
+
+        sb.append("\nConfusion matrix format: Actual (rowClass) predicted as (columnClass) N times");
+
+        return sb.toString();
     }
 
     private static String format(DecimalFormat f, double num) {
