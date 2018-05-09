@@ -29,7 +29,7 @@ public class NesterovsSpace extends BaseUpdaterSpace {
     public NesterovsSpace(@JsonProperty("learningRate") ParameterSpace<Double> learningRate,
                           @JsonProperty("learningRateSchedule") ParameterSpace<ISchedule> learningRateSchedule,
                           @JsonProperty("momentum") ParameterSpace<Double> momentum,
-                          @JsonProperty("learningRateSchedule") ParameterSpace<ISchedule> momentumSchedule){
+                          @JsonProperty("momentumSchedule") ParameterSpace<ISchedule> momentumSchedule) {
         this.learningRate = learningRate;
         this.learningRateSchedule = learningRateSchedule;
         this.momentum = momentum;
