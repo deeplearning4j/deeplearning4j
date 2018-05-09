@@ -1,5 +1,7 @@
 package org.deeplearning4j.arbiter.ui.listener;
 
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.Persistable;
@@ -13,8 +15,6 @@ import org.deeplearning4j.arbiter.ui.data.ModelInfoPersistable;
 import org.deeplearning4j.arbiter.ui.misc.JsonMapper;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.eclipse.collections.impl.list.mutable.primitive.FloatArrayList;
-import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
@@ -164,7 +164,7 @@ public class ArbiterStatusListener implements StatusListener {
         }
 
 
-        int[] iters = iter.toArray();
+        int[] iters = iter.toIntArray();
         float[] fScores = new float[iters.length];
         for( int i=0; i<iters.length; i++ ){
             fScores[i] = scores.get(i);
