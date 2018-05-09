@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.distribution.TruncatedNormalDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -163,7 +164,7 @@ public class ResNet50 extends ZooModel {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(updater)
                         .weightInit(weightInit)
-                        .dist(new NormalDistribution(0.0, 0.5))
+                        .dist(new TruncatedNormalDistribution(0.0, 0.5))
                         .l1(1e-7)
                         .l2(5e-5)
                         .miniBatch(true)
