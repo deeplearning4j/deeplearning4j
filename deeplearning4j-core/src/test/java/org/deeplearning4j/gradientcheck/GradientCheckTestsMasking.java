@@ -377,7 +377,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
                 gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
-                                new INDArray[] {features}, new INDArray[] {labels}, null, new INDArray[]{labelMask});
+                                new INDArray[] {features}, new INDArray[] {labels}, null, new INDArray[]{labelMask}, null);
 
                 assertTrue(msg + " (compgraph)", gradOK);
             }
