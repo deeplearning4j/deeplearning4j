@@ -707,6 +707,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     public String confusionMatrix(){
         int nClasses = numClasses();
 
+        if(confusion == null){
+            return "Confusion matrix: <no data>";
+        }
+
         //First: work out the maximum count
         List<Integer> classes = confusion.getClasses();
         int maxCount = 1;
