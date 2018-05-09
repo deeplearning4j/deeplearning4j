@@ -30,14 +30,14 @@ public class TestInstantiation {
 
     @Test
     public void testMultipleCnnTraining() throws Exception {
-        int numClasses = 10;
         ZooModel[] models = new ZooModel[]{
-                Darknet19.builder().numClasses(numClasses).build(),
-                TinyYOLO.builder().numClasses(numClasses).build(),
-                YOLO2.builder().numClasses(numClasses).build()
+                Darknet19.builder().numClasses(10).build(),
+                TinyYOLO.builder().numClasses(10).build(),
+                YOLO2.builder().numClasses(10).build()
         };
 
         for(int i = 0; i < models.length; i++) {
+            int numClasses = 10;
             ZooModel model = models[i];
             String modelName = model.getClass().getSimpleName();
             log.info("Testing training on zoo model " + modelName);
