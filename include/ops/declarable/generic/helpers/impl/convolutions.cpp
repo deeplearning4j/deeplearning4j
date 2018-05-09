@@ -1643,19 +1643,19 @@ void ConvolutionUtils<T>::col2vol(NDArray<T>& columns, NDArray<T>& volume, const
                                             volCol = volColStart;
                                             vol2 = vol1 + volRow * volStride3;
 
-                                            // if(kDep == -pD &&  kRow == -pH && kCol == -pW) {        // first pass, nullify all columns elemets
-                                            //     for (int colCol = 0; colCol < oW; ++colCol, volCol+=sW,  col0+=colStride7)
-                                            //         if (static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) 
-                                            //             *(vol2 + volCol * volStride4) = *col0;                                                        
-                                            // }
-                                            // else {
+                                            if(kDep == -pD &&  kRow == -pH && kCol == -pW) {        // first pass, nullify all columns elemets
+                                                for (int colCol = 0; colCol < oW; ++colCol, volCol+=sW,  col0+=colStride7)
+                                                    if (static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) 
+                                                        *(vol2 + volCol * volStride4) = *col0;                                                        
+                                            }
+                                            else {
                                                 for (int colCol = 0; colCol < oW; ++colCol, volCol+=sW,  col0+=colStride7) {
                                                     if (static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) {
                                                         vol3 = vol2 + volCol * volStride4;
                                                         *vol3 += *col0;
                                                     }
                                                 }
-                                            // }
+                                            }
                                         }
                                     }
                                 }
@@ -1670,7 +1670,7 @@ void ConvolutionUtils<T>::col2vol(NDArray<T>& columns, NDArray<T>& volume, const
         const int col5End = oH * colStride6;
         const int col6End = oW * colStride7;
         T *vol0, *col1, *col2, *col3, *col4, *col5, *col6;
-#pragma omp parallel for if(bS > Environment::getInstance()->elementwiseThreshold()) schedule(static) proc_bind(close) private(vol0, vol1, vol2, col0, col1, col2, col3, col4, col5, col6, volDepStart, volRowStart, volColStart, volDep, volRow, volCol)
+#pragma omp parallel for if(bS > Environment::getInstance()->elementwiseThreshold()) schedule(static) proc_bind(close) private(vol1, vol2, col0, col1, col2, col3, col4, col5, col6, volDepStart, volRowStart, volColStart, volDep, volRow, volCol)
           for (int b = 0; b < bS; b++) {            
             col0 = col + (b * colStride0);     
             T *vol0 = vol + (b * volStride0);                   
@@ -1711,19 +1711,19 @@ void ConvolutionUtils<T>::col2vol(NDArray<T>& columns, NDArray<T>& volume, const
                                             volCol = volColStart;    
                                             vol2 = vol1 + volRow * volStride3;
 
-                                            // if(kDep == -pD &&  kRow == -pH && kCol == -pW) {        // first pass, nullify all columns elemets
-                                            //     for (int colCol = 0; colCol < oW; ++colCol, volCol+=sW, col6+=colStride7)
-                                            //         if (static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) 
-                                            //             *(vol2 + volCol * volStride4) = *col6;
-                                            // }
-                                            // else {
+                                            if(kDep == -pD &&  kRow == -pH && kCol == -pW) {        // first pass, nullify all columns elemets
+                                                for (int colCol = 0; colCol < oW; ++colCol, volCol+=sW, col6+=colStride7)
+                                                    if (static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) 
+                                                        *(vol2 + volCol * volStride4) = *col6;
+                                            }
+                                            else {
                                                 for (int colCol = 0; colCol < oW; ++colCol, volCol+=sW, col6+=colStride7) {
                                                     if (static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) {
                                                         vol3 = vol2 + volCol * volStride4;
                                                         *vol3 += *col6;   
                                                     }
                                                 }
-                                            // }
+                                            }
                                         }        
                                     }
                                 }
