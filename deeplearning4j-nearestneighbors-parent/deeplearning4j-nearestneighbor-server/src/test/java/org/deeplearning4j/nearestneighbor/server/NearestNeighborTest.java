@@ -5,10 +5,9 @@ import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
 import org.deeplearning4j.nearestneighbor.client.NearestNeighborsClient;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
-import org.deeplearning4j.nearestneighbor.model.NearstNeighborsResults;
+import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResults;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.binary.BinarySerde;
 
@@ -77,7 +76,7 @@ public class NearestNeighborTest {
                 String.valueOf(localPort));
 
         NearestNeighborsClient client = new NearestNeighborsClient("http://localhost:" + localPort);
-        NearstNeighborsResults result = client.knnNew(5, rand.getRow(0));
+        NearestNeighborsResults result = client.knnNew(5, rand.getRow(0));
         assertEquals(5, result.getResults().size());
         server.stop();
     }
