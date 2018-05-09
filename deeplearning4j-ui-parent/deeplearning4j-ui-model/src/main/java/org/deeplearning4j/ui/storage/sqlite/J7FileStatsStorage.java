@@ -574,7 +574,7 @@ public class J7FileStatsStorage implements StatsStorage {
             while (rs.next()) {
                 list.add(rs.getLong(1));
             }
-            return list.elements();
+            return list.toLongArray();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
