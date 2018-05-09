@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -37,6 +38,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * Weight distribution uses 0.1 std for all layers in the paper but 0.005 in the dense layers in the imagenetExample code
  *
  */
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class AlexNet extends ZooModel {
@@ -45,7 +47,7 @@ public class AlexNet extends ZooModel {
     @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
     private int numClasses;
     @Builder.Default private IUpdater updater = new Nesterovs(1e-2, 0.9);
-    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
@@ -68,8 +70,7 @@ public class AlexNet extends ZooModel {
         double nonZeroBias = 1;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
-                        .weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0.0, 0.01))
+                        .weightInit(new NormalDistribution(0.0, 0.01))
                         .activation(Activation.RELU)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(updater)

@@ -61,7 +61,7 @@ public abstract class BaseLabels implements Labels {
     public List<List<ClassPrediction>> decodePredictions(INDArray predictions, int n) {
         int rows = predictions.size(0);
         int cols = predictions.size(1);
-        if (predictions.isColumnVector()) {
+        if (predictions.isColumnVectorOrScalar()) {
             predictions = predictions.ravel();
             rows = predictions.size(0);
             cols = predictions.size(1);

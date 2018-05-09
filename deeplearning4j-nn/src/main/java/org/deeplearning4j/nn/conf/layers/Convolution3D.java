@@ -9,7 +9,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.layers.convolution.Convolution3DLayer;
 import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.base.Preconditions;
@@ -69,7 +69,7 @@ public class Convolution3D extends ConvolutionLayer {
     }
 
     @Override
-    public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+    public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> iterationListeners,
                              int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("Convolution3D", getLayerName(), layerIndex, getNIn(), getNOut());
 

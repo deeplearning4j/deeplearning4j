@@ -11,7 +11,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.junit.Test;
@@ -109,7 +110,7 @@ public class TestListeners {
         assertEquals(2, ss.listWorkerIDsForSession(ss.listSessionIDs().get(0)).size());
     }
 
-    private static void testListenersForModel(Model model, List<IterationListener> listeners) {
+    private static void testListenersForModel(Model model, List<TrainingListener> listeners) {
 
         int nWorkers = 2;
         ParallelWrapper wrapper = new ParallelWrapper.Builder(model).workers(nWorkers).averagingFrequency(1)
@@ -136,7 +137,7 @@ public class TestListeners {
     }
 
 
-    private static class TestListener implements RoutingIterationListener {
+    private static class TestListener extends BaseTrainingListener implements RoutingIterationListener {
 
         private static final AtomicInteger forwardPassCount = new AtomicInteger();
         private static final AtomicInteger backwardPassCount = new AtomicInteger();

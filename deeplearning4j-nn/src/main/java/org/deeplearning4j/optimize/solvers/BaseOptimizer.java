@@ -31,7 +31,11 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
-import org.deeplearning4j.optimize.api.*;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.api.TerminationCondition;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
@@ -41,7 +45,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +61,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
     @Getter
     protected StepFunction stepFunction;
-    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
+    protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
     protected Collection<TerminationCondition> terminationConditions = new ArrayList<>();
     protected Model model;
     protected BackTrackLineSearch lineMaximizer;
@@ -81,12 +84,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      *
      * @param conf
      * @param stepFunction
-     * @param iterationListeners
+     * @param trainingListeners
      * @param model
      */
     public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners, Model model) {
-        this(conf, stepFunction, iterationListeners, Arrays.asList(new ZeroDirection(), new EpsTermination()), model);
+                    Collection<TrainingListener> trainingListeners, Model model) {
+        this(conf, stepFunction, trainingListeners, Arrays.asList(new ZeroDirection(), new EpsTermination()), model);
     }
 
 
@@ -94,16 +97,16 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      *
      * @param conf
      * @param stepFunction
-     * @param iterationListeners
+     * @param trainingListeners
      * @param terminationConditions
      * @param model
      */
     public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<IterationListener> iterationListeners,
+                    Collection<TrainingListener> trainingListeners,
                     Collection<TerminationCondition> terminationConditions, Model model) {
         this.conf = conf;
         this.stepFunction = (stepFunction != null ? stepFunction : getDefaultStepFunctionForOptimizer(this.getClass()));
-        this.iterationListeners = iterationListeners != null ? iterationListeners : new ArrayList<IterationListener>();
+        this.trainingListeners = trainingListeners != null ? trainingListeners : new ArrayList<TrainingListener>();
         this.terminationConditions = terminationConditions;
         this.model = model;
         lineMaximizer = new BackTrackLineSearch(model, this.stepFunction, this);
@@ -157,11 +160,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<TrainingListener> listeners) {
         if (listeners == null)
-            this.iterationListeners = Collections.emptyList();
+            this.trainingListeners = Collections.emptyList();
         else
-            this.iterationListeners = listeners;
+            this.trainingListeners = listeners;
     }
 
     @Override
@@ -174,12 +177,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         oldScore = score;
         model.computeGradientAndScore(workspaceMgr);
 
-        if (iterationListeners != null && !iterationListeners.isEmpty()) {
+        if (trainingListeners != null && !trainingListeners.isEmpty()) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (IterationListener l : iterationListeners) {
-                    if (l instanceof TrainingListener) {
-                        ((TrainingListener) l).onGradientCalculation(model);
-                    }
+                for (TrainingListener l : trainingListeners) {
+                    l.onGradientCalculation(model);
                 }
             }
         }
@@ -259,7 +260,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         int iterationCount = BaseOptimizer.getIterationCount(model);
         int epochCount = BaseOptimizer.getEpochCount(model);
         try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            for (IterationListener listener : iterationListeners)
+            for (TrainingListener listener : trainingListeners)
                 listener.iterationDone(model, iterationCount, epochCount);
         }
 

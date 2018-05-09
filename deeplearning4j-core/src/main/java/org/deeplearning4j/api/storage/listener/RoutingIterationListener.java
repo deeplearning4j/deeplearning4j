@@ -1,11 +1,12 @@
 package org.deeplearning4j.api.storage.listener;
 
 import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 
+import java.io.Serializable;
+
 /**
- * An extension of the {@link IterationListener} interface for those listeners that pass data off to a
+ * An extension of the {@link TrainingListener} interface for those listeners that pass data off to a
  * {@link org.deeplearning4j.api.storage.StatsStorageRouter} instance.
  * The most common use case here is in distributed training scenarios: each worker has a set of listeners, that have
  * to be serialized and transferred across the network, to some storage mechanism.<br>
@@ -14,7 +15,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
  *
  * @author Alex Black
  */
-public interface RoutingIterationListener extends TrainingListener, Cloneable {
+public interface RoutingIterationListener extends TrainingListener, Cloneable, Serializable {
 
     void setStorageRouter(StatsStorageRouter router);
 

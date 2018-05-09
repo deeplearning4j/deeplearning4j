@@ -29,7 +29,7 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializerHelper;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -115,8 +115,8 @@ public abstract class Layer implements Serializable, Cloneable {
     }
 
     public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                                Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
-                                                                boolean initializeParams);
+                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams);
 
     /**
      * @return The parameter initializer for this model

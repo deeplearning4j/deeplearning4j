@@ -13,7 +13,7 @@ import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
@@ -432,7 +432,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             try {
                 String sparkIp = InetAddress.getByName(System.getenv("SPARK_PUBLIC_DNS")).getHostAddress();
                 voidConfiguration.setControllerAddress(sparkIp);
-            } catch(UnknownHostException e) { }
+            } catch (UnknownHostException e) {
+            }
         }
 
         // next step - is to get ip address that matches specific network mask
@@ -607,12 +608,12 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<TrainingListener> listeners) {
         // optional stuff actually
     }
 
     @Override
-    public void setListeners(StatsStorageRouter router, Collection<IterationListener> listeners) {
+    public void setListeners(StatsStorageRouter router, Collection<TrainingListener> listeners) {
         // optional stuff actually
     }
 
@@ -1212,9 +1213,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach,
-                            storageLevel, true, repartitionStrategy, repartition, threshold, minThreshold,
-                            thresholdStep, stepTrigger, stepDelay, shakeFrequency, batchSize, debugLongerIterations,
-                            numWorkersPerNode);
+                            storageLevel, collectTrainingStats, repartitionStrategy, repartition, threshold,
+                            minThreshold, thresholdStep, stepTrigger, stepDelay, shakeFrequency, batchSize,
+                            debugLongerIterations, numWorkersPerNode);
             if (transport != null)
                 master.transport = this.transport;
 

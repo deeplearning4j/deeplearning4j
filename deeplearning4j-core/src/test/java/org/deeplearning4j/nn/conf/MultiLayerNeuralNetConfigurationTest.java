@@ -28,7 +28,6 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -39,7 +38,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.*;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Properties;
 
 import static org.junit.Assert.*;
@@ -229,13 +227,13 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testIterationListener() {
+    public void testTrainingListener() {
         MultiLayerNetwork model1 = new MultiLayerNetwork(getConf());
         model1.init();
-        model1.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(1)));
+        model1.addListeners( new ScoreIterationListener(1));
 
         MultiLayerNetwork model2 = new MultiLayerNetwork(getConf());
-        model2.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(1)));
+        model2.addListeners( new ScoreIterationListener(1));
         model2.init();
 
         Layer[] l1 = model1.getLayers();

@@ -15,8 +15,9 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.ConjugateGradient;
 import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.solvers.LineGradientDescent;
@@ -38,7 +39,6 @@ import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -360,7 +360,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setListeners(IterationListener... listeners) {
+        public void setListeners(TrainingListener... listeners) {
 
         }
 
@@ -554,7 +554,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setListeners(IterationListener... listeners) {
+        public void setListeners(TrainingListener... listeners) {
 
         }
 
@@ -757,7 +757,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setListeners(IterationListener... listeners) {
+        public void setListeners(TrainingListener... listeners) {
 
         }
 
@@ -804,7 +804,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void addListeners(IterationListener... listener) {
+        public void addListeners(TrainingListener... listener) {
             // no-op
         }
 
@@ -839,7 +839,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setListeners(IterationListener... listeners) {
+        public void setListeners(TrainingListener... listeners) {
 
         }
 
@@ -1000,12 +1000,12 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public Collection<IterationListener> getListeners() {
+        public Collection<TrainingListener> getListeners() {
             return null;
         }
 
         @Override
-        public void setListeners(Collection<IterationListener> listeners) {
+        public void setListeners(Collection<TrainingListener> listeners) {
             throw new UnsupportedOperationException();
         }
 

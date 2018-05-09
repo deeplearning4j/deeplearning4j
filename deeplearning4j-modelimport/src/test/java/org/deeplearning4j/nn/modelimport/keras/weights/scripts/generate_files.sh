@@ -24,6 +24,8 @@ KERAS_BACKEND=tensorflow python3 conv1d_flatten.py
 KERAS_BACKEND=theano python3 conv1d_flatten.py
 KERAS_BACKEND=tensorflow python3 embedding_conv1d_extended.py
 KERAS_BACKEND=theano python3 embedding_conv1d_extended.py
+KERAS_BACKEND=tensorflow python3 conv2d_reshape.py
+KERAS_BACKEND=theano python3 conv2d_reshape.py
 
 pip3 install keras==2.1.3
 
@@ -49,3 +51,5 @@ KERAS_BACKEND=tensorflow python3 conv1d_flatten.py
 KERAS_BACKEND=theano python3 conv1d_flatten.py
 KERAS_BACKEND=tensorflow python3 embedding_conv1d_extended.py
 KERAS_BACKEND=theano python3 embedding_conv1d_extended.py
+KERAS_BACKEND=tensorflow python3 conv2d_reshape.py
+KERAS_BACKEND=theano python3 conv2d_reshape.py

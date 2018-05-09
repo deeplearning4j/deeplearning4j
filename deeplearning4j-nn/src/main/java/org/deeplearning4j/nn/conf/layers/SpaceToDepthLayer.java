@@ -28,7 +28,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -77,12 +77,12 @@ public class SpaceToDepthLayer extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<IterationListener> iterationListeners,
+                                                       Collection<TrainingListener> trainingListeners,
                                                        int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.SpaceToDepth ret =
                 new org.deeplearning4j.nn.layers.convolution.SpaceToDepth(conf);
-        ret.setListeners(iterationListeners);
+        ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

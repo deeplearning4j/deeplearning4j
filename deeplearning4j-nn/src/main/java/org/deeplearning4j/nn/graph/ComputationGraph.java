@@ -18,9 +18,7 @@
 
 package org.deeplearning4j.nn.graph;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +35,7 @@ import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
+import org.deeplearning4j.nn.graph.util.GraphIndices;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
@@ -44,9 +43,10 @@ import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
@@ -54,7 +54,10 @@ import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.*;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
@@ -72,9 +75,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.util.DataSetUtils;
 import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
@@ -156,6 +156,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     protected int[] topologicalOrder;
     /**
+     * Topological sort and vertex index/name + name/index mapping
+     */
+    protected GraphIndices graphIndices;
+
+    /**
      * A list of layers. Each of these layers is present in a GraphVertex, but are here for easy reference.
      * This array also defines the order in which the getLayer(int) method returns layers.
      */
@@ -181,7 +186,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private transient int[] outputLayerIdxs;
 
     private NeuralNetConfiguration defaultConfiguration;
-    private Collection<IterationListener> listeners = new ArrayList<>();
     private Collection<TrainingListener> trainingListeners = new ArrayList<>();
 
 
@@ -432,7 +436,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 //        }
 
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
-        topologicalOrder = topologicalSortOrder();
+        GraphIndices indices = calculateIndices();
+        topologicalOrder = indices.getTopologicalSortOrder();
 
         //Initialization: create the GraphVertex objects, based on configuration structure
         Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
@@ -462,16 +467,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (; i < configuration.getNetworkInputs().size(); i++) {
             numParamsForVertex[i] = 0; //No parameters for input vertices
         }
-        for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
-            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
+        for(; i<topologicalOrder.length; i++ ){
+            String name = indices.getIdxToName().get(i);
+            org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
             numParamsForVertex[i] = n.numParams(true);
             numParams += numParamsForVertex[i];
-            i++;
         }
 
         boolean initializeParams;
         if (parameters != null) {
-            if (!parameters.isRowVector())
+            if (!parameters.isRowVectorOrScalar())
                 throw new IllegalArgumentException("Invalid parameters: should be a row vector");
             if (parameters.length() != numParams)
                 throw new IllegalArgumentException("Invalid parameters: expected length " + numParams + ", got length "
@@ -516,9 +521,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         List<Layer> tempLayerList = new ArrayList<>();
         defaultConfiguration.clearVariables();
         List<String> variables = defaultConfiguration.variables(false);
-        for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
-            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
-            String name = nodeEntry.getKey();
+        i = configuration.getNetworkInputs().size();
+        for(; i<topologicalOrder.length; i++ ){
+            String name = indices.getIdxToName().get(i);
+            org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
+
             GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
                     initializeParams);
 
@@ -543,7 +550,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             vertices[vertexNumber++] = gv;
         }
         layers = tempLayerList.toArray(new Layer[numLayers]);
-
 
         //Create the lookup table, so we can find vertices easily by name
         verticesMap = new HashMap<>();
@@ -659,6 +665,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             if (!initCalled)
                 init();
 
+            GraphIndices indices = calculateIndices();
+
             //Go through layers, and work out total number of parameters. Then allocate full parameters array
             int numParams = 0;
             int[] numParamsForVertex = new int[topologicalOrder.length];
@@ -667,12 +675,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 numParamsForVertex[i] = 0; //No parameters for input vertices
             }
             Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
-            for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap
-                    .entrySet()) {
-                org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
+            for (; i < topologicalOrder.length; i++) {
+                String name = indices.getIdxToName().get(i);
+                org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
                 numParamsForVertex[i] = n.numParams(true);
                 numParams += numParamsForVertex[i];
-                i++;
             }
 
             if(numParams > 0) {
@@ -1061,6 +1068,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         clearLayersStates();
     }
 
+
+
     /**
      * Calculate a topological sort order for the vertices in the graph.
      * Note that this is used for
@@ -1071,8 +1080,41 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Specifically, gradients/params/forward pass are executed on vertex[topologicalSortOrder[i]], for i=0..nVertices-1
      */
     public int[] topologicalSortOrder() {
-        if (topologicalOrder != null)
-            return topologicalOrder;
+        return calculateIndices().getTopologicalSortOrder();
+    }
+
+    /**
+     * Calculate the indices needed for the network:<br>
+     * (a) topological sort order<br>
+     * (b) Map: vertex index -> vertex name<br>
+     * (c) Map: vertex name -> vertex index<br>
+     *
+     * @return Calculated indices
+     */
+    public GraphIndices calculateIndices(){
+        if(graphIndices != null)
+            return graphIndices;
+
+
+        //Get cached topological sort order from config, if present
+        if(configuration.getTopologicalOrder() != null && configuration.getTopologicalOrderStr() != null){
+            int[] t = configuration.getTopologicalOrder();
+            List<String> s = configuration.getTopologicalOrderStr();
+            Map<String,Integer> m1 = new HashMap<>();
+            Map<Integer,String> m2 = new HashMap<>();
+            for( int i=0; i<t.length; i++ ){
+                m1.put(s.get(i), t[i]);
+                m2.put(t[i], s.get(i));
+            }
+
+            graphIndices = GraphIndices.builder()
+                    .topologicalSortOrder(t)
+                    .nameToIdx(m1)
+                    .idxToName(m2)
+                    .build();
+            return graphIndices;
+        }
+
 
         //https://en.wikipedia.org/wiki/Topological_sorting#Kahn.27s_algorithm
         Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeMap = configuration.getVertices();
@@ -1171,7 +1213,21 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 + "\")");
         }
 
-        return out;
+        //Store: the topological sort order in the configuraation... this is to ensure that when the config is
+        // deserialized, it has exactly the same topological sort order on all platforms
+        List<String> s = new ArrayList<>(out.length);
+        for( int idx : out){
+            s.add(vertexNamesMap.get(idx));
+        }
+        configuration.setTopologicalOrder(out);
+        configuration.setTopologicalOrderStr(s);
+
+        graphIndices = GraphIndices.builder()
+                .topologicalSortOrder(out)
+                .nameToIdx(vertexNamesMap2)
+                .idxToName(vertexNamesMap)
+                .build();
+        return graphIndices;
     }
 
     @Override
@@ -2109,9 +2165,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             //Close all open workspaces... usually this list will be empty, but not if an exception is thrown
             //Though if stopIndex < numLayers, some might still be open
             for(MemoryWorkspace ws : openActivationsWorkspaces.keySet()){
-                ws.close();
+                while (ws.isScopeActive()) {
+                    //Edge case here: seems that scoping out can increase the tagScope of the current WS
+                    //and if we hit an exception during forward pass, we aren't guaranteed to call close a sufficient
+                    // number of times to actually close it, in all cases
+                    ws.close();
+                }
             }
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
+
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at end of call to outputOfLayersDetached");
         }
 
         return outputs;
@@ -2209,8 +2272,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         try{
-            boolean hitFrozen = false;
             for(int i=topologicalOrder.length-1; i>= 0; i--){
+                boolean hitFrozen = false;
                 GraphVertex current = vertices[topologicalOrder[i]];
                 int vIdx = current.getVertexIndex();
                 String vertexName = current.getVertexName();
@@ -2407,7 +2470,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 cg.getUpdater().setStateViewArray(updaterState.dup());
             }
         }
-        cg.listeners = this.listeners;
+        cg.trainingListeners = this.trainingListeners;
         for (int i = 0; i < topologicalOrder.length; i++) {
             if (!vertices[topologicalOrder[i]].hasLayer())
                 continue;
@@ -2444,10 +2507,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      */
-    public void setListeners(Collection<IterationListener> listeners) {
-        this.listeners = listeners;
+    public void setListeners(Collection<TrainingListener> listeners) {
         if (layers == null)
             init();
 
@@ -2461,23 +2523,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         this.trainingListeners.clear();
         if (listeners != null) {
-            for (IterationListener il : listeners) {
-                if (il instanceof TrainingListener) {
-                    this.trainingListeners.add((TrainingListener) il);
-                }
-            }
+            this.trainingListeners.addAll(listeners);
         }
     }
 
     /**
-     * Set the IterationListeners for the ComputationGraph (and all layers in the network)
+     * Set the trainingListeners for the ComputationGraph (and all layers in the network)
      */
-    public void setListeners(IterationListener... listeners) {
-        List<IterationListener> list = new ArrayList<>();
+    public void setListeners(TrainingListener... listeners) {
+        List<TrainingListener> list = new ArrayList<>();
         //Check: user might have done setListeners(null) thinking this would clear the current listeners.
-        //This results in an IterationListener[1] with a single null value -> results in a NPE later
+        //This results in an TrainingListener[1] with a single null value -> results in a NPE later
         if (listeners != null && listeners.length > 0) {
-            for (IterationListener i : listeners) {
+            for (TrainingListener i : listeners) {
                 if (i != null)
                     list.add(i);
             }
@@ -2486,34 +2544,27 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * This method ADDS additional IterationListener to existing listeners
+     * This method ADDS additional TrainingListener to existing listeners
      *
      * @param listeners Listeners to add
      */
     @Override
-    public void addListeners(IterationListener... listeners) {
-        if (this.listeners == null) {
+    public void addListeners(TrainingListener... listeners) {
+        if (this.trainingListeners == null) {
             setListeners(listeners);
             return;
         }
 
-        for (IterationListener listener : listeners) {
-            this.listeners.add(listener);
-            if (listener instanceof TrainingListener) {
-                this.trainingListeners.add((TrainingListener) listener);
-            }
-        }
-
         if (solver != null) {
-            solver.setListeners(this.listeners);
+            solver.setListeners(this.trainingListeners);
         }
     }
 
     /**
-     * Get the IterationListeners for the ComputationGraph
+     * Get the trainingListeners for the ComputationGraph
      */
-    public Collection<IterationListener> getListeners() {
-        return listeners;
+    public Collection<TrainingListener> getListeners() {
+        return trainingListeners;
     }
 
     /**
@@ -2988,8 +3039,24 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void setParamTable(Map<String, INDArray> paramTable) {
-        throw new UnsupportedOperationException("Not implemented");
+    public void setParamTable(@NonNull Map<String, INDArray> paramTable) {
+        Preconditions.checkArgument(paramTable.keySet().equals(paramTable().keySet()), "Cannot set param table: parameter set keys are not equal");
+        Map<String,INDArray> current = paramTable();
+        //Check shapes before doing partial assigment to avoid leaving net in incorrect state
+        for(String s : current.keySet()){
+            INDArray arrCurrent = current.get(s);
+            INDArray arrNew = paramTable.get(s);
+            int[] shapeCurrent = arrCurrent.shape();
+            int[] shapeNew = arrNew.shape();
+            Preconditions.checkState(Arrays.equals(shapeCurrent, shapeNew), "Cannot set parameters: shape array for " +
+                    "parameter \"%s\" does not match existing shape: parameter shape = %s, new param shape = %s", s, shapeCurrent, arrNew);
+        }
+
+        for(String s : current.keySet()) {
+            INDArray arrCurrent = current.get(s);
+            INDArray arrNew = paramTable.get(s);
+            arrCurrent.assign(arrNew);
+        }
     }
 
     @Override
@@ -4006,7 +4073,26 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Return the layer size (number of units) for the specified layer.
+     * Return the input size (number of inputs) for the specified layer.<br>
+     * Note that the meaning of the "input size" can depend on the type of layer. For example:<br>
+     * - DenseLayer, OutputLayer, etc: the feature vector size (nIn configuration option)<br>
+     * - Recurrent layers: the feature vector size <i>per time step</i> (nIn configuration option)<br>
+     * - ConvolutionLayer: the channels (number of channels)<br>
+     * - Subsampling layers, global pooling layers, etc: size of 0 is always returned<br>
+     *
+     * @param layer Index of the layer to get the size of. Must be in range 0 to nLayers-1 inclusive
+     * @return Size of the layer
+     */
+    public int layerInputSize(int layer) {
+        if (layer < 0 || layer > layers.length) {
+            throw new IllegalArgumentException("Invalid layer index: " + layer + ". Layer index must be between 0 and "
+                    + (layers.length - 1) + " inclusive");
+        }
+        return layerInputSize(layers[layer].conf().getLayer().getLayerName());
+    }
+
+    /**
+     * Return the layer size (number of units) for the specified layer.<br>
      * Note that the meaning of the "layer size" can depend on the type of layer. For example:<br>
      * - DenseLayer, OutputLayer, recurrent layers: number of units (nOut configuration option)<br>
      * - ConvolutionLayer: the channels (number of channels)<br>
@@ -4026,6 +4112,30 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
         return ffl.getNOut();
+    }
+
+    /**
+     * Return the input size (number of inputs) for the specified layer.<br>
+     * Note that the meaning of the "input size" can depend on the type of layer. For example:<br>
+     * - DenseLayer, OutputLayer, etc: the feature vector size (nIn configuration option)<br>
+     * - Recurrent layers: the feature vector size <i>per time step</i> (nIn configuration option)<br>
+     * - ConvolutionLayer: the channels (number of channels)<br>
+     * - Subsampling layers, global pooling layers, etc: size of 0 is always returned<br>
+     *
+     * @param layerName Name of the layer to get the size of
+     * @return Size of the layer
+     */
+    public int layerInputSize(String layerName) {
+        Layer l = getLayer(layerName);
+        if(l == null){
+            throw new IllegalArgumentException("No layer with name \"" + layerName + "\" exists");
+        }
+        org.deeplearning4j.nn.conf.layers.Layer conf = l.conf().getLayer();
+        if (conf == null || !(conf instanceof FeedForwardLayer)) {
+            return 0;
+        }
+        FeedForwardLayer ffl = (FeedForwardLayer) conf;
+        return ffl.getNIn();
     }
 
     /**

@@ -239,7 +239,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param costArray Row vector cost array. May be null
      */
     public Evaluation(List<String> labels, INDArray costArray) {
-        if (costArray != null && !costArray.isRowVector()) {
+        if (costArray != null && !costArray.isRowVectorOrScalar()) {
             throw new IllegalArgumentException("Invalid cost array: must be a row vector (got shape: "
                             + Arrays.toString(costArray.shape()) + ")");
         }

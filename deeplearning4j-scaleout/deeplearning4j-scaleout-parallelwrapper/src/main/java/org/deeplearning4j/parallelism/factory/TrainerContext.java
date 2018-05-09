@@ -30,7 +30,7 @@ public interface TrainerContext {
      * @param useMDS whether to use the {@link org.deeplearning4j.parallelism.MagicQueue}
      *               or not
      * @param wrapper the wrapper instance to use with this trainer (this refernece is needed
-     *                for coordination with the {@link ParallelWrapper} 's {@link org.deeplearning4j.optimize.api.IterationListener}
+     *                for coordination with the {@link ParallelWrapper} 's {@link org.deeplearning4j.optimize.api.TrainingListener}
      * @return the created training instance
      */
     Trainer create(String uuid, int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,

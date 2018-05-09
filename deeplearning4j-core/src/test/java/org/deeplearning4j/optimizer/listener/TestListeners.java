@@ -14,7 +14,8 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
 import org.deeplearning4j.optimize.listeners.PerformanceListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -24,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -35,7 +35,6 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -62,16 +61,16 @@ public class TestListeners extends BaseDL4JTest {
         net.setListeners(new ScoreIterationListener(), new TestRoutingListener());
 
         for (Layer l : net.getLayers()) {
-            Collection<IterationListener> layerListeners = l.getListeners();
+            Collection<TrainingListener> layerListeners = l.getListeners();
             assertEquals(l.getClass().toString(), 2, layerListeners.size());
-            IterationListener[] lArr = layerListeners.toArray(new IterationListener[2]);
+            TrainingListener[] lArr = layerListeners.toArray(new TrainingListener[2]);
             assertTrue(lArr[0] instanceof ScoreIterationListener);
             assertTrue(lArr[1] instanceof TestRoutingListener);
         }
 
-        Collection<IterationListener> netListeners = net.getListeners();
+        Collection<TrainingListener> netListeners = net.getListeners();
         assertEquals(2, netListeners.size());
-        IterationListener[] lArr = netListeners.toArray(new IterationListener[2]);
+        TrainingListener[] lArr = netListeners.toArray(new TrainingListener[2]);
         assertTrue(lArr[0] instanceof ScoreIterationListener);
         assertTrue(lArr[1] instanceof TestRoutingListener);
 
@@ -86,39 +85,21 @@ public class TestListeners extends BaseDL4JTest {
         cg.setListeners(new ScoreIterationListener(), new TestRoutingListener());
 
         for (Layer l : cg.getLayers()) {
-            Collection<IterationListener> layerListeners = l.getListeners();
+            Collection<TrainingListener> layerListeners = l.getListeners();
             assertEquals(2, layerListeners.size());
-            lArr = layerListeners.toArray(new IterationListener[2]);
+            lArr = layerListeners.toArray(new TrainingListener[2]);
             assertTrue(lArr[0] instanceof ScoreIterationListener);
             assertTrue(lArr[1] instanceof TestRoutingListener);
         }
 
         netListeners = cg.getListeners();
         assertEquals(2, netListeners.size());
-        lArr = netListeners.toArray(new IterationListener[2]);
+        lArr = netListeners.toArray(new TrainingListener[2]);
         assertTrue(lArr[0] instanceof ScoreIterationListener);
         assertTrue(lArr[1] instanceof TestRoutingListener);
     }
 
-    private static class TestRoutingListener implements RoutingIterationListener {
-
-        @Override
-        public void onEpochStart(Model model) {}
-
-        @Override
-        public void onEpochEnd(Model model) {}
-
-        @Override
-        public void onForwardPass(Model model, List<INDArray> activations) {}
-
-        @Override
-        public void onForwardPass(Model model, Map<String, INDArray> activations) {}
-
-        @Override
-        public void onGradientCalculation(Model model) {}
-
-        @Override
-        public void onBackwardPass(Model model) {}
+    private static class TestRoutingListener extends BaseTrainingListener implements RoutingIterationListener {
 
         @Override
         public void setStorageRouter(StatsStorageRouter router) {}
@@ -161,7 +142,7 @@ public class TestListeners extends BaseDL4JTest {
     public void testListenerSerialization() throws Exception {
         //Note: not all listeners are (or should be) serializable. But some should be - for Spark etc
 
-        List<IterationListener> listeners = new ArrayList<>();
+        List<TrainingListener> listeners = new ArrayList<>();
         listeners.add(new ScoreIterationListener());
         listeners.add(new PerformanceListener(1));
         listeners.add(new TimeIterationListener(10000));
@@ -184,15 +165,15 @@ public class TestListeners extends BaseDL4JTest {
 
         net.fit(iter);
 
-        List<IterationListener> listeners2 = new ArrayList<>();
-        for(IterationListener il : listeners){
+        List<TrainingListener> listeners2 = new ArrayList<>();
+        for(TrainingListener il : listeners){
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(il);
             byte[] bytes = baos.toByteArray();
 
             ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
-            IterationListener il2 = (IterationListener) ois.readObject();
+            TrainingListener il2 = (TrainingListener) ois.readObject();
 
             listeners2.add(il2);
         }

@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.layers;
 
-import com.google.common.base.Preconditions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -27,6 +26,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -51,7 +51,7 @@ import java.util.List;
  *
  */
 public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseOutputLayer>
-                extends BaseLayer<LayerConfT> implements Serializable, IOutputLayer {
+        extends BaseLayer<LayerConfT> implements Serializable, IOutputLayer {
 
     //current input and label matrices
     protected INDArray labels;
@@ -92,7 +92,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
                 layerConf().getActivationFn(), maskArray,false);
         score += fullNetworkL1 + fullNetworkL2;
-        score /= getInputMiniBatchSize();
+        if(conf().isMiniBatch())
+            score /= getInputMiniBatchSize();
 
         this.score = score;
 
@@ -113,8 +114,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
-                        lossFunction.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM),
-                                preOut, layerConf().getActivationFn(), maskArray);
+                lossFunction.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM),
+                        preOut, layerConf().getActivationFn(), maskArray);
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
@@ -357,15 +358,15 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     protected void applyMask(INDArray to) {
         //For output layers: can be either per-example masking, or per-
-        if (maskArray.isColumnVector()) {
+        if (maskArray.isColumnVectorOrScalar()) {
             to.muliColumnVector(maskArray);
         } else if (Arrays.equals(to.shape(), maskArray.shape())) {
             to.muli(maskArray);
         } else {
             throw new IllegalStateException("Invalid mask array: per-example masking should be a column vector, "
-                            + "per output masking arrays should be the same shape as the output/labels arrays. Mask shape: "
-                            + Arrays.toString(maskArray.shape()) + ", output shape: " + Arrays.toString(to.shape())
-                            + layerId());
+                    + "per output masking arrays should be the same shape as the output/labels arrays. Mask shape: "
+                    + Arrays.toString(maskArray.shape()) + ", output shape: " + Arrays.toString(to.shape())
+                    + layerId());
         }
     }
 

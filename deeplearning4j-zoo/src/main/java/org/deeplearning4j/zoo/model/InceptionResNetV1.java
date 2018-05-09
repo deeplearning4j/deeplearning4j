@@ -2,10 +2,12 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.distribution.TruncatedNormalDistribution;
 import org.deeplearning4j.nn.conf.graph.L2NormalizeVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -29,6 +31,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * Revised and consolidated version by @crockpotveggies
  */
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class InceptionResNetV1 extends ZooModel {
@@ -37,7 +40,7 @@ public class InceptionResNetV1 extends ZooModel {
     @Builder.Default private int[] inputShape = new int[] {3, 160, 160};
     private int numClasses;
     @Builder.Default private IUpdater updater = new RmsProp(0.1, 0.96, 0.001);
-    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
@@ -89,8 +92,7 @@ public class InceptionResNetV1 extends ZooModel {
                         .activation(Activation.RELU)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(updater)
-                        .weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0.0, 0.5))
+                        .weightInit(new TruncatedNormalDistribution(0.0, 0.5))
                         .l2(5e-5)
                         .miniBatch(true)
                         .cacheMode(cacheMode)

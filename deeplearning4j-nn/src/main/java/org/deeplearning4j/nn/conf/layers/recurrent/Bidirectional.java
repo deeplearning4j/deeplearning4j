@@ -5,17 +5,14 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.AbstractLSTM;
 import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
-import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
@@ -89,7 +86,7 @@ public class Bidirectional extends Layer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                                                       Collection<IterationListener> iterationListeners, int layerIndex,
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex,
                                                        INDArray layerParamsView, boolean initializeParams) {
         NeuralNetConfiguration c1 = conf.clone();
         NeuralNetConfiguration c2 = conf.clone();
@@ -100,10 +97,10 @@ public class Bidirectional extends Layer {
         INDArray fp = layerParamsView.get(point(0), interval(0,n));
         INDArray bp = layerParamsView.get(point(0), interval(n, 2*n));
         org.deeplearning4j.nn.api.layers.RecurrentLayer f
-                = (RecurrentLayer) fwd.instantiate(c1, iterationListeners, layerIndex, fp, initializeParams);
+                = (RecurrentLayer) fwd.instantiate(c1, trainingListeners, layerIndex, fp, initializeParams);
 
         org.deeplearning4j.nn.api.layers.RecurrentLayer b
-                = (RecurrentLayer) bwd.instantiate(c2, iterationListeners, layerIndex, bp, initializeParams);
+                = (RecurrentLayer) bwd.instantiate(c2, trainingListeners, layerIndex, bp, initializeParams);
 
         BidirectionalLayer ret = new BidirectionalLayer(conf, f, b);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

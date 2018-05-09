@@ -1,7 +1,6 @@
 package org.deeplearning4j.ui;
 
 import org.apache.commons.io.IOUtils;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.image.loader.LFWLoader;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -41,6 +40,7 @@ import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -51,7 +51,10 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 
 import static org.junit.Assert.fail;
 
@@ -166,8 +169,7 @@ public class ManualTests {
 
         log.info("Train model....");
 
-        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq),
-                        new ConvolutionalIterationListener(listenerFreq)));
+        model.setListeners(new ScoreIterationListener(listenerFreq), new ConvolutionalIterationListener(listenerFreq));
 
         while (lfw.hasNext()) {
             lfwNext = lfw.next();

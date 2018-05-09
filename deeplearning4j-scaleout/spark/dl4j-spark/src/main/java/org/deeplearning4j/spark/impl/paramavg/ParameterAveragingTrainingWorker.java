@@ -13,7 +13,7 @@ import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.TrainingHook;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -45,18 +45,18 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
     private Collection<TrainingHook> trainingHooks;
     private final WorkerConfiguration configuration;
     private ParameterAveragingTrainingWorkerStats.ParameterAveragingTrainingWorkerStatsHelper stats = null;
-    private Collection<IterationListener> iterationListeners;
+    private Collection<TrainingListener> trainingListeners;
     private StatsStorageRouterProvider listenerRouterProvider;
 
     public ParameterAveragingTrainingWorker(Broadcast<NetBroadcastTuple> broadcast, boolean saveUpdater,
                     WorkerConfiguration configuration, Collection<TrainingHook> trainingHooks,
-                    Collection<IterationListener> listeners, StatsStorageRouterProvider routerProvider) {
+                    Collection<TrainingListener> listeners, StatsStorageRouterProvider routerProvider) {
 
         this.broadcast = broadcast;
         this.saveUpdater = saveUpdater;
         this.configuration = configuration;
         this.trainingHooks = trainingHooks;
-        this.iterationListeners = listeners;
+        this.trainingListeners = listeners;
         this.listenerRouterProvider = routerProvider;
     }
 
@@ -146,9 +146,9 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
     }
 
     private void configureListeners(Model m, int counter) {
-        if (iterationListeners != null) {
-            List<IterationListener> list = new ArrayList<>(iterationListeners.size());
-            for (IterationListener l : iterationListeners) {
+        if (trainingListeners != null) {
+            List<TrainingListener> list = new ArrayList<>(trainingListeners.size());
+            for (TrainingListener l : trainingListeners) {
                 if (listenerRouterProvider != null && l instanceof RoutingIterationListener) {
                     RoutingIterationListener rl = (RoutingIterationListener) l;
                     rl.setStorageRouter(listenerRouterProvider.getRouter());

@@ -18,19 +18,22 @@
 
 package org.deeplearning4j.optimize.listeners;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Serializable;
 
 /**
  * Score iteration listener
  *
  * @author Adam Gibson
  */
-public class ScoreIterationListener implements IterationListener {
+@Slf4j
+public class ScoreIterationListener extends BaseTrainingListener implements Serializable {
     private int printIterations = 10;
-    private static final Logger log = LoggerFactory.getLogger(ScoreIterationListener.class);
 
     /**
      * @param printIterations    frequency with which to print scores (i.e., every printIterations parameter updates)

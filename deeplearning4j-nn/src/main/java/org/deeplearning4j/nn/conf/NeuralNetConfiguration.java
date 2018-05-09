@@ -43,6 +43,7 @@ import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyReconstructionDistrib
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
@@ -237,6 +238,26 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public ListBuilder.InputTypeBuilder inputType(){
             return new InputTypeBuilder();
+        }
+
+        /**
+         * For the (perhaps partially constructed) network configuration, return a list of activation sizes for each
+         * layer in the network.<br>
+         * Note: To use this method, the network input type must have been set using {@link #setInputType(InputType)} first
+         * @return A list of activation types for the network, indexed by layer number
+         */
+        public List<InputType> getLayerActivationTypes(){
+            Preconditions.checkState(inputType != null, "Can only calculate activation types if input type has" +
+                    "been set. Use setInputType(InputType)");
+
+            MultiLayerConfiguration conf;
+            try{
+                conf = build();
+            } catch (Exception e){
+                throw new RuntimeException("Error calculating layer activation types: error instantiating MultiLayerConfiguration", e);
+            }
+
+            return conf.getLayerActivationTypes(inputType);
         }
 
         /**

@@ -158,8 +158,12 @@ public class KerasModel {
         prepareLayers((List<Object>) layerLists.get((config.getModelFieldLayers())));
 
         /* Import training configuration. */
-        if (trainingJson != null && enforceTrainingConfig)
-            importTrainingConfiguration(trainingJson);
+        if (enforceTrainingConfig) {
+            if (trainingJson != null)
+                importTrainingConfiguration(trainingJson);
+            else throw new UnsupportedKerasConfigurationException("If enforceTrainingConfig is true, a training " +
+                    "configuration object (JSON) has to be provided.");
+        }
 
         /* Infer output types for each layer. */
         inferOutputTypes(inputShape);
@@ -253,7 +257,7 @@ public class KerasModel {
             InputType outputType;
             if (layer instanceof KerasInput) {
                 if (inputShape != null) {
-                    layer.inputShape =inputShape;
+                    layer.inputShape = inputShape;
                 }
                 outputType = layer.getOutputType();
                 this.truncatedBPTT = ((KerasInput) layer).getTruncatedBptt();
@@ -322,17 +326,10 @@ public class KerasModel {
                 if (preprocessor != null)
                     preprocessors.put(layer.getLayerName(), preprocessor);
                 graphBuilder.addLayer(layer.getLayerName(), layer.getLayer(), inboundLayerNamesArray);
-                if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
-                    log.warn("Model cannot be trained: output layer " + layer.getLayerName()
-                            + " is not an IOutputLayer (no loss function specified)");
             } else if (layer.isVertex()) { // Ignore "preprocessor" layers for now
                 if (preprocessor != null)
                     preprocessors.put(layer.getLayerName(), preprocessor);
                 graphBuilder.addVertex(layer.getLayerName(), layer.getVertex(), inboundLayerNamesArray);
-                if (this.outputLayerNames.contains(layer.getLayerName())
-                        && !(layer.getVertex() instanceof IOutputLayer))
-                    log.warn("Model cannot be trained: output vertex " + layer.getLayerName()
-                            + " is not an IOutputLayer (no loss function specified)");
             } else if (layer.isInputPreProcessor()) {
                 if (preprocessor == null)
                     throw new UnsupportedKerasConfigurationException("Layer " + layer.getLayerName()
@@ -340,10 +337,6 @@ public class KerasModel {
                 graphBuilder.addVertex(layer.getLayerName(), new PreprocessorVertex(preprocessor),
                         inboundLayerNamesArray);
             }
-
-            if (this.outputLayerNames.contains(layer.getLayerName()))
-                log.warn("Model cannot be trained: output " + layer.getLayerName()
-                        + " is not an IOutputLayer (no loss function specified)");
         }
         graphBuilder.setInputPreProcessors(preprocessors);
 

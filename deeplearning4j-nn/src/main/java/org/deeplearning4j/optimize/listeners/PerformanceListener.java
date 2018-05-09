@@ -1,10 +1,11 @@
 package org.deeplearning4j.optimize.listeners;
 
 import com.google.common.base.Preconditions;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -12,16 +13,16 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.util.concurrent.atomic.AtomicLong;
+import java.io.Serializable;
 
 /**
  * Simple IterationListener that tracks time spend on training per iteration.
  *
  * @author raver119@gmail.com
  */
-public class PerformanceListener implements IterationListener {
+@Slf4j
+public class PerformanceListener extends BaseTrainingListener implements Serializable {
     private final int frequency;
-    private static final Logger logger = LoggerFactory.getLogger(PerformanceListener.class);
     private transient ThreadLocal<Double> samplesPerSec = new ThreadLocal<>();
     private transient ThreadLocal<Double> batchesPerSec = new ThreadLocal<>();
     private transient ThreadLocal<Long> lastTime = new ThreadLocal<>();
@@ -115,7 +116,7 @@ public class PerformanceListener implements IterationListener {
                 builder.append("score: ").append(model.score()).append(";");
 
 
-            logger.info(builder.toString());
+            log.info(builder.toString());
         }
 
         lastTime.set(System.currentTimeMillis());
@@ -211,7 +212,7 @@ public class PerformanceListener implements IterationListener {
         }
 
         /**
-         * Desired IterationListener activation frequency
+         * Desired TrainingListener activation frequency
          *
          * @param frequency
          * @return

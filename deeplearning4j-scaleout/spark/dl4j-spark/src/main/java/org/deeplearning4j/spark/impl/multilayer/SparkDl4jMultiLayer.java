@@ -39,10 +39,7 @@ import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateAggregateFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluationReduceFunction;
-import org.deeplearning4j.spark.impl.multilayer.scoring.FeedForwardWithKeyFunction;
-import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesFunction;
-import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreExamplesWithKeyFunction;
-import org.deeplearning4j.spark.impl.multilayer.scoring.ScoreFlatMapFunction;
+import org.deeplearning4j.spark.impl.multilayer.scoring.*;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
@@ -431,10 +428,25 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param featuresData Features data to feed through the network
      * @param batchSize    Batch size to use when doing feed forward operations
      * @param <K>          Type of data for key - may be anything
-     * @return             Network output given the input, by key
+     * @return Network output given the input, by key
      */
     public <K> JavaPairRDD<K, INDArray> feedForwardWithKey(JavaPairRDD<K, INDArray> featuresData, int batchSize) {
-        return featuresData.mapPartitionsToPair(new FeedForwardWithKeyFunction<K>(sc.broadcast(network.params()),
+        return feedForwardWithMaskAndKey(featuresData.mapToPair(new SingleToPairFunction<K>()), batchSize);
+    }
+
+    /**
+     * Feed-forward the specified data (and optionally mask array), with the given keys. i.e., get the network
+     * output/predictions for the specified data
+     *
+     * @param featuresDataAndMask Features data to feed through the network. The Tuple2 is of the network input (features),
+     *                            and optionally the feature mask arrays
+     * @param batchSize           Batch size to use when doing feed forward operations
+     * @param <K>                 Type of data for key - may be anything
+     * @return Network output given the input (and optionally mask), by key
+     */
+    public <K> JavaPairRDD<K, INDArray> feedForwardWithMaskAndKey(JavaPairRDD<K, Tuple2<INDArray,INDArray>> featuresDataAndMask, int batchSize) {
+        return featuresDataAndMask
+                .mapPartitionsToPair(new FeedForwardWithKeyFunction<K>(sc.broadcast(network.params()),
                         sc.broadcast(conf.toJson()), batchSize));
     }
 

@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -32,6 +33,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * @author Justin Long (crockpotveggies)
  *
  */
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class SqueezeNet extends ZooModel {
@@ -41,7 +43,7 @@ public class SqueezeNet extends ZooModel {
     private int numClasses;
     @Builder.Default private WeightInit weightInit = WeightInit.RELU;
     @Builder.Default private IUpdater updater = new AdaDelta();
-    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
@@ -85,7 +87,6 @@ public class SqueezeNet extends ZooModel {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(updater)
                 .weightInit(weightInit)
-                .dist(new NormalDistribution(0.0, 0.5))
                 .l2(5e-5)
                 .miniBatch(true)
                 .cacheMode(cacheMode)

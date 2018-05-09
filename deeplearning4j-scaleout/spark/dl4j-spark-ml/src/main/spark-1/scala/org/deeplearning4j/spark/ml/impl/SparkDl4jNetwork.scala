@@ -9,7 +9,7 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql.{DataFrame, Row}
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
-import org.deeplearning4j.optimize.api.IterationListener
+import org.deeplearning4j.optimize.api.TrainingListener
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer}
 
@@ -19,19 +19,19 @@ final class SparkDl4jNetwork(
                                 override val numLabels: Int,
                                 override val trainingMaster: ParamSerializer,
                                 override val epochs: Int,
-                                override val listeners: util.Collection[IterationListener],
+                                override val listeners: util.Collection[TrainingListener],
                                 override val collectStats: Boolean = false,
                                 override val uid: String = Identifiable.randomUID("dl4j"))
     extends SparkDl4jNetworkWrapper[Vector, SparkDl4jNetwork, SparkDl4jModel](
         uid, multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, collectStats) {
 
     def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, epochs: Int,
-             listeners: util.Collection[IterationListener]) {
+             listeners: util.Collection[TrainingListener]) {
         this(multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, false, Identifiable.randomUID("dl4j"))
     }
 
     def this(multiLayerConfiguration: MultiLayerConfiguration, numLabels: Int, trainingMaster: ParamSerializer, epochs: Int,
-             listeners: util.Collection[IterationListener], collectStats: Boolean) {
+             listeners: util.Collection[TrainingListener], collectStats: Boolean) {
         this(multiLayerConfiguration, numLabels, trainingMaster, epochs, listeners, collectStats, Identifiable.randomUID("dl4j"))
     }
 

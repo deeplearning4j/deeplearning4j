@@ -18,7 +18,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.*;
@@ -620,12 +620,12 @@ public class ParameterAveragingTrainingMaster
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<TrainingListener> listeners) {
         setListeners(null, listeners);
     }
 
     @Override
-    public void setListeners(StatsStorageRouter statsStorage, Collection<IterationListener> listeners) {
+    public void setListeners(StatsStorageRouter statsStorage, Collection<TrainingListener> listeners) {
         this.statsStorage = statsStorage;
         this.listeners = listeners;
     }

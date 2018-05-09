@@ -57,7 +57,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
         }
         switch (input.rank()){
             case 2:
-                if(!maskArray.isColumnVector() || maskArray.size(0) != input.size(0)){
+                if(!maskArray.isColumnVectorOrScalar() || maskArray.size(0) != input.size(0)){
                     throw new IllegalStateException("Expected column vector for mask with 2d input, with same size(0)" +
                             " as input. Got mask with shape: " + Arrays.toString(maskArray.shape()) +
                             ", input shape = " + Arrays.toString(input.shape()));
@@ -75,7 +75,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
                 return fwd;
             case 4:
                 //CNN input. Expect column vector (per example masking)
-                if(!maskArray.isColumnVector() || maskArray.size(0) != input.size(0)){
+                if(!maskArray.isColumnVectorOrScalar() || maskArray.size(0) != input.size(0)){
                     throw new IllegalStateException("Expected column vector for mask with 2d input, with same size(0)" +
                             " as input. Got mask with shape: " + Arrays.toString(maskArray.shape()) +
                             ", input shape = " + Arrays.toString(input.shape()));

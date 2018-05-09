@@ -28,6 +28,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -175,6 +176,12 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
+        //Notation difference between CuDNN and our implementation:
+        //Us:       runningMean = (1-decay) * batchMean + decay * runningMean
+        //CuDNN:    runningMean = decay * batchMean + (1-decay) * runningMean
+        //i.e., "decay" has a different meaning...
+        decay = 1.0 - decay;
+
         int miniBatch = x.size(0);
         int inDepth = x.size(1);
         int inH = x.size(2);
@@ -232,5 +239,4 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
         return activations;
     }
-
 }

@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder;
@@ -34,6 +35,7 @@ import static org.deeplearning4j.zoo.model.helper.DarknetHelper.addLayers;
  *
  * @author saudet
  */
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Darknet19 extends ZooModel {
@@ -43,7 +45,7 @@ public class Darknet19 extends ZooModel {
     private int numClasses;
     @Builder.Default private WeightInit weightInit = WeightInit.RELU;
     @Builder.Default private IUpdater updater = new Nesterovs(1e-3, 0.9);
-    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 

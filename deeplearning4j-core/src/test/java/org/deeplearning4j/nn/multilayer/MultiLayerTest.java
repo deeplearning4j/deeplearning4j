@@ -40,7 +40,7 @@ import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.*;
@@ -63,7 +63,6 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -261,7 +260,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
 
-        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
+        model.addListeners(new ScoreIterationListener(listenerFreq));
 
         log.info("Train model....");
         int cnt = 0;
@@ -1218,6 +1217,11 @@ public class MultiLayerTest extends BaseDL4JTest {
         assertEquals(0, net.layerSize(1));
         assertEquals(30, net.layerSize(2));
         assertEquals(13, net.layerSize(3));
+
+        assertEquals(3, net.layerInputSize(0));
+        assertEquals(0, net.layerInputSize(1));
+        assertEquals(((FeedForwardLayer)net.getLayer(2).conf().getLayer()).getNIn(), net.layerInputSize(2));
+        assertEquals(30, net.layerInputSize(3));
     }
 
 
@@ -1246,5 +1250,75 @@ public class MultiLayerTest extends BaseDL4JTest {
         MultiLayerNetwork net2 = TestUtils.testModelSerialization(net);
         INDArray out2 = net2.output(ds.getFeatures());
         assertEquals(out, out2);
+    }
+
+
+    @Test
+    public void testInputActivationGradient(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .activation(Activation.TANH)
+                .list()
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray in = Nd4j.rand(1, 10);
+        INDArray label = Nd4j.rand(1, 10);
+
+        Pair<Gradient,INDArray> p = net.calculateGradients(in, label, null, null);
+
+        //Quick gradient check:
+        double eps = 1e-6;
+        double maxRelError = 1e-5;
+        for( int i=0; i<10; i++ ){
+            double orig = in.getDouble(i);
+            in.putScalar(i, orig + eps);
+            double scorePlus = net.score(new DataSet(in, label));
+            in.putScalar(i, orig - eps);
+            double scoreMinus = net.score(new DataSet(in, label));
+            in.putScalar(i, orig);
+
+            double expGrad = (scorePlus - scoreMinus) / (2.0 * eps);
+            double actGrad = p.getSecond().getDouble(i);
+
+            double relError = (Math.abs(expGrad - actGrad)) / (Math.abs(expGrad) + Math.abs(actGrad));
+
+            String str = i + " - " + relError + " - exp=" + expGrad + ", act=" + actGrad;
+            assertTrue(str, relError < maxRelError);
+        }
+    }
+
+
+    @Test
+    public void testMultiLayerConfigurationActivationTypes(){
+
+        NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new LSTM.Builder().nOut(6).build())
+                .layer(new LSTM.Builder().nOut(7).build())
+                .layer(new GlobalPoolingLayer())
+                .layer(new OutputLayer.Builder().nOut(8).build())
+                .setInputType(InputType.recurrent(10));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        List<InputType> outBuilder = builder.getLayerActivationTypes();
+        List<InputType> outConf = conf.getLayerActivationTypes(InputType.recurrent(10));
+
+        List<InputType> exp = Arrays.asList(
+                InputType.recurrent(6),
+                InputType.recurrent(7),
+                InputType.feedForward(7),
+                InputType.feedForward(8)
+        );
+
+
+        assertEquals(exp, outBuilder);
+        assertEquals(exp, outConf);
     }
 }

@@ -11,7 +11,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, RowFactory}
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
-import org.deeplearning4j.optimize.api.IterationListener
+import org.deeplearning4j.optimize.api.TrainingListener
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer, SparkDl4jUtil}
@@ -29,7 +29,7 @@ abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M],
  protected val numLabels: Int,
  protected val trainingMaster: ParamSerializer,
  protected val epochs : Int,
- protected val listeners : util.Collection[IterationListener],
+ protected val listeners : util.Collection[TrainingListener],
  protected val collectStats: Boolean = false
 ) extends Predictor[T, E, M]  {
 

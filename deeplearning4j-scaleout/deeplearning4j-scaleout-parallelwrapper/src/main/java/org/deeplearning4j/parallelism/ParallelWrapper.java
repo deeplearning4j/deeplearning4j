@@ -17,7 +17,7 @@ import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
@@ -86,7 +86,7 @@ public class ParallelWrapper implements AutoCloseable {
     protected boolean legacyAveraging = false;
     protected boolean wasAveraged = false;
     protected AtomicBoolean stopFit = new AtomicBoolean(false);
-    protected List<IterationListener> listeners = new ArrayList<>();
+    protected List<TrainingListener> listeners = new ArrayList<>();
     protected StatsStorageRouter storageRouter;
     protected boolean isMQ;
     protected WorkspaceMode workspaceMode;
@@ -377,24 +377,24 @@ public class ParallelWrapper implements AutoCloseable {
 
 
     /**
-     * This method allows you to specify IterationListeners for this model.
+     * This method allows you to specify trainingListeners for this model.
      * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
      * using {@link #setListeners(StatsStorageRouter, Collection)}
      *
      * @param listeners    Listeners to set
      */
-    public void setListeners(@NonNull Collection<IterationListener> listeners) {
+    public void setListeners(@NonNull Collection<TrainingListener> listeners) {
         setListeners(null, listeners);
     }
 
     /**
-     * This method allows you to specify IterationListeners for this model.
+     * This method allows you to specify trainingListeners for this model.
      * Note that for listeners like StatsListener (that have state that will be sent somewhere), consider instead
      * using {@link #setListeners(StatsStorageRouter, Collection)}
      *
      * @param listeners    Listeners to set
      */
-    public void setListeners(@NonNull IterationListener... listeners) {
+    public void setListeners(@NonNull TrainingListener... listeners) {
         setListeners(Arrays.asList(listeners));
     }
 
@@ -405,7 +405,7 @@ public class ParallelWrapper implements AutoCloseable {
      * @param statsStorage Stats storage router to place the results into
      * @param listeners    Listeners to set
      */
-    public void setListeners(StatsStorageRouter statsStorage, IterationListener... listeners) {
+    public void setListeners(StatsStorageRouter statsStorage, TrainingListener... listeners) {
         setListeners(statsStorage, Arrays.asList(listeners));
     }
 
@@ -416,10 +416,10 @@ public class ParallelWrapper implements AutoCloseable {
      * @param statsStorage Stats storage router to place the results into
      * @param listeners    Listeners to set
      */
-    public void setListeners(StatsStorageRouter statsStorage, Collection<? extends IterationListener> listeners) {
+    public void setListeners(StatsStorageRouter statsStorage, Collection<? extends TrainingListener> listeners) {
         //Check if we have any RoutingIterationListener instances that need a StatsStorage implementation...
         if (listeners != null) {
-            for (IterationListener l : listeners) {
+            for (TrainingListener l : listeners) {
                 if (l instanceof RoutingIterationListener) {
                     RoutingIterationListener rl = (RoutingIterationListener) l;
                     if (statsStorage == null && rl.getStorageRouter() == null) {
@@ -851,7 +851,7 @@ public class ParallelWrapper implements AutoCloseable {
 
             wrapper.init();
 
-            List<IterationListener> modelListeners = null;
+            List<TrainingListener> modelListeners = null;
             if (model instanceof MultiLayerNetwork) {
                 modelListeners = new ArrayList<>(((MultiLayerNetwork) model).getListeners());
                 model.setListeners(Collections.emptyList());
@@ -868,17 +868,17 @@ public class ParallelWrapper implements AutoCloseable {
         }
     }
 
-    private static IterationListener cloneListener(IterationListener original) {
+    private static TrainingListener cloneListener(TrainingListener original) {
         if (original instanceof RoutingIterationListener) {
             return ((RoutingIterationListener) original).clone();
         }
         return original;
     }
 
-    private void configureListeners(String workerUUID, Collection<IterationListener> oldListeners,
-                    Collection<IterationListener> replicatedListeners) {
-        for (IterationListener listener : oldListeners) {
-            IterationListener l = cloneListener(listener);
+    private void configureListeners(String workerUUID, Collection<TrainingListener> oldListeners,
+                    Collection<TrainingListener> replicatedListeners) {
+        for (TrainingListener listener : oldListeners) {
+            TrainingListener l = cloneListener(listener);
 
             if (l instanceof RoutingIterationListener) {
                 RoutingIterationListener rl = (RoutingIterationListener) l;

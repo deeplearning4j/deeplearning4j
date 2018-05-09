@@ -10,8 +10,8 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.optimize.api.InvocationType;
-import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.callbacks.EvaluationCallback;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class EvaluativeListener implements TrainingListener {
+public class EvaluativeListener extends BaseTrainingListener {
     protected transient ThreadLocal<AtomicLong> iterationCount = new ThreadLocal<>();
     protected int frequency;
 

@@ -14,7 +14,9 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -27,7 +29,6 @@ import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.*;
 
@@ -484,7 +485,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
         final MultiLayerNetwork net = new MultiLayerNetwork(conf);
 
-        final IterationListener scoreSaver = new IterationListener() {
+        final TrainingListener scoreSaver = new BaseTrainingListener() {
 
             @Override
             public void iterationDone(Model model, int iteration, int epoch) {

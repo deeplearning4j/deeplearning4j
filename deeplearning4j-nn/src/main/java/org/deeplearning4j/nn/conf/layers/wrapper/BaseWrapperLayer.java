@@ -4,15 +4,10 @@ import lombok.Data;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.WrapperLayerParamInitializer;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Collection;
 
 /**
  * Base wrapper layer: the idea is to pass through all methods to the underlying layer, and selectively override

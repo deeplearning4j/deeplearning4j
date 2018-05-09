@@ -15,9 +15,10 @@ import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
@@ -28,8 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.*;
 
@@ -62,8 +61,7 @@ public class VariationalAutoencoder implements Layer {
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
     protected Gradient gradient;
-    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
-    protected Collection<TrainingListener> trainingListeners = null;
+    protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
     protected int index = 0;
     protected INDArray maskArray;
     protected Solver solver;
@@ -796,53 +794,50 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public Collection<IterationListener> getListeners() {
-        if (iterationListeners == null)
+    public Collection<TrainingListener> getListeners() {
+        if (trainingListeners == null) {
             return null;
-        return new ArrayList<>(iterationListeners);
+        }
+
+        return new ArrayList<>(trainingListeners);
     }
 
     @Override
-    public void setListeners(IterationListener... listeners) {
-        setListeners(Arrays.<IterationListener>asList(listeners));
+    public void setListeners(TrainingListener... listeners) {
+        setListeners(Arrays.<TrainingListener>asList(listeners));
     }
 
     @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        if (iterationListeners == null)
-            iterationListeners = new ArrayList<>();
+    public void setListeners(Collection<TrainingListener> listeners) {
+        if (trainingListeners == null)
+            trainingListeners = new ArrayList<>();
         else
-            iterationListeners.clear();
+            trainingListeners.clear();
         if (trainingListeners == null)
             trainingListeners = new ArrayList<>();
         else
             trainingListeners.clear();
 
         if (listeners != null && !listeners.isEmpty()) {
-            iterationListeners.addAll(listeners);
-            for (IterationListener il : listeners) {
-                if (il instanceof TrainingListener) {
-                    trainingListeners.add((TrainingListener) il);
-                }
-            }
+            trainingListeners.addAll(listeners);
         }
     }
 
 
     /**
-     * This method ADDS additional IterationListener to existing listeners
+     * This method ADDS additional TrainingListener to existing listeners
      *
      * @param listeners
      */
     @Override
-    public void addListeners(IterationListener... listeners) {
-        if (this.iterationListeners == null) {
+    public void addListeners(TrainingListener... listeners) {
+        if (this.trainingListeners == null) {
             setListeners(listeners);
             return;
         }
 
-        for (IterationListener listener : listeners)
-            iterationListeners.add(listener);
+        for (TrainingListener listener : listeners)
+            trainingListeners.add(listener);
     }
 
     @Override

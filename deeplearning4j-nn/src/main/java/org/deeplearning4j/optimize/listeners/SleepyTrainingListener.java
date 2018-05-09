@@ -3,14 +3,14 @@ package org.deeplearning4j.optimize.listeners;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.util.ThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * This TrainingListener implementation provides a way to "sleep" during specific Neural Network training phases.
@@ -26,7 +26,7 @@ import java.util.concurrent.locks.LockSupport;
 @Data
 @Builder
 @Slf4j
-public class SleepyTrainingListener implements TrainingListener {
+public class SleepyTrainingListener extends BaseTrainingListener implements Serializable {
     public enum SleepMode {
         /**
          * In this mode parkNanos() call will be used, to make process really idle

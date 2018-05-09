@@ -9,12 +9,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TrainingListener: an extension of {@link IterationListener} that adds onEpochStart, onEpochEnd, onForwardPass and
- * onBackwardPass methods
+ * A listener interface for training DL4J models.<br>
+ * The methods here will be called at various points during training, and only during training.<br>
+ * Note that users can extend {@link BaseTrainingListener} and selectively override the required methods,
+ * instead of implementing TrainingListener directly and having a number of no-op methods.
  *
  * @author Alex Black
  */
-public interface TrainingListener extends IterationListener {
+public interface TrainingListener {
+
+    /**
+     * Event listener for each iteration. Called once, after each parameter update has ocurred while training the network
+     * @param iteration the iteration
+     * @param model the model iterating
+     */
+    void iterationDone(Model model, int iteration, int epoch);
 
     /**
      * Called once at the start of each epoch, when using methods such as {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork#fit(DataSetIterator)},

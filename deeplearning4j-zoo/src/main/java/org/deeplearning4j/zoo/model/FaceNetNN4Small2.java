@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * Revised and consolidated version by @crockpotveggies
  */
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class FaceNetNN4Small2 extends ZooModel {
@@ -37,7 +39,7 @@ public class FaceNetNN4Small2 extends ZooModel {
     private int numClasses;
     @Builder.Default private IUpdater updater = new Adam(0.1, 0.9, 0.999, 0.01);
     @Builder.Default private Activation transferFunction = Activation.RELU;
-    @Builder.Default CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 

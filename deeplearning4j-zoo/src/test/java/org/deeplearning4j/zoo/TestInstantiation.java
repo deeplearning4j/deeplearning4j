@@ -37,13 +37,13 @@ public class TestInstantiation {
         };
 
         for(int i = 0; i < models.length; i++) {
+            int numClasses = 10;
             ZooModel model = models[i];
-            String modelName = model.getClass().getName();
+            String modelName = model.getClass().getSimpleName();
             log.info("Testing training on zoo model " + modelName);
             int gridWidth = -1;
             int gridHeight = -1;
-            int numClasses = 10;
-            if (modelName == "TinyYOLO" || modelName == "YOLO2") {
+            if (modelName.equals("TinyYOLO") || modelName.equals("YOLO2")) {
                 int[] inputShapes = model.metaData().getInputShape()[0];
                 gridWidth = DarknetHelper.getGridWidth(inputShapes);
                 gridHeight = DarknetHelper.getGridHeight(inputShapes);
@@ -53,7 +53,7 @@ public class TestInstantiation {
             // set up data iterator
             int[] inputShape = model.metaData().getInputShape()[0];
             DataSetIterator iter = new BenchmarkDataSetIterator(
-                            new int[] {16, inputShape[0], inputShape[1], inputShape[2]}, numClasses, 1,
+                            new int[] {8, inputShape[0], inputShape[1], inputShape[2]}, numClasses, 1,
                             gridWidth, gridHeight);
 
             Model initializedModel = model.init();

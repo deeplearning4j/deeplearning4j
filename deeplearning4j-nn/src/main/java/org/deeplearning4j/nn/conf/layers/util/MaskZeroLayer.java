@@ -1,14 +1,15 @@
 package org.deeplearning4j.nn.conf.layers.util;
 
-import java.util.Collection;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Collection;
 
 /*
  Wrapper which masks timesteps with 0 activation.
@@ -28,13 +29,13 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                                                        int layerIndex, INDArray layerParamsView, boolean initializeParams) {
 
         NeuralNetConfiguration conf2 = conf.clone();
         conf2.setLayer(((BaseWrapperLayer)conf2.getLayer()).getUnderlying());
 
-        org.deeplearning4j.nn.api.Layer underlyingLayer = underlying.instantiate(conf2, iterationListeners, layerIndex, layerParamsView, initializeParams);
+        org.deeplearning4j.nn.api.Layer underlyingLayer = underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView, initializeParams);
         return new org.deeplearning4j.nn.layers.recurrent.MaskZeroLayer(underlyingLayer);
     }
 

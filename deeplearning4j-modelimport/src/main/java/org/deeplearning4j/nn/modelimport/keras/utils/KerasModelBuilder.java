@@ -118,8 +118,13 @@ public class KerasModelBuilder implements Cloneable, Closeable {
         return this;
     }
 
-    public KerasModelBuilder weightsHdf5Filename(String weightsHdf5Filename) {
+    public KerasModelBuilder weightsHdf5Filename(String weightsHdf5Filename)
+            throws InvalidKerasConfigurationException {
         this.weightsArchive = new Hdf5Archive(weightsHdf5Filename);
+        this.weightsRoot = config.getTrainingWeightsRoot();
+        if (!this.weightsArchive.hasAttribute(config.getTrainingModelConfigAttribute()))
+            throw new InvalidKerasConfigurationException(
+                    "Model configuration attribute missing from " + weightsHdf5Filename + " archive.");
         return this;
     }
 
@@ -143,7 +148,8 @@ public class KerasModelBuilder implements Cloneable, Closeable {
         return sequentialModel;
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         if (trainingArchive != null && trainingArchive != weightsArchive) {
             trainingArchive.close();
             trainingArchive = null;

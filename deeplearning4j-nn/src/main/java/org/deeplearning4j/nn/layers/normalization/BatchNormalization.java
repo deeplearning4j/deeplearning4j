@@ -7,7 +7,9 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
@@ -17,15 +19,9 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Batch normalization layer.
@@ -43,7 +39,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     BatchNormalizationHelper helper = null;
     protected int index = 0;
-    protected List<IterationListener> listeners = new ArrayList<>();
+    protected List<TrainingListener> listeners = new ArrayList<>();
     protected INDArray std;
     protected INDArray xMu;
     protected INDArray xHat;
@@ -125,6 +121,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, shape, gamma, dGammaView, dBetaView,
                             layerConf.getEps(), workspaceMgr);
             if (ret != null) {
+                ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
+                ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_VAR, dGlobalVarView);
                 return ret;
             }
         }
@@ -408,12 +406,12 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public Collection<IterationListener> getListeners() {
+    public Collection<TrainingListener> getListeners() {
         return listeners;
     }
 
     @Override
-    public void setListeners(IterationListener... listeners) {
+    public void setListeners(TrainingListener... listeners) {
         this.listeners = new ArrayList<>(Arrays.asList(listeners));
     }
 

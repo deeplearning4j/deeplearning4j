@@ -113,7 +113,7 @@ public class ReshapeVertex extends BaseGraphVertex {
         // ii. output is rank 3 (RNN) -> no change
 
 
-        if(maskArrays[0].isColumnVector()){
+        if(maskArrays[0].isColumnVectorOrScalar()){
             if(newShape.length == 2 || newShape.length == 4){
                 return new Pair<>(maskArrays[0], currentMaskState);
             } else if(newShape.length == 3) {

@@ -432,7 +432,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
             Writable w = list.get(i);
             if (w instanceof NDArrayWritable) {
                 INDArray a = ((NDArrayWritable) w).get();
-                if (!a.isRowVector()) {
+                if (!a.isRowVectorOrScalar()) {
                     throw new UnsupportedOperationException("Multiple writables present but NDArrayWritable is "
                                     + "not a row vector. Can only concat row vectors with other writables. Shape: "
                                     + Arrays.toString(a.shape()));
@@ -845,7 +845,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
          * @param numClasses Total number of classes
          */
         public Builder addInputOneHot(String readerName, int column, int numClasses) {
-            inputs.add(new SubsetDetails(readerName, false, true, numClasses, column, -1));
+            inputs.add(new SubsetDetails(readerName, false, true, numClasses, column, column));
             return this;
         }
 
@@ -879,7 +879,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
          * @param numClasses Number of classes
          */
         public Builder addOutputOneHot(String readerName, int column, int numClasses) {
-            outputs.add(new SubsetDetails(readerName, false, true, numClasses, column, -1));
+            outputs.add(new SubsetDetails(readerName, false, true, numClasses, column, column));
             return this;
         }
 

@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -16,6 +17,7 @@ import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -31,6 +33,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * @author Justin Long (crockpotveggies)
  *
  */
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Xception extends ZooModel {
@@ -39,8 +42,8 @@ public class Xception extends ZooModel {
     @Builder.Default private int[] inputShape = new int[] {3, 299, 299};
     private int numClasses;
     @Builder.Default private WeightInit weightInit = WeightInit.RELU;
-    @Builder.Default private IUpdater updater = new AdaGrad(1e-4);
-    @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
+    @Builder.Default private IUpdater updater = new AdaDelta();
+    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
@@ -84,7 +87,7 @@ public class Xception extends ZooModel {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(updater)
                 .weightInit(weightInit)
-                .l2(5e-5)
+                .l2(4e-5)
                 .miniBatch(true)
                 .cacheMode(cacheMode)
                 .trainingWorkspaceMode(workspaceMode)

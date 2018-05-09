@@ -15,7 +15,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.ml.utils.DatasetFacade;
@@ -47,7 +47,7 @@ public class SparkDl4jNetworkTest {
 
         ParamSerializer ps = new ParamHelper();
         MultiLayerConfiguration mc = getNNConfiguration();
-        Collection<IterationListener> il = new ArrayList<>();
+        Collection<TrainingListener> il = new ArrayList<>();
         il.add(new ScoreIterationListener(1));
 
         SparkDl4jNetwork sparkDl4jNetwork =
@@ -70,7 +70,7 @@ public class SparkDl4jNetworkTest {
 
         ParamSerializer ps = new ParamHelper();
         MultiLayerConfiguration mc = getNNConfiguration();
-        Collection<IterationListener> il = new ArrayList<>();
+        Collection<TrainingListener> il = new ArrayList<>();
         il.add(new ScoreIterationListener(1));
 
         SparkDl4jNetwork sparkDl4jNetwork =

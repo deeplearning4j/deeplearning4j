@@ -9,7 +9,8 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.solvers.BackTrackLineSearch;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
@@ -23,7 +24,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Collections;
 
@@ -172,7 +172,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.SIGMOID, optimizer));
         network.init();
-        IterationListener listener = new ScoreIterationListener(1);
+        TrainingListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
         double oldScore = network.score(data);
         for( int i=0; i<100; i++ ) {
@@ -190,7 +190,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         data.normalizeZeroMeanZeroUnitVariance();
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
         network.init();
-        IterationListener listener = new ScoreIterationListener(1);
+        TrainingListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
         double firstScore = network.score(data);
 
@@ -209,7 +209,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         data.normalizeZeroMeanZeroUnitVariance();
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
         network.init();
-        IterationListener listener = new ScoreIterationListener(1);
+        TrainingListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
         double oldScore = network.score(data);
 
@@ -228,7 +228,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
         network.init();
-        IterationListener listener = new ScoreIterationListener(1);
+        TrainingListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
 
         for( int i=0; i<100; i++ ) {

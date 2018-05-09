@@ -36,12 +36,12 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_LAYER = "layer";
 
     /* Basic layer names */
-    // Missing Layers: Permute, RepeatVector, Lambda, ActivityRegularization, Masking
-    // Conv3D, Cropping1D-3D, UpSampling3D,
-    // ZeroPadding3D, LocallyConnected1D-2D
+    // Missing Layers: RepeatVector, Lambda, ActivityRegularization, Masking
+    // LocallyConnected1D-2D
     // Missing layers from keras 1: Highway, MaxoutDense
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
+    private final String LAYER_CLASS_NAME_PERMUTE = "Permute";
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
     private final String LAYER_CLASS_NAME_ALPHA_DROPOUT = "AlphaDropout";
     private final String LAYER_CLASS_NAME_GAUSSIAN_DROPOUT = "GaussianDropout";
