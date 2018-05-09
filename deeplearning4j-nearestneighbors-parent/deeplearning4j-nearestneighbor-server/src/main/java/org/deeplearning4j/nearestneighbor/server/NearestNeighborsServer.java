@@ -192,7 +192,7 @@ public class NearestNeighborsServer {
                         nnResult.add(new NearestNeighborsResult(results.get(i).getIndex(), distances.get(i)));
                 }
 
-                NearstNeighborsResults results2 = NearstNeighborsResults.builder().results(nnResult).build();
+                NearestNeighborsResults results2 = NearestNeighborsResults.builder().results(nnResult).build();
                 return ok(Json.toJson(results2));
 
             } catch (Throwable e) {
