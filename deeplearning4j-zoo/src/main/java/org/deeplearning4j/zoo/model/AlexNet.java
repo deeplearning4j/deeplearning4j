@@ -38,18 +38,19 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * Weight distribution uses 0.1 std for all layers in the paper but 0.005 in the dense layers in the imagenetExample code
  *
  */
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class AlexNet extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
-    private int numClasses;
+    @Builder.Default private int numClasses = 0;
     @Builder.Default private IUpdater updater = new Nesterovs(1e-2, 0.9);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+
+    private AlexNet() {}
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {

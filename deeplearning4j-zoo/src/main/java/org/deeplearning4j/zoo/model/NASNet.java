@@ -6,7 +6,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -19,6 +18,10 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
+
+import static org.deeplearning4j.zoo.model.helper.NASNetHelper.normalA;
+import static org.deeplearning4j.zoo.model.helper.NASNetHelper.reductionA;
 
 /**
  * U-Net
@@ -41,13 +44,21 @@ public class NASNet extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
-    @Builder.Default private int penultimateFilters = 1056;
-    private int numClasses;
+    @Builder.Default private int numClasses = 0;
     @Builder.Default private WeightInit weightInit = WeightInit.RELU;
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.DEVICE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+
+    // NASNet specific
+    @Builder.Default private int numBlocks = 6;
+    @Builder.Default private int penultimateFilters = 1056;
+    @Builder.Default private int stemFilters = 96;
+    @Builder.Default private int filterMultiplier = 2;
+    @Builder.Default private boolean skipReduction = true;
+
+    private NASNet() {}
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
@@ -89,6 +100,8 @@ public class NASNet extends ZooModel {
 
     public ComputationGraphConfiguration.GraphBuilder graphBuilder() {
 
+        int filters = (int) Math.floor(penultimateFilters / 24);
+
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(updater)
@@ -103,19 +116,59 @@ public class NASNet extends ZooModel {
                 .convolutionMode(ConvolutionMode.Truncate)
                 .graphBuilder();
 
+        if(!skipReduction) {
+            graph.addLayer("stem_conv1", new ConvolutionLayer.Builder(3, 3).stride(2, 2).nOut(penultimateFilters).hasBias(false)
+                    .cudnnAlgoMode(cudnnAlgoMode).build(), "input");
+        } else {
+            graph.addLayer("stem_conv1", new ConvolutionLayer.Builder(3, 3).stride(1, 1).nOut(penultimateFilters).hasBias(false)
+                    .cudnnAlgoMode(cudnnAlgoMode).build(), "input");
+        }
 
+        graph.addLayer("stem_bn1", new BatchNormalization.Builder().eps(1e-3).gamma(0.9997).build(), "stem_conv1");
+
+        String inputX = "stem_bn1";
+        String inputP = null;
+        if(!skipReduction) {
+            Pair<String, String> stem1 = reductionA(graph, (int) Math.floor(stemFilters / Math.pow(filterMultiplier,2)), "stem1", "stem_conv1", inputP);
+            Pair<String, String> stem2 = reductionA(graph, (int) Math.floor(stemFilters / (filterMultiplier)), "stem2", stem1.getFirst(), stem1.getSecond());
+            inputX = stem2.getFirst();
+            inputP = stem2.getSecond();
+        }
+
+        for(int i = 0; i < numBlocks; i++){
+            Pair<String, String> block = normalA(graph, filters, String.valueOf(i), inputX, inputP);
+            inputX = block.getFirst();
+            inputP = block.getSecond();
+        }
+
+        String inputP0;
+        Pair<String, String> reduce = reductionA(graph, filters * filterMultiplier, "reduce"+numBlocks, inputX, inputP);
+        inputX = reduce.getFirst();
+        inputP0 = reduce.getSecond();
+
+        if(!skipReduction) inputP = inputP0;
+
+        for(int i = 0; i < numBlocks; i++){
+            Pair<String, String> block = normalA(graph, filters * filterMultiplier, String.valueOf(i+numBlocks+1), inputX, inputP);
+            inputX = block.getFirst();
+            inputP = block.getSecond();
+        }
+
+        reduce = reductionA(graph, filters * (int)Math.pow(filterMultiplier, 2), "reduce"+(2*numBlocks), inputX, inputP);
+        inputX = reduce.getFirst();
+        inputP0 = reduce.getSecond();
+
+        if(!skipReduction) inputP = inputP0;
+
+        for(int i = 0; i < numBlocks; i++){
+            Pair<String, String> block = normalA(graph, filters * (int) Math.pow(filterMultiplier, 2), String.valueOf(i+(2*numBlocks)+1), inputX, inputP);
+            inputX = block.getFirst();
+            inputP = block.getSecond();
+        }
+
+        // output
         graph
-                // stem
-                .addLayer("stem_conv1", new ConvolutionLayer.Builder(3,3).stride(2,2).nOut(penultimateFilters).hasBias(false)
-                        .cudnnAlgoMode(cudnnAlgoMode).build(), "input")
-                .addLayer("stem_bn1", new BatchNormalization(), "stem_conv1");
-
-                // reduction
-
-
-        graph
-                // output
-                .addLayer("act", new ActivationLayer(Activation.RELU), )
+                .addLayer("act", new ActivationLayer(Activation.RELU), inputX)
                 .addLayer("avg_pool", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "act")
                 .addLayer("output", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                     .activation(Activation.SOFTMAX).build(), "avg_pool")

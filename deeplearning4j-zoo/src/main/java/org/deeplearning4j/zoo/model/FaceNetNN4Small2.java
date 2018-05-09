@@ -29,19 +29,20 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * Revised and consolidated version by @crockpotveggies
  */
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class FaceNetNN4Small2 extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 96, 96};
-    private int numClasses;
+    @Builder.Default private int numClasses = 0;
     @Builder.Default private IUpdater updater = new Adam(0.1, 0.9, 0.999, 0.01);
     @Builder.Default private Activation transferFunction = Activation.RELU;
     @Builder.Default CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+
+    private FaceNetNN4Small2() {}
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {

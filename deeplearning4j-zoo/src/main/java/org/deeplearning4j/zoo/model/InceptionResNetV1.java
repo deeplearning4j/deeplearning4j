@@ -31,18 +31,19 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * Revised and consolidated version by @crockpotveggies
  */
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class InceptionResNetV1 extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 160, 160};
-    private int numClasses;
+    @Builder.Default private int numClasses = 0;
     @Builder.Default private IUpdater updater = new RmsProp(0.1, 0.96, 0.001);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+
+    private InceptionResNetV1() {}
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {

@@ -67,6 +67,9 @@ public abstract class InputType implements Serializable {
     @JsonIgnore
     public abstract int arrayElementsPerExample();
 
+    @JsonIgnore
+    public abstract int[] getShape();
+
     /**
      * InputType for feed forward network data
      *
@@ -160,6 +163,11 @@ public abstract class InputType implements Serializable {
         public int arrayElementsPerExample() {
             return size;
         }
+
+        @Override
+        public int[] getShape() {
+            return new int[]{size};
+        }
     }
 
     @Getter
@@ -195,6 +203,11 @@ public abstract class InputType implements Serializable {
                         + "time series length is not set. Use InputType.recurrent(int size, int timeSeriesLength) instead?");
             }
             return timeSeriesLength * size;
+        }
+
+        @Override
+        public int[] getShape() {
+            return new int[]{size, timeSeriesLength};
         }
     }
 
@@ -243,6 +256,11 @@ public abstract class InputType implements Serializable {
         public int arrayElementsPerExample() {
             return height * width * channels;
         }
+
+        @Override
+        public int[] getShape() {
+            return new int[]{height, width, channels};
+        }
     }
 
     @AllArgsConstructor
@@ -268,6 +286,11 @@ public abstract class InputType implements Serializable {
         @Override
         public int arrayElementsPerExample() {
             return height * width * depth * channels;
+        }
+
+        @Override
+        public int[] getShape() {
+            return new int[]{height, width, depth, channels};
         }
     }
 
@@ -301,6 +324,11 @@ public abstract class InputType implements Serializable {
         @Override
         public int arrayElementsPerExample() {
             return height * width * depth;
+        }
+
+        @Override
+        public int[] getShape() {
+            return new int[]{height, width, depth};
         }
     }
 
