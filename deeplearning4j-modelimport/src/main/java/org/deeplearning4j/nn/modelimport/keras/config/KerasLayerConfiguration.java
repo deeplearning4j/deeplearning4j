@@ -107,6 +107,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_UPSAMPLING_1D = "UpSampling1D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_2D = "UpSampling2D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_3D = "UpSampling3D";
+    private final String LAYER_CLASS_NAME_DEPTHWISE_CONVOLUTION_2D = "DepthwiseConv2D"; // Keras 2 only
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = ""; // 1: SeparableConvolution2D, 2: SeparableConv2D
     private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = ""; // 1: Deconvolution2D, 2: Conv2DTranspose
 
@@ -158,6 +159,8 @@ public class KerasLayerConfiguration {
     /* Keras separable convolution types */
     private final String LAYER_PARAM_NAME_DEPTH_WISE_KERNEL = "depthwise_kernel";
     private final String LAYER_PARAM_NAME_POINT_WISE_KERNEL = "pointwise_kernel";
+    private final String LAYER_FIELD_DEPTH_MULTIPLIER = "depth_multiplier";
+
 
     private final String LAYER_FIELD_DEPTH_WISE_INIT = "depthwise_initializer";
     private final String LAYER_FIELD_POINT_WISE_INIT = "pointwise_initializer";
