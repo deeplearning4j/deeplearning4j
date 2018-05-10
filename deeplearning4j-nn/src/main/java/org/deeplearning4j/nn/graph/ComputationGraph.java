@@ -941,6 +941,23 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
+     * Perform minibatch training on all minibatches in the DataSetIterator, for the specified number of epochs.
+     * Equvalent to calling {@link #fit(DataSetIterator)} numEpochs times in a loop
+     *
+     * @param iterator  Training data (DataSetIterator). Iterator must support resetting
+     * @param numEpochs Number of training epochs, >= 1
+     */
+    public void fit(@NonNull DataSetIterator iterator, int numEpochs){
+        Preconditions.checkArgument(numEpochs > 0, "Number of epochs much be > 0. Got numEpochs = %s", numEpochs);
+        Preconditions.checkArgument(numEpochs == 1 || iterator.resetSupported(), "Cannot perform multiple epochs training using" +
+                "iterator thas does not support resetting (iterator.resetSupported() returned false)");
+
+        for(int i=0; i<numEpochs; i++ ){
+            fit(iterator);
+        }
+    }
+
+    /**
      * Fit the ComputationGraph using a DataSetIterator.<br>
      * Note that this method can only be used with ComputationGraphs with 1 input and 1 output<br>
      * Method doesn't do layerwise  pretraining.<br>
@@ -959,6 +976,23 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 multiDataSet.getLabelsMaskArrays());
         if (multiDataSet.hasMaskArrays())
             clearLayerMaskArrays();
+    }
+
+    /**
+     * Perform minibatch training on all minibatches in the MultiDataSetIterator, for the specified number of epochs.
+     * Equvalent to calling {@link #fit(MultiDataSetIterator)} numEpochs times in a loop
+     *
+     * @param iterator  Training data (DataSetIterator). Iterator must support resetting
+     * @param numEpochs Number of training epochs, >= 1
+     */
+    public void fit(@NonNull MultiDataSetIterator iterator, int numEpochs){
+        Preconditions.checkArgument(numEpochs > 0, "Number of epochs much be > 0. Got numEpochs = %s", numEpochs);
+        Preconditions.checkArgument(numEpochs == 1 || iterator.resetSupported(), "Cannot perform multiple epochs training using" +
+                "iterator thas does not support resetting (iterator.resetSupported() returned false)");
+
+        for(int i=0; i<numEpochs; i++ ){
+            fit(iterator);
+        }
     }
 
     /**

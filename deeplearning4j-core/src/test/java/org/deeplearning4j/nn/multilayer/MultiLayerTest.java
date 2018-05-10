@@ -36,6 +36,7 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
@@ -1320,5 +1321,24 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         assertEquals(exp, outBuilder);
         assertEquals(exp, outConf);
+    }
+
+    @Test
+    public void testMultipleEpochsSimple(){
+        //Mainly a simple sanity check on the preconditions in the method...
+        DataSetIterator iter = new IrisDataSetIterator(10, 150);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new OutputLayer.Builder().nIn(4).nOut(3).build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        net.fit(iter, 3);
+
+        ComputationGraph g = net.toComputationGraph();
+        g.fit(iter, 3);
+
     }
 }

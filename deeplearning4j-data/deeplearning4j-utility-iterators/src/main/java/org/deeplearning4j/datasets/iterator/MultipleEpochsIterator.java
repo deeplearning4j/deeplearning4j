@@ -34,7 +34,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A dataset iterator for doing multiple passes over a dataset
+ *
+ * @deprecated Does not properly trigger the incrementing of epoch counts in MultiLayerNetwork/ComputationGraph.
+ * Use MultiLayerNetwork/ComputationGraph.fit(DataSetIterator, int numEpochs) instead
  */
+@Deprecated
 public class MultipleEpochsIterator implements DataSetIterator {
     @VisibleForTesting
     protected int epochs = 0;
@@ -51,6 +55,7 @@ public class MultipleEpochsIterator implements DataSetIterator {
     protected AtomicLong iterationsCounter = new AtomicLong(0);
     protected long totalIterations = Long.MAX_VALUE;
 
+    @Deprecated
     public MultipleEpochsIterator(int numEpochs, DataSetIterator iter) {
         this.numEpochs = numEpochs;
         this.iter = iter;
@@ -69,12 +74,14 @@ public class MultipleEpochsIterator implements DataSetIterator {
         this.totalIterations = totalIterations;
     }
 
+    @Deprecated
     public MultipleEpochsIterator(DataSetIterator iter, long totalIterations) {
         this.numEpochs = Integer.MAX_VALUE;
         this.iter = iter;
         this.totalIterations = totalIterations;
     }
 
+    @Deprecated
     public MultipleEpochsIterator(int numEpochs, DataSet ds) {
         this.numEpochs = numEpochs;
         this.ds = ds;

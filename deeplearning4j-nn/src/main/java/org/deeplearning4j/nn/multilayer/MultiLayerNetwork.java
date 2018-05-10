@@ -1350,12 +1350,30 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return f1Score(data.getFeatures(), data.getLabels());
     }
 
-    @Override
     /**
-     * Method doesn't do layerwise  pretraining.<br>
+     * Perform minibatch training on all minibatches in the DataSetIterator, for the specified number of epochs.
+     * Equvalent to calling {@link #fit(DataSetIterator)} numEpochs times in a loop
+     *
+     * @param iterator  Training data (DataSetIterator). Iterator must support resetting
+     * @param numEpochs Number of training epochs, >= 1
+     */
+    public void fit(@NonNull DataSetIterator iterator, int numEpochs){
+        Preconditions.checkArgument(numEpochs > 0, "Number of epochs much be > 0. Got numEpochs = %s", numEpochs);
+        Preconditions.checkArgument(numEpochs == 1 || iterator.resetSupported(), "Cannot perform multiple epochs training using" +
+                "iterator thas does not support resetting (iterator.resetSupported() returned false)");
+
+        for(int i=0; i<numEpochs; i++ ){
+            fit(iterator);
+        }
+    }
+
+    /**
+     * Perform minibatch training on all minibatches in the DataSetIterator.<br>
+     * Note that this method does not do layerwise  pretraining.<br>
      * For pretraining use method pretrain.. {@link #pretrain(DataSetIterator)}<br>
      * @param iterator Training data (DataSetIterator)
      */
+    @Override
     public void fit(DataSetIterator iterator) {
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         DataSetIterator iter;
@@ -3101,6 +3119,30 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 "MultiLayerNetwork can't handle MultiDataSet. Please consider use of ComputationGraph");
     }
 
+    /**
+     * Perform minibatch training on all minibatches in the MultiDataSetIterator, for the specified number of epochs.
+     * Equvalent to calling {@link #fit(MultiDataSetIterator)} numEpochs times in a loop
+     *
+     * @param iterator  Training data (DataSetIterator). Iterator must support resetting
+     * @param numEpochs Number of training epochs, >= 1
+     */
+    public void fit(@NonNull MultiDataSetIterator iterator, int numEpochs){
+        Preconditions.checkArgument(numEpochs > 0, "Number of epochs much be > 0. Got numEpochs = %s", numEpochs);
+        Preconditions.checkArgument(numEpochs == 1 || iterator.resetSupported(), "Cannot perform multiple epochs training using" +
+                "iterator thas does not support resetting (iterator.resetSupported() returned false)");
+
+        for(int i=0; i<numEpochs; i++ ){
+            fit(iterator);
+        }
+    }
+
+    /**
+     * Perform minibatch training on all minibatches in the MultiDataSetIterator.<br>
+     * Note: The MultiDataSets in the MultiDataSetIterator must have exactly 1 input and output array (as
+     * MultiLayerNetwork only supports 1 input and 1 output)
+     *
+     * @param iterator  Training data (DataSetIterator). Iterator must support resetting
+     */
     @Override
     public void fit(MultiDataSetIterator iterator) {
         fit(new MultiDataSetWrapperIterator(iterator));
