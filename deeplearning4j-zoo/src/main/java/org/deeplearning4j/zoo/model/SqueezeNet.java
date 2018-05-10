@@ -51,7 +51,7 @@ public class SqueezeNet extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return "http://blob.deeplearning4j.org/models/squeezenet_dl4j_inference.v1.zip";
+            return "http://blob.deeplearning4j.org/models/squeezenet_dl4j_inference.v2.zip";
         else
             return null;
     }
@@ -59,7 +59,7 @@ public class SqueezeNet extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return 1654817155L;
+            return 3711411239L;
         else
             return 0L;
     }
