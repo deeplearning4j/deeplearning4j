@@ -927,24 +927,88 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
     }
 
     @Test
+    public void testDepthwiseConv2D() {
+        int nIn = 3;
+        int depthMultiplier = 2;
+        int nOut = nIn * depthMultiplier;
+
+        int width = 8;
+        int height = 8;
+
+        Nd4j.getRandom().setSeed(12345);
+
+        int[] ks = new int[]{1,3,1,3,1,3,1,3};
+        int[] ss = new int[]{1,1,2,2,1,1,2,2};
+        ConvolutionMode[] cms = new ConvolutionMode[]{
+                Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate};
+        int[] mb = new int[]{1,1,3,3,3,1,3,3};
+
+        for( int t=0; t<ks.length; t++ ){
+
+            int k = ks[t];
+            int s = ss[t];
+            ConvolutionMode cm = cms[t];
+            int minibatchSize = mb[t];
+
+
+            INDArray input = Nd4j.rand(minibatchSize, width * height * nIn);
+            INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+            for (int i = 0; i < minibatchSize; i++) {
+                labels.putScalar(new int[]{i, i % nOut}, 1.0);
+            }
+
+            NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345)
+                    .updater(new NoOp())
+                    .activation(Activation.TANH)
+                    .convolutionMode(cm)
+                    .list()
+                    .layer(new SeparableConvolution2D.Builder().name("depth-wise conv 2D layer")
+                            .cudnnAllowFallback(false)
+                            .kernelSize(k, k)
+                            .stride(s, s)
+                            .depthMultiplier(depthMultiplier)
+                            .nIn(nIn).nOut(nOut).build());
+
+            MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                    .activation(Activation.SOFTMAX).nOut(nOut).build())
+                    .setInputType(InputType.convolutionalFlat(height, width, nIn)).build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            for (int i = 0; i < net.getLayers().length; i++) {
+                System.out.println("nParams, layer " + i + ": " + net.getLayer(i).numParams());
+            }
+
+            String msg = " - mb=" + minibatchSize + ", k="
+                    + k + ", s=" + s + ", cm=" + cm;
+            System.out.println(msg);
+
+            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+            assertTrue(msg, gradOK);
+
+            TestUtils.testModelSerialization(net);
+        }
+    }
+
+
+    @Test
     public void testSeparableConv2D() {
         int nOut = 2;
 
-        int[] minibatchSizes = new int[] {1, 3};
         int width = 8;
         int height = 8;
         int inputDepth = 3;
-        int[] kernelSizes = new int[]{2, 3};
-        int[] strides = {1, 2};
-        int[] dilation = {1, 2};
-        ConvolutionMode[] cModes = new ConvolutionMode[]{ConvolutionMode.Truncate};
 
         Nd4j.getRandom().setSeed(12345);
 
         int[] ks = new int[]{1,3,1,3,1,3,1,3};
         int[] ss = new int[]{1,1,2,2,1,1,2,2};
         int[] ds = new int[]{1,1,1,1,2,2,2,2};
-        ConvolutionMode[] cms = new ConvolutionMode[]{Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate};
+        ConvolutionMode[] cms = new ConvolutionMode[]{
+                Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate};
         int[] mb = new int[]{1,1,3,3,3,1,3,3};
 
         for( int t=0; t<ks.length; t++ ){
