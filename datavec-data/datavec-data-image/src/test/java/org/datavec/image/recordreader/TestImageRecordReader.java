@@ -20,7 +20,11 @@ import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.io.labels.PathMultiLabelGenerator;
 import org.datavec.api.records.Record;
+import org.datavec.api.records.listener.RecordListener;
+import org.datavec.api.records.listener.impl.LogRecordListener;
 import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
@@ -28,6 +32,7 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.batch.NDArrayRecordBatch;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -229,6 +234,33 @@ public class TestImageRecordReader {
         assertEquals(l2.get(), act2);
     }
 
+    @Test
+    public void testListenerInvocationBatch() throws IOException {
+        ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+        ImageRecordReader rr = new ImageRecordReader(32, 32, 3, labelMaker);
+        File parent = new ClassPathResource("/testimages/class0").getFile();
+        int numFiles = parent.list().length;
+        rr.initialize(new FileSplit(parent));
+        CountingListener counting = new CountingListener(new LogRecordListener());
+        rr.setListeners(counting);
+        rr.next(numFiles + 1);
+        assertEquals(numFiles, counting.getCount());
+    }
+
+    @Test
+    public void testListenerInvocationSingle() throws IOException {
+        ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+        ImageRecordReader rr = new ImageRecordReader(32, 32, 3, labelMaker);
+        File parent = new ClassPathResource("/testimages/class0").getFile();
+        int numFiles = parent.list().length;
+        rr.initialize(new FileSplit(parent));
+        CountingListener counting = new CountingListener(new LogRecordListener());
+        rr.setListeners(counting);
+        while(rr.hasNext()) {
+            rr.next();
+        }
+        assertEquals(numFiles, counting.getCount());
+    }
 
     private static class TestRegressionLabelGen implements PathLabelGenerator {
 
@@ -382,6 +414,42 @@ public class TestImageRecordReader {
                         new NDArrayWritable(Nd4j.create(new double[]{0,0,1})), new DoubleWritable(5.0));
             default:
                 throw new RuntimeException(filename);
+        }
+    }
+
+    private static class CountingListener implements RecordListener {
+
+        private RecordListener listener;
+        private int count = 0;
+
+        public CountingListener(RecordListener listener) {
+            this.listener = listener;
+        }
+
+        @Override
+        public boolean invoked() {
+            return this.listener.invoked();
+        }
+
+        @Override
+        public void invoke() {
+            this.listener.invoke();
+        }
+
+        @Override
+        public void recordRead(RecordReader reader, Object record) {
+            this.listener.recordRead(reader, record);
+            this.count++;
+        }
+
+        @Override
+        public void recordWrite(RecordWriter writer, Object record) {
+            this.listener.recordWrite(writer, record);
+            this.count++;
+        }
+
+        public int getCount() {
+            return count;
         }
     }
 }

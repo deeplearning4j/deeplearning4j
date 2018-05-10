@@ -278,6 +278,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         while (cnt < num && iter.hasNext()) {
             currentFile = iter.next();
             currBatch.add(currentFile);
+            invokeListeners(currentFile);
             if (appendLabel || writeLabel) {
                 //Collect the label Writables from the label generators
                 if(labelMultiGenerator != null){
