@@ -43,6 +43,9 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     private final String LAYER_CLASS_NAME_PERMUTE = "Permute";
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
+    private final String LAYER_CLASS_NAME_SPATIAL_DROPOUT_1D = "SpatialDropout1D";
+    private final String LAYER_CLASS_NAME_SPATIAL_DROPOUT_2D = "SpatialDropout2D";
+    private final String LAYER_CLASS_NAME_SPATIAL_DROPOUT_3D = "SpatialDropout3D";
     private final String LAYER_CLASS_NAME_ALPHA_DROPOUT = "AlphaDropout";
     private final String LAYER_CLASS_NAME_GAUSSIAN_DROPOUT = "GaussianDropout";
     private final String LAYER_CLASS_NAME_GAUSSIAN_NOISE = "GaussianNoise";
