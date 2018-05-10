@@ -4983,16 +4983,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Shape.length(javaShapeInformation);
     }
 
-    /**
-     * Broadcasts this ndarray to be the specified shape
-     *
-     * @param shape the new shape of this ndarray
-     * @return the broadcasted ndarray
-     */
     @Override
-    public INDArray broadcast(int... shape) {
+    public INDArray broadcast(INDArray result) {
         Nd4j.getCompressor().autoDecompress(this);
 
+        int[] shape = result.shape();
 
         if (Shape.shapeEquals(shape, shape()))
             return this;
@@ -5000,6 +4995,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // if we're on scalar, we can just create new array
         if (this.isScalar())
             return Nd4j.createUninitialized(shape).assign(this.getDouble(0));
+
+
 
 
         boolean compatible = true;
@@ -5052,16 +5049,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         }
 
-        INDArray ret = create(retShape, ordering());
 
         if (isRowVector()) {
             //number of times to repeat each value
-            for (int i = 0; i < ret.slices(); i++) {
-                ret.putSlice(i, this);
+            for (int i = 0; i < result.slices(); i++) {
+                result.putSlice(i, this);
             }
         } else if (isColumnVector()) {
-            for (int i = 0; i < ret.columns(); i++) {
-                ret.putColumn(i, this);
+            for (int i = 0; i < result.columns(); i++) {
+                result.putColumn(i, this);
             }
         }
 
@@ -5081,10 +5077,23 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 }
             }
 
-            ret = Nd4j.tile(this,repeat);
-        }
-        return ret;
+            //Nd4j.getExecutioner().exec(new Tile(new INDArray[]{this},new INDArray[]{result},repeat));
 
+            result = Nd4j.tile(this,repeat);
+        }
+        return result;
+
+    }
+
+    /**
+     * Broadcasts this ndarray to be the specified shape
+     *
+     * @param shape the new shape of this ndarray
+     * @return the broadcasted ndarray
+     */
+    @Override
+    public INDArray broadcast(int... shape) {
+      return broadcast(Nd4j.createUninitialized(shape));
     }
 
 

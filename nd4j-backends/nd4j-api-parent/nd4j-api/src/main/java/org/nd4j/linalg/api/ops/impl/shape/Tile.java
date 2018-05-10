@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -39,6 +40,7 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class Tile extends DynamicCustomOp {
+
     private int[] axis;
     private boolean is_static_reps = false;
 
@@ -47,6 +49,19 @@ public class Tile extends DynamicCustomOp {
         this.axis = axis;
         addArguments();
     }
+
+    public Tile(INDArray[] inputs, INDArray[] outputs, int[] axis, boolean is_static_reps) {
+        super(null, inputs, outputs);
+        this.axis = axis;
+        this.is_static_reps = is_static_reps;
+        addArguments();
+    }
+
+
+    public Tile(INDArray[] inputs, INDArray[] outputs, int[] axis) {
+        this(inputs,outputs,axis,false);
+    }
+
 
     public Tile() {}
 

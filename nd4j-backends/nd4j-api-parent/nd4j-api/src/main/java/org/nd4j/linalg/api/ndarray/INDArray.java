@@ -2506,6 +2506,14 @@ public interface INDArray extends Serializable {
 
 
     /**
+     * Broadcasts this ndarray to be the specified shape
+     *
+     * @return the broadcasted ndarray
+     */
+    INDArray broadcast(INDArray result);
+
+
+    /**
      * Returns a scalar (individual element)
      * of a scalar ndarray
      *

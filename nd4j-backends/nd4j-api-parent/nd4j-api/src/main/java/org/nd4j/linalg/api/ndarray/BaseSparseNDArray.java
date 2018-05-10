@@ -1604,6 +1604,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public INDArray broadcast(INDArray result) {
+        return null;
+    }
+
+    @Override
     public INDArray getColumn(int i) {
         return null;
     }

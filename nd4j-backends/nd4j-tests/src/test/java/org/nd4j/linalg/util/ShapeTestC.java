@@ -7,6 +7,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.shape.Tile;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,6 +46,18 @@ public class ShapeTestC extends BaseNd4jTest {
 
     }
 
+
+    @Test
+    public void testTile() {
+        INDArray arr = Nd4j.scalar(1.0);
+        //INDArray[] inputs, INDArray[] outputs, int[] axis
+        INDArray result = Nd4j.createUninitialized(2,2);
+        Tile tile = new Tile(new INDArray[]{arr},new INDArray[]{result},new int[] {2,2});
+        Nd4j.getExecutioner().exec(tile);
+        INDArray tiled = Nd4j.tile(arr,2,2);
+        assertEquals(tiled,result);
+
+    }
 
     @Test
     public void testElementWiseCompareOnesInMiddle() {
