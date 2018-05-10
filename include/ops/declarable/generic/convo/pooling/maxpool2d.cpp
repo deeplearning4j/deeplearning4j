@@ -1,5 +1,6 @@
 //
-// Created by raver119 on 29/10/17.
+// @author raver119, created  on 29/10/17.
+// @author Yurii Shyrma (iuriish@yahoo.com), changed on 09.05.2018
 //
 
 #include <op_boilerplate.h>
@@ -10,108 +11,84 @@
 #include <ops/declarable/helpers/max_pooling.h>
 
 namespace nd4j {
-    namespace ops {
-        CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 11) {
+namespace ops  {
 
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
-            NDArray<T>* epsilon = INPUT_VARIABLE(1);
-            NDArray<T>* outEpsilon = this->getZ(block);
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-            std::vector<int> argI = *(block.getIArguments());
+CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 9) {
 
-            int kH = argI[0];
-            int kW = argI[1];
-            int sH = argI[2];
-            int sW = argI[3];
-            int pH = argI[4];
-            int pW = argI[5];
-            int dH = argI[6];
-            int dW = argI[7];
-            int isSameMode = argI[8];
-            bool isNCHW = true;
-            if (block.getIArguments()->size() > 10)
-                isNCHW = INT_ARG(10) == 0;
+    NDArray<T>* input = INPUT_VARIABLE(0);                          // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    NDArray<T>* gradO = INPUT_VARIABLE(1);                          // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    NDArray<T>* gradI = OUTPUT_VARIABLE(0);                         // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
 
-            int bS = input->getShapeInfo()[1];
-            int iD = input->getShapeInfo()[2];
-            int iH = input->getShapeInfo()[3];
-            int iW = input->getShapeInfo()[4];
+    int kH = INT_ARG(0);                                                        // filter(kernel) height
+    int kW = INT_ARG(1);                                                        // filter(kernel) width
+    int sH = INT_ARG(2);                                                        // strides height
+    int sW = INT_ARG(3);                                                        // strides width
+    int pH = INT_ARG(4);                                                        // paddings height
+    int pW = INT_ARG(5);                                                        // paddings width
+    int dH = INT_ARG(6);                                                        // dilations height
+    int dW = INT_ARG(7);                                                        // dilations width
+    int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
+    int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;           // 0-NHWC, 1-NCHW    
 
-            // calculate output Height/Width
-            int oH, oW;
-            ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    REQUIRE_TRUE(input->rankOf() == 4, 0, "MAXPOOL2D_BP op: input should have rank of 4, but got %i instead", input->rankOf());
 
-            bool cOrderStrides = false;
-            bool isEpsilonDup = false;
-            if (epsilon->ordering() != 'c') {
-                epsilon->streamline('c');
-                cOrderStrides = true;
-                isEpsilonDup = true;
-            }
+    int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
+    int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
+    ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
-            int strideToCompare[] = {oH*oW, iD*oH*oW, oW, 1};
-            if (!cOrderStrides && shape::strideDescendingCAscendingF(epsilon->getShapeInfo())) {
-                cOrderStrides = true;
-            }
-            else if (!shape::strideEquals(strideToCompare, 4, epsilon->stridesOf(), epsilon->rankOf())) {
-                epsilon = epsilon->dup('c');
-                cOrderStrides = true;
-                isEpsilonDup = true;
-            }
+    std::string expectedGradOShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,iC,oH,oW,  0,indIOioC,indIiH,indIiH+1}));
+    std::string expectedGradIShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,iC,iH,iW,  0,indIOioC,indIiH,indIiH+1}));
+    REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(gradO), 0, "MAXPOOL2D_BP op: wrong shape of output's gradients array (next epsilon), expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradO).c_str());    
+    REQUIRE_TRUE(expectedGradIShape == ShapeUtils<T>::shapeAsString(gradI), 0, "MAXPOOL2D_BP op: wrong shape of input's gradients array (epsilon), expected is %s, but got %s instead !", expectedGradIShape.c_str(), ShapeUtils<T>::shapeAsString(gradI).c_str());
 
-            NDArray<T>* col6d = nullptr;
-            NDArray<T>* col6dPermuted = nullptr;
-            NDArray<T>* epsilon1d = nullptr;
+    if(!isNCHW) {
+        input = input->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]                        
+        gradI = gradI->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]                        
+        gradO = gradO->permute({0, 3, 1, 2});                                   // [bS, oH, oW, iC] -> [bS, iC, oH, oW]                        
+    }
+    
+    if(isSameMode)                       // SAME        
+        ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-            if (cOrderStrides) {
-                col6d = new NDArray<T>('c', {bS, iD, oH, oW, kH, kW}, block.getWorkspace());
-                col6dPermuted = col6d->permute({0, 1, 4, 5, 2, 3});
-                epsilon1d = epsilon->reshape('c', {(int) epsilon->lengthOf(), 1}); //zero copy reshape
-            }
-            else {
-                col6d = new NDArray<T>('c', {iD, bS, oH, oW, kH, kW}, block.getWorkspace());
-                col6dPermuted = col6d->permute({1, 0, 4, 5, 2, 3});
-                NDArray<T>* epsilonTemp = epsilon->permute({1, 0, 2, 3});
-                epsilon1d = epsilonTemp->reshape('c', {(int) epsilon->lengthOf(), 1}); //Should be a zero-copy reshape always
-                delete epsilonTemp;
-            }
+    NDArray<T> columnsWrongShape(input->ordering(), {bS, iC, oH, oW, kH, kW}, input->getWorkspace());    
+    NDArray<T>* columns = columnsWrongShape.permute({0, 1, 4, 5, 2, 3});
 
-            NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW});
+    T extraParams1[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW};
+    input->template applyTransform<simdOps::Im2col<T>>(columns, extraParams1);
 
-            T extraParams1[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW, (T)0.0};
-            input->template applyTransform<simdOps::Im2col<T>>(col6dPermuted, extraParams1);
+    NDArray<T>* columns2d = columnsWrongShape.reshape('c', {bS*iC*oH*oW, kH*kW});
+    NDArray<T>* gradOVector = gradO->reshape('c', {(int) gradO->lengthOf(), 1}); 
+    T extraParams2[] = {(T)1., (T)1.};
+    columns2d->template applyTransform<simdOps::IsMax<T>>(extraParams2);
+    columns2d->muliColumnVector(gradOVector);
 
-            //FIXME: this op should be moved to CustomOps
-            T extraParams2[] = {(T)1.f, (T)1.f};
-            col2d->template applyTransform<simdOps::IsMax<T>>(extraParams2);
-            col2d->muliColumnVector(epsilon1d);
+    T extraParams3[] = {(T) sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW};
+    columns->template applyTransform<simdOps::Col2Im<T>>(gradI, extraParams3);
 
-            T extraParams3[] = {(T) sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW};   			// ??? zeros
-            col6dPermuted->template applyTransform<simdOps::Col2Im<T>>(outEpsilon, extraParams3);
+    if(!isNCHW) {
+        delete input;
+        delete gradI;
+        delete gradO;
+    }
+    delete columns;
+    delete columns2d;
+    delete gradOVector;
+    
+    return Status::OK();
+}
+DECLARE_SYN(MaxPool2D_bp, maxpool2d_bp);
+DECLARE_SYN(MaxPool_bp, maxpool2d_bp);
 
-            STORE_RESULT(*outEpsilon);		// ???
-
-            //if(isEpsilonDup)
-                //delete epsilon;
-            delete col6d;
-            delete col6dPermuted;
-            delete epsilon1d;
-            delete col2d;
-
-            return ND4J_STATUS_OK;
-        }
-        DECLARE_SYN(MaxPool2D_bp, maxpool2d_bp);
-        DECLARE_SYN(MaxPool_bp, maxpool2d_bp);
-
-        DECLARE_SHAPE_FN(maxpool2d_bp) {
-            
-            // FIXME: remove memcpy here
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
-            memcpy(newShapeInfo, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
-            return SHAPELIST(newShapeInfo);
-        }
+DECLARE_SHAPE_FN(maxpool2d_bp) {
+                
+    REQUIRE_TRUE(inputShape->at(0)[0] == 4, 0, "MAXPOOL2D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
+    REQUIRE_TRUE(inputShape->at(1)[0] == 4, 0, "MAXPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!", inputShape->at(1)[0]);
+    
+    int* gradIShapeInfo(nullptr);
+    COPY_SHAPE(inputShape->at(0), gradIShapeInfo);
+    
+    return SHAPELIST(gradIShapeInfo);
+}
 
 
         //////////////////////////////////////////////////////////////////////////
@@ -181,7 +158,7 @@ namespace nd4j {
                 isNCHW = INT_ARG(10) == 0;
 
             int bS = shapeOf[0];
-            int iD = isNCHW ? shapeOf[1] : shapeOf[3];
+            int iC = isNCHW ? shapeOf[1] : shapeOf[3];
             int iH = isNCHW ? shapeOf[2] : shapeOf[1];
             int iW = isNCHW ? shapeOf[3] : shapeOf[2];
 
@@ -201,7 +178,7 @@ namespace nd4j {
             if (isNCHW) {
                 newShapeInfo[0] = 4;        // rank
                 newShapeInfo[1] = bS;
-                newShapeInfo[2] = iD;
+                newShapeInfo[2] = iC;
                 newShapeInfo[3] = oH;
                 newShapeInfo[4] = oW;
             } else {
@@ -209,7 +186,7 @@ namespace nd4j {
                 newShapeInfo[1] = bS;
                 newShapeInfo[2] = oH;
                 newShapeInfo[3] = oW;
-                newShapeInfo[4] = iD;
+                newShapeInfo[4] = iC;
             }
             shape::updateStrides(newShapeInfo, order);
 
