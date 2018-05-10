@@ -103,10 +103,10 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         INDArray[] outputs;
         if (layerConf().hasBias()) {
             bias = getParamWithNoise(DepthwiseConvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
-            inputs = new INDArray[]{input, delta, bias, depthWiseWeights};
+            inputs = new INDArray[]{input, depthWiseWeights, bias, delta};
             outputs = new INDArray[]{outEpsilon, weightGradView, biasGradView};
         } else {
-            inputs = new INDArray[]{input, delta, depthWiseWeights};
+            inputs = new INDArray[]{input, depthWiseWeights, delta};
             outputs = new INDArray[]{outEpsilon, weightGradView};
         }
 

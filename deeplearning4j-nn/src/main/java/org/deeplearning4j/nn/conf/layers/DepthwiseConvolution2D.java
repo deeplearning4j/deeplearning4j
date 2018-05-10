@@ -53,6 +53,7 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
         this.cudnnFwdAlgo = builder.cudnnFwdAlgo;
         this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
         this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
+        this.nOut = this.nIn * this.depthMultiplier;
 
         initializeConstraints(builder);
     }

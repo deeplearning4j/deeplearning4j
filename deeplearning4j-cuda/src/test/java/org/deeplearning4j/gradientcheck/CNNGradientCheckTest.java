@@ -962,12 +962,12 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     .activation(Activation.TANH)
                     .convolutionMode(cm)
                     .list()
-                    .layer(new SeparableConvolution2D.Builder().name("depth-wise conv 2D layer")
+                    .layer(new DepthwiseConvolution2D.Builder().name("depth-wise conv 2D layer")
                             .cudnnAllowFallback(false)
                             .kernelSize(k, k)
                             .stride(s, s)
                             .depthMultiplier(depthMultiplier)
-                            .nIn(nIn).nOut(nOut).build());
+                            .nIn(nIn).build()); // nOut = nIn * depthMultiplier
 
             MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                     .activation(Activation.SOFTMAX).nOut(nOut).build())

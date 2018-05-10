@@ -7,7 +7,6 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
-import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
@@ -72,6 +71,7 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
+
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
         int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
@@ -96,7 +96,7 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
 
 
         DepthwiseConvolution2D.Builder builder = new DepthwiseConvolution2D.Builder().name(this.layerName)
-                .nOut(getNOutFromConfig(layerConfig, conf))
+//                .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(depthWeightInit)
