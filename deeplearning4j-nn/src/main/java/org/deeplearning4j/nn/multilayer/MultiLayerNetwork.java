@@ -1638,7 +1638,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     }
 
                     IOutputLayer outputLayer = (IOutputLayer) getOutputLayer();
-                    if (labels == null)
+                    if (labels == null && outputLayer.needsLabels())
                         throw new IllegalStateException("No labels found");
                     outputLayer.setLabels(labels);
                 }
@@ -1651,7 +1651,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     // workspace may be set to the incorrect one
                     wsActGradTemp.setPreviousWorkspace(initialWorkspace);
 
-                    INDArray eps = (i == layers.length-1 ? epsilon : currPair.getRight());  //eps is null for OutputLayer
+                    INDArray eps = (i == layers.length - 1 ? epsilon : currPair.getRight());  //eps is null for OutputLayer
 
                     if(!tbptt){
                         //Standard case

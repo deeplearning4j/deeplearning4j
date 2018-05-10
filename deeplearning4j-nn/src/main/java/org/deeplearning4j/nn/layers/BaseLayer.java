@@ -31,6 +31,7 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
@@ -43,7 +44,7 @@ import java.util.*;
  * @author Adam Gibson
  */
 public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseLayer>
-                extends AbstractLayer<LayerConfT> {
+        extends AbstractLayer<LayerConfT> {
 
     protected INDArray paramsFlattened;
     protected INDArray gradientsFlattened;
@@ -87,6 +88,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
         Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
+
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
 
         if(hasBias()){
@@ -193,7 +195,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             length += getParam(s).length();
         if (params.length() != length)
             throw new IllegalArgumentException("Unable to set parameters: must be of length " + length
-                            + ", got params of length " + params.length() + " - " + layerId());
+                    + ", got params of length " + params.length() + " - " + layerId());
         int idx = 0;
         Set<String> paramKeySet = this.params.keySet();
         for (String s : paramKeySet) {
@@ -201,7 +203,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             INDArray get = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(idx, idx + param.length()));
             if (param.length() != get.length())
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length()
-                                + " but was " + get.length() + " - " + layerId());
+                        + " but was " + get.length() + " - " + layerId());
             param.assign(get.reshape(order, param.shape())); //Use assign due to backprop params being a view of a larger array
             idx += param.length();
         }
@@ -211,7 +213,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public void setParamsViewArray(INDArray params) {
         if (this.params != null && params.length() != numParams())
             throw new IllegalArgumentException("Invalid input: expect params of length " + numParams()
-                            + ", got params of length " + params.length() + " - " + layerId());
+                    + ", got params of length " + params.length() + " - " + layerId());
 
         this.paramsFlattened = params;
     }
@@ -225,7 +227,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public void setBackpropGradientsViewArray(INDArray gradients) {
         if (this.params != null && gradients.length() != numParams())
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true)
-                            + ", got array of length " + gradients.length() + " - " + layerId());
+                    + ", got array of length " + gradients.length() + " - " + layerId());
 
         this.gradientsFlattened = gradients;
         this.gradientViews = conf.getLayer().initializer().getGradientsFromFlattened(conf, gradients);
@@ -295,13 +297,13 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         if (input.rank() != 2 || input.columns() != W.rows()) {
             if (input.rank() != 2) {
                 throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank "
-                                + input.rank() + " array with shape " + Arrays.toString(input.shape())
-                                + ". Missing preprocessor or wrong input type? " + layerId());
+                        + input.rank() + " array with shape " + Arrays.toString(input.shape())
+                        + ". Missing preprocessor or wrong input type? " + layerId());
             }
             throw new DL4JInvalidInputException(
-                            "Input size (" + input.columns() + " columns; shape = " + Arrays.toString(input.shape())
-                                            + ") is invalid: does not match layer input size (layer # inputs = "
-                                            + W.size(0) + ") " + layerId());
+                    "Input size (" + input.columns() + " columns; shape = " + Arrays.toString(input.shape())
+                            + ") is invalid: does not match layer input size (layer # inputs = "
+                            + W.size(0) + ") " + layerId());
         }
 
 
@@ -406,14 +408,14 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public String toString() {
         return getClass().getName() + "{" + "conf=" + conf + ", dropoutMask=" + dropoutMask + ", score=" + score
-                        + ", optimizer=" + optimizer + ", listeners=" + trainingListeners + '}';
+                + ", optimizer=" + optimizer + ", listeners=" + trainingListeners + '}';
     }
 
     @Override
     public Layer transpose() {
         if (!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
             throw new UnsupportedOperationException(
-                            "Unsupported layer type: " + conf.getLayer().getClass().getName() + " - " + layerId());
+                    "Unsupported layer type: " + conf.getLayer().getClass().getName() + " - " + layerId());
 
         INDArray w = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
@@ -423,7 +425,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             NeuralNetConfiguration clone = conf.clone(); // assume a deep clone here
 
             org.deeplearning4j.nn.conf.layers.FeedForwardLayer clonedLayerConf =
-                            (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) clone.getLayer();
+                    (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) clone.getLayer();
             int nIn = clonedLayerConf.getNOut();
             int nOut = clonedLayerConf.getNIn();
             clonedLayerConf.setNIn(nIn);

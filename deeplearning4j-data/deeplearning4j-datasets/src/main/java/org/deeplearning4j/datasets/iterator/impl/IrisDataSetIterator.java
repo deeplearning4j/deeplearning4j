@@ -19,6 +19,7 @@
 package org.deeplearning4j.datasets.iterator.impl;
 
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.BaseDatasetIterator;
 
 public class IrisDataSetIterator extends BaseDatasetIterator {
@@ -56,5 +57,14 @@ public class IrisDataSetIterator extends BaseDatasetIterator {
     }
 
 
+    @Override
+    public DataSet next() {
+        fetcher.fetch(batch);
+        DataSet next = fetcher.next();
+        if(preProcessor != null) {
+            preProcessor.preProcess(next);
+        }
 
+        return next;
+    }
 }
