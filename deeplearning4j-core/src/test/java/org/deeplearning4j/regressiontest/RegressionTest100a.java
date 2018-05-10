@@ -222,4 +222,46 @@ public class RegressionTest100a extends BaseDL4JTest {
     }
 
 
+    @Test
+    public void testUpsampling2d() throws Exception {
+
+        File f = new ClassPathResource("regression_testing/100a/upsampling/net.bin").getFile();
+        MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
+
+        INDArray in;
+        File fIn = new ClassPathResource("regression_testing/100a/upsampling/in.bin").getTempFileFromArchive();
+        try(DataInputStream dis = new DataInputStream(new FileInputStream(fIn))){
+            in = Nd4j.read(dis);
+        }
+
+        INDArray label;
+        File fLabels = new ClassPathResource("regression_testing/100a/upsampling/labels.bin").getTempFileFromArchive();
+        try(DataInputStream dis = new DataInputStream(new FileInputStream(fLabels))){
+            label = Nd4j.read(dis);
+        }
+
+        INDArray outExp;
+        File fOutExp = new ClassPathResource("regression_testing/100a/upsampling/out.bin").getTempFileFromArchive();
+        try(DataInputStream dis = new DataInputStream(new FileInputStream(fOutExp))){
+            outExp = Nd4j.read(dis);
+        }
+
+        INDArray gradExp;
+        File fGradExp = new ClassPathResource("regression_testing/100a/upsampling/gradient.bin").getTempFileFromArchive();
+        try(DataInputStream dis = new DataInputStream(new FileInputStream(fGradExp))){
+            gradExp = Nd4j.read(dis);
+        }
+
+        INDArray out = net.output(in, false);
+        assertEquals(outExp, out);
+
+        net.setInput(in);
+        net.setLabels(label);
+        net.computeGradientAndScore();
+
+        INDArray grad = net.getFlattenedGradients();
+        assertEquals(gradExp, grad);
+    }
+
+
 }

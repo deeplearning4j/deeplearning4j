@@ -26,9 +26,11 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
+import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyIntArrayDeserializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Collection;
 import java.util.Map;
@@ -45,6 +47,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Upsampling2D extends BaseUpsamplingLayer {
 
+    @JsonDeserialize(using= LegacyIntArrayDeserializer.class)
     protected int[] size;
 
     protected Upsampling2D(UpsamplingBuilder builder) {
