@@ -7,8 +7,11 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasRegularizerUtils;
 import org.deeplearning4j.nn.params.SeparableConvolutionParamInitializer;
@@ -16,6 +19,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,7 +60,20 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
      */
     public KerasDepthwiseConvolution2D(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        this(layerConfig, true);
+        this(layerConfig, Collections.<String, KerasLayer>emptyMap(), true);
+    }
+
+    /**
+     * Constructor from parsed Keras layer configuration dictionary.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @throws InvalidKerasConfigurationException     Invalid Keras configuration
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras configuration
+     */
+    public KerasDepthwiseConvolution2D(Map<String, Object> layerConfig,
+                                       Map<String, ? extends KerasLayer> previousLayers)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this(layerConfig, previousLayers, true);
     }
 
     /**
@@ -67,7 +84,8 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
      * @throws InvalidKerasConfigurationException     Invalid Keras configuration
      * @throws UnsupportedKerasConfigurationException Unsupported Keras configuration
      */
-    public KerasDepthwiseConvolution2D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasDepthwiseConvolution2D(Map<String, Object> layerConfig,
+                                       Map<String, ? extends KerasLayer> previousLayers, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
@@ -80,6 +98,8 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
                 conf.getLAYER_FIELD_DEPTH_WISE_INIT(), enforceTrainingConfig, conf, kerasMajorVersion);
         WeightInit depthWeightInit = depthWiseInit.getFirst();
         Distribution depthDistribution = depthWiseInit.getSecond();
+
+        int nIn = getNInFromConfig(previousLayers);
 
         int depthMultiplier = getDepthMultiplier(layerConfig, conf);
 
@@ -96,8 +116,9 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
 
 
         DepthwiseConvolution2D.Builder builder = new DepthwiseConvolution2D.Builder().name(this.layerName)
-//                .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout)
+                .nIn(nIn)
+                .nOut(nIn * depthMultiplier)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(depthWeightInit)
                 .depthMultiplier(depthMultiplier)
@@ -121,6 +142,31 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
             builder.constrainWeights(depthWiseWeightConstraint);
         this.layer = builder.build();
     }
+
+    int getNInFromConfig(Map<String, ? extends KerasLayer> previousLayers) throws UnsupportedKerasConfigurationException {
+        int size = previousLayers.size();
+        int count = 0;
+        int nIn;
+        String inboundLayerName = inboundLayerNames.get(0);
+        while (count <= size) {
+            if (previousLayers.containsKey(inboundLayerName)) {
+                KerasLayer inbound = previousLayers.get(inboundLayerName);
+                try {
+                    FeedForwardLayer ffLayer = (FeedForwardLayer) inbound.getLayer();
+                    nIn = ffLayer.getNOut();
+                    if (nIn > 0)
+                        return nIn;
+                    count++;
+                    inboundLayerName = inbound.getInboundLayerNames().get(0);
+                } catch (Exception e) {
+                    inboundLayerName = inbound.getInboundLayerNames().get(0);
+                }
+            }
+        }
+        throw new UnsupportedKerasConfigurationException("Could not determine number of input channels for" +
+                "depthwise convolution.");
+    }
+
 
     /**
      * Set weights for layer.

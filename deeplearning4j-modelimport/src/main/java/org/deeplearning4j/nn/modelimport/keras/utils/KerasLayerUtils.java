@@ -221,7 +221,7 @@ public class KerasLayerUtils {
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ATROUS_CONVOLUTION_1D())) {
             layer = new KerasAtrousConvolution1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DEPTHWISE_CONVOLUTION_2D())) {
-            layer = new KerasDepthwiseConvolution2D(layerConfig, enforceTrainingConfig);
+            layer = new KerasDepthwiseConvolution2D(layerConfig, previousLayers, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D())) {
             layer = new KerasSeparableConvolution2D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAX_POOLING_3D()) ||
