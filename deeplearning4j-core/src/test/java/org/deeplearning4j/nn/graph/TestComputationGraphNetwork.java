@@ -7,8 +7,10 @@ import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -26,6 +28,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.GraphIndices;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.multilayer.MultiLayerTest;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -39,6 +42,7 @@ import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1592,5 +1596,56 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
             INDArray[] out5 = g2.output(in);
             assertArrayEquals(out1, out5);
         }
+    }
+
+    @Test
+    public void testPretrainFitMethods(){
+
+        //The fit methods should *not* do layerwise pretraining:
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new VariationalAutoencoder.Builder()
+                        .nIn(10).nOut(10).encoderLayerSizes(10).decoderLayerSizes(10).build(), "in")
+                .layer("1", new OutputLayer.Builder().nIn(10).nOut(10).build(), "0")
+                .setOutputs("1")
+                .pretrain(true).backprop(true)
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        Set<Class<?>> exp = new HashSet<>();
+        exp.add(ComputationGraph.class);
+
+        MultiLayerTest.CheckModelsListener listener = new MultiLayerTest.CheckModelsListener();
+        net.setListeners(listener);
+
+        INDArray f = Nd4j.create(1,10);
+        INDArray l = Nd4j.create(1,10);
+        DataSet ds = new DataSet(f,l);
+        MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(f,l);
+
+        DataSetIterator iter = new ExistingDataSetIterator(Collections.singletonList(ds));
+
+        net.fit(ds);
+        assertEquals(exp, listener.getModelClasses());
+
+        net.fit(iter);
+        assertEquals(exp, listener.getModelClasses());
+
+        net.fit(new INDArray[]{f}, new INDArray[]{l});
+        assertEquals(exp, listener.getModelClasses());
+
+        net.fit(new INDArray[]{f}, new INDArray[]{l}, null, null);
+        assertEquals(exp, listener.getModelClasses());
+
+        net.fit(mds);
+        assertEquals(exp, listener.getModelClasses());
+
+        net.fit(new SingletonMultiDataSetIterator(mds));
+        assertEquals(exp, listener.getModelClasses());
     }
 }

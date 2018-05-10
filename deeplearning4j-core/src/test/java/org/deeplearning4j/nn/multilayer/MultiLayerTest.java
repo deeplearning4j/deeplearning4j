@@ -18,18 +18,23 @@
 
 package org.deeplearning4j.nn.multilayer;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
+import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
@@ -42,6 +47,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.*;
@@ -50,6 +56,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
@@ -1339,6 +1346,65 @@ public class MultiLayerTest extends BaseDL4JTest {
 
         ComputationGraph g = net.toComputationGraph();
         g.fit(iter, 3);
+    }
 
+
+    @Test
+    public void testPretrainFitMethods(){
+
+        //The fit methods should *not* do layerwise pretraining:
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .list()
+                .layer(new VariationalAutoencoder.Builder()
+                        .nIn(10).nOut(10).encoderLayerSizes(10).decoderLayerSizes(10).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).build())
+                .pretrain(true).backprop(true)
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        Set<Class<?>> exp = new HashSet<>();
+        exp.add(MultiLayerNetwork.class);
+
+        CheckModelsListener listener = new CheckModelsListener();
+        net.setListeners(listener);
+
+        INDArray f = Nd4j.create(1,10);
+        INDArray l = Nd4j.create(1,10);
+        DataSet ds = new DataSet(f,l);
+        MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(f,l);
+
+        DataSetIterator iter = new ExistingDataSetIterator(Collections.singletonList(ds));
+        net.fit(iter);
+        assertEquals(exp, listener.getModelClasses());
+
+        net.fit(ds);
+        assertEquals(exp, listener.getModelClasses());
+
+        net.fit(f, l);
+        assertEquals(exp, listener.getModelClasses());
+
+        net.fit(f, l, null, null);
+        assertEquals(exp, listener.getModelClasses());
+
+        net.fit(mds);
+        assertEquals(exp, listener.getModelClasses());
+
+        net.fit(new SingletonMultiDataSetIterator(mds));
+        assertEquals(exp, listener.getModelClasses());
+    }
+
+    @Data
+    public static class CheckModelsListener extends BaseTrainingListener {
+
+        private Set<Class<?>> modelClasses = new HashSet<>();
+
+        @Override
+        public void iterationDone(Model model, int iteration, int epoch) {
+            modelClasses.add(model.getClass());
+        }
     }
 }

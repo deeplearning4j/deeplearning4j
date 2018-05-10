@@ -1455,8 +1455,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 time1 = System.currentTimeMillis();
             }
-        } else if (layerWiseConfigurations.isPretrain()) {
-            log.warn("Warning: finetune is not applied.");
         }
 
         if (!trainingListeners.isEmpty()) {
@@ -3114,9 +3112,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             DataSet ds = new DataSet(features, labels, fMask, lMask);
             fit(ds);
+        } else {
+            throw new DL4JInvalidInputException(
+                    "MultiLayerNetwork can't handle MultiDataSet with more than 1 features or labels array." +
+                            "Please consider use of ComputationGraph");
         }
-        throw new DL4JInvalidInputException(
-                "MultiLayerNetwork can't handle MultiDataSet. Please consider use of ComputationGraph");
     }
 
     /**
