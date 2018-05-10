@@ -72,8 +72,10 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
         super(layerConfig, enforceTrainingConfig);
 
         hasBias = getHasBiasFromConfig(layerConfig, conf);
-        numTrainableParams = hasBias ? 2 : 1;
+        numTrainableParams = hasBias ? 3 : 2;
         int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
+
+        int depthMultiplier = getDepthMultiplier(layerConfig, conf);
 
         Pair<WeightInit, Distribution> depthWiseInit = getWeightInitFromConfig(layerConfig,
                 conf.getLAYER_FIELD_DEPTH_WISE_INIT(), enforceTrainingConfig, conf, kerasMajorVersion);
@@ -109,6 +111,7 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(depthWeightInit)
+                .depthMultiplier(depthMultiplier)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
