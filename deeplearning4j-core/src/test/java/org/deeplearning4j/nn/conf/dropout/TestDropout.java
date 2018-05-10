@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -18,6 +19,7 @@ import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Triple;
@@ -30,6 +32,8 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 public class TestDropout extends BaseDL4JTest {
 
@@ -291,6 +295,105 @@ public class TestDropout extends BaseDL4JTest {
         assertEquals(100, countValueDropped+ countEqn);
         assertTrue(countValueDropped >= 25 && countValueDropped <= 75);
         assertTrue(countEqn >= 25 && countEqn <= 75);
+    }
+
+
+    @Test
+    public void testSpatialDropoutValues(){
+        Nd4j.getRandom().setSeed(12345);
+
+        SpatialDropout d = new SpatialDropout(0.5);
+
+        INDArray in = Nd4j.ones(10, 10, 5, 5);
+        INDArray out = d.applyDropout(in, 0, 0, false);
+
+        assertEquals(in, Nd4j.ones(10, 10, 5, 5));
+
+        //Now, we expect all values for a given depth to be the same... 0 or 2
+        int countZero = 0;
+        int countTwo = 0;
+        for( int i=0; i<10; i++ ){
+            for( int j=0; j<10; j++ ){
+                double value = out.getDouble(i,j,0,0);
+                assertTrue( value == 0 || value == 2.0);
+                INDArray exp = Nd4j.valueArrayOf(new int[]{5,5,}, value);
+                INDArray act = out.get(point(i), point(j), all(), all());
+                assertEquals(exp, act);
+
+                if(value == 0.0){
+                    countZero++;
+                } else {
+                    countTwo++;
+                }
+            }
+        }
+
+        //Stochastic, but this should hold for most cases
+        assertTrue(countZero >= 25 && countZero <= 75);
+        assertTrue(countTwo >= 25 && countTwo <= 75);
+
+        //Test schedule:
+        d = new SpatialDropout(new MapSchedule.Builder(ScheduleType.ITERATION).add(0, 0.5).add(5, 0.1).build());
+        for( int i=0; i<10; i++ ) {
+            out = d.applyDropout(in, i, 0, false);
+            assertEquals(in, Nd4j.ones(10, 10, 5, 5));
+
+            if(i < 5){
+                countZero = 0;
+                countTwo = 0;
+                for( int m=0; m<10; m++ ){
+                    for( int j=0; j<10; j++ ){
+                        double value = out.getDouble(m,j,0,0);
+                        assertTrue( value == 0 || value == 2.0);
+                        INDArray exp = Nd4j.valueArrayOf(new int[]{5,5,}, value);
+                        INDArray act = out.get(point(m), point(j), all(), all());
+                        assertEquals(exp, act);
+
+                        if(value == 0.0){
+                            countZero++;
+                        } else {
+                            countTwo++;
+                        }
+                    }
+                }
+            } else {
+                countZero = 0;
+                int countInverse = 0;
+                for( int m=0; m<10; m++ ){
+                    for( int j=0; j<10; j++ ){
+                        double value = out.getDouble(m,j,0,0);
+                        assertTrue( value == 0 || value == 10.0);
+                        INDArray exp = Nd4j.valueArrayOf(new int[]{5,5,}, value);
+                        INDArray act = out.get(point(m), point(j), all(), all());
+                        assertEquals(exp, act);
+
+                        if(value == 0.0){
+                            countZero++;
+                        } else {
+                            countInverse++;
+                        }
+                    }
+                }
+
+                //Stochastic, but this should hold for most cases
+                assertTrue(countZero >= 80);
+                assertTrue(countInverse <= 20);
+            }
+        }
+    }
+
+    @Test
+    public void testSpatialDropoutJSON(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new DropoutLayer.Builder(new SpatialDropout(0.5)).build())
+                .build();
+
+        String asJson = conf.toJson();
+        MultiLayerConfiguration fromJson = MultiLayerConfiguration.fromJson(asJson);
+
+        assertEquals(conf, fromJson);
     }
 
 }
