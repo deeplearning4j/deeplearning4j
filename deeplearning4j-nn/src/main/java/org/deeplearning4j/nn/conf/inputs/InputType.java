@@ -276,8 +276,8 @@ public abstract class InputType implements Serializable {
 
         @Override
         public int[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new int[]{-1, height, width, channels};
-            else return new int[]{height, width, channels};
+            if(includeBatchDim) return new int[]{-1, channels, height, width};
+            else return new int[]{channels, height, width};
         }
     }
 
@@ -308,8 +308,8 @@ public abstract class InputType implements Serializable {
 
         @Override
         public int[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new int[]{-1, height, width, depth, channels};
-            else return new int[]{height, width, depth, channels};
+            if(includeBatchDim) return new int[]{-1, channels, depth, height, width};
+            else return new int[]{channels, depth, height, width};
         }
     }
 
@@ -347,8 +347,8 @@ public abstract class InputType implements Serializable {
 
         @Override
         public int[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new int[]{-1, height, width, depth};
-            else return new int[]{height, width, depth};
+            if(includeBatchDim) return new int[]{-1, depth, height, width};
+            else return new int[]{depth, height, width};
         }
     }
 
