@@ -713,7 +713,13 @@ public class VariationalAutoencoder implements Layer {
             gradient.gradientForVariable().put(wKey, dLdW);
             gradient.gradientForVariable().put(bKey, dLdB);
 
-            epsilon = weights.mmul(currentDelta.transpose()).transpose();
+            if(i == 0) {
+                epsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{weights.size(0), currentDelta.size(0)}, 'f');
+                weights.mmuli(currentDelta.transpose(), epsilon);
+                epsilon = epsilon.transpose();
+            } else {
+                epsilon = weights.mmul(currentDelta.transpose()).transpose();
+            }
         }
 
         return new Pair<>(gradient, epsilon);
