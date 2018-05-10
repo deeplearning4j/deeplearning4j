@@ -67,8 +67,23 @@ public abstract class InputType implements Serializable {
     @JsonIgnore
     public abstract int arrayElementsPerExample();
 
+    /**
+     * Returns the shape of this InputType
+     *
+     * @param includeBatchDim Whether to include minibatch in the return shape array
+     * @return int[]
+     */
     @JsonIgnore
-    public abstract int[] getShape();
+    public abstract int[] getShape(boolean includeBatchDim);
+
+    /**
+     * Returns the shape of this InputType without minibatch dimension in the returned array
+     *
+     * @return int[]
+     */
+    public int[] getShape() {
+        return getShape(false);
+    }
 
     /**
      * InputType for feed forward network data
@@ -165,8 +180,9 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public int[] getShape() {
-            return new int[]{size};
+        public int[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new int[]{-1, size};
+            else return new int[]{size};
         }
     }
 
@@ -206,8 +222,9 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public int[] getShape() {
-            return new int[]{size, timeSeriesLength};
+        public int[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new int[]{-1, size, timeSeriesLength};
+            else return new int[]{size, timeSeriesLength};
         }
     }
 
@@ -258,8 +275,9 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public int[] getShape() {
-            return new int[]{height, width, channels};
+        public int[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new int[]{-1, height, width, channels};
+            else return new int[]{height, width, channels};
         }
     }
 
@@ -289,8 +307,9 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public int[] getShape() {
-            return new int[]{height, width, depth, channels};
+        public int[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new int[]{-1, height, width, depth, channels};
+            else return new int[]{height, width, depth, channels};
         }
     }
 
@@ -327,8 +346,9 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public int[] getShape() {
-            return new int[]{height, width, depth};
+        public int[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new int[]{-1, height, width, depth};
+            else return new int[]{height, width, depth};
         }
     }
 

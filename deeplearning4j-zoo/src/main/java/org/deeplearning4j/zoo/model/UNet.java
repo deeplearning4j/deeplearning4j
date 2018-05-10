@@ -2,7 +2,6 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -27,7 +26,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * An implementation of U-Net, a deep learning network for image segmentation in Deeplearning4j. The u-net is convolutional network architecture for fast and precise segmentation of images. Up to now it has outperformed the prior best method (a sliding-window convolutional network) on the ISBI challenge for segmentation of neuronal structures in electron microscopic stacks.
  *
  * <p>Paper: https://arxiv.org/abs/1505.04597</p>
- * <p>Weights have been converted from a model trained on the DRIVE retinal dataset from https://github.com/orobix/retina-unet/</p>
+ * <p>Weights are available for image segmentation trained on a synthetic dataset</p>
  *
  * @author Justin Long (crockpotveggies)
  *
@@ -49,16 +48,16 @@ public class UNet extends ZooModel {
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
-        if (pretrainedType == PretrainedType.RETINA)
-            return "http://blob.deeplearning4j.org/models/unet_dl4j_retina_inference.v1.zip";
+        if (pretrainedType == PretrainedType.SEGMENT)
+            return "http://blob.deeplearning4j.org/models/unet_dl4j_segment_inference.v1.zip";
         else
             return null;
     }
 
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
-        if (pretrainedType == PretrainedType.RETINA)
-            return 1654817155L;
+        if (pretrainedType == PretrainedType.SEGMENT)
+            return 712347958L;
         else
             return 0L;
     }
