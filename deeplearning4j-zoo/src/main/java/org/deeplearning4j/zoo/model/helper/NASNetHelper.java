@@ -28,11 +28,11 @@ public class NASNetHelper {
                 .addLayer(prefix+"_act", new ActivationLayer(Activation.RELU), input)
                 .addLayer(prefix+"_sepconv1", new SeparableConvolution2D.Builder(kernelSize, kernelSize).stride(stride, stride).nOut(filters).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).build(), prefix+"_act")
-                .addLayer(prefix+"_conv1_bn", new BatchNormalization.Builder().eps(1e-3).build(), prefix+"_sepconv1")
+                .addLayer(prefix+"_conv1_bn", new BatchNormalization.Builder().eps(1e-3).gamma(0.9997).build(), prefix+"_sepconv1")
                 .addLayer(prefix+"_act2", new ActivationLayer(Activation.RELU), prefix+"_conv1_bn")
                 .addLayer(prefix+"_sepconv2", new SeparableConvolution2D.Builder(kernelSize, kernelSize).stride(stride, stride).nOut(filters).hasBias(false)
                         .convolutionMode(ConvolutionMode.Same).build(), prefix+"_act2")
-                .addLayer(prefix+"_conv2_bn", new BatchNormalization.Builder().eps(1e-3).build(), prefix+"_sepconv2");
+                .addLayer(prefix+"_conv2_bn", new BatchNormalization.Builder().eps(1e-3).gamma(0.9997).build(), prefix+"_sepconv2");
 
         return prefix+"_conv2_bn";
     }
@@ -56,16 +56,16 @@ public class NASNetHelper {
             graphBuilder
                     .addLayer(prefix+"_relu1", new ActivationLayer(Activation.RELU), input)
                     // tower 1
-                    .addLayer(prefix+"_avgpool1", new SubsamplingLayer.Builder(PoolingType.AVG).kernelSize(2,2).stride(2,2)
-                            .build(), prefix+"_relu1")
-                    .addLayer(prefix+"_conv1", new ConvolutionLayer.Builder(1,1).nOut((int) Math.floor(filters / 2))
+                    .addLayer(prefix+"_avgpool1", new SubsamplingLayer.Builder(PoolingType.AVG).kernelSize(1,1).stride(2,2)
+                            .convolutionMode(ConvolutionMode.Truncate).build(), prefix+"_relu1")
+                    .addLayer(prefix+"_conv1", new ConvolutionLayer.Builder(1,1).stride(1,1).nOut((int) Math.floor(filters / 2)).hasBias(false)
                             .convolutionMode(ConvolutionMode.Same).build(), prefix+"_avg_pool_1")
                     // tower 2
                     .addLayer(prefix+"_zeropad1", new ZeroPaddingLayer(0,1), prefix+"_relu1")
                     .addLayer(prefix+"_crop1", new Cropping2D(1,0), prefix+"_zeropad_1")
                     .addLayer(prefix+"_avgpool2", new SubsamplingLayer.Builder(PoolingType.AVG).kernelSize(1,1).stride(2,2)
-                            .build(), prefix+"_crop1")
-                    .addLayer(prefix+"_conv2", new ConvolutionLayer.Builder(1,1).nOut((int) Math.floor(filters / 2))
+                            .convolutionMode(ConvolutionMode.Truncate).build(), prefix+"_crop1")
+                    .addLayer(prefix+"_conv2", new ConvolutionLayer.Builder(1,1).stride(1,1).nOut((int) Math.floor(filters / 2)).hasBias(false)
                             .convolutionMode(ConvolutionMode.Same).build(), prefix+"_avgpool2")
 
                     .addVertex(prefix+"_concat1", new MergeVertex(), prefix+"_conv1", prefix+"_conv2")
@@ -78,7 +78,7 @@ public class NASNetHelper {
         if(inputShape[3] != filters) {
             graphBuilder
                     .addLayer(prefix+"_projection_relu", new ActivationLayer(Activation.RELU), outputName)
-                    .addLayer(prefix+"_projection_conv", new ConvolutionLayer.Builder(1,1).stride(1,1).nOut(filters)
+                    .addLayer(prefix+"_projection_conv", new ConvolutionLayer.Builder(1,1).stride(1,1).nOut(filters).hasBias(false)
                             .convolutionMode(ConvolutionMode.Same).build(), prefix+"_projection_relu")
                     .addLayer(prefix+"_projection_bn", new BatchNormalization.Builder().eps(1e-3).gamma(0.9997)
                             .build(), prefix+"_projection_conv");

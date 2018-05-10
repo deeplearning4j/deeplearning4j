@@ -21,7 +21,7 @@ import java.util.Map;
  * @author Justin Long (crockpotveggies)
  */
 @Slf4j
-public class TestDownload extends BaseDL4JTest {
+public class TestDownload {
 
     @Test
     public void testDownloadAllModels() throws Exception {

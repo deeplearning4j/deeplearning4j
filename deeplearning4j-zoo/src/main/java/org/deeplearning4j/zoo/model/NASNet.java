@@ -73,9 +73,9 @@ public class NASNet extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return 1654817155L;
+            return 3082463801L;
         else if (pretrainedType == PretrainedType.IMAGENETLARGE)
-            return 1654817155L;
+            return 321395591L;
         else
             return 0L;
     }
@@ -100,6 +100,9 @@ public class NASNet extends ZooModel {
 
     public ComputationGraphConfiguration.GraphBuilder graphBuilder() {
 
+        if(penultimateFilters % 24 != 0) {
+            throw new IllegalArgumentException("For NASNet-A models penultimate filters must be divisible by 24. Current value is "+penultimateFilters);
+        }
         int filters = (int) Math.floor(penultimateFilters / 24);
 
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
@@ -117,10 +120,10 @@ public class NASNet extends ZooModel {
                 .graphBuilder();
 
         if(!skipReduction) {
-            graph.addLayer("stem_conv1", new ConvolutionLayer.Builder(3, 3).stride(2, 2).nOut(penultimateFilters).hasBias(false)
+            graph.addLayer("stem_conv1", new ConvolutionLayer.Builder(3, 3).stride(2, 2).nOut(stemFilters).hasBias(false)
                     .cudnnAlgoMode(cudnnAlgoMode).build(), "input");
         } else {
-            graph.addLayer("stem_conv1", new ConvolutionLayer.Builder(3, 3).stride(1, 1).nOut(penultimateFilters).hasBias(false)
+            graph.addLayer("stem_conv1", new ConvolutionLayer.Builder(3, 3).stride(1, 1).nOut(stemFilters).hasBias(false)
                     .cudnnAlgoMode(cudnnAlgoMode).build(), "input");
         }
 
