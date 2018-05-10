@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -566,10 +567,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * This method defines Workspace mode being used during training:
-         * NONE: workspace won't be used
-         * SINGLE: one workspace will be used during whole iteration loop
-         * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
+         * This method defines Workspace mode being used during training:<br>
+         * NONE: workspace won't be used<br>
+         * ENABLED: workspaces will be used for training (reduced memory and better performance)
          *
          * @param workspaceMode Workspace mode for training
          * @return Builder
@@ -581,10 +581,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * This method defines Workspace mode being used during inference:
-         * NONE: workspace won't be used
-         * SINGLE: one workspace will be used during whole iteration loop
-         * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
+         * This method defines Workspace mode being used during inference:<br>
+         * NONE: workspace won't be used<br>
+         * ENABLED: workspaces will be used for inference (reduced memory and better performance)
          *
          * @param workspaceMode Workspace mode for inference
          * @return Builder
@@ -804,6 +803,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Note: values set by this method will be applied to all applicable layers in the network, unless a different
          * value is explicitly set on a given layer. In other words: values set via this method are used as the default
          * value, and can be overridden on a per-layer basis.
+         *
+         * @see #weightInit(Distribution)
          */
         public Builder dist(Distribution dist) {
             this.dist = dist;
@@ -1076,6 +1077,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 configureLayer(((FrozenLayer) layer).getLayer());
             }
 
+            if (layer instanceof FrozenLayerWithBackprop) {
+                configureLayer(((FrozenLayerWithBackprop) layer).getUnderlying());
+            }
+
             return conf;
         }
 
@@ -1097,6 +1102,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
             if (layer instanceof FrozenLayer) {
                 copyConfigToLayer(layerName, ((FrozenLayer) layer).getLayer());
+            }
+
+            if (layer instanceof FrozenLayerWithBackprop) {
+                copyConfigToLayer(layerName, ((FrozenLayerWithBackprop) layer).getUnderlying());
             }
 
             if (layer instanceof Bidirectional) {

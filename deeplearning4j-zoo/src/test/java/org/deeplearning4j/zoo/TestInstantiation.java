@@ -26,7 +26,7 @@ import static org.junit.Assert.assertArrayEquals;
  * @author Justin Long (crockpotveggies)
  */
 @Slf4j
-public class TestInstantiation {
+public class TestInstantiation extends BaseDL4JTest {
 
     @Test
     public void testMultipleCnnTraining() throws Exception {

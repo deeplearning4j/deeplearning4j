@@ -70,23 +70,23 @@ public class LocalResponseNormalization
     }
 
     void initializeHelper() {
-        try {
-            helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper")
-                            .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
-            log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
-            if (!helper.checkSupported(layerConf().getK(), layerConf().getN(), layerConf().getAlpha(),
-                            layerConf().getBeta())) {
-                helper = null;
-            }
-        } catch (Throwable t) {
-            if (!(t instanceof ClassNotFoundException)) {
-                log.warn("Could not initialize CudnnLocalResponseNormalizationHelper", t);
-            } else {
-                Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
-                if (p.getProperty("backend").equals("CUDA")) {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if("CUDA".equalsIgnoreCase(backend)) {
+            try {
+                helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper")
+                        .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
+                log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
+                if (!helper.checkSupported(layerConf().getK(), layerConf().getN(), layerConf().getAlpha(),
+                        layerConf().getBeta())) {
+                    helper = null;
+                }
+            } catch (Throwable t) {
+                if (!(t instanceof ClassNotFoundException)) {
+                    log.warn("Could not initialize CudnnLocalResponseNormalizationHelper", t);
+                } else {
                     OneTimeLogger.info(log, "cuDNN not found: "
-                                    + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                                    + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
+                            + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
                 }
             }
         }

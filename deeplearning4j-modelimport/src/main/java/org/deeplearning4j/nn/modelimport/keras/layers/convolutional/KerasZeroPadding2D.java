@@ -56,9 +56,9 @@ public class KerasZeroPadding2D extends KerasLayer {
     }
 
     /**
-     * Get DL4J SubsamplingLayer.
+     * Get DL4J ZeroPadding2DLayer.
      *
-     * @return  SubsamplingLayer
+     * @return  ZeroPadding2DLayer
      */
     public ZeroPaddingLayer getZeroPadding2DLayer() {
         return (ZeroPaddingLayer) this.layer;

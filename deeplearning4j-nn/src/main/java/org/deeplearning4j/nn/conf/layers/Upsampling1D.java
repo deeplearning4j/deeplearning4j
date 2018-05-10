@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -44,7 +45,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Upsampling1D extends BaseUpsamplingLayer {
 
-    protected int size;
+    protected int[] size;
 
     protected Upsampling1D(UpsamplingBuilder builder) {
         super(builder);
@@ -97,7 +98,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
         InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
         InputType.InputTypeRecurrent outputType = (InputType.InputTypeRecurrent) getOutputType(-1, inputType);
 
-        int im2colSizePerEx = recurrent.getSize() * outputType.getTimeSeriesLength() * size;
+        int im2colSizePerEx = recurrent.getSize() * outputType.getTimeSeriesLength() * size[0];
         int trainingWorkingSizePerEx = im2colSizePerEx;
         if (getIDropout() != null) {
             trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
@@ -114,17 +115,28 @@ public class Upsampling1D extends BaseUpsamplingLayer {
     public static class Builder extends UpsamplingBuilder<Builder> {
 
         public Builder(int size) {
-            super(size);
+            super(new int[] {size, size});
         }
 
         /**
-         * Upsampling size
+         * Upsampling size int
          *
-         * @param size    upsampling size in height and width dimensions
+         * @param size    upsampling size in single spatial dimension of this 1D layer
          */
         public Builder size(int size) {
 
-            this.size = size;
+            this.size = new int[] {size, size};
+            return this;
+        }
+
+        /**
+         * Upsampling size int array with a single element
+         *
+         * @param size    upsampling size in single spatial dimension of this 1D layer
+         */
+        public Builder size(int[] size) {
+            Preconditions.checkArgument(size.length == 1);
+            this.size = new int[] {size[0], size[0]}; // Since this is 2D under the hood, we need to hide this.
             return this;
         }
 

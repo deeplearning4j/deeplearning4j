@@ -122,6 +122,14 @@ public class GradientCheckUtil {
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError,
                                          INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
                                          boolean subset, int maxPerParam) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input,
+                labels, inputMask, labelMask, subset, maxPerParam, null);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
+                                         boolean subset, int maxPerParam, Set<String> excludeParams) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -239,6 +247,11 @@ public class GradientCheckUtil {
                 currParamNameIdx++;
             }
             String paramName = paramNames.get(currParamNameIdx);
+            if(excludeParams != null && excludeParams.contains(paramName)){
+                log.info("Skipping parameters for parameter name: {}", paramName);
+                i = paramEnds[currParamNameIdx++];
+                continue;
+            }
 
             //(w+epsilon): Do forward pass and score
             double origValue = params.getDouble(i);
@@ -331,12 +344,19 @@ public class GradientCheckUtil {
     public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
                     double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
                     INDArray[] labels) {
-        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs, labels, null, null);
+        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs, labels, null, null, null);
     }
 
     public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
                                          INDArray[] labels, INDArray[] fMask, INDArray[] lMask) {
+        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs,
+                labels, fMask, lMask, null);
+    }
+
+    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
+                                         INDArray[] labels, INDArray[] fMask, INDArray[] lMask, Set<String> excludeParams) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -441,6 +461,11 @@ public class GradientCheckUtil {
                 currParamNameIdx++;
             }
             String paramName = paramNames.get(currParamNameIdx);
+            if(excludeParams != null && excludeParams.contains(paramName)){
+                log.info("Skipping parameters for parameter name: {}", paramName);
+                i = paramEnds[currParamNameIdx++];
+                continue;
+            }
 
             //(w+epsilon): Do forward pass and score
             double origValue = params.getDouble(i);

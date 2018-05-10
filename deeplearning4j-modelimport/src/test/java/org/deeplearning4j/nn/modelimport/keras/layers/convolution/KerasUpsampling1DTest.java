@@ -63,7 +63,7 @@ public class KerasUpsampling1DTest {
 
         Upsampling1D layer = new KerasUpsampling1D(layerConfig).getUpsampling1DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
-        assertEquals(size, layer.getSize());
+        assertEquals(size, layer.getSize()[0]);
     }
 
 }

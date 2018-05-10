@@ -22,7 +22,7 @@ public abstract class BaseWrapperLayer extends Layer {
 
     protected BaseWrapperLayer(){ }
 
-    public BaseWrapperLayer(@NonNull Layer underlying){
+    public BaseWrapperLayer(Layer underlying){
         this.underlying = underlying;
     }
 

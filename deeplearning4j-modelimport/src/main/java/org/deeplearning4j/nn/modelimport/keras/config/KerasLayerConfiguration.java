@@ -103,6 +103,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_LEAKY_RELU = "LeakyReLU";
     private final String LAYER_CLASS_NAME_UPSAMPLING_1D = "UpSampling1D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_2D = "UpSampling2D";
+    private final String LAYER_CLASS_NAME_UPSAMPLING_3D = "UpSampling3D";
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = ""; // 1: SeparableConvolution2D, 2: SeparableConv2D
     private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = ""; // 1: Deconvolution2D, 2: Conv2DTranspose
 
@@ -201,6 +202,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_POOL_1D_STRIDES = ""; // 1: stride, 2: strides
     private final String LAYER_FIELD_UPSAMPLING_1D_SIZE = ""; // 1: length, 2: size
     private final String LAYER_FIELD_UPSAMPLING_2D_SIZE = "size";
+    private final String LAYER_FIELD_UPSAMPLING_3D_SIZE = "size";
 
 
     /* Keras convolution border modes. */

@@ -75,8 +75,13 @@ import static org.deeplearning4j.zoo.model.helper.DarknetHelper.addLayers;
 @Builder
 public class YOLO2 extends ZooModel {
 
+    /**
+     * Default prior boxes for the model
+     */
+    public static final double[][] DEFAULT_PRIOR_BOXES = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
+
     @Builder.Default @Getter private int nBoxes = 5;
-    @Builder.Default @Getter private double[][] priorBoxes = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
+    @Builder.Default @Getter private double[][] priorBoxes = DEFAULT_PRIOR_BOXES;
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = {3, 608, 608};

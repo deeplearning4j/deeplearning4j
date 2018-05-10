@@ -583,6 +583,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     @Data
     public static class GraphBuilder {
+        private static final int DEFAULT_TBPTT_LENGTH = 20;
+
         protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
 
         /**
@@ -597,8 +599,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         protected boolean pretrain = false;
         protected boolean backprop = true;
         protected BackpropType backpropType = BackpropType.Standard;
-        protected int tbpttFwdLength = 20;
-        protected int tbpttBackLength = 20;
+        protected int tbpttFwdLength = DEFAULT_TBPTT_LENGTH;
+        protected int tbpttBackLength = DEFAULT_TBPTT_LENGTH;
 
         protected Map<String, InputPreProcessor> inputPreProcessors = new LinkedHashMap<>();
 
@@ -955,6 +957,13 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
 
         private ComputationGraphConfiguration buildConfig(){
+            //Validate BackpropType setting
+            if((tbpttBackLength != DEFAULT_TBPTT_LENGTH || tbpttFwdLength != DEFAULT_TBPTT_LENGTH) && backpropType != BackpropType.TruncatedBPTT){
+                log.warn("Truncated backpropagation through time lengths have been configured with values " + tbpttFwdLength
+                        + " and " + tbpttBackLength + " but backprop type is set to " + backpropType + ". TBPTT configuration" +
+                        " settings will only take effect if backprop type is set to BackpropType.TruncatedBPTT");
+            }
+
             ComputationGraphConfiguration conf = new ComputationGraphConfiguration();
             conf.backprop = backprop;
             conf.pretrain = pretrain;

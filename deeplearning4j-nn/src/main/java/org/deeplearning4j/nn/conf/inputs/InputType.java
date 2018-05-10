@@ -139,8 +139,8 @@ public abstract class InputType implements Serializable {
      * @param channels Number of channels of the input
      * @return InputTypeConvolutional3D
      */
-    public static InputType convolutional3D(int height, int width, int depth, int channels) {
-        return new InputTypeConvolutional3D(height, width, depth, channels);
+    public static InputType convolutional3D(int depth, int height, int width,  int channels) {
+        return new InputTypeConvolutional3D(depth, height, width, channels);
     }
 
     /**
@@ -286,9 +286,9 @@ public abstract class InputType implements Serializable {
     @EqualsAndHashCode(callSuper = false)
     @NoArgsConstructor
     public static class InputTypeConvolutional3D extends InputType {
+        private int depth;
         private int height;
         private int width;
-        private int depth;
         private int channels;
 
         @Override
@@ -298,7 +298,7 @@ public abstract class InputType implements Serializable {
 
         @Override
         public String toString() {
-            return "InputTypeConvolutional3D(h=" + height + ",w=" + width + ",d=" + depth + ",c=" + channels + ")";
+            return "InputTypeConvolutional3D(d=" + depth + ",h=" + height + ",w=" + width + ",c=" + channels + ")";
         }
 
         @Override
@@ -363,10 +363,10 @@ public abstract class InputType implements Serializable {
             case 3:
                 return InputType.recurrent(inputArray.size(1), inputArray.size(2));
             case 4:
-                //Order: [minibatch, channels, height, width] -> [h, w, d]
+                //Order: [minibatch, channels, height, width] -> [h, w, c]
                 return InputType.convolutional(inputArray.size(2), inputArray.size(3), inputArray.size(1));
             case 5:
-                //Order: [minibatch, channels, height, width, channels] -> [h, w, d, c]
+                //Order: [minibatch, channels, depth, height, width] -> [d, h, w, c]
                 return InputType.convolutional3D(inputArray.size(2), inputArray.size(3),
                         inputArray.size(4), inputArray.size(1));
             default:
