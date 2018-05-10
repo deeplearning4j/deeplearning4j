@@ -68,6 +68,24 @@ public abstract class InputType implements Serializable {
     public abstract int arrayElementsPerExample();
 
     /**
+     * Returns the shape of this InputType
+     *
+     * @param includeBatchDim Whether to include minibatch in the return shape array
+     * @return int[]
+     */
+    @JsonIgnore
+    public abstract int[] getShape(boolean includeBatchDim);
+
+    /**
+     * Returns the shape of this InputType without minibatch dimension in the returned array
+     *
+     * @return int[]
+     */
+    public int[] getShape() {
+        return getShape(false);
+    }
+
+    /**
      * InputType for feed forward network data
      *
      * @param size The size of the activations
@@ -160,6 +178,12 @@ public abstract class InputType implements Serializable {
         public int arrayElementsPerExample() {
             return size;
         }
+
+        @Override
+        public int[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new int[]{-1, size};
+            else return new int[]{size};
+        }
     }
 
     @Getter
@@ -195,6 +219,12 @@ public abstract class InputType implements Serializable {
                         + "time series length is not set. Use InputType.recurrent(int size, int timeSeriesLength) instead?");
             }
             return timeSeriesLength * size;
+        }
+
+        @Override
+        public int[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new int[]{-1, size, timeSeriesLength};
+            else return new int[]{size, timeSeriesLength};
         }
     }
 
@@ -243,6 +273,12 @@ public abstract class InputType implements Serializable {
         public int arrayElementsPerExample() {
             return height * width * channels;
         }
+
+        @Override
+        public int[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new int[]{-1, channels, height, width};
+            else return new int[]{channels, height, width};
+        }
     }
 
     @AllArgsConstructor
@@ -268,6 +304,12 @@ public abstract class InputType implements Serializable {
         @Override
         public int arrayElementsPerExample() {
             return height * width * depth * channels;
+        }
+
+        @Override
+        public int[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new int[]{-1, channels, depth, height, width};
+            else return new int[]{channels, depth, height, width};
         }
     }
 
@@ -301,6 +343,12 @@ public abstract class InputType implements Serializable {
         @Override
         public int arrayElementsPerExample() {
             return height * width * depth;
+        }
+
+        @Override
+        public int[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new int[]{-1, depth, height, width};
+            else return new int[]{depth, height, width};
         }
     }
 

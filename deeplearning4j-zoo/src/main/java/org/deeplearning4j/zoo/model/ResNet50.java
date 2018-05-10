@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.distribution.TruncatedNormalDistribution;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -29,19 +30,20 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * @author Justin Long (crockpotveggies)
  */
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ResNet50 extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
-    private int numClasses;
+    @Builder.Default private int numClasses = 0;
     @Builder.Default private WeightInit weightInit = WeightInit.DISTRIBUTION;
     @Builder.Default private IUpdater updater = new RmsProp(0.1, 0.96, 0.001);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+
+    private ResNet50() {}
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
@@ -163,7 +165,7 @@ public class ResNet50 extends ZooModel {
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(updater)
                         .weightInit(weightInit)
-                        .dist(new NormalDistribution(0.0, 0.5))
+                        .dist(new TruncatedNormalDistribution(0.0, 0.5))
                         .l1(1e-7)
                         .l2(5e-5)
                         .miniBatch(true)

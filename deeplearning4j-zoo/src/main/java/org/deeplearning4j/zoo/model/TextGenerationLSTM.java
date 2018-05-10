@@ -30,7 +30,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * @author Justin Long (crockpotveggies)
  */
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class TextGenerationLSTM extends ZooModel {
@@ -43,6 +42,8 @@ public class TextGenerationLSTM extends ZooModel {
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+
+    private TextGenerationLSTM() {}
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {

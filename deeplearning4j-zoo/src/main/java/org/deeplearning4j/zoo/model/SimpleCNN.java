@@ -24,18 +24,19 @@ import org.nd4j.linalg.learning.config.IUpdater;
  *
  * @author Justin Long (crockpotveggies)
  */
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class SimpleCNN extends ZooModel {
 
     @Builder.Default private long seed = 1234;
     @Builder.Default private int[] inputShape = new int[] {3, 48, 48};
-    private int numClasses;
+    @Builder.Default private int numClasses = 0;
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+
+    private SimpleCNN() {}
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
