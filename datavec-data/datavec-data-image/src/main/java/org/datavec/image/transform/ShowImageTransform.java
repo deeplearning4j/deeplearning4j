@@ -33,6 +33,7 @@ import java.util.Random;
 public class ShowImageTransform extends BaseImageTransform {
 
     CanvasFrame canvas;
+    String title;
     int delay;
 
     /** Calls {@code this(canvas, -1)}. */
@@ -65,13 +66,17 @@ public class ShowImageTransform extends BaseImageTransform {
      */
     public ShowImageTransform(String title, int delay) {
         super(null);
-        this.canvas = new CanvasFrame(title, 1.0);
-        this.canvas.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        this.canvas = null;
+        this.title = title;
         this.delay = delay;
     }
 
     @Override
     protected ImageWritable doTransform(ImageWritable image, Random random) {
+        if (canvas == null) {
+            canvas = new CanvasFrame(title, 1.0);
+            canvas.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        }
         if (image == null) {
             canvas.dispose();
             return null;
