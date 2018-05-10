@@ -54,9 +54,8 @@ public class KerasSeparableConvolution2DTest {
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
     private final int[] KERNEL_SIZE = new int[]{1, 2};
     private final int[] DILATION = new int[]{2, 2};
-    private final int[] INPUT_SHAPE = new int[]{100, 20};
+    private final int DEPTH_MULTIPLIER = 4;
     private final int[] STRIDE = new int[]{3, 4};
-    private final PoolingType POOLING_TYPE = PoolingType.MAX;
     private final int N_OUT = 13;
     private final String BORDER_MODE_VALID = "valid";
     private final int[] VALID_PADDING = new int[]{0, 0};
@@ -98,6 +97,8 @@ public class KerasSeparableConvolution2DTest {
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_DEPTH_WISE_REGULARIZER(), W_reg);
         config.put(conf.getLAYER_FIELD_DROPOUT(), DROPOUT_KERAS);
+        config.put(conf.getLAYER_FIELD_DEPTH_MULTIPLIER(), DEPTH_MULTIPLIER);
+
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_NB_ROW(), KERNEL_SIZE[0]);
             config.put(conf.getLAYER_FIELD_NB_COL(), KERNEL_SIZE[1]);
@@ -129,6 +130,7 @@ public class KerasSeparableConvolution2DTest {
         assertEquals(INIT_DL4J, layer.getWeightInit());
         assertEquals(L1_REGULARIZATION, layer.getL1(), 0.0);
         assertEquals(L2_REGULARIZATION, layer.getL2(), 0.0);
+        assertEquals(DEPTH_MULTIPLIER, layer.getDepthMultiplier());
         assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
         assertArrayEquals(KERNEL_SIZE, layer.getKernelSize());
         assertArrayEquals(STRIDE, layer.getStride());
