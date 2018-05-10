@@ -54,7 +54,7 @@ public class VGG16 extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return "http://blob.deeplearning4j.org/models/vgg16_dl4j_inference.zip";
+            return "http://blob.deeplearning4j.org/models/vgg16_dl4j_inference.v2.zip";
         else if (pretrainedType == PretrainedType.CIFAR10)
             return "http://blob.deeplearning4j.org/models/vgg16_dl4j_cifar10_inference.v1.zip";
         else if (pretrainedType == PretrainedType.VGGFACE)
@@ -66,7 +66,7 @@ public class VGG16 extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return 3501732770L;
+            return 2461269549L;
         if (pretrainedType == PretrainedType.CIFAR10)
             return 2192260131L;
         if (pretrainedType == PretrainedType.VGGFACE)

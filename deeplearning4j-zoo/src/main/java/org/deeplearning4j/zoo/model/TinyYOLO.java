@@ -89,7 +89,7 @@ public class TinyYOLO extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return "http://blob.deeplearning4j.org/models/tiny-yolo-voc_dl4j_inference.v1.zip";
+            return "http://blob.deeplearning4j.org/models/tiny-yolo-voc_dl4j_inference.v2.zip";
         else
             return null;
     }
@@ -97,7 +97,7 @@ public class TinyYOLO extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return 2004171617L;
+            return 1256226465L;
         else
             return 0L;
     }
