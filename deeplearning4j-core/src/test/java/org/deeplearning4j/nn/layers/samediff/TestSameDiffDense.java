@@ -22,12 +22,15 @@ import java.util.Map;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeTrue;
 
 @Slf4j
 public class TestSameDiffDense {
 
     @Test
     public void testSameDiffDenseBasic() {
+        //Only run test for CPU backend for now:
+        assumeTrue("CPU".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend")));
 
         int nIn = 3;
         int nOut = 4;
@@ -52,6 +55,8 @@ public class TestSameDiffDense {
 
     @Test
     public void testSameDiffDenseForward() {
+        //Only run test for CPU backend for now:
+        assumeTrue("CPU".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend")));
 
         for (int minibatch : new int[]{5, 1}) {
             int nIn = 3;
@@ -116,6 +121,8 @@ public class TestSameDiffDense {
 
     @Test
     public void testSameDiffDenseForwardMultiLayer() {
+        //Only run test for CPU backend for now:
+        assumeTrue("CPU".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend")));
 
         for (int minibatch : new int[]{5, 1}) {
             int nIn = 3;
