@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 
 public class TestGraphHuffman {
 
-    @Test
+    @Test(timeout = 10000L)
     public void testGraphHuffman() {
         //Simple test case from Weiss - Data Structires and Algorithm Analysis in Java 3ed pg436
         //Huffman code is non-unique, but length of code for each node is same for all Huffman codes

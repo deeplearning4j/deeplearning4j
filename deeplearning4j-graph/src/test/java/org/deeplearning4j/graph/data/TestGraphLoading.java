@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
 
 public class TestGraphLoading {
 
-    @Test
+    @Test(timeout = 10000L)
     public void testEdgeListGraphLoading() throws IOException {
         ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
 
@@ -38,7 +38,7 @@ public class TestGraphLoading {
         }
     }
 
-    @Test
+    @Test(timeout = 10000L)
     public void testGraphLoading() throws IOException {
 
         ClassPathResource cpr = new ClassPathResource("simplegraph.txt");
@@ -81,7 +81,7 @@ public class TestGraphLoading {
         }
     }
 
-    @Test
+    @Test(timeout = 10000L)
     public void testGraphLoadingWithVertices() throws IOException {
 
         ClassPathResource verticesCPR = new ClassPathResource("test_graph_vertices.txt");
