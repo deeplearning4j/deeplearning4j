@@ -645,3 +645,34 @@ TEST_F(NDArrayTest2, permute_test4) {
     delete []arr1Buffer;
     delete []arr2Buffer;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, TestStdDev3) {
+    
+    // NDArray<double> array('c', {10, 10});
+    NDArray<double> array('c', {2, 2}, {0.2946, 0.2084, 0.0345, 0.7368});
+    // NDArrayFactory<double>::linspace(0.1, array, 0.1);
+    const int len = array.lengthOf();
+
+    double sum = 0.;
+    for(int i=0; i < len; ++i)
+        sum += array(i);
+
+    const double mean = sum / len;
+
+    double diffSquared = 0.;
+    for(int i=0; i < len; ++i)
+        diffSquared += (array(i) - mean) * (array(i) - mean);
+
+    const double trueVariance     = math::nd4j_sqrt<double>(diffSquared / len);
+    const double trueVarianceCorr = math::nd4j_sqrt<double>(diffSquared / (len - 1));
+
+    const double variance     = array.varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(false);
+    const double varianceCorr = array.varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true);
+
+    // printf("%s  expected %.10f    calculated %.10f\n","variance          :", trueVariance, variance );
+    // printf("%s  expected %.10f    calculated %.10f\n","variance corrected:", trueVarianceCorr, varianceCorr);
+
+    ASSERT_NEAR(trueVariance, variance, 1e-8);
+    ASSERT_NEAR(trueVarianceCorr, varianceCorr, 1e-8);
+}

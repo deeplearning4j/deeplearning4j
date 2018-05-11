@@ -103,7 +103,8 @@ namespace functions {
                     return 0.0;
                 }
 
-                return (M2 - nd4j::math::nd4j_pow<T>(skewness(), 2.0) / n) / (n - 1.0);
+                // return (M2 - nd4j::math::nd4j_pow<T>(skewness(), 2.0) / n) / (n - 1.0);
+                return M2 / (n - 1.0);
             }
 
 
