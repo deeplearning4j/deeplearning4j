@@ -191,7 +191,7 @@ public class ArbiterModule implements UIModule {
     }
 
     private Result setSession(String newSessionID) {
-        log.info("SET TO SESSION: {}", newSessionID);
+        log.debug("Arbiter UI: Set to session {}", newSessionID);
 
         if (knownSessionIDs.containsKey(newSessionID)) {
             currentSessionID = newSessionID;
@@ -261,7 +261,7 @@ public class ArbiterModule implements UIModule {
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
-            log.warn("getModelLastUpdateTimes(): Session ID is unknown: {}", currentSessionID);
+            log.debug("getModelLastUpdateTimes(): Session ID is unknown: {}", currentSessionID);
             return ok("-1");
         }
 
@@ -289,7 +289,7 @@ public class ArbiterModule implements UIModule {
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
-            log.warn("getModelLastUpdateTimes(): Session ID is unknown: {}", currentSessionID);
+            log.debug("getModelLastUpdateTimes(): Session ID is unknown: {}", currentSessionID);
             return ok();
         }
 
@@ -468,7 +468,7 @@ public class ArbiterModule implements UIModule {
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
-            log.warn("getOptimizationConfig(): Session ID is unknown: {}", currentSessionID);
+            log.debug("getOptimizationConfig(): Session ID is unknown: {}", currentSessionID);
             return ok();
         }
 
@@ -557,7 +557,7 @@ public class ArbiterModule implements UIModule {
     private Result getSummaryResults(){
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
-            log.warn("getSummaryResults(): Session ID is unknown: {}", currentSessionID);
+            log.debug("getSummaryResults(): Session ID is unknown: {}", currentSessionID);
             return ok();
         }
 
@@ -578,7 +578,7 @@ public class ArbiterModule implements UIModule {
     private Result getSummaryStatus(){
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
-            log.warn("getOptimizationConfig(): Session ID is unknown: {}", currentSessionID);
+            log.debug("getOptimizationConfig(): Session ID is unknown: {}", currentSessionID);
             return ok();
         }
 
