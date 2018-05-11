@@ -42,6 +42,7 @@ public class Nd4jEnvironment implements Serializable {
     private long blasThreads;
     private int ompThreads;
 
+    public final static String MEMORY_BANDWIDTH_KEY = "memoryBandwidth";
 
     public final static String CUDA_DEVICE_NAME_KEY = "cuda.deviceName";
     public final static String CUDA_FREE_MEMORY_KEY = "cuda.freeMemory";

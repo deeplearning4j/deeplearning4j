@@ -2467,6 +2467,9 @@ public class Shape {
     }
 
     public static int[] normalizeAxis(int rank, int... axis) {
+        if (axis == null || axis.length == 0)
+            return new int[] {Integer.MAX_VALUE};
+
         // first we should get rid of all negative axis
         int[] tmp = new int[axis.length];
 

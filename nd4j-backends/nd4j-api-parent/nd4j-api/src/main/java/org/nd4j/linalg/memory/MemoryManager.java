@@ -6,6 +6,8 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Map;
+
 /**
  *
  * @author raver119@gmail.com
@@ -162,4 +164,9 @@ public interface MemoryManager {
      * @return
      */
     MemoryWorkspace scopeOutOfWorkspaces();
+
+    /**
+     *  This method returns per-device bandwidth use for memory transfers
+     */
+    Map<Integer, Long> getBandwidthUse();
 }

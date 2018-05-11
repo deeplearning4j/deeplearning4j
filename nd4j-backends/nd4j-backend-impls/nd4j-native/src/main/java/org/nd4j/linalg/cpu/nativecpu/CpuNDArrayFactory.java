@@ -21,7 +21,10 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.compression.CompressionUtils;
+import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
@@ -1236,7 +1239,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         IntPointer intPointer = new IntPointer(shapeBufferPointer);
         IntPointer newPointer = new IntPointer(length);
 
+        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+
         Pointer.memcpy(newPointer, intPointer, shapeBufferPointer.limit());
+
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, shapeBufferPointer.limit(), MemcpyDirection.HOST_TO_HOST);
 
         DataBuffer shapeBuffer = Nd4j.createBuffer(
                 newPointer,
@@ -1251,7 +1258,12 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         if(dataBufferElementSize == (Float.SIZE / 8)) {
             FloatPointer dPointer = new FloatPointer(dataPointer.limit() / dataBufferElementSize);
+
+            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
             Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
 
             data = Nd4j.createBuffer(dPointer,
                     DataBuffer.Type.FLOAT,
@@ -1260,7 +1272,12 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         }
         else if(dataBufferElementSize == (Double.SIZE / 8)) {
             DoublePointer dPointer = new DoublePointer(dataPointer.limit() / dataBufferElementSize);
+
+            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
             Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
 
             data = Nd4j.createBuffer(dPointer,
                     DataBuffer.Type.DOUBLE,

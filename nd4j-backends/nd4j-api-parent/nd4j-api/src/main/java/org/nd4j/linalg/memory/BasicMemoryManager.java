@@ -1,10 +1,12 @@
 package org.nd4j.linalg.memory;
 
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 
@@ -81,8 +83,12 @@ public abstract class BasicMemoryManager implements MemoryManager {
 
     @Override
     public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
+        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+
         Pointer.memcpy(dstBuffer.addressPointer(), srcBuffer.addressPointer(),
                         srcBuffer.length() * srcBuffer.getElementSize());
+
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, srcBuffer.length() * srcBuffer.getElementSize(), MemcpyDirection.HOST_TO_HOST);
     }
 
     @Override

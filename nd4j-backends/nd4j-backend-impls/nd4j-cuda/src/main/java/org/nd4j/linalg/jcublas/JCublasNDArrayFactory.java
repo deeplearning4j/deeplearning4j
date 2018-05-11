@@ -19,7 +19,10 @@
 
 package org.nd4j.linalg.jcublas;
 
+import lombok.val;
+import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.compression.CompressionUtils;
+import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
@@ -764,9 +767,12 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         AllocationPoint point = allocator.getAllocationPoint(ret);
 
+        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
         nativeOps.memcpyAsync(point.getDevicePointer(), point.getHostPointer(), ret.lengthLong() * Nd4j.sizeOfDataType(ret.data().dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
         context.getSpecialStream().synchronize();
+
+        PerformanceTracker.getInstance().helperRegisterTransaction(point.getDeviceId(), perfD, point.getNumberOfBytes(), MemcpyDirection.HOST_TO_DEVICE);
 
         point.tickHostRead();
         point.tickDeviceWrite();

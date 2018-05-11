@@ -1,5 +1,6 @@
 package org.nd4j.jita.constant;
 
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -10,6 +11,7 @@ import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.cache.ArrayDescriptor;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -19,6 +21,7 @@ import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaHalfDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
@@ -119,11 +122,15 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                                 false);
             }
 
+            val profD = PerformanceTracker.getInstance().helperStartTransaction();
+
             if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(),
                             requiredMemoryBytes, 1, context.getSpecialStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
             }
             flowController.commitTransfer(context.getSpecialStream());
+
+            PerformanceTracker.getInstance().helperRegisterTransaction(point.getDeviceId(), profD, point.getNumberOfBytes(), MemcpyDirection.HOST_TO_DEVICE);
 
             point.setConstant(true);
             point.tickDeviceWrite();
@@ -168,11 +175,15 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                                 false);
             }
 
+            val profD = PerformanceTracker.getInstance().helperStartTransaction();
+
             if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(),
                             requiredMemoryBytes, 1, context.getSpecialStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
             }
             flowController.commitTransfer(context.getSpecialStream());
+
+            PerformanceTracker.getInstance().helperRegisterTransaction(point.getDeviceId(), profD, point.getNumberOfBytes(), MemcpyDirection.HOST_TO_DEVICE);
 
             point.setConstant(true);
             point.tickDeviceWrite();

@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
+import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
@@ -2102,6 +2103,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             List<Map<String, Object>> devicesList = new ArrayList<>();
 
+            // fill with per-device information: name, memory, versions
             for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
                 Map<String, Object> deviceProps = new HashMap<>();
 
@@ -2116,18 +2118,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 devicesList.add(i, deviceProps);
             }
 
+            // fill with basic general info
             props.put(Nd4jEnvironment.BACKEND_KEY, "CUDA");
             props.put(Nd4jEnvironment.CUDA_NUM_GPUS_KEY, nativeOps.getAvailableDevices());
             props.put(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY, devicesList);
             props.put(Nd4jEnvironment.BLAS_VENDOR_KEY, (Nd4j.factory().blas()).getBlasVendor().toString());
             props.put(Nd4jEnvironment.HOST_FREE_MEMORY_KEY, Pointer.maxBytes() - Pointer.totalBytes());
 
+            // fill bandwidth information
+            props.put(Nd4jEnvironment.MEMORY_BANDWIDTH_KEY, PerformanceTracker.getInstance().getCurrentBandwidth());
 
             properties = props;
         } else {
 
             List<Map<String, Object>> devicesList = (List<Map<String, Object>>) properties.get(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY);
 
+            // just update information that might change over time
             for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
                 Map<String, Object> dev = devicesList.get(i);
                 CudaPointer devPtr = new CudaPointer(i);
@@ -2138,6 +2144,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             properties.put(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY, devicesList);
             properties.put(Nd4jEnvironment.HOST_FREE_MEMORY_KEY, Pointer.maxBytes() - Pointer.totalBytes());
+
+            // fill bandwidth information
+            properties.put(Nd4jEnvironment.MEMORY_BANDWIDTH_KEY, PerformanceTracker.getInstance().getCurrentBandwidth());
         }
         return properties;
     }

@@ -27,4 +27,9 @@ public class AllocationShape {
         this.elementSize = elementSize;
         this.dataType = dataType;
     }
+
+
+    public long getNumberOfBytes() {
+        return this.length * this.elementSize;
+    }
 }

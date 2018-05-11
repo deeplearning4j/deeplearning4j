@@ -6338,6 +6338,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(out5, exp);
     }
 
+    @Test
+    public void testAccumuationWithoutAxis_1() {
+        val array = Nd4j.create(3, 3).assign(1.0);
+
+        val result = array.sum();
+
+        assertEquals(1, result.length());
+        assertEquals(9.0, result.getDouble(0), 1e-5);
+    }
+
 
 
     ///////////////////////////////////////////////////////

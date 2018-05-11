@@ -166,6 +166,10 @@ public class AllocationPoint {
         }
     }
 
+    public long getNumberOfBytes() {
+        return shape.getNumberOfBytes();
+    }
+
     public void addReadLane(cudaEvent_t event) {
         readLane.add(event);
     }

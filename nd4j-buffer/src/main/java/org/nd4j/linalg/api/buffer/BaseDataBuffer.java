@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.buffer;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.util.AllocUtil;
@@ -236,6 +237,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         initTypeAndSize();
 
         pointer = new FloatPointer(data);
+
         setIndexer(FloatIndexer.create((FloatPointer) pointer));
         //wrappedBuffer = pointer.asByteBuffer();
 
@@ -1625,6 +1627,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     break;
             }
         }
+
         Pointer.memcpy(pointer, oldPointer, this.length() * getElementSize());
         //this.underlyingLength = length;
         return this;

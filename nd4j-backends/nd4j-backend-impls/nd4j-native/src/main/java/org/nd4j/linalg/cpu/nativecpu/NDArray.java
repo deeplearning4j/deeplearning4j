@@ -20,6 +20,7 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
@@ -27,7 +28,9 @@ import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 
 import java.util.List;
@@ -374,7 +377,11 @@ public class NDArray extends BaseNDArray {
 
         INDArray ret = Nd4j.createArrayFromShapeBuffer(rb, this.shapeInfoDataBuffer());
 
+        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+
         Pointer.memcpy(ret.data().addressPointer(), this.data().addressPointer(), this.data().length() * this.data().getElementSize());
+
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, this.data().length() * this.data().getElementSize(), MemcpyDirection.HOST_TO_HOST);
 
         return ret;
     }

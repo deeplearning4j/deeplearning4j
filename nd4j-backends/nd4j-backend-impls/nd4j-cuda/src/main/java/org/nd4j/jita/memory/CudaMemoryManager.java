@@ -17,6 +17,8 @@ import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.util.Map;
+
 /**
  * @author raver119@gmail.com
  */
@@ -233,5 +235,10 @@ public class CudaMemoryManager extends BasicMemoryManager {
             Pointer.memset(AtomicAllocator.getInstance().getHostPointer(array), 0, array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()));
             point.tickHostWrite();
         }
+    }
+
+    @Override
+    public Map<Integer, Long> getBandwidthUse() {
+        return null;
     }
 }

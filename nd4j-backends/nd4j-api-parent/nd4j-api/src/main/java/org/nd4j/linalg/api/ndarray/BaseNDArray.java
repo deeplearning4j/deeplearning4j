@@ -53,6 +53,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
+import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -60,6 +61,7 @@ import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -189,22 +191,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(double[][] data, char ordering) {
-        this(Nd4j.createBuffer(ordering == 'c' ? ArrayUtil.flatten(data) : ArrayUtil.flattenF(data)),
+        this(internalCreateBuffer(ordering == 'c' ? ArrayUtil.flatten(data) : ArrayUtil.flattenF(data)),
                 new int[] {data.length, data[0].length},
                 Nd4j.getStrides(new int[] {data.length, data[0].length}, ordering), 0, ordering);
 
         for (int r = 0; r < rows(); r++) {
             assert (data[r].length == columns());
         }
-        /*
-        this.data = Nd4j.createBuffer(length);
-        
-        
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < columns; c++) {
-                putScalar(r, c, data[r][c]);
-            }
-        }*/
     }
 
 
@@ -388,7 +381,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
         if (data != null && data.length > 0) {
-            this.data = Nd4j.createBuffer(data, offset);
+
+            val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+
+            this.data = internalCreateBuffer(data, offset);
+
+            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+
             if (offset >= data.length)
                 throw new IllegalArgumentException("invalid offset: must be < data.length");
         }
@@ -421,7 +420,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param strides
      */
     public BaseNDArray(int[] data, int[] shape, int[] strides) {
-        this(Nd4j.createBuffer(data), shape, strides);
+        this(internalCreateBuffer(data), shape, strides);
     }
 
     /**
@@ -462,7 +461,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(double[] data, int[] shape, char ordering) {
-        this(Nd4j.createBuffer(data), shape, ordering);
+        this(internalCreateBuffer(data), shape, ordering);
     }
 
     /**
@@ -474,7 +473,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(double[] data, int[] shape, int[] stride, long offset, char ordering) {
-        this(Nd4j.createBuffer(data, offset), shape, stride, offset, ordering);
+        this(internalCreateBuffer(data, offset), shape, stride, offset, ordering);
     }
 
     /**
@@ -483,7 +482,61 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param order
      */
     public BaseNDArray(float[] data, char order) {
-        this(Nd4j.createBuffer(data), order);
+        this(internalCreateBuffer(data), order);
+    }
+
+    protected static DataBuffer internalCreateBuffer(float[] data) {
+        val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+        val buffer = Nd4j.createBuffer(data);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+
+        return buffer;
+    }
+
+    protected static DataBuffer internalCreateBuffer(double[] data) {
+        val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+        val buffer = Nd4j.createBuffer(data);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+
+        return buffer;
+    }
+
+    protected static DataBuffer internalCreateBuffer(int[] data) {
+        val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+        val buffer = Nd4j.createBuffer(data);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+
+        return buffer;
+    }
+
+    protected static DataBuffer internalCreateBuffer(float[] data, long offset) {
+        val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+        val buffer = Nd4j.createBuffer(data, offset);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+
+        return buffer;
+    }
+
+    protected static DataBuffer internalCreateBuffer(double[] data, long offset) {
+        val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+        val buffer = Nd4j.createBuffer(data, offset);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+
+        return buffer;
+    }
+
+    protected static DataBuffer internalCreateBuffer(int[] data, long offset) {
+        val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+        val buffer = Nd4j.createBuffer(data, offset);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+
+        return buffer;
     }
 
     /**
@@ -657,22 +710,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(float[][] data, char ordering) {
-        this(Nd4j.createBuffer(ordering == 'c' ? ArrayUtil.flatten(data) : ArrayUtil.flattenF(data)),
+        this(internalCreateBuffer(ordering == 'c' ? ArrayUtil.flatten(data) : ArrayUtil.flattenF(data)),
                 new int[] {data.length, data[0].length},
                 Nd4j.getStrides(new int[] {data.length, data[0].length}, ordering), 0, ordering);
 
         for (int r = 0; r < rows(); r++) {
             assert (data[r].length == columns());
         }
-        /*
-        this.data = Nd4j.createBuffer(length);
-        
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < columns; c++) {
-                putScalar(r, c, data[r][c]);
-            }
-        }
-        */
     }
 
 
@@ -690,7 +734,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray(double[] data, int[] shape, int[] stride, long offset) {
-        this(Nd4j.createBuffer(data), shape, stride, offset);
+        this(internalCreateBuffer(data), shape, stride, offset);
     }
 
 
