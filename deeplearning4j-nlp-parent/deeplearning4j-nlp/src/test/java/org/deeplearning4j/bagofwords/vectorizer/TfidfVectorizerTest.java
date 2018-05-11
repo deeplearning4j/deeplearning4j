@@ -55,7 +55,7 @@ public class TfidfVectorizerTest {
     private static final Logger log = LoggerFactory.getLogger(TfidfVectorizerTest.class);
 
 
-    @Test
+    @Test(timeout = 60000L)
     public void testTfIdfVectorizer() throws Exception {
         File rootDir = new ClassPathResource("tripledir").getFile();
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);
@@ -126,7 +126,7 @@ public class TfidfVectorizerTest {
         assertEquals(vector, dataSet.getFeatureMatrix());
     }
 
-    @Test
+    @Test(timeout = 10000L)
     public void testParallelFlag1() throws Exception {
         val vectorizer = new TfidfVectorizer.Builder()
                 .allowParallelTokenization(false)
@@ -136,7 +136,7 @@ public class TfidfVectorizerTest {
     }
 
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test(expected = ND4JIllegalStateException.class, timeout = 20000L)
     public void testParallelFlag2() throws Exception {
         val collection = new ArrayList<String>();
         collection.add("First string");
@@ -160,7 +160,7 @@ public class TfidfVectorizerTest {
         vectorizer.fit();
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test(expected = ND4JIllegalStateException.class, timeout = 20000L)
     public void testParallelFlag3() throws Exception {
         val collection = new ArrayList<String>();
         collection.add("First string");

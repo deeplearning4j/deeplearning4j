@@ -294,7 +294,7 @@ public class GradientCheckUtil {
                     if (print)
                         log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
                                         + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
+                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
                     if (exitOnFirstError)
                         return false;
                     totalNFailures++;
@@ -507,7 +507,7 @@ public class GradientCheckUtil {
                     if (print)
                         log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
                                         + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
+                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
                     if (exitOnFirstError)
                         return false;
                     totalNFailures++;
@@ -632,7 +632,7 @@ public class GradientCheckUtil {
                     if (print)
                         log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
                                         + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
+                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
                     if (exitOnFirstError)
                         return false;
                     totalNFailures++;
