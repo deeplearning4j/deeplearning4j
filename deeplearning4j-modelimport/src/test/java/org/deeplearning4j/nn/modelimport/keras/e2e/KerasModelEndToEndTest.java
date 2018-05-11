@@ -344,6 +344,13 @@ public class KerasModelEndToEndTest {
         importFunctionalModelH5Test("modelimport/keras/examples/squeezenet/squeezenet.h5");
     }
 
+    /**
+     * DeepMoji
+     */
+    @Test
+    public void importDeepMoji() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/DeepMoji/deepmoji.h5");
+    }
 
     /**
      * MobileNet
