@@ -1,5 +1,6 @@
 package org.deeplearning4j.convolution;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -29,7 +30,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 15/11/2016.
  */
-public class TestConvolution {
+public class TestConvolution extends BaseDL4JTest {
 
     @Test
     public void testSameModeActivationSizes() {
