@@ -195,7 +195,7 @@ public class Keras2ModelConfigurationTest {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         MultiLayerConfiguration config =
                 new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildSequential().getMultiLayerConfiguration();
+                        .enforceTrainingConfig(false).buildSequential().getMultiLayerConfiguration();
         MultiLayerNetwork model = new MultiLayerNetwork(config);
         model.init();
     }
@@ -204,7 +204,7 @@ public class Keras2ModelConfigurationTest {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         ComputationGraphConfiguration config =
                 new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
-                        .enforceTrainingConfig(true).buildModel().getComputationGraphConfiguration();
+                        .enforceTrainingConfig(false).buildModel().getComputationGraphConfiguration();
         ComputationGraph model = new ComputationGraph(config);
         model.init();
     }

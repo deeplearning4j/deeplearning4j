@@ -67,7 +67,9 @@ public class KerasUpsampling2DTest {
 
         Upsampling2D layer = new KerasUpsampling2D(layerConfig).getUpsampling2DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
-        assertEquals(size[0], layer.getSize());
+        assertEquals(size[0], layer.getSize()[0]);
+        assertEquals(size[1], layer.getSize()[1]);
+
     }
 
 }
