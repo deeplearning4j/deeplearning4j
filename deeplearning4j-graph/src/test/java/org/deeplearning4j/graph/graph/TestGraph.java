@@ -20,7 +20,7 @@ import static org.junit.Assert.*;
 
 public class TestGraph {
 
-    @Test
+    @Test(timeout = 10000L)
     public void testSimpleGraph() {
 
         Graph<String, String> graph = new Graph<>(10, false, new VFactory());
@@ -74,7 +74,7 @@ public class TestGraph {
     }
 
 
-    @Test
+    @Test(timeout = 10000L)
     public void testRandomWalkIterator() {
         Graph<String, String> graph = new Graph<>(10, false, new VFactory());
         assertEquals(10, graph.numVertices());
@@ -117,7 +117,7 @@ public class TestGraph {
         assertEquals(10, startIdxSet.size());
     }
 
-    @Test
+    @Test(timeout = 10000L)
     public void testWeightedRandomWalkIterator() throws Exception {
 
         //Load a directed, weighted graph from file

@@ -20,16 +20,15 @@ import static org.junit.Assert.*;
 
 public class DeepWalkGradientCheck {
 
-    public static final double epsilon = 1e-6;
-    public static final double MAX_REL_ERROR = 1e-5;
+    public static final double epsilon = 1e-8;
+    public static final double MAX_REL_ERROR = 1e-3;
 
     @Before
     public void before() {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
 
-    @Test
+    @Test(timeout = 10000L)
     public void checkGradients() throws IOException {
 
         ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
@@ -42,7 +41,7 @@ public class DeepWalkGradientCheck {
 
         Nd4j.getRandom().setSeed(12345);
         DeepWalk<String, String> deepWalk = new DeepWalk.Builder<String, String>().learningRate(0.01)
-                        .vectorSize(vectorSize).windowSize(windowSize).learningRate(0.01).build();
+                        .vectorSize(vectorSize).windowSize(windowSize).build();
         deepWalk.initialize(graph);
 
         for (int i = 0; i < 7; i++) {
@@ -172,7 +171,7 @@ public class DeepWalkGradientCheck {
 
 
 
-    @Test
+    @Test(timeout = 10000L)
     public void checkGradients2() throws IOException {
 
         ClassPathResource cpr = new ClassPathResource("graph13.txt");
