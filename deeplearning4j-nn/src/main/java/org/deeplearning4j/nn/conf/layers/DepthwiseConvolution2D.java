@@ -36,41 +36,16 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
 
     protected DepthwiseConvolution2D(Builder builder) {
         super(builder);
-        this.hasBias = builder.hasBias;
         this.depthMultiplier = builder.depthMultiplier;
-        this.convolutionMode = builder.convolutionMode;
-        this.dilation = builder.dilation;
-        if (builder.kernelSize.length != 2)
-            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
-        this.kernelSize = builder.kernelSize;
-        if (builder.stride.length != 2)
-            throw new IllegalArgumentException("Stride should include stride for rows and columns (a 2d array)");
-        this.stride = builder.stride;
-        if (builder.padding.length != 2)
-            throw new IllegalArgumentException("Padding should include padding for rows and columns (a 2d array)");
-        this.padding = builder.padding;
-        this.cudnnAlgoMode = builder.cudnnAlgoMode;
-        this.cudnnFwdAlgo = builder.cudnnFwdAlgo;
-        this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
-        this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
         this.nOut = this.nIn * this.depthMultiplier;
 
         initializeConstraints(builder);
     }
 
-    public boolean hasBias() {
-        return hasBias;
-    }
-
     @Override
     public DepthwiseConvolution2D clone() {
         DepthwiseConvolution2D clone = (DepthwiseConvolution2D) super.clone();
-        if (clone.kernelSize != null)
-            clone.kernelSize = clone.kernelSize.clone();
-        if (clone.stride != null)
-            clone.stride = clone.stride.clone();
-        if (clone.padding != null)
-            clone.padding = clone.padding.clone();
+        clone.depthMultiplier = depthMultiplier;
         return clone;
     }
 
