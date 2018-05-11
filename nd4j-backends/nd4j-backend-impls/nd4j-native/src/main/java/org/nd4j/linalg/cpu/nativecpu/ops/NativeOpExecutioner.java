@@ -423,7 +423,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     ret.putScalar(0, loop.execSummaryStatsScalarDouble(dummy, op.opNum(),
                             (DoublePointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
-                            (DoublePointer) getPointerForExtraArgs(op), true));
+                            (DoublePointer) getPointerForExtraArgs(op), ((Variance) op).isBiasCorrected()));
                 } else {
                     Variance var = (Variance) op;
                     loop.execSummaryStatsDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
