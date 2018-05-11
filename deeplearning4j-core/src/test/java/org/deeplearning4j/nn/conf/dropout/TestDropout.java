@@ -356,6 +356,10 @@ public class TestDropout extends BaseDL4JTest {
                         }
                     }
                 }
+
+                //Stochastic, but this should hold for most cases
+                assertTrue(countZero >= 25 && countZero <= 75);
+                assertTrue(countTwo >= 25 && countTwo <= 75);
             } else {
                 countZero = 0;
                 int countInverse = 0;
@@ -378,6 +382,94 @@ public class TestDropout extends BaseDL4JTest {
                 //Stochastic, but this should hold for most cases
                 assertTrue(countZero >= 80);
                 assertTrue(countInverse <= 20);
+            }
+        }
+    }
+
+    @Test
+    public void testSpatialDropoutValues3D(){
+        Nd4j.getRandom().setSeed(12345);
+
+        SpatialDropout d = new SpatialDropout(0.5);
+
+        INDArray in = Nd4j.ones(10, 8, 12);
+        INDArray out = d.applyDropout(in, 0, 0, false);
+
+        assertEquals(in, Nd4j.ones(10, 8, 12));
+
+        //Now, we expect all values for a given depth to be the same... 0 or 2
+        int countZero = 0;
+        int countTwo = 0;
+        for( int i=0; i<10; i++ ){
+            for( int j=0; j<8; j++ ){
+                double value = out.getDouble(i,j,0);
+                assertTrue( value == 0 || value == 2.0);
+                INDArray exp = Nd4j.valueArrayOf(new int[]{1,12}, value);
+                INDArray act = out.get(point(i), point(j), all());
+                assertEquals(exp, act);
+
+                if(value == 0.0){
+                    countZero++;
+                } else {
+                    countTwo++;
+                }
+            }
+        }
+
+        //Stochastic, but this should hold for most cases
+        assertTrue(countZero >= 20 && countZero <= 60);
+        assertTrue(countTwo >= 20 && countTwo <= 60);
+
+        //Test schedule:
+        d = new SpatialDropout(new MapSchedule.Builder(ScheduleType.ITERATION).add(0, 0.5).add(5, 0.1).build());
+        for( int i=0; i<10; i++ ) {
+            out = d.applyDropout(in, i, 0, false);
+            assertEquals(in, Nd4j.ones(10, 8, 12));
+
+            if(i < 5){
+                countZero = 0;
+                countTwo = 0;
+                for( int m=0; m<10; m++ ){
+                    for( int j=0; j<8; j++ ){
+                        double value = out.getDouble(m,j,0);
+                        assertTrue( value == 0 || value == 2.0);
+                        INDArray exp = Nd4j.valueArrayOf(new int[]{1, 12}, value);
+                        INDArray act = out.get(point(m), point(j), all());
+                        assertEquals(exp, act);
+
+                        if(value == 0.0){
+                            countZero++;
+                        } else {
+                            countTwo++;
+                        }
+                    }
+                }
+
+                //Stochastic, but this should hold for most cases
+                assertTrue(countZero >= 20 && countZero <= 60);
+                assertTrue(countTwo >= 20 && countTwo <= 60);
+            } else {
+                countZero = 0;
+                int countInverse = 0;
+                for( int m=0; m<10; m++ ){
+                    for( int j=0; j<8; j++ ){
+                        double value = out.getDouble(m,j,0);
+                        assertTrue( value == 0 || value == 10.0);
+                        INDArray exp = Nd4j.valueArrayOf(new int[]{1,12}, value);
+                        INDArray act = out.get(point(m), point(j), all());
+                        assertEquals(exp, act);
+
+                        if(value == 0.0){
+                            countZero++;
+                        } else {
+                            countInverse++;
+                        }
+                    }
+                }
+
+                //Stochastic, but this should hold for most cases
+                assertTrue(countZero >= 60);
+                assertTrue(countInverse <= 15);
             }
         }
     }
