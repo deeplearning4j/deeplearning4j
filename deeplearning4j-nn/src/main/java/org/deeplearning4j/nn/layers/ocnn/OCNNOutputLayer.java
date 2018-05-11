@@ -218,6 +218,11 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         return doOutput(training,workspaceMgr);
     }
 
+    @Override
+    protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
+        return labels;
+    }
+
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
