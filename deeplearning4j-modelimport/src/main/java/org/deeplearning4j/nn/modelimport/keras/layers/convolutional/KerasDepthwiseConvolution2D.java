@@ -21,6 +21,7 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.*;
@@ -87,9 +88,26 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
     public KerasDepthwiseConvolution2D(Map<String, Object> layerConfig,
                                        Map<String, ? extends KerasLayer> previousLayers, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this(layerConfig, previousLayers, null, enforceTrainingConfig);
+    }
+
+    /**
+     * Constructor from parsed Keras layer configuration dictionary.
+     *
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras configuration
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras configuration
+     */
+    public KerasDepthwiseConvolution2D(Map<String, Object> layerConfig,
+                                       Map<String, ? extends KerasLayer> previousLayers,
+                                       List<String> layerNamesToCheck, boolean enforceTrainingConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
-
+        if (layerNamesToCheck != null) {
+            inboundLayerNames.addAll(layerNamesToCheck);
+        }
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
         int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);

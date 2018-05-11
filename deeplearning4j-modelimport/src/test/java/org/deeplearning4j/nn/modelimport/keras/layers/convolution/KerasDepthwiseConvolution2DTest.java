@@ -20,19 +20,15 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
-import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
-import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasDepthwiseConvolution2D;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSeparableConvolution2D;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -54,9 +50,8 @@ public class KerasDepthwiseConvolution2DTest {
     private final int[] KERNEL_SIZE = new int[]{1, 2};
     private final int[] DILATION = new int[]{2, 2};
     private final int[] STRIDE = new int[]{3, 4};
-    private final int N_IN = 3;
     private final int DEPTH_MULTIPLIER = 4;
-    private final int N_OUT = N_IN * DEPTH_MULTIPLIER;
+    private final int N_IN = 3;
     private final String BORDER_MODE_VALID = "valid";
     private final int[] VALID_PADDING = new int[]{0, 0};
 
@@ -79,10 +74,12 @@ public class KerasDepthwiseConvolution2DTest {
         config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         if (kerasVersion == 1) {
+            config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
             config.put(conf.getLAYER_FIELD_DEPTH_WISE_INIT(), INIT_KERAS);
         } else {
             Map<String, Object> init = new HashMap<>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
+            config.put(conf.getLAYER_FIELD_INIT(), init);
             config.put(conf.getLAYER_FIELD_DEPTH_WISE_INIT(), init);
         }
         Map<String, Object> W_reg = new HashMap<>();
@@ -107,12 +104,21 @@ public class KerasDepthwiseConvolution2DTest {
         subsampleList.add(STRIDE[0]);
         subsampleList.add(STRIDE[1]);
         config.put(conf.getLAYER_FIELD_CONVOLUTION_STRIDES(), subsampleList);
-        config.put(conf.getLAYER_FIELD_NB_FILTER(), N_OUT);
         config.put(conf.getLAYER_FIELD_BORDER_MODE(), BORDER_MODE_VALID);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+        config.put(conf.getLAYER_FIELD_NB_FILTER(), N_IN);
 
-        DepthwiseConvolution2D layer = new KerasDepthwiseConvolution2D(layerConfig).getDepthwiseConvolution2DLayer();
+        KerasConvolution2D previousLayer = new KerasConvolution2D(layerConfig);
+        Map<String, KerasLayer> previousLayers = new HashMap<>();
+        previousLayers.put("conv", previousLayer);
+        List<String> layerNames = Collections.singletonList("conv");
+
+        KerasDepthwiseConvolution2D kerasLayer =  new KerasDepthwiseConvolution2D(
+                layerConfig, previousLayers, layerNames, false);
+        assert  kerasLayer.getInboundLayerNames().get(0) == "conv";
+
+        DepthwiseConvolution2D layer = kerasLayer.getDepthwiseConvolution2DLayer();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());
@@ -122,7 +128,7 @@ public class KerasDepthwiseConvolution2DTest {
         assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
         assertArrayEquals(KERNEL_SIZE, layer.getKernelSize());
         assertArrayEquals(STRIDE, layer.getStride());
-        assertEquals(N_OUT, layer.getNOut());
+        assertEquals(N_IN * DEPTH_MULTIPLIER, layer.getNOut());
         assertEquals(ConvolutionMode.Truncate, layer.getConvolutionMode());
         assertArrayEquals(VALID_PADDING, layer.getPadding());
         if (withDilation) {
