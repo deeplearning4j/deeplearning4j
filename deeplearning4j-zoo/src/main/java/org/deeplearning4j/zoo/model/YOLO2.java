@@ -96,7 +96,7 @@ public class YOLO2 extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return "http://blob.deeplearning4j.org/models/yolo2_dl4j_inference.v2.zip";
+            return "http://blob.deeplearning4j.org/models/yolo2_dl4j_inference.v3.zip";
         else
             return null;
     }
@@ -104,7 +104,7 @@ public class YOLO2 extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return 3583899975L;
+            return 3658373840L;
         else
             return 0L;
     }

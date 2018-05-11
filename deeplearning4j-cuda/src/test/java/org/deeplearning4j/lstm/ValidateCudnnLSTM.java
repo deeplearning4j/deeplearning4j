@@ -1,5 +1,6 @@
 package org.deeplearning4j.lstm;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.*;
@@ -27,7 +28,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 18/07/2017.
  */
-public class ValidateCudnnLSTM {
+public class ValidateCudnnLSTM extends BaseDL4JTest {
 
     @Test
     public void validateImplSimple() throws Exception {

@@ -54,7 +54,7 @@ public class BagOfWordsVectorizerTest {
 
 
 
-    @Test
+    @Test(timeout = 60000L)
     public void testBagOfWordsVectorizer() throws Exception {
         File rootDir = new ClassPathResource("rootdir").getFile();
         LabelAwareSentenceIterator iter = new LabelAwareFileSentenceIterator(rootDir);

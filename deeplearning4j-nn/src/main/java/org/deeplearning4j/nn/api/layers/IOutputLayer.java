@@ -27,6 +27,13 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 public interface IOutputLayer extends Layer, Classifier {
 
     /**
+     * Returns true if labels are required
+     * for this output layer
+     * @return true if this output layer needs labels or not
+     */
+    boolean needsLabels();
+
+    /**
      * Set the labels array for this output layer
      *
      * @param labels Labels array to set

@@ -47,6 +47,17 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>maven-restlet</id>
+            <name>Public online Restlet repository</name>
+            <url>http://maven.restlet.org</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <prerequisites>
@@ -80,6 +91,7 @@
         <typesafe.config.version>1.3.0</typesafe.config.version>
         <lombok.version>1.16.20</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
+        <lucene-solr.version>7.3.0</lucene-solr.version>
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>
@@ -382,7 +394,7 @@
 
         <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
         <profile>
-            <id>test-nd4j-cuda-8.0</id>
+            <id>test-nd4j-cuda-9.0</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -395,7 +407,7 @@
                 </dependency>
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-8.0</artifactId>
+                    <artifactId>nd4j-cuda-9.0</artifactId>
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>
@@ -531,6 +543,7 @@
         <module>deeplearning4j-nlp-parent</module>
         <module>deeplearning4j-nn</module>
         <module>deeplearning4j-modelimport</module>
+        <module>deeplearning4j-modelexport-solr</module>
         <module>deeplearning4j-zoo</module>
         <module>deeplearning4j-nearestneighbors-parent</module>
         <module>deeplearning4j-data</module>
@@ -650,7 +663,7 @@
                             <skip>${skipBackendChoice}</skip>
                             <rules>
                                 <requireActiveProfile>
-                                    <profiles>test-nd4j-native,test-nd4j-cuda-8.0</profiles>
+                                    <profiles>test-nd4j-native,test-nd4j-cuda-9.0</profiles>
                                     <all>false</all>
                                 </requireActiveProfile>
                             </rules>
@@ -705,6 +718,7 @@
                         <directory>deeplearning4j-nlp-parent</directory>
                         <directory>deeplearning4j-nn</directory>
                         <directory>deeplearning4j-modelimport</directory>
+                        <directory>deeplearning4j-modelexport-solr</directory>
                         <directory>deeplearning4j-zoo</directory>
                         <directory>deeplearning4j-nearestneighbors-parent</directory>
                     </directories>

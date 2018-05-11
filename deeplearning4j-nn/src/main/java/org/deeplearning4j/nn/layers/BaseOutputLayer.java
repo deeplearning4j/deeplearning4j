@@ -100,6 +100,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         return score;
     }
 
+    @Override
+    public boolean needsLabels() {
+        return true;
+    }
+
     /**Compute the score for each example individually, after labels and input have been set.
      *
      * @param fullNetworkL1 L1 regularization term for the entire network (or, 0.0 to not include regularization)
@@ -370,14 +375,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         }
     }
 
-
-    protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
-        Preconditions.checkArgument(labels != null, "Labels are null");
-        if (labels.rank() > 2) {
-            return workspaceMgr.leverageTo(arrayType, labels.reshape(labels.size(2), labels.size(1)));
-        }
-        return labels;
-    }
+    protected abstract INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType);
 
     @Override
     public boolean isPretrainLayer() {

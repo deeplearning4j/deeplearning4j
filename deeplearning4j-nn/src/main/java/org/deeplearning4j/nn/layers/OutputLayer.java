@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
@@ -37,6 +39,11 @@ public class OutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.laye
 
     public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+    }
+
+    @Override
+    protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
+        return labels;
     }
 
 }

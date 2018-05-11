@@ -220,7 +220,7 @@ public class TrainModuleUtils {
             reconstructionInfo.put("Input Size", String.valueOf(inputSize));
             reconstructionInfo.put("Layer Size", String.valueOf(outputSize));
             reconstructionInfo.put("Num Parameters", String
-                            .valueOf((inputSize + 1) * va.getOutputDistribution().distributionInputSize(va.getNIn())));
+                    .valueOf((inputSize + 1) * va.getOutputDistribution().distributionInputSize(va.getNIn())));
             reconstructionInfo.put("Distribution", va.getOutputDistribution().toString());
             layerInfo.add(reconstructionInfo);
 
@@ -263,7 +263,7 @@ public class TrainModuleUtils {
 
         if (layer instanceof ConvolutionLayer) {
             org.deeplearning4j.nn.conf.layers.ConvolutionLayer layer1 =
-                            (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer;
+                    (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) layer;
             map.put("Kernel size", Arrays.toString(layer1.getKernelSize()));
             map.put("Stride", Arrays.toString(layer1.getStride()));
             map.put("Padding", Arrays.toString(layer1.getPadding()));
@@ -275,7 +275,8 @@ public class TrainModuleUtils {
             map.put("Pooling Type", layer1.getPoolingType().toString());
         } else if (layer instanceof BaseOutputLayer) {
             BaseOutputLayer ol = (BaseOutputLayer) layer;
-            map.put("Loss Function", ol.getLossFn().toString());
+            if(ol.getLossFn() != null)
+                map.put("Loss Function", ol.getLossFn().toString());
         }
 
         return map;

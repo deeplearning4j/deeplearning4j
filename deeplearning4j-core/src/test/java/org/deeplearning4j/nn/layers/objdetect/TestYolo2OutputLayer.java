@@ -3,6 +3,9 @@ package org.deeplearning4j.nn.layers.objdetect;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
@@ -26,8 +29,11 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.schedule.MapSchedule;
+import org.nd4j.linalg.schedule.ScheduleType;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,6 +50,9 @@ import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 public class TestYolo2OutputLayer extends BaseDL4JTest {
+
+    @Rule
+    public TemporaryFolder tempDir = new TemporaryFolder();
 
     @Test
     public void testYoloActivateScoreBasic() {
@@ -396,7 +405,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         InputStream is3 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2008_003344.jpg").getInputStream();
         InputStream is4 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2008_003344.xml").getInputStream();
 
-        File dir = Files.createTempDirectory("testYoloOverfitting").toFile();
+        File dir = tempDir.newFolder();
         File jpg = new File(dir, "JPEGImages");
         File annot = new File(dir, "Annotations");
         jpg.mkdirs();
@@ -459,15 +468,15 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .convolutionMode(ConvolutionMode.Same)
                 .updater(new Adam(1e-3))
+                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                .gradientNormalizationThreshold(3)
                 .activation(Activation.LEAKYRELU)
                 .weightInit(WeightInit.RELU)
-                .seed(123456)
+                .seed(12345)
                 .list()
-                .layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(32).build())
-                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build())
-                .layer(new ConvolutionLayer.Builder().kernelSize(3,3).stride(1,1).nOut(64).build())
-                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build())
-                .layer(new ConvolutionLayer.Builder().activation(Activation.IDENTITY).kernelSize(3,3).stride(1,1).nOut(depthOut).build())
+                .layer(new ConvolutionLayer.Builder().kernelSize(5,5).stride(2,2).nOut(256).build())
+                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2)/*.poolingType(SubsamplingLayer.PoolingType.AVG)*/.build())
+                .layer(new ConvolutionLayer.Builder().activation(Activation.IDENTITY).kernelSize(5,5).stride(1,1).nOut(depthOut).build())
                 .layer(new Yolo2OutputLayer.Builder()
                         .boundingBoxPriors(bbPriors)
                         .build())
@@ -478,7 +487,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         net.init();
         net.setListeners(new ScoreIterationListener(100));
 
-        int nEpochs = 1600;
+        int nEpochs = 1000;
         DataSet ds = iter.next();
         URI[] uris = fileSplit.locations();
         if (!uris[0].getPath().contains("2007_009346")) {
@@ -491,7 +500,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         }
 
         org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer ol =
-                (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer) net.getLayer(5);
+                (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer) net.getLayer(3);
 
         INDArray out = net.output(ds.getFeatures());
 

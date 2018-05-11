@@ -5,6 +5,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
@@ -492,6 +493,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
 
     @Test
     public void lossFunctionWeightedGradientCheck() {
+        Nd4j.getRandom().setSeed(12345);
 
         INDArray[] weights = new INDArray[] {Nd4j.create(new double[] {0.2, 0.3, 0.5}),
                         Nd4j.create(new double[] {1.0, 0.5, 2.0})};
@@ -536,7 +538,9 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
                                     .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
-                                    .dist(new UniformDistribution(-3, 3)).list()
+//                                    .dist(new UniformDistribution(-3, 3))
+                                    .dist(new NormalDistribution(0, 1))
+                                    .list()
                                     .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH)
                                                     .build())
                                     .layer(1, new OutputLayer.Builder().lossFunction(lossFunctions[i])
@@ -545,6 +549,15 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
 
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
+
+                    //Check params to avoid test flakiness on small or large params
+                    INDArray params = net.params();
+                    for( int x=0; x<params.length(); x++ ){
+                        while(Math.abs(params.getDouble(x)) < 0.01 || Math.abs(params.getDouble(x)) > 1.5){
+                            double d = Nd4j.getRandom().nextDouble();
+                            params.putScalar(x, -1.5 + d * 3);
+                        }
+                    }
 
                     INDArray[] inOut = getFeaturesAndLabels(lossFunctions[i], minibatchSizes[j], 4, 3, 12345);
                     INDArray input = inOut[0];

@@ -764,6 +764,7 @@ public class ModelSerializer {
             tempFile = File.createTempFile("tempcopy", "temp");
             tempFile.deleteOnExit();
             Files.copy(f, tempFile);
+            f.delete();
             try (ZipFile zipFile = new ZipFile(tempFile);
                  ZipOutputStream writeFile =
                          new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(f)))) {
@@ -780,14 +781,24 @@ public class ModelSerializer {
                     writeFile.putNextEntry(wEntry);
 
                     IOUtils.copy(is, writeFile);
+                    writeFile.closeEntry();
+                    is.close();
                 }
 
                 //Add new object:
                 ZipEntry entry = new ZipEntry("objects/" + key);
                 writeFile.putNextEntry(entry);
-                try(ObjectOutputStream oos = new ObjectOutputStream(writeFile)){
+
+                try(ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos)){
                     oos.writeObject(o);
+                    byte[] bytes = baos.toByteArray();
+                    writeFile.write(bytes);
                 }
+                writeFile.closeEntry();
+
+                writeFile.close();
+                zipFile.close();
+
             }
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -815,16 +826,18 @@ public class ModelSerializer {
                         || NO_PARAMS_MARKER.equalsIgnoreCase(key) || PREPROCESSOR_BIN.equalsIgnoreCase(key)),
                 "Invalid key: Key is reserved for internal use: \"%s\"", key);
 
-        try {
-            ZipFile zipFile = new ZipFile(f);
+        try (ZipFile zipFile = new ZipFile(f)) {
             ZipEntry entry = zipFile.getEntry("objects/" + key);
             if(entry == null){
                 throw new IllegalStateException("No object with key \"" + key + "\" found");
             }
 
+            Object o;
             try(ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(zipFile.getInputStream(entry)))){
-                return (T)ois.readObject();
+                o = ois.readObject();
             }
+            zipFile.close();
+            return (T)o;
         } catch (IOException | ClassNotFoundException e){
             throw new RuntimeException("Error reading object (key = " + key + ") from file " + f, e);
         }
@@ -839,9 +852,8 @@ public class ModelSerializer {
         Preconditions.checkState(f.exists(), "File must exist: %s", f);
 
         List<String> out = new ArrayList<>();
-        try {
-            ZipFile zipFile = new ZipFile(f);
-            ZipEntry entry = zipFile.getEntry("objects");
+        try (ZipFile zipFile = new ZipFile(f)){
+
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
             while(entries.hasMoreElements()){
                 ZipEntry e = entries.nextElement();
@@ -851,7 +863,6 @@ public class ModelSerializer {
                     out.add(s);
                 }
             }
-
             return out;
         } catch (IOException e){
             throw new RuntimeException(e);

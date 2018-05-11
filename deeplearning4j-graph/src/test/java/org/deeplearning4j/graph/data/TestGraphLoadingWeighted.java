@@ -18,7 +18,7 @@ import static org.junit.Assert.assertEquals;
 
 public class TestGraphLoadingWeighted {
 
-    @Test
+    @Test(timeout = 10000L)
     public void testWeightedDirected() throws IOException {
 
         String path = new ClassPathResource("WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
@@ -58,7 +58,7 @@ public class TestGraphLoadingWeighted {
     }
 
 
-    @Test
+    @Test(timeout = 10000L)
     public void testWeightedDirectedV2() throws Exception {
 
         String path = new ClassPathResource("WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();

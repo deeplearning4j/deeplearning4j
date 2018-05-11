@@ -44,9 +44,9 @@ public class TestStatsListener {
             StatsStorage ss = new MapDBStatsStorage(); //in-memory
 
             if (useJ7) {
-                net.setListeners(new J7StatsListener(ss));
+                net.setListeners(new J7StatsListener(ss, 1));
             } else {
-                net.setListeners(new StatsListener(ss));
+                net.setListeners(new StatsListener(ss, 1));
             }
 
 

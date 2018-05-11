@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -27,9 +28,8 @@ import java.util.Map;
  */
 
 @Slf4j
-public class FrozenLayer implements Layer {
+public class FrozenLayer extends BaseWrapperLayer {
 
-    private Layer insideLayer;
     private boolean logUpdate = false;
     private boolean logFit = false;
     private boolean logTestMode = false;
@@ -37,11 +37,10 @@ public class FrozenLayer implements Layer {
     private Gradient zeroGradient;
 
     public FrozenLayer(Layer insideLayer) {
-        this.insideLayer = insideLayer;
+        super(insideLayer);
         if (insideLayer instanceof OutputLayer) {
             throw new IllegalArgumentException("Output Layers are not allowed to be frozen " + layerId());
         }
-        this.insideLayer = insideLayer;
         this.zeroGradient = new DefaultGradient(insideLayer.params());
         if (insideLayer.paramTable() != null) {
             for (String paramType : insideLayer.paramTable().keySet()) {
@@ -57,8 +56,8 @@ public class FrozenLayer implements Layer {
     }
 
     protected String layerId() {
-        String name = insideLayer.conf().getLayer().getLayerName();
-        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + insideLayer.getIndex() + ")";
+        String name = underlying.conf().getLayer().getLayerName();
+        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + underlying.getIndex() + ")";
     }
 
     @Override
@@ -72,56 +71,25 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public Type type() {
-        return insideLayer.type();
-    }
-
-    //FIXME
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         return new Pair<>(zeroGradient, null);
     }
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);
-        return insideLayer.activate(false, workspaceMgr);
+        return underlying.activate(false, workspaceMgr);
     }
 
     @Override
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);
-        return insideLayer.activate(input, false, workspaceMgr);
-    }
-
-    @Override
-    public Layer transpose() {
-        return new FrozenLayer(insideLayer.transpose());
+        return underlying.activate(input, false, workspaceMgr);
     }
 
     @Override
     public Layer clone() {
         OneTimeLogger.info(log, "Frozen layers are cloned as their original versions.");
-        return new FrozenLayer(insideLayer.clone());
-    }
-
-    @Override
-    public Collection<TrainingListener> getListeners() {
-        return insideLayer.getListeners();
-    }
-
-    @Override
-    public void setListeners(TrainingListener... listeners) {
-        insideLayer.setListeners(listeners);
-    }
-
-    /**
-     * This method ADDS additional TrainingListener to existing listeners
-     *
-     * @param listener
-     */
-    @Override
-    public void addListeners(TrainingListener... listener) {
-        insideLayer.addListeners(listener);
+        return new FrozenLayer(underlying.clone());
     }
 
     @Override
@@ -150,12 +118,6 @@ public class FrozenLayer implements Layer {
         }
         //no op
     }
-
-    @Override
-    public double score() {
-        return insideLayer.score();
-    }
-
     @Override
     public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (!logGradient) {
@@ -163,43 +125,8 @@ public class FrozenLayer implements Layer {
                             "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
             logGradient = true;
         }
-        insideLayer.score();
+        underlying.score();
         //no op
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
-        insideLayer.accumulateScore(accum);
-    }
-
-    @Override
-    public INDArray params() {
-        return insideLayer.params();
-    }
-
-    @Override
-    public int numParams() {
-        return insideLayer.numParams();
-    }
-
-    @Override
-    public int numParams(boolean backwards) {
-        return insideLayer.numParams(backwards);
-    }
-
-    @Override
-    public void setParams(INDArray params) {
-        insideLayer.setParams(params);
-    }
-
-    @Override
-    public void setParamsViewArray(INDArray params) {
-        insideLayer.setParamsViewArray(params);
-    }
-
-    @Override
-    public INDArray getGradientsViewArray() {
-        return insideLayer.getGradientsViewArray();
     }
 
     @Override
@@ -233,72 +160,7 @@ public class FrozenLayer implements Layer {
                             "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
             logGradient = true;
         }
-        return new Pair<>(zeroGradient, insideLayer.score());
-    }
-
-    @Override
-    public int batchSize() {
-        return insideLayer.batchSize();
-    }
-
-    @Override
-    public NeuralNetConfiguration conf() {
-        return insideLayer.conf();
-    }
-
-    @Override
-    public void setConf(NeuralNetConfiguration conf) {
-        insideLayer.setConf(conf);
-    }
-
-    @Override
-    public INDArray input() {
-        return insideLayer.input();
-    }
-
-    @Override
-    public void validateInput() {
-        insideLayer.validateInput();
-    }
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        return insideLayer.getOptimizer();
-    }
-
-    @Override
-    public INDArray getParam(String param) {
-        return insideLayer.getParam(param);
-    }
-
-    @Override
-    public void initParams() {
-        insideLayer.initParams();
-    }
-
-    @Override
-    public Map<String, INDArray> paramTable() {
-        return insideLayer.paramTable();
-    }
-
-    @Override
-    public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
-        return insideLayer.paramTable(backpropParamsOnly);
-    }
-
-    @Override
-    public void setParamTable(Map<String, INDArray> paramTable) {
-        insideLayer.setParamTable(paramTable);
-    }
-
-    @Override
-    public void setParam(String key, INDArray val) {
-        insideLayer.setParam(key, val);
-    }
-
-    @Override
-    public void clear() {
-        insideLayer.clear();
+        return new Pair<>(zeroGradient, underlying.score());
     }
 
     @Override
@@ -312,82 +174,6 @@ public class FrozenLayer implements Layer {
     @Override
     public void init() {
 
-    }
-
-    @Override
-    public void setListeners(Collection<TrainingListener> listeners) {
-        insideLayer.setListeners(listeners);
-    }
-
-    @Override
-    public void setIndex(int index) {
-        insideLayer.setIndex(index);
-    }
-
-    @Override
-    public int getIndex() {
-        return insideLayer.getIndex();
-    }
-
-    @Override
-    public int getIterationCount() {
-        return insideLayer.getIterationCount();
-    }
-
-    @Override
-    public int getEpochCount() {
-        return insideLayer.getEpochCount();
-    }
-
-    @Override
-    public void setIterationCount(int iterationCount) {
-        insideLayer.setIterationCount(iterationCount);
-    }
-
-    @Override
-    public void setEpochCount(int epochCount) {
-        insideLayer.setEpochCount(epochCount);
-    }
-
-    @Override
-    public void setInput(INDArray input, LayerWorkspaceMgr layerWorkspaceMgr) {
-        insideLayer.setInput(input, layerWorkspaceMgr);
-    }
-
-    @Override
-    public void setInputMiniBatchSize(int size) {
-        insideLayer.setInputMiniBatchSize(size);
-    }
-
-    @Override
-    public int getInputMiniBatchSize() {
-        return insideLayer.getInputMiniBatchSize();
-    }
-
-    @Override
-    public void setMaskArray(INDArray maskArray) {
-        insideLayer.setMaskArray(maskArray);
-    }
-
-    @Override
-    public INDArray getMaskArray() {
-        return insideLayer.getMaskArray();
-    }
-
-    @Override
-    public boolean isPretrainLayer() {
-        return insideLayer.isPretrainLayer();
-    }
-
-    @Override
-    public void clearNoiseWeightParams() {
-        insideLayer.clearNoiseWeightParams();
-    }
-
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        return insideLayer.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
     }
 
     public void logTestMode(boolean training) {
@@ -415,7 +201,7 @@ public class FrozenLayer implements Layer {
     }
 
     public Layer getInsideLayer() {
-        return insideLayer;
+        return underlying;
     }
 }
 
