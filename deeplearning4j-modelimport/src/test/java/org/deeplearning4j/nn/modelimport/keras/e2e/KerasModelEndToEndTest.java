@@ -349,8 +349,6 @@ public class KerasModelEndToEndTest {
      * MobileNet
      */
     @Test
-    @Ignore
-    // TODO: needs DepthwiseConv2D layer mapping
     public void importMobileNet() throws Exception {
         importFunctionalModelH5Test("modelimport/keras/examples/mobilenet/mobilenet_tf_keras_2.h5");
     }

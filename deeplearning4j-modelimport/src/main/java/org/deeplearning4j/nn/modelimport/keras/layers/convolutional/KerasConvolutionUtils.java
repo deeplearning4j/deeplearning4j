@@ -78,6 +78,11 @@ public class KerasConvolutionUtils {
         return strides;
     }
 
+    static int getDepthMultiplier(Map<String, Object> layerConfig, KerasLayerConfiguration conf)
+            throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        return  (int) innerConfig.get(conf.getLAYER_FIELD_DEPTH_MULTIPLIER());
+    }
 
     /**
      * Get atrous / dilation rate from config

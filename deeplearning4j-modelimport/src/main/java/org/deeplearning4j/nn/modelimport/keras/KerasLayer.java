@@ -211,7 +211,7 @@ public class KerasLayer {
      *
      * @return list of inbound layer names
      */
-    List<String> getInboundLayerNames() {
+    public List<String> getInboundLayerNames() {
         if (this.inboundLayerNames == null)
             this.inboundLayerNames = new ArrayList<>();
         return this.inboundLayerNames;
@@ -222,7 +222,7 @@ public class KerasLayer {
      *
      * @param inboundLayerNames list of inbound layer naems
      */
-    void setInboundLayerNames(List<String> inboundLayerNames) {
+    public void setInboundLayerNames(List<String> inboundLayerNames) {
         this.inboundLayerNames = new ArrayList<>(inboundLayerNames);
     }
 
