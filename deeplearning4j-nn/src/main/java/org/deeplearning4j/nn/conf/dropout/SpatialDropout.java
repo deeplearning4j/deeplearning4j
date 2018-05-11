@@ -56,13 +56,9 @@ public class SpatialDropout implements IDropout {
 
     @Override
     public INDArray applyDropout(@NonNull INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
-        Preconditions.checkArgument(inputActivations.rank() == 4, "Cannot apply spatial dropout to activations of rank %s:" +
-                " spatial dropout can only be used for rank 4 activations (input activations shape: %s)", inputActivations.rank(),
-                inputActivations.shape());
-
-        int minibatch = inputActivations.size(0);
-        int channels = inputActivations.size(1);
-        INDArray mc = Nd4j.ones(minibatch, channels);
+        Preconditions.checkArgument(inputActivations.rank() == 4 || inputActivations.rank() == 3,
+                "Cannot apply spatial dropout to activations of rank %s: spatial dropout can only be used" +
+                        " for rank 3 or 4 activations (input activations shape: %s)", inputActivations.rank(), inputActivations.shape());
 
         double currP;
         if(pSchedule != null){
@@ -71,7 +67,11 @@ public class SpatialDropout implements IDropout {
             currP = p;
         }
 
-        Nd4j.getExecutioner().exec(new DropOutInverted(mc, currP));
+        int minibatch = inputActivations.size(0);
+        int dim1 = inputActivations.size(1);
+        INDArray mask = Nd4j.ones(minibatch, dim1);
+
+        Nd4j.getExecutioner().exec(new DropOutInverted(mask, currP));
 
         INDArray result;
         if(inPlace){
@@ -80,7 +80,7 @@ public class SpatialDropout implements IDropout {
             result = Nd4j.createUninitialized(inputActivations.shape(), 'c');
         }
 
-        Broadcast.mul(inputActivations, mc, result, 0, 1);
+        Broadcast.mul(inputActivations, mask, result, 0, 1);
         return result;
     }
 

@@ -241,4 +241,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         return new Pair<>(gradient, delta);
     }
+
+    @Override
+    protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
+        return labels;
+    }
 }
