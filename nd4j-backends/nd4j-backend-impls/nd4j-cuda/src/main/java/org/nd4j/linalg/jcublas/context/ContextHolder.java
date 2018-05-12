@@ -36,18 +36,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * A multithreaded version derived
  * from the cuda launcher util
  * by the authors of jcuda.
- *
+ * <p>
  * This class handles managing cuda contexts
  * across multiple devices and threads.
- *
  *
  * @author Adam Gibson
  */
 @Data
 public class ContextHolder {
 
-    private Map<String,Integer> threadNameToDeviceNumber = new ConcurrentHashMap<>();
-    private Map<String,Integer> threads = new ConcurrentHashMap<>();
+    private Map<String, Integer> threadNameToDeviceNumber = new ConcurrentHashMap<>();
+    private Map<String, Integer> threads = new ConcurrentHashMap<>();
     private List<Integer> bannedDevices;
     private int numDevices = 0;
     private static ContextHolder INSTANCE;
@@ -58,13 +57,15 @@ public class ContextHolder {
     private AtomicBoolean shutdown = new AtomicBoolean(false);
 
     // holder for memory strategies override
+
     /**
      * Singleton pattern
+     *
      * @return the instance for the context holder.
      */
-    public static synchronized  ContextHolder getInstance() {
+    public static synchronized ContextHolder getInstance() {
 
-        if(INSTANCE == null) {
+        if (INSTANCE == null) {
             Properties props = new Properties();
             try {
                 props.load(new ClassPathResource("/cudafunctions.properties", ContextHolder.class.getClassLoader()).getInputStream());
@@ -77,13 +78,11 @@ public class ContextHolder {
 
 
             //set the properties to be accessible globally
-            for(String pair : props.stringPropertyNames())
-                System.getProperties().put(pair,props.getProperty(pair));
-
+            for (String pair : props.stringPropertyNames())
+                System.getProperties().put(pair, props.getProperty(pair));
 
 
         }
-
 
 
         return INSTANCE;
@@ -95,9 +94,9 @@ public class ContextHolder {
     }
 
 
-
     /**
      * Get the number of devices
+     *
      * @return the number of devices
      */
     public int deviceNum() {
@@ -110,7 +109,7 @@ public class ContextHolder {
      * based on the device
      */
     public void configure() {
-        if(confCalled )
+        if (confCalled)
             return;
 
 /*
@@ -139,7 +138,6 @@ public class ContextHolder {
         JCuda.cudaDeviceSetLimit(0,stackSize);
 
         */
-
 
 
         //force certain ops to have a certain number of threads
@@ -185,8 +183,8 @@ public class ContextHolder {
             }
 */
 
-        }catch(Exception e) {
-            log.warn("Unable to initialize cuda",e);
+        } catch (Exception e) {
+            log.warn("Unable to initialize cuda", e);
         }
 
     /*
@@ -217,8 +215,8 @@ public class ContextHolder {
 
     /**
      * Get the device number for a particular host thread
-     * @return the device for the given host thread
      *
+     * @return the device for the given host thread
      */
     public int getDeviceForThread() {
         /*
