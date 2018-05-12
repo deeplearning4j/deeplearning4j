@@ -151,12 +151,12 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         }
 
         if(firstDerivVBroadcast == null || !Shape.shapeEquals(firstDerivVBroadcast.shape(),shape)) {
-            firstDerivVBroadcast = Nd4j.createUninitialized(shape);
+            firstDerivVBroadcast = Nd4j.createUninitializedDetached(shape);
         }
 
 
         if(secondDerivVBroadcast == null  || !Shape.shapeEquals(secondDerivVBroadcast.shape(),shape)) {
-            secondDerivVBroadcast = Nd4j.createUninitialized(shape);
+            secondDerivVBroadcast = Nd4j.createUninitializedDetached(shape);
         }
 
 
