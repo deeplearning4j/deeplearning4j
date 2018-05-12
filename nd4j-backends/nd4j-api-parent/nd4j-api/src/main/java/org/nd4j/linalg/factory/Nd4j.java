@@ -123,6 +123,7 @@ public class Nd4j {
     public final static String OP_FACTORY = "opfactory";
     public final static String DISTRIBUTION = "dist";
     public final static String INSTRUMENTATION = "instrumentation";
+    public final static String INSTRUMENTATION_CLASS = "instrumentation.class";
     public final static String RESOURCE_MANGER_ON = "resourcemanager_state";
     public final static String EXECUTION_MODE = "opexec.mode";
     public final static String SHAPEINFO_PROVIDER = "shapeinfoprovider";
@@ -6378,7 +6379,7 @@ public class Nd4j {
 
 
             instrumentationClazz = (Class<? extends Instrumentation>) Class
-                    .forName(pp.toString(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
+                    .forName(pp.toString(INSTRUMENTATION_CLASS, InMemoryInstrumentation.class.getName()));
 
             opFactoryClazz = (Class<? extends OpFactory>) Class
                     .forName(pp.toString(OP_FACTORY, DefaultOpFactory.class.getName()));
