@@ -31,9 +31,9 @@ namespace nd4j {
 
             static void _dilatedMaxPool3D_bp(T *gradInput_p, T *gradOutput_p, T *indz_p, Nd4jIndex nslices, Nd4jIndex  itime, Nd4jIndex  iwidth, Nd4jIndex  iheight, Nd4jIndex otime, Nd4jIndex owidth, Nd4jIndex oheight, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH);
 
-            static void _avgPool3D(T *input_p, T *output_p, Nd4jIndex iC, Nd4jIndex iD, Nd4jIndex iH, Nd4jIndex iW, Nd4jIndex oD, Nd4jIndex oH, Nd4jIndex oW, int kD, int kH, int kW, int sD, int sH, int sW, int pD, int pH, int pW, bool count_include_pad);
+            static void avgPool3D(NDArray<T>& input, NDArray<T>& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const bool count_include_pad);
 
-            static void _avgPool3D_bp(T *gradI_p, T *gradO_p, Nd4jIndex iC, Nd4jIndex iD, Nd4jIndex iH, Nd4jIndex iW, Nd4jIndex oD, Nd4jIndex oH, Nd4jIndex oW, int kD, int kH, int kW, int sD, int sH, int sW, int pD, int pH, int pW, bool count_include_pad);
+            static void avgPool3DBP(NDArray<T>& gradO, NDArray<T>& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const bool count_include_pad);
             
             // volume [bS, volC, volD, volH, volW], columns [bS, volC, kD, kH, kW, colD, colH, colW]
             static void vol2col2(NDArray<T>& vol, NDArray<T>& col, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
@@ -50,13 +50,13 @@ namespace nd4j {
             static void calcPadding3D(int& pD, int& pH, int& pW, const int oD, const int oH, const int oW, const int iD, const int iH, const int iW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int dD, const int dH, const int dW);            
 
             // input [bS, iC, iD, iH, iW], output [bS, iC, oD, oH, oW]
-            static void maxPool3dFrame(NDArray<T>& input, NDArray<T>& output, const int iStride, const int oStride, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
+            static void maxPool3d(NDArray<T>& input, NDArray<T>& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
 
             // input [bS, iC, iD, iH, iW], indices [bS, iC, oD, oH, oW]
-            static void maxPool3dIndicesFrame(NDArray<T>& input, int* indices, const int iStride, const int indStride, const int oD, const int oH, const int oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
+            static void maxPool3dIndices(NDArray<T>& input, int* indices, const int oD, const int oH, const int oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
 
             // input [bS, iC, iD, iH, iW], indices [bS, iC, iD, iH, iW], output [bS, iC, oD, oH, oW]
-            static void maxPool3dFrameBp(NDArray<T>& input, const int* indices, NDArray<T>& output, const int iStride, const int oStride, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
+            static void maxPool3dBP(NDArray<T>& input, const int* indices, NDArray<T>& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
 
             // calculation of output height and width in 2D deconvolution procedure
             static void calcOutSizeDeconv2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode);
@@ -89,6 +89,8 @@ namespace nd4j {
             static void upsampling2dBP(const NDArray<T>& gradO, NDArray<T>& gradI, const bool isNCHW);
 
             static void upsampling3dBP(const NDArray<T>& gradO, NDArray<T>& gradI, const bool isNCDHW);
+
+            static void maxPool2d(NDArray<T>* input, NDArray<T>* values, const std::vector<int>& params, NDArray<T>* indices);
 
     };
 

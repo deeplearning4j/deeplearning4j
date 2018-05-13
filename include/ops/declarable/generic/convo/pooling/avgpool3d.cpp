@@ -57,12 +57,8 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 10) {
 
     if(isSameMode)                       // SAME
         ConvolutionUtils<T>::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, 1, 1, 1);    
-
-    int iStride = iC * iD * iH * iW;
-    int oStride = iC * oD * oH * oW;
-    
-    for(int i = 0; i < bS; ++i)   
-        ConvolutionUtils<T>::_avgPool3D(input->getBuffer() + i*iStride, output->getBuffer() + i*oStride, iC, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, !isSameMode);
+        
+    ConvolutionUtils<T>::avgPool3D(*input, *output, kD, kH, kW, sD, sH, sW, pD, pH, pW, !isSameMode);
    
     if(!isNCHW) {              
 
@@ -179,12 +175,8 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 10) {
    
     if(isSameMode)                       // SAME
         ConvolutionUtils<T>::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, 1, 1, 1);    
-
-    int iStride = iC * iD * iH * iW;
-    int oStride = iC * oD * oH * oW;
     
-    for(int i = 0; i < bS; ++i)   
-        ConvolutionUtils<T>::_avgPool3D_bp(gradI->getBuffer() + i*iStride, gradO->getBuffer() + i*oStride, iC, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, !isSameMode);
+    ConvolutionUtils<T>::avgPool3DBP(*gradO, *gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, !isSameMode);
 
     if(!isNCHW) {              
 

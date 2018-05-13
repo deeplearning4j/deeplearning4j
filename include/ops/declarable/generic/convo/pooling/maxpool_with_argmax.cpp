@@ -7,7 +7,6 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
-#include <ops/declarable/helpers/max_pooling.h>
 
 namespace nd4j {
     namespace ops {
@@ -21,7 +20,7 @@ namespace nd4j {
 
             std::vector<int> argI = *(block.getIArguments());
 
-            helpers::maxPoolingFunctor(x, z, argI, indeces);
+            ConvolutionUtils<T>::maxPool2d(x, z, argI, indeces);
 
             return ND4J_STATUS_OK;
         }
