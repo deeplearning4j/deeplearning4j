@@ -514,6 +514,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (initCalled)
             return;
 
+        if (layerWiseConfigurations.getTrainingWorkspaceMode() == null)
+            layerWiseConfigurations.setTrainingWorkspaceMode(WorkspaceMode.NONE);
+
+        if (layerWiseConfigurations.getInferenceWorkspaceMode() == null)
+            layerWiseConfigurations.setInferenceWorkspaceMode(WorkspaceMode.NONE);
+
+        if (layerWiseConfigurations.getCacheMode() == null)
+            layerWiseConfigurations.setCacheMode(CacheMode.NONE);
+
         OneTimeLogger.info(log, "Starting MultiLayerNetwork with WorkspaceModes set to [training: {}; inference: {}], cacheMode set to [{}]",
                 layerWiseConfigurations.getTrainingWorkspaceMode(),
                 layerWiseConfigurations.getInferenceWorkspaceMode(),
