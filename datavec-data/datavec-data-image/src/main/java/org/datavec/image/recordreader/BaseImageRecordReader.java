@@ -26,6 +26,7 @@ import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.util.files.FileFromPathIterator;
 import org.datavec.api.util.files.URIUtil;
 import org.datavec.api.util.ndarray.RecordConverter;
@@ -51,6 +52,7 @@ import java.util.*;
  * @author Adam Gibson
  */
 public abstract class BaseImageRecordReader extends BaseRecordReader {
+    protected boolean finishedInputStreamSplit;
     protected Iterator<File> iter;
     protected Configuration conf;
     protected File currentFile;
@@ -87,12 +89,12 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     }
 
     public BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator,
-                    ImageTransform imageTransform) {
+                                 ImageTransform imageTransform) {
         this(height, width, channels, labelGenerator, null, imageTransform);
     }
 
     protected BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator,
-                                 PathMultiLabelGenerator labelMultiGenerator, ImageTransform imageTransform) {
+                                    PathMultiLabelGenerator labelMultiGenerator, ImageTransform imageTransform) {
         this.height = height;
         this.width = width;
         this.channels = channels;
@@ -115,7 +117,17 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         if (imageLoader == null) {
             imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
         }
+
+        if(split instanceof InputStreamInputSplit) {
+            this.inputSplit = split;
+            this.finishedInputStreamSplit = false;
+            return;
+        }
+
         inputSplit = split;
+
+
+
         URI[] locations = split.locations();
         if (locations != null && locations.length >= 1) {
             if (appendLabel && labelGenerator != null && labelGenerator.inferLabelClasses()) {
@@ -189,7 +201,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
      * @throws InterruptedException
      */
     public void initialize(Configuration conf, InputSplit split, ImageTransform imageTransform)
-                    throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
         this.imageLoader = null;
         this.imageTransform = imageTransform;
         initialize(conf, split);
@@ -198,6 +210,16 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
     @Override
     public List<Writable> next() {
+        if(inputSplit instanceof InputStreamInputSplit) {
+            InputStreamInputSplit inputStreamInputSplit = (InputStreamInputSplit) inputSplit;
+            try {
+                NDArrayWritable ndArrayWritable =  new NDArrayWritable(imageLoader.asMatrix(inputStreamInputSplit.getIs()));
+                finishedInputStreamSplit = true;
+                return Arrays.<Writable>asList(ndArrayWritable);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         if (iter != null) {
             List<Writable> ret;
             File image = iter.next();
@@ -237,6 +259,10 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
     @Override
     public boolean hasNext() {
+        if(inputSplit instanceof InputStreamInputSplit) {
+            return finishedInputStreamSplit;
+        }
+
         if (iter != null) {
             return iter.hasNext();
         } else if (record != null) {
@@ -296,7 +322,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         for (int i = 0; i < cnt; i++) {
             try {
                 ((NativeImageLoader) imageLoader).asMatrixView(currBatch.get(i),
-                                features.tensorAlongDimension(i, 1, 2, 3));
+                        features.tensorAlongDimension(i, 1, 2, 3));
             } catch (Exception e) {
                 System.out.println("Image file failed during load: " + currBatch.get(i).getAbsolutePath());
                 throw new RuntimeException(e);

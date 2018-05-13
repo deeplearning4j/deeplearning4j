@@ -80,7 +80,12 @@ public class FlipImageTransform extends BaseImageTransform<Mat> {
         if (image == null) {
             return null;
         }
+
         Mat mat = converter.convert(image.getFrame());
+
+        if(mat == null) {
+            return null;
+        }
         h = mat.rows();
         w = mat.cols();
 

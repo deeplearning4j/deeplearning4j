@@ -36,6 +36,7 @@
         <module>datavec-jdbc</module>
         <module>datavec-excel</module>
         <module>datavec-arrow</module>
+        <module>datavec-perf</module>
     </modules>
     <name>DataVec</name>
 
