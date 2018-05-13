@@ -408,6 +408,8 @@ public class ParallelInferenceTest {
                 }
 
                 testParallelInference(inf, arrs, exp);
+
+                inf.shutdown();
             }
         }
     }
@@ -457,6 +459,8 @@ public class ParallelInferenceTest {
                     exp.add(out);
                 }
                 testParallelInference(inf, arrs, exp);
+
+                inf.shutdown();
             }
         }
     }
@@ -512,6 +516,8 @@ public class ParallelInferenceTest {
                 }
 
                 testParallelInference(inf, arrs, exp);
+
+                inf.shutdown();
             }
         }
     }
@@ -564,6 +570,8 @@ public class ParallelInferenceTest {
                     exp.add(out);
                 }
                 testParallelInference(inf, arrs, exp);
+
+                inf.shutdown();
             }
         }
     }
@@ -616,6 +624,8 @@ public class ParallelInferenceTest {
 
                 actOk = inf.output(inOk);
                 assertEquals(expOk, actOk);
+
+                inf.shutdown();
             }
         }
     }
@@ -689,6 +699,8 @@ public class ParallelInferenceTest {
                     }
 
                     testParallelInference(inf, in, inMasks, exp);
+
+                    inf.shutdown();
                 }
             }
         }
@@ -733,6 +745,7 @@ public class ParallelInferenceTest {
                 }
 
                 testParallelInferenceMulti(inf, in, null, exp);
+                inf.shutdown();
             }
         }
 
