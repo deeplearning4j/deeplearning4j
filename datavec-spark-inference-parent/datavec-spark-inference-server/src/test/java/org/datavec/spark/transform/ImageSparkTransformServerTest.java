@@ -4,7 +4,6 @@ import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
 import org.apache.commons.io.FileUtils;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.transform.ImageTransformProcess;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchImageRecord;
@@ -13,6 +12,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.serde.base64.Nd4jBase64;
 
 import java.io.File;

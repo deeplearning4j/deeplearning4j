@@ -21,10 +21,10 @@ import org.apache.commons.io.FileUtils;
 
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
 
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.util.HashSet;

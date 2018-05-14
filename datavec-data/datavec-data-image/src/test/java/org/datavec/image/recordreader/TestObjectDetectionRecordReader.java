@@ -22,7 +22,6 @@ import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.image.recordreader.objdetect.ImageObject;
@@ -45,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import org.datavec.image.transform.FlipImageTransform;
 import org.datavec.image.transform.PipelineImageTransform;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import static org.junit.Assert.*;
 

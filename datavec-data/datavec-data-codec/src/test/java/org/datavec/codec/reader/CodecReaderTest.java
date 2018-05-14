@@ -21,11 +21,11 @@ import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.DataInputStream;
 import java.io.File;

@@ -22,8 +22,8 @@ import org.apache.spark.serializer.SerializerInstance;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.nio.ByteBuffer;

@@ -16,9 +16,9 @@
 
 package org.datavec.image.recordreader.objdetect;
 
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.util.Arrays;
 import java.util.Collections;

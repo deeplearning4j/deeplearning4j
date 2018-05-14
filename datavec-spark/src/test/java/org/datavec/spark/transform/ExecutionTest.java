@@ -33,6 +33,7 @@ import org.junit.Test;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 25/11/2016.
@@ -194,6 +195,40 @@ public class ExecutionTest extends BaseSparkTest {
         );
 
         assertEquals(expOut, out);
+    }
+
+
+    @Test
+    public void testUniqueMultiCol(){
+
+        Schema schema = new Schema.Builder()
+                .addColumnInteger("col0")
+                .addColumnCategorical("col1", "state0", "state1", "state2")
+                .addColumnDouble("col2").build();
+
+        List<List<Writable>> inputData = new ArrayList<>();
+        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new Text("state1"), new DoubleWritable(1.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new Text("state0"), new DoubleWritable(2.1)));
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(inputData);
+
+        Map<String,List<Writable>> l = AnalyzeSpark.getUnique(Arrays.asList("col0", "col1"), schema, rdd);
+
+        assertEquals(2, l.size());
+        List<Writable> c0 = l.get("col0");
+        assertEquals(3, c0.size());
+        assertTrue(c0.contains(new IntWritable(0)) && c0.contains(new IntWritable(1)) && c0.contains(new IntWritable(2)));
+
+        List<Writable> c1 = l.get("col1");
+        assertEquals(3, c1.size());
+        assertTrue(c1.contains(new Text("state0")) && c1.contains(new Text("state1")) && c1.contains(new Text("state2")));
     }
 
 }

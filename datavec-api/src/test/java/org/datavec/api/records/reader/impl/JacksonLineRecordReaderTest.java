@@ -6,9 +6,9 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.jackson.FieldSelection;
 import org.datavec.api.records.reader.impl.jackson.JacksonLineRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 

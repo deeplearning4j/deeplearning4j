@@ -1,8 +1,8 @@
 package org.datavec.spark.transform;
 
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.spark.transform.model.SingleImageRecord;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 

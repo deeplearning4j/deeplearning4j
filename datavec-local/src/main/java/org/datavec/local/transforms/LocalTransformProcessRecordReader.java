@@ -6,6 +6,7 @@ import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -25,15 +26,5 @@ public class LocalTransformProcessRecordReader extends TransformProcessRecordRea
      */
     public LocalTransformProcessRecordReader(RecordReader recordReader, TransformProcess transformProcess) {
         super(recordReader, transformProcess);
-    }
-
-    @Override
-    public List<List<Writable>> next(int num) {
-        return LocalTransformExecutor.execute(recordReader.next(num),transformProcess);
-    }
-
-    @Override
-    public List<Writable> next() {
-        return LocalTransformExecutor.execute(Arrays.asList(recordReader.next()),transformProcess).get(0);
     }
 }

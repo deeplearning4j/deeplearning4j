@@ -25,7 +25,6 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
 import org.datavec.codec.reader.CodecRecordReader;
 import org.datavec.spark.BaseSparkTest;
@@ -35,6 +34,7 @@ import org.datavec.spark.functions.pairdata.PathToKeyConverter;
 import org.datavec.spark.functions.pairdata.PathToKeyConverterFilename;
 import org.datavec.spark.util.DataVecSparkUtil;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 import scala.Tuple2;
 
 import java.io.File;

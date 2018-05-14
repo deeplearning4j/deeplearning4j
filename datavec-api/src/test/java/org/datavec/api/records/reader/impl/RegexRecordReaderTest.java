@@ -27,10 +27,10 @@ import org.datavec.api.records.reader.impl.regex.RegexSequenceRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.NumberedFileInputSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -25,7 +25,6 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.records.writer.SequenceRecordWriter;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.FloatWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
@@ -34,6 +33,7 @@ import org.datavec.hadoop.records.reader.mapfile.MapFileSequenceRecordReader;
 import org.datavec.hadoop.records.writer.mapfile.MapFileRecordWriter;
 import org.datavec.hadoop.records.writer.mapfile.MapFileSequenceRecordWriter;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;

@@ -20,11 +20,11 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.nlp.vectorizer.TfidfVectorizer;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.util.Collection;
 import java.util.Iterator;

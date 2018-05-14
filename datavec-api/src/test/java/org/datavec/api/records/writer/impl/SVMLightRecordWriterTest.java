@@ -22,12 +22,12 @@ import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.datavec.api.records.writer.impl.misc.SVMLightRecordWriter;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.*;
 import org.datavec.api.writable.NDArrayWritable;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;

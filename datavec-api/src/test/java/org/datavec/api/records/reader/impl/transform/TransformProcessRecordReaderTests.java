@@ -6,18 +6,19 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
-import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by agibsonccc on 3/21/17.
@@ -26,15 +27,29 @@ public class TransformProcessRecordReaderTests {
 
     @Test
     public void simpleTransformTest() throws Exception {
-        Schema schema = new Schema.Builder().addColumnDouble("0").addColumnDouble("1").addColumnDouble("2")
-                        .addColumnDouble("3").addColumnDouble("4").build();
+        Schema schema = new Schema.Builder()
+                .addColumnsDouble("%d", 0, 4)
+                .build();
         TransformProcess transformProcess = new TransformProcess.Builder(schema).removeColumns("0").build();
         CSVRecordReader csvRecordReader = new CSVRecordReader();
         csvRecordReader.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
-        TransformProcessRecordReader transformProcessRecordReader =
+        TransformProcessRecordReader rr =
                         new TransformProcessRecordReader(csvRecordReader, transformProcess);
-        assertEquals(4, transformProcessRecordReader.next().size());
+        int count = 0;
+        List<List<Writable>> all = new ArrayList<>();
+        while(rr.hasNext()){
+            List<Writable> next = rr.next();
+            assertEquals(4, next.size());
+            count++;
+            all.add(next);
+        }
+        assertEquals(150, count);
 
+        //Test batch:
+        assertTrue(rr.resetSupported());
+        rr.reset();
+        List<List<Writable>> batch = rr.next(150);
+        assertEquals(all, batch);
     }
 
     @Test
