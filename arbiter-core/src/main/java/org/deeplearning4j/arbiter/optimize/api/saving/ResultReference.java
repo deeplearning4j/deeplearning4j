@@ -33,4 +33,6 @@ public interface ResultReference {
 
     OptimizationResult getResult() throws IOException;
 
+    Object getResultModel() throws IOException;
+
 }

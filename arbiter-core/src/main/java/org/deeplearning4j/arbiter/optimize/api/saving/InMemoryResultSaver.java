@@ -31,8 +31,8 @@ import java.util.List;
 @NoArgsConstructor
 public class InMemoryResultSaver implements ResultSaver {
     @Override
-    public ResultReference saveModel(OptimizationResult result) throws IOException {
-        return new InMemoryResult(result);
+    public ResultReference saveModel(OptimizationResult result, Object modelResult) throws IOException {
+        return new InMemoryResult(result, modelResult);
     }
 
     @Override
@@ -48,10 +48,16 @@ public class InMemoryResultSaver implements ResultSaver {
     @AllArgsConstructor
     private static class InMemoryResult implements ResultReference {
         private OptimizationResult result;
+        private Object modelResult;
 
         @Override
         public OptimizationResult getResult() throws IOException {
             return result;
+        }
+
+        @Override
+        public Object getResultModel() throws IOException {
+            return modelResult;
         }
     }
 }

@@ -95,7 +95,7 @@ public class TestScoreFunctions {
                     testIter.setPreProcessor(new PreProc(rocType));
 
                     OptimizationResult or = rr.getResult();
-                    MultiLayerNetwork net = (MultiLayerNetwork) or.getResult();
+                    MultiLayerNetwork net = (MultiLayerNetwork) or.getResultReference().getResultModel();
 
                     double expScore;
                     switch (rocType){

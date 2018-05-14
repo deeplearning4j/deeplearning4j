@@ -20,14 +20,11 @@ package org.deeplearning4j.arbiter.saver.local;
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
-import org.deeplearning4j.arbiter.GraphConfiguration;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 
 import java.io.File;
@@ -54,13 +51,6 @@ public class LocalFileNetResultReference implements ResultReference {
     @Override
     public OptimizationResult getResult() throws IOException {
 
-        Model m;
-        if (isGraph) {
-            m = ModelSerializer.restoreComputationGraph(modelFile, false);
-        } else {
-            m = ModelSerializer.restoreMultiLayerNetwork(modelFile, false);
-        }
-
 
         String scoreStr = FileUtils.readFileToString(scoreFile);
         //TODO: properly parsing. Probably want to store additional info other than just score...
@@ -80,15 +70,6 @@ public class LocalFileNetResultReference implements ResultReference {
             nEpochs = Integer.parseInt(numEpochs);
         }
 
-        Object dl4jConfiguration;
-        if (isGraph) {
-            dl4jConfiguration = new GraphConfiguration(((ComputationGraph) m).getConfiguration(),
-                            earlyStoppingConfiguration, nEpochs);
-        } else {
-            dl4jConfiguration = new DL4JConfiguration(((MultiLayerNetwork) m).getLayerWiseConfigurations(),
-                            earlyStoppingConfiguration, nEpochs);
-        }
-
 
 
         Object additionalResults;
@@ -102,7 +83,18 @@ public class LocalFileNetResultReference implements ResultReference {
             additionalResults = null;
         }
 
-        return new OptimizationResult(candidate, m, d, index, additionalResults, null, this);
+        return new OptimizationResult(candidate, d, index, additionalResults, null, this);
+    }
+
+    @Override
+    public Object getResultModel() throws IOException {
+        Model m;
+        if (isGraph) {
+            m = ModelSerializer.restoreComputationGraph(modelFile, false);
+        } else {
+            m = ModelSerializer.restoreMultiLayerNetwork(modelFile, false);
+        }
+        return m;
     }
 
     @Override
