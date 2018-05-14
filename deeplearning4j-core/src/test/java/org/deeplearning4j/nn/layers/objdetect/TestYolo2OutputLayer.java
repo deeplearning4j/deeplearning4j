@@ -200,7 +200,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         InputStream is1 = new ClassPathResource("yolo/VOC_SingleImage/JPEGImages/2007_009346.jpg").getInputStream();
         InputStream is2 = new ClassPathResource("yolo/VOC_SingleImage/Annotations/2007_009346.xml").getInputStream();
 
-        File dir = Files.createTempDirectory("testYoloOverfitting").toFile();
+        File dir = tempDir.newFolder("testYoloOverfitting");
         File jpg = new File(dir, "JPEGImages");
         File annot = new File(dir, "Annotations");
         jpg.mkdirs();

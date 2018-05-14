@@ -54,6 +54,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
 import java.util.*;
@@ -427,10 +428,11 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         int miniBatchSize = 10;
         int labelIdx = 0;
 
-        String path = FilenameUtils.concat(System.getProperty("java.io.tmpdir"), "rr_csv_test_rand.csv");
-        double[][] data = makeRandomCSV(path, nLines, nFeatures);
+        String path = "rr_csv_test_rand.csv";
+        Pair<double[][],File> p = makeRandomCSV(path, nLines, nFeatures);
+        double[][] data = p.getFirst();
         RecordReader testReader = new CSVRecordReader();
-        testReader.initialize(new FileSplit(new File(path)));
+        testReader.initialize(new FileSplit(p.getSecond()));
 
         DataSetIterator iter = new RecordReaderDataSetIterator(testReader, miniBatchSize, labelIdx, labelIdx, true);
         int miniBatch = 0;
@@ -463,8 +465,9 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
     }
 
 
-    public static double[][] makeRandomCSV(String tempFile, int nLines, int nFeatures) {
-        File temp = new File(tempFile);
+    public Pair<double[][],File> makeRandomCSV(String tempFile, int nLines, int nFeatures) throws IOException {
+        File temp = temporaryFolder.newFile(tempFile);
+        temp.mkdirs();
         temp.deleteOnExit();
         Random rand = new Random(12345);
 
@@ -484,7 +487,7 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
             e.printStackTrace();
         }
 
-        return dArr;
+        return new Pair<>(dArr,temp);
     }
 
     @Test
@@ -1306,13 +1309,13 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
     @Test
     public void testImagesRRDSI() throws Exception {
-        File parentDir = Files.createTempDir();
+        File parentDir = temporaryFolder.newFolder();
         parentDir.deleteOnExit();
         String str1 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Zico/");
         String str2 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Ziwang_Xu/");
 
-        File f1 = new File(str1);
         File f2 = new File(str2);
+        File f1 = new File(str1);
         f1.mkdirs();
         f2.mkdirs();
 

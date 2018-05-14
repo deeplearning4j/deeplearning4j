@@ -21,6 +21,8 @@ package org.deeplearning4j.spark.models.embeddings.word2vec;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -49,6 +51,9 @@ import static org.junit.Assert.*;
  */
 @Ignore
 public class Word2VecTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void testConcepts() throws Exception {
@@ -123,8 +128,7 @@ public class Word2VecTest {
 
 
         // test serialization
-        File tempFile = File.createTempFile("temp", "tmp");
-        tempFile.deleteOnExit();
+        File tempFile = testDir.newFile("temp" + System.currentTimeMillis() + ".tmp");
 
         int idx1 = word2Vec.vocab().wordFor("day").getIndex();
 

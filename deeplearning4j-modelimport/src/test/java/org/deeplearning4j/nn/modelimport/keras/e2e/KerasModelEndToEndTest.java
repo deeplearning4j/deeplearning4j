@@ -36,7 +36,9 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
@@ -48,6 +50,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
@@ -74,6 +77,9 @@ public class KerasModelEndToEndTest {
     private static final String TEMP_MODEL_FILENAME = "tempModel";
     private static final String H5_EXTENSION = ".h5";
     private static final double EPS = 1E-6;
+
+    @Rule
+    public final TemporaryFolder testDir = new TemporaryFolder();
 
     /**
      * MNIST MLP tests
@@ -387,7 +393,7 @@ public class KerasModelEndToEndTest {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+        File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
                 .enforceTrainingConfig(train);
@@ -407,7 +413,7 @@ public class KerasModelEndToEndTest {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+        File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
                 .enforceTrainingConfig(false);
@@ -428,7 +434,7 @@ public class KerasModelEndToEndTest {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+        File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         MultiLayerNetwork model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
                 .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
@@ -436,7 +442,7 @@ public class KerasModelEndToEndTest {
         ClassPathResource outputsResource =
                 new ClassPathResource(inputsOutputsPath,
                         KerasModelEndToEndTest.class.getClassLoader());
-        File outputsFile = File.createTempFile(TEMP_OUTPUTS_FILENAME, H5_EXTENSION);
+        File outputsFile = createTempFile(TEMP_OUTPUTS_FILENAME, H5_EXTENSION);
         Files.copy(outputsResource.getInputStream(), outputsFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         try (Hdf5Archive outputsArchive = new Hdf5Archive(outputsFile.getAbsolutePath())) {
 
@@ -619,5 +625,9 @@ public class KerasModelEndToEndTest {
         boolean passed = GradientCheckUtil.checkGradients(netToTest, eps, max_rel_error, min_abs_error, true, false,
                 input, labels, null, null, true, 9);
         assertTrue("Gradient check failed", passed);
+    }
+
+    private File createTempFile(String prefix, String suffix) throws IOException {
+        return testDir.newFile(prefix + "-" + System.nanoTime() + suffix);
     }
 }

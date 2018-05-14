@@ -57,8 +57,7 @@ public class ModelSerializerTest extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        File tempFile = File.createTempFile("tsfs", "fdfsdf");
-        tempFile.deleteOnExit();
+        File tempFile = tempDir.newFile();
 
         ModelSerializer.writeModel(net, tempFile, true);
 
@@ -84,8 +83,7 @@ public class ModelSerializerTest extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        File tempFile = File.createTempFile("tsfs", "fdfsdf");
-        tempFile.deleteOnExit();
+        File tempFile = tempDir.newFile();
         FileOutputStream fos = new FileOutputStream(tempFile);
 
         ModelSerializer.writeModel(net, fos, true);
@@ -129,8 +127,7 @@ public class ModelSerializerTest extends BaseDL4JTest {
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();
 
-        File tempFile = File.createTempFile("tsfs", "fdfsdf");
-        tempFile.deleteOnExit();
+        File tempFile = tempDir.newFile();
 
         ModelSerializer.writeModel(cg, tempFile, true);
 
@@ -155,8 +152,7 @@ public class ModelSerializerTest extends BaseDL4JTest {
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();
 
-        File tempFile = File.createTempFile("tsfs", "fdfsdf");
-        tempFile.deleteOnExit();
+        File tempFile = tempDir.newFile();
 
         ModelSerializer.writeModel(cg, tempFile, true);
         FileInputStream fis = new FileInputStream(tempFile);
@@ -196,8 +192,7 @@ public class ModelSerializerTest extends BaseDL4JTest {
         ComputationGraph cg = simpleComputationGraph();
         cg.init();
 
-        File tempFile = File.createTempFile("tsfs", "fdfsdf");
-        tempFile.deleteOnExit();
+        File tempFile = tempDir.newFile();
 
         ModelSerializer.writeModel(cg, tempFile, true);
 
@@ -228,8 +223,7 @@ public class ModelSerializerTest extends BaseDL4JTest {
         ComputationGraph cg = simpleComputationGraph();
         cg.init();
 
-        File tempFile = File.createTempFile("tsfs", "fdfsdf");
-        tempFile.deleteOnExit();
+        File tempFile = tempDir.newFile();
         ModelSerializer.writeModel(cg, tempFile, true);
 
         FileInputStream fis = new FileInputStream(tempFile);
@@ -251,8 +245,7 @@ public class ModelSerializerTest extends BaseDL4JTest {
         ComputationGraph cg = new ComputationGraph(config);
         cg.init();
 
-        File tempFile = File.createTempFile("modelSerializer", "bin");
-        tempFile.deleteOnExit();
+        File tempFile = tempDir.newFile();
 
         ModelSerializer.writeModel(cg, tempFile, true);
 
@@ -280,8 +273,7 @@ public class ModelSerializerTest extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        File tempFile = File.createTempFile("modelSerializer", "bin");
-        tempFile.deleteOnExit();
+        File tempFile = tempDir.newFile("testInvalidLoading2.bin");
 
         ModelSerializer.writeModel(net, tempFile, true);
 

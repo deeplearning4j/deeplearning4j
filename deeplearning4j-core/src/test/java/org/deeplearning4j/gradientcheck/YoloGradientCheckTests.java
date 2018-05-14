@@ -3,6 +3,8 @@ package org.deeplearning4j.gradientcheck;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
@@ -53,6 +55,9 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
     static {
         Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void testYoloOutputLayer() {
@@ -144,7 +149,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
         InputStream is3 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2008_003344.jpg").getInputStream();
         InputStream is4 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2008_003344.xml").getInputStream();
 
-        File dir = Files.createTempDirectory("testYoloOverfitting").toFile();
+        File dir = testDir.newFolder("testYoloOverfitting");
         File jpg = new File(dir, "JPEGImages");
         File annot = new File(dir, "Annotations");
         jpg.mkdirs();

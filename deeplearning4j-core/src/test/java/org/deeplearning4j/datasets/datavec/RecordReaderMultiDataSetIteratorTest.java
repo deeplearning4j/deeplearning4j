@@ -507,7 +507,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testImagesRRDMSI() throws Exception {
-        File parentDir = Files.createTempDir();
+        File parentDir = temporaryFolder.newFolder();
         parentDir.deleteOnExit();
         String str1 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Zico/");
         String str2 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Ziwang_Xu/");
@@ -561,7 +561,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testImagesRRDMSI_Batched() throws Exception {
-        File parentDir = Files.createTempDir();
+        File parentDir = temporaryFolder.newFolder();
         parentDir.deleteOnExit();
         String str1 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Zico/");
         String str2 = FilenameUtils.concat(parentDir.getAbsolutePath(), "Ziwang_Xu/");
