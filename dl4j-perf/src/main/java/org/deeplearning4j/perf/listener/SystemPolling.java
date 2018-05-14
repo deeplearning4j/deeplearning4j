@@ -11,6 +11,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Poll a system for its local statistics with a specified time.
+ * The polling process will output a yaml file
+ * in the specified output directory
+ *
+ * with all the related system diagnostics.
+ *
+ * @author Adam Gibson
+ */
 public class SystemPolling {
 
     private ScheduledExecutorService scheduledExecutorService;
@@ -26,6 +35,10 @@ public class SystemPolling {
     }
 
 
+    /**
+     * Run the polling in the background as a thread pool
+     * running every {@link #pollEveryMillis} milliseconds
+     */
     public void run() {
         scheduledExecutorService = Executors.newScheduledThreadPool(1);
         scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
@@ -44,12 +57,20 @@ public class SystemPolling {
     }
 
 
+    /**
+     * Shut down the background polling
+     */
     public void stopPolling() {
         scheduledExecutorService.shutdownNow();
     }
 
 
-
+    /**
+     * The naming sequence provider.
+     * This is for allowing generation of naming the output
+     * according to some semantic sequence (such as a neural net epoch
+     * or some time stamp)
+     */
     public  interface NameProvider {
         String nextName();
     }
@@ -66,17 +87,34 @@ public class SystemPolling {
         };
 
 
+        /**
+         * The name provider for  this {@link SystemPolling}
+         * the default value for this is a simple UUID
+         * @param nameProvider the name provider to use
+         * @return
+         */
         public Builder nameProvider(NameProvider nameProvider) {
             this.nameProvider = nameProvider;
             return this;
         }
 
 
+        /**
+         * The interval in milliseconds in which to poll
+         * the system for diagnostics
+         * @param pollEveryMillis the interval in milliseconds
+         * @return
+         */
         public Builder pollEveryMillis(long pollEveryMillis) {
             this.pollEveryMillis = pollEveryMillis;
             return this;
         }
 
+        /**
+         * The output directory for the files
+         * @param outputDirectory the output directory for the logs
+         * @return
+         */
         public Builder outputDirectory(File outputDirectory) {
             this.outputDirectory = outputDirectory;
             return this;
