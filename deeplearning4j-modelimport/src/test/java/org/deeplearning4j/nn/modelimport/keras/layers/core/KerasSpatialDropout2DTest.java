@@ -60,7 +60,7 @@ public class KerasSpatialDropout2DTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        DropoutLayer layer = new KerasSpatialDropout2D(layerConfig).getSpatialDropout2DLayer();
+        DropoutLayer layer = new KerasSpatialDropout(layerConfig).getSpatialDropoutLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(new SpatialDropout(RATE_DL4J), layer.getIDropout());
     }

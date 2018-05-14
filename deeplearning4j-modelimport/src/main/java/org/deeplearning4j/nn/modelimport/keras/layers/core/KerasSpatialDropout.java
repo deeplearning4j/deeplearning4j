@@ -29,11 +29,11 @@ import java.util.Map;
 
 
 /**
- * Keras wrapper for DL4J dropout layer with SpatialDropout 2D.
+ * Keras wrapper for DL4J dropout layer with SpatialDropout, works 1D-3D.
  *
  * @author Max Pumperla
  */
-public class KerasSpatialDropout2D extends KerasLayer {
+public class KerasSpatialDropout extends KerasLayer {
 
     /**
      * Pass-through constructor from KerasLayer
@@ -41,7 +41,7 @@ public class KerasSpatialDropout2D extends KerasLayer {
      * @param kerasVersion major keras version
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasSpatialDropout2D(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+    public KerasSpatialDropout(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
     }
 
@@ -52,7 +52,7 @@ public class KerasSpatialDropout2D extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasSpatialDropout2D(Map<String, Object> layerConfig)
+    public KerasSpatialDropout(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
@@ -66,14 +66,14 @@ public class KerasSpatialDropout2D extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasSpatialDropout2D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public KerasSpatialDropout(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_RATE())) {
             throw new InvalidKerasConfigurationException("Keras configuration does not contain " +
                     "parameter" + conf.getLAYER_FIELD_RATE() +
-                    "needed for SpatialDropout2D");
+                    "needed for spatial dropout");
         }
         double rate = (double) innerConfig.get(conf.getLAYER_FIELD_RATE()); // Keras stores drop rates
         double retainRate = 1 - rate;
@@ -93,16 +93,16 @@ public class KerasSpatialDropout2D extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras SpatialDropout2D layer accepts only one input (received " + inputType.length + ")");
-        return this.getSpatialDropout2DLayer().getOutputType(-1, inputType[0]);
+                    "Keras SpatialDropout layer accepts only one input (received " + inputType.length + ")");
+        return this.getSpatialDropoutLayer().getOutputType(-1, inputType[0]);
     }
 
     /**
-     * Get DL4J DropoutLayer with 2D spatial dropout.
+     * Get DL4J DropoutLayer with spatial dropout.
      *
      * @return DropoutLayer
      */
-    public DropoutLayer getSpatialDropout2DLayer() {
+    public DropoutLayer getSpatialDropoutLayer() {
         return (DropoutLayer) this.layer;
     }
 

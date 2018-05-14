@@ -191,8 +191,10 @@ public class KerasLayerUtils {
             layer = new KerasLeakyReLU(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DROPOUT())) {
             layer = new KerasDropout(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SPATIAL_DROPOUT_2D())) {
-            layer = new KerasSpatialDropout2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SPATIAL_DROPOUT_1D())
+                || layerClassName.equals(conf.getLAYER_CLASS_NAME_SPATIAL_DROPOUT_2D())
+                || layerClassName.equals(conf.getLAYER_CLASS_NAME_SPATIAL_DROPOUT_3D())) {
+            layer = new KerasSpatialDropout(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ALPHA_DROPOUT())) {
             layer = new KerasAlphaDropout(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_GAUSSIAN_DROPOUT())) {
