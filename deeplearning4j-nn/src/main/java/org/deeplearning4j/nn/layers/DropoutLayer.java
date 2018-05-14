@@ -61,7 +61,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        INDArray delta = epsilon.dup();
+        INDArray delta = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
 
         if (maskArray != null) {
             delta.muliColumnVector(maskArray);
