@@ -2,6 +2,7 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -407,6 +408,8 @@ public class ParallelInferenceTest {
                 }
 
                 testParallelInference(inf, arrs, exp);
+
+                inf.shutdown();
             }
         }
     }
@@ -456,6 +459,8 @@ public class ParallelInferenceTest {
                     exp.add(out);
                 }
                 testParallelInference(inf, arrs, exp);
+
+                inf.shutdown();
             }
         }
     }
@@ -511,6 +516,8 @@ public class ParallelInferenceTest {
                 }
 
                 testParallelInference(inf, arrs, exp);
+
+                inf.shutdown();
             }
         }
     }
@@ -563,6 +570,8 @@ public class ParallelInferenceTest {
                     exp.add(out);
                 }
                 testParallelInference(inf, arrs, exp);
+
+                inf.shutdown();
             }
         }
     }
@@ -615,7 +624,18 @@ public class ParallelInferenceTest {
 
                 actOk = inf.output(inOk);
                 assertEquals(expOk, actOk);
+
+                inf.shutdown();
             }
+        }
+    }
+
+    @Test
+    public void testInputMaskingCyclic() throws Exception {
+        for (int e = 0; e < 1000; e++) {
+            testInputMasking();
+            log.info("Iteration: {} finished", e);
+            System.gc();
         }
     }
 
@@ -640,6 +660,7 @@ public class ParallelInferenceTest {
 
         Random r = new Random();
         for( InferenceMode m : InferenceMode.values()) {
+            log.info("Testing inference mode: [{}]", m);
             for( int w : new int[]{1,2}) {
                 for (boolean randomTSLength : new boolean[]{false, true}) {
 
@@ -678,6 +699,8 @@ public class ParallelInferenceTest {
                     }
 
                     testParallelInference(inf, in, inMasks, exp);
+
+                    inf.shutdown();
                 }
             }
         }
@@ -722,6 +745,7 @@ public class ParallelInferenceTest {
                 }
 
                 testParallelInferenceMulti(inf, in, null, exp);
+                inf.shutdown();
             }
         }
 
@@ -737,9 +761,11 @@ public class ParallelInferenceTest {
         final AtomicInteger counter = new AtomicInteger(0);
         final AtomicInteger failedCount = new AtomicInteger(0);
 
+        val threads = new ArrayList<Thread>();
+
         for( int i=0; i<in.size(); i++ ){
             final int j=i;
-            new Thread(new Runnable() {
+            val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try{
@@ -751,13 +777,18 @@ public class ParallelInferenceTest {
                         failedCount.incrementAndGet();
                     }
                 }
-            }).start();
+            });
+
+            t.start();
+
+            threads.add(t);
         }
 
-        long start = System.currentTimeMillis();
-        long current = System.currentTimeMillis();
-        while(current < start + 20000 && failedCount.get() == 0 && counter.get() < in.size()){
-            Thread.sleep(1000L);
+        // wait for ALL started threads
+        for (val t: threads) {
+            if (failedCount.get() > 0)
+                throw new RuntimeException("One of threads failed!");
+            t.join();
         }
 
         assertEquals(0, failedCount.get());
@@ -774,7 +805,7 @@ public class ParallelInferenceTest {
 //            System.out.println(Arrays.toString(e.shape()) + " vs " + Arrays.toString(a.shape()));
 //            assertArrayEquals(e.shape(), a.shape());
 
-            assertEquals(e, a);
+            assertEquals("Failed at iteration [" + i + "]", e, a);
         }
     }
 

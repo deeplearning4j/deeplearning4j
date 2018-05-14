@@ -428,6 +428,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (initCalled)
             return;
 
+        if (configuration.getTrainingWorkspaceMode() == null)
+            configuration.setTrainingWorkspaceMode(WorkspaceMode.NONE);
+
+        if (configuration.getInferenceWorkspaceMode() == null)
+            configuration.setInferenceWorkspaceMode(WorkspaceMode.NONE);
+
+        if (configuration.getCacheMode() == null)
+            configuration.setCacheMode(CacheMode.NONE);
+
         OneTimeLogger.info(log, "Starting ComputationGraph with WorkspaceModes set to [training: {}; inference: {}], cacheMode set to [{}]",
                 configuration.getTrainingWorkspaceMode(), configuration.getInferenceWorkspaceMode(), configuration.getCacheMode());
 

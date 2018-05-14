@@ -2,6 +2,7 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -23,6 +24,7 @@ import java.util.Observer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -90,6 +92,26 @@ public class ParallelInference {
 
     protected long getWorkerCounter(int workerIdx) {
         return zoo[workerIdx].getCounterValue();
+    }
+
+    /**
+     * This method gracefully shuts down ParallelInference instance
+     */
+    public synchronized void shutdown() {
+        if (zoo == null)
+            return;
+
+        for (int e = 0; e < zoo.length; e++) {
+            if (zoo[e] == null)
+                continue;
+
+            zoo[e].interrupt();
+            zoo[e].shutdown();
+            zoo[e] = null;
+        }
+        zoo = null;
+
+        System.gc();
     }
 
     /**
@@ -390,8 +412,9 @@ public class ParallelInference {
                 // do nothing
             } catch (Exception e) {
                 throw new RuntimeException(e);
+            } finally {
+                isStopped.set(true);
             }
-            isStopped.set(true);
         }
 
         protected void shutdown() {
