@@ -35,7 +35,6 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
     @Getter
     private  IActivation activation = new ActivationReLU();
     private  static IActivation relu = new ActivationReLU();
-    private INDArray firstDerivVBroadcast, secondDerivVBroadcast;
 
 
     private ILossFunction lossFunction;
@@ -150,14 +149,8 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
             shape[i] = Math.max(firstVertDerivV.size(i),secondTermDerivV.size(i));
         }
 
-        if(firstDerivVBroadcast == null || !Shape.shapeEquals(firstDerivVBroadcast.shape(),shape)) {
-            firstDerivVBroadcast = Nd4j.createUninitializedDetached(shape);
-        }
-
-
-        if(secondDerivVBroadcast == null  || !Shape.shapeEquals(secondDerivVBroadcast.shape(),shape)) {
-            secondDerivVBroadcast = Nd4j.createUninitializedDetached(shape);
-        }
+        INDArray firstDerivVBroadcast = Nd4j.createUninitialized(shape);
+        INDArray secondDerivVBroadcast = Nd4j.createUninitialized(shape);
 
 
         INDArray mulResult = firstVertDerivV.broadcast(firstDerivVBroadcast)
@@ -235,7 +228,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray v = getParamWithNoise(V_KEY,training,workspaceMgr);
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        INDArray first = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.size(0), v.size(1));
+        INDArray first = Nd4j.createUninitialized(input.size(0), v.size(1));
         input.mmuli(v, first);
         INDArray act2d = layerConf().getActivationFn().getActivation(first, training);
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,input.size(0));
