@@ -77,7 +77,7 @@ public class VGG16 extends ZooModel {
 
     @Override
     public Class<? extends Model> modelType() {
-        return ComputationGraph.class;
+        return MultiLayerNetwork.class;
     }
 
     public MultiLayerConfiguration conf() {
