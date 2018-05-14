@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.weights;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.api.rng.distribution.impl.OrthogonalDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -65,7 +66,11 @@ public class WeightInitUtil {
                     Distribution dist, char order, INDArray paramView) {
         switch (initScheme) {
             case DISTRIBUTION:
-                dist.sample(paramView);
+                if (dist instanceof OrthogonalDistribution) {
+                    dist.sample(paramView.reshape(shape));
+                } else {
+                    dist.sample(paramView);
+                }
                 break;
             case RELU:
                 Nd4j.randn(paramView).muli(FastMath.sqrt(2.0 / fanIn)); //N(0, 2/nIn)
