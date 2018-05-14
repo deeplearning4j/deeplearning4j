@@ -39,8 +39,6 @@ public class OptimizationResult implements Serializable {
     @JsonProperty
     private Candidate candidate;
     @JsonProperty
-    private Object result;
-    @JsonProperty
     private Double score;
     @JsonProperty
     private int index;
@@ -51,10 +49,9 @@ public class OptimizationResult implements Serializable {
     private ResultReference resultReference;
 
 
-    public OptimizationResult(Candidate candidate, Object result, Double score, int index, Object modelSpecificResults,
+    public OptimizationResult(Candidate candidate, Double score, int index, Object modelSpecificResults,
                     CandidateInfo candidateInfo, ResultReference resultReference) {
         this.candidate = candidate;
-        this.result = result;
         this.score = score;
         this.index = index;
         this.modelSpecificResults = modelSpecificResults;

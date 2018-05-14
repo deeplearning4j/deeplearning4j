@@ -37,11 +37,12 @@ public interface ResultSaver {
     /**
      * Save the model (including configuration and any additional evaluation/results)
      *
-     * @param result Results to save
-     * @return ResultReference, such that the result can be loadde back into memory
+     * @param result        Optimization result for the model to save
+     * @param modelResult   Model result to save
+     * @return ResultReference, such that the result can be loaded back into memory
      * @throws IOException If IO error occurs during model saving
      */
-    ResultReference saveModel(OptimizationResult result) throws IOException;
+    ResultReference saveModel(OptimizationResult result, Object modelResult) throws IOException;
 
     /**
      * @return The candidate types supported by this class

@@ -214,7 +214,7 @@ public class TestGridSearch {
                     CandidateInfo ci = new CandidateInfo(-1, CandidateStatus.Complete, score, System.currentTimeMillis(),
                             null, null, null, null);
 
-                    return new OptimizationResult(c, candidate, score, c.getIndex(), null, ci, null);
+                    return new OptimizationResult(c, score, c.getIndex(), null, ci, null);
                 }
             };
         }

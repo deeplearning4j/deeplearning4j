@@ -76,7 +76,7 @@ public class FileModelSaver implements ResultSaver {
     }
 
     @Override
-    public ResultReference saveModel(OptimizationResult result) throws IOException {
+    public ResultReference saveModel(OptimizationResult result, Object modelResult) throws IOException {
         String dir = new File(path, result.getIndex() + "/").getAbsolutePath();
 
         File f = new File(dir);
@@ -90,7 +90,7 @@ public class FileModelSaver implements ResultSaver {
 
         FileUtils.writeStringToFile(scoreFile, String.valueOf(result.getScore()));
 
-        Model m = (Model) result.getResult();
+        Model m = (Model) modelResult;
         ModelSerializer.writeModel(m, modelFile, true);
 
 

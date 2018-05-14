@@ -23,6 +23,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.listener.DL4JArbiterStatusReportingListener;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
@@ -44,7 +45,9 @@ import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.util.StringUtils;
 
 import java.io.IOException;
 import java.util.List;
@@ -121,15 +124,25 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
                     }
                 }
                 return result;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 String stackTrace = ExceptionUtils.getStackTrace(e);
                 log.warn( "Execution failed for task {}", candidate.getIndex(), e );
 
                 CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null, startTime,
                         null, null, candidate.getFlatParameters(), stackTrace);
-                return new OptimizationResult(candidate, null, null, candidate.getIndex(), null, ci, null);
+                return new OptimizationResult(candidate, null, candidate.getIndex(), null, ci, null);
+            } finally {
+                //Destroy workspaces to free memory
+                Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+                System.gc();
+                try {
+                    //Sleep for a few seconds - workspace destruction and memory deallocation happens quickly but doesn't
+                    // happen instantly; if we didn't have this, we may run into a situation where the next thread/task
+                    // tries to allocate before WS memory is fully deallocated, resulting in an OOM in memory constrained
+                    // environments
+                    Thread.sleep(2000L);
+                } catch (Exception e){ }
             }
-
         }
 
         private OptimizationResult callHelper() {
@@ -199,13 +212,13 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
                 taskListener.postProcess(net, candidate);
             }
 
-            OptimizationResult result = new OptimizationResult(candidate, net, score, candidate.getIndex(), additionalEvaluation, ci, null);
+            OptimizationResult result = new OptimizationResult(candidate, score, candidate.getIndex(), additionalEvaluation, ci, null);
             //Save the model:
             ResultSaver saver = runner.getConfiguration().getResultSaver();
             ResultReference resultReference = null;
             if (saver != null) {
                 try {
-                    resultReference = saver.saveModel(result);
+                    resultReference = saver.saveModel(result, net);
                 } catch (IOException e) {
                     //TODO: Do we want ta warn or fail on IOException?
                     log.warn("Error saving model (id={}): IOException thrown. ", result.getIndex(), e);
