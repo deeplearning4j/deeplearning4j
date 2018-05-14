@@ -1643,13 +1643,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     outputLayer.setLabels(labels);
                 }
 
+                //Open activation gradients WS *then* BP working memory, so BP working memory is opened last for use in layers
+                wsActGradTemp = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATION_GRAD);
                 try(MemoryWorkspace wsBPWorking = workspaceMgr.notifyScopeEntered(ArrayType.BP_WORKING_MEM)){
-                    wsActGradTemp = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATION_GRAD);
 
                     //Note that because we're opening activation workspaces not in a simple nested order, we'll manually
                     // override the previous workspace setting. Otherwise, when we close these workspaces, the "current"
                     // workspace may be set to the incorrect one
                     wsActGradTemp.setPreviousWorkspace(initialWorkspace);
+                    wsBPWorking.setPreviousWorkspace(initialWorkspace);
 
                     INDArray eps = (i == layers.length - 1 ? epsilon : currPair.getRight());  //eps is null for OutputLayer
 

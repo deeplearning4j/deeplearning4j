@@ -14,6 +14,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -35,7 +36,6 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
     @Getter
     private  IActivation activation = new ActivationReLU();
     private  static IActivation relu = new ActivationReLU();
-    private INDArray firstDerivVBroadcast, secondDerivVBroadcast;
 
 
     private ILossFunction lossFunction;
@@ -150,18 +150,11 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
             shape[i] = Math.max(firstVertDerivV.size(i),secondTermDerivV.size(i));
         }
 
-        if(firstDerivVBroadcast == null || !Shape.shapeEquals(firstDerivVBroadcast.shape(),shape)) {
-            firstDerivVBroadcast = Nd4j.createUninitializedDetached(shape);
-        }
+        INDArray firstDerivVBroadcast = Nd4j.createUninitialized(shape);
 
-
-        if(secondDerivVBroadcast == null  || !Shape.shapeEquals(secondDerivVBroadcast.shape(),shape)) {
-            secondDerivVBroadcast = Nd4j.createUninitializedDetached(shape);
-        }
-
-
-        INDArray mulResult = firstVertDerivV.broadcast(firstDerivVBroadcast)
-                .muli(secondTermDerivV.broadcast(secondDerivVBroadcast));
+        INDArray mulResult = firstVertDerivV.broadcast(firstDerivVBroadcast);
+        int[] bcDims = Shape.getBroadcastDimensions(mulResult.shape(), secondTermDerivV.shape());
+        Broadcast.mul(mulResult, secondTermDerivV, mulResult, bcDims);
 
         INDArray derivV = mulResult
                 .mean(0).muli(oneDivNu).addi(getParam(V_KEY));
@@ -235,7 +228,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray v = getParamWithNoise(V_KEY,training,workspaceMgr);
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        INDArray first = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.size(0), v.size(1));
+        INDArray first = Nd4j.createUninitialized(input.size(0), v.size(1));
         input.mmuli(v, first);
         INDArray act2d = layerConf().getActivationFn().getActivation(first, training);
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,input.size(0));
