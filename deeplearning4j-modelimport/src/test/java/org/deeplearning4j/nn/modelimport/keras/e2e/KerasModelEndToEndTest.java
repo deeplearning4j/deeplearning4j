@@ -36,6 +36,8 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -169,7 +171,7 @@ public class KerasModelEndToEndTest {
     /**
      * IMDB LSTM fasttext
      */
-    // TODO: prediction checks fail due to globalpooling for fasttext, very few grad fail as well
+    // TODO: prediction checks fail due to globalpooling for fasttext, very few grads fail as well
     @Test
     public void importImdbFasttextTfKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_fasttext/imdb_fasttext_tf_keras_1_model.h5";
@@ -246,10 +248,8 @@ public class KerasModelEndToEndTest {
         String modelPath = "modelimport/keras/examples/simple_rnn/simple_rnn_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/simple_rnn/" +
                 "simple_rnn_tf_keras_2_inputs_and_outputs.h5";
-        // TODO: input data needs to be reshaped to 2D
-        importEndModelTest(modelPath, inputsOutputPath, true, false, false);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false);
     }
-
 
     /**
      * CNN without bias test
@@ -496,6 +496,9 @@ public class KerasModelEndToEndTest {
                 compareINDArrays("predictions", predictionsKeras, predictionsDl4j, EPS);
                 INDArray outputs = getOutputs(outputsArchive, true)[0];
 
+                if (outputs.shape()[0] == 1) {
+                    outputs = outputs.reshape(outputs.shape()[1], outputs.shape()[0]);
+                }
                 int nOut = outputs.shape()[outputs.shape().length - 1];
                 compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, nOut, EPS);
             }
