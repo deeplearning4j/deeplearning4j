@@ -215,6 +215,42 @@ public class KerasModelEndToEndTest {
         importEndModelTest(modelPath, inputsOutputPath, true, false, false);
     }
 
+
+    /**
+     * Simple LSTM (return sequences = true) into flatten into Dense layer test
+     */
+    @Test
+    public void importSimpleFlattenLstmTfKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/simple_flatten_lstm/simple_flatten_lstm_tf_keras_2_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/simple_flatten_lstm/" +
+                "simple_flatten_lstm_tf_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false);
+    }
+
+    /**
+     * Simple RNN (return sequences = true) into flatten into Dense layer test
+     */
+    @Test
+    public void importSimpleFlattenRnnTfKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/simple_flatten_rnn/simple_flatten_rnn_tf_keras_2_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/simple_flatten_rnn/" +
+                "simple_flatten_rnn_tf_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false);
+    }
+
+    /**
+     * Simple RNN (return sequences = false) into Dense layer test
+     */
+    @Test
+    public void importSimpleRnnTfKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/simple_rnn/simple_rnn_tf_keras_2_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/simple_rnn/" +
+                "simple_rnn_tf_keras_2_inputs_and_outputs.h5";
+        // TODO: input data needs to be reshaped to 2D
+        importEndModelTest(modelPath, inputsOutputPath, true, false, false);
+    }
+
+
     /**
      * CNN without bias test
      */
