@@ -8,9 +8,9 @@ import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.misc.StringToWritablesFunction;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.spark.BaseSparkTest;
-import org.deeplearning4j.ui.standalone.ClassPathResource;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.util.*;
