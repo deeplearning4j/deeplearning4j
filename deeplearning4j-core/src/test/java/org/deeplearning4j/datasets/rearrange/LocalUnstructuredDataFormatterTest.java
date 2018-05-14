@@ -3,7 +3,9 @@ package org.deeplearning4j.datasets.rearrange;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.util.Iterator;
@@ -16,11 +18,14 @@ import static org.junit.Assert.assertEquals;
  */
 public class LocalUnstructuredDataFormatterTest extends BaseDL4JTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testRearrange() throws Exception {
         //ensure exists
         new LFWDataSetIterator(new int[] {28, 28, 3}).next();
-        File destinationDir = new File(System.getProperty("user.home"), "rearrangedlfw");
+        File destinationDir = testDir.newFolder("rearrangedlfw");
         if (destinationDir.exists())
             FileUtils.deleteDirectory(destinationDir);
         LocalUnstructuredDataFormatter formatter = new LocalUnstructuredDataFormatter(destinationDir,

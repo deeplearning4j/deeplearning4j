@@ -12,7 +12,9 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.ModelSerializer;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Nesterovs;
@@ -25,6 +27,9 @@ import java.io.File;
  */
 @Slf4j
 public class ParallelWrapperMainTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void runParallelWrapperMain() throws Exception {
@@ -64,10 +69,10 @@ public class ParallelWrapperMainTest {
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
-        File tempModel = new File("tmpmodel.zip");
+        File tempModel = testDir.newFile("tmpmodel.zip");
         tempModel.deleteOnExit();
         ModelSerializer.writeModel(model, tempModel, false);
-        File tmp = new File("tmpmodel.bin");
+        File tmp = testDir.newFile("tmpmodel.bin");
         tmp.deleteOnExit();
         ParallelWrapperMain parallelWrapperMain = new ParallelWrapperMain();
         parallelWrapperMain.runMain(new String[] {"--modelPath", tempModel.getAbsolutePath(),
