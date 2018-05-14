@@ -14,7 +14,9 @@ import org.deeplearning4j.ui.stats.impl.java.JavaStatsInitializationReport;
 import org.deeplearning4j.ui.stats.impl.java.JavaStatsReport;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.deeplearning4j.ui.storage.sqlite.J7FileStatsStorage;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +30,9 @@ import static org.junit.Assert.*;
  */
 public class TestStatsStorage {
 
+    @Rule
+    public final TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Test
     public void testStatsStorage() throws IOException {
@@ -38,12 +43,12 @@ public class TestStatsStorage {
                 StatsStorage ss;
                 switch (i) {
                     case 0:
-                        File f = Files.createTempFile("TestMapDbStatsStore", ".db").toFile();
+                        File f = createTempFile("TestMapDbStatsStore", ".db");
                         f.delete(); //Don't want file to exist...
                         ss = new MapDBStatsStorage.Builder().file(f).build();
                         break;
                     case 1:
-                        File f2 = Files.createTempFile("TestJ7FileStatsStore", ".db").toFile();
+                        File f2 = createTempFile("TestJ7FileStatsStore", ".db");
                         f2.delete(); //Don't want file to exist...
                         ss = new J7FileStatsStorage(f2);
                         break;
@@ -190,9 +195,9 @@ public class TestStatsStorage {
             for (int i = 0; i < 2; i++) {
                 File f;
                 if (i == 0) {
-                    f = Files.createTempFile("TestMapDbStatsStore", ".db").toFile();
+                    f = createTempFile("TestMapDbStatsStore", ".db");
                 } else {
-                    f = Files.createTempFile("TestSqliteStatsStore", ".db").toFile();
+                    f = createTempFile("TestSqliteStatsStore", ".db");
                 }
 
                 f.delete(); //Don't want file to exist...
@@ -402,5 +407,8 @@ public class TestStatsStorage {
         }
     }
 
+    private File createTempFile(String prefix, String suffix) throws IOException {
+        return testDir.newFile(prefix + "-" + System.nanoTime() + suffix);
+    }
 
 }

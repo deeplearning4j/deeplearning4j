@@ -6,18 +6,24 @@ import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
 @Slf4j
 public class KerasWeightSettingTests {
+
+    @Rule
+    public final TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void testSimpleLayersWithWeights() throws Exception {
@@ -92,7 +98,7 @@ public class KerasWeightSettingTests {
         }
     }
 
-    private static void importDense(String modelPath) throws Exception {
+    private void importDense(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, true);
 
         INDArray weights = model.getLayer(0).getParam("W");
@@ -104,7 +110,7 @@ public class KerasWeightSettingTests {
         assert (bias.length() == 6);
     }
 
-    private static void importConv2D(String modelPath) throws Exception {
+    private void importConv2D(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
 
         INDArray weights = model.getLayer(0).getParam("W");
@@ -119,7 +125,7 @@ public class KerasWeightSettingTests {
     }
 
 
-    private static void importConv2DReshape(String modelPath) throws Exception {
+    private void importConv2DReshape(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
 
 
@@ -133,7 +139,7 @@ public class KerasWeightSettingTests {
 
     }
 
-    private static void importConv1DFlatten(String modelPath) throws Exception {
+    private void importConv1DFlatten(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
 
         int nOut = 6;
@@ -146,12 +152,12 @@ public class KerasWeightSettingTests {
         assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength - kernel + 1});
     }
 
-    private static void importBatchNormToConv2D(String modelPath) throws Exception {
+    private void importBatchNormToConv2D(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
         model.summary();
     }
 
-    private static void importSimpleSpaceToDepth(String modelPath) throws Exception {
+    private void importSimpleSpaceToDepth(String modelPath) throws Exception {
         KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
 
@@ -160,7 +166,7 @@ public class KerasWeightSettingTests {
         assert Arrays.equals(output.shape(), new int[]{10, 16, 3, 3});
     }
 
-    private static void importGraphSpaceToDepth(String modelPath) throws Exception {
+    private void importGraphSpaceToDepth(String modelPath) throws Exception {
         KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
         ComputationGraph model = loadComputationalGraph(modelPath, false);
 
@@ -170,13 +176,13 @@ public class KerasWeightSettingTests {
         assert Arrays.equals(output[0].shape(), new int[]{10, 32, 3, 3});
     }
 
-    private static void importLstm(String modelPath) throws Exception {
+    private void importLstm(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
         model.summary();
         // TODO: check weights
     }
 
-    private static void importEmbeddingLstm(String modelPath) throws Exception {
+    private void importEmbeddingLstm(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
 
         int nIn = 4;
@@ -196,11 +202,11 @@ public class KerasWeightSettingTests {
 
     }
 
-    private static void importEmbeddingConv1DExtended(String modelPath) throws Exception {
+    private void importEmbeddingConv1DExtended(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
     }
 
-    private static void importEmbeddingConv1D(String modelPath) throws Exception {
+    private void importEmbeddingConv1D(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
 
         int nIn = 4;
@@ -221,34 +227,38 @@ public class KerasWeightSettingTests {
 
     }
 
-    private static void importSimpleRnn(String modelPath) throws Exception {
+    private void importSimpleRnn(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
         model.summary();
         // TODO: check weights
     }
 
-    private static void importBidirectionalLstm(String modelPath) throws Exception {
+    private void importBidirectionalLstm(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
         model.summary();
         // TODO: check weights
     }
 
-    private static MultiLayerNetwork loadMultiLayerNetwork(String modelPath, boolean training) throws Exception {
+    private MultiLayerNetwork loadMultiLayerNetwork(String modelPath, boolean training) throws Exception {
         ClassPathResource modelResource = new ClassPathResource(modelPath,
                 KerasWeightSettingTests.class.getClassLoader());
-        File modelFile = File.createTempFile("temp", ".h5");
+        File modelFile = createTempFile("temp", ".h5");
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         return new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
                 .enforceTrainingConfig(training).buildSequential().getMultiLayerNetwork();
     }
 
-    private static ComputationGraph loadComputationalGraph(String modelPath, boolean training) throws Exception {
+    private ComputationGraph loadComputationalGraph(String modelPath, boolean training) throws Exception {
         ClassPathResource modelResource = new ClassPathResource(modelPath,
                 KerasWeightSettingTests.class.getClassLoader());
-        File modelFile = File.createTempFile("temp", ".h5");
+        File modelFile = createTempFile("temp", ".h5");
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         return new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
                 .enforceTrainingConfig(training).buildModel().getComputationGraph();
+    }
+
+    private File createTempFile(String prefix, String suffix) throws IOException {
+        return testDir.newFile(prefix + "-" + System.nanoTime() + suffix);
     }
 
 }

@@ -22,7 +22,9 @@ import org.datavec.spark.util.DataVecSparkUtil;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.spark.BaseSparkTest;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,6 +40,9 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public class TestDataVecDataSetFunctions extends BaseSparkTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void testDataVecDataSetFunction() throws Exception {
@@ -220,7 +225,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         JavaPairRDD<Text, BytesPairWritable> toWrite =
                         DataVecSparkUtil.combineFilesForSequenceFile(sc, path, path, pathConverter);
 
-        Path p = Files.createTempDirectory("dl4j_testSeqPairFn");
+        Path p = testDir.newFolder("dl4j_testSeqPairFn").toPath();
         p.toFile().deleteOnExit();
         String outPath = p.toString() + "/out";
         new File(outPath).deleteOnExit();
@@ -322,7 +327,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         JavaPairRDD<Text, BytesPairWritable> toWrite =
                         DataVecSparkUtil.combineFilesForSequenceFile(sc, pathFeatures, pathLabels, pathConverter);
 
-        Path p = Files.createTempDirectory("dl4j_testSeqPairFnVarLength");
+        Path p = testDir.newFolder("dl4j_testSeqPairFnVarLength").toPath();
         p.toFile().deleteOnExit();
         String outPath = p.toFile().getAbsolutePath() + "/out";
         new File(outPath).deleteOnExit();

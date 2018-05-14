@@ -19,6 +19,9 @@
 package org.deeplearning4j.bagofwords.vectorizer;
 
 
+import lombok.extern.slf4j.Slf4j;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -37,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,9 +52,11 @@ import static org.junit.Assume.assumeNotNull;
 /**
  *@author Adam Gibson
  */
+@Slf4j
 public class BagOfWordsVectorizerTest {
 
-    private static final Logger log = LoggerFactory.getLogger(BagOfWordsVectorizerTest.class);
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
 
 
@@ -126,7 +132,7 @@ public class BagOfWordsVectorizerTest {
         assertNotEquals(idx2, idx1);
 
         // Serialization check
-        File tempFile = File.createTempFile("fdsf", "fdfsdf");
+        File tempFile = createTempFile("fdsf", "fdfsdf");
         tempFile.deleteOnExit();
 
         SerializationUtils.saveObject(vectorizer, tempFile);
@@ -138,5 +144,8 @@ public class BagOfWordsVectorizerTest {
         assertEquals(array, dataSet.getFeatureMatrix());
     }
 
+    private File createTempFile(String prefix, String suffix) throws IOException {
+        return testDir.newFile(prefix + "-" + System.nanoTime() + suffix);
+    }
 
 }

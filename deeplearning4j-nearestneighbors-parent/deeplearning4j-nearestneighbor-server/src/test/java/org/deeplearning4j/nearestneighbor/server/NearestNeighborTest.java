@@ -6,7 +6,9 @@ import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
 import org.deeplearning4j.nearestneighbor.client.NearestNeighborsClient;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResults;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.binary.BinarySerde;
@@ -25,6 +27,9 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 4/27/17.
  */
 public class NearestNeighborTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void testNearestNeighbor() {
@@ -68,7 +73,7 @@ public class NearestNeighborTest {
         int localPort = getAvailablePort();
         Nd4j.getRandom().setSeed(7);
         INDArray rand = Nd4j.randn(10, 5);
-        File writeToTmp = new File(System.getProperty("java.io.tmpdir"), "ndarray" + UUID.randomUUID().toString());
+        File writeToTmp = testDir.newFile();
         writeToTmp.deleteOnExit();
         BinarySerde.writeArrayToDisk(rand, writeToTmp);
         NearestNeighborsServer server = new NearestNeighborsServer();

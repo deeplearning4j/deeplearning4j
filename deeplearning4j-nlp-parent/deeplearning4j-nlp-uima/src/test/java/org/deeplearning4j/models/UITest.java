@@ -11,9 +11,9 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.api.UIServer;
-import org.deeplearning4j.ui.standalone.ClassPathResource;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;

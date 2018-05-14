@@ -18,7 +18,10 @@
 
 package org.deeplearning4j.bagofwords.vectorizer;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -50,9 +53,11 @@ import static org.junit.Assume.assumeNotNull;
 /**
  * @author Adam Gibson
  */
+@Slf4j
 public class TfidfVectorizerTest {
 
-    private static final Logger log = LoggerFactory.getLogger(TfidfVectorizerTest.class);
+    @Rule
+    public final TemporaryFolder testDir = new TemporaryFolder();
 
 
     @Test(timeout = 60000L)
@@ -114,8 +119,8 @@ public class TfidfVectorizerTest {
         assertEquals(1, cnt);
 
 
-        File tempFile = File.createTempFile("somefile", "Dsdas");
-        tempFile.deleteOnExit();
+        File tempFile = testDir.newFile("somefile.bin");
+        tempFile.delete();
 
         SerializationUtils.saveObject(vectorizer, tempFile);
 

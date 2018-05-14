@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * @author Adam Gibson
  */
-public class ApiTest extends BaseUiServerTest {
+public class ApiTest {
     @Test
     @Ignore
     public void testUpdateCoords() throws Exception {

@@ -29,7 +29,9 @@ import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
@@ -47,6 +49,9 @@ import static org.junit.Assert.*;
  */
 public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testJson() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
@@ -61,7 +66,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
         props.put("json", json);
         String key = props.getProperty("json");
         assertEquals(json, key);
-        File f = new File("props");
+        File f = testDir.newFile("props");
         f.deleteOnExit();
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(f));
         props.store(bos, "");
@@ -172,7 +177,7 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
         props.put("json", json);
         String key = props.getProperty("json");
         assertEquals(json, key);
-        File f = new File("props");
+        File f = testDir.newFile("props");
         f.deleteOnExit();
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(f));
         props.store(bos, "");

@@ -10,7 +10,9 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
@@ -31,6 +33,9 @@ import static org.junit.Assume.assumeNotNull;
  * Created by agibsonccc on 12/29/16.
  */
 public class ModelGuesserTest extends BaseDL4JTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
 
     @Test
@@ -79,8 +84,7 @@ public class ModelGuesserTest extends BaseDL4JTest {
     public void testLoadNormalizersFile() throws Exception {
         MultiLayerNetwork net = getNetwork();
 
-        File tempFile = File.createTempFile("tsfs", "fdfsdf");
-        tempFile.deleteOnExit();
+        File tempFile = testDir.newFile("testLoadNormalizersFile.bin");
 
         ModelSerializer.writeModel(net, tempFile, true);
 
@@ -99,9 +103,7 @@ public class ModelGuesserTest extends BaseDL4JTest {
     public void testNormalizerInPlace() throws Exception {
         MultiLayerNetwork net = getNetwork();
 
-        File tempFile = File.createTempFile("tsfs", "fdfsdf");
-        tempFile.deleteOnExit();
-
+        File tempFile = testDir.newFile("testNormalizerInPlace.bin");
 
         NormalizerMinMaxScaler normalizer = new NormalizerMinMaxScaler(0, 1);
         normalizer.fit(new DataSet(Nd4j.rand(new int[] {2, 2}), Nd4j.rand(new int[] {2, 2})));
@@ -118,8 +120,7 @@ public class ModelGuesserTest extends BaseDL4JTest {
     public void testLoadNormalizersInputStream() throws Exception {
         MultiLayerNetwork net = getNetwork();
 
-        File tempFile = File.createTempFile("tsfs", "fdfsdf");
-        tempFile.deleteOnExit();
+        File tempFile = testDir.newFile("testLoadNormalizersInputStream.bin");
 
         ModelSerializer.writeModel(net, tempFile, true);
 
@@ -140,8 +141,7 @@ public class ModelGuesserTest extends BaseDL4JTest {
     public void testModelGuesserDl4jModelFile() throws Exception {
         MultiLayerNetwork net = getNetwork();
 
-        File tempFile = File.createTempFile("tsfs", "fdfsdf");
-        tempFile.deleteOnExit();
+        File tempFile = testDir.newFile("testModelGuesserDl4jModelFile.bin");
 
         ModelSerializer.writeModel(net, tempFile, true);
 
@@ -156,8 +156,7 @@ public class ModelGuesserTest extends BaseDL4JTest {
     public void testModelGuesserDl4jModelInputStream() throws Exception {
         MultiLayerNetwork net = getNetwork();
 
-        File tempFile = File.createTempFile("tsfs", "fdfsdf");
-        tempFile.deleteOnExit();
+        File tempFile = testDir.newFile("testModelGuesserDl4jModelInputStream.bin");
 
         ModelSerializer.writeModel(net, tempFile, true);
 
@@ -228,8 +227,7 @@ public class ModelGuesserTest extends BaseDL4JTest {
 
     private File getTempFile(ClassPathResource classPathResource) throws Exception {
         InputStream is = classPathResource.getInputStream();
-        File f = new File(UUID.randomUUID().toString());
-        f.deleteOnExit();
+        File f = testDir.newFile();
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(f));
         IOUtils.copy(is, bos);
         bos.flush();
