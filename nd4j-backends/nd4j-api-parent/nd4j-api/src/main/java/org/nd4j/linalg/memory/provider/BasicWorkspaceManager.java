@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.util.StringUtils;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
@@ -308,12 +309,16 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         Map<String, MemoryWorkspace> map = backingMap.get();
         log.info("Workspace statistics: ---------------------------------");
         log.info("Number of workspaces in current thread: {}", map.size());
+        log.info("Workspace name: Allocated / external (spilled) / external (pinned)");
         for (String key : map.keySet()) {
-            log.info("Workspace: {}", key);
-            log.info("Allocated amount: {} bytes", ((Nd4jWorkspace) map.get(key)).getCurrentSize());
-            log.info("External (spilled) amount: {} bytes", ((Nd4jWorkspace) map.get(key)).getSpilledSize());
-            log.info("External (pinned) amount: {} bytes", ((Nd4jWorkspace) map.get(key)).getPinnedSize());
-            System.out.println();
+            long current = ((Nd4jWorkspace) map.get(key)).getCurrentSize();
+            long spilled = ((Nd4jWorkspace) map.get(key)).getSpilledSize();
+            long pinned = ((Nd4jWorkspace) map.get(key)).getPinnedSize();
+            log.info(String.format("%-26s %8s / %8s / %8s (%11d / %11d / %11d)", (key + ":"),
+                    StringUtils.TraditionalBinaryPrefix.long2String(current, "", 2),
+                    StringUtils.TraditionalBinaryPrefix.long2String(spilled, "", 2),
+                    StringUtils.TraditionalBinaryPrefix.long2String(pinned, "", 2),
+                    current, spilled, pinned));
         }
     }
 
