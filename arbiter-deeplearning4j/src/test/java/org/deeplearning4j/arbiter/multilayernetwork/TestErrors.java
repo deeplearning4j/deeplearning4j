@@ -47,7 +47,7 @@ public class TestErrors {
                 .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
                 .terminationConditions(
-                        new MaxCandidatesCondition(10))
+                        new MaxCandidatesCondition(5))
                 .build();
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration);
@@ -74,7 +74,7 @@ public class TestErrors {
                 .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
                 .terminationConditions(
-                        new MaxCandidatesCondition(10))
+                        new MaxCandidatesCondition(5))
                 .build();
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration);
@@ -102,7 +102,7 @@ public class TestErrors {
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
                 .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
-                .terminationConditions(new MaxCandidatesCondition(10))
+                .terminationConditions(new MaxCandidatesCondition(5))
                 .build();
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration);
@@ -130,7 +130,7 @@ public class TestErrors {
                 .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
                 .terminationConditions(
-                        new MaxCandidatesCondition(10))
+                        new MaxCandidatesCondition(5))
                 .build();
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
