@@ -14,6 +14,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -150,11 +151,10 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         }
 
         INDArray firstDerivVBroadcast = Nd4j.createUninitialized(shape);
-        INDArray secondDerivVBroadcast = Nd4j.createUninitialized(shape);
 
-
-        INDArray mulResult = firstVertDerivV.broadcast(firstDerivVBroadcast)
-                .muli(secondTermDerivV.broadcast(secondDerivVBroadcast));
+        INDArray mulResult = firstVertDerivV.broadcast(firstDerivVBroadcast);
+        int[] bcDims = Shape.getBroadcastDimensions(mulResult.shape(), secondTermDerivV.shape());
+        Broadcast.mul(mulResult, secondTermDerivV, mulResult, bcDims);
 
         INDArray derivV = mulResult
                 .mean(0).muli(oneDivNu).addi(getParam(V_KEY));
