@@ -15,7 +15,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * Dropout mask is generated along the depth dimension, and is applied to each x/y location in an image.<br>
  * Note that the dropout mask is generated independently for each example: i.e., a dropout mask of shape [minibatch, channels]
  * is generated and applied to activations of shape [minibatch, channels, height, width]
- *
+ * <p>
  * Reference: Efficient Object Localization Using Convolutional Networks: https://arxiv.org/abs/1411.4280
  *
  * @author Alex Black
@@ -31,10 +31,10 @@ public class SpatialDropout implements IDropout {
      */
     public SpatialDropout(double activationRetainProbability) {
         this(activationRetainProbability, null);
-        if(activationRetainProbability < 0.0){
+        if (activationRetainProbability < 0.0) {
             throw new IllegalArgumentException("Activation retain probability must be > 0. Got: " + activationRetainProbability);
         }
-        if(activationRetainProbability == 0.0){
+        if (activationRetainProbability == 0.0) {
             throw new IllegalArgumentException("Invalid probability value: Dropout with 0.0 probability of retaining "
                     + "activations is not supported");
         }
@@ -43,7 +43,7 @@ public class SpatialDropout implements IDropout {
     /**
      * @param activationRetainProbabilitySchedule Schedule for probability of retaining an activation - see {@link Dropout} javadoc
      */
-    public SpatialDropout(ISchedule activationRetainProbabilitySchedule){
+    public SpatialDropout(ISchedule activationRetainProbabilitySchedule) {
         this(Double.NaN, activationRetainProbabilitySchedule);
     }
 
@@ -56,12 +56,13 @@ public class SpatialDropout implements IDropout {
 
     @Override
     public INDArray applyDropout(@NonNull INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
-        Preconditions.checkArgument(inputActivations.rank() == 4 || inputActivations.rank() == 3,
-                "Cannot apply spatial dropout to activations of rank %s: spatial dropout can only be used" +
-                        " for rank 3 or 4 activations (input activations shape: %s)", inputActivations.rank(), inputActivations.shape());
+        Preconditions.checkArgument(inputActivations.rank() == 5 || inputActivations.rank() == 4
+                || inputActivations.rank() == 3, "Cannot apply spatial dropout to activations of rank %s: " +
+                "spatial dropout can only be used for rank 3, 4 or 5 activations (input activations shape: %s)"
+                , inputActivations.rank(), inputActivations.shape());
 
         double currP;
-        if(pSchedule != null){
+        if (pSchedule != null) {
             currP = pSchedule.valueAt(iteration, epoch);
         } else {
             currP = p;
@@ -74,7 +75,7 @@ public class SpatialDropout implements IDropout {
         Nd4j.getExecutioner().exec(new DropOutInverted(mask, currP));
 
         INDArray result;
-        if(inPlace){
+        if (inPlace) {
             result = inputActivations;
         } else {
             result = Nd4j.createUninitialized(inputActivations.shape(), 'c');
