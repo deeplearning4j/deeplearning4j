@@ -7,6 +7,9 @@ import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.memory.MemcpyDirection;
+import oshi.SystemInfo;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.HWDiskStore;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -14,6 +17,8 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+
+
 
 /**
  * Timing components of a data vec pipeline
@@ -62,7 +67,13 @@ public class IOTiming {
     public static TimingStatistics timeNDArrayCreation(RecordReader reader,
                                                        InputStream inputStream,
                                                        INDArrayCreationFunction function) throws Exception {
+        SystemInfo si = new SystemInfo();
+        CentralProcessor processor = si.getHardware().getProcessor();
+        for (HWDiskStore disk : si.getHardware().getDiskStores()) {
+        }
 
+
+        double systemLoadAverage = processor.getSystemLoadAverage();
         reader.initialize(new InputStreamInputSplit(inputStream));
         long longNanos = System.nanoTime();
         List<Writable> next = reader.next();

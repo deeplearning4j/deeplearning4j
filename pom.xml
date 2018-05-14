@@ -58,6 +58,7 @@
     </developers>
 
     <properties>
+        <oshi.version>3.4.2</oshi.version>
         <protonpack.version>1.15</protonpack.version>
         <poi.version>3.17</poi.version>
         <jcommander.version>1.27</jcommander.version>
