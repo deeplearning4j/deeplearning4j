@@ -28,13 +28,43 @@ public class HardwareMetric implements Serializable {
     private long ioWaitTime;
     private long averagedCpuLoad;
     private Map<Integer,DiskInfo> diskInfo;
+    private String name;
 
 
+    /**
+     * Runs {@link #fromSystem(SystemInfo)}
+     * with a fresh {@link SystemInfo}
+     * @return the hardware metric based on
+     * the current snapshot of the system this
+     * runs on
+     */
     public static HardwareMetric fromSystem() {
         return fromSystem(new SystemInfo());
     }
 
+
+
+    /**
+     * Returns the relevant information
+     * needed for system diagnostics
+     * based on the {@link SystemInfo}
+     * @param systemInfo the system info to use
+     * @return the {@link HardwareMetric} for the
+     * system this process runs on
+     */
     public static HardwareMetric fromSystem(SystemInfo systemInfo) {
+        return fromSystem(systemInfo,UUID.randomUUID().toString());
+    }
+
+    /**
+     * Returns the relevant information
+     * needed for system diagnostics
+     * based on the {@link SystemInfo}
+     * @param systemInfo the system info to use
+     * @return the {@link HardwareMetric} for the
+     * system this process runs on
+     */
+    public static HardwareMetric fromSystem(SystemInfo systemInfo,String name) {
         HardwareMetricBuilder builder = HardwareMetric.builder();
         CentralProcessor processor = systemInfo.getHardware().getProcessor();
         long[] prevTicks = processor.getSystemCpuLoadTicks();
@@ -96,6 +126,7 @@ public class HardwareMetric implements Serializable {
 
         return builder.logicalProcessorCount(processor.getLogicalProcessorCount())
                 .physicalProcessorCount(processor.getPhysicalProcessorCount())
+                .name(name)
                 .averagedCpuLoad((long) processor.getSystemCpuLoad() * 100)
                 .ioWaitTime(iowait).gpuMetrics(gpuMetric)
                 .hostName(networkParams.getHostName()).diskInfo(diskInfoMap)
