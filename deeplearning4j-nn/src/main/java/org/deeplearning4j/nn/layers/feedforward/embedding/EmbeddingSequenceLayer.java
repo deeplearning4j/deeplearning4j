@@ -96,11 +96,18 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
     protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
 
+        // if inference is true, override input length config with input data columns
+        boolean inferInputLength = layerConf().isInferInputLength();
+        if (inferInputLength) {
+            layerConf().setInputLength(input.columns());
+        }
+
         if (input.columns() != layerConf().getInputLength()) {
             //Assume shape is [numExamples, inputLength], and each entry is an integer index
             throw new DL4JInvalidInputException("Sequence length of embedding input has to be equal to the specified "
                     + "input length: " + layerConf().getInputLength()
-                    + "i.e. we expect input shape [numExamples, inputDim] with each entry being an integer index, "
+                    + " i.e. we expect input shape [numExamples, inputDim] with each entry being an integer index, "
+                    + " got [" + input.rows() + ", " + input.columns() + "] instead, "
                     + "for layer with id: " + layerId());
         }
 
