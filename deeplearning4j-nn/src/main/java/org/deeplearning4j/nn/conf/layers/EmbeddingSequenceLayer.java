@@ -35,11 +35,13 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
 
     private int inputLength = 1; // By default only use one index to embed
     private boolean hasBias = false;
+    private boolean inferInputLength = false; // use input length as provided by input data
 
     private EmbeddingSequenceLayer(Builder builder) {
         super(builder);
         this.hasBias = builder.hasBias;
         this.inputLength = builder.inputLength;
+        this.inferInputLength = builder.inferInputLength;
         initializeConstraints(builder);
     }
 
@@ -96,6 +98,7 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
 
         private boolean hasBias = false;
         private int inputLength = 1;
+        private boolean inferInputLength = false;
 
         /**
          * If true: include bias parameters in the layer. False (default): no bias.
@@ -118,6 +121,17 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
             return this;
         }
 
+
+        /**
+         * Set input sequence inference mode for embedding layer.
+         *
+         * @param inferInputLength whether to infer input length
+         * @return Builder
+         */
+        public Builder inferInputLength(boolean inferInputLength) {
+            this.inferInputLength = inferInputLength;
+            return this;
+        }
 
         @Override
         @SuppressWarnings("unchecked")
