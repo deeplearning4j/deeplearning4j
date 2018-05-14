@@ -23,7 +23,9 @@ import java.util.Map;
 /**
  * Timing components of a data vec pipeline
  * consisting of:
- * {@link RecordReader}, {@link InputStreamInputSplit} (note that this uses input stream input split, the record reader must support {@link InputStreamInputSplit} for this to work)
+ * {@link RecordReader}, {@link InputStreamInputSplit}
+ * (note that this uses input stream input split,
+ * the record reader must support {@link InputStreamInputSplit} for this to work)
  *
  * @author Adam Gibson
  */

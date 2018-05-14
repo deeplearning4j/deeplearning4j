@@ -4,7 +4,15 @@ import lombok.Builder;
 import lombok.Data;
 
 
-
+/**
+ * The timing statistics for a data pipeline including:
+ * ndarray creation time in nanoseconds
+ * disk reading time in nanoseconds
+ * bandwidth used in host to device in nano seconds
+ * bandwidth device to host in nanoseconds
+ *
+ * @author Adam Gibson
+ */
 @Builder
 @Data
 public class TimingStatistics {
