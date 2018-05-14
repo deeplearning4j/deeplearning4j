@@ -11,7 +11,7 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
         template<typename T>
-        void ConvolutionUtils<T>::_calcPadding2D(int& pH, int& pW, int oH, int oW, int inH, int inW, int kH, int kW, int sH, int sW, int dH, int dW) {
+        void ConvolutionUtils<T>::calcPadding2D(int& pH, int& pW, int oH, int oW, int iH, int iW, int kH, int kW, int sH, int sW, int dH, int dW) {
             int eKH, eKW;
 
             if (dH == 1 && dW == 1) {
@@ -22,8 +22,8 @@ namespace ops  {
                 eKW = kW + (kW - 1) * (dW - 1);
             }
 
-            pH = ((oH - 1) * sH + eKH - inH) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
-            pW = ((oW - 1) * sW + eKW - inW) / 2;
+            pH = ((oH - 1) * sH + eKH - iH) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
+            pW = ((oW - 1) * sW + eKW - iW) / 2;
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -651,12 +651,12 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
                     /* get kernel */
                     T* ptr_weight = weight_data + k*kstride0 + i*kstride1;
                     /* get input */
-                    T* ptr_input = input_data + i*istride0;
+                    T* pIn = input_data + i*istride0;
 
                     /* do image, kernel convolution */
                     ConvolutionUtils<T>::conv3D(output_data,
                            alpha,
-                           ptr_input,  nInputDepth, nInputRows,  nInputCols,
+                           pIn,  nInputDepth, nInputRows,  nInputCols,
                            ptr_weight, nKernelDepth, nKernelRows, nKernelCols,
                            sdepth, srow, scol, vf, xc);
                 }
@@ -674,7 +674,7 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
         template<typename T>
         Nd4jStatus ConvolutionUtils<T>::conv3D(T* output_data,
                                      T alpha,
-                                     T* ptr_input, Nd4jIndex nInputDepth, Nd4jIndex nInputRows, Nd4jIndex nInputCols,
+                                     T* pIn, Nd4jIndex nInputDepth, Nd4jIndex nInputRows, Nd4jIndex nInputCols,
                                      T* ptr_weight, Nd4jIndex nKernelDepth, Nd4jIndex nKernelRows, Nd4jIndex nKernelCols,
                                      Nd4jIndex sdepth, Nd4jIndex srow, Nd4jIndex scol,
                                      const char *vf, const char *xc) {
@@ -690,13 +690,13 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
                 if (*xc == 'X') {
                     ConvolutionUtils<T>::fullXCorr3Dptr(output_data,
                                                  alpha,
-                                                 ptr_input, nInputDepth, nInputRows,  nInputCols,
+                                                 pIn, nInputDepth, nInputRows,  nInputCols,
                                                  ptr_weight, nKernelDepth, nKernelRows, nKernelCols,
                                                  sdepth, srow, scol);
                 } else {
                     ConvolutionUtils<T>::fullConv3Dptr(output_data,
                                                 alpha,
-                                                ptr_input, nInputDepth, nInputRows,  nInputCols,
+                                                pIn, nInputDepth, nInputRows,  nInputCols,
                                                 ptr_weight, nKernelDepth, nKernelRows, nKernelCols,
                                                 sdepth, srow, scol);
                 }
@@ -704,13 +704,13 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
             if (*xc == 'X') {
                 ConvolutionUtils<T>::validXCorr3Dptr(output_data,
                                               alpha,
-                                              ptr_input, nInputDepth, nInputRows,  nInputCols,
+                                              pIn, nInputDepth, nInputRows,  nInputCols,
                                               ptr_weight, nKernelDepth, nKernelRows, nKernelCols,
                                               sdepth, srow, scol);
             } else {
                 ConvolutionUtils<T>::validConv3Dptr(output_data,
                                              alpha,
-                                             ptr_input, nInputDepth, nInputRows,  nInputCols,
+                                             pIn, nInputDepth, nInputRows,  nInputCols,
                                              ptr_weight, nKernelDepth, nKernelRows, nKernelCols,
                                              sdepth, srow, scol);
             }
@@ -1167,7 +1167,7 @@ void ConvolutionUtils<T>::conv2d(const std::vector<NDArray<T>*>& inArrs, NDArray
         permutForOutput = {0, indOoH, indOoH+1, indIOioC};                          // [bS, oC, oH, oW] -> [bS, oH, oW, oC]
      
     if(isSameMode)                       // SAME        
-        ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+        ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     NDArray<T> columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());        
 
@@ -1228,7 +1228,7 @@ void ConvolutionUtils<T>::conv2dBP(const std::vector<NDArray<T>*>& inArrs, const
     }
     
     if(isSameMode)                       // SAME        
-        _calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+        calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     // ----- calculation of gradW and gradB ----- // 
     NDArray<T> columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());
@@ -1299,7 +1299,7 @@ void ConvolutionUtils<T>::depthwiseConv2d(const std::vector<NDArray<T>*>& inArrs
     }
 
     if(isSameMode)                       // SAME        
-        ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+        ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     NDArray<T> columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());                
     NDArray<T>* outputReshaped = output->reshape(output->ordering(), outReShape);
@@ -1366,7 +1366,7 @@ void ConvolutionUtils<T>::depthwiseConv2dBP(const std::vector<NDArray<T>*>& inAr
     }
 
     if(isSameMode)                       // SAME        
-        ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+        ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     NDArray<T>  columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->getWorkspace());        
     NDArray<T>* gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
@@ -1936,7 +1936,7 @@ void ConvolutionUtils<T>::upsampling3dBP(const NDArray<T>& gradO, NDArray<T>& gr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void ConvolutionUtils<T>::maxPool2d(NDArray<T>* input, NDArray<T>* values, const std::vector<int>& params, NDArray<T>* indices) {
+void ConvolutionUtils<T>::maxPool2d(NDArray<T>* input, NDArray<T>* output, const std::vector<int>& params, NDArray<T>* indices) {
 
     int kY = params[0];
     int kX = params[1];
@@ -1946,35 +1946,34 @@ void ConvolutionUtils<T>::maxPool2d(NDArray<T>* input, NDArray<T>* values, const
     int pX = params[5];
     int dY = params[6];
     int dX = params[7];
-    int oY = 0;
-    int oX = 0;
 
-    const int bSize = input->sizeAt(0);
+    const int bS  = input->sizeAt(0);
     const int inD = input->sizeAt(1);
     const int inY = input->sizeAt(2);
     const int inX = input->sizeAt(3);
+    const int oY  = output->sizeAt(2);
+    const int oX  = output->sizeAt(3);
+
     const bool isSameMode = params[8] != 0;
 
-    calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
-
     if (isSameMode)
-        ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, params[0], params[1], params[2], params[3], params[6], params[7]);                    
+        ConvolutionUtils<T>::calcPadding2D(pY, pX, oY, oX, inY, inX, params[0], params[1], params[2], params[3], params[6], params[7]);                    
 
-    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
-    std::vector<T> argT = {(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T)dX, (T)1.f, (T)0.f, (T)1.f, (T) oY, (T) oX};
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - absent (doesn't matter),  9 - poolingMode; 10 - divisor;
+    std::vector<T> argT = {(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T)dX, 1., (T)0., (T)1.};
 
-    input->template applyTransform<simdOps::Pooling2D<T>>(values, argT.data());
+    input->template applyTransform<simdOps::Pooling2D<T>>(output, argT.data());
     
-    if (nullptr != indices) {
+    if (indices != nullptr) {
         // for max_pool_with_argmax 
-        int total = input->lengthOf();
-        int part = total / bSize;
-                
-        for (int k = 0; k < total; )
+        int part = input->lengthOf() / bS;
+#pragma omp parallel for if(input->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2)
+        for (int b = 0; b < input->lengthOf(); b += part) 
             for (int i = 0; i < part; i++)
-                (*indices)(k++) = i;                
+                (*indices)(b+i) = i;                
     }
 }
+
 
 template class ND4J_EXPORT ConvolutionUtils<float>;
 template class ND4J_EXPORT ConvolutionUtils<float16>;
