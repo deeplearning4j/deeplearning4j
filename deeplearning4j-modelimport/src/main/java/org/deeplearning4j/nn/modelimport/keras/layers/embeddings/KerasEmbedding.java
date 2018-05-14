@@ -43,6 +43,7 @@ public class KerasEmbedding extends KerasLayer {
     private boolean hasZeroMasking;
     private int inputDim;
     private int inputLength;
+    private boolean inferInputLength;
 
 
     /**
@@ -79,6 +80,9 @@ public class KerasEmbedding extends KerasLayer {
 
         this.inputDim = getInputDimFromConfig(layerConfig);
         this.inputLength = getInputLengthFromConfig(layerConfig);
+        this.inferInputLength = this.inputLength == 0;
+        if (this.inferInputLength)
+            this.inputLength = 1; // set dummy value, so shape inference works
 
         this.hasZeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
         if (hasZeroMasking)
@@ -97,8 +101,10 @@ public class KerasEmbedding extends KerasLayer {
                 layerConfig, conf.getLAYER_FIELD_EMBEDDINGS_CONSTRAINT(), conf, kerasMajorVersion);
 
         EmbeddingSequenceLayer.Builder builder = new EmbeddingSequenceLayer.Builder()
-                .name(this.layerName).nIn(inputDim)
+                .name(this.layerName)
+                .nIn(inputDim)
                 .inputLength(inputLength)
+                .inferInputLength(inferInputLength)
                 .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout).activation(Activation.IDENTITY)
                 .weightInit(weightInit)
@@ -189,7 +195,7 @@ public class KerasEmbedding extends KerasLayer {
             throw new InvalidKerasConfigurationException(
                     "Keras Embedding layer config missing " + conf.getLAYER_FIELD_INPUT_LENGTH() + " field");
         if (innerConfig.get(conf.getLAYER_FIELD_INPUT_LENGTH()) == null) {
-            return 1;
+            return 0;
         } else {
             return (int) innerConfig.get(conf.getLAYER_FIELD_INPUT_LENGTH());
         }
