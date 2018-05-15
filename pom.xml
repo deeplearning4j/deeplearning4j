@@ -66,6 +66,7 @@
 
     <properties>
         <deeplearning4j.version>1.0.0-SNAPSHOT</deeplearning4j.version>
+        <oshi.version>3.4.2</oshi.version>
         <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
         <datavec.version>1.0.0-SNAPSHOT</datavec.version>
         <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
@@ -549,6 +550,7 @@
         <module>deeplearning4j-data</module>
         <module>deeplearning4j-manifold</module>
         <module>deeplearning4j-util</module>
+        <module>dl4j-perf</module>
     </modules>
 
     <licenses>
