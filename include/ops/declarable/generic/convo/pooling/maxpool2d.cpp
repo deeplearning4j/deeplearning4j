@@ -8,6 +8,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/max_pooling.h>
 
 namespace nd4j {
 namespace ops  {
@@ -50,7 +51,7 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 9) {
         ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     NDArray<T> columnsWrongShape(input->ordering(), {bS, iC, oH, oW, kH, kW}, input->getWorkspace());    
-    NDArray<T>* columns = columnsWrongShape.permute({0, 1, 4, 5, 2, 3});                                // [bS, iC, oH, oW, kH, kW] -> [bS, iC, kH, kW, oH, oW]
+    NDArray<T>* columns = columnsWrongShape.permute({0, 1, 4, 5, 2, 3});
 
     T extraParams1[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW};
     input->template applyTransform<simdOps::Im2col<T>>(columns, extraParams1);
@@ -115,7 +116,7 @@ DECLARE_SHAPE_FN(maxpool2d_bp) {
 
             std::vector<int> argI = *(block.getIArguments());
 
-            ConvolutionUtils<T>::maxPool2d(x, z, argI, (NDArray<T>*)nullptr);
+            helpers::maxPoolingFunctor(x, z, argI, (NDArray<T>*)nullptr);
             STORE_RESULT(*z);
 
             //z->printShapeInfo("MaxPool2D result shape");

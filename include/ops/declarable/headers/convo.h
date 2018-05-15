@@ -280,8 +280,8 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_maxpool3dnew)
-        DECLARE_CUSTOM_OP(maxpool3dnew, 1, 1, false, 0, 13);
-        DECLARE_CUSTOM_OP(maxpool3dnew_bp, 2, 1, false, 0, 13);
+        DECLARE_CUSTOM_OP(maxpool3dnew, 1, 1, false, 0, 10);
+        DECLARE_CUSTOM_OP(maxpool3dnew_bp, 2, 1, false, 0, 10);
         #endif
 
         /**
