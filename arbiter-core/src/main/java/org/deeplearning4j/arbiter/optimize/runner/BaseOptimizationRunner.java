@@ -137,7 +137,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
             //Check termination conditions:
             if (terminate()) {
-                shutdown();
+                shutdown(true);
                 break;
             }
 
@@ -371,6 +371,4 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
     protected abstract List<ListenableFuture<OptimizationResult>> execute(List<Candidate> candidates,
                                                                           DataProvider dataProvider, ScoreFunction scoreFunction);
-
-    protected abstract void shutdown();
 }

@@ -63,7 +63,9 @@ import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.dataset.DataSet;
@@ -84,6 +86,9 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 public class TestMultiLayerSpace {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void testBasic() {
@@ -341,7 +346,7 @@ public class TestMultiLayerSpace {
     }
 
     @Test
-    public void testInputTypeBasic() {
+    public void testInputTypeBasic() throws Exception {
 
         ParameterSpace<Integer> layerSizeHyperparam = new IntegerParameterSpace(20, 60);
 
@@ -365,12 +370,11 @@ public class TestMultiLayerSpace {
 
         DataProvider dataProvider = new TestDataSetProvider();
 
-        String baseSaveDirectory = "arbiterExample2/";
-        File f = new File(baseSaveDirectory);
+        File f = testDir.newFolder();
         if (f.exists())
             f.delete();
         f.mkdir();
-        ResultSaver modelSaver = new FileModelSaver(baseSaveDirectory);
+        ResultSaver modelSaver = new FileModelSaver(f.getAbsolutePath());
 
         ScoreFunction scoreFunction = new TestSetAccuracyScoreFunction();
 

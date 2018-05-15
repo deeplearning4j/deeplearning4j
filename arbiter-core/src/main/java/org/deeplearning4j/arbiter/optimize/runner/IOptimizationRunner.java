@@ -60,4 +60,9 @@ public interface IOptimizationRunner {
 
     List<CandidateInfo> getCandidateStatus();
 
+    /**
+     * @param awaitCompletion If true: await completion of currently scheduled tasks. If false: shutdown immediately,
+     *                        cancelling any currently executing tasks
+     */
+    void shutdown(boolean awaitCompletion);
 }
