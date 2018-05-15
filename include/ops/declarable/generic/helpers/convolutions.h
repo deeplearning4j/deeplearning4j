@@ -45,7 +45,7 @@ namespace nd4j {
 
             static void calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int isSameMode);
 
-            static void calcPadding2D(int& pH, int& pW, int oH, int oW, int inH, int inW, int kH, int kW, int sH, int sW, int dH, int dW);
+            static void _calcPadding2D(int& pH, int& pW, int oH, int oW, int inH, int inW, int kH, int kW, int sH, int sW, int dH, int dW);
 
             static void calcPadding3D(int& pD, int& pH, int& pW, const int oD, const int oH, const int oW, const int iD, const int iH, const int iW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int dD, const int dH, const int dW);            
 
@@ -90,7 +90,7 @@ namespace nd4j {
 
             static void upsampling3dBP(const NDArray<T>& gradO, NDArray<T>& gradI, const bool isNCDHW);
 
-            static void maxPool2d(NDArray<T>* input, NDArray<T>* output, const std::vector<int>& params, NDArray<T>* indices);
+            static void maxPool2d(NDArray<T>* input, NDArray<T>* values, const std::vector<int>& params, NDArray<T>* indices);
 
     };
 

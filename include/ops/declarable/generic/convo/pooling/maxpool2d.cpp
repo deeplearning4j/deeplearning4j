@@ -1,5 +1,5 @@
 //
-// @author raver119@gmail.com, created  on 29/10/17.
+// @author raver119, created  on 29/10/17.
 // @author Yurii Shyrma (iuriish@yahoo.com), changed on 09.05.2018
 //
 
@@ -47,7 +47,7 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 9) {
     }
     
     if(isSameMode)                       // SAME        
-        ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+        ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     NDArray<T> columnsWrongShape(input->ordering(), {bS, iC, oH, oW, kH, kW}, input->getWorkspace());    
     NDArray<T>* columns = columnsWrongShape.permute({0, 1, 4, 5, 2, 3});                                // [bS, iC, oH, oW, kH, kW] -> [bS, iC, kH, kW, oH, oW]
@@ -94,37 +94,50 @@ DECLARE_SHAPE_FN(maxpool2d_bp) {
         // maxpool2d corresponds to poolingMode=0
         CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
 
-            NDArray<T>* input  = INPUT_VARIABLE(0);
-            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            NDArray<T> *x = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
+            REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
 
             bool isNCHW = true;
             if (block.getIArguments()->size() > 10)
                 isNCHW = INT_ARG(10) == 0;
 
             if (!isNCHW) {
-                input  = input->permute({0, 3, 1, 2});                // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-                output = output->permute({0, 3, 1, 2});               // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+                x = x->permute({0, 3, 1, 2});
+                //x = x->dup('c');
+
+                // FIXME: eventually we want NWHC impl
+                z->permutei({0, 3, 1, 2});
+                z->streamline('c');
             }
         
+
             std::vector<int> argI = *(block.getIArguments());
 
-            ConvolutionUtils<T>::maxPool2d(input, output, argI, (NDArray<T>*)nullptr);                
+            ConvolutionUtils<T>::maxPool2d(x, z, argI, (NDArray<T>*)nullptr);
+            STORE_RESULT(*z);
+
+            //z->printShapeInfo("MaxPool2D result shape");
             
             if (!isNCHW) {
-                delete input;
-                delete output;
+                delete x;
+
+                z->permutei({0, 2, 3, 1});
+                z->streamline('c');
+
+                //z->printShapeInfo("max pool shape");
+                //z->printIndexedBuffer("maxpool final");
             }
 
-            return Status::OK();
+            return ND4J_STATUS_OK;
         }
         DECLARE_SYN(MaxPool2D, maxpool2d);
         DECLARE_SYN(MaxPool, maxpool2d);
         DECLARE_SYN(maxpool, maxpool2d);
 
         DECLARE_SHAPE_FN(maxpool2d) {
-            //NDArray<T> *input = block.getVariables().at(0)->getNDArray();
+            //NDArray<T> *x = block.getVariables().at(0)->getNDArray();
             int* inShape = inputShape->at(0);
             int* shapeOf = shape::shapeOf(inShape);
             // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
@@ -156,7 +169,7 @@ DECLARE_SHAPE_FN(maxpool2d_bp) {
 
             const bool bisSameMode = INT_ARG(8) > 0;
             if (bisSameMode)
-                ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
+                ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
 
             // allocate memory for new shape
             int* newShapeInfo = nullptr;

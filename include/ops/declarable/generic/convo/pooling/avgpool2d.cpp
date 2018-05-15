@@ -1,6 +1,5 @@
 //
-// @author raver119@gmail.com, created on 29/10/17.
-// @author Yurii Shyrma (iuriish@yahoo.com), changed on 14.05.2018
+// Created by raver119 on 29/10/17.
 //
 
 #include <op_boilerplate.h>
@@ -13,13 +12,13 @@ namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 11) {
 
-            NDArray<T>* input = INPUT_VARIABLE(0);
+            NDArray<T> *x = INPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
+            REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
             std::vector<int> argI = *(block.getIArguments());
-            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
             int kY = argI[0];
             int kX = argI[1];
@@ -40,31 +39,44 @@ namespace nd4j {
             if (block.getIArguments()->size() > 10)
                 isNCHW = INT_ARG(10) == 0;
 
-            const int inY = isNCHW ? input->sizeAt(2) : input->sizeAt(1);
-            const int inX = isNCHW ? input->sizeAt(3) : input->sizeAt(2);
+            const int inY = isNCHW ? x->sizeAt(2) : x->sizeAt(1);
+            const int inX = isNCHW ? x->sizeAt(3) : x->sizeAt(2);
 
             if (!isNCHW) {
-                input  = input->permute({0, 3, 1, 2});                // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-                output = output->permute({0, 3, 1, 2});               // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+                x = x->permute({0, 3, 1, 2});
+
+                // FIXME: eventually we want NWHC impl
+                z->permutei({0, 3, 1, 2});
+                z->streamline('c');
             }
 
             const bool isSameMode = INT_ARG(8) > 0;
 
             ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
-            if (isSameMode)
-                ConvolutionUtils<T>::calcPadding2D(pY, pX, oY, oX, inY, inX, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);
-            
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
-            std::vector<T> argT = {(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T)dX, (T)1.f, (T)1.f, (T) argI[9], (T) oY, (T) oX};
-            input->template applyTransform<simdOps::Pooling2D<T>>(output, argT.data());
-
-            if (!isNCHW) {
-                delete input;
-                delete output;
+            if (isSameMode) {
+                ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, argI[0], argI[1],
+                                                    argI[2], argI[3], argI[6], argI[7]);
             }
 
-            return Status::OK();
+            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
+            std::vector<T> argT = {(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T)dX, (T)1.f, (T)1.f, (T) argI[9], (T) oY, (T) oX};
+
+
+            x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
+
+            STORE_RESULT(*z);
+
+            if (!isNCHW) {
+                delete x;
+                z->permutei({0, 2, 3, 1});
+                z->streamline('c');
+
+                //z->printShapeInfo("avg pool shape");
+                //z->printIndexedBuffer("avg pool final");
+            }
+
+            return ND4J_STATUS_OK;
         }
 
         DECLARE_SYN(AvgPool2D, avgpool2d);

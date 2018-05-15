@@ -849,8 +849,8 @@ TEST_F(DeclarableOpsTests3, Test_AvgPool_1) {
     //                                  0   1   2   3   4   5   6   7   8   9   10
     auto z = result->at(0);
 
-    // z->printShapeInfo("z shape");
-    // z->printIndexedBuffer("z buffr");
+    z->printShapeInfo("z shape");
+    z->printIndexedBuffer("z buffr");
 
     delete result;
 }
