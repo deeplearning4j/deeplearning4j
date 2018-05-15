@@ -98,6 +98,18 @@ public class TestInstantiation extends BaseDL4JTest {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
+
+        model = VGG19.builder().numClasses(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
+        assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
+
+        initializedModel = (ComputationGraph) model.initPretrained();
+        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
+        assertArrayEquals(result[0].shape(), new int[] {1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
         model = Darknet19.builder().numClasses(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
@@ -174,4 +186,18 @@ public class TestInstantiation extends BaseDL4JTest {
         TransferLearningHelper transferLearningHelper = new TransferLearningHelper(computationGraph, "conv2d_9");
     }
 
+    @Test
+    public void testInitNotPretrained(){
+        //Sanity check on the non-pretrained versions:
+        ZooModel[] models = new ZooModel[]{
+                VGG16.builder().numClasses(10).build(),
+                VGG19.builder().numClasses(10).build()
+        };
+
+        for(ZooModel zm : models){
+            zm.init();
+
+            System.gc();
+        }
+    }
 }
