@@ -109,10 +109,16 @@ public class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
 
   @Test
   public void iterateTest() throws Exception {
+    doIterateTest(true);
+    doIterateTest(false);
+  }
+
+  private void doIterateTest(boolean withIdKey) throws Exception {
 
       try (final TupleStreamDataSetIterator
       tsdsi = new TupleStreamDataSetIterator(
         123 /* batch */,
+        (withIdKey ? "greeting" : null) /* idKey */,
         new String[] { "pie" },
         new String[] { "answer" },
         "tuple(greeting=\"hello world\",pie=3.14,answer=42)",
@@ -120,6 +126,15 @@ public class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
 
       assertTrue(tsdsi.hasNext());
       final DataSet ds = tsdsi.next();
+
+      if (withIdKey) {
+        assertTrue(ds instanceof TupleStreamDataSetIterator.IdDataSet);
+        final TupleStreamDataSetIterator.IdDataSet ids = (TupleStreamDataSetIterator.IdDataSet) ds;
+        assertEquals("greeting", ids.getIdKey());
+        assertEquals("hello world", ids.getIdValue());
+      } else {
+        assertFalse(ds instanceof TupleStreamDataSetIterator.IdDataSet);
+      }
 
       assertEquals(1, ds.getFeatures().length());
       assertEquals(3.14f, ds.getFeatures().getFloat(0), 0.0f);
@@ -159,6 +174,7 @@ public class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
       try (final TupleStreamDataSetIterator tsdsi =
           new TupleStreamDataSetIterator(
             batch,
+            "id" /* idKey */,
             new String[] { "channel_b_f", "channel_g_f", "channel_r_f" },
             new String[] { "luminance_f" },
             "search(mySolrCollection," +

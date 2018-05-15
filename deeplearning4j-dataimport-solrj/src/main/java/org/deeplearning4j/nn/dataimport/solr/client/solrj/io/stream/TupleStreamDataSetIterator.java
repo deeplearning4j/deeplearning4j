@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.dataimport.solr.client.solrj.io.stream;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -18,6 +19,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
   * A {@link DataSetIterator} which uses a <a href="https://lucene.apache.org/solr/guide/7_2/streaming-expressions.html">streaming expression</a> to fetch data from Apache Solr and/or one of the sources (e.g. <code>jdbc</code>) supported as a <a href="https://lucene.apache.org/solr/guide/7_2/stream-source-reference.html">stream source</a>.
@@ -27,6 +30,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
   try (final TupleStreamDataSetIterator tsdsi =
          new TupleStreamDataSetIterator(
          batch,
+         "id",
          new String[] { "fieldA", "fieldB", "fieldC" },
          new String[] { "fieldX", "fieldY" },
          "search(mySolrCollection," +
@@ -42,10 +46,13 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
   */
 public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
 
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
     @Getter
     protected DataSetPreProcessor preProcessor;
 
     final private int batch;
+    final private String idKey;
     final private String[] featureKeys;
     final private String[] labelKeys;
 
@@ -66,28 +73,43 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
         }
     }
 
+    public static class IdDataSet extends DataSet {
+        final private String idKey;
+        final private Object idValue;
+        public IdDataSet(String idKey, Object idValue,
+            INDArray features, INDArray labels) {
+            super(features, labels);
+            this.idKey = idKey;
+            this.idValue = idValue;
+        }
+        public String getIdKey() { return idKey; }
+        public Object getIdValue() { return idValue; }
+    }
+
     public TupleStreamDataSetIterator(
         int batch,
+        String idKey,
         String[] featureKeys,
         String[] labelKeys,
         String expression,
         String defaultZkHost)
         throws IOException {
 
-        this(batch, featureKeys, labelKeys,
+        this(batch, idKey, featureKeys, labelKeys,
              new DefaultStreamFactory().withDefaultZkHost(defaultZkHost),
              expression);
     }
 
     public TupleStreamDataSetIterator(
         int batch,
+        String idKey,
         String[] featureKeys,
         String[] labelKeys,
         StreamFactory streamFactory,
         String expression)
         throws IOException {
 
-        this(batch, featureKeys, labelKeys,
+        this(batch, idKey, featureKeys, labelKeys,
              streamFactory,
              expression,
              new CloseableStreamContext());
@@ -95,6 +117,7 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
 
     public TupleStreamDataSetIterator(
         int batch,
+        String idKey,
         String[] featureKeys,
         String[] labelKeys,
         StreamFactory streamFactory,
@@ -103,6 +126,7 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
         throws IOException {
 
         this.batch = batch;
+        this.idKey = idKey;
         this.featureKeys = featureKeys;
         this.labelKeys = labelKeys;
 
@@ -133,9 +157,14 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
 
         while (hasNext() && 0 < numWanted) {
 
-            final INDArray features = getValues(this.tuple, this.featureKeys);
-            final INDArray labels = getValues(this.tuple, this.labelKeys);
-            final DataSet rawDataSet = new DataSet(features, labels);
+            final INDArray features = getValues(this.tuple, this.featureKeys, this.idKey);
+            final INDArray labels = getValues(this.tuple, this.labelKeys, this.idKey);
+            final DataSet rawDataSet;
+            if (this.idKey != null) {
+                rawDataSet = new IdDataSet(this.idKey, this.tuple.get(this.idKey), features, labels);
+            } else {
+                rawDataSet = new DataSet(features, labels);
+            }
             rawDataSets.add(rawDataSet);
 
             --numWanted;
@@ -158,11 +187,22 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
         return new DataSet(inputs, labels);
     }
 
-    private static INDArray getValues(Tuple tuple, String[] keys) {
-      final List<Double> values = new ArrayList<Double>(keys.length);
+    private static INDArray getValues(Tuple tuple, String[] keys, String idKey) {
+      final double[] values = new double[keys.length];
       for (int ii=0; ii<keys.length; ++ii)
       {
-        values.add(tuple.getDouble(keys[ii]));
+        final String key = keys[ii];
+        final Double value = tuple.getDouble(key);
+        if (value == null) {
+          // log potentially useful debugging info here ...
+          if (idKey == null) {
+            log.info("tuple[ key[{}]={} ]={}", ii, key, value);
+          } else {
+            log.info("tuple[ key[{}]={} ]={} tuple[ idKey={} ]={}", ii, key, value, idKey, tuple.get(idKey));
+          }
+          // ... before proceeding to hit the NullPointerException below
+        }
+        values[ii] = value.doubleValue();
       }
       return Nd4j.create(values);
     }
