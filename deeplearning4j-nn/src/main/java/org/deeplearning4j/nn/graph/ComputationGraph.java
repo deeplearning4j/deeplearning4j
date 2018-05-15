@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.util.GraphIndices;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.deeplearning4j.nn.graph.vertex.impl.FrozenVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
@@ -2327,7 +2328,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 String vertexName = current.getVertexName();
 
                 //FIXME: make the frozen vertex feature extraction more flexible
-                if (current.hasLayer() && current.getLayer() instanceof FrozenLayer){
+                if (current.hasLayer() && current.getLayer() instanceof FrozenLayer || current instanceof FrozenVertex){
                     hitFrozen = true;
                 }
 

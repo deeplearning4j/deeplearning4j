@@ -357,7 +357,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * Add preprocessors automatically, given the specified types of inputs for the network. Inputs are specified using the
      * {@link InputType} class, in the same order in which the inputs were defined in the original configuration.<br>
      * For example, in a network with two inputs: a convolutional input (28x28x1 images) and feed forward inputs, use
-     * {@code .addPreProcessors(InputType.convolutional(1,28,28),InputType.feedForward())}.<br>
+     * {@code .addPreProcessors(InputType.convolutional(28,28,1),InputType.feedForward())}.<br>
      * For the CNN->Dense and CNN->RNN transitions, the nIns on the Dense/RNN layers will also be added automatically.
      * <b>NOTE</b>: This method will be called automatically when using the
      * {@link GraphBuilder#setInputTypes(InputType...)} functionality.
@@ -856,7 +856,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * (a) preprocessors can be automatically added, and<br>
          * (b) the nIns (input size) for each layer can be automatically calculated and set<br>
          * The order here is the same order as .addInputs(). Thus, if you do .addInputs("a","b") and .setInputTypes(InputType.feedForward(),
-         * InputType.convolutional(1,28,28)) then the input labelled "a" is a feed forward input, whereas the input labelled "b" in a CNN
+         * InputType.convolutional(28,28,1)) then the input labelled "a" is a feed forward input, whereas the input labelled "b" in a CNN
          * input, with 28x28x1 images as input.<br>
          * <b>Note</b>: Using setInputTypes is not always necessary, but can be especially helpful for example with CNNs such that
          * the calculations on input/ouput sizes (width, height, channels, etc) don't need to be done manually.<br>
