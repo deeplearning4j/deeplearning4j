@@ -455,141 +455,134 @@ public class WordVectorSerializer {
 
         // writing out syn0
         File tempFileSyn0 = File.createTempFile("word2vec", "0");
-        tempFileSyn0.deleteOnExit();
-
-        writeWordVectors(vectors.lookupTable(), tempFileSyn0);
-
-        FileUtils.copyFile(tempFileSyn0, zipfile);
-
-        // writing out syn1
         File tempFileSyn1 = File.createTempFile("word2vec", "1");
-        tempFileSyn1.deleteOnExit();
-
-        INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
-
-        if (syn1 != null)
-            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
-                for (int x = 0; x < syn1.rows(); x++) {
-                    INDArray row = syn1.getRow(x);
-                    StringBuilder builder = new StringBuilder();
-                    for (int i = 0; i < row.length(); i++) {
-                        builder.append(row.getDouble(i)).append(" ");
-                    }
-                    writer.println(builder.toString().trim());
-                }
-            }
-
-        ZipEntry zSyn1 = new ZipEntry("syn1.txt");
-        zipfile.putNextEntry(zSyn1);
-
-        FileUtils.copyFile(tempFileSyn1, zipfile);
-
-        // writing out syn1
         File tempFileSyn1Neg = File.createTempFile("word2vec", "n");
-        tempFileSyn1Neg.deleteOnExit();
-
-        INDArray syn1Neg = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1Neg();
-
-        if (syn1Neg != null)
-            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1Neg))) {
-                for (int x = 0; x < syn1Neg.rows(); x++) {
-                    INDArray row = syn1Neg.getRow(x);
-                    StringBuilder builder = new StringBuilder();
-                    for (int i = 0; i < row.length(); i++) {
-                        builder.append(row.getDouble(i)).append(" ");
-                    }
-                    writer.println(builder.toString().trim());
-                }
-            }
-
-        ZipEntry zSyn1Neg = new ZipEntry("syn1Neg.txt");
-        zipfile.putNextEntry(zSyn1Neg);
-
-        FileUtils.copyFile(tempFileSyn1Neg, zipfile);
-
-
         File tempFileCodes = File.createTempFile("word2vec", "h");
-        tempFileCodes.deleteOnExit();
-
-        ZipEntry hC = new ZipEntry("codes.txt");
-        zipfile.putNextEntry(hC);
-
-        // writing out huffman tree
-        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileCodes))) {
-            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
-                VocabWord word = vectors.getVocab().elementAtIndex(i);
-                StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
-                for (int code : word.getCodes()) {
-                    builder.append(code).append(" ");
-                }
-
-                writer.println(builder.toString().trim());
-            }
-        }
-
-        FileUtils.copyFile(tempFileCodes, zipfile);
-
-
         File tempFileHuffman = File.createTempFile("word2vec", "h");
+        File tempFileFreqs = File.createTempFile("word2vec", "f");
+        tempFileSyn0.deleteOnExit();
+        tempFileSyn1.deleteOnExit();
+        tempFileSyn1Neg.deleteOnExit();
+        tempFileFreqs.deleteOnExit();
+        tempFileCodes.deleteOnExit();
         tempFileHuffman.deleteOnExit();
 
-        ZipEntry hP = new ZipEntry("huffman.txt");
-        zipfile.putNextEntry(hP);
+        try {
+            writeWordVectors(vectors.lookupTable(), tempFileSyn0);
 
-        // writing out huffman tree
-        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileHuffman))) {
-            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
-                VocabWord word = vectors.getVocab().elementAtIndex(i);
-                StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
-                for (int point : word.getPoints()) {
-                    builder.append(point).append(" ");
+            FileUtils.copyFile(tempFileSyn0, zipfile);
+
+            // writing out syn1
+            INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
+
+            if (syn1 != null)
+                try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
+                    for (int x = 0; x < syn1.rows(); x++) {
+                        INDArray row = syn1.getRow(x);
+                        StringBuilder builder = new StringBuilder();
+                        for (int i = 0; i < row.length(); i++) {
+                            builder.append(row.getDouble(i)).append(" ");
+                        }
+                        writer.println(builder.toString().trim());
+                    }
                 }
 
-                writer.println(builder.toString().trim());
+            ZipEntry zSyn1 = new ZipEntry("syn1.txt");
+            zipfile.putNextEntry(zSyn1);
+
+            FileUtils.copyFile(tempFileSyn1, zipfile);
+
+            // writing out syn1
+            INDArray syn1Neg = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1Neg();
+
+            if (syn1Neg != null)
+                try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1Neg))) {
+                    for (int x = 0; x < syn1Neg.rows(); x++) {
+                        INDArray row = syn1Neg.getRow(x);
+                        StringBuilder builder = new StringBuilder();
+                        for (int i = 0; i < row.length(); i++) {
+                            builder.append(row.getDouble(i)).append(" ");
+                        }
+                        writer.println(builder.toString().trim());
+                    }
+                }
+
+            ZipEntry zSyn1Neg = new ZipEntry("syn1Neg.txt");
+            zipfile.putNextEntry(zSyn1Neg);
+
+            FileUtils.copyFile(tempFileSyn1Neg, zipfile);
+
+
+            ZipEntry hC = new ZipEntry("codes.txt");
+            zipfile.putNextEntry(hC);
+
+            // writing out huffman tree
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileCodes))) {
+                for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                    VocabWord word = vectors.getVocab().elementAtIndex(i);
+                    StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
+                    for (int code : word.getCodes()) {
+                        builder.append(code).append(" ");
+                    }
+
+                    writer.println(builder.toString().trim());
+                }
             }
-        }
 
-        FileUtils.copyFile(tempFileHuffman, zipfile);
+            FileUtils.copyFile(tempFileCodes, zipfile);
 
-        File tempFileFreqs = File.createTempFile("word2vec", "f");
-        tempFileFreqs.deleteOnExit();
+            ZipEntry hP = new ZipEntry("huffman.txt");
+            zipfile.putNextEntry(hP);
 
-        ZipEntry hF = new ZipEntry("frequencies.txt");
-        zipfile.putNextEntry(hF);
+            // writing out huffman tree
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileHuffman))) {
+                for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                    VocabWord word = vectors.getVocab().elementAtIndex(i);
+                    StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
+                    for (int point : word.getPoints()) {
+                        builder.append(point).append(" ");
+                    }
 
-        // writing out word frequencies
-        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileFreqs))) {
-            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
-                VocabWord word = vectors.getVocab().elementAtIndex(i);
-                StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ")
-                                .append(word.getElementFrequency()).append(" ")
-                                .append(vectors.getVocab().docAppearedIn(word.getLabel()));
-
-                writer.println(builder.toString().trim());
+                    writer.println(builder.toString().trim());
+                }
             }
-        }
 
-        FileUtils.copyFile(tempFileFreqs, zipfile);
+            FileUtils.copyFile(tempFileHuffman, zipfile);
 
-        ZipEntry config = new ZipEntry("config.json");
-        zipfile.putNextEntry(config);
-        //log.info("Current config: {}", vectors.getConfiguration().toJson());
-        try(ByteArrayInputStream bais = new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes(StandardCharsets.UTF_8))){
-            IOUtils.copy(bais, zipfile);
-        }
+            ZipEntry hF = new ZipEntry("frequencies.txt");
+            zipfile.putNextEntry(hF);
 
-        zipfile.flush();
-        zipfile.close();
+            // writing out word frequencies
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileFreqs))) {
+                for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                    VocabWord word = vectors.getVocab().elementAtIndex(i);
+                    StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ")
+                            .append(word.getElementFrequency()).append(" ")
+                            .append(vectors.getVocab().docAppearedIn(word.getLabel()));
 
-        try {
-            tempFileCodes.delete();
-            tempFileFreqs.delete();
-            tempFileHuffman.delete();
-            tempFileSyn0.delete();
-            tempFileSyn1.delete();
-            tempFileSyn1Neg.delete();
-        } catch (Exception e) {
-            //
+                    writer.println(builder.toString().trim());
+                }
+            }
+
+            FileUtils.copyFile(tempFileFreqs, zipfile);
+
+            ZipEntry config = new ZipEntry("config.json");
+            zipfile.putNextEntry(config);
+            //log.info("Current config: {}", vectors.getConfiguration().toJson());
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes(StandardCharsets.UTF_8))) {
+                IOUtils.copy(bais, zipfile);
+            }
+
+            zipfile.flush();
+            zipfile.close();
+        } finally {
+            for(File f : new File[]{tempFileSyn0, tempFileSyn1, tempFileSyn1Neg, tempFileCodes, tempFileHuffman, tempFileFreqs}){
+                try{
+                    f.delete();
+                } catch (Exception e){
+                    //Ignore, is temp file
+                }
+            }
         }
     }
 
@@ -604,114 +597,119 @@ public class WordVectorSerializer {
 
         // writing out syn0
         File tempFileSyn0 = File.createTempFile("paravec", "0");
-        tempFileSyn0.deleteOnExit();
-
-        writeWordVectors(vectors.lookupTable(), tempFileSyn0);
-
-        FileUtils.copyFile(tempFileSyn0, zipfile);
-
-        // writing out syn1
         File tempFileSyn1 = File.createTempFile("paravec", "1");
+        File tempFileCodes = File.createTempFile("paravec", "h");
+        File tempFileHuffman = File.createTempFile("paravec", "h");
+        File tempFileFreqs = File.createTempFile("paravec", "h");
+        tempFileSyn0.deleteOnExit();
         tempFileSyn1.deleteOnExit();
+        tempFileCodes.deleteOnExit();
+        tempFileHuffman.deleteOnExit();
+        tempFileFreqs.deleteOnExit();
 
-        INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
+        try {
 
-        if (syn1 != null)
-            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
-                for (int x = 0; x < syn1.rows(); x++) {
-                    INDArray row = syn1.getRow(x);
-                    StringBuilder builder = new StringBuilder();
-                    for (int i = 0; i < row.length(); i++) {
-                        builder.append(row.getDouble(i)).append(" ");
+            writeWordVectors(vectors.lookupTable(), tempFileSyn0);
+
+            FileUtils.copyFile(tempFileSyn0, zipfile);
+
+            // writing out syn1
+            INDArray syn1 = ((InMemoryLookupTable<VocabWord>) vectors.getLookupTable()).getSyn1();
+
+            if (syn1 != null)
+                try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileSyn1))) {
+                    for (int x = 0; x < syn1.rows(); x++) {
+                        INDArray row = syn1.getRow(x);
+                        StringBuilder builder = new StringBuilder();
+                        for (int i = 0; i < row.length(); i++) {
+                            builder.append(row.getDouble(i)).append(" ");
+                        }
+                        writer.println(builder.toString().trim());
                     }
+                }
+
+            ZipEntry zSyn1 = new ZipEntry("syn1.txt");
+            zipfile.putNextEntry(zSyn1);
+
+            FileUtils.copyFile(tempFileSyn1, zipfile);
+
+            ZipEntry hC = new ZipEntry("codes.txt");
+            zipfile.putNextEntry(hC);
+
+            // writing out huffman tree
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileCodes))) {
+                for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                    VocabWord word = vectors.getVocab().elementAtIndex(i);
+                    StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
+                    for (int code : word.getCodes()) {
+                        builder.append(code).append(" ");
+                    }
+
                     writer.println(builder.toString().trim());
                 }
             }
 
-        ZipEntry zSyn1 = new ZipEntry("syn1.txt");
-        zipfile.putNextEntry(zSyn1);
+            FileUtils.copyFile(tempFileCodes, zipfile);
 
-        FileUtils.copyFile(tempFileSyn1, zipfile);
+            ZipEntry hP = new ZipEntry("huffman.txt");
+            zipfile.putNextEntry(hP);
 
-        File tempFileCodes = File.createTempFile("paravec", "h");
-        tempFileCodes.deleteOnExit();
+            // writing out huffman tree
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileHuffman))) {
+                for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                    VocabWord word = vectors.getVocab().elementAtIndex(i);
+                    StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
+                    for (int point : word.getPoints()) {
+                        builder.append(point).append(" ");
+                    }
 
-        ZipEntry hC = new ZipEntry("codes.txt");
-        zipfile.putNextEntry(hC);
-
-        // writing out huffman tree
-        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileCodes))) {
-            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
-                VocabWord word = vectors.getVocab().elementAtIndex(i);
-                StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
-                for (int code : word.getCodes()) {
-                    builder.append(code).append(" ");
+                    writer.println(builder.toString().trim());
                 }
-
-                writer.println(builder.toString().trim());
             }
-        }
 
-        FileUtils.copyFile(tempFileCodes, zipfile);
+            FileUtils.copyFile(tempFileHuffman, zipfile);
+
+            ZipEntry config = new ZipEntry("config.json");
+            zipfile.putNextEntry(config);
+            IOUtils.write(vectors.getConfiguration().toJson(), zipfile, StandardCharsets.UTF_8);
 
 
-        File tempFileHuffman = File.createTempFile("paravec", "h");
-        tempFileHuffman.deleteOnExit();
+            ZipEntry labels = new ZipEntry("labels.txt");
+            zipfile.putNextEntry(labels);
+            StringBuilder builder = new StringBuilder();
+            for (VocabWord word : vectors.getVocab().tokens()) {
+                if (word.isLabel())
+                    builder.append(encodeB64(word.getLabel())).append("\n");
+            }
+            IOUtils.write(builder.toString().trim(), zipfile, StandardCharsets.UTF_8);
 
-        ZipEntry hP = new ZipEntry("huffman.txt");
-        zipfile.putNextEntry(hP);
+            ZipEntry hF = new ZipEntry("frequencies.txt");
+            zipfile.putNextEntry(hF);
 
-        // writing out huffman tree
-        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileHuffman))) {
-            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
-                VocabWord word = vectors.getVocab().elementAtIndex(i);
-                StringBuilder builder = new StringBuilder(encodeB64(word.getLabel())).append(" ");
-                for (int point : word.getPoints()) {
-                    builder.append(point).append(" ");
+            // writing out word frequencies
+            try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileFreqs))) {
+                for (int i = 0; i < vectors.getVocab().numWords(); i++) {
+                    VocabWord word = vectors.getVocab().elementAtIndex(i);
+                    builder = new StringBuilder(encodeB64(word.getLabel())).append(" ").append(word.getElementFrequency())
+                            .append(" ").append(vectors.getVocab().docAppearedIn(word.getLabel()));
+
+                    writer.println(builder.toString().trim());
                 }
+            }
 
-                writer.println(builder.toString().trim());
+            FileUtils.copyFile(tempFileFreqs, zipfile);
+
+            zipfile.flush();
+            zipfile.close();
+        } finally {
+            for(File f : new File[]{tempFileSyn0, tempFileSyn1, tempFileCodes, tempFileHuffman, tempFileFreqs}){
+                try{
+                    f.delete();
+                } catch (Exception e){
+                    //Ignore, is temp file
+                }
             }
         }
-
-        FileUtils.copyFile(tempFileHuffman, zipfile);
-
-        ZipEntry config = new ZipEntry("config.json");
-        zipfile.putNextEntry(config);
-        IOUtils.write(vectors.getConfiguration().toJson(), zipfile, StandardCharsets.UTF_8);
-
-
-        ZipEntry labels = new ZipEntry("labels.txt");
-        zipfile.putNextEntry(labels);
-        StringBuilder builder = new StringBuilder();
-        for (VocabWord word : vectors.getVocab().tokens()) {
-            if (word.isLabel())
-                builder.append(encodeB64(word.getLabel())).append("\n");
-        }
-        IOUtils.write(builder.toString().trim(), zipfile, StandardCharsets.UTF_8);
-
-        ZipEntry hF = new ZipEntry("frequencies.txt");
-        zipfile.putNextEntry(hF);
-
-
-        File tempFileFreqs = File.createTempFile("paravec", "h");
-        tempFileFreqs.deleteOnExit();
-
-        // writing out word frequencies
-        try (PrintWriter writer = new PrintWriter(new FileWriter(tempFileFreqs))) {
-            for (int i = 0; i < vectors.getVocab().numWords(); i++) {
-                VocabWord word = vectors.getVocab().elementAtIndex(i);
-                builder = new StringBuilder(encodeB64(word.getLabel())).append(" ").append(word.getElementFrequency())
-                                .append(" ").append(vectors.getVocab().docAppearedIn(word.getLabel()));
-
-                writer.println(builder.toString().trim());
-            }
-        }
-
-        FileUtils.copyFile(tempFileFreqs, zipfile);
-
-        zipfile.flush();
-        zipfile.close();
     }
 
 
@@ -876,6 +874,14 @@ public class WordVectorSerializer {
                 Nd4j.getMemoryManager().togglePeriodicGc(true);
 
             Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
+
+            for(File f : new File[]{tmpFileSyn0, tmpFileSyn1, tmpFileC, tmpFileH, tmpFileF}){
+                try{
+                    f.delete();
+                } catch (Exception e){
+                    //Ignore, is temp file
+                }
+            }
         }
     }
 
@@ -886,8 +892,12 @@ public class WordVectorSerializer {
      */
     public static ParagraphVectors readParagraphVectors(InputStream stream) throws IOException {
         File tmpFile = File.createTempFile("restore", "paravec");
-        FileUtils.copyInputStreamToFile(stream, tmpFile);
-        return readParagraphVectors(tmpFile);
+        try {
+            FileUtils.copyInputStreamToFile(stream, tmpFile);
+            return readParagraphVectors(tmpFile);
+        } finally {
+            tmpFile.delete();
+        }
     }
 
     /**
@@ -2213,6 +2223,8 @@ public class WordVectorSerializer {
         Nd4j.getMemoryManager().setOccasionalGcFrequency(50000);
 
         // try to load zip format
+        File tmpFileSyn0 = null;
+        File tmpFileConfig = null;
         try {
             if (extendedModel) {
                 log.debug("Trying full model restoration...");
@@ -2227,9 +2239,9 @@ public class WordVectorSerializer {
             } else {
                 log.debug("Trying simplified model restoration...");
 
-                File tmpFileSyn0 = File.createTempFile("word2vec", "syn");
+                tmpFileSyn0 = File.createTempFile("word2vec", "syn");
                 tmpFileSyn0.deleteOnExit();
-                File tmpFileConfig = File.createTempFile("word2vec", "config");
+                tmpFileConfig = File.createTempFile("word2vec", "config");
                 tmpFileConfig.deleteOnExit();
                 // we don't need full model, so we go directly to syn0 file
 
@@ -2365,6 +2377,16 @@ public class WordVectorSerializer {
                     }
                 }
             }
+        } finally {
+            try {
+                if (tmpFileSyn0 != null) {
+                    tmpFileSyn0.delete();
+                }
+
+                if (tmpFileConfig != null) {
+                    tmpFileConfig.delete();
+                }
+            } catch (Exception e){ }    //Ignore
         }
 
         Word2Vec.Builder builder = new Word2Vec.Builder(configuration).lookupTable(lookupTable).useAdaGrad(false)
