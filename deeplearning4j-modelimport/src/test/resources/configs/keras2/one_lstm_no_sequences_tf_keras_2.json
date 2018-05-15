@@ -1,0 +1,60 @@
+{
+  "class_name" : "Sequential",
+  "keras_version": "2.1.4",
+  "config" : [
+    {
+      "class_name" : "LSTM",
+      "config" : {
+        "unroll" : false,
+        "recurrent_dropout" : 0,
+        "recurrent_activation" : "hard_sigmoid",
+        "trainable" : true,
+        "recurrent_initializer" : {
+          "config" : {
+            "seed" : null,
+            "gain" : 1
+          },
+          "class_name" : "Orthogonal"
+        },
+        "implementation" : 1,
+        "bias_constraint" : null,
+        "stateful" : false,
+        "kernel_regularizer" : null,
+        "dtype" : "float32",
+        "bias_regularizer" : null,
+        "recurrent_constraint" : null,
+        "name" : "lstm_2",
+        "bias_initializer" : {
+          "config" : {},
+          "class_name" : "Zeros"
+        },
+        "activity_regularizer" : null,
+        "go_backwards" : false,
+        "dropout" : 0,
+        "use_bias" : true,
+        "activation" : "tanh",
+        "kernel_constraint" : null,
+        "units" : 64,
+        "return_sequences" : false,
+        "kernel_initializer" : {
+          "class_name" : "VarianceScaling",
+          "config" : {
+            "mode" : "fan_avg",
+            "distribution" : "uniform",
+            "scale" : 1,
+            "seed" : null
+          }
+        },
+        "unit_forget_bias" : true,
+        "batch_input_shape" : [
+          null,
+          1500,
+          500
+        ],
+        "return_state" : false,
+        "recurrent_regularizer" : null
+      }
+    }
+  ],
+  "backend" : "tensorflow"
+}
