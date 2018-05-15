@@ -3,6 +3,7 @@ package org.deeplearning4j.arbiter.optimize.runner;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import lombok.Setter;
 import org.deeplearning4j.arbiter.optimize.api.*;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
@@ -11,10 +12,7 @@ import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -31,6 +29,8 @@ public class LocalOptimizationRunner extends BaseOptimizationRunner {
 
     private TaskCreator taskCreator;
     private ListeningExecutorService executor;
+    @Setter
+    private long shutdownMaxWaitMS = 2L * 24 * 60 * 60 * 1000;
 
     public LocalOptimizationRunner(OptimizationConfiguration config){
         this(config, null);
@@ -102,7 +102,16 @@ public class LocalOptimizationRunner extends BaseOptimizationRunner {
     }
 
     @Override
-    protected void shutdown() {
-        executor.shutdownNow();
+    public void shutdown(boolean awaitTermination) {
+        if(awaitTermination){
+            try {
+                executor.shutdown();
+                executor.awaitTermination(shutdownMaxWaitMS, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e){
+                throw new RuntimeException(e);
+            }
+        } else {
+            executor.shutdownNow();
+        }
     }
 }
