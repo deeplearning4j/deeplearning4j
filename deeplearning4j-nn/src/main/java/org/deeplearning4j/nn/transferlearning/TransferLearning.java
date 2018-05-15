@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.deeplearning4j.nn.graph.vertex.impl.FrozenVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -826,6 +827,11 @@ public class TransferLearning {
                                     break;
                                 }
                             }
+                        } else {
+                            GraphVertex currVertexConf = newConfig.getVertices().get(gv.getVertexName());
+                            GraphVertex newVertexConf = new org.deeplearning4j.nn.conf.graph.FrozenVertex(currVertexConf);
+                            newConfig.getVertices().put(gv.getVertexName(), newVertexConf);
+                            vertices[topologicalOrder[i]] = new FrozenVertex(gv);
                         }
 
                         //Also: mark any inputs as to be frozen also

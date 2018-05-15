@@ -50,7 +50,7 @@ public class BaseWrapperVertex implements GraphVertex {
 
     @Override
     public VertexIndices[] getOutputVertices() {
-        underlying.getOutputVertices();
+        return underlying.getOutputVertices();
     }
 
     @Override
@@ -140,7 +140,7 @@ public class BaseWrapperVertex implements GraphVertex {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState, int minibatchSize) {
-        underlying.feedForwardMaskArrays(maskArrays, currentMaskState, minibatchSize);
+        return underlying.feedForwardMaskArrays(maskArrays, currentMaskState, minibatchSize);
     }
 
     @Override
