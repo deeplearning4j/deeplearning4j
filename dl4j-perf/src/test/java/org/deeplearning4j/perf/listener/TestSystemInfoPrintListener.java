@@ -47,8 +47,7 @@ public class TestSystemInfoPrintListener {
 
         net.fit(iter, 3);
 
-        System.out.println(FileUtils.readFileToString(tmpFile));
-
+//        System.out.println(FileUtils.readFileToString(tmpFile));
     }
 
 }
