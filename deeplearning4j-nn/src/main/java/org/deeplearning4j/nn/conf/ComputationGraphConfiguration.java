@@ -741,6 +741,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *                    on a combination of the two.
          * @see #addLayer(String, Layer, InputPreProcessor, String...)
          */
+        public GraphBuilder layer(int layerName, Layer layer, String... layerInputs) {
+            return addLayer(String.valueOf(layerName), layer, null, layerInputs);
+        }
+
+        /**
+         * Add a layer, with no {@link InputPreProcessor}, with the specified name and specified inputs.
+         *
+         * @param layerName   Name/label of the layer to add
+         * @param layer       The layer configuration
+         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         *                    on a combination of the two.
+         * @see #addLayer(String, Layer, InputPreProcessor, String...)
+         */
         public GraphBuilder layer(String layerName, Layer layer, String... layerInputs) {
             return addLayer(layerName, layer, null, layerInputs);
         }

@@ -8,15 +8,15 @@ import org.deeplearning4j.nn.api.Model;
  */
 public interface InstantiableModel {
 
-    public void setInputShape(int[][] inputShape);
+    void setInputShape(int[][] inputShape);
 
-    public Model init();
+    <M extends Model> M init();
 
-    @Deprecated public ModelMetaData metaData();
+    @Deprecated ModelMetaData metaData();
 
-    public Class<? extends Model> modelType();
+    Class<? extends Model> modelType();
 
-    public String pretrainedUrl(PretrainedType pretrainedType);
+    String pretrainedUrl(PretrainedType pretrainedType);
 
-    public long pretrainedChecksum(PretrainedType pretrainedType);
+    long pretrainedChecksum(PretrainedType pretrainedType);
 }
