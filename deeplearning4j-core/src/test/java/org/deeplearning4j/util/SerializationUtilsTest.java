@@ -47,18 +47,13 @@ public class SerializationUtilsTest extends BaseDL4JTest {
 
         DataSet freshDataSet = iter.next(150);
 
-        org.nd4j.linalg.util.SerializationUtils.saveObject(freshDataSet, testDir.newFile(irisData));
+        File f = testDir.newFile(irisData);
+        org.nd4j.linalg.util.SerializationUtils.saveObject(freshDataSet, f);
 
-        DataSet readDataSet = org.nd4j.linalg.util.SerializationUtils.readObject(new File(irisData));
+        DataSet readDataSet = org.nd4j.linalg.util.SerializationUtils.readObject(f);
 
         assertEquals(freshDataSet.getFeatureMatrix(), readDataSet.getFeatureMatrix());
         assertEquals(freshDataSet.getLabels(), readDataSet.getLabels());
-        try {
-            FileUtils.forceDelete(new File(irisData));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
     }
 
 }
