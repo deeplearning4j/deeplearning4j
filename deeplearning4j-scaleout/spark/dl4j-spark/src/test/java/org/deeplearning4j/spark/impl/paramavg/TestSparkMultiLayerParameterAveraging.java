@@ -83,6 +83,13 @@ import static org.junit.Assert.*;
  */
 public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
+    public static class TestFn implements Function<LabeledPoint, LabeledPoint>{
+        @Override
+        public LabeledPoint call(LabeledPoint v1) throws Exception {
+            return new LabeledPoint(v1.label(), Vectors.dense(v1.features().toArray()));
+        }
+    }
+
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
@@ -92,12 +99,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .loadLibSVMFile(sc.sc(),
                                         new ClassPathResource("svmLight/iris_svmLight_0.txt").getTempFileFromArchive()
                                                         .getAbsolutePath())
-                        .toJavaRDD().map(new Function<LabeledPoint, LabeledPoint>() {
-                            @Override
-                            public LabeledPoint call(LabeledPoint v1) throws Exception {
-                                return new LabeledPoint(v1.label(), Vectors.dense(v1.features().toArray()));
-                            }
-                        });
+                        .toJavaRDD().map(new TestFn());
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         DataSet d = new IrisDataSetIterator(150, 150).next();
@@ -135,12 +137,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .loadLibSVMFile(sc.sc(),
                                         new ClassPathResource("svmLight/iris_svmLight_0.txt").getTempFileFromArchive()
                                                         .getAbsolutePath())
-                        .toJavaRDD().map(new Function<LabeledPoint, LabeledPoint>() {
-                            @Override
-                            public LabeledPoint call(LabeledPoint v1) throws Exception {
-                                return new LabeledPoint(v1.label(), Vectors.dense(v1.features().toArray()));
-                            }
-                        });
+                        .toJavaRDD().map(new TestFn());
 
         DataSet d = new IrisDataSetIterator(150, 150).next();
         MultiLayerConfiguration conf =
