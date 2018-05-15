@@ -57,6 +57,7 @@ extern "C" {
 #define MS_SYNC         2
 #define MS_INVALIDATE   4
 
+void _mmap(Nd4jIndex* result, size_t length, const char *fileName);
 void*   mmap(void *addr, size_t len, int prot, int flags, int fildes, OffsetType off);
 int     munmap(void *addr, size_t len);
 int     _mprotect(void *addr, size_t len, int prot);
@@ -114,7 +115,76 @@ static DWORD __map_mmap_prot_file(const int prot)
     return desiredAccess;
 }
 
-void* mmap(void *addr, size_t len, int prot, int flags, int fildes, OffsetType off)
+void _mmap(Nd4jIndex* result, size_t length, const char *fileName) {
+    HANDLE fm, h;
+
+    void * map = MAP_FAILED;
+    OffsetType off  = 0;
+    int prot = PROT_READ | PROT_WRITE;
+
+    // we need to convert long path (probably) to short pat (actually)
+    // it's Windows API, in the middle of 2018!
+    auto sz = GetShortPathName(fileName, nullptr, 0);
+
+    auto shortName = new TCHAR[sz];
+    GetShortPathName(fileName, shortName, sz);
+
+    delete[] shortName;
+
+#ifdef _MSC_VER
+    #pragma warning(push)
+    #pragma warning(disable: 4293)
+#endif
+
+    const DWORD dwFileOffsetLow = (sizeof(OffsetType) <= sizeof(DWORD)) ?
+                                  (DWORD)off : (DWORD)(off & 0xFFFFFFFFL);
+    const DWORD dwFileOffsetHigh = (sizeof(OffsetType) <= sizeof(DWORD)) ?
+                                   (DWORD)0 : (DWORD)((off >> 32) & 0xFFFFFFFFL);
+    const DWORD protect = __map_mmap_prot_page(prot);
+    const DWORD desiredAccess = __map_mmap_prot_file(prot);
+
+    const OffsetType maxSize = off + (OffsetType) length;
+
+    const DWORD dwMaxSizeLow = (sizeof(OffsetType) <= sizeof(DWORD)) ?
+                               (DWORD)maxSize : (DWORD)(maxSize & 0xFFFFFFFFL);
+    const DWORD dwMaxSizeHigh = (sizeof(OffsetType) <= sizeof(DWORD)) ?
+                                (DWORD)0 : (DWORD)((maxSize >> 32) & 0xFFFFFFFFL);
+
+#ifdef _MSC_VER
+    #pragma warning(pop)
+#endif
+
+    h = CreateFile(shortName, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+    if (h == INVALID_HANDLE_VALUE) {
+        errno = __map_mman_error(GetLastError(), EPERM);
+        nd4j_printf("Error code: %i\n", (int) errno);
+        throw std::runtime_error("CreateFile failed");
+    }
+
+    fm = CreateFileMapping(h, NULL, protect, dwMaxSizeHigh, dwMaxSizeLow, NULL);
+
+    if (fm == NULL)
+    {
+        errno = __map_mman_error(GetLastError(), EPERM);
+        throw std::runtime_error("CreateFileMapping failed");
+    }
+
+    map = MapViewOfFile(fm, desiredAccess, dwFileOffsetHigh, dwFileOffsetLow, length);
+
+    CloseHandle(fm);
+
+    if (map == NULL)
+    {
+        errno = __map_mman_error(GetLastError(), EPERM);
+        throw std::runtime_error("MapViewOfFile failed");
+    }
+
+    result[0] = reinterpret_cast<Nd4jIndex>(map);
+    result[1] = reinterpret_cast<Nd4jIndex>(h);
+}
+
+void* mmap(void *addr, size_t len, int prot, int flags, int files, OffsetType off)
 {
     HANDLE fm, h;
 
@@ -156,7 +226,8 @@ void* mmap(void *addr, size_t len, int prot, int flags, int fildes, OffsetType o
     }
 
     h = ((flags & MAP_ANONYMOUS) == 0) ?
-        (HANDLE)_get_osfhandle(fildes) : INVALID_HANDLE_VALUE;
+        (HANDLE)_get_osfhandle(files) : INVALID_HANDLE_VALUE;
+
 
     if ((flags & MAP_ANONYMOUS) == 0 && h == INVALID_HANDLE_VALUE)
     {
@@ -209,6 +280,7 @@ int _mprotect(void *addr, size_t len, int prot)
 }
 
 int msync(void *addr, size_t len, int flags)
+
 {
     if (FlushViewOfFile(addr, len))
         return 0;

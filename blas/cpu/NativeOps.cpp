@@ -17,17 +17,24 @@
 #include <helpers/logger.h>
 #include <pointercast.h>
 #include <pairwise_util.h>
+
+
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
 #ifndef _WIN32
+#include <unistd.h>
 #include <sys/mman.h>
 #else
+#include <io.h>
 #include <helpers/mman.h>
 #endif
 #include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
+
 
 #include <layers/layers_factory.h>
 #include <ops/declarable/CustomOperations.h>
+#include <errno.h>
 
 
 char *name;
@@ -3063,16 +3070,30 @@ void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex
 
 
 Nd4jIndex* NativeOps::mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jIndex length) {
-Nd4jIndex * result = new Nd4jIndex[2];
+auto result = new Nd4jIndex[2];
+errno = 0;
+
+#if defined(_WIN32) || defined(_WIN64)
+    _mmap(result, static_cast<size_t>(length), fileName);
+#else
 int fd = open(fileName, O_RDWR, 0);
+// checking for failed fopen
+if (fd < 0) {
+    nd4j_printf("Errno: %i\n", errno);
+    throw std::runtime_error("Failed to open file for MMAP");
+}
+
 void * ptr = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
 // check for failed allocation
 if (ptr == MAP_FAILED)
-return nullptr;
+    return nullptr;
 
 result[0] = (Nd4jIndex) ptr;
 result[1] = fd;
+
+#endif
+
 
 return result;
 
@@ -3081,7 +3102,12 @@ return result;
 
 void NativeOps::munmapFile(Nd4jPointer *extraPointers, Nd4jIndex *ptrMap, Nd4jIndex length) {
 munmap((Nd4jPointer) ptrMap[0], length);
-close((int) ptrMap[1]);
+
+#if defined(_WIN32) || defined(_WIN64)
+    CloseHandle(reinterpret_cast<HANDLE>(ptrMap[1]));
+#else
+    close((int) ptrMap[1]);
+#endif
 
 delete[] ptrMap;
 }
