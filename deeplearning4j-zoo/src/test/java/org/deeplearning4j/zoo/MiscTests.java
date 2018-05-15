@@ -40,6 +40,9 @@ public class MiscTests extends BaseDL4JTest {
 //        System.out.println(transferModel.summary());
 //        System.out.println("Fitting");
         transferModel.fit(ds);
+
+        ComputationGraph g2 = TestUtils.testModelSerialization(transferModel);
+        g2.fit(ds);
     }
 
 }

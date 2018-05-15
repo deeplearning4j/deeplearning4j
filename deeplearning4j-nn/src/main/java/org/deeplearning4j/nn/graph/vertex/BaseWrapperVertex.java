@@ -3,14 +3,18 @@ package org.deeplearning4j.nn.graph.vertex;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.vertex.GraphVertex;
-import org.deeplearning4j.nn.graph.vertex.VertexIndices;
-import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
-public class BaseWrapperVertex implements GraphVertex {
+/**
+ * A base class for wrapper vertices: i.e., those vertices that have another vertex inside.
+ * Use this as the basis of such wrapper vertices, which can selectively override only
+ * the vertices that are required.
+ *
+ * @author Alex Black
+ */
+public abstract class BaseWrapperVertex implements GraphVertex {
 
     protected GraphVertex underlying;
 
