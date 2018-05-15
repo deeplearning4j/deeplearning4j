@@ -67,7 +67,7 @@ public class WeightInitUtil {
         switch (initScheme) {
             case DISTRIBUTION:
                 if (dist instanceof OrthogonalDistribution) {
-                    dist.sample(paramView.reshape(shape));
+                    dist.sample(paramView.reshape(order, shape));
                 } else {
                     dist.sample(paramView);
                 }

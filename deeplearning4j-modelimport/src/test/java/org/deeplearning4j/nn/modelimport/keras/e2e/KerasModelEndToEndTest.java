@@ -589,7 +589,7 @@ public class KerasModelEndToEndTest {
 
         // skip too small absolute inputs
         if (Math.abs(aAbsMax) > threshold && Math.abs(bAbsMax) > threshold) {
-            assert (a.equalsWithEps(b, eps));
+            assertTrue(a.equalsWithEps(b, eps));
         }
 
     }
