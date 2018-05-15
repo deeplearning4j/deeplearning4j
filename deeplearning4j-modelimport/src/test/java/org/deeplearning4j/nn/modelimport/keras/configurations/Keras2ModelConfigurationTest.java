@@ -26,7 +26,13 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+
+import java.util.Arrays;
+
+import static junit.framework.TestCase.assertTrue;
 
 
 /**
@@ -188,6 +194,20 @@ public class Keras2ModelConfigurationTest {
     @Test
     public void conv1dDilationTest() throws Exception {
         runModelConfigTest("/configs/keras2/conv1d_dilation_tf_keras_2_config.json");
+    }
+
+    @Test
+    public void oneLstmLayerTest() throws Exception {
+        ClassPathResource configResource = new ClassPathResource(
+                "/configs/keras2/one_lstm_no_sequences_tf_keras_2.json", classLoader);
+        MultiLayerConfiguration config =
+                new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
+                        .enforceTrainingConfig(false).buildSequential().getMultiLayerConfiguration();
+        MultiLayerNetwork model = new MultiLayerNetwork(config);
+        model.init();
+        INDArray input = Nd4j.create(50, 500, 1500);
+        INDArray out = model.output(input);
+        assertTrue(Arrays.equals(out.shape(), new int[]{50, 64}));
     }
 
 
