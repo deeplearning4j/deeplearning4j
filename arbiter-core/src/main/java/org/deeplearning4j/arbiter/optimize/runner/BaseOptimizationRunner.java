@@ -149,6 +149,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
                     //Failed on generation...
                     status = processFailedCandidates(candidate);
                 } else {
+                    long created = System.currentTimeMillis();
                     ListenableFuture<OptimizationResult> f =
                             execute(candidate, config.getDataProvider(), config.getScoreFunction());
                     f.addListener(new OnCompletionListener(f), futureListenerExecutor);
@@ -156,7 +157,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
                     totalCandidateCount.getAndIncrement();
 
                     status = new CandidateInfo(candidate.getIndex(), CandidateStatus.Created, null,
-                            System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
+                            created, null, null, candidate.getFlatParameters(), null);
                     currentStatus.put(candidate.getIndex(), status);
                 }
 
