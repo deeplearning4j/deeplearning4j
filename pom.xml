@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.deeplearning4j</groupId>
   <artifactId>scalnet_2.11</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0-beta</version>
 
   <name>ScalNet</name>
   <description>A Scala wrapper for Deeplearning4j, inspired by Keras. Scala + DL + Spark + GPUs</description>
@@ -54,8 +54,8 @@
     <scala.binary.version>2.11</scala.binary.version>
     <scala.version>2.11.12</scala.version>
 
-    <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
-    <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
+    <nd4j.version>1.0.0-beta</nd4j.version>
+    <dl4j.version>1.0.0-beta</dl4j.version>
     <logback.version>1.2.3</logback.version>
     <scalatest.version>3.0.5</scalatest.version>
     <scalafmt.version>1.3.0</scalafmt.version>
