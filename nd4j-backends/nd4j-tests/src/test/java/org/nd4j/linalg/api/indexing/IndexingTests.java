@@ -53,8 +53,7 @@ public class IndexingTests extends BaseNd4jTest {
 
         INDArray assertion = Nd4j.create(new double[]{1,2});
         INDArray getTest = x.get(indexes);
-        assertEquals(assertion,getTest);
-
+        assertEquals(assertion, getTest);
     }
 
 

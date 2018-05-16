@@ -656,6 +656,9 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray concat(int dimension, INDArray... toConcat) {
+        if (toConcat == null || toConcat.length == 0)
+            throw new ND4JIllegalStateException("Can't concatenate 0 arrays");
+
         if (toConcat.length == 1)
             return toConcat[0];
 

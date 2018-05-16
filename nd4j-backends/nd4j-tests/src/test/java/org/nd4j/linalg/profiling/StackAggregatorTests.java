@@ -3,6 +3,7 @@ package org.nd4j.linalg.profiling;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -99,6 +100,7 @@ public class StackAggregatorTests {
     }
 
     @Test
+    @Ignore
     public void testScalarAggregator() {
         INDArray x = Nd4j.create(10);
 

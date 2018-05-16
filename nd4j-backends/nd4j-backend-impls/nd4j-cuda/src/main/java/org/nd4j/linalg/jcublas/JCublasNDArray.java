@@ -37,6 +37,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.memory.MemcpyDirection;
+import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.List;
@@ -496,6 +497,7 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray unsafeDuplication(boolean blocking) {
+        WorkspaceUtils.assertValidArray(this, "Cannot duplicate array");
         DataBuffer rb = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createSame(this.data, false) : Nd4j.getDataBufferFactory().createSame(this.data, false, Nd4j.getMemoryManager().getCurrentWorkspace());
 
         INDArray ret = Nd4j.createArrayFromShapeBuffer(rb, this.shapeInfoDataBuffer());
@@ -575,6 +577,8 @@ public class JCublasNDArray extends BaseNDArray {
 //            log.info("Skipping non-existent");
             return this;
         }
+
+        WorkspaceUtils.assertValidArray(this, "Cannot leverage INDArray to new workspace");
 
         MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
 
@@ -662,6 +666,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     @Override
     public INDArray migrate() {
+        WorkspaceUtils.assertValidArray(this, "Cannot leverage INDArray to new workspace");
         MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
 
         if (current == null)

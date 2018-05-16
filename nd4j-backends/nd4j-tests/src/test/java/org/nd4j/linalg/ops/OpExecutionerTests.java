@@ -668,7 +668,8 @@ public class OpExecutionerTests extends BaseNd4jTest {
         double stdev = arr.stdNumber(true).doubleValue();
 
 
-        double exp = 0.370035856962204;
+        val standardDeviation = new org.apache.commons.math3.stat.descriptive.moment.StandardDeviation(true);
+        double exp = standardDeviation.evaluate(arr.toDoubleVector());
         assertEquals(exp, stdev, 1e-7f);
 
 
@@ -685,7 +686,8 @@ public class OpExecutionerTests extends BaseNd4jTest {
         double var2 = var1.getDouble(0);
         assertEquals(var, var2, 1e-3);
 
-        double exp = 0.136926531791687;
+        val variance = new org.apache.commons.math3.stat.descriptive.moment.Variance(true);
+        double exp = variance.evaluate(arr.toDoubleVector());
         assertEquals(exp, var, 1e-7f);
     }
 

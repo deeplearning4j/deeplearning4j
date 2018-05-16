@@ -903,7 +903,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         }
 
         INDArray fourD = Nd4j.create(1, 2, 1, 1);
-        INDArray broadCasted3 = fourD.broadcast(1, 1, 36, 36);
+        INDArray broadCasted3 = fourD.broadcast(1, 2, 36, 36);
         assertTrue(Arrays.equals(new int[] {1, 2, 36, 36}, broadCasted3.shape()));
     }
 
