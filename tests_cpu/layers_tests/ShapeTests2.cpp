@@ -345,13 +345,13 @@ public:
     int dimension[3] = {0,2,3};
 };
 
-TEST_F(RowVectorOnesTest,TadShape) {
-    shape::TAD *tad = new shape::TAD(shapeBuffer,dimension,dimensionLength);
-    tad->createTadOnlyShapeInfo();
-    tad ->createOffsets();
-    ASSERT_TRUE(arrsEquals(10,assertionBuffer,tad->tadOnlyShapeInfo));
-    delete tad;
-}
+// TEST_F(RowVectorOnesTest,TadShape) {
+//     shape::TAD *tad = new shape::TAD(shapeBuffer,dimension,dimensionLength);
+//     tad->createTadOnlyShapeInfo();
+//     tad ->createOffsets();
+//     ASSERT_TRUE(arrsEquals(10,assertionBuffer,tad->tadOnlyShapeInfo));
+//     delete tad;
+// }
 
 
 

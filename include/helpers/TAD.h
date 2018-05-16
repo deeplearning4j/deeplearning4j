@@ -335,12 +335,15 @@ namespace shape {
 
         int ews = shape::elementWiseStride(shapeInfo);
 
-        if(!shape::isVector(shapeInfo))
-            wholeThing = this->numTads == 1 || ((this->dimensionLength == this->rank || this->numTads == shape::length(shapeInfo)) && ews == 1);                        
-        else if(shape::isScalar(shapeInfo))
+        if(!shape::isVector(shapeInfo)) {
+            wholeThing = this->numTads == 1 // if number of TADs is 1, we just have input shape == TAD shape
+                         || ((this->dimensionLength == this->rank // if number of dimensions is the same as input rank, that'll be wholeTad too, but only if EWS==1 (aka - not a View)
+                         || (this->numTads == shape::length(shapeInfo) && shape::order(shapeInfo) == 'c')) // OR  number of tads equals to shapeInfo length AND input is in C order. if order is F - we'll have to calculate offsets
+                         && ews == 1); // as mentioned above - last 2 rules apply only to non-views
+        } else if(shape::isScalar(shapeInfo)) {
             wholeThing = true;
             //vector case
-        else {
+        } else {
             // if(dimensionLength == 1 && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
             if(dimension == 0 && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
                 wholeThing = true;
@@ -711,7 +714,7 @@ namespace shape {
 
     INLINEDEF void TAD::createOffsets() {
         this->tadOffsets = new Nd4jIndex[this->numTads];
-#pragma omp parallel for schedule(guided) proc_bind(close) default(shared)
+#pragma omp parallel for if (this->numTads > 128) schedule(guided) proc_bind(close) default(shared)
         for(int i = 0; i < this->numTads; i++) {
             this->tadOffsets[i] = this->tadOffset(i);
 
@@ -779,7 +782,8 @@ namespace shape {
         int tensorLength = shape::prod(tensorShape,tadRank);
 
         int compLength = shape::isVector(ret2) ? shape::length(ret2) : shape::prod(tensorShape,tadRank);
-        // const bool isLikeVector = shape::isLikeVector(ret2);
+        // int temp;
+        // const bool isLikeVector = shape::isLikeVector(ret2, temp);
 
         // if(dimensionLength == tadRank && compLength == shape::length(ret2) && !isLikeVector) {
         if(dimensionLength == tadRank && compLength == shape::length(ret2)) {
