@@ -23,7 +23,7 @@
 
     <packaging>pom</packaging>
 
-    <version>1.0.0-beta</version>
+    <version>1.0.0-SNAPSHOT</version>
     <modules>
         <module>datavec-api</module>
         <module>datavec-data</module>
@@ -65,7 +65,7 @@
         <play.version>2.4.6</play.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.version>1.7.12</slf4j.version>
-        <nd4j.version>1.0.0-beta</nd4j.version>
+        <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
         <junit.version>4.12</junit.version>
         <jackson.version>2.8.7</jackson.version>    <!-- To match spark and geoip2 -->
         <commons-compress.version>1.16.1</commons-compress.version>
