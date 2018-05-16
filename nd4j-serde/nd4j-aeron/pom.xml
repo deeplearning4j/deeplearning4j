@@ -31,6 +31,9 @@
         <maven.compiler.release>8</maven.compiler.release>
       </properties>
     </profile>
+    <profile>
+      <id>testresources</id>
+    </profile>
   </profiles>
 
 

@@ -57,4 +57,10 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
 </project>

@@ -18,4 +18,10 @@
         <module>nd4j-api-parent</module>
     </modules>
 
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
+
 </project>

@@ -26,6 +26,11 @@
             <artifactId>commons-net</artifactId>
             <version>3.1</version>
         </dependency>
-
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
 </project>

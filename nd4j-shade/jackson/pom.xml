@@ -11,6 +11,11 @@
 
     <artifactId>jackson</artifactId>
 
+
+    <properties>
+        <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
+    </properties>
+
     <profiles>
       <profile>
         <id>custom-lifecycle</id>

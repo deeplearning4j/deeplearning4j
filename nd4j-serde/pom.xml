@@ -20,4 +20,9 @@
         <module>nd4j-arrow</module>
     </modules>
 
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
 </project>

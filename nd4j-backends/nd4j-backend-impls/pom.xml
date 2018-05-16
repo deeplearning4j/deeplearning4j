@@ -317,6 +317,10 @@
             <javacpp.platform.compiler>bin/arm-linux-gnueabihf-g++</javacpp.platform.compiler>
           </properties>
         </profile>
+
+        <profile>
+            <id>testresources</id>
+        </profile>
     </profiles>
 
     <reporting>

@@ -104,6 +104,9 @@
                 <os.arch>x86_64</os.arch>
             </properties>
         </profile>
+        <profile>
+            <id>testresources</id>
+        </profile>
     </profiles>
 
 

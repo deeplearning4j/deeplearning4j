@@ -16,4 +16,9 @@
         <module>nd4j-api</module>
     </modules>
 
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
 </project>

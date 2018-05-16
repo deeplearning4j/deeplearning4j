@@ -338,6 +338,10 @@
       </dependency>
     </dependencies>
   </profile>
+
+    <profile>
+      <id>testresources</id>
+    </profile>
 </profiles>
 
 

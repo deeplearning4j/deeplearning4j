@@ -15,4 +15,7 @@
         <module>jackson</module>
     </modules>
 
+    <properties>
+        <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
+    </properties>
 </project>
