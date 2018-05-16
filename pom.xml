@@ -164,6 +164,43 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+                    <!--<execution>-->
+                        <!--<id>libnd4j.cpu.test.clean</id>-->
+                        <!--<phase>clean</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>exec</goal>-->
+                        <!--</goals>-->
+                        <!--<configuration>-->
+                            <!--<executable>make</executable>-->
+                            <!--<workingDirectory>${project.basedir}/tests_cpu</workingDirectory>-->
+                            <!--<arguments>-->
+                                <!--<argument>clean</argument>-->
+                            <!--</arguments>-->
+                        <!--</configuration>-->
+                    <!--</execution>-->
+                    <execution>
+                        <id>libnd4j.cpu.test.run</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${maven.test.skip}</skip>
+                            <executable>bash</executable>
+                            <workingDirectory>${project.basedir}/tests_cpu</workingDirectory>
+                            <arguments>
+                                <argument>run_tests.sh</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
