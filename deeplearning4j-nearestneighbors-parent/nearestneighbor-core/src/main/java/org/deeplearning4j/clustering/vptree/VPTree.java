@@ -120,11 +120,10 @@ public class VPTree implements Serializable {
         // build list of INDArrays first
         for (int i = 0; i < items.size(); i++)
             list[i] = items.get(i).getPoint();
-            //itemsList.add(items.get(i).getPoint());
             //this.items.putRow(i, items.get(i).getPoint());
 
         // just stack them out with concat :)
-        this.items = Nd4j.concat(0, list);
+        this.items = Nd4j.pile(list);
 
         this.invert = invert;
         this.similarityFunction = similarityFunction;

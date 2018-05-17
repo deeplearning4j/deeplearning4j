@@ -1,5 +1,6 @@
 package org.deeplearning4j.clustering.vptree;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
@@ -17,6 +18,7 @@ import static org.junit.Assert.assertTrue;
  * VPTree java serialization tests
  * @author raver119@gmail.com
  */
+@Slf4j
 public class VPTreeSerializationTests {
 
     @Test
@@ -60,5 +62,25 @@ public class VPTreeSerializationTests {
                 }
             }
         }
+    }
+
+
+    @Test
+    public void testNewConstructor_1() {
+        val points = Nd4j.rand(new int[] {10, 15});
+        val treeA = new VPTree(points, true, 2);
+
+        val rows = Nd4j.tear(points, 1);
+
+        val list = new ArrayList<DataPoint>();
+
+        int idx = 0;
+        for (val r: rows)
+            list.add(new DataPoint(idx++, r));
+
+        val treeB = new VPTree(list);
+
+        assertEquals(points, treeA.getItems());
+        assertEquals(points, treeB.getItems());
     }
 }
