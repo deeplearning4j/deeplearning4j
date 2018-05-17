@@ -38,6 +38,9 @@ public class KerasBatchNormalization extends KerasLayer {
     private final String LAYER_FIELD_AXIS = "axis";
     private final String LAYER_FIELD_MOMENTUM = "momentum";
     private final String LAYER_FIELD_EPSILON = "epsilon";
+    private final String LAYER_FIELD_SCALE = "scale";
+    private final String LAYER_FIELD_CENTER = "center";
+
 
     /* Keras layer parameter names. */
     private final int NUM_TRAINABLE_PARAMS = 4;
@@ -48,6 +51,8 @@ public class KerasBatchNormalization extends KerasLayer {
 
 
     private boolean scale = true;
+    private boolean center = true;
+
 
     /**
      * Pass-through constructor from KerasLayer
@@ -84,6 +89,7 @@ public class KerasBatchNormalization extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
 
         this.scale = getScaleParameter(layerConfig);
+        this.center = getCenterParameter(layerConfig);
 
         // TODO: these helper functions should return regularizers that we use in constructor
         getGammaRegularizerFromConfig(layerConfig, enforceTrainingConfig);
@@ -99,14 +105,18 @@ public class KerasBatchNormalization extends KerasLayer {
                     "DL4J currently picks batch norm dimensions for you, according to industry" +
                     "standard conventions. If your results do not match, please file an issue.");
 
-        //TODO: momentum not used
         LayerConstraint betaConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_BATCHNORMALIZATION_BETA_CONSTRAINT(), conf, kerasMajorVersion);
         LayerConstraint gammaConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_BATCHNORMALIZATION_GAMMA_CONSTRAINT(), conf, kerasMajorVersion);
 
-        BatchNormalization.Builder builder = new BatchNormalization.Builder().name(this.layerName).dropOut(this.dropout).minibatch(true)
-                .lockGammaBeta(false).eps(getEpsFromConfig(layerConfig));
+        BatchNormalization.Builder builder = new BatchNormalization.Builder()
+                .name(this.layerName)
+                .dropOut(this.dropout)
+                .minibatch(true)
+                .lockGammaBeta(false)
+                .decay(getMomentumFromConfig(layerConfig))
+                .eps(getEpsFromConfig(layerConfig));
         if (betaConstraint != null)
             builder.constrainBeta(betaConstraint);
         if (gammaConstraint != null)
@@ -155,11 +165,15 @@ public class KerasBatchNormalization extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         this.weights = new HashMap<>();
-        if (weights.containsKey(PARAM_NAME_BETA))
-            this.weights.put(BatchNormalizationParamInitializer.BETA, weights.get(PARAM_NAME_BETA));
-        else
-            throw new InvalidKerasConfigurationException("Parameter " + PARAM_NAME_BETA + " does not exist in weights");
-
+        if (center) {
+            if (weights.containsKey(PARAM_NAME_BETA))
+                this.weights.put(BatchNormalizationParamInitializer.BETA, weights.get(PARAM_NAME_BETA));
+            else
+                throw new InvalidKerasConfigurationException("Parameter " + PARAM_NAME_BETA + " does not exist in weights");
+        } else {
+            INDArray dummyBeta = Nd4j.zerosLike(weights.get(PARAM_NAME_BETA));
+            this.weights.put(BatchNormalizationParamInitializer.BETA, dummyBeta);
+        }
         if (scale) {
             if (weights.containsKey(PARAM_NAME_GAMMA))
                 this.weights.put(BatchNormalizationParamInitializer.GAMMA, weights.get(PARAM_NAME_GAMMA));
@@ -167,7 +181,7 @@ public class KerasBatchNormalization extends KerasLayer {
                 throw new InvalidKerasConfigurationException(
                         "Parameter " + PARAM_NAME_GAMMA + " does not exist in weights");
         } else {
-            INDArray dummyGamma = Nd4j.onesLike(weights.get(PARAM_NAME_BETA));
+            INDArray dummyGamma = Nd4j.onesLike(weights.get(PARAM_NAME_GAMMA));
             this.weights.put(BatchNormalizationParamInitializer.GAMMA, dummyGamma);
         }
         if (weights.containsKey(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()))
@@ -244,8 +258,18 @@ public class KerasBatchNormalization extends KerasLayer {
     private boolean getScaleParameter(Map<String, Object> layerConfig)
             throws UnsupportedOperationException, InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (innerConfig.containsKey("scale")) {
-            return (boolean) innerConfig.get("scale");
+        if (innerConfig.containsKey(LAYER_FIELD_SCALE)) {
+            return (boolean) innerConfig.get(LAYER_FIELD_SCALE);
+        } else {
+            return true;
+        }
+    }
+
+    private boolean getCenterParameter(Map<String, Object> layerConfig)
+            throws UnsupportedOperationException, InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        if (innerConfig.containsKey(LAYER_FIELD_CENTER)) {
+            return (boolean) innerConfig.get(LAYER_FIELD_CENTER);
         } else {
             return true;
         }
