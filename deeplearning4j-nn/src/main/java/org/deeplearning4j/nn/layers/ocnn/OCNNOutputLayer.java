@@ -100,7 +100,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         assertInputSet(true);
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr), workspaceMgr); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         //150
-       int inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
+        int inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
         INDArray delta = pair.getSecond();
         //4 x 150
         INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{inputShape, delta.length()}, 'f');
@@ -118,6 +118,15 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.BP_WORKING_MEM);
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
+        org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer conf = ( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf().getLayer();
+
+        if(conf.getLastEpochSinceRUpdated()  != epochCount) {
+            INDArray currentR = doOutput(false,workspaceMgr);
+            double percentile = currentR.percentileNumber(100 * 0.04).doubleValue();
+            getParam(R_KEY).putScalar(0,percentile);
+            conf.setLastEpochSinceRUpdated(epochCount);
+        }
+
 
         Gradient gradient = new DefaultGradient();
         INDArray vGradView = gradientViews.get(V_KEY);
@@ -139,7 +148,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
                 .getFirst().muliRowVector(getParam(W_KEY).neg());
         firstVertDerivV = delta.isRowVector() ?
                 firstVertDerivV .muliRowVector(delta)
-                .reshape('f',input.size(0),1,layerConf().getHiddenSize()) :
+                        .reshape('f',input.size(0),1,layerConf().getHiddenSize()) :
                 firstVertDerivV.muli(delta)
                         .reshape('f',input.size(0),1,layerConf().getHiddenSize());
         INDArray secondTermDerivV = input.reshape('f',
@@ -159,6 +168,8 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray derivV = mulResult
                 .mean(0).muli(oneDivNu).addi(getParam(V_KEY));
         gradient.setGradientFor(V_KEY,vGradView.assign(derivV));
+
+
 
         INDArray derivR = Nd4j.scalar(delta.meanNumber()).muli(oneDivNu).addi(-1);
         gradient.setGradientFor(R_KEY,Nd4j.scalar(0.0));
