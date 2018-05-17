@@ -10,6 +10,7 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -20,7 +21,7 @@ import java.util.*;
 @JsonIgnoreProperties({"paramsList", "weightParamsList", "biasParamsList"})
 @NoArgsConstructor
 @Data
-public class SDLayerParams {
+public class SDLayerParams implements Serializable {
 
     private Map<String,int[]> weightParams = new LinkedHashMap<>();
     private Map<String,int[]> biasParams = new LinkedHashMap<>();
