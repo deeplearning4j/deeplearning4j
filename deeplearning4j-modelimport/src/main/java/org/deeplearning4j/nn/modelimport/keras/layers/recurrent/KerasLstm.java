@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
@@ -52,6 +53,7 @@ import java.util.Set;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.mapActivation;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
 /**
@@ -160,6 +162,8 @@ public class KerasLstm extends KerasLayer {
         WeightInit recurrentWeightInit = recurrentInit.getFirst();
         Distribution recurrentDistribution = recurrentInit.getSecond();
 
+        boolean hasBias = getHasBiasFromConfig(layerConfig, conf);
+
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         this.returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
 
@@ -191,7 +195,7 @@ public class KerasLstm extends KerasLayer {
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
                 .weightInitRecurrent(recurrentWeightInit)
-                .biasInit(0.0)
+                .biasInit(0.0) // TODO: this is incorrect
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization);
         if (distribution != null)
@@ -397,40 +401,35 @@ public class KerasLstm extends KerasLayer {
                         "Keras LSTM layer does not contain parameter " + KERAS_PARAM_NAME_B_I);
 
         }
-        INDArray W = Nd4j.zeros(W_c.rows(), W_c.columns() + W_f.columns() + W_o.columns() + W_i.columns());
-        W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, W.rows()), NDArrayIndex.interval(0, W_c.columns())}, W_c);
-        W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, W.rows()),
-                NDArrayIndex.interval(W_c.columns(), W_c.columns() + W_f.columns())}, W_f);
-        W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, W.rows()), NDArrayIndex
-                .interval(W_c.columns() + W_f.columns(), W_c.columns() + W_f.columns() + W_o.columns())}, W_o);
-        W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, W.rows()),
-                        NDArrayIndex.interval(W_c.columns() + W_f.columns() + W_o.columns(),
-                                W_c.columns() + W_f.columns() + W_o.columns() + W_i.columns())},
-                W_i);
+
+        // Need to convert from IFCO to CFOI order
+        int wCols = W_c.columns();
+        int wRows = W_c.rows();
+
+        INDArray W = Nd4j.zeros(wRows, 4 * wCols);
+        W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, wRows), NDArrayIndex.interval(0, wCols)}, W_c);
+        W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, wRows), NDArrayIndex.interval(wCols, 2 * wCols)}, W_f);
+        W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, wRows), NDArrayIndex.interval(2 * wCols, 3 * wCols)}, W_o);
+        W.put(new INDArrayIndex[]{NDArrayIndex.interval(0, wRows), NDArrayIndex.interval(3 * wCols, 4 * wCols)}, W_i);
         this.weights.put(LSTMParamInitializer.INPUT_WEIGHT_KEY, W);
 
-        INDArray U = Nd4j.zeros(U_c.rows(), U_c.columns() + U_f.columns() + U_o.columns() + U_i.columns());
-        U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, U.rows()), NDArrayIndex.interval(0, U_c.columns())}, U_c);
-        U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, U.rows()),
-                NDArrayIndex.interval(U_c.columns(), U_c.columns() + U_f.columns())}, U_f);
-        U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, U.rows()), NDArrayIndex
-                .interval(U_c.columns() + U_f.columns(), U_c.columns() + U_f.columns() + U_o.columns())}, U_o);
-        U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, U.rows()),
-                        NDArrayIndex.interval(U_c.columns() + U_f.columns() + U_o.columns(),
-                                U_c.columns() + U_f.columns() + U_o.columns() + U_i.columns())},
-                U_i);
+        int uCols = U_c.columns();
+        int uRows = U_c.rows();
+        INDArray U = Nd4j.zeros(uRows, 4 * uCols);
+        U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, U.rows()), NDArrayIndex.interval(0, uCols)}, U_c);
+        U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, U.rows()), NDArrayIndex.interval(uCols, 2 * uCols)}, U_f);
+        U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, U.rows()), NDArrayIndex.interval(2 * uCols, 3 * uCols)}, U_o);
+        U.put(new INDArrayIndex[]{NDArrayIndex.interval(0, U.rows()), NDArrayIndex.interval(3 * uCols, 4 * uCols)}, U_i);
         this.weights.put(LSTMParamInitializer.RECURRENT_WEIGHT_KEY, U);
 
-        INDArray b = Nd4j.zeros(b_c.rows(), b_c.columns() + b_f.columns() + b_o.columns() + b_i.columns());
-        b.put(new INDArrayIndex[]{NDArrayIndex.interval(0, b.rows()), NDArrayIndex.interval(0, b_c.columns())}, b_c);
-        b.put(new INDArrayIndex[]{NDArrayIndex.interval(0, b.rows()),
-                NDArrayIndex.interval(b_c.columns(), b_c.columns() + b_f.columns())}, b_f);
-        b.put(new INDArrayIndex[]{NDArrayIndex.interval(0, b.rows()), NDArrayIndex
-                .interval(b_c.columns() + b_f.columns(), b_c.columns() + b_f.columns() + b_o.columns())}, b_o);
-        b.put(new INDArrayIndex[]{NDArrayIndex.interval(0, b.rows()),
-                        NDArrayIndex.interval(b_c.columns() + b_f.columns() + b_o.columns(),
-                                b_c.columns() + b_f.columns() + b_o.columns() + b_i.columns())},
-                b_i);
+
+        int bCols = b_c.columns();
+        int bRows = b_c.rows();
+        INDArray b = Nd4j.zeros(bRows, 4 * bCols);
+        b.put(new INDArrayIndex[]{NDArrayIndex.interval(0, b.rows()), NDArrayIndex.interval(0, bCols)}, b_c);
+        b.put(new INDArrayIndex[]{NDArrayIndex.interval(0, b.rows()), NDArrayIndex.interval(bCols, 2 * bCols)}, b_f);
+        b.put(new INDArrayIndex[]{NDArrayIndex.interval(0, b.rows()), NDArrayIndex.interval(2 * bCols, 3 * bCols)}, b_o);
+        b.put(new INDArrayIndex[]{NDArrayIndex.interval(0, b.rows()), NDArrayIndex.interval(3 * bCols, 4 * bCols)}, b_i);
         this.weights.put(LSTMParamInitializer.BIAS_KEY, b);
 
         if (weights.size() > NUM_WEIGHTS_IN_KERAS_LSTM) {
@@ -492,10 +491,12 @@ public class KerasLstm extends KerasLayer {
         String kerasForgetBiasInit;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_UNIT_FORGET_BIAS())) {
             kerasForgetBiasInit = LSTM_FORGET_BIAS_INIT_ONE;
-        } else if (!innerConfig.containsKey(conf.getLAYER_FIELD_FORGET_BIAS_INIT()))
+        } else if (!innerConfig.containsKey(conf.getLAYER_FIELD_FORGET_BIAS_INIT())) {
             throw new InvalidKerasConfigurationException(
                     "Keras LSTM layer config missing " + conf.getLAYER_FIELD_FORGET_BIAS_INIT() + " field");
-        else kerasForgetBiasInit = (String) innerConfig.get(conf.getLAYER_FIELD_FORGET_BIAS_INIT());
+        } else {
+            kerasForgetBiasInit = (String) innerConfig.get(conf.getLAYER_FIELD_FORGET_BIAS_INIT());
+        }
         double init;
         switch (kerasForgetBiasInit) {
             case LSTM_FORGET_BIAS_INIT_ZERO:

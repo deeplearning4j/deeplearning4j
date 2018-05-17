@@ -27,6 +27,8 @@ import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.recurrent.LSTM;
+import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
@@ -473,8 +475,10 @@ public class KerasModelEndToEndTest {
                         KerasModelEndToEndTest.class.getClassLoader());
         File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        MultiLayerNetwork model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
+        KerasSequentialModel kerasModel = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                .enforceTrainingConfig(false).buildSequential();
+
+        MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
 
         ClassPathResource outputsResource =
                 new ClassPathResource(inputsOutputsPath,
