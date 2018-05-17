@@ -20,11 +20,11 @@
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>1.0.0-beta</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spark_2.11</artifactId>
-    <version>1.0.0-beta_spark_1</version>
+    <version>1.0.0_spark_1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Spark parent</name>
@@ -45,7 +45,7 @@
           (in different pom files) instead of a single global property -->
         <spark.version>1.6.3</spark.version>
         <spark.major.version>1</spark.major.version>
-        <datavec.spark.version>1.0.0-beta_spark_1</datavec.spark.version>
+        <datavec.spark.version>1.0.0_spark_1-SNAPSHOT</datavec.spark.version>
 
 
 
