@@ -1,6 +1,8 @@
 package org.deeplearning4j;
 
 import org.apache.commons.compress.utils.IOUtils;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
@@ -17,42 +19,74 @@ public class TestUtils {
 
     public static MultiLayerNetwork testModelSerialization(MultiLayerNetwork net){
 
+        MultiLayerNetwork restored;
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ModelSerializer.writeModel(net, baos, true);
             byte[] bytes = baos.toByteArray();
 
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
+            restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
 
             assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
             assertEquals(net.params(), restored.params());
-
-            return restored;
         } catch (IOException e){
             //Should never happen
             throw new RuntimeException(e);
         }
+
+        //Also check the MultiLayerConfiguration is serializable (required by Spark etc)
+        MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
+        serializeDeserializeJava(conf);
+
+        return restored;
     }
 
     public static ComputationGraph testModelSerialization(ComputationGraph net){
 
+        ComputationGraph restored;
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ModelSerializer.writeModel(net, baos, true);
             byte[] bytes = baos.toByteArray();
 
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            ComputationGraph restored = ModelSerializer.restoreComputationGraph(bais, true);
+            restored = ModelSerializer.restoreComputationGraph(bais, true);
 
             assertEquals(net.getConfiguration(), restored.getConfiguration());
             assertEquals(net.params(), restored.params());
-
-            return restored;
         } catch (IOException e){
             //Should never happen
             throw new RuntimeException(e);
         }
+
+        //Also check the ComputationGraphConfiguration is serializable (required by Spark etc)
+        ComputationGraphConfiguration conf = net.getConfiguration();
+        serializeDeserializeJava(conf);
+
+        return restored;
+    }
+
+    private static <T> T serializeDeserializeJava(T object){
+        byte[] bytes;
+        try(ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos)){
+            oos.writeObject(object);
+            oos.close();
+            bytes = baos.toByteArray();
+        } catch (IOException e){
+            //Should never happen
+            throw new RuntimeException(e);
+        }
+
+        T out;
+        try(ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))){
+            out = (T)ois.readObject();
+        } catch (IOException | ClassNotFoundException e){
+            throw new RuntimeException(e);
+        }
+
+        assertEquals(object, out);
+        return out;
     }
 
     public static INDArray randomOneHot(int examples, int nOut){

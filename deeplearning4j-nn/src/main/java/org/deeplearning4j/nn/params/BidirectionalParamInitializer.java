@@ -92,6 +92,8 @@ public class BidirectionalParamInitializer implements ParamInitializer {
         INDArray forwardView = paramsView.get(point(0), interval(0, n));
         INDArray backwardView = paramsView.get(point(0), interval(n, 2*n));
 
+        conf.clearVariables();
+
         NeuralNetConfiguration c1 = conf.clone();
         NeuralNetConfiguration c2 = conf.clone();
         c1.setLayer(underlying);
