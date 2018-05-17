@@ -253,7 +253,7 @@ public class KerasLayer {
         //no op
     }
 
-    public Map<String, INDArray> getWeights() throws InvalidKerasConfigurationException {
+    public Map<String, INDArray> getWeights() {
         return this.weights;
     }
 

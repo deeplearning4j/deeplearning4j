@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -54,22 +55,23 @@ import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.customLayers;
  * @author dave@skymind.io, Max Pumperla
  */
 @Slf4j
+@Data
 public class KerasModel {
 
     protected static KerasModelConfiguration config = new KerasModelConfiguration();
-    KerasModelBuilder modelBuilder = new KerasModelBuilder(config);
+    protected KerasModelBuilder modelBuilder = new KerasModelBuilder(config);
 
     protected String className; // Keras model class name
     protected boolean enforceTrainingConfig; // whether to build model in training mode
     protected Map<String, KerasLayer> layers; // map from layer name to KerasLayer
-    List<KerasLayer> layersOrdered; // ordered list of layers
-    Map<String, InputType> outputTypes; // inferred output types for all layers
-    ArrayList<String> inputLayerNames; // list of input layers
-    ArrayList<String> outputLayerNames; // list of output layers
-    boolean useTruncatedBPTT = false; // whether to use truncated BPTT
-    int truncatedBPTT = 0; // truncated BPTT value
-    int kerasMajorVersion;
-    String kerasBackend;
+    protected List<KerasLayer> layersOrdered; // ordered list of layers
+    protected Map<String, InputType> outputTypes; // inferred output types for all layers
+    protected ArrayList<String> inputLayerNames; // list of input layers
+    protected ArrayList<String> outputLayerNames; // list of output layers
+    protected boolean useTruncatedBPTT = false; // whether to use truncated BPTT
+    protected int truncatedBPTT = 0; // truncated BPTT value
+    protected int kerasMajorVersion;
+    protected String kerasBackend;
 
     public KerasModel() {
     }
