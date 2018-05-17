@@ -113,16 +113,18 @@ public class VPTree implements Serializable {
      * @param invert whether to invert the metric (different optimization objective)
      */
     public VPTree(List<DataPoint> items, String similarityFunction, int workers, boolean invert) {
-        if (this.items == null) {
-            this.items = Nd4j.create(items.size(), items.get(0).getPoint().columns());
-        }
-
         this.workers = workers;
 
-        for (int i = 0; i < items.size(); i++) {
+        val list = new INDArray[items.size()];
+
+        // build list of INDArrays first
+        for (int i = 0; i < items.size(); i++)
+            list[i] = items.get(i).getPoint();
             //itemsList.add(items.get(i).getPoint());
-            this.items.putRow(i, items.get(i).getPoint());
-        }
+            //this.items.putRow(i, items.get(i).getPoint());
+
+        // just stack them out with concat :)
+        this.items = Nd4j.concat(0, list);
 
         this.invert = invert;
         this.similarityFunction = similarityFunction;
