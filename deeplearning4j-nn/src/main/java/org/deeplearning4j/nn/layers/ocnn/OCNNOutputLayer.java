@@ -118,6 +118,13 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.BP_WORKING_MEM);
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
+        if(iterationCount > 0) {
+            INDArray currentR = getParam(R_KEY);
+            INDArray percentile = currentR.percentile(100*0.04);
+            setParam(R_KEY,percentile);
+
+        }
+
 
         Gradient gradient = new DefaultGradient();
         INDArray vGradView = gradientViews.get(V_KEY);
@@ -159,6 +166,8 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray derivV = mulResult
                 .mean(0).muli(oneDivNu).addi(getParam(V_KEY));
         gradient.setGradientFor(V_KEY,vGradView.assign(derivV));
+
+
 
         INDArray derivR = Nd4j.scalar(delta.meanNumber()).muli(oneDivNu).addi(-1);
         gradient.setGradientFor(R_KEY,Nd4j.scalar(0.0));
