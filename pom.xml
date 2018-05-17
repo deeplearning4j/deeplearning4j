@@ -21,7 +21,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0-beta</version>
     <packaging>pom</packaging>
     <name>DeepLearning4j</name>
 
@@ -65,11 +65,11 @@
     </prerequisites>
 
     <properties>
-        <deeplearning4j.version>1.0.0-SNAPSHOT</deeplearning4j.version>
+        <deeplearning4j.version>1.0.0-beta</deeplearning4j.version>
         <oshi.version>3.4.2</oshi.version>
-        <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
-        <datavec.version>1.0.0-SNAPSHOT</datavec.version>
-        <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
+        <nd4j.version>1.0.0-beta</nd4j.version>
+        <datavec.version>1.0.0-beta</datavec.version>
+        <dl4j-test-resources.version>1.0.0-beta</dl4j-test-resources.version>
         <kafka.version>0.10.1.1</kafka.version>
         <akka.version>2.3.13</akka.version>
         <typesafe.config.version>1.3.0</typesafe.config.version>
