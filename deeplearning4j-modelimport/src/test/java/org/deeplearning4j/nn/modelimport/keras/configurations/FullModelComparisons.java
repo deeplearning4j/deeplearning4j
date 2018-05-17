@@ -158,4 +158,40 @@ public class FullModelComparisons {
 
 
     }
+
+    @Test
+    public void cnnBatchNormTest() throws IOException, UnsupportedKerasConfigurationException,
+            InvalidKerasConfigurationException {
+
+        String modelPath = "fullconfigs/cnn/cnn_batch_norm.h5";
+
+
+        ClassPathResource modelResource = new ClassPathResource(modelPath, classLoader);
+
+        KerasSequentialModel kerasModel = new KerasModel().modelBuilder()
+                .modelHdf5Filename(modelResource.getFile().getAbsolutePath())
+                .enforceTrainingConfig(false)
+                .buildSequential();
+
+        MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
+        model.init();
+
+        System.out.println(model.summary());
+
+        ClassPathResource inputResource = new ClassPathResource("fullconfigs/cnn/input.npy", classLoader);
+        INDArray input = Nd4j.createFromNpyFile(inputResource.getFile());
+        input = input.permute(0, 3, 1, 2);
+        assertTrue(Arrays.equals(input.shape(), new int[] {5, 3, 10, 10}));
+
+        INDArray output = model.output(input);
+
+        ClassPathResource outputResource = new ClassPathResource("fullconfigs/cnn/predictions.npy", classLoader);
+        INDArray kerasOutput = Nd4j.createFromNpyFile(outputResource.getFile());
+
+        for (int i = 0; i < 5; i++) {
+            TestCase.assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-4);
+        }
+
+    }
+
 }
