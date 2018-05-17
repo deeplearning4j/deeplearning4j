@@ -196,7 +196,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
         files.addAll(Arrays.asList(new File(file.getParent(), "headers").listFiles()));
         Collections.sort(files);
         for (File f : files) {
-            try (Scanner scanner = new Scanner(f)) {
+            try (Scanner scanner = new Scanner(f, "UTF-8")) {
                 while (scanner.hasNextLine()) {
                     String line = scanner.nextLine().trim();
                     if (line.startsWith("DECLARE_")) {
