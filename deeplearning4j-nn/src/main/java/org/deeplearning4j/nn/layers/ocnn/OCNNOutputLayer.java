@@ -122,8 +122,8 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
         if(conf.getLastEpochSinceRUpdated()  != epochCount) {
             INDArray currentR = doOutput(false,workspaceMgr);
-            INDArray percentile = currentR.percentile(100 * 0.04);
-            setParam(R_KEY,percentile);
+            double percentile = currentR.percentileNumber(100 * 0.04).doubleValue();
+            getParam(R_KEY).putScalar(0,percentile);
             conf.setLastEpochSinceRUpdated(epochCount);
         }
 
