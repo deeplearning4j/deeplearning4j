@@ -45,6 +45,23 @@ public class OCNNOutputLayer extends BaseOutputLayer {
 
     private IActivation activation;
 
+    /**
+     * Psuedo code from keras:
+     *  start_time = time.time()
+     for epoch in range(100):
+     # Train with each example
+     sess.run(updates, feed_dict={X: train_X,r:rvalue})
+     rvalue = nnScore(train_X, w_1, w_2, g)
+     with sess.as_default():
+     rvalue = rvalue.eval()
+     rvalue = np.percentile(rvalue,q=100*nu)
+     print("Epoch = %d, r = %f"
+     % (epoch + 1,rvalue))
+
+
+     */
+    private int lastEpochSinceRUpdated = 0;
+
     public OCNNOutputLayer(Builder builder) {
         super(builder);
         this.hiddenSize = builder.hiddenLayerSize;
