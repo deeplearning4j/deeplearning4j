@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Builder
 @AllArgsConstructor
 public class VPTree implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     public static final String EUCLIDEAN = "euclidean";
     private double tau;
@@ -569,6 +570,8 @@ public class VPTree implements Serializable {
 
     @Data
     public static class Node implements Serializable {
+        private static final long serialVersionUID = 2L;
+
         private int index;
         private float threshold;
         private Node left, right;
