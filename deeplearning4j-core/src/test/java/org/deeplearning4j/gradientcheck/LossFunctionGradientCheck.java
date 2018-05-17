@@ -2,6 +2,7 @@ package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -181,6 +182,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 }
 
                 System.out.println("\n\n");
+                TestUtils.testModelSerialization(net);
             }
         }
 
@@ -343,6 +345,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 }
 
                 System.out.println("\n\n");
+                TestUtils.testModelSerialization(net);
             }
         }
 

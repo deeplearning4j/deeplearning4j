@@ -130,6 +130,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 String msg = "gradientCheckMaskingOutputSimple() - timeSeriesLength=" + timeSeriesLength
                                 + ", miniBatchSize=" + 1;
                 assertTrue(msg, gradOK);
+                TestUtils.testModelSerialization(mln);
             }
         }
     }
@@ -187,6 +188,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, mask, mask);
 
             assertTrue(gradOK);
+            TestUtils.testModelSerialization(mln);
         }
     }
 
@@ -265,6 +267,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels, null, labelMask);
 
                 assertTrue(msg, gradOK);
+                TestUtils.testModelSerialization(net);
             }
         }
     }
@@ -380,6 +383,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                 new INDArray[] {features}, new INDArray[] {labels}, null, new INDArray[]{labelMask}, null);
 
                 assertTrue(msg + " (compgraph)", gradOK);
+                TestUtils.testModelSerialization(graph);
             }
         }
     }

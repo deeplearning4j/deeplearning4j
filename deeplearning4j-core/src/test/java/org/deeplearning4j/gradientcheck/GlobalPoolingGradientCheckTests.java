@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -94,7 +95,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                 assertTrue(gradOK);
-
+                TestUtils.testModelSerialization(mln);
             }
         }
     }
@@ -151,7 +152,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                 assertTrue(gradOK);
-
+                TestUtils.testModelSerialization(mln);
             }
         }
     }
@@ -221,6 +222,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, featuresMask, null);
 
             assertTrue(gradOK);
+            TestUtils.testModelSerialization(mln);
         }
     }
 
@@ -301,6 +303,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, inputMask, null);
 
                     assertTrue(gradOK);
+                    TestUtils.testModelSerialization(mln);
                 }
             }
         }

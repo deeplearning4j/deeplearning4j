@@ -187,6 +187,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(msg, gradOK);
+                        TestUtils.testModelSerialization(net);
                     }
                 }
             }
@@ -262,6 +263,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(msg, gradOK);
+                        TestUtils.testModelSerialization(net);
                     }
                 }
             }

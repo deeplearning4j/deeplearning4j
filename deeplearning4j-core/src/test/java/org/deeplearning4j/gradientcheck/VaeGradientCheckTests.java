@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -115,6 +116,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input,
                     labels);
             assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(mln);
         }
     }
 
@@ -190,6 +192,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                     RETURN_ON_FIRST_FAILURE, input, 12345);
 
             assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(mln);
         }
     }
 
@@ -276,6 +279,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                     data, 12345);
 
             assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(mln);
         }
     }
 
@@ -318,6 +322,7 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                     features, 12345);
 
             assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(mln);
         }
     }
 }

@@ -35,7 +35,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  */
 @NoArgsConstructor
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"initializer"})
 @JsonIgnoreProperties({"initializer"})
 public class Bidirectional extends Layer {
 
@@ -55,7 +55,7 @@ public class Bidirectional extends Layer {
     private Layer fwd;
     private Layer bwd;
     private Mode mode;
-    private BidirectionalParamInitializer initializer;
+    private transient BidirectionalParamInitializer initializer;
 
     private Bidirectional(Bidirectional.Builder builder) {
         super(builder);

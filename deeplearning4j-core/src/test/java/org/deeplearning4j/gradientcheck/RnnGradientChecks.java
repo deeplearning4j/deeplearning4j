@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
@@ -102,6 +103,9 @@ public class RnnGradientChecks extends BaseDL4JTest {
                         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
                         assertTrue(gradOK);
+
+
+                        TestUtils.testModelSerialization(net);
                     }
                 }
             }
@@ -172,6 +176,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
                                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
                                 assertTrue(gradOK);
+                                TestUtils.testModelSerialization(net);
                             }
                         }
                     }
@@ -242,6 +247,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null);
                     assertTrue(name, gradOK);
+                    TestUtils.testModelSerialization(net);
                 }
             }
         }
