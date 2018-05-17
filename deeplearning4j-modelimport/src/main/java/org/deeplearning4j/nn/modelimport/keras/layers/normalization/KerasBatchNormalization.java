@@ -22,7 +22,7 @@ import java.util.Set;
 /**
  * Imports a BatchNormalization layer from Keras.
  *
- * @author dave@skymind.io
+ * @author dave@skymind.io, Max Pumperla
  */
 @Slf4j
 @Data
