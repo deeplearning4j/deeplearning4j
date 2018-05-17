@@ -119,6 +119,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
         assertTrue(gradOK);
+        TestUtils.testModelSerialization(mln);
     }
 
     @Test
@@ -213,6 +214,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(gradOK);
+                        TestUtils.testModelSerialization(mln);
                     }
                 }
             }
@@ -311,6 +313,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(gradOK);
+                        TestUtils.testModelSerialization(mln);
                     }
                 }
             }
@@ -350,6 +353,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
         assertTrue(gradOK);
+        TestUtils.testModelSerialization(mln);
     }
 
     @Test
@@ -389,6 +393,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
         assertTrue(gradOK);
+        TestUtils.testModelSerialization(mln);
     }
 
     @Test
@@ -425,6 +430,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                         new INDArray[] {labels});
 
         assertTrue(gradOK);
+        TestUtils.testModelSerialization(net);
     }
 
 
@@ -519,6 +525,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                         new INDArray[] {input}, new INDArray[] {labels});
 
                         assertTrue(gradOK);
+                        TestUtils.testModelSerialization(net);
                     }
                 }
             }

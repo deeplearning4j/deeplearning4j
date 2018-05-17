@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -93,6 +94,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         String msg = "testBasicIris()";
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(graph);
     }
 
     @Test
@@ -143,6 +145,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         String msg = "testBasicIrisWithMerging()";
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(graph);
     }
 
     @Test
@@ -199,6 +202,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             String msg = "testBasicIrisWithElementWiseVertex(op=" + op + ")";
             assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -258,6 +262,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             String msg = "testBasicIrisWithElementWiseVertex(op=" + op + ")";
             assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -304,6 +309,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         String msg = "testCnnDepthMerge()";
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(graph);
     }
 
     @Test
@@ -365,6 +371,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         String msg = "testLSTMWithMerging()";
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(graph);
     }
 
     @Test
@@ -405,6 +412,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         String msg = "testLSTMWithSubset()";
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(graph);
     }
 
     @Test
@@ -456,6 +464,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input}, new INDArray[] {labels});
 
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(graph);
     }
 
     @Test
@@ -509,6 +518,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         String msg = "testLSTMWithDuplicateToTimeSeries()";
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(graph);
     }
 
     @Test
@@ -572,6 +582,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input}, new INDArray[] {labels});
 
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(graph);
     }
 
     @Test
@@ -614,6 +625,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                             new INDArray[] {out});
 
             assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -653,6 +665,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                             new INDArray[] {out});
 
             assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -697,6 +710,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, new INDArray[] {out});
 
             assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -747,6 +761,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                             new INDArray[] {out});
 
             assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -815,6 +830,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         String msg = "testBasicIrisTripletStackingL2Loss()";
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(graph);
     }
 
 
@@ -874,6 +890,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                 new INDArray[] {labels});
 
                 assertTrue(msg, gradOK);
+                TestUtils.testModelSerialization(graph);
             }
         }
     }
@@ -937,6 +954,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, example, labels);
 
                 assertTrue(msg, gradOK);
+                TestUtils.testModelSerialization(net);
             }
         }
     }
@@ -985,6 +1003,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                             new INDArray[] {labels});
 
             assertTrue(testName, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -1042,6 +1061,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                             new INDArray[] {labels1, labels2});
 
             assertTrue(testName, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -1099,6 +1119,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                             new INDArray[] {labels1, labels2});
 
             assertTrue(testName, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -1163,6 +1184,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                             new INDArray[] {labels1, labels2}, new INDArray[] {inMask1, inMask2}, null);
 
             assertTrue(testName, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -1218,6 +1240,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1, in2},
                             new INDArray[] {labels1, labels2});
             assertTrue(testName, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -1260,6 +1283,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                             new INDArray[] {labels1});
 
             assertTrue(testName, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -1308,6 +1332,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                             new INDArray[] {labels1});
 
             assertTrue(testName, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
     }
 
@@ -1345,5 +1370,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         String msg = "testGraphEmbeddingLayerSimple";
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(cg);
     }
 }

@@ -3,6 +3,7 @@ package org.deeplearning4j.gradientcheck;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.TestUtils;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -115,6 +116,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(msg, gradOK);
+                    TestUtils.testModelSerialization(net);
                 }
             }
         }
@@ -222,5 +224,6 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l);
 
         assertTrue(ok);
+        TestUtils.testModelSerialization(net);
     }
 }
