@@ -2402,14 +2402,14 @@ public interface INDArray extends Serializable {
      *
      * @return the number of columns in this matrix
      */
-    long columns();
+    int columns();
 
     /**
      * Returns the number of rows in this matrix (throws exception if not 2d)
      *
      * @return the number of rows in this matrix
      */
-    long rows();
+    int rows();
 
     /**
      * Returns true if the number of columns is 1

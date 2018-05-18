@@ -4815,13 +4815,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return the number of columns in the array (only 2d)
      */
     @Override
-    public long columns() {
+    public int columns() {
+        // FIXME: int cast
         if (isMatrix())
-            return size(1);
+            return (int) size(1);
         else if (Shape.isColumnVectorShape(shape())) {
             return 1;
         } else if (Shape.isRowVectorShape(shape())) {
-            return length();
+            return (int) length();
         }
         throw new IllegalStateException("Rank is [" + rank() + "]; columns() call is not valid");
 
@@ -4836,13 +4837,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return the number of rows in the matrix
      */
     @Override
-    public long rows() {
+    public int rows() {
+        // FIXME:
         if (isMatrix())
-            return size(0);
+            return (int) size(0);
         else if (Shape.isRowVectorShape(shape())) {
             return 1;
         } else if (Shape.isColumnVectorShape(shape())) {
-            return length();
+            return (int) length();
         }
 
         throw new IllegalStateException("Rank is " + rank() + " rows() call is not valid");

@@ -3355,8 +3355,8 @@ public class Nd4j {
      * @param columns the number of columns in the matrix
      * @return
      */
-    public static INDArray randn(int rows, int columns) {
-        INDArray ret = Nd4j.createUninitialized(new int[]{rows, columns}, order());
+    public static INDArray randn(long rows, long columns) {
+        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
         logCreationIfNecessary(ret);
         return randn(ret);
     }
@@ -3368,8 +3368,8 @@ public class Nd4j {
      * @param rows    the number of rows in the matrix
      * @param columns the number of columns in the matrix
      */
-    public static INDArray randn(char order, int rows, int columns) {
-        INDArray ret = Nd4j.createUninitialized(new int[]{rows, columns}, order);
+    public static INDArray randn(char order, long rows, long columns) {
+        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order);
         logCreationIfNecessary(ret);
         return randn(ret);
     }
@@ -3381,8 +3381,8 @@ public class Nd4j {
      * @param columns the number of columns in the matrix
      * @return
      */
-    public static INDArray randn(int rows, int columns, long seed) {
-        INDArray ret = Nd4j.createUninitialized(new int[]{rows, columns}, order());
+    public static INDArray randn(long rows, long columns, long seed) {
+        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
         logCreationIfNecessary(ret);
         return randn(ret, seed);
     }
@@ -3395,8 +3395,8 @@ public class Nd4j {
      * @param r       the random generator to use
      * @return
      */
-    public static INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = Nd4j.createUninitialized(new int[]{rows, columns}, order());
+    public static INDArray randn(long rows, long columns, org.nd4j.linalg.api.rng.Random r) {
+        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
         logCreationIfNecessary(ret);
         return randn(ret, r);
     }
@@ -3409,6 +3409,19 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
+        final INDArray ret = Nd4j.createUninitialized(shape, order());
+        logCreationIfNecessary(ret);
+        return randn(ret, r);
+    }
+
+    /**
+     * Random normal using the given rng
+     *
+     * @param shape the shape of the ndarray
+     * @param r     the random generator to use
+     * @return
+     */
+    public static INDArray randn(long[] shape, org.nd4j.linalg.api.rng.Random r) {
         final INDArray ret = Nd4j.createUninitialized(shape, order());
         logCreationIfNecessary(ret);
         return randn(ret, r);

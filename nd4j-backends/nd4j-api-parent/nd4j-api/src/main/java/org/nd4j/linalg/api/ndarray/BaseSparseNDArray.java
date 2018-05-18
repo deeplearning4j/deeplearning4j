@@ -1672,12 +1672,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public long columns() {
+    public int columns() {
         return columns;
     }
 
     @Override
-    public long rows() {
+    public int rows() {
         return rows;
     }
 

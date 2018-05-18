@@ -228,7 +228,13 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     }
 
     @Override
-    public INDArray create(@NonNull T arrayType, @NonNull int... shape) {
+    public INDArray create(@NonNull T arrayType, @NonNull int[] shape) {
+        enforceExistsAndActive(arrayType);
+        return create(arrayType, shape, Nd4j.order());
+    }
+
+    @Override
+    public INDArray create(@NonNull T arrayType, @NonNull long... shape) {
         enforceExistsAndActive(arrayType);
         return create(arrayType, shape, Nd4j.order());
     }
@@ -242,12 +248,33 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     }
 
     @Override
-    public INDArray createUninitialized(@NonNull T arrayType, @NonNull int... shape) {
+    public INDArray create(@NonNull T arrayType, @NonNull long[] shape, @NonNull char order) {
+        enforceExistsAndActive(arrayType);
+        try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
+            return Nd4j.create(shape, order);
+        }
+    }
+
+    @Override
+    public INDArray createUninitialized(@NonNull T arrayType, @NonNull int[] shape) {
+        return createUninitialized(arrayType, shape, Nd4j.order());
+    }
+
+    @Override
+    public INDArray createUninitialized(@NonNull T arrayType, @NonNull long... shape) {
         return createUninitialized(arrayType, shape, Nd4j.order());
     }
 
     @Override
     public INDArray createUninitialized(@NonNull T arrayType, @NonNull int[] shape, char order) {
+        enforceExistsAndActive(arrayType);
+        try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
+            return Nd4j.createUninitialized(shape, order);
+        }
+    }
+
+    @Override
+    public INDArray createUninitialized(@NonNull T arrayType, @NonNull long[] shape, char order) {
         enforceExistsAndActive(arrayType);
         try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
             return Nd4j.createUninitialized(shape, order);
