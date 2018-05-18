@@ -30,25 +30,25 @@ namespace nd4j {
 
             int kSize = kW * kH;
 
-            int *inShape = shape::shapeOf(x->getShapeInfo());
-            int *inStride = shape::stride(x->getShapeInfo());
+            auto inShape = shape::shapeOf(x->getShapeInfo());
+            auto inStride = shape::stride(x->getShapeInfo());
 
-            int samples = inShape[0];
-            int depth = inShape[1];
-            int height = inShape[2];
-            int width = inShape[3];
+            int samples = (int) inShape[0];
+            int depth = (int) inShape[1];
+            int height = (int) inShape[2];
+            int width = (int) inShape[3];
 
-            int strideex = inStride[0];
-            int stridech = inStride[1];
-            int strideh = inStride[2];
-            int stridew = inStride[3];
+            int strideex = (int) inStride[0];
+            int stridech = (int) inStride[1];
+            int strideh = (int) inStride[2];
+            int stridew = (int) inStride[3];
 
             int outH = (z->getShapeInfo())[3];
             int outW = (z->getShapeInfo())[4];
-            int *im2colShapeInfo = new int[16] {6, samples, depth, kH, kW, outH, outW, depth*kH*kW*outH*outW, kH*kW*outH*outW, kW*outH*outW, outH*outW, outW, 1, 0, 1, 99};
+            auto im2colShapeInfo = new Nd4jLong[16] {6, samples, depth, kH, kW, outH, outW, depth*kH*kW*outH*outW, kH*kW*outH*outW, kW*outH*outW, outH*outW, outW, 1, 0, 1, 99};
 
-            int *outShape = shape::shapeOf(im2colShapeInfo);
-            int *outStride = shape::stride(im2colShapeInfo);
+            auto outShape = shape::shapeOf(im2colShapeInfo);
+            auto outStride = shape::stride(im2colShapeInfo);
 
             int height_col = outShape[4];
             int width_col = outShape[5];
@@ -146,9 +146,9 @@ namespace nd4j {
 
         //////////////////////////////////////////////////////////////////////////
         DECLARE_SHAPE_FN(pooling2d) {
-            int* inShape = inputShape->at(0);
+            auto inShape = inputShape->at(0);
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - pooling mode;
-            std::vector<int> argI = *(block.getIArguments());
+            auto argI = *(block.getIArguments());
             int kH = argI[0];
             int kW = argI[1];
             int sH = argI[2];
@@ -170,8 +170,8 @@ namespace nd4j {
             int oH, oW;
             ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
             // allocate memory for new shape
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+            Nd4jLong* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, Nd4jLong);
             newShapeInfo[0] = 4;		// rank
             newShapeInfo[1] = bS;
             newShapeInfo[2] = iD;

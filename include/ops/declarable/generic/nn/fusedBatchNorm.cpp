@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
     }
     else {
         REQUIRE_TRUE(block.width() == 3, 0, "CUSTOM_OP fused_batch_norm: when isTraining=true then number of input arrays must be equal to 3, but got %i instead !", block.width());   
-        std::vector<int> shape = {iD};
+        std::vector<Nd4jLong> shape = {iD};
         mean = new NDArray<T>(scale->ordering(), shape, block.getWorkspace());
         variance = new NDArray<T>(scale->ordering(), shape, block.getWorkspace());        
     }
@@ -103,16 +103,15 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
 
 
 DECLARE_SHAPE_FN(fused_batch_norm) {
-
-    int* xShapeInfo     = inputShape->at(0);
-    int* scaleShapeInfo = inputShape->at(1);
+    auto xShapeInfo     = inputShape->at(0);
+    auto scaleShapeInfo = inputShape->at(1);
 
     const bool dataFormat = (bool)INT_ARG(0);               // 0->NHWC, 1->NCHW
     const int iD = dataFormat ? xShapeInfo[2] : xShapeInfo[4];
 
     REQUIRE_TRUE(scaleShapeInfo[0] == 1  && scaleShapeInfo[1] == iD, 0, "CUSTOM_OP fused_batch_norm: wrong shape of input scale array, expected is [%i], but got %s instead", iD, ShapeUtils<T>::shapeAsString(scaleShapeInfo).c_str());
     
-    int* outShapeInfo(nullptr), *batchMeanShapeInfo(nullptr), *batchVarShapeInfo(nullptr);
+    Nd4jLong* outShapeInfo(nullptr), *batchMeanShapeInfo(nullptr), *batchVarShapeInfo(nullptr);
     
     COPY_SHAPE(xShapeInfo, outShapeInfo);
     COPY_SHAPE(scaleShapeInfo, batchMeanShapeInfo);

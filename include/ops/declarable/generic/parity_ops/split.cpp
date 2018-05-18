@@ -67,7 +67,7 @@ namespace ops {
 
     DECLARE_SHAPE_FN(split) {
         int num_splits = INT_ARG(0);
-        int *input = nullptr;
+        Nd4jLong *input = nullptr;
 
         // axis is 0 by default
         int axis = 0;
@@ -95,7 +95,7 @@ namespace ops {
         if (axis < 0)
             axis += shape::rank(input);
 
-        std::vector<int> shape(shape::rank(input));
+        std::vector<Nd4jLong> shape(shape::rank(input));
 
         for (int e = 0; e < shape::rank(input); e++)
             if (e == axis)
@@ -106,8 +106,8 @@ namespace ops {
         auto shapes = SHAPELIST();
 
         for (int e = 0; e < num_splits; e++) {
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), int);
+            Nd4jLong *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong);
 
             if (shape::order(input) == 'c')
                 shape::shapeBuffer(shape.size(), shape.data(), newShape);

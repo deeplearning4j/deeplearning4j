@@ -29,7 +29,7 @@ enum DataType:byte {
 
 // this structure describe NDArray
 table FlatArray {
-    shape:[int]; // shape in Nd4j format
+    shape:[long]; // shape in Nd4j format
     buffer:[byte]; // byte buffer with data
     dtype:DataType; // data type of actual data within buffer
     byteOrder:ByteOrder; // byte order of buffer

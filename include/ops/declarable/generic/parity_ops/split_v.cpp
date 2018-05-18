@@ -82,10 +82,10 @@ namespace ops {
         int pos = 0;
         for (int e = 0; e < length; e++) {
             int c_size = sizes->getScalar(e);
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), int);
+            Nd4jLong *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong);
 
-            std::vector<int> shape(rank);
+            std::vector<Nd4jLong> shape(rank);
 
             for (int d = 0; d < rank; d++) {
                 if (d != axis)

@@ -10,7 +10,7 @@ namespace nd4j {
 namespace graph {
 
     template <typename T>
-    GraphState<T>::GraphState(Nd4jIndex id) {
+    GraphState<T>::GraphState(Nd4jLong id) {
         _id = id;
         _graph = new Graph<T>(nullptr, &_variableSpace);
     };
@@ -151,12 +151,12 @@ namespace graph {
     };
 
     template <typename T>
-    Nd4jIndex GraphState<T>::id() {
+    Nd4jLong GraphState<T>::id() {
         return _id;
     }
 
     template <typename T>
-    Nd4jStatus GraphState<T>::attachOpToScope(int scopeId, Nd4jIndex opNum, int type, ArgumentsList inputs) {
+    Nd4jStatus GraphState<T>::attachOpToScope(int scopeId, Nd4jLong opNum, int type, ArgumentsList inputs) {
         // we should use OpRegistrator here, to create Node and push it to specific scope
         return Status::OK();
     }

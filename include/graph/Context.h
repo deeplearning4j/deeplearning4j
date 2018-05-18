@@ -32,7 +32,7 @@ namespace nd4j {
         protected:
             nd4j::memory::Workspace* _workspace = nullptr;
             nd4j::graph::VariableSpace<T>* _variableSpace = nullptr;
-            std::pair<Nd4jIndex, Nd4jIndex> _executionTime;
+            std::pair<Nd4jLong, Nd4jLong> _executionTime;
             nd4j::random::RandomBuffer* _rng = nullptr;
 
             // branch for divergent_op
@@ -54,10 +54,10 @@ namespace nd4j {
             ~Context();
 
             // these methods are for execution timing
-            void setOuterTime(Nd4jIndex time);
-            void setInnerTime(Nd4jIndex time);
-            Nd4jIndex getOuterTime();
-            Nd4jIndex getInnerTime();
+            void setOuterTime(Nd4jLong time);
+            void setInnerTime(Nd4jLong time);
+            Nd4jLong getOuterTime();
+            Nd4jLong getInnerTime();
 
             // these methods are related to Workspace abstraction
             bool hasWorkspaceProvided();

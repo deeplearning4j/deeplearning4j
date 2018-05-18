@@ -15,15 +15,15 @@ namespace nd4j {
 
             // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
             template <typename T>
-            void _im2col(nd4j::graph::LaunchContext& context, T *out, T *in, int *zShape, int *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, T zeroPadVal) {
+            void _im2col(nd4j::graph::LaunchContext& context, T *out, T *in, Nd4jLong *zShape, Nd4jLong *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, T zeroPadVal) {
 
                 int kSize = kH * kW;
 
-                const int *outShape  = shape::shapeOf(zShape);
+                const Nd4jLong *outShape  = shape::shapeOf(zShape);
                 const char outOrder  = shape::order(zShape);
-                const int *outStride = shape::stride(zShape);
-                const int *inShape = shape::shapeOf(xShape);
-                const int *inStride = shape::stride(xShape);
+                const Nd4jLong *outStride = shape::stride(zShape);
+                const Nd4jLong *inShape = shape::shapeOf(xShape);
+                const Nd4jLong *inStride = shape::stride(xShape);
 
                 const int bS = inShape[0];
                 const int iC = inShape[1];
@@ -130,9 +130,9 @@ namespace nd4j {
                 }
             }
 
-            template void _im2col<float>(nd4j::graph::LaunchContext& context, float *output, float *in, int *zShape, int *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, float zeroPadVal);
-            template void _im2col<float16>(nd4j::graph::LaunchContext& context, float16 *output, float16 *in, int *zShape, int *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, float16 zeroPadVal);
-            template void _im2col<double>(nd4j::graph::LaunchContext& context, double *output, double *in, int *zShape, int *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, double zeroPadVal);
+            template void _im2col<float>(nd4j::graph::LaunchContext& context, float *output, float *in, Nd4jLong *zShape, Nd4jLong *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, float zeroPadVal);
+            template void _im2col<float16>(nd4j::graph::LaunchContext& context, float16 *output, float16 *in, Nd4jLong *zShape, Nd4jLong *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, float16 zeroPadVal);
+            template void _im2col<double>(nd4j::graph::LaunchContext& context, double *output, double *in, Nd4jLong *zShape, Nd4jLong *xShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, double zeroPadVal);
         }
     }
 }

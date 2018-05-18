@@ -45,32 +45,32 @@ namespace functions {
             template<typename OpType>
 			static __device__ void transformCuda(
 			T *x,
-			int *xShapeInfo,
+			Nd4jLong *xShapeInfo,
 			T *y,
-			int *yShapeInfo,
+			Nd4jLong *yShapeInfo,
 			T *result,
-			int *resultShapeInfo,
+			Nd4jLong *resultShapeInfo,
 			int *dimension,
-			int dimensionLength, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *tadOnlyShapeInfoZ, Nd4jIndex *tadOffsetsZ);
+			int dimensionLength, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
 
-            static __host__ void executeBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, T *x, int *xShapeInfo, T *y, int *yShapeInfo, T *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *tadOnlyShapeInfoZ, Nd4jIndex *tadOffsetsZ);
+            static __host__ void executeBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, T *x, Nd4jLong *xShapeInfo, T *y, Nd4jLong *yShapeInfo, T *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
 #endif
 
             static void exec(const int opNum,
                              T *x,
-                             int *xShapeInfo,
+                             Nd4jLong *xShapeInfo,
                              T *y,
-                             int *yShapeInfo,
+                             Nd4jLong *yShapeInfo,
                              T *result,
-                             int *resultShapeInfo,
+                             Nd4jLong *resultShapeInfo,
                              int *dimension,
                              int dimensionLength,
-                             int *tadShapeInfo,
-                             Nd4jIndex *tadOffset,
-                             int *tadShapeInfoZ,
-                             Nd4jIndex *tadOffsetZ);
+                             Nd4jLong *tadShapeInfo,
+                             Nd4jLong *tadOffset,
+                             Nd4jLong *tadShapeInfoZ,
+                             Nd4jLong *tadOffsetZ);
 
             /**
              * CPU execution
@@ -85,17 +85,17 @@ namespace functions {
              */
             template<typename OpType>
             static void exec(T *x,
-                             int *xShapeInfo,
+                             Nd4jLong *xShapeInfo,
                              T *y,
-                             int *yShapeInfo,
+                             Nd4jLong *yShapeInfo,
                              T *result,
-                             int *resultShapeInfo,
+                             Nd4jLong *resultShapeInfo,
                              int *dimension,
                              int dimensionLength,
-                             int *tadShapeInfo,
-                             Nd4jIndex *tadOffset,
-                             int *tadShapeInfoZ,
-                             Nd4jIndex *tadOffsetZ);
+                             Nd4jLong *tadShapeInfo,
+                             Nd4jLong *tadOffset,
+                             Nd4jLong *tadShapeInfoZ,
+                             Nd4jLong *tadOffsetZ);
         };
     }
 }

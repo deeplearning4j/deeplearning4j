@@ -80,11 +80,11 @@ nd4j.graph.FlatArray.getRootAsFlatArray = function(bb, obj) {
 
 /**
  * @param {number} index
- * @returns {number}
+ * @returns {flatbuffers.Long}
  */
 nd4j.graph.FlatArray.prototype.shape = function(index) {
   var offset = this.bb.__offset(this.bb_pos, 4);
-  return offset ? this.bb.readInt32(this.bb.__vector(this.bb_pos + offset) + index * 4) : 0;
+  return offset ? this.bb.readInt64(this.bb.__vector(this.bb_pos + offset) + index * 8) : this.bb.createLong(0, 0);
 };
 
 /**
@@ -93,14 +93,6 @@ nd4j.graph.FlatArray.prototype.shape = function(index) {
 nd4j.graph.FlatArray.prototype.shapeLength = function() {
   var offset = this.bb.__offset(this.bb_pos, 4);
   return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
-};
-
-/**
- * @returns {Int32Array}
- */
-nd4j.graph.FlatArray.prototype.shapeArray = function() {
-  var offset = this.bb.__offset(this.bb_pos, 4);
-  return offset ? new Int32Array(this.bb.bytes().buffer, this.bb.bytes().byteOffset + this.bb.__vector(this.bb_pos + offset), this.bb.__vector_len(this.bb_pos + offset)) : null;
 };
 
 /**
@@ -161,13 +153,13 @@ nd4j.graph.FlatArray.addShape = function(builder, shapeOffset) {
 
 /**
  * @param {flatbuffers.Builder} builder
- * @param {Array.<number>} data
+ * @param {Array.<flatbuffers.Long>} data
  * @returns {flatbuffers.Offset}
  */
 nd4j.graph.FlatArray.createShapeVector = function(builder, data) {
-  builder.startVector(4, data.length, 4);
+  builder.startVector(8, data.length, 8);
   for (var i = data.length - 1; i >= 0; i--) {
-    builder.addInt32(data[i]);
+    builder.addInt64(data[i]);
   }
   return builder.endVector();
 };
@@ -177,7 +169,7 @@ nd4j.graph.FlatArray.createShapeVector = function(builder, data) {
  * @param {number} numElems
  */
 nd4j.graph.FlatArray.startShapeVector = function(builder, numElems) {
-  builder.startVector(4, numElems, 4);
+  builder.startVector(8, numElems, 8);
 };
 
 /**

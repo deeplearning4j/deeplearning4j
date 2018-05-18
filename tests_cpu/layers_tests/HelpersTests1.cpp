@@ -1288,7 +1288,7 @@ TEST_F(HelpersTests1, softMaxForVector_test2) {
 TEST_F(HelpersTests1, softMaxForVector_test3) {
 
     NDArray<double> input ('c', {5}, {1,2,3,4,5});
-    NDArray<double> output('c', std::vector<int>{5});
+    NDArray<double> output('c', {5});
     NDArray<double> expOutput('c', {5}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});    
 
     ops::helpers::softMaxForVector<double>(input, output);
@@ -1324,7 +1324,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test2) {
 TEST_F(HelpersTests1, logSoftMaxForVector_test3) {
 
     NDArray<double> input ('c', {5}, {1,2,3,4,5});
-    NDArray<double> output('c', std::vector<int>{5});
+    NDArray<double> output('c', {5});
     NDArray<double> expOutput('c', {5}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});    
 
     ops::helpers::logSoftMaxForVector<double>(input, output);

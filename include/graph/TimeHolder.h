@@ -12,8 +12,8 @@ namespace nd4j {
     namespace graph {
         class TimeHolder {
         private:
-            std::map<int, Nd4jIndex> _outer;
-            std::map<int, Nd4jIndex> _inner;
+            std::map<int, Nd4jLong> _outer;
+            std::map<int, Nd4jLong> _inner;
 
 
         public:
@@ -22,12 +22,12 @@ namespace nd4j {
             ~TimeHolder() = default;
 
 
-            void setOuterTime(int nodeId, Nd4jIndex time);
-            void setInnerTime(int nodeId, Nd4jIndex time);
+            void setOuterTime(int nodeId, Nd4jLong time);
+            void setInnerTime(int nodeId, Nd4jLong time);
 
 
-            Nd4jIndex outerTime(int nodeId);
-            Nd4jIndex innerTime(int nodeId);
+            Nd4jLong outerTime(int nodeId);
+            Nd4jLong innerTime(int nodeId);
         };
     }
 }

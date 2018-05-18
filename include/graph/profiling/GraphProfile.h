@@ -18,28 +18,28 @@ namespace nd4j {
         class ND4J_EXPORT GraphProfile {
         private:
             // this variable
-            Nd4jIndex _merges = 1L;
+            Nd4jLong _merges = 1L;
 
             /**
              * This is global memory values
              */
-            Nd4jIndex _memoryTotal = 0L;
-            Nd4jIndex _memoryActivations = 0L;
-            Nd4jIndex _memoryTemporary = 0L;
-            Nd4jIndex _memoryObjects = 0L;
+            Nd4jLong _memoryTotal = 0L;
+            Nd4jLong _memoryActivations = 0L;
+            Nd4jLong _memoryTemporary = 0L;
+            Nd4jLong _memoryObjects = 0L;
 
             // time spent for graph construction
-            Nd4jIndex _buildTime = 0L;
+            Nd4jLong _buildTime = 0L;
 
             // time spent for graph execution
-            Nd4jIndex _executionTime = 0L;
+            Nd4jLong _executionTime = 0L;
 
             // collection of pointers to profile results 
             std::vector<NodeProfile *> _profiles;
             std::map<int, NodeProfile *> _profilesById;
 
             // collection of various timing reports
-            std::map<std::string, Nd4jIndex> _timings;
+            std::map<std::string, Nd4jLong> _timings;
             std::chrono::time_point<std::chrono::system_clock> _last;
 
             std::map<std::string, std::chrono::time_point<std::chrono::system_clock>> _timers;
@@ -52,20 +52,20 @@ namespace nd4j {
             /**
              * These methods just adding amount of bytes to various counters
              */
-            void addToTotal(Nd4jIndex bytes);
-            void addToActivations(Nd4jIndex bytes);
-            void addToTemporary(Nd4jIndex bytes);
-            void addToObjects(Nd4jIndex bytes);
+            void addToTotal(Nd4jLong bytes);
+            void addToActivations(Nd4jLong bytes);
+            void addToTemporary(Nd4jLong bytes);
+            void addToObjects(Nd4jLong bytes);
 
             /**
              * This method allows to set graph construction (i.e. deserialization) time in nanoseconds
              */
-            void setBuildTime(Nd4jIndex nanos);
+            void setBuildTime(Nd4jLong nanos);
 
             /**
              * This method sets graph execution time in nanoseconds.
              */
-            void setExecutionTime(Nd4jIndex nanos);
+            void setExecutionTime(Nd4jLong nanos);
 
             void startEvent(const char *name);
             void recordEvent(const char *name);
@@ -93,8 +93,8 @@ namespace nd4j {
             /**
              * These methods are just utility methods for time
              */
-            static Nd4jIndex currentTime();
-            static Nd4jIndex relativeTime(Nd4jIndex time);
+            static Nd4jLong currentTime();
+            static Nd4jLong relativeTime(Nd4jLong time);
 
             void printOut();
         };

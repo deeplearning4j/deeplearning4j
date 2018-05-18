@@ -38,9 +38,9 @@ namespace nd4j {
         ShapeList* DeclarableListOp<T>::calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context<T>& block) {
             // TODO: ensure this method isn't ever called
 
-            std::vector<int> shape({1, 1});
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+            std::vector<Nd4jLong> shape({1, 1});
+            Nd4jLong *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
             shape::shapeBuffer(2, shape.data(), newShape);
 
             return SHAPELIST(newShape);

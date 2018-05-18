@@ -158,7 +158,7 @@ namespace nd4j {
             if (transB == 1)
                 transB = 112;
 
-            int* outputShape = ShapeUtils<T>::matrixProductShape(inputShape->at(0), inputShape->at(1), transA == 112, transB == 112, block.getWorkspace());
+            auto outputShape = ShapeUtils<T>::matrixProductShape(inputShape->at(0), inputShape->at(1), transA == 112, transB == 112, block.getWorkspace());
 
             return SHAPELIST(outputShape);
         }

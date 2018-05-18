@@ -8,7 +8,7 @@ nd4j::ops::OpTuple::OpTuple(const char *opName) {
     _opName = opName;
 }
 
-nd4j::ops::OpTuple::OpTuple(const char *opName, std::initializer_list<nd4j::NDArray<float> *> &&inputs, std::initializer_list<float> &&tArgs, std::initializer_list<int> &&iArgs) {
+nd4j::ops::OpTuple::OpTuple(const char *opName, std::initializer_list<nd4j::NDArray<float> *> &&inputs, std::initializer_list<float> &&tArgs, std::initializer_list<Nd4jLong> &&iArgs) {
     _opName = opName;
     _inputs = inputs;
     _iArgs = iArgs;
@@ -35,7 +35,7 @@ nd4j::ops::OpTuple *nd4j::ops::OpTuple::setTArgs(std::initializer_list<float> tA
     return this;
 }
 
-nd4j::ops::OpTuple *nd4j::ops::OpTuple::setIArgs(std::initializer_list<int> iArgs) {
+nd4j::ops::OpTuple *nd4j::ops::OpTuple::setIArgs(std::initializer_list<Nd4jLong> iArgs) {
     _iArgs = iArgs;
     return this;
 }

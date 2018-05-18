@@ -57,7 +57,7 @@ bool nd4j::memory::MemoryUtils::retrieveMemoryStatistics(nd4j::memory::MemoryRep
         int n;
         lseek(fd, 0, SEEK_SET);
         if ((n = read(fd, line, sizeof(line))) > 0 && (s = (char*)memchr(line, ' ', n)) != NULL) {
-            report.setRSS((Nd4jIndex)(atoll(s + 1) * getpagesize()));
+            report.setRSS((Nd4jLong)(atoll(s + 1) * getpagesize()));
         }
         close(fd);
     }

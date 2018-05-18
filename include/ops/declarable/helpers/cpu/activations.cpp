@@ -20,8 +20,8 @@ void softMaxForVector(const NDArray<T>& input, NDArray<T>& output) {
 
     T* inBuff  = const_cast<NDArray<T>&>(input).getBuffer();
     T* outBuff = output.getBuffer();
-    int* inShapeInfo  = input.getShapeInfo();
-    int* outShapeInfo = output.getShapeInfo();
+    auto inShapeInfo  = input.getShapeInfo();
+    auto outShapeInfo = output.getShapeInfo();
 
     T max = -FLOAT_MAX_VALUE;
     T sum = 0.;
@@ -75,14 +75,14 @@ void logSoftMaxForVector(const NDArray<T>& input, NDArray<T>& output) {
 
     T* inBuff  = const_cast<NDArray<T>&>(input).getBuffer();
     T* outBuff = output.getBuffer();
-    int* inShapeInfo  = input.getShapeInfo();
-    int* outShapeInfo = output.getShapeInfo();
+    auto inShapeInfo  = input.getShapeInfo();
+    auto outShapeInfo = output.getShapeInfo();
 
     T max = -FLOAT_MAX_VALUE;
     T sum = 0;
 
-    int inEWS  = shape::elementWiseStride(inShapeInfo);
-    int length = shape::length(inShapeInfo);
+    auto inEWS  = shape::elementWiseStride(inShapeInfo);
+    auto length = shape::length(inShapeInfo);
     
     if (inEWS == 1) {
 #pragma omp simd reduction(maxT:max)

@@ -119,7 +119,7 @@ TEST_F(SingleDimTests, Test_ExpandDims_2) {
 
 
 TEST_F(SingleDimTests, Test_Squeeze_1) {
-    std::vector<int> vecS({1});
+    std::vector<Nd4jLong> vecS({1});
     std::vector<float> vecB({3.0f});
     NDArray<float> x('c', vecS, vecB);
     NDArray<float> exp(3.0f);

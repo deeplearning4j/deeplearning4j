@@ -10,7 +10,7 @@ namespace nd4j {
 //        _autoremovable = autoRemovable;
 //    }
 
-    ShapeList::ShapeList(int* shape) {
+    ShapeList::ShapeList(Nd4jLong* shape) {
         if (shape != nullptr)
             _shapes.push_back(shape);
     }
@@ -20,21 +20,21 @@ namespace nd4j {
             destroy();
     }
 
-    ShapeList::ShapeList(std::initializer_list<int*> shapes) {
+    ShapeList::ShapeList(std::initializer_list<Nd4jLong*> shapes) {
         for (auto v:shapes)
             _shapes.push_back(v);
     }
 
-    ShapeList::ShapeList(std::initializer_list<int*> shapes, bool isWorkspace) : ShapeList(shapes){
+    ShapeList::ShapeList(std::initializer_list<Nd4jLong*> shapes, bool isWorkspace) : ShapeList(shapes){
         _workspace = isWorkspace;
     }
 
-    ShapeList::ShapeList(std::vector<int*>& shapes) {
+    ShapeList::ShapeList(std::vector<Nd4jLong*>& shapes) {
         for (auto v:shapes)
             _shapes.push_back(v);
     }
 
-    std::vector<int*>* ShapeList::asVector() {
+    std::vector<Nd4jLong*>* ShapeList::asVector() {
         return &_shapes;
     }
 
@@ -49,21 +49,21 @@ namespace nd4j {
         return (int) _shapes.size();
     }
 
-    int* ShapeList::at(int idx) {
+    Nd4jLong* ShapeList::at(int idx) {
         return _shapes.at(idx);
     }
 
-    void ShapeList::push_back(int *shape) {
+    void ShapeList::push_back(Nd4jLong *shape) {
         _shapes.push_back(shape);
     }
 
-    void ShapeList::push_back(std::vector<int>& shape) {
+    void ShapeList::push_back(std::vector<Nd4jLong>& shape) {
         int dLen = shape::shapeInfoLength(shape.at(0));
 
         if (shape.size() != dLen)
             throw "Bad shape was passed in";
 
-        auto nShape = new int[dLen];
+        auto nShape = new Nd4jLong[dLen];
         std::memcpy(nShape, shape.data(), shape::shapeInfoByteLength(shape.at(0)));
 
         _shapes.push_back(nShape);

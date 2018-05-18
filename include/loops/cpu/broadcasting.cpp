@@ -12,17 +12,17 @@ namespace functions {
         template <typename T>
         void Broadcast<T>::exec(const int opNum,
                              T *x,
-                             int *xShapeInfo,
+                             Nd4jLong *xShapeInfo,
                              T *y,
-                             int *yShapeInfo,
+                             Nd4jLong *yShapeInfo,
                              T *result,
-                             int *resultShapeInfo,
+                             Nd4jLong *resultShapeInfo,
                              int *dimension,
                              int dimensionLength,
-                             int *tadShapeInfo,
-                             Nd4jIndex *tadOffset,
-                             int *tadShapeInfoZ,
-                             Nd4jIndex *tadOffsetZ) {
+                             Nd4jLong *tadShapeInfo,
+                             Nd4jLong *tadOffset,
+                             Nd4jLong *tadShapeInfoZ,
+                             Nd4jLong *tadOffsetZ) {
             DISPATCH_BY_OPNUM(exec, PARAMS(x,
                                                xShapeInfo,
                                                y,
@@ -40,25 +40,25 @@ namespace functions {
         template <typename T>
         template<typename OpType>
         void Broadcast<T>::exec(T *x,
-                             int *xShapeInfo,
+                             Nd4jLong *xShapeInfo,
                              T *y,
-                             int *yShapeInfo,
+                             Nd4jLong *yShapeInfo,
                              T *result,
-                             int *resultShapeInfo,
+                             Nd4jLong *resultShapeInfo,
                              int *dimension,
                              int dimensionLength,
-                             int *tadShapeInfo,
-                             Nd4jIndex *tadOffset,
-                             int *tadShapeInfoZ,
-                             Nd4jIndex *tadOffsetZ) {
+                             Nd4jLong *tadShapeInfo,
+                             Nd4jLong *tadOffset,
+                             Nd4jLong *tadShapeInfoZ,
+                             Nd4jLong *tadOffsetZ) {
 
 
                 //decompose in to several sub tads after
                 //moving all dimensions (in sorted order)
                 //to the back.
                 //permuted version of the x shape info for setting up the tad problem
-                int *tadShapeShapeInfo = tadShapeInfo;
-                Nd4jIndex *tadOffsets = tadOffset;
+                auto tadShapeShapeInfo = tadShapeInfo;
+                auto tadOffsets = tadOffset;
                 shape::TAD *tad = nullptr;
 
                 if (tadShapeInfo == nullptr || tadOffsets == nullptr) {
@@ -71,17 +71,17 @@ namespace functions {
                 }
 
                 //int *resultStride = shape::stride(tadShapeShapeInfo);
-                int tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
-                int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                int yStride = shape::elementWiseStride(yShapeInfo);
-                int tads = shape::length(xShapeInfo) / tadLength;
+                auto tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
+                auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                auto yStride = shape::elementWiseStride(yShapeInfo);
+                auto tads = shape::length(xShapeInfo) / tadLength;
 
                 if (tadShapeInfoZ == nullptr) {
                     tadShapeInfoZ = tadShapeShapeInfo;
                     tadOffsetZ = tadOffsets;
                 }
 
-                int zEWS = shape::elementWiseStride(tadShapeInfoZ);
+                auto zEWS = shape::elementWiseStride(tadShapeInfoZ);
 
                 int tadsPerThread = tads / TAD_THRESHOLD;
                 int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
@@ -89,10 +89,8 @@ namespace functions {
 
 #pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
                 for (int i = 0; i < tads; i++) {
-                    Nd4jIndex offset = tadOffsets[i];
-                    Nd4jIndex offsetZ = tadOffsetZ[i];
-//                    printf("Tad: [%i]; Offset: [%lld]; OffsetZ: [%lld];\n", i, offset, offsetZ);
-
+                    auto offset = tadOffsets[i];
+                    auto offsetZ = tadOffsetZ[i];
 
                     if (tadEWS > 0 && yStride > 0 && zEWS > 0 && dimensionLength == 1) {
                         T *oRes = result + offsetZ;
@@ -111,21 +109,21 @@ namespace functions {
                         }
                     }
                     else {
-                        int *zShape = shape::shapeOf(tadShapeInfoZ);
-                        int *zStride = shape::stride(tadShapeInfoZ);
+                        auto zShape = shape::shapeOf(tadShapeInfoZ);
+                        auto zStride = shape::stride(tadShapeInfoZ);
                         int zRank = shape::rank(tadShapeInfoZ);
 
-                        int *xShape = shape::shapeOf(tadShapeShapeInfo);
-                        int *xStride = shape::stride(tadShapeShapeInfo);
+                        auto xShape = shape::shapeOf(tadShapeShapeInfo);
+                        auto xStride = shape::stride(tadShapeShapeInfo);
                         int xRank = shape::rank(tadShapeShapeInfo);
 
-                        int *yShape = shape::shapeOf(yShapeInfo);
-                        int *yStride = shape::stride(yShapeInfo);
+                        auto yShape = shape::shapeOf(yShapeInfo);
+                        auto yStride = shape::stride(yShapeInfo);
                         int yRank = shape::rank(yShapeInfo);
 
-                        int xCoord[MAX_RANK];
-                        int yCoord[MAX_RANK];
-                        int zCoord[MAX_RANK];
+                        Nd4jLong xCoord[MAX_RANK];
+                        Nd4jLong yCoord[MAX_RANK];
+                        Nd4jLong zCoord[MAX_RANK];
 
 
                         // TODO: cover this codebranch with tests
@@ -144,9 +142,9 @@ namespace functions {
                             else
                                 shape::ind2sub(zRank, zShape, f, zCoord);
 
-                            Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
-                            Nd4jIndex zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);
-                            Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                            auto xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
+                            auto zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);
+                            auto yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 
                             result[zOffset] = OpType::op(x[xOffset], y[yOffset]);
                         }
@@ -161,8 +159,8 @@ namespace functions {
         template class ND4J_EXPORT Broadcast<float16>;
         template class ND4J_EXPORT Broadcast<double>;
 
-        BUILD_CALL_1(template void Broadcast<float>::exec, float, (float*, int*, float*, int*, float*, int*, int*, int, int*, long long*, int*, Nd4jIndex*), BROADCAST_OPS)
-        BUILD_CALL_1(template void Broadcast<float16>::exec, float16, (float16*, int*, float16*, int*, float16*, int*, int*, int, int*, long long*, int*, Nd4jIndex*), BROADCAST_OPS)
-        BUILD_CALL_1(template void Broadcast<double>::exec, double, (double*, int*, double*, int*, double*, int*, int*, int, int*, long long*, int*, Nd4jIndex*), BROADCAST_OPS)
+        BUILD_CALL_1(template void Broadcast<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
+        BUILD_CALL_1(template void Broadcast<float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
+        BUILD_CALL_1(template void Broadcast<double>::exec, double, (double*, Nd4jLong*, double*, Nd4jLong*, double*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
     }
 }

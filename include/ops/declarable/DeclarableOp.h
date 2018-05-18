@@ -60,8 +60,8 @@ namespace nd4j {
              *
              * TODO: we want workspaces support right here
              */
-            bool allocateResult(Context<T>& block, std::initializer_list<int>& shape, char order = 'c');
-            bool allocateResult(Context<T>& block, int* shape);
+            bool allocateResult(Context<T>& block, std::initializer_list<Nd4jLong>& shape, char order = 'c');
+            bool allocateResult(Context<T>& block, Nd4jLong* shape);
 
             /**
              * This method overwrites existen NDArray or NDArrayList in VariableSpace
@@ -122,7 +122,7 @@ namespace nd4j {
             /**
              * Returns opHash
              */
-            Nd4jIndex getOpHash();
+            Nd4jLong getOpHash();
 
             /**
              * This method sets arguments for op
@@ -142,13 +142,13 @@ namespace nd4j {
              */
             virtual Nd4jStatus execute(Context<T>* block);
 
-            nd4j::ResultSet<T>* execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
-            Nd4jStatus execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
-            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
+            nd4j::ResultSet<T>* execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<T> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
+            Nd4jStatus execute(std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
+            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::initializer_list<NDArray<T>*> inputs, std::initializer_list<NDArray<T>*> outputs , std::initializer_list<T> tArgs, std::initializer_list<Nd4jLong> iArgs, bool isInplace = false);
 
-            nd4j::ResultSet<T>* execute(std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
-            Nd4jStatus execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
-            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
+            nd4j::ResultSet<T>* execute(std::vector<NDArray<T>*>& inputs, std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
+            Nd4jStatus execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
+            Nd4jStatus execute(nd4j::random::RandomBuffer *rng, std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs , std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace = false);
 
             // There methods provide various validation options
             Nd4jStatus validateNonEmptyInput(Context<T>& block);

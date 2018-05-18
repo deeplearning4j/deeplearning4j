@@ -625,8 +625,8 @@ TEST_F(NDArrayTest2, Test_toIndexedString_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, permute_test4) {
             
-    int arr1ShapeInfo[] = {6, 1, 1, 4, 3, 2, 2,    48, 48, 12, 4,  2,  1, 0, 1,  99};
-    int arr2ShapeInfo[] = {6, 1, 2, 2, 1, 4, 3,    48, 2,  1,  48, 12, 4, 0, -1, 99};
+    Nd4jLong arr1ShapeInfo[] = {6, 1, 1, 4, 3, 2, 2,    48, 48, 12, 4,  2,  1, 0, 1,  99};
+    Nd4jLong arr2ShapeInfo[] = {6, 1, 2, 2, 1, 4, 3,    48, 2,  1,  48, 12, 4, 0, -1, 99};
 
     float* arr1Buffer = new float[786432];
     float* arr2Buffer = new float[786432];
@@ -635,7 +635,6 @@ TEST_F(NDArrayTest2, permute_test4) {
     NDArray<float> arr2(arr2Buffer, arr2ShapeInfo, nullptr);
 
     const std::vector<int> perm = {0, 4, 5, 1, 2, 3};    
-    printf("!!!\n");
     NDArray<float>* arr1P = arr1.permute(perm);
     arr1P->printShapeInfo();
 

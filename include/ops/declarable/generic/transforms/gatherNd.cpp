@@ -34,8 +34,8 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(gather_nd) {
 
-	int* inShapeInfoIn = inputShape->at(0);
-    int* inShapeInfoInd = inputShape->at(1);
+	auto inShapeInfoIn = inputShape->at(0);
+    auto inShapeInfoInd = inputShape->at(1);
 		
     const int rankIn = inShapeInfoIn[0];
     const int rankInd = inShapeInfoInd[0];
@@ -45,8 +45,8 @@ DECLARE_SHAPE_FN(gather_nd) {
 
 	int outRank = (rankInd - 1) + (rankIn - lastIndDim);
 
-    int* outShapeInfo = nullptr;
-	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), int);
+    Nd4jLong* outShapeInfo = nullptr;
+	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
 
     outShapeInfo[0] = outRank;
 

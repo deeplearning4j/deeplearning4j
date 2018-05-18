@@ -34,7 +34,7 @@ namespace nd4j {
             _workspace = nullptr;
         }
 
-        void MemoryRegistrator::setGraphMemoryFootprint(Nd4jIndex hash, Nd4jIndex bytes) {
+        void MemoryRegistrator::setGraphMemoryFootprint(Nd4jLong hash, Nd4jLong bytes) {
             _lock.lock();
     
             _footprint[hash] = bytes;
@@ -42,13 +42,13 @@ namespace nd4j {
             _lock.unlock();
         }
 
-        void MemoryRegistrator::setGraphMemoryFootprintIfGreater(Nd4jIndex hash, Nd4jIndex bytes) {
+        void MemoryRegistrator::setGraphMemoryFootprintIfGreater(Nd4jLong hash, Nd4jLong bytes) {
             _lock.lock();
 
             if (_footprint.count(hash) == 0)
                 _footprint[hash] = bytes;
             else {
-                Nd4jIndex cv = _footprint[hash];
+                Nd4jLong cv = _footprint[hash];
                 if (bytes > cv)
                     _footprint[hash] = bytes;
             }
@@ -56,10 +56,10 @@ namespace nd4j {
             _lock.unlock();
         }
 
-        Nd4jIndex MemoryRegistrator::getGraphMemoryFootprint(Nd4jIndex hash) {
+        Nd4jLong MemoryRegistrator::getGraphMemoryFootprint(Nd4jLong hash) {
             _lock.lock();
             
-            Nd4jIndex result = 0L;
+            Nd4jLong result = 0L;
             if (_footprint.count(hash) > 0)
                 result = _footprint[hash];
         

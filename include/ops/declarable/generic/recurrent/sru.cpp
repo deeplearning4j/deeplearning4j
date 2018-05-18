@@ -95,7 +95,7 @@ CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
 
 DECLARE_SHAPE_FN(sru_logic) {
 
-    int* inShape = inputShape->at(0);   // [bS x K x N]
+    auto inShape = inputShape->at(0);   // [bS x K x N]
     int rank = inShape[0];              // = 3
     int size = rank*2 + 4;
     int bS   = inShape[1];
@@ -103,10 +103,10 @@ DECLARE_SHAPE_FN(sru_logic) {
     int N    = inShape[3];
     char order = (char)(inShape[size-1]);
 
-    int* newShapeInfo1 = nullptr;
-    int* newShapeInfo2 = nullptr;
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, int);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), size, int);
+    Nd4jLong* newShapeInfo1 = nullptr;
+    Nd4jLong* newShapeInfo2 = nullptr;
+    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);
+    ALLOCATE(newShapeInfo2, block.getWorkspace(), size, Nd4jLong);
     
     newShapeInfo1[0] = rank;        
     newShapeInfo1[1] = bS;
@@ -197,18 +197,18 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
 
 DECLARE_SHAPE_FN(sru_old) {
 
-    int* inShape = inputShape->at(0);   // [bS x inSize x time]
+    auto inShape = inputShape->at(0);   // [bS x inSize x time]
     int rank = inShape[0];              // = 3
     int size = rank*2 + 4;
-    int bS   = inShape[1];
-    int inSize    = inShape[2];
+    auto bS   = inShape[1];
+    auto inSize    = inShape[2];
     int time    = inShape[3];
     char order = (char)(inShape[size-1]);
 
-    int* newShapeInfo1 = nullptr;
-    int* newShapeInfo2 = nullptr;
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, int);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), size, int);
+    Nd4jLong* newShapeInfo1 = nullptr;
+    Nd4jLong* newShapeInfo2 = nullptr;
+    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);
+    ALLOCATE(newShapeInfo2, block.getWorkspace(), size, Nd4jLong);
 
     newShapeInfo1[0] = rank;
     newShapeInfo1[1] = bS;
@@ -278,11 +278,11 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
 
 DECLARE_SHAPE_FN(sru) {
 
-    int* xShapeInfo    = inputShape->at(0);                                   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
-    int* wShapeInfo    = inputShape->at(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
-    int* bShapeInfo    = inputShape->at(2);                                   // B, row of biases with twice length [2*inSize]
-    int* c0ShapeInfo   = inputShape->at(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
-    int* maskShapeInfo = block.width() > 4 ? inputShape->at(4) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
+    auto xShapeInfo    = inputShape->at(0);                                   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
+    auto wShapeInfo    = inputShape->at(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
+    auto bShapeInfo    = inputShape->at(2);                                   // B, row of biases with twice length [2*inSize]
+    auto c0ShapeInfo   = inputShape->at(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
+    Nd4jLong* maskShapeInfo = block.width() > 4 ? inputShape->at(4) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
 
     const int rank   = xShapeInfo[0];              // = 3
     const int bS     = xShapeInfo[1];
@@ -311,10 +311,10 @@ DECLARE_SHAPE_FN(sru) {
         REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str());
     }
 
-    int* newShapeInfo1 = nullptr;
-    int* newShapeInfo2 = nullptr;
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), int);       // [bS x inSize x time]
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), shape::shapeInfoLength(rank), int);       // [bS x inSize x time]
+    Nd4jLong* newShapeInfo1 = nullptr;
+    Nd4jLong* newShapeInfo2 = nullptr;
+    ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);       // [bS x inSize x time]
+    ALLOCATE(newShapeInfo2, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);       // [bS x inSize x time]
 
     newShapeInfo1[0] = rank;
     newShapeInfo1[1] = bS;
@@ -488,17 +488,17 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
 DECLARE_SHAPE_FN(sru_bp) {
 
-    int* inShape = inputShape->at(0);   // [bS x inSize x time]
-    int bS   = inShape[1];
-    int inSize    = inShape[2];
-    int time    = inShape[3];
+    auto inShape = inputShape->at(0);   // [bS x inSize x time]
+    auto bS   = inShape[1];
+    auto inSize    = inShape[2];
+    auto time    = inShape[3];
     char order = (char)(inShape[9]);
 
-    int *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), 10, int);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), 10, int);
-    ALLOCATE(newShapeInfo3, block.getWorkspace(), 8, int);
-    ALLOCATE(newShapeInfo4, block.getWorkspace(), 8,  int);    
+    Nd4jLong *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
+    ALLOCATE(newShapeInfo1, block.getWorkspace(), 10, Nd4jLong);
+    ALLOCATE(newShapeInfo2, block.getWorkspace(), 10, Nd4jLong);
+    ALLOCATE(newShapeInfo3, block.getWorkspace(), 8, Nd4jLong);
+    ALLOCATE(newShapeInfo4, block.getWorkspace(), 8,  Nd4jLong);    
     
     newShapeInfo1[0] = 3;
     newShapeInfo1[1] = bS;
@@ -663,17 +663,17 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
 
 DECLARE_SHAPE_FN(sru_bp_logic) {
 
-    int* inShape = inputShape->at(0);   // [bS x inSize x time]
-    int bS   = inShape[1];
-    int inSize    = inShape[2];
-    int time    = inShape[3];
-    char order = (char)(inShape[9]);
+    auto inShape = inputShape->at(0);   // [bS x inSize x time]
+    auto bS   = inShape[1];
+    auto inSize    = inShape[2];
+    auto time    = inShape[3];
+    char order = shape::order(inShape);
 
-    int *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), 10, int);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), 10, int);
-    ALLOCATE(newShapeInfo3, block.getWorkspace(), 8, int);
-    ALLOCATE(newShapeInfo4, block.getWorkspace(), 8,  int);    
+    Nd4jLong *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
+    ALLOCATE(newShapeInfo1, block.getWorkspace(), 10, Nd4jLong);
+    ALLOCATE(newShapeInfo2, block.getWorkspace(), 10, Nd4jLong);
+    ALLOCATE(newShapeInfo3, block.getWorkspace(), 8, Nd4jLong);
+    ALLOCATE(newShapeInfo4, block.getWorkspace(), 8,  Nd4jLong);    
     
     newShapeInfo1[0] = 3;
     newShapeInfo1[1] = bS;
@@ -788,19 +788,19 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
 
 DECLARE_SHAPE_FN(sru_bi) {
 
-    int* inShape = inputShape->at(0);   // [time x bS x 2K ]
-    int rank = inShape[0];              // = 3
-    int size = rank*2 + 4;        
-    int time    = inShape[1];
-    int bS   = inShape[2];
-    int inSize    = inShape[3] / 2;
+    auto inShape = inputShape->at(0);   // [time x bS x 2K ]
+    auto rank = inShape[0];              // = 3
+    auto size = rank*2 + 4;        
+    auto time    = inShape[1];
+    auto bS   = inShape[2];
+    auto inSize    = inShape[3] / 2;
     
-    char order = (char)(inShape[size-1]);
+    char order = shape::order(inShape);
 
-    int* newShapeInfo1 = nullptr;
-    int* newShapeInfo2 = nullptr;
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, int);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), size, int);
+    Nd4jLong* newShapeInfo1 = nullptr;
+    Nd4jLong* newShapeInfo2 = nullptr;
+    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);
+    ALLOCATE(newShapeInfo2, block.getWorkspace(), size, Nd4jLong);
     
     newShapeInfo1[0] = rank;        
     newShapeInfo1[1] = time;
@@ -949,17 +949,17 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
 
 DECLARE_SHAPE_FN(sru_bi_bp) {
 
-    int* inShape = inputShape->at(0);   // [time x bS x 2K]
-    int time    = inShape[1];
-    int bS   = inShape[2];
-    int inSize    = inShape[3] / 2;
-    char order = (char)(inShape[9]);
+    auto inShape = inputShape->at(0);   // [time x bS x 2K]
+    auto time    = inShape[1];
+    auto bS   = inShape[2];
+    auto inSize    = inShape[3] / 2;
+    char order = shape::order(inShape);
 
-    int *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), 10, int);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), 10, int);
-    ALLOCATE(newShapeInfo3, block.getWorkspace(), 8, int);
-    ALLOCATE(newShapeInfo4, block.getWorkspace(), 8, int);    
+    Nd4jLong *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
+    ALLOCATE(newShapeInfo1, block.getWorkspace(), 10, Nd4jLong);
+    ALLOCATE(newShapeInfo2, block.getWorkspace(), 10, Nd4jLong);
+    ALLOCATE(newShapeInfo3, block.getWorkspace(), 8, Nd4jLong);
+    ALLOCATE(newShapeInfo4, block.getWorkspace(), 8, Nd4jLong);    
     
     // gradInput
     newShapeInfo1[0] = 3;

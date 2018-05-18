@@ -36,16 +36,16 @@ namespace nd4j {
             auto in = inputShape->at(0);
             auto source = INPUT_VARIABLE(0);
 //            auto shapeList = SHAPELIST(); 
-            int* valuesShape;
-            int* indicesShape;
+            Nd4jLong* valuesShape;
+            Nd4jLong* indicesShape;
 
             int uniqueCount = helpers::uniqueCount(source);
 
             // all output shapes are 1D arrays (vectors)
-            ALLOCATE(valuesShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+            ALLOCATE(valuesShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
             shape::shapeVector(uniqueCount, valuesShape);
 
-            ALLOCATE(indicesShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+            ALLOCATE(indicesShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
             shape::shapeVector(source->lengthOf(), indicesShape);
 
             //COPY_SHAPE_EX(in, indicesShape, block.getWorkspace());
@@ -68,19 +68,19 @@ namespace nd4j {
             auto source = INPUT_VARIABLE(0);
             auto shapeList = SHAPELIST(); 
 
-            int* valuesShape;
-            int* indicesShape;
-            int* countsShape;
+            Nd4jLong* valuesShape;
+            Nd4jLong* indicesShape;
+            Nd4jLong* countsShape;
 
             int uniqueCount = helpers::uniqueCount(source);
             // all output shapes are 1D arrays (vectors)
-            ALLOCATE(valuesShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+            ALLOCATE(valuesShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
             shape::shapeVector(uniqueCount, valuesShape);
 
-            ALLOCATE(indicesShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+            ALLOCATE(indicesShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
             shape::shapeVector(source->lengthOf(), indicesShape);
 
-            ALLOCATE(countsShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+            ALLOCATE(countsShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
             shape::shapeVector(uniqueCount, countsShape);
 
             shapeList->push_back(valuesShape); 

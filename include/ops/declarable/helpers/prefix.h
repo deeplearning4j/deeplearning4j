@@ -14,7 +14,7 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
             template <typename T, typename OpName>
-            void _prefix(T* x, int* xShapeInfo, T* z, int* zShapeInfo, bool exclusive, bool reverse);
+            void _prefix(T* x, Nd4jLong *xShapeInfo, T* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse);
 
             template <typename T, typename OpName>
             void _prefix(NDArray<T>* x, NDArray<T>* z, std::vector<int>& dims, bool exclusive, bool reverse);

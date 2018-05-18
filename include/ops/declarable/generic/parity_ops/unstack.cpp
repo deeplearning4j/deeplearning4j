@@ -60,9 +60,9 @@ namespace nd4j {
 
             shape::TAD tad(inShape, dims.data(), (int) dims.size());
             tad.createTadOnlyShapeInfo();
-            Nd4jIndex numTads = shape::length(inShape) / shape::tadLength(inShape, dims.data(), (int) dims.size());
+            Nd4jLong numTads = shape::length(inShape) / shape::tadLength(inShape, dims.data(), (int) dims.size());
             
-            std::vector<int> shape(shape::rank(tad.tadOnlyShapeInfo));
+            std::vector<Nd4jLong> shape(shape::rank(tad.tadOnlyShapeInfo));
             for (int e = 0; e < shape::rank(tad.tadOnlyShapeInfo); e++)
                 shape[e] = shape::shapeOf(tad.tadOnlyShapeInfo)[e];
 
@@ -72,8 +72,8 @@ namespace nd4j {
             
             auto result = SHAPELIST();
             for (int e = 0; e < numTads; e++) {
-                int *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
+                Nd4jLong *newShape;
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
                 if (shape::order(inShape) == 'c')
                     shape::shapeBuffer(shape.size(), shape.data(), newShape);
                 else

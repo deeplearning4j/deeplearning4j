@@ -129,14 +129,14 @@ namespace nd4j {
                 return from + (nextT() * (to - from));
             }
 
-            inline _CUDA_D uint64_t relativeUInt(Nd4jIndex index) {
+            inline _CUDA_D uint64_t relativeUInt(Nd4jLong index) {
                 return buffer->getElement(index);
             }
 
             /**
              *  relative methods are made as workaround for lock-free concurrent execution
              */
-            inline _CUDA_D int relativeInt(Nd4jIndex index) {
+            inline _CUDA_D int relativeInt(Nd4jLong index) {
                 return (int) (relativeUInt(index) % ((unsigned int) MAX_INT + 1));
             }
 
@@ -147,7 +147,7 @@ namespace nd4j {
              * @param to
              * @return
              */
-            inline _CUDA_D int relativeInt(Nd4jIndex index, int to) {
+            inline _CUDA_D int relativeInt(Nd4jLong index, int to) {
                 int rel = relativeInt(index);
                 return rel % to;
             }
@@ -160,7 +160,7 @@ namespace nd4j {
              * @param from
              * @return
              */
-            inline int _CUDA_D relativeInt(Nd4jIndex index, int to, int from) {
+            inline int _CUDA_D relativeInt(Nd4jLong index, int to, int from) {
                 if (from == 0)
                     return relativeInt(index, to);
 
@@ -174,7 +174,7 @@ namespace nd4j {
              * @return
              */
 
-            inline _CUDA_D T relativeT(Nd4jIndex index) {
+            inline _CUDA_D T relativeT(Nd4jLong index) {
                 if (sizeof(T) < 4) {
                     // FIXME: this is fast hack for short types, like fp16. This should be improved.
                     return (T)((float) relativeUInt(index) / (float) MAX_UINT);
@@ -188,7 +188,7 @@ namespace nd4j {
              * @param to
              * @return
              */
-            inline _CUDA_D T relativeT(Nd4jIndex index, T to) {
+            inline _CUDA_D T relativeT(Nd4jLong index, T to) {
                 if (to == (T) 1.0f)
                     return relativeT(index);
 
@@ -203,7 +203,7 @@ namespace nd4j {
              * @param to
              * @return
              */
-            inline _CUDA_D T relativeT(Nd4jIndex index, T from, T to) {
+            inline _CUDA_D T relativeT(Nd4jLong index, T from, T to) {
                 return from + (relativeT(index) * (to - from));
             }
 
@@ -213,7 +213,7 @@ namespace nd4j {
              *
              * @param numberOfElements number of elements to skip
              */
-            inline _CUDA_D void rewind(Nd4jIndex numberOfElements) {
+            inline _CUDA_D void rewind(Nd4jLong numberOfElements) {
                 buffer->rewindH(numberOfElements);
             }
         };

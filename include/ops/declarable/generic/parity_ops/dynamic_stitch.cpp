@@ -34,10 +34,10 @@ namespace ops {
     DECLARE_SHAPE_FN(dynamic_stitch) {
 
         int maxValue = 0;
-        int numOfData = block.width();
+        auto numOfData = block.width();
         numOfData /= 2; // only index part it's needed to review
-        int* restShape = inputShape->at(numOfData);
-        int* firstShape = inputShape->at(0);
+        auto restShape = inputShape->at(numOfData);
+        auto firstShape = inputShape->at(0);
         for(int i = 0; i < numOfData; i++) {
             NDArray<T>* input = INPUT_VARIABLE(i);
             
@@ -47,9 +47,9 @@ namespace ops {
             }
         }
 
-        int *outShapeInfo;
+        Nd4jLong *outShapeInfo;
         int outRank = shape::rank(restShape) - shape::rank(firstShape) + 1;
-        ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), int);
+        ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
 
         outShapeInfo[0] = outRank;
         outShapeInfo[1] = maxValue + 1;

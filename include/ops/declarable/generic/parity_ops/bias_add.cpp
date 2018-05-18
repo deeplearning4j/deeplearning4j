@@ -23,7 +23,7 @@ namespace nd4j {
                 input->addRowVector(bias, z);
             else {
                 // TODO: we might want to use NDArray::applyTrueBroadcast here, like AddOp does
-                std::vector<int> shape({-1, (int) bias->lengthOf()});
+                std::vector<Nd4jLong> shape({-1, bias->lengthOf()});
                 //nd4j_debug("Reshaping to: [%i, %i]\n", -1, (int) bias->lengthOf());
                 auto tArr = input->reshape(input->ordering(), shape);
                 auto zArr = z->reshape(z->ordering(), shape);
@@ -76,14 +76,11 @@ namespace nd4j {
             auto input = inputShape->at(0);
             auto bias = inputShape->at(1);
 
-            int* epsShape;
-            int* gradShape;
-            ALLOCATE(epsShape, block.getWorkspace(), shape::shapeInfoLength(input), int);
-            ALLOCATE(gradShape, block.getWorkspace(), shape::shapeInfoLength(bias), int);
+            Nd4jLong* epsShape;
+            Nd4jLong* gradShape;
 
-            // FIXME: remove memcpy here
-            memcpy(epsShape, input, shape::shapeInfoByteLength(input));
-            memcpy(gradShape, bias, shape::shapeInfoByteLength(gradShape));
+            COPY_SHAPE(input, epsShape);
+            COPY_SHAPE(bias, gradShape);
 
             return SHAPELIST(epsShape, gradShape);
         }

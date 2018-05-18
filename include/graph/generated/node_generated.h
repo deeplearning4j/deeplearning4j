@@ -61,11 +61,11 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<int32_t> *output() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_OUTPUT);
   }
-  const flatbuffers::Vector<float> *extraParams() const {
-    return GetPointer<const flatbuffers::Vector<float> *>(VT_EXTRAPARAMS);
+  const flatbuffers::Vector<double> *extraParams() const {
+    return GetPointer<const flatbuffers::Vector<double> *>(VT_EXTRAPARAMS);
   }
-  const flatbuffers::Vector<int32_t> *extraInteger() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_EXTRAINTEGER);
+  const flatbuffers::Vector<int64_t> *extraInteger() const {
+    return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_EXTRAINTEGER);
   }
   const flatbuffers::Vector<int32_t> *dimensions() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_DIMENSIONS);
@@ -145,10 +145,10 @@ struct FlatNodeBuilder {
   void add_output(flatbuffers::Offset<flatbuffers::Vector<int32_t>> output) {
     fbb_.AddOffset(FlatNode::VT_OUTPUT, output);
   }
-  void add_extraParams(flatbuffers::Offset<flatbuffers::Vector<float>> extraParams) {
+  void add_extraParams(flatbuffers::Offset<flatbuffers::Vector<double>> extraParams) {
     fbb_.AddOffset(FlatNode::VT_EXTRAPARAMS, extraParams);
   }
-  void add_extraInteger(flatbuffers::Offset<flatbuffers::Vector<int32_t>> extraInteger) {
+  void add_extraInteger(flatbuffers::Offset<flatbuffers::Vector<int64_t>> extraInteger) {
     fbb_.AddOffset(FlatNode::VT_EXTRAINTEGER, extraInteger);
   }
   void add_dimensions(flatbuffers::Offset<flatbuffers::Vector<int32_t>> dimensions) {
@@ -189,8 +189,8 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> inputPaired = 0,
     DataType dataType = DataType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> output = 0,
-    flatbuffers::Offset<flatbuffers::Vector<float>> extraParams = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> extraInteger = 0,
+    flatbuffers::Offset<flatbuffers::Vector<double>> extraParams = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int64_t>> extraInteger = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> dimensions = 0,
     int32_t device = 0,
     float scalar = 0.0f,
@@ -227,8 +227,8 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     const std::vector<flatbuffers::Offset<IntPair>> *inputPaired = nullptr,
     DataType dataType = DataType_INHERIT,
     const std::vector<int32_t> *output = nullptr,
-    const std::vector<float> *extraParams = nullptr,
-    const std::vector<int32_t> *extraInteger = nullptr,
+    const std::vector<double> *extraParams = nullptr,
+    const std::vector<int64_t> *extraInteger = nullptr,
     const std::vector<int32_t> *dimensions = nullptr,
     int32_t device = 0,
     float scalar = 0.0f,
@@ -245,8 +245,8 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
       inputPaired ? _fbb.CreateVector<flatbuffers::Offset<IntPair>>(*inputPaired) : 0,
       dataType,
       output ? _fbb.CreateVector<int32_t>(*output) : 0,
-      extraParams ? _fbb.CreateVector<float>(*extraParams) : 0,
-      extraInteger ? _fbb.CreateVector<int32_t>(*extraInteger) : 0,
+      extraParams ? _fbb.CreateVector<double>(*extraParams) : 0,
+      extraInteger ? _fbb.CreateVector<int64_t>(*extraInteger) : 0,
       dimensions ? _fbb.CreateVector<int32_t>(*dimensions) : 0,
       device,
       scalar,

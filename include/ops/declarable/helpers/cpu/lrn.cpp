@@ -39,7 +39,7 @@ namespace helpers {
     template <typename T>
     int lrnFunctorEx(NDArray<T>* input, NDArray<T>* output, NDArray<T>* unitScale, NDArray<T>* scale, int depth, T bias, T alpha, T beta) {
     
-        depth = nd4j::math::nd4j_min(depth, input->sizeAt(1));
+        depth = nd4j::math::nd4j_min<Nd4jLong>(depth, input->sizeAt(1));
 
         int halfDepth = (int) ( (T) depth / (T) 2.f);
         halfDepth = nd4j::math::nd4j_max(halfDepth, 0);

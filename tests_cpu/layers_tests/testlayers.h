@@ -6,6 +6,7 @@
 #define LIBND4J_TESTLAYERS_H
 
 #include <op_boilerplate.h>
+#include <pointercast.h>
 #include <NativeOps.h>
 #include <graph/Node.h>
 #include <graph/Variable.h>

@@ -81,15 +81,15 @@ namespace ops {
 
     DECLARE_SHAPE_FN(transpose) {
         if (block.width() == 1) {
-            int *outputShapeInfo = ShapeUtils<T>::evalTranspShapeInfo(*INPUT_VARIABLE(0), block.workspace());
+            auto outputShapeInfo = ShapeUtils<T>::evalTranspShapeInfo(*INPUT_VARIABLE(0), block.workspace());
             return SHAPELIST(outputShapeInfo);
         } else {
             // this is basically permute mode
             auto shapeList = SHAPELIST();
-            std::vector<int>* arguments = block.getIArguments();
+            auto arguments = block.getIArguments();
             if (shape::rank(inputShape->at(0)) == 0) {
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
+                Nd4jLong *newshape;
+                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), Nd4jLong);
                 newshape[0] = 0;
                 newshape[1] = 0;
                 newshape[2] = 1;
@@ -97,20 +97,19 @@ namespace ops {
                 shapeList->push_back(newshape);
             } else if (arguments->size() > 0 || inputShape->size() > 1) {
                 std::vector<int> axis = arguments->size() > 0 ? *arguments : (INPUT_VARIABLE(1))->template asVectorT<int>();
-                int* outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(axis.data(), axis.size(), *INPUT_VARIABLE(0), block.workspace());
+                auto outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(axis.data(), axis.size(), *INPUT_VARIABLE(0), block.workspace());
                 shapeList->push_back(outputShapeInfo);
             } else if (inputShape->size() == 2) {
                 // dead end
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
-                memcpy(newshape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
+                Nd4jLong *newshape;
+                COPY_SHAPE(inputShape->at(0), newshape);
                 shapeList->push_back(newshape);
             } else {
                 int rank = shape::rank(inputShape->at(0));
                 for (int e = rank - 1; e >= 0; e--)
                     arguments->emplace_back(e);
 
-                int* outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
+                auto outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
                 shapeList->push_back(outputShapeInfo);
             }
 

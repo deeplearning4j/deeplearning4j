@@ -83,8 +83,8 @@ namespace nd4j {
             int batchSize = INT_ARG(8);
 
             if (!(M > 0 && N > 0 && K > 0 && ldA > 0 && ldB > 0 && ldC > 0 && batchSize > 0)) {
-                int *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+                Nd4jLong *newShape;
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
                 newShape[0] = 2;
                 newShape[1] = 1;
@@ -100,11 +100,11 @@ namespace nd4j {
             }
             
 
-            std::vector<int> shape({M, N});
+            std::vector<Nd4jLong> shape({M, N});
 
             for (int e = 0; e < batchSize; e++) {
-                int *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+                Nd4jLong *newShape;
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
                 shape::shapeBufferFortran(2, shape.data(), newShape);
 

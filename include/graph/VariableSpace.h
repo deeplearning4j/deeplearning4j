@@ -98,9 +98,9 @@ namespace nd4j {
             virtual void putOutputVariable(Variable<T> *variable);
 
             // memory-related statistics
-            virtual Nd4jIndex externalMemory();
-            virtual Nd4jIndex internalMemory();
-            virtual Nd4jIndex totalMemory();
+            virtual Nd4jLong externalMemory();
+            virtual Nd4jLong internalMemory();
+            virtual Nd4jLong totalMemory();
 
             virtual int externalEntries();
             virtual int internalEntries();

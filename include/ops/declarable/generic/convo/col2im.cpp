@@ -49,8 +49,8 @@ namespace nd4j {
             int dX = INT_ARG(7);			//Dilation, width/x dimension
             bool isSameMode = INT_ARG(8) > 0;
 
-            int* zShape;
-            ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
+            Nd4jLong* zShape;
+            ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
 
             zShape[0] = 4;
             zShape[1] = bS;

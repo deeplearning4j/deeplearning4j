@@ -12,7 +12,7 @@ namespace ops     {
 namespace helpers {
 
 	template <typename T>
-	void reverseArray(T* inArr, int *inShapeBuffer, T *result, int *zShapeBuffer, int numOfElemsToReverse = 0);
+	void reverseArray(T* inArr, Nd4jLong *inShapeBuffer, T *result, Nd4jLong *zShapeBuffer, int numOfElemsToReverse = 0);
 
 	
 	template <typename T>

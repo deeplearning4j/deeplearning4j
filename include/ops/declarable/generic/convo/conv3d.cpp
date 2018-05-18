@@ -78,9 +78,9 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
 
 DECLARE_SHAPE_FN(conv3dnew) {    
 
-    int* inputShapeInfo   = inputShape->at(0);                                  // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
-    int* weightsShapeInfo = inputShape->at(1);                                  // [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)
-    int* biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;    // [oC]
+    auto inputShapeInfo   = inputShape->at(0);                                  // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
+    auto weightsShapeInfo = inputShape->at(1);                                  // [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)
+    auto biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;    // [oC]
 
     int kD = INT_ARG(0);                                                        // filter(kernel) depth
     int kH = INT_ARG(1);                                                        // filter(kernel) height
@@ -124,8 +124,8 @@ DECLARE_SHAPE_FN(conv3dnew) {
     int oD, oH, oW;                         // output depth, height, width
     ConvolutionUtils<T>::calcOutSizePool3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW, isSameMode);
     
-    int* outputShapeInfo = nullptr;
-    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), int);
+    Nd4jLong* outputShapeInfo = nullptr;
+    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), Nd4jLong);
 
     outputShapeInfo[0] = rank;
     outputShapeInfo[1] = bS;
@@ -239,10 +239,10 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
 
 DECLARE_SHAPE_FN(conv3dnew_bp) {
 
-    int* inputShapeInfo   = inputShape->at(0);                                              // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
-    int* weightsShapeInfo = inputShape->at(1);                                              // [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)
-    int* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;                // [oC]
-    int* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);      // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
+    Nd4jLong* inputShapeInfo   = inputShape->at(0);                                              // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
+    Nd4jLong* weightsShapeInfo = inputShape->at(1);                                              // [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)
+    Nd4jLong* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;                // [oC]
+    Nd4jLong* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);      // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
 
     int kD = INT_ARG(0);                                                        // filter(kernel) depth
     int kH = INT_ARG(1);                                                        // filter(kernel) height
@@ -289,12 +289,12 @@ DECLARE_SHAPE_FN(conv3dnew_bp) {
     if(biasShapeInfo)        
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM CONV3D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
-    int* gradIshapeInfo(nullptr), *gradWshapeInfo(nullptr);
+    Nd4jLong* gradIshapeInfo(nullptr), *gradWshapeInfo(nullptr);
     COPY_SHAPE(inputShapeInfo, gradIshapeInfo);
     COPY_SHAPE(weightsShapeInfo, gradWshapeInfo);
 
     if(biasShapeInfo) {
-        int* gradBshapeInfo(nullptr);
+        Nd4jLong* gradBshapeInfo(nullptr);
         COPY_SHAPE(biasShapeInfo, gradBshapeInfo);
         return SHAPELIST(gradIshapeInfo, gradWshapeInfo, gradBshapeInfo);
     }     

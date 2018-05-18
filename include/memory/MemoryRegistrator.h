@@ -15,7 +15,7 @@ namespace nd4j {
         protected:
             static MemoryRegistrator* _INSTANCE;
             Workspace* _workspace;
-            std::map<Nd4jIndex, Nd4jIndex> _footprint;
+            std::map<Nd4jLong, Nd4jLong> _footprint;
             std::mutex _lock;
 
             MemoryRegistrator();
@@ -30,18 +30,18 @@ namespace nd4j {
             /**
              * This method allows you to set memory requirements for given graph
              */
-            void setGraphMemoryFootprint(Nd4jIndex hash, Nd4jIndex bytes);
+            void setGraphMemoryFootprint(Nd4jLong hash, Nd4jLong bytes);
 
             /**
              * This method allows you to set memory requirements for given graph, ONLY if
              * new amount of bytes is greater then current one
              */
-            void setGraphMemoryFootprintIfGreater(Nd4jIndex hash, Nd4jIndex bytes);
+            void setGraphMemoryFootprintIfGreater(Nd4jLong hash, Nd4jLong bytes);
 
             /**
              * This method returns memory requirements for given graph
              */ 
-            Nd4jIndex getGraphMemoryFootprint(Nd4jIndex hash);
+            Nd4jLong getGraphMemoryFootprint(Nd4jLong hash);
         };
     }
 }

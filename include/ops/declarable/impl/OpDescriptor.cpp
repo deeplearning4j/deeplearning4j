@@ -45,7 +45,7 @@ namespace nd4j {
             //
         }
 
-        void OpDescriptor::setHash(Nd4jIndex hash) {
+        void OpDescriptor::setHash(Nd4jLong hash) {
             _hash = hash;
         }
 
@@ -102,7 +102,7 @@ namespace nd4j {
             return _numInputs;
         }
 
-        Nd4jIndex OpDescriptor::getHash() {
+        Nd4jLong OpDescriptor::getHash() {
             return _hash;
         }
 

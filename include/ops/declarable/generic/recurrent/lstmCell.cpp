@@ -75,15 +75,15 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
 
 DECLARE_SHAPE_FN(lstmCell) {    
 
-    int* xtShapeInfo   = inputShape->at(0);                   // input [bS x inSize]
-    int* ht_1ShapeInfo = inputShape->at(1);                   // previous cell output [bS x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!! 
-    int* ct_1ShapeInfo = inputShape->at(2);                   // previous cell state  [bS x numUnits], that is at previous time step t-1   
+    auto xtShapeInfo   = inputShape->at(0);                   // input [bS x inSize]
+    auto ht_1ShapeInfo = inputShape->at(1);                   // previous cell output [bS x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!! 
+    auto ct_1ShapeInfo = inputShape->at(2);                   // previous cell state  [bS x numUnits], that is at previous time step t-1   
 
-    int* WxShapeInfo   = inputShape->at(3);                   // input-to-hidden  weights, [inSize  x 4*numUnits] 
-    int* WhShapeInfo   = inputShape->at(4);                   // hidden-to-hidden weights, [numProj x 4*numUnits] 
-    int* WcShapeInfo   = inputShape->at(5);                   // diagonal weights for peephole connections [3*numUnits] 
-    int* WpShapeInfo   = inputShape->at(6);                   // projection weights [numUnits x numProj] 
-    int* bShapeInfo    = inputShape->at(7);                   // biases, [4*numUnits] 
+    auto WxShapeInfo   = inputShape->at(3);                   // input-to-hidden  weights, [inSize  x 4*numUnits] 
+    auto WhShapeInfo   = inputShape->at(4);                   // hidden-to-hidden weights, [numProj x 4*numUnits] 
+    auto WcShapeInfo   = inputShape->at(5);                   // diagonal weights for peephole connections [3*numUnits] 
+    auto WpShapeInfo   = inputShape->at(6);                   // projection weights [numUnits x numProj] 
+    auto bShapeInfo    = inputShape->at(7);                   // biases, [4*numUnits] 
     
     const int rank     = xtShapeInfo[0];    
     const int bS       = xtShapeInfo[1];
@@ -116,9 +116,9 @@ DECLARE_SHAPE_FN(lstmCell) {
     REQUIRE_TRUE(correctBShape  == bShape,  0, "LSTMCELL operation: wrong shape of biases, expected is %s, but got %s instead !", correctBShape.c_str(), bShape.c_str());     
     
     // evaluate output shapeInfos
-    int *hShapeInfo(nullptr), *cShapeInfo(nullptr);
-    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);      // [bS x numProj]
-    ALLOCATE(cShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);      // [bS x numUnits]
+    Nd4jLong *hShapeInfo(nullptr), *cShapeInfo(nullptr);
+    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);      // [bS x numProj]
+    ALLOCATE(cShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);      // [bS x numUnits]
             
     hShapeInfo[0] = cShapeInfo[0] = rank;
     hShapeInfo[1] = cShapeInfo[1] = bS;

@@ -140,8 +140,8 @@ namespace helpers {
     template <typename T>
     int determinant(NDArray<T>* input, NDArray<T>* output) {
 
-        int n = input->sizeAt(-1);
-        int n2 = n * n;
+        Nd4jLong n = input->sizeAt(-1);
+        Nd4jLong n2 = n * n;
 
         std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
 //#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
@@ -163,9 +163,10 @@ namespace helpers {
     template <typename T>
     int inverse(NDArray<T>* input, NDArray<T>* output) {
 
-        int n = input->sizeAt(-1);
-        int n2 = n * n;
-        int totalCount = output->lengthOf() / n2;
+        auto n = input->sizeAt(-1);
+        auto n2 = n * n;
+        auto totalCount = output->lengthOf() / n2;
+        
         output->assign((T)0.0); // fill up output tensor with zeros
         std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
         std::unique_ptr<NDArray<T>> compound(new NDArray<T>({n, n})); //, block.getWorkspace());

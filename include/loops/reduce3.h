@@ -59,12 +59,12 @@ namespace functions {
      * @param extraParams
      */
 template<typename OpType>
-			static __inline__ __device__ void aggregatePartials(T **sPartialsRef, int tid, int numItems, T *extraParamsRef) {
+			static __inline__ __device__ void aggregatePartials(T **sPartialsRef, Nd4jLong tid, Nd4jLong numItems, T *extraParamsRef) {
 				// start the shared memory loop on the next power of 2 less
 				// than the block size.  If block size is not a power of 2,
 				// accumulate the intermediate sums in the remainder range.
 				T *sPartials = *sPartialsRef;
-				int floorPow2 = numItems;
+				Nd4jLong floorPow2 = numItems;
 
 				if (floorPow2 & (floorPow2 - 1)) {
 					while (floorPow2 & (floorPow2 - 1)) {
@@ -76,7 +76,7 @@ template<typename OpType>
 					__syncthreads();
 				}
 
-				for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
+				for (Nd4jLong activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
 					if (tid < activeThreads) {
 						sPartials[tid] = OpType::update(sPartials[tid], sPartials[tid + activeThreads], extraParamsRef);
 					}
@@ -95,14 +95,14 @@ template<typename OpType>
              */
 			virtual __inline__ __device__ void transformNoElementWiseStride(
 					T *dx,
-					int *xShapeInfo,
+					Nd4jLong *xShapeInfo,
 					T *dy,
-					int *yShapeInfo,
+					Nd4jLong *yShapeInfo,
 					T *extraParams,
 					T *result,
-					int *resultShapeInfo,
-					int postProcessOrNot, int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
-				Nd4jIndex n = shape::length(xShapeInfo);
+					Nd4jLong *resultShapeInfo,
+					int postProcessOrNot, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo) {
+				Nd4jLong n = shape::length(xShapeInfo);
 				int rank = shape::rank(xShapeInfo);
 
 				T *sPartials = (T *) manager->getSharedReductionBuffer(); //val.getPointer();
@@ -117,12 +117,13 @@ template<typename OpType>
 				sPartials[threadIdx.x] = startingVal;
 				__syncthreads();
 
-                int idx[MAX_RANK];
+                Nd4jLong idx[MAX_RANK];
 
-				for(Nd4jIndex i = blockIdx.x * gridDim.x + threadIdx.x; i < n; i += gridDim.x * blockDim.x) {
+				for(Nd4jLong i = blockIdx.x * gridDim.x + threadIdx.x; i < n; i += gridDim.x * blockDim.x) {
 					shape::ind2subC(rank,shape::shapeOf(xShapeInfo),i, idx);
-					Nd4jIndex offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
-					Nd4jIndex yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
+					auto offset = shape::getOffset(0,shape::shapeOf(xShapeInfo),shape::stride(xShapeInfo),idx,rank);
+					auto yOffset = shape::getOffset(0,shape::shapeOf(yShapeInfo),shape::stride(yShapeInfo),idx,rank);
+					
 					sPartials[threadIdx.x] = update(sPartials[threadIdx.x], this->opAtomic(dx[offset], dy[yOffset], extraZ), extraZ);
 				}
 
@@ -153,12 +154,12 @@ template<typename OpType>
 template<typename OpType>
 			static inline __device__ void execScalarCuda(
 					T *dx,
-					int *xShapeInfo,
+					Nd4jLong *xShapeInfo,
 					T *dy,
-					int *yShapeInfo,
+					Nd4jLong *yShapeInfo,
 					T *extraParams,
 					T *result,
-					int *resultShapeInfo, int *allocationPointer, T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
+					Nd4jLong *resultShapeInfo, int *allocationPointer, T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo) {
 
 
 //		SharedMemory <T> val;
@@ -178,7 +179,7 @@ template<typename OpType>
 				__syncthreads();
 
 				T startingVal = OpType::startingValue(dx);
-				Nd4jIndex length = shape::length(xShapeInfo);
+				Nd4jLong length = shape::length(xShapeInfo);
 				int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 				int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 				int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -187,22 +188,22 @@ template<typename OpType>
 
 				if(xOrder == yOrder && (xElementWiseStride > 0 && yElementWiseStride > 0) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
-						for(Nd4jIndex i = tid; i < length; i+= gridDim.x * blockDim.x) {
+						for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
 							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i], dy[i], extraZ), extraZ);
 						}
 					}
 					else {
-						for(Nd4jIndex i = tid; i < length; i+= gridDim.x * blockDim.x) {
+						for(Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
 							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i * xElementWiseStride], dy[i * yElementWiseStride], extraZ), extraZ);
 						}
 					}
 
 					sPartials[threadIdx.x] = startingVal;
 				} else {
-				    __shared__ int *xShape;
-				    __shared__ int *yShape;
-				    __shared__ int *xStride;
-				    __shared__ int *yStride;
+				    __shared__ Nd4jLong *xShape;
+				    __shared__ Nd4jLong *yShape;
+				    __shared__ Nd4jLong *xStride;
+				    __shared__ Nd4jLong *yStride;
 				    __shared__ int rank;
 				    if (threadIdx.x == 0) {
 
@@ -217,17 +218,17 @@ template<typename OpType>
 
 					T *sPartials = (T *) manager->getSharedReductionBuffer();
 
-					int xCoords[MAX_RANK];
-					int yCoords[MAX_RANK];
+					Nd4jLong xCoords[MAX_RANK];
+					Nd4jLong yCoords[MAX_RANK];
 
 					sPartials[threadIdx.x] = startingVal;
 
-					for(unsigned int i = tid ;i < length; i += gridDim.x * blockDim.x) {
+					for(Nd4jLong i = tid ;i < length; i += gridDim.x * blockDim.x) {
 						shape::ind2subC(rank,xShape,i,xCoords);
 						shape::ind2subC(rank,yShape,i,yCoords);
 
-						Nd4jIndex offset = shape::getOffset(0, xShape, xStride, xCoords,rank);
-						Nd4jIndex yOffset = shape::getOffset(0,yShape, yStride, yCoords,rank);
+						auto offset = shape::getOffset(0, xShape, xStride, xCoords,rank);
+						auto yOffset = shape::getOffset(0,yShape, yStride, yCoords,rank);
 
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[offset], dy[yOffset], extraZ), extraZ);
 					}
@@ -276,7 +277,7 @@ template<typename OpType>
                             }
 						}
 
-						for (Nd4jIndex i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
+						for (Nd4jLong i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
 							sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraZ);
 						}
 						__syncthreads();
@@ -306,21 +307,21 @@ template<typename OpType>
 			__device__
 			static inline void transformAll(
 					T *dx,
-					int *xShapeInfo,
+					Nd4jLong *xShapeInfo,
 					T *dy,
-					int *yShapeInfo,
+					Nd4jLong *yShapeInfo,
 					T *extraParams,
 					T *result,
-					int *resultShapeInfo,
+					Nd4jLong *resultShapeInfo,
 					int *dimension,
 					int dimensionLength,
 					int postProcessOrNot,
 					int *allocationPointer,
 					UnifiedSharedMemory *manager,
-					int *xTadShapeInfo,
-					Nd4jIndex *xOffsets,
-					int *yTadShapeInfo,
-					Nd4jIndex *yOffsets) {
+					Nd4jLong *xTadShapeInfo,
+					Nd4jLong *xOffsets,
+					Nd4jLong *yTadShapeInfo,
+					Nd4jLong *yOffsets) {
 
                         // initialize partials first
                         T *sPartials = (T *) manager->getSharedReductionBuffer();
@@ -338,12 +339,12 @@ template<typename OpType>
                         __shared__ int xTads;
                         __shared__ int yTads;
 
-                        __shared__ int *xShape;
-                        __shared__ int *xStride;
+                        __shared__ Nd4jLong *xShape;
+                        __shared__ Nd4jLong *xStride;
                         __shared__ int xRank;
 
-                        __shared__ int *yShape;
-                        __shared__ int *yStride;
+                        __shared__ Nd4jLong *yShape;
+                        __shared__ Nd4jLong *yStride;
                         __shared__ int yRank;
 
                         //reading initial data
@@ -365,8 +366,8 @@ template<typename OpType>
                         __syncthreads();
 
 
-                        int xCoord[MAX_RANK];
-                        int yCoord[MAX_RANK];
+                        Nd4jLong xCoord[MAX_RANK];
+                        Nd4jLong yCoord[MAX_RANK];
 
 
                         int limit = xTadLength / maxBlock;
@@ -384,7 +385,7 @@ template<typename OpType>
                                     shape::ind2sub(xRank, xShape, threadIdx.x, xCoord);
                                 }
 
-                                Nd4jIndex xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                                auto xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
 
                                 tempX[threadIdx.x] = x[xO];
                             }
@@ -412,7 +413,7 @@ template<typename OpType>
                                                 shape::ind2sub(xRank, xShape, threadIdx.x + (t * maxBlock), xCoord);
                                             }
 
-                                            Nd4jIndex xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                                            Nd4jLong xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
 
                                             tempX[threadIdx.x] = x[xO];
             //                                tempX[threadIdx.x] = x[threadIdx.x + (t * maxBlock)];
@@ -425,7 +426,7 @@ template<typename OpType>
                                             shape::ind2sub(yRank, yShape, f, yCoord);
                                         }
 
-                                        Nd4jIndex yO = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                                        Nd4jLong yO = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 
                                         sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(tempX[threadIdx.x], y[yO], extraZ), extraZ);
                                     }
@@ -461,21 +462,21 @@ template<typename OpType>
 			__device__
 			static inline void transform(
 					T *dx,
-					int *xShapeInfo,
+					Nd4jLong *xShapeInfo,
 					T *dy,
-					int *yShapeInfo,
+					Nd4jLong *yShapeInfo,
 					T *extraParams,
 					T *result,
-					int *resultShapeInfo,
+					Nd4jLong *resultShapeInfo,
 					int *dimension,
 					int dimensionLength,
 					int postProcessOrNot,
 					int *allocationPointer,
 					UnifiedSharedMemory *manager,
-					int *tadOnlyShapeInfo,
-					Nd4jIndex *tadOffsets,
-					int *yTadOnlyShapeInfo,
-					Nd4jIndex *yTadOffsets) {
+					Nd4jLong *tadOnlyShapeInfo,
+					Nd4jLong *tadOffsets,
+					Nd4jLong *yTadOnlyShapeInfo,
+					Nd4jLong *yTadOffsets) {
 				/**
                  * Gpu information for the problem
                  */
@@ -495,7 +496,7 @@ template<typename OpType>
 
 				//length for the tad
 
-				__shared__ Nd4jIndex resultLength;
+				__shared__ Nd4jLong resultLength;
 				__shared__ int tadLength;
 				__shared__ int yLength;
 				__shared__ int tadElementWiseStride;
@@ -521,7 +522,7 @@ template<typename OpType>
 					if (resultLength == 1)
 						resultScalar = 1;
 
-					int *xStride = shape::stride(xShapeInfo);
+					auto xStride = shape::stride(xShapeInfo);
 					char xOrder = shape::order(xShapeInfo);
 
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
@@ -535,13 +536,13 @@ template<typename OpType>
 
                 // code branch for TAD vs full array
                 if (tadLength == yLength) {
-                    int xCoord[MAX_RANK];
-                    int yCoord[MAX_RANK];
+                    Nd4jLong xCoord[MAX_RANK];
+                    Nd4jLong yCoord[MAX_RANK];
 
-                    int *yShape = shape::shapeOf(yShapeInfo);
-					int *yStride = shape::stride(yShapeInfo);
-					int *xShape = shape::shapeOf(tadOnlyShapeInfo);
-					int *xStride = shape::stride(tadOnlyShapeInfo);
+                    auto yShape = shape::shapeOf(yShapeInfo);
+					auto yStride = shape::stride(yShapeInfo);
+					auto xShape = shape::shapeOf(tadOnlyShapeInfo);
+					auto xStride = shape::stride(tadOnlyShapeInfo);
 					int yRank = shape::rank(yShapeInfo);
 					int xRank = shape::rank(tadOnlyShapeInfo);
 
@@ -558,8 +559,8 @@ template<typename OpType>
                             shape::ind2subC(xRank,xShape, j, xCoord);
                             shape::ind2subC(yRank,yShape, j, yCoord);
 
-                            Nd4jIndex xOffset = shape::getOffset(xOffsetForTad, xShape, xStride, xCoord, xRank);
-                            Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                            Nd4jLong xOffset = shape::getOffset(xOffsetForTad, xShape, xStride, xCoord, xRank);
+                            Nd4jLong yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 
 							sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(dx[xOffset],dy[yOffset], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[xOffset],dy[yOffset], extraZ), extraZ);
 						}
@@ -637,20 +638,20 @@ template<typename OpType>
 
 */
 
-                        int xCoord[MAX_RANK];
-                        int yCoord[MAX_RANK];
+                        Nd4jLong xCoord[MAX_RANK];
+                        Nd4jLong yCoord[MAX_RANK];
 
-                        int *yShape = shape::shapeOf(yTadOnlyShapeInfo);
-						int *yStride = shape::stride(yTadOnlyShapeInfo);
-						int *xShape = shape::shapeOf(tadOnlyShapeInfo);
-						int *xStride = shape::stride(tadOnlyShapeInfo);
+                        auto yShape = shape::shapeOf(yTadOnlyShapeInfo);
+						auto yStride = shape::stride(yTadOnlyShapeInfo);
+						auto xShape = shape::shapeOf(tadOnlyShapeInfo);
+						auto xStride = shape::stride(tadOnlyShapeInfo);
 						int yRank = shape::rank(yTadOnlyShapeInfo);
 						int xRank = shape::rank(tadOnlyShapeInfo);
 
 
 						for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
-							int xOffsetForTad = tadOffsets[i];
-							int yOffsetForTad = yTadOffsets[i];
+							auto xOffsetForTad = tadOffsets[i];
+							auto yOffsetForTad = yTadOffsets[i];
 
 							if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) {
 					            extraZ[threadIdx.x] = (T) startingVal;
@@ -661,8 +662,8 @@ template<typename OpType>
                                 shape::ind2subC(xRank,xShape, j, xCoord);
                                 shape::ind2subC(yRank,yShape, j, yCoord);
 
-                                Nd4jIndex xOffset = shape::getOffset(xOffsetForTad, xShape, xStride, xCoord, xRank);
-                                Nd4jIndex yOffset = shape::getOffset(yOffsetForTad, yShape, yStride, yCoord, yRank);
+                                auto xOffset = shape::getOffset(xOffsetForTad, xShape, xStride, xCoord, xRank);
+                                auto yOffset = shape::getOffset(yOffsetForTad, yShape, yStride, yCoord, yRank);
 
 								sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(dx[xOffset],dy[yOffset], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[xOffset],dy[yOffset], extraZ), extraZ);
 							}
@@ -693,21 +694,21 @@ template<typename OpType>
 			static inline void exec(
 				const int opNum,
 				T *dx,
-				int *xShapeInfo,
+				Nd4jLong *xShapeInfo,
 				T *dy,
-				int *yShapeInfo,
+				Nd4jLong *yShapeInfo,
 				T *extraParams,
 				T *result,
-				int *resultShapeInfo,
+				Nd4jLong *resultShapeInfo,
 				int *dimension,
 				int dimensionLength,
 				int postProcessOrNot,
 				int *allocationPointer,
 				UnifiedSharedMemory *manager,
-				int *tadOnlyShapeInfo,
-				Nd4jIndex *tadOffsets,
-				int *yTadOnlyShapeInfo,
-				Nd4jIndex *yTadOffsets) {
+				Nd4jLong *tadOnlyShapeInfo,
+				Nd4jLong *tadOffsets,
+				Nd4jLong *yTadOnlyShapeInfo,
+				Nd4jLong *yTadOffsets) {
                             DISPATCH_BY_OPNUM(transform, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 			}
 
@@ -715,21 +716,21 @@ template<typename OpType>
 			static inline void execAllCuda(
 				const int opNum,
 				T *dx,
-				int *xShapeInfo,
+				Nd4jLong *xShapeInfo,
 				T *dy,
-				int *yShapeInfo,
+				Nd4jLong *yShapeInfo,
 				T *extraParams,
 				T *result,
-				int *resultShapeInfo,
+				Nd4jLong *resultShapeInfo,
 				int *dimension,
 				int dimensionLength,
 				int postProcessOrNot,
 				int *allocationPointer,
 				UnifiedSharedMemory *manager,
-				int *tadOnlyShapeInfo,
-				Nd4jIndex *tadOffsets,
-				int *yTadOnlyShapeInfo,
-				Nd4jIndex *yTadOffsets) {
+				Nd4jLong *tadOnlyShapeInfo,
+				Nd4jLong *tadOffsets,
+				Nd4jLong *yTadOnlyShapeInfo,
+				Nd4jLong *yTadOffsets) {
                             DISPATCH_BY_OPNUM(transformAll, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, manager, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 			}
 
@@ -738,16 +739,16 @@ template<typename OpType>
 			static inline void execScalarCuda(
 				const int opNum,
 				T *dx,
-				int *xShapeInfo,
+				Nd4jLong *xShapeInfo,
 				T *dy,
-				int *yShapeInfo,
+				Nd4jLong *yShapeInfo,
 				T *extraParams,
 				T *result,
-				int *resultShapeInfo,
+				Nd4jLong *resultShapeInfo,
 				int * allocationPointer,
 				T *reductionBuffer,
 				UnifiedSharedMemory *manager,
-				int *tadOnlyShapeInfo) {
+				Nd4jLong *tadOnlyShapeInfo) {
                             DISPATCH_BY_OPNUM(execScalarCuda, PARAMS(dx, xShapeInfo, dy, yShapeInfo, extraParams, result, resultShapeInfo, allocationPointer, reductionBuffer, manager, tadOnlyShapeInfo), REDUCE3_OPS);
 			}
 #endif
@@ -760,10 +761,10 @@ template<typename OpType>
             static T execScalar(
                     const int opNum,
                     T *x,
-                    int *xShapeInfo,
+                    Nd4jLong *xShapeInfo,
                     T *extraParamsVals,
                     T *y,
-                    int *yShapeInfo) {
+                    Nd4jLong *yShapeInfo) {
                 RETURNING_DISPATCH_BY_OPNUM(execScalar, PARAMS(x,
                                                                xShapeInfo,
                                                                extraParamsVals,
@@ -772,12 +773,12 @@ template<typename OpType>
             }
 
             static void exec( const int opNum,
-                              T *x, int *xShapeInfo,
+                              T *x, Nd4jLong *xShapeInfo,
                               T *extraParamsVals,
                               T *y,
-                              int *yShapeInfo,
+                              Nd4jLong *yShapeInfo,
                               T *result,
-                              int *resultShapeInfoBuffer,
+                              Nd4jLong *resultShapeInfoBuffer,
                               int *dimension,
                               int dimensionLength) {
                 DISPATCH_BY_OPNUM(exec, PARAMS(x,
@@ -792,14 +793,14 @@ template<typename OpType>
 
 
             static void exec( const int opNum,
-                              T *x, int *xShapeInfo,
+                              T *x, Nd4jLong *xShapeInfo,
                               T *extraParamsVals,
                               T *y,
-                              int *yShapeInfo,
+                              Nd4jLong *yShapeInfo,
                               T *result,
-                              int *resultShapeInfoBuffer,
+                              Nd4jLong *resultShapeInfoBuffer,
                               int *dimension,
-                              int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
+                              int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
                 DISPATCH_BY_OPNUM(exec, PARAMS(x,
                                                xShapeInfo,
                                                extraParamsVals,
@@ -812,16 +813,16 @@ template<typename OpType>
 
             static void execAll( const int opNum,
                                  T *x,
-                                 int *xShapeInfo,
+                                 Nd4jLong *xShapeInfo,
                                  T *extraParamsVals,
                                  T *y,
-                                 int *yShapeInfo,
+                                 Nd4jLong *yShapeInfo,
                                  T *result,
-                                 int *resultShapeInfoBuffer,
+                                 Nd4jLong *resultShapeInfoBuffer,
                                  int *dimension,
                                  int dimensionLength,
-                                 int *xTadShapeInfo, Nd4jIndex *xOffsets,
-                                 int *yTadShapeInfo, Nd4jIndex *yOffsets) {
+                                 Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
+                                 Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
                 DISPATCH_BY_OPNUM(execAll, PARAMS(x,
                                                   xShapeInfo,
                                                   extraParamsVals,
@@ -840,14 +841,14 @@ template<typename OpType>
 #endif
             static T execScalar(
                     T *x,
-                    int *xShapeInfo,
+                    Nd4jLong *xShapeInfo,
                     T *extraParams,
                     T *y,
-                    int *yShapeInfo) {
+                    Nd4jLong *yShapeInfo) {
                 T startingVal = OpType::startingValue(x);
-                Nd4jIndex length = shape::length(xShapeInfo);
-                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                int yElementWiseStride = shape::elementWiseStride(yShapeInfo);
+                Nd4jLong length = shape::length(xShapeInfo);
+                Nd4jLong xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                Nd4jLong yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 
                 T extraParamsVals[3] = {(T) 0.0, (T) 0.0, (T) 0.0};
                 // it's possible case for EqualsWithEps op
@@ -875,7 +876,7 @@ template<typename OpType>
 
                     else {
 // TODO:: proper reduction required here
-                        for(Nd4jIndex i = 0; i < length; i++) {
+                        for(Nd4jLong i = 0; i < length; i++) {
                             startingVal = OpType::update(startingVal, OpType::op(x[i * xElementWiseStride],y[i * yElementWiseStride], extraParamsVals), extraParamsVals);
                         }
 
@@ -886,23 +887,23 @@ template<typename OpType>
 
 
                 else {
-                    int xCoords[MAX_RANK];
-                    int yCoords[MAX_RANK];
+                    Nd4jLong xCoords[MAX_RANK];
+                    Nd4jLong yCoords[MAX_RANK];
 
                     int xRank = shape::rank(xShapeInfo);
                     int yRank = shape::rank(yShapeInfo);
 
-                    int *xShape = shape::shapeOf(xShapeInfo);
-                    int *xStride = shape::stride(xShapeInfo);
-                    int *yShape = shape::shapeOf(yShapeInfo);
-                    int *yStride = shape::stride(yShapeInfo);
+                    Nd4jLong *xShape = shape::shapeOf(xShapeInfo);
+                    Nd4jLong *xStride = shape::stride(xShapeInfo);
+                    Nd4jLong *yShape = shape::shapeOf(yShapeInfo);
+                    Nd4jLong *yStride = shape::stride(yShapeInfo);
 
                     for(unsigned int i = 0 ;i < length; i++) {
                         shape::ind2subC(xRank, xShape, i, xCoords);
                         shape::ind2subC(yRank, yShape, i, yCoords);
 
-                        Nd4jIndex offset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
-                        Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoords, yRank);
+                        Nd4jLong offset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
+                        Nd4jLong yOffset = shape::getOffset(0, yShape, yStride, yCoords, yRank);
 
                         startingVal = OpType::update(startingVal, OpType::op(x[offset], y[yOffset], extraParamsVals), extraParamsVals);
                     }
@@ -917,46 +918,46 @@ template<typename OpType>
             template<typename OpType>
             static void execAll(
                     T *x,
-                    int *xShapeInfo,
+                    Nd4jLong *xShapeInfo,
                     T *extraParams,
                     T *y,
-                    int *yShapeInfo,
+                    Nd4jLong *yShapeInfo,
                     T *result,
-                    int *resultShapeInfoBuffer,
+                    Nd4jLong *resultShapeInfoBuffer,
                     int *dimension,
-                    int dimensionLength, int *xTadShapeInfo, Nd4jIndex *xOffsets, int *yTadShapeInfo, Nd4jIndex *yOffsets) {
+                    int dimensionLength, Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets, Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
 
-                int xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                int yTadLength = shape::tadLength(yShapeInfo, dimension, dimensionLength);
+                auto xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                auto yTadLength = shape::tadLength(yShapeInfo, dimension, dimensionLength);
 
-                int xTads = shape::length(xShapeInfo) / xTadLength;
-                int yTads = shape::length(yShapeInfo) / yTadLength;
+                auto xTads = shape::length(xShapeInfo) / xTadLength;
+                auto yTads = shape::length(yShapeInfo) / yTadLength;
 
-                int *xShape = shape::shapeOf(xTadShapeInfo);
-                int *xStride = shape::stride(xTadShapeInfo);
+                auto xShape = shape::shapeOf(xTadShapeInfo);
+                auto xStride = shape::stride(xTadShapeInfo);
                 int xRank = shape::rank(xTadShapeInfo);
 
-                int *yShape = shape::shapeOf(yTadShapeInfo);
-                int *yStride = shape::stride(yTadShapeInfo);
+                auto yShape = shape::shapeOf(yTadShapeInfo);
+                auto yStride = shape::stride(yTadShapeInfo);
                 int yRank = shape::rank(yTadShapeInfo);
 
 
-                int xCoord[MAX_RANK];
-                int yCoord[MAX_RANK];
+                Nd4jLong xCoord[MAX_RANK];
+                Nd4jLong yCoord[MAX_RANK];
 
                 T startingVal = OpType::startingValue(x);
 
 #pragma  omp parallel for proc_bind(AFFINITY) default(shared) private(xCoord, yCoord)
-                for (int r = 0; r < xTads; r++) {
-                    Nd4jIndex xOffset = xOffsets[r];
+                for (Nd4jLong r = 0; r < xTads; r++) {
+                    Nd4jLong xOffset = xOffsets[r];
 
                     T *lX = x + xOffset;
 
-                    for (int g = 0; g < yTads; g++) {
-                        int yOffset = yOffsets[g];
+                    for (Nd4jLong g = 0; g < yTads; g++) {
+                        auto yOffset = yOffsets[g];
                         T *lY = y + yOffset;
 
-                        int ri = (r * yTads) + g;
+                        auto ri = (r * yTads) + g;
 
                         T *localExtraParams = nullptr;
                         if (OpType::extraParamsLen > 0)
@@ -978,8 +979,8 @@ template<typename OpType>
                                 shape::ind2sub(xRank, xShape, f, xCoord);
                             }
 
-                            Nd4jIndex xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                            Nd4jIndex yO = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                            Nd4jLong xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            Nd4jLong yO = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 
                             result[ri] = OpType::update(result[ri], OpType::op(lX[xO], lY[yO], localExtraParams), localExtraParams);
                         }
@@ -997,14 +998,14 @@ template<typename OpType>
             template<typename OpType>
             static void exec(
                     T *x,
-                    int *xShapeInfo,
+                    Nd4jLong *xShapeInfo,
                     T *extraParams,
                     T *y,
-                    int *yShapeInfo,
+                    Nd4jLong *yShapeInfo,
                     T *result,
-                    int *resultShapeInfoBuffer,
+                    Nd4jLong *resultShapeInfoBuffer,
                     int *dimension,
-                    int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
+                    int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 /*
                 nd4j_printf("Xp: [%p]; Yp: [%p]; Zp: [%p];\n", (void *) x, (void *) y, (void *) result);
                 nd4j_printf("XSp: [%p]; YSp: [%p]; ZSp: [%p];\n", (void *) xShapeInfo, (void *) yShapeInfo, (void *) resultShapeInfoBuffer);
@@ -1027,15 +1028,15 @@ template<typename OpType>
 */
                 T startingVal = OpType::startingValue(x);
 
-                int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
-                int tads = (int) (shape::length(xShapeInfo) / tadLength);
+                auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                auto tads = shape::length(xShapeInfo) / tadLength;
 
-                int *xShape = shape::shapeOf(tadShapeInfo);
-                int *xStride = shape::stride(tadShapeInfo);
+                auto *xShape = shape::shapeOf(tadShapeInfo);
+                auto *xStride = shape::stride(tadShapeInfo);
                 int xRank = shape::rank(tadShapeInfo);
 
-                int *yShape = shape::shapeOf(yShapeInfo);
-                int *yStride = shape::stride(yShapeInfo);
+                auto *yShape = shape::shapeOf(yShapeInfo);
+                auto *yStride = shape::stride(yShapeInfo);
                 int yRank = shape::rank(yShapeInfo);
 
                 //shape::printShapeInfoLinear(xShapeInfo);
@@ -1043,12 +1044,12 @@ template<typename OpType>
                 //shape::printShapeInfoLinear(resultShapeInfoBuffer);
                 //shape::printShapeInfoLinear(tadShapeInfo);
 
-                int xCoord[MAX_RANK];
-                int yCoord[MAX_RANK];
+                Nd4jLong xCoord[MAX_RANK];
+                Nd4jLong yCoord[MAX_RANK];
 
 //#pragma  omp parallel for proc_bind(AFFINITY) default(shared)
-                for (int r = 0; r < tads; r++) {
-                    Nd4jIndex offset = tadOffsets[r];
+                for (Nd4jLong r = 0; r < tads; r++) {
+                    Nd4jLong offset = tadOffsets[r];
 
                     T *localExtraParams = nullptr;
                     if (OpType::extraParamsLen > 0)
@@ -1057,7 +1058,7 @@ template<typename OpType>
                         localExtraParams[extraParamsIdx] = startingVal;
                     }
 
-                    for (int f = 0; f < tadLength; f++) {
+                    for (Nd4jLong f = 0; f < tadLength; f++) {
                         if (shape::order(tadShapeInfo) == 'c') {
                             shape::ind2subC(xRank, xShape, f, xCoord);
                             shape::ind2subC(yRank, yShape, f, yCoord);
@@ -1066,8 +1067,8 @@ template<typename OpType>
                             shape::ind2sub(yRank, yShape, f, yCoord);
                         }
 
-                        Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
-                        Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+                        Nd4jLong xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
+                        Nd4jLong yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 
                         result[r] = OpType::update(result[r], OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
                     }
@@ -1082,12 +1083,12 @@ template<typename OpType>
             template<typename OpType>
             static void exec(
                     T *x,
-                    int *xShapeInfo,
+                    Nd4jLong *xShapeInfo,
                     T *extraParams,
                     T *y,
-                    int *yShapeInfo,
+                    Nd4jLong *yShapeInfo,
                     T *result,
-                    int *resultShapeInfoBuffer,
+                    Nd4jLong *resultShapeInfoBuffer,
                     int *dimension,
                     int dimensionLength) {
 /*
@@ -1126,16 +1127,16 @@ template<typename OpType>
                 char xOrder = shape::order(xShapeInfo);
                 char yOrder = shape::order(yShapeInfo);
                 if(xOrder != yOrder) {
-                    int shapeIter[MAX_RANK];
-                    int coord[MAX_RANK];
+                    Nd4jLong shapeIter[MAX_RANK];
+                    Nd4jLong coord[MAX_RANK];
                     int dim;
-                    int xStridesIter[MAX_RANK];
-                    int yStridesIter[MAX_RANK];
+                    Nd4jLong xStridesIter[MAX_RANK];
+                    Nd4jLong yStridesIter[MAX_RANK];
 
-                    int *xShape = shape::shapeOf(xShapeInfo);
+                    auto xShape = shape::shapeOf(xShapeInfo);
 
-                    int *xStride = shape::stride(xShapeInfo);
-                    int *yStride = shape::stride(yShapeInfo);
+                    auto xStride = shape::stride(xShapeInfo);
+                    auto yStride = shape::stride(yShapeInfo);
 
                     int rank = shape::rank(xShapeInfo);
                     if(PrepareTwoRawArrayIter<T>(rank,
@@ -1151,11 +1152,11 @@ template<typename OpType>
                                                  &y,
                                                  yStridesIter) >= 0) {
 
-                        Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
-                        Nd4jIndex tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
+                        Nd4jLong resultLength = shape::length(resultShapeInfoBuffer);
+                        Nd4jLong tadLength = shape::tadLength(xShapeInfo,dimension,dimensionLength);
                         ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                                Nd4jIndex xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
-                                int reductionIndex = xOffset / resultLength;
+                                Nd4jLong xOffset = shape::getOffset(0,xShape,xStride,coord,rank);
+                                auto reductionIndex = xOffset / resultLength;
                                 result[reductionIndex] = OpType::update(result[reductionIndex], OpType::op(x[0],y[0], extraParamsVals), extraParamsVals);
                             } ND4J_RAW_ITER_TWO_NEXT(dim,
                                                      rank,
@@ -1168,7 +1169,7 @@ template<typename OpType>
 
 
 //#pragma  omp parallel for proc_bind(AFFINITY) default(shared)
-                        for(Nd4jIndex i = 0; i < resultLength ;i++) {
+                        for(Nd4jLong i = 0; i < resultLength ;i++) {
                             result[i] = OpType::postProcess(result[i],tadLength, extraParamsVals);
                         }
                     }
@@ -1180,7 +1181,7 @@ template<typename OpType>
                 else {
                     T startingVal = OpType::startingValue(x);
 
-                    Nd4jIndex resultLength = shape::length(resultShapeInfoBuffer);
+                    Nd4jLong resultLength = shape::length(resultShapeInfoBuffer);
                     shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
                     xTad.createTadOnlyShapeInfo();
                     xTad.createOffsets();
@@ -1201,12 +1202,12 @@ template<typename OpType>
                      */
                     int largerElementWiseStride;
                     int smallerElementWiseStride;
-                    int xElementWiseStride = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
-                    int yElementWiseStride = shape::elementWiseStride(yTad.tadOnlyShapeInfo);
+                    auto xElementWiseStride = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
+                    auto yElementWiseStride = shape::elementWiseStride(yTad.tadOnlyShapeInfo);
                     int tadLength;
-                    int xModLength;
-                    int yModLength;
-                    int *iterationTadInfo;
+                    Nd4jLong xModLength;
+                    Nd4jLong yModLength;
+                    Nd4jLong *iterationTadInfo;
                     bool xTadBigger;
                     if(shape::length(xShapeInfo) > shape::length(yShapeInfo)) {
                         tadLength = shape::length(xTad.tadOnlyShapeInfo);
@@ -1234,7 +1235,7 @@ template<typename OpType>
                     if (largerElementWiseStride >= 1 && smallerElementWiseStride >= 1 && xElementWiseStride >= 1 && yElementWiseStride >= 1) {
                         if(shape::length(xShapeInfo) == shape::length(yShapeInfo)) {
                             //#pragma omp parallel for proc_bind(AFFINITY) default(shared)
-                            for (Nd4jIndex i = 0; i < resultLength; i++) {
+                            for (Nd4jLong i = 0; i < resultLength; i++) {
                                 T *localExtraParams = nullptr;
                                 if (OpType::extraParamsLen > 0)
                                     localExtraParams = new T[OpType::extraParamsLen];
@@ -1242,8 +1243,8 @@ template<typename OpType>
                                     localExtraParams[extraParamsIdx] = startingVal;
                                 }
 
-                                Nd4jIndex offset = xTad.tadOffsets[i];
-                                Nd4jIndex yOffset = yTad.tadOffsets[i];
+                                Nd4jLong offset = xTad.tadOffsets[i];
+                                Nd4jLong yOffset = yTad.tadOffsets[i];
                                 result[i] = OpType::op(x[offset], y[yOffset], localExtraParams);
                                 for (int j = 1; j < tadLength; j++) {
                                     int xIdx = (offset + xElementWiseStride * j);
@@ -1267,16 +1268,16 @@ template<typename OpType>
 
 //#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
                             for (int i = 0; i < resultLength; i++) {
-                                Nd4jIndex xOffset = xTadBigger ? xTad.tadOffsets[i] : 0;
-                                Nd4jIndex yOffset = !xTadBigger ? yTad.tadOffsets[i] : 0;
-                                int *xShape = xTadBigger ? xTad.tadShape : shape::shapeOf(xShapeInfo);
-                                int *yShape = !xTadBigger ? yTad.tadShape : shape::shapeOf(yShapeInfo);
-                                int *xStride = xTadBigger ? xTad.tadStride : shape::stride(xShapeInfo);
-                                int *yStride = !xTadBigger ? yTad.tadStride : shape::stride(yShapeInfo);
+                                Nd4jLong xOffset = xTadBigger ? xTad.tadOffsets[i] : 0;
+                                Nd4jLong yOffset = !xTadBigger ? yTad.tadOffsets[i] : 0;
+                                auto xShape = xTadBigger ? xTad.tadShape : shape::shapeOf(xShapeInfo);
+                                auto yShape = !xTadBigger ? yTad.tadShape : shape::shapeOf(yShapeInfo);
+                                auto xStride = xTadBigger ? xTad.tadStride : shape::stride(xShapeInfo);
+                                auto yStride = !xTadBigger ? yTad.tadStride : shape::stride(yShapeInfo);
                                 int xRank = xTadBigger ? shape::rank(xTad.tadOnlyShapeInfo) : shape::rank(xShapeInfo);
                                 int yRank = !xTadBigger ? shape::rank(yTad.tadOnlyShapeInfo) : shape::rank(yShapeInfo);
-                                int coord[MAX_RANK];
-                                int yCoord[MAX_RANK];
+                                Nd4jLong coord[MAX_RANK];
+                                Nd4jLong yCoord[MAX_RANK];
                                 T start = 0.0;
 
                                 for (int j = 0; j < tadLength; j++) {
@@ -1316,20 +1317,20 @@ template<typename OpType>
                         int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                         num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-                        int coord[MAX_RANK];
+                        Nd4jLong coord[MAX_RANK];
 
 //#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared) private(coord)
                         for (int i = 0; i < resultLength; i++) {
-                            Nd4jIndex xOffset = xTad.tadOffsets[i];
-                            Nd4jIndex yOffset = yTad.tadOffsets[i];
+                            Nd4jLong xOffset = xTad.tadOffsets[i];
+                            Nd4jLong yOffset = yTad.tadOffsets[i];
 
 
                             T start = OpType::startingValue(x + xOffset);
 
                             for (int j = 0; j < tadLength; j++) {
                                 shape::ind2subC(shape::rank(iterationTadInfo), shape::shapeOf(iterationTadInfo), j, coord);
-                                Nd4jIndex xOffset2 = shape::getOffset(xOffset,shape::shapeOf(xTad.tadOnlyShapeInfo),shape::stride(xTad.tadOnlyShapeInfo),coord,shape::rank(xTad.tadOnlyShapeInfo));
-                                Nd4jIndex yOffset2 = shape::getOffset(yOffset,shape::shapeOf(yTad.tadOnlyShapeInfo),shape::stride(yTad.tadOnlyShapeInfo),coord,shape::rank(yTad.tadOnlyShapeInfo));
+                                Nd4jLong xOffset2 = shape::getOffset(xOffset,shape::shapeOf(xTad.tadOnlyShapeInfo),shape::stride(xTad.tadOnlyShapeInfo),coord,shape::rank(xTad.tadOnlyShapeInfo));
+                                Nd4jLong yOffset2 = shape::getOffset(yOffset,shape::shapeOf(yTad.tadOnlyShapeInfo),shape::stride(yTad.tadOnlyShapeInfo),coord,shape::rank(yTad.tadOnlyShapeInfo));
                                 start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2],extraParamsVals), extraParamsVals);
                             }
 
@@ -1367,15 +1368,15 @@ template <typename T>
 __device__ void reduce3Generic(
 		const int opNum,
 		T *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		T *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		T *extraParams,
 		T *result,
-		int *resultShapeInfo,
+		Nd4jLong *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *yTadOnlyShapeInfo, Nd4jIndex *yTadOffsets) {
+		int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -1411,20 +1412,20 @@ template <typename T>
 __device__ void reduce3AllGeneric(
 		const int opNum,
 		T *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		T *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		T *extraParams,
 		T *result,
-		int *resultShapeInfo,
+		Nd4jLong *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
 		int postProcessOrNot,
 		int *allocationPointer,
-		int *tadOnlyShapeInfo,
-		Nd4jIndex *tadOffsets,
-		int *yTadOnlyShapeInfo,
-		Nd4jIndex *yTadOffsets) {
+		Nd4jLong *tadOnlyShapeInfo,
+		Nd4jLong *tadOffsets,
+		Nd4jLong *yTadOnlyShapeInfo,
+		Nd4jLong *yTadOffsets) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -1460,13 +1461,13 @@ template <typename T>
 __device__ void reduce3ScalarGeneric(
 		int opNum,
 		T *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		T *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		T *extraParams,
 		T *result,
-		int *resultShapeInfo, int *allocationPointer,
-		T *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *yTadOnlyShapeInfo, Nd4jIndex *yTadOffsets) {
+		Nd4jLong *resultShapeInfo, int *allocationPointer,
+		T *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -1511,15 +1512,15 @@ extern "C"
 __global__ void reduce3Double(
 		int opNum,
 		double *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		double *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		double *extraParams,
 		double *result,
-		int *resultShapeInfo,
+		Nd4jLong *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *yTadOnlyShapeInfo, Nd4jIndex *yTadOffsets) {
+		int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 	reduce3Generic<double>(
 			opNum,
 			dx,
@@ -1539,15 +1540,15 @@ extern "C"
 __global__ void reduce3AllDouble(
 		int opNum,
 		double *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		double *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		double *extraParams,
 		double *result,
-		int *resultShapeInfo,
+		Nd4jLong *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *yTadOnlyShapeInfo, Nd4jIndex *yTadOffsets) {
+		int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 	reduce3AllGeneric<double>(
 			opNum,
 			dx,
@@ -1583,15 +1584,15 @@ extern "C"
 __global__ void reduce3Float(
 		int opNum,
 		float *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		float *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		float *extraParams,
 		float *result,
-		int *resultShapeInfo,
+		Nd4jLong *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *yTadOnlyShapeInfo, Nd4jIndex *yTadOffsets) {
+		int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 	reduce3Generic<float>(
 			opNum,
 			dx,
@@ -1611,15 +1612,15 @@ extern "C"
 __global__ void reduce3AllFloat(
 		int opNum,
 		float *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		float *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		float *extraParams,
 		float *result,
-		int *resultShapeInfo,
+		Nd4jLong *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *yTadOnlyShapeInfo, Nd4jIndex *yTadOffsets) {
+		int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 	reduce3AllGeneric<float>(
 			opNum,
 			dx,
@@ -1639,15 +1640,15 @@ extern "C"
 __global__ void reduce3Half(
 		int opNum,
 		float16 *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		float16 *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		float16 *extraParams,
 		float16 *result,
-		int *resultShapeInfo,
+		Nd4jLong *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *yTadOnlyShapeInfo, Nd4jIndex *yTadOffsets) {
+		int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 	reduce3Generic<float16>(
 			opNum,
 			dx,
@@ -1667,15 +1668,15 @@ extern "C"
 __global__ void reduce3AllHalf(
 		int opNum,
 		float16 *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		float16 *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		float16 *extraParams,
 		float16 *result,
-		int *resultShapeInfo,
+		Nd4jLong *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *yTadOnlyShapeInfo, Nd4jIndex *yTadOffsets) {
+		int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 	reduce3AllGeneric<float16>(
 			opNum,
 			dx,
@@ -1695,15 +1696,15 @@ extern "C"
 __global__ void reduce3ScalarFloat(
 		int opNum,
 		float *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		float *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		float *extraParams,
 		float *result,
-		int *resultShapeInfo,
+		Nd4jLong *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, float *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *yTadOnlyShapeInfo, Nd4jIndex *yTadOffsets) {
+		int postProcessOrNot, int *allocationPointer, float *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 	reduce3ScalarGeneric<float>(
 			opNum,
 			dx,
@@ -1720,15 +1721,15 @@ __global__ void reduce3ScalarFloat(
 extern "C" __global__ void reduce3ScalarHalf(
 		int opNum,
 		float16 *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		float16 *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		float16 *extraParams,
 		float16 *result,
-		int *resultShapeInfo,
+		Nd4jLong *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, float16 *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *yTadOnlyShapeInfo, Nd4jIndex *yTadOffsets) {
+		int postProcessOrNot, int *allocationPointer, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 	reduce3ScalarGeneric<float16>(
 			opNum,
 			dx,
@@ -1746,15 +1747,15 @@ extern "C"
 __global__ void reduce3ScalarDouble(
 		int opNum,
 		double *dx,
-		int *xShapeInfo,
+		Nd4jLong *xShapeInfo,
 		double *dy,
-		int *yShapeInfo,
+		Nd4jLong *yShapeInfo,
 		double *extraParams,
 		double *result,
-		int *resultShapeInfo,
+		Nd4jLong *resultShapeInfo,
 		int *dimension,
 		int dimensionLength,
-		int postProcessOrNot, int *allocationPointer, double *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *yTadOnlyShapeInfo, Nd4jIndex *yTadOffsets) {
+		int postProcessOrNot, int *allocationPointer, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 	reduce3ScalarGeneric<double>(
 			opNum,
 			dx,

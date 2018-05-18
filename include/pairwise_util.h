@@ -198,10 +198,10 @@ template <typename T>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-inline int PrepareOneRawArrayIter(int ndim, int shape[],
-                                  T data[], int strides[],
-                                  int *out_ndim, int outShape[],
-                                  T **out_data, int *outStrides) {
+inline int PrepareOneRawArrayIter(int ndim, Nd4jLong shape[],
+                                  T data[], Nd4jLong strides[],
+                                  int *out_ndim, Nd4jLong outShape[],
+                                  T **out_data, Nd4jLong *outStrides) {
 
     for (int i = 0; i < ndim; i++) {
         outShape[i] = shape[i];
@@ -235,11 +235,11 @@ inline int PrepareOneRawArrayIter(int ndim, int shape[],
 
 class BlockInformation {
 public:
-    Nd4jIndex items;
+    Nd4jLong items;
     int threads;
-    Nd4jIndex chunks;
-    Nd4jIndex modulo;
-    BlockInformation(Nd4jIndex length, int threshold) {
+    Nd4jLong chunks;
+    Nd4jLong modulo;
+    BlockInformation(Nd4jLong length, int threshold) {
 
     int tadsPerThread = length / threshold;
     int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
@@ -343,12 +343,12 @@ template <typename T>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-int PrepareTwoRawArrayIter(int ndim, int *shape,
-                           T *dataA, int *stridesA,
-                           T *dataB, int *stridesB,
-                           int *out_ndim, int *outShape,
-                           T **out_dataA, int *outStridesA,
-                           T **out_dataB, int *outStridesB) {
+int PrepareTwoRawArrayIter(int ndim, Nd4jLong *shape,
+                           T *dataA, Nd4jLong *stridesA,
+                           T *dataB, Nd4jLong *stridesB,
+                           int *out_ndim, Nd4jLong *outShape,
+                           T **out_dataA, Nd4jLong *outStridesA,
+                           T **out_dataB, Nd4jLong *outStridesB) {
     int i;
 
 /* Sort the axes based on the destination strides */
@@ -360,9 +360,9 @@ int PrepareTwoRawArrayIter(int ndim, int *shape,
 
 /* Reverse any negative strides of operand A */
     for (i = 0; i < ndim; i++) {
-        int stride_entryA = outStridesA[i];
-        int stride_entryB = outStridesB[i];
-        int shape_entry = outShape[i];
+        Nd4jLong stride_entryA = outStridesA[i];
+        Nd4jLong stride_entryB = outStridesB[i];
+        Nd4jLong shape_entry = outShape[i];
 
         if (stride_entryA < 0) {
             dataA += stride_entryA * (shape_entry - 1);
@@ -437,14 +437,14 @@ template <typename T>
 #ifdef __CUDACC__
 __host__ __device__
 #endif
-int  PrepareThreeRawArrayIter(int ndim, int shape[],
-                              T *dataA, int *stridesA,
-                              T *dataB, int *stridesB,
-                              T *dataC, int *stridesC,
-                              int &out_ndim, int *outShape,
-                              T **out_dataA, int outStridesA[],
-                              T **out_dataB, int outStridesB[],
-                              T **out_dataC, int outStridesC[])
+int  PrepareThreeRawArrayIter(int ndim, Nd4jLong shape[],
+                              T *dataA, Nd4jLong *stridesA,
+                              T *dataB, Nd4jLong *stridesB,
+                              T *dataC, Nd4jLong *stridesC,
+                              int &out_ndim, Nd4jLong *outShape,
+                              T **out_dataA, Nd4jLong outStridesA[],
+                              T **out_dataB, Nd4jLong outStridesB[],
+                              T **out_dataC, Nd4jLong outStridesC[])
 {
 
     /* Special case 0 and 1 dimensions */
@@ -460,10 +460,10 @@ int  PrepareThreeRawArrayIter(int ndim, int shape[],
         return 0;
     }
     else if (ndim == 1) {
-        int stride_entryA = stridesA[0];
-        int stride_entryB = stridesB[0];
-        int stride_entryC = stridesC[0];
-        int shape_entry = shape[0];
+        auto stride_entryA = stridesA[0];
+        auto stride_entryB = stridesB[0];
+        auto stride_entryC = stridesC[0];
+        auto shape_entry = shape[0];
         out_ndim = 1;
         outShape[0] = shape[0];
         /* Always make a positive stride for the first operand */
@@ -495,10 +495,10 @@ int  PrepareThreeRawArrayIter(int ndim, int shape[],
 
     /* Reverse any negative strides of operand A */
     for (int i = 0; i < ndim; ++i) {
-        int stride_entryA = outStridesA[i];
-        int stride_entryB = outStridesB[i];
-        int stride_entryC = outStridesC[i];
-        int shape_entry = outShape[i];
+        auto stride_entryA = outStridesA[i];
+        auto stride_entryB = outStridesB[i];
+        auto stride_entryC = outStridesC[i];
+        auto shape_entry = outShape[i];
 
         if (stride_entryA < 0) {
             dataA += stride_entryA * (shape_entry - 1);

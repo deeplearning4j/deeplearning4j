@@ -30,7 +30,7 @@ DECLARE_SYN(MatrixDiag, diag);
 ////////////////////////////////////////////////////////////////////////// 
 DECLARE_SHAPE_FN(diag) {
     
-    const int* inputShapeInfo = inputShape->at(0);
+    const Nd4jLong* inputShapeInfo = inputShape->at(0);
 
     return SHAPELIST(ShapeUtils<T>::evalDiagShapeInfo(inputShapeInfo, block.workspace()));
 }

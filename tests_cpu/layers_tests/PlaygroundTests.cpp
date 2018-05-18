@@ -365,7 +365,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
 
     NativeOps nativeOps;
 
-    int iArgs[] = {kH, kW, sH, sW, pH, pW, dH, dW, 0};
+    Nd4jLong iArgs[] = {kH, kW, sH, sW, pH, pW, dH, dW, 0};
     Nd4jPointer inputBuffers[] = {input.buffer()};
     Nd4jPointer inputShapes[] = {input.shapeInfo()};
 
@@ -412,7 +412,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_2) {
 
     nd4j::ops::im2col<float> op;
 
-    int iArgs[] = {11, 11, 4, 4, 2, 2, 1, 1, 0};
+    Nd4jLong iArgs[] = {11, 11, 4, 4, 2, 2, 1, 1, 0};
     Nd4jPointer inputBuffers[] = {input.buffer()};
     Nd4jPointer inputShapes[] = {input.shapeInfo()};
 

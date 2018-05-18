@@ -15,7 +15,7 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
 
             if (block.width() == 1) {
-                std::vector<int>* argumets = block.getIArguments();
+                auto argumets = block.getIArguments();
                 int argsSize = argumets->size();
 
                 REQUIRE_TRUE(argsSize >= 2, 0, "Reshape arguments should have order and at least 1 dimensions");
@@ -27,7 +27,7 @@ namespace nd4j {
                     e = 0;
                 }
 
-                std::vector<int> shapeNew;
+                std::vector<Nd4jLong> shapeNew;
                 
                 for (; e < (int) argumets->size(); e++)
                     shapeNew.push_back((int) argumets->at(e));
@@ -58,9 +58,9 @@ namespace nd4j {
                 if (block.numI() > 0)
                     order = (char) INT_ARG(0);
 
-                std::vector<int> shapeNew;
+                std::vector<Nd4jLong> shapeNew(s->lengthOf());
                 for (int e = 0; e < (int) s->lengthOf(); e++)
-                    shapeNew.push_back((int) s->getIndexedScalar(e));
+                    shapeNew[e] = s->getIndexedScalar(e);
 
                if (Environment::getInstance()->isDebugAndVerbose()) {
                     nd4j_printv("Reshape: new shape", shapeNew);
@@ -86,7 +86,7 @@ namespace nd4j {
             return ND4J_STATUS_BAD_INPUT;
         }
         DECLARE_SHAPE_FN(reshape) {
-            int *inp = inputShape->at(0);
+            auto inp = inputShape->at(0);
 
             // we can launch op using Int arguments
             if (inputShape->size() == 1) {
@@ -101,8 +101,8 @@ namespace nd4j {
                 for (int e = 1; e < (int) arguments->size(); e++)
                     shapeNew.push_back((int) arguments->at(e));
 
-                int *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) shapeNew.size()), int);
+                Nd4jLong *newShape;
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) shapeNew.size()), Nd4jLong);
 
                 int numberNegativesOnes = 0;
 
@@ -154,13 +154,13 @@ namespace nd4j {
                 // or, with second input "as shape"
                 auto y = INPUT_VARIABLE(1);
 
-                std::vector<int> shapeNew(y->lengthOf());
+                std::vector<Nd4jLong> shapeNew(y->lengthOf());
                 int numberNegativesOnes = 0;
 
                 for (int e = 0; e < (int) y->lengthOf(); e++)
                     shapeNew[e] = (int) y->getIndexedScalar(e);
 
-                int *shape_ = shapeNew.data();
+                auto shape_ = shapeNew.data();
                 for (int i = 0; i < (int) shapeNew.size(); i++) {
                     if (shapeNew[i] < 0) {
                         if (numberNegativesOnes >= 1)
@@ -174,8 +174,8 @@ namespace nd4j {
                                 shapeLength *= shape_[j];
 
                         // FIXME: use workspace here
-                        int realShape = nd4j::math::nd4j_abs<int>((int) shape::length(inp) / shapeLength);
-                        int *thisNewShape = new int[shapeNew.size()];
+                        int realShape = nd4j::math::nd4j_abs<Nd4jLong>((Nd4jLong) shape::length(inp) / shapeLength);
+                        auto thisNewShape = new Nd4jLong[shapeNew.size()];
 
                         for (int j = 0; j < (int) shapeNew.size(); j++) {
                             if (i != j) {
@@ -196,8 +196,8 @@ namespace nd4j {
                 if (numberNegativesOnes > 0)
                     delete[] shape_;
 
-                int *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shapeNew.size()), int);
+                Nd4jLong *newShape;
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shapeNew.size()), Nd4jLong);
 
                 shape::shapeBuffer(shapeNew.size(), shapeNew.data(), newShape);
 

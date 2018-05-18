@@ -39,8 +39,8 @@ namespace ops {
 
         const int input_dims = input->rankOf();
         int block_dims = 0;
-        std::vector<int> block_shape; // = blocks->template asVectorT<int>();
-        std::vector<int> crops_shape; // = crops->template asVectorT<int>();
+        std::vector<Nd4jLong> block_shape; // = blocks->template asVectorT<int>();
+        std::vector<Nd4jLong> crops_shape; // = crops->template asVectorT<int>();
 
         if (block.width() >= 3) {
             auto blocks = INPUT_VARIABLE(1);
@@ -53,8 +53,8 @@ namespace ops {
             REQUIRE_TRUE(crops->rankOf() == 2, 0, "BatchToSpace: padding should have rank of 2, but got %i instead", crops->rankOf());
             REQUIRE_TRUE(crops->columns() == 2 && blocks->lengthOf() == crops->rows(), 0, "BatchToSpace: padding should have M rows and 2 columns");
 
-            block_shape = blocks->template asVectorT<int>();
-            crops_shape = crops->template asVectorT<int>();
+            block_shape = blocks->template asVectorT<Nd4jLong>();
+            crops_shape = crops->template asVectorT<Nd4jLong>();
 
         } else if (block.numI() > 0) {
             int totalArgs = block.numI();
@@ -101,7 +101,7 @@ namespace ops {
         REQUIRE_TRUE(block_shape_product > 0, 0, "BatchToSpace: block should contain values >= 1 ONLY");
 
 
-        const int orig_input_batch_size = input->sizeAt(0);
+        const Nd4jLong orig_input_batch_size = input->sizeAt(0);
         const int internal_block_dims = block_dims - removed_prefix_block_dims - removed_suffix_block_dims;
 
         REQUIRE_TRUE(internal_block_dims <= kMaxSpaceToBatchBlockDims, 0, "BatchToSpace: Maximum number of non-combined block dimensions should be less or equal then %i but got %i instead", kMaxSpaceToBatchBlockDims, internal_block_dims);
@@ -111,9 +111,9 @@ namespace ops {
             return Status::OK();
         }
 
-        std::vector<int> internal_input_shape;
-        std::vector<int> internal_output_shape;
-        std::vector<int> external_output_shape;
+        std::vector<Nd4jLong> internal_input_shape;
+        std::vector<Nd4jLong> internal_output_shape;
+        std::vector<Nd4jLong> external_output_shape;
 
         external_output_shape.emplace_back(orig_input_batch_size / block_shape_product);
 
@@ -152,8 +152,8 @@ namespace ops {
         internal_input_shape.emplace_back(depth);
         internal_output_shape.emplace_back(depth);
 
-        int* internal_crops = &crops_shape.data()[2 * removed_prefix_block_dims];
-        int* internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
+        Nd4jLong* internal_crops = &crops_shape.data()[2 * removed_prefix_block_dims];
+        Nd4jLong* internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
 
         helpers::_batchToSpace(internal_block_dims, output, input, internal_output_shape, internal_input_shape, internal_block_shape, internal_crops);
 
@@ -228,21 +228,21 @@ namespace ops {
 
         if (internal_block_dims == 0) {
             // just return input shape here
-            int *newShape;
+            Nd4jLong *newShape;
             COPY_SHAPE(in, newShape);
             return SHAPELIST(newShape);
         }
 
         // go full route otherwise
-        std::vector<int> internal_input_shape;
-        std::vector<int> internal_output_shape;
-        std::vector<int> external_output_shape;
+        std::vector<Nd4jLong> internal_input_shape;
+        std::vector<Nd4jLong> internal_output_shape;
+        std::vector<Nd4jLong> external_output_shape;
 
         external_output_shape.emplace_back(orig_input_batch_size / block_shape_product);
 
-        int input_batch_size = orig_input_batch_size;
+        Nd4jLong input_batch_size = orig_input_batch_size;
         for (int block_dim = 0; block_dim < removed_prefix_block_dims; ++block_dim) {
-            const int size = shape::sizeAt(in, block_dim + 1);
+            const Nd4jLong size = shape::sizeAt(in, block_dim + 1);
             input_batch_size *= size;
             external_output_shape.emplace_back(size);
         }
@@ -270,10 +270,10 @@ namespace ops {
             depth *= size;
         }
 
-        int *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) external_output_shape.size()), int);
+        Nd4jLong *newShape;
+        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) external_output_shape.size()), Nd4jLong);
 
-        nd4j_printv("STB shape: ", external_output_shape);
+        //nd4j_printv("STB shape: ", external_output_shape);
 
         // we always give out C order here
         shape::shapeBuffer((int) external_output_shape.size(), external_output_shape.data(), newShape);

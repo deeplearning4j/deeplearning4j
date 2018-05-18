@@ -89,7 +89,7 @@ namespace helpers {
     template <typename T>
     int inTopKFunctor(NDArray<T>* input, NDArray<T>* target, NDArray<T>* result, int k) {
 
-            std::vector<int> shapeV(input->rankOf() + 1);
+            std::vector<Nd4jLong> shapeV(input->rankOf() + 1);
             for (int i = 0; i < input->rankOf(); i++)
                 shapeV[i] = input->sizeAt(i);
             shapeV[input->rankOf()] = k;

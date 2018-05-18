@@ -31,7 +31,7 @@ namespace aggregateOps {
     class GEMM {
     public:
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             // no-op
         }
 #endif
@@ -74,7 +74,7 @@ namespace aggregateOps {
 #endif
 
 #ifndef __CUDACC__
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             int M = indexArguments[0];
             int N = indexArguments[1];
             int K = indexArguments[2];
@@ -95,7 +95,7 @@ namespace aggregateOps {
             nd4j::blas::GEMM<T>::op(convertOrder(Order), convertTranspose(TransA), convertTranspose(TransB),M,N,K,(T) alpha,A,lda,B,ldb,(T) beta,C,ldc);
         }
 #else
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             // stub for nvcc
         }
 #endif
@@ -109,7 +109,7 @@ namespace aggregateOps {
     class HierarchicSoftmax {
         public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             int vectorLength = indexArguments[0];
             int expLength = indexArguments[1];
             int code = indexArguments[2];
@@ -161,7 +161,7 @@ namespace aggregateOps {
         }
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             /*
                 We know that syn0 & syn1 are 2D matrices, so we can just use offsets here
             */
@@ -242,7 +242,7 @@ namespace aggregateOps {
     class NegativeSampling {
     public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             int vectorLength = indexArguments[0];
             int expLength = indexArguments[1];
             int code = indexArguments[2];
@@ -294,7 +294,7 @@ namespace aggregateOps {
         }
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             /*
                 We know that syn0 & syn1 are 2D matrices, so we can just use offsets here
             */
@@ -381,7 +381,7 @@ namespace aggregateOps {
     class Dot {
     public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
             T *vecZ = arguments[2];
@@ -399,7 +399,7 @@ namespace aggregateOps {
         };
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
             T *vecZ = arguments[2];
@@ -427,7 +427,7 @@ namespace aggregateOps {
     class Axpy {
     public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
 
@@ -442,7 +442,7 @@ namespace aggregateOps {
         };
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             T *vecX = arguments[0];
             T *vecY = arguments[1];
 
@@ -463,7 +463,7 @@ namespace aggregateOps {
     class SkipGram {
     public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregate(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             int syn0Row = indexArguments[0];
             int vectorLength = indexArguments[1];
             int hsRounds = indexArguments[2];
@@ -555,7 +555,7 @@ namespace aggregateOps {
         }
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays, T *realArguments, int numRealArguments) {
             __shared__ int syn0Row;
             __shared__ int vectorLength;
             __shared__ int hsRounds;
@@ -679,7 +679,7 @@ namespace aggregateOps {
     class CBOW {
     public:
 
-        aggregate_def void executeAggregate(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments,
+        aggregate_def void executeAggregate(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments,
                          int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays,
                          T *realArguments, int numRealArguments) {
             int vectorLength = indexArguments[0];
@@ -811,7 +811,7 @@ namespace aggregateOps {
 
 
 #ifdef __CUDACC__
-        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, int **shapeArguments, int numShapeArguments,
+        aggregate_def void executeAggregateCuda(T **arguments, int numArguments, Nd4jLong **shapeArguments, int numShapeArguments,
                          int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays,
                          T *realArguments, int numRealArguments) {
             __shared__ int vectorLength;

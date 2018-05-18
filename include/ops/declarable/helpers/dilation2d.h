@@ -36,7 +36,7 @@ namespace helpers {
     }
 
 
-    FORCEINLINE Nd4jStatus _dilation_hw(int *in, int *wh, std::vector<int> &strides, std::vector<int> &rates, bool isSameMode, int *stride_rows, int *stride_cols, int *rate_rows, int *rate_cols, int *pad_top, int *pad_left, int *out_rows, int *out_cols) {
+    FORCEINLINE Nd4jStatus _dilation_hw(Nd4jLong *in, Nd4jLong *wh, std::vector<int> &strides, std::vector<int> &rates, bool isSameMode, int *stride_rows, int *stride_cols, int *rate_rows, int *rate_cols, int *pad_top, int *pad_left, int *out_rows, int *out_cols) {
         const int input_rows = shape::sizeAt(in, 1);
         const int input_cols = shape::sizeAt(in, 2);
         const int depth = shape::sizeAt(in, 3);

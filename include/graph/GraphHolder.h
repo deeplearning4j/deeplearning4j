@@ -12,9 +12,9 @@ namespace nd4j {
         class GraphHolder {
         private:
             static GraphHolder *_INSTANCE;
-            std::map<Nd4jIndex, Graph<float>*> _graphF;
-            std::map<Nd4jIndex, Graph<double>*> _graphD;
-            std::map<Nd4jIndex, Graph<float16>*> _graphH;
+            std::map<Nd4jLong, Graph<float>*> _graphF;
+            std::map<Nd4jLong, Graph<double>*> _graphD;
+            std::map<Nd4jLong, Graph<float16>*> _graphH;
 
             GraphHolder() = default;
             ~GraphHolder() = default;
@@ -22,25 +22,25 @@ namespace nd4j {
             static GraphHolder* getInstance();
 
             template <typename T>
-            void registerGraph(Nd4jIndex graphId, Graph<T>* graph);
+            void registerGraph(Nd4jLong graphId, Graph<T>* graph);
             
             template <typename T>
-            Graph<T>* cloneGraph(Nd4jIndex graphId);
+            Graph<T>* cloneGraph(Nd4jLong graphId);
 
             template <typename T>
-            Graph<T>* pullGraph(Nd4jIndex graphId);
+            Graph<T>* pullGraph(Nd4jLong graphId);
 
             template <typename T>
-            void forgetGraph(Nd4jIndex graphId);
+            void forgetGraph(Nd4jLong graphId);
 
             template <typename T>
-            void dropGraph(Nd4jIndex graphId);
+            void dropGraph(Nd4jLong graphId);
 
 
-            void dropGraphAny(Nd4jIndex graphId);
+            void dropGraphAny(Nd4jLong graphId);
 
             template <typename T>
-            bool hasGraph(Nd4jIndex graphId);
+            bool hasGraph(Nd4jLong graphId);
         };
     }
 }

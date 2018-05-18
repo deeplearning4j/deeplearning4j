@@ -55,7 +55,7 @@ namespace nd4j {
 
                 Nd4jStatus  res = ConvolutionUtils<T>::conv3Dmv(tadOut, (T) 1.0f, (T) 1.0f, tadIn, weights, dT, dH, dW, "V", "X");
                 if (res != ND4J_STATUS_OK)
-                    throw "Boom";
+                    throw std::runtime_error("Failed to apply Conv3D");
             }
 
             STORE_RESULT(*output);
@@ -68,8 +68,8 @@ namespace nd4j {
             // REQUIRE_TRUE(output->sizeAt(0) == input->sizeAt(0) && output->sizeAt(1) == nOutputPlane && output->sizeAt(2) == outputDepth && output->sizeAt(3) == outputHeight && output->sizeAt(4) == outputWidth, 0,
             // "Expected output shape: [%i, %i, %i, %i, %i] but got [%i, %i, %i, %i, %i] instead", input->sizeAt(0), nOutputPlane, outputDepth, outputHeight, outputWidth, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->sizeAt(4));
 
-            int* inputShapeInfo  = inputShape->at(0);
-            int* weightShapeInfo = inputShape->at(1);
+            auto inputShapeInfo  = inputShape->at(0);
+            auto weightShapeInfo = inputShape->at(1);
             
             int rank         = inputShapeInfo[0];              // = 5
             int bS           = inputShapeInfo[1];            
@@ -91,8 +91,8 @@ namespace nd4j {
             int shapeInfoLength = rank*2 + 4;        
             char order = (char)(inputShapeInfo[shapeInfoLength-1]);
         
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), shapeInfoLength, int);
+            Nd4jLong *newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), shapeInfoLength, Nd4jLong);
 
             newShapeInfo[0] = rank;
             newShapeInfo[1] = bS;

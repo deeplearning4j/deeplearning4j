@@ -75,11 +75,11 @@ namespace nd4j {
         DECLARE_SYN(LRN, lrn_old);
         
         DECLARE_SHAPE_FN(lrn_old) {
-            int *inp = inputShape->at(0);
+            auto inp = inputShape->at(0);
 
             auto shapeList = SHAPELIST();
             for(int e = 0; e < 3; e++) {
-                int *newShape;
+                Nd4jLong *newShape;
                 COPY_SHAPE(inp, newShape);
                 shapeList->push_back(newShape);
             }

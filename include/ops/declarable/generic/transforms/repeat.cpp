@@ -24,19 +24,19 @@ namespace nd4j {
         DECLARE_SHAPE_FN(repeat) {                               
             
             NDArray<T>* x   = INPUT_VARIABLE(0);
-            std::vector<int>* argumets = block.getIArguments();
+            auto argumets = block.getIArguments();
             int argsSize = argumets->size();
             int dimension = (*argumets)[argsSize-1];
-            std::vector<int> repeats = *argumets;
+            auto repeats = *argumets;
             repeats.pop_back();
             
-            std::vector<int> outShape = ShapeUtils<T>::evalRepeatShape(dimension, repeats, *x);
+            auto outShape = ShapeUtils<T>::evalRepeatShape(dimension, ArrayUtils::toLongVector(repeats), *x);
             int rank = outShape.size();
 
-            int* newShapeInfo = nullptr; 
-            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int); 
+            Nd4jLong* newShapeInfo = nullptr; 
+            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong); 
             newShapeInfo[0] = rank;
-            copy(outShape.begin(), outShape.end(), newShapeInfo+1);
+            std::copy(outShape.begin(), outShape.end(), newShapeInfo+1);
             shape::updateStrides(newShapeInfo, x->ordering());
 
             return SHAPELIST(newShapeInfo);

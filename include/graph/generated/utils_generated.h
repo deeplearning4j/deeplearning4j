@@ -11,6 +11,8 @@ namespace graph {
 
 struct LongPair;
 
+struct LongTriple;
+
 struct IntPair;
 
 struct IntTriple;
@@ -182,6 +184,66 @@ inline flatbuffers::Offset<LongPair> CreateLongPair(
     int64_t first = 0,
     int64_t second = 0) {
   LongPairBuilder builder_(_fbb);
+  builder_.add_second(second);
+  builder_.add_first(first);
+  return builder_.Finish();
+}
+
+struct LongTriple FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_FIRST = 4,
+    VT_SECOND = 6,
+    VT_THIRD = 8
+  };
+  int64_t first() const {
+    return GetField<int64_t>(VT_FIRST, 0);
+  }
+  int64_t second() const {
+    return GetField<int64_t>(VT_SECOND, 0);
+  }
+  int64_t third() const {
+    return GetField<int64_t>(VT_THIRD, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int64_t>(verifier, VT_FIRST) &&
+           VerifyField<int64_t>(verifier, VT_SECOND) &&
+           VerifyField<int64_t>(verifier, VT_THIRD) &&
+           verifier.EndTable();
+  }
+};
+
+struct LongTripleBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_first(int64_t first) {
+    fbb_.AddElement<int64_t>(LongTriple::VT_FIRST, first, 0);
+  }
+  void add_second(int64_t second) {
+    fbb_.AddElement<int64_t>(LongTriple::VT_SECOND, second, 0);
+  }
+  void add_third(int64_t third) {
+    fbb_.AddElement<int64_t>(LongTriple::VT_THIRD, third, 0);
+  }
+  explicit LongTripleBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  LongTripleBuilder &operator=(const LongTripleBuilder &);
+  flatbuffers::Offset<LongTriple> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<LongTriple>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<LongTriple> CreateLongTriple(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int64_t first = 0,
+    int64_t second = 0,
+    int64_t third = 0) {
+  LongTripleBuilder builder_(_fbb);
+  builder_.add_third(third);
   builder_.add_second(second);
   builder_.add_first(first);
   return builder_.Finish();

@@ -25,8 +25,8 @@ namespace nd4j {
         DECLARE_SHAPE_FN(shape_of) {
             auto inShape = inputShape->at(0);
 
-            int *newshape;
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+            Nd4jLong *newshape;
+            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
             shape::shapeVector(shape::rank(inShape), newshape);
 
             return SHAPELIST(newshape);

@@ -64,11 +64,11 @@ namespace nd4j {
             auto xShape = inputShape->at(0);
             auto yShape = inputShape->at(1);
 
-            int *zShape = nullptr;
+            Nd4jLong *zShape = nullptr;
 
             if (shape::equalsSoft(xShape, yShape) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT))) {
                 // reduce3 to scalar case
-                ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+                ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
                 zShape[0] = 2;
                 zShape[1] = 1;
                 zShape[2] = 1;

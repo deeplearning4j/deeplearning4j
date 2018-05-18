@@ -20,22 +20,22 @@ CUSTOM_OP_IMPL(eye, 1, 1, false, 0, 2) {
 
 DECLARE_SHAPE_FN(eye) {
 
-    std::vector<int> params = *block.getIArguments();
+    auto params = *block.getIArguments();
     const int size = params.size();
 
-    int* outShapeInfo(nullptr);
+    Nd4jLong* outShapeInfo(nullptr);
 
     switch(size) {
         
         case 2:
-            ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2), int);
+            ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
             outShapeInfo[0] = 2;
             outShapeInfo[1] = params[1];
             outShapeInfo[2] = params[1];
             break;
 
         case 3:
-            ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2), int);
+            ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
             outShapeInfo[0] = 2;
             outShapeInfo[1] = params[1];
             outShapeInfo[2] = params[2];
@@ -43,7 +43,7 @@ DECLARE_SHAPE_FN(eye) {
 
         default:
             int rank = size-1;
-            ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
+            ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
             outShapeInfo[0] = rank;
             outShapeInfo[rank-1] = params[1];
             outShapeInfo[rank] = params[2];

@@ -157,22 +157,22 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jIndex nd4j::graph::Context<T>::getOuterTime(){
+        Nd4jLong nd4j::graph::Context<T>::getOuterTime(){
             return this->_executionTime.first;
         }
 
         template <typename T>
-        Nd4jIndex nd4j::graph::Context<T>::getInnerTime(){
+        Nd4jLong nd4j::graph::Context<T>::getInnerTime(){
             return this->_executionTime.second;
         }
 
         template <typename T>
-        void nd4j::graph::Context<T>::setOuterTime(Nd4jIndex time){
+        void nd4j::graph::Context<T>::setOuterTime(Nd4jLong time){
             this->_executionTime.first = time;
         }
 
         template <typename T>
-        void nd4j::graph::Context<T>::setInnerTime(Nd4jIndex time){
+        void nd4j::graph::Context<T>::setInnerTime(Nd4jLong time){
             this->_executionTime.second = time;
         }
 

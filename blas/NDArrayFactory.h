@@ -50,18 +50,18 @@ namespace nd4j {
         /**
         *  modif - (can be empty) vector containing a subsequence of permutation/reshaping arrays (in any order), user must take care of correctness of such arrays by himself 
         */
-        static void tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, const std::vector<std::vector<int>>& modifA, const std::vector<std::vector<int>>& modifB, const std::vector<std::vector<int>>& modifC);
-        static nd4j::NDArray<T>* tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, const std::vector<std::vector<int>>& modifA, const std::vector<std::vector<int>>& modifB);
+        static void tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB, const std::vector<std::vector<Nd4jLong>>& modifC);
+        static nd4j::NDArray<T>* tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB);
 #endif
 
-        static NDArray<T>* linspace(T from, T to, Nd4jIndex numElements);
+        static NDArray<T>* linspace(T from, T to, Nd4jLong numElements);
         
         static void linspace(T from, NDArray<T>& arr, T step = 1.0f);
 
         static NDArray<T>* scalar(T value);
 
-        static NDArray<T>* valueOf(std::initializer_list<int> shape, T value, char order = 'c');
-        static NDArray<T>* valueOf(std::vector<int>& shape, T value, char order = 'c');
+        static NDArray<T>* valueOf(std::initializer_list<Nd4jLong> shape, T value, char order = 'c');
+        static NDArray<T>* valueOf(std::vector<Nd4jLong>& shape, T value, char order = 'c');
 
         static NDArray<T>* concat(const std::vector<NDArray<T> *>& vectors, int axis = 0, NDArray<T>* target = nullptr);
 

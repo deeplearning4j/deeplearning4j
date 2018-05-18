@@ -30,22 +30,22 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(extract_image_patches) {
 
-            int *in = inputShape->at(0);
+            auto in = inputShape->at(0);
             int outRank = shape::rank(in);
-            int *outputShape = nullptr;
+            Nd4jLong *outputShape = nullptr;
 
             int ksizeRowsEffective = INT_ARG(0) + (INT_ARG(0) - 1) * (INT_ARG(4) - 1);
             int ksizeColsEffective = INT_ARG(1) + (INT_ARG(1) - 1) * (INT_ARG(5) - 1);
 
-            int batchSizeDim = shape::sizeAt(in, 0);
-            int inputRowsDim = shape::sizeAt(in, 1);
-            int inputColsDim = shape::sizeAt(in, 2);
-            int outputDepthDim = shape::sizeAt(in, 3) * INT_ARG(0) * INT_ARG(1); // last dim * ksizeRows * ksizeCols
+            auto batchSizeDim = shape::sizeAt(in, 0);
+            auto inputRowsDim = shape::sizeAt(in, 1);
+            auto inputColsDim = shape::sizeAt(in, 2);
+            auto outputDepthDim = shape::sizeAt(in, 3) * INT_ARG(0) * INT_ARG(1); // last dim * ksizeRows * ksizeCols
 
-            int inputRowSize = inputRowsDim; //shape::sizeAt(in, inputRowsDim);
-            int inputColSize = inputColsDim; //shape::sizeAt(in, inputColsDim);
-            int outRowSize;
-            int outColSize;
+            auto inputRowSize = inputRowsDim; //shape::sizeAt(in, inputRowsDim);
+            auto inputColSize = inputColsDim; //shape::sizeAt(in, inputColsDim);
+            Nd4jLong outRowSize;
+            Nd4jLong outColSize;
             if (INT_ARG(6) == 0) {
                 // Padding is "VALID":
                 outRowSize = (inputRowSize - ksizeRowsEffective + INT_ARG(2)) / INT_ARG(2);
@@ -57,7 +57,7 @@ namespace nd4j {
             }
 
 
-            ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), int);
+            ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
 
             outputShape[0] = outRank;
             outputShape[1] = batchSizeDim;

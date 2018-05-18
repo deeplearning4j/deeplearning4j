@@ -77,9 +77,9 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
 
 DECLARE_SHAPE_FN(deconv2d) {
 
-    int* inputShapeInfo   = inputShape->at(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    int* weightsShapeInfo = inputShape->at(1);                                    // [kH, kW, oC, iC] (NHWC) or [iC, oC, kH, kW] (NCHW)
-    int* biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;      // [oC]
+    auto inputShapeInfo   = inputShape->at(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    auto weightsShapeInfo = inputShape->at(1);                                    // [kH, kW, oC, iC] (NHWC) or [iC, oC, kH, kW] (NCHW)
+    auto biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;      // [oC]
 
     const int rank = 4;
     REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM DECONV2D OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);
@@ -118,8 +118,8 @@ DECLARE_SHAPE_FN(deconv2d) {
     int oH, oW;                                         // output height, width
     ConvolutionUtils<T>::calcOutSizeDeconv2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
     
-    int* outputShapeInfo = nullptr;
-    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), int);
+    Nd4jLong* outputShapeInfo = nullptr;
+    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), Nd4jLong);
 
     outputShapeInfo[0] = rank;
     outputShapeInfo[1] = bS;
@@ -224,10 +224,10 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
 
 DECLARE_SHAPE_FN(deconv2d_bp) {
 
-    int* inputShapeInfo   = inputShape->at(0);                                                // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
-    int* weightsShapeInfo = inputShape->at(1);                                                // [kH, kW, oC, iC] (NDHWC) or [iC, oC, kH, kW] (NCDHW)
-    int* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;                  // [oC]
-    int* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);        // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
+    auto inputShapeInfo   = inputShape->at(0);                                                // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
+    auto weightsShapeInfo = inputShape->at(1);                                                // [kH, kW, oC, iC] (NDHWC) or [iC, oC, kH, kW] (NCDHW)
+    Nd4jLong* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;                  // [oC]
+    Nd4jLong* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);        // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
 
     const int rank = 4;
     REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM DECONV2D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);
@@ -269,14 +269,14 @@ DECLARE_SHAPE_FN(deconv2d_bp) {
     if(biasShapeInfo)
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM DECONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
-    int *gradIShapeInfo(nullptr), *gradWShapeInfo(nullptr);
+    Nd4jLong *gradIShapeInfo(nullptr), *gradWShapeInfo(nullptr);
     COPY_SHAPE(inputShapeInfo, gradIShapeInfo);
     COPY_SHAPE(weightsShapeInfo, gradWShapeInfo);
 
     auto shapes = SHAPELIST(gradIShapeInfo, gradWShapeInfo);
 
     if (biasShapeInfo != nullptr) {
-        int *gradBShapeInfo(nullptr);
+        Nd4jLong *gradBShapeInfo(nullptr);
         COPY_SHAPE(biasShapeInfo, gradBShapeInfo);
         shapes->push_back(gradBShapeInfo);
     }

@@ -6,7 +6,7 @@
 
 namespace nd4j {
     namespace memory {
-        ExternalWorkspace::ExternalWorkspace(Nd4jPointer ptrH, Nd4jIndex sizeH, Nd4jPointer ptrD, Nd4jIndex sizeD) {
+        ExternalWorkspace::ExternalWorkspace(Nd4jPointer ptrH, Nd4jLong sizeH, Nd4jPointer ptrD, Nd4jLong sizeD) {
             _ptrH = ptrH;
             _sizeH = sizeH;
 
@@ -22,11 +22,11 @@ namespace nd4j {
             return _ptrD;
         }
 
-        Nd4jIndex ExternalWorkspace::sizeHost() {
+        Nd4jLong ExternalWorkspace::sizeHost() {
             return _sizeH;
         }
         
-        Nd4jIndex ExternalWorkspace::sizeDevice() {
+        Nd4jLong ExternalWorkspace::sizeDevice() {
             return _sizeD;
         }
     }

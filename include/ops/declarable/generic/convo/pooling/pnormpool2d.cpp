@@ -84,11 +84,11 @@ namespace nd4j {
 
 
         DECLARE_SHAPE_FN(pnormpool2d) {
-            int* inShape = inputShape->at(0);
-            int* shapeOf = shape::shapeOf(inShape);
+            auto inShape = inputShape->at(0);
+            auto shapeOf = shape::shapeOf(inShape);
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-            std::vector<int> argI = *(block.getIArguments());
+            auto argI = *(block.getIArguments());
             int kH = argI[0];
             int kW = argI[1];
             int sH = argI[2];
@@ -113,8 +113,8 @@ namespace nd4j {
             int oH, oW;
             ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
             // allocate memory for new shape
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+            Nd4jLong* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, Nd4jLong);
             if (isNCHW) {
                 newShapeInfo[0] = 4;        // rank
                 newShapeInfo[1] = bS;
@@ -139,8 +139,8 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
             auto outEpsilon = OUTPUT_VARIABLE(0);
-            std::vector<int> argI = *(block.getIArguments());
-            std::vector<T>   argT = *(block.getTArguments());
+            auto argI = *(block.getIArguments());
+            auto argT = *(block.getTArguments());
 
             int kH = argI[0];
             int kW = argI[1];
@@ -171,7 +171,7 @@ namespace nd4j {
                 isEpsilonDup = true;
             }
 
-            int strideToCompare[] = {oH*oW, iD*oH*oW, oW, 1};
+            Nd4jLong strideToCompare[] = {oH*oW, iD*oH*oW, oW, 1};
             if (!cOrderStrides && shape::strideDescendingCAscendingF(epsilon->getShapeInfo())) {
                 cOrderStrides = true;
             }
@@ -253,9 +253,8 @@ namespace nd4j {
         DECLARE_SHAPE_FN(pnormpool2d_bp) {
 
             // FIXME: remove memcpy here
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
-            memcpy(newShapeInfo, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
+            Nd4jLong* newShapeInfo = nullptr;
+            COPY_SHAPE(inputShape->at(0), newShapeInfo);
             return SHAPELIST(newShapeInfo);
         }
     }

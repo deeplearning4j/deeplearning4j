@@ -41,8 +41,8 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(tensormmul) {               
         
-            int* aShapeInfo = inputShape->at(0);
-            int* bShapeInfo = inputShape->at(1);  
+            auto aShapeInfo = inputShape->at(0);
+            auto bShapeInfo = inputShape->at(1);  
             // building axes
             int axe0_size = INT_ARG(0);
             int axe1_size = INT_ARG(axe0_size+1);
@@ -54,15 +54,17 @@ namespace nd4j {
                 axes_1[e] = (int) INT_ARG(e + axe0_size + 2);
 
             // evaluate shapes 
-            std::vector<int> permutAt, permutBt, shapeAt, shapeBt;
-            std::vector<int> outShape = nd4j::ShapeUtils<T>::evalShapeForTensorDot(aShapeInfo, bShapeInfo, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
+            std::vector<int> permutAt, permutBt;
+            std::vector<Nd4jLong> shapeAt, shapeBt;
+            auto outShape = nd4j::ShapeUtils<T>::evalShapeForTensorDot(aShapeInfo, bShapeInfo, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
             
             int rank = outShape.size();
 
-            int* newShapeInfo = nullptr; 
-            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int); 
+            Nd4jLong* newShapeInfo = nullptr; 
+            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong); 
             newShapeInfo[0] = rank;
-            copy(outShape.begin(), outShape.end(), newShapeInfo+1);
+            std::copy(outShape.begin(), outShape.end(), newShapeInfo+1);
+            
             shape::updateStrides(newShapeInfo, 'c');
 
             return SHAPELIST(newShapeInfo);

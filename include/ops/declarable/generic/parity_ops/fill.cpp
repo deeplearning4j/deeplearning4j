@@ -20,10 +20,10 @@ namespace nd4j {
                 scalar = scArr->getScalar(0);
             }
 
-            std::vector<int> shape((int) shapeArray->lengthOf());
+            std::vector<Nd4jLong> shape((int) shapeArray->lengthOf());
 
             for (int e = 0; e < shapeArray->lengthOf(); e++)
-                shape[e] = (int) shapeArray->getScalar(e);
+                shape[e] = (Nd4jLong) shapeArray->getScalar(e);
 
             auto result = NDArrayFactory<T>::valueOf(shape, scalar, 'c');
 
@@ -38,12 +38,12 @@ namespace nd4j {
 
             int len = shape::length(inp);
 
-            std::vector<int> shape((int) shape::length(inp));
+            std::vector<Nd4jLong> shape(shape::length(inp));
             for (int e = 0; e < shape::length(inp); e++)
                 shape[e] = 1;
 
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape::length(inp)), int);
+            Nd4jLong *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape::length(inp)), Nd4jLong);
             shape::shapeBuffer(shape.size(), shape.data(), newShape);
 
             return SHAPELIST(newShape);

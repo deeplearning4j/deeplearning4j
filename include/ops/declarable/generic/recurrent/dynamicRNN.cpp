@@ -71,13 +71,13 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
 
 DECLARE_SHAPE_FN(dynamic_rnn) {    
 
-    int* xShapeInfo  = inputShape->at(0);               // input [time x bS x inSize] or [bS x time x inSize], depends on timeMajor parameter
-    int* WxShapeInfo = inputShape->at(1);               // input-to-hidden  weights, [inSize  x numUnits]     
-    int* WhShapeInfo = inputShape->at(2);               // hidden-to-hidden weights, [numUnits x numUnits]         
-    int* bShapeInfo  = inputShape->at(3);               // biases for, [2*numUnits] 
+    auto xShapeInfo  = inputShape->at(0);               // input [time x bS x inSize] or [bS x time x inSize], depends on timeMajor parameter
+    auto WxShapeInfo = inputShape->at(1);               // input-to-hidden  weights, [inSize  x numUnits]     
+    auto WhShapeInfo = inputShape->at(2);               // hidden-to-hidden weights, [numUnits x numUnits]         
+    auto bShapeInfo  = inputShape->at(3);               // biases for, [2*numUnits] 
 
-    int* h0ShapeInfo          = nullptr;                // initial cell output (at time step = 0) [bS x numUnits] 
-    int* maxTimeStepShapeInfo = nullptr;                // vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
+    Nd4jLong* h0ShapeInfo          = nullptr;                // initial cell output (at time step = 0) [bS x numUnits] 
+    Nd4jLong* maxTimeStepShapeInfo = nullptr;                // vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
 
     const int timeMajor = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;       // if true then [time, bS, ...], else [bS, time, ...]
 
@@ -108,9 +108,9 @@ DECLARE_SHAPE_FN(dynamic_rnn) {
         REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(maxTimeStepShapeInfo)  == ShapeUtils<T>::shapeAsString({bS}), 0, "DYNAMIC_RNN custom operation: wrong shape of maxTimeStep array, expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString({bS}).c_str(), ShapeUtils<T>::shapeAsString(maxTimeStepShapeInfo).c_str()); 
 
     // evaluate output shapeInfos
-    int *hShapeInfo(nullptr), *hPrevShapeInfo(nullptr);
-    ALLOCATE(hShapeInfo,     block.getWorkspace(), shape::shapeInfoLength(inRank), int);
-    ALLOCATE(hPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), int);
+    Nd4jLong *hShapeInfo(nullptr), *hPrevShapeInfo(nullptr);
+    ALLOCATE(hShapeInfo,     block.getWorkspace(), shape::shapeInfoLength(inRank), Nd4jLong);
+    ALLOCATE(hPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), Nd4jLong);
             
     hShapeInfo[0]     = inRank;
     hPrevShapeInfo[0] = inRank-1;

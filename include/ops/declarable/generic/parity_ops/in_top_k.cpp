@@ -30,14 +30,9 @@ namespace nd4j {
             auto in = inputShape->at(1);
             int shapeRank = shape::rank(in);
 
-            int* newshape;
+            Nd4jLong* newshape;
 
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), int);
-
-//            if (shape::order(in) == 'c')
-//                shape::shapeVector(shape::sizeAt(in, 0),  newshape);
-//            else
-//                shape::shapeVectorFortran(shape::sizeAt(in, 0),  newshape);
+            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), Nd4jLong);
             if (shape::order(in) == 'c')
                 shape::shapeBuffer(shape::rank(in), shape::shapeOf(in), newshape);
             else 

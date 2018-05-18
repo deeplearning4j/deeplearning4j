@@ -80,10 +80,10 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
 
 DECLARE_SHAPE_FN(sconv2d) {
 
-    int* inputShapeInfo    = inputShape->at(0);         // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    int* weightsDShapeInfo = inputShape->at(1);         // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    int* weightsPShapeInfo = nullptr;                   // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
-    int* biasShapeInfo     = nullptr;                   // [oC], oC = iC*mC if weightsPoint=nullptr
+    auto inputShapeInfo    = inputShape->at(0);         // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
+    auto weightsDShapeInfo = inputShape->at(1);         // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
+    Nd4jLong* weightsPShapeInfo = nullptr;                   // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
+    Nd4jLong* biasShapeInfo     = nullptr;                   // [oC], oC = iC*mC if weightsPoint=nullptr
 
     if(block.width() == 3)
         if(inputShape->at(2)[0] == 4)
@@ -141,8 +141,8 @@ DECLARE_SHAPE_FN(sconv2d) {
     int oH, oW;                                         // output height, width
     ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-    int* outputShapeInfo = nullptr;
-    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), int);
+    Nd4jLong* outputShapeInfo = nullptr;
+    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), Nd4jLong);
 
     outputShapeInfo[0] = 4;
     outputShapeInfo[1] = bS;
@@ -245,11 +245,11 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
     // ----- if weightsPoint is present, perform pointwise backprop first and calculate gradWP at this step ----- //
     if (weightsPoint){
 
-        std::vector<int> resultFFShape = isNCHW ? std::vector<int>({bS, mC*iC, oH, oW}) : std::vector<int>({bS, oH, oW, mC*iC});
+        auto resultFFShape = isNCHW ? std::vector<Nd4jLong>({bS, mC*iC, oH, oW}) : std::vector<Nd4jLong>({bS, oH, oW, mC*iC});
         NDArray<T>* resultFF = new NDArray<T>(input->ordering(), resultFFShape, block.getWorkspace());
         ConvolutionUtils<T>::sconv2d({input, weightsDepth, nullptr, nullptr}, resultFF, {kH,kW, sH,sW, pH,pW, dH,dW, isSameMode, isNCHW});
 
-        std::vector<int> gradIDepthShape = ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,iC*mC,oH,oW,  0,indIOioC,indIiH,indIiH+1});
+        auto gradIDepthShape = ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,iC*mC,oH,oW,  0,indIOioC,indIiH,indIiH+1});
         NDArray<T>* gradIDepth = new NDArray<T>(resultFF->ordering(), gradIDepthShape, block.getWorkspace());                 // [bS, oH, oW, iC*mC]  (NHWC) or [bS, iC*mC, oH, oW] (NCHW)
 
         ConvolutionUtils<T>::conv2dBP({resultFF, weightsPoint, bias, gradO}, {gradIDepth, gradWP, gradB}, {1,1, 1,1, 0,0, 1,1, isSameMode, isNCHW});    // in this case oH=iH and oW=iW
@@ -272,11 +272,11 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
 
 DECLARE_SHAPE_FN(sconv2d_bp) {
 
-    int* inputShapeInfo    = inputShape->at(0);                 // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    int* gradOShapeInfo    = inputShape->at(1);                 // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
-    int* weightsDShapeInfo = inputShape->at(2);                 // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
-    int* weightsPShapeInfo = nullptr;                           // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
-    int* biasShapeInfo     = nullptr;                           // [oC], oC = iC*mC if weightsPoint=nullptr
+    auto inputShapeInfo    = inputShape->at(0);                 // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
+    auto gradOShapeInfo    = inputShape->at(1);                 // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    auto weightsDShapeInfo = inputShape->at(2);                 // [kH, kW, iC, mC]  (NHWC) or [mC, iC, kH, kW]  (NCHW)
+    Nd4jLong* weightsPShapeInfo = nullptr;                           // [1, 1, iC*mC, oC] (NHWC) or [oC, iC*mC, 1, 1] (NCHW)
+    Nd4jLong* biasShapeInfo     = nullptr;                           // [oC], oC = iC*mC if weightsPoint=nullptr
 
     if(block.width() == 4) {
         if(inputShape->at(3)[0] == 4)
@@ -338,11 +338,11 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
     if (biasShapeInfo)
         REQUIRE_TRUE((biasShapeInfo[0] == 1 || biasShapeInfo[0] == 2) && oC == shape::length(biasShapeInfo), 0, "SCONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
-    int* gradIshapeInfo(nullptr), *gradWDshapeInfo(nullptr);
+    Nd4jLong* gradIshapeInfo(nullptr), *gradWDshapeInfo(nullptr);
     COPY_SHAPE(inputShapeInfo, gradIshapeInfo);
     COPY_SHAPE(weightsDShapeInfo, gradWDshapeInfo);
 
-    int* gradWPshapeInfo(nullptr), *gradBshapeInfo(nullptr);
+    Nd4jLong* gradWPshapeInfo(nullptr), *gradBshapeInfo(nullptr);
 
     if(weightsPShapeInfo && biasShapeInfo) {
         COPY_SHAPE(weightsPShapeInfo, gradWPshapeInfo);

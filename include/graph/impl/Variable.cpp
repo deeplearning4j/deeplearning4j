@@ -201,15 +201,15 @@ namespace nd4j {
                 int shapeLen = flatVariable->shape()->Length();
                 //int *shape = new int[shapeLen];
 
-                std::vector<int> shapeInfo;
+                std::vector<Nd4jLong> shapeInfo(flatVariable->shape()->size());
                 for (int i = 0; i < flatVariable->shape()->size(); i++) {
-                    shapeInfo.emplace_back(flatVariable->shape()->Get(i));
+                    shapeInfo[i] = flatVariable->shape()->Get(i);
                 }
 
                 // we just create empty array here
-                std::vector<int> shape;
+                std::vector<Nd4jLong> shape(shapeInfo.at(0));
                 for (int i = 0; i < shapeInfo.at(0); i++) {
-                    shape.emplace_back(shapeInfo.at(i + 1));
+                    shape[i] = shapeInfo.at(i + 1);
                 }
 
                 _ndarray = new NDArray<T>((char) shapeInfo.at(shapeInfo.size() - 1), shape);

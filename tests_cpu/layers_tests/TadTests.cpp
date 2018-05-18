@@ -29,7 +29,7 @@ TEST_F(TadTests, Test4DTad1) {
     //arrayExp->printShapeInfo("Exp shapeBuffer: ");
 
 
-    std::vector<int> badShape({4, 2, 1, 4, 4, 80, 16, 4, 1, 0, -1, 99});
+    std::vector<Nd4jLong> badShape({4, 2, 1, 4, 4, 80, 16, 4, 1, 0, -1, 99});
 
     arrayBad->setBuffer(arraySource->getBuffer());
     arrayBad->setShapeInfo(badShape.data());
@@ -53,11 +53,11 @@ TEST_F(TadTests, TestNumTads1) {
 
     std::vector<int> dim({0});
 
-    Nd4jIndex tadLengthX = shape::tadLength(x.getShapeInfo(), dim.data(), dim.size());
-    Nd4jIndex numTadsX = x.lengthOf() / tadLengthX;
+    Nd4jLong tadLengthX = shape::tadLength(x.getShapeInfo(), dim.data(), dim.size());
+    Nd4jLong numTadsX = x.lengthOf() / tadLengthX;
 
-    Nd4jIndex tadLengthY = shape::tadLength(y.getShapeInfo(), dim.data(), dim.size());
-    Nd4jIndex numTadsY = y.lengthOf() / tadLengthY;
+    Nd4jLong tadLengthY = shape::tadLength(y.getShapeInfo(), dim.data(), dim.size());
+    Nd4jLong numTadsY = y.lengthOf() / tadLengthY;
 
     ASSERT_EQ(2, tadLengthX);
     ASSERT_EQ(3, numTadsX);
@@ -69,19 +69,19 @@ TEST_F(TadTests, TestNumTads1) {
 TEST_F(TadTests, TestShapeTad_1) {
 
     float buff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};    
-    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};   
+    Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
 
     NDArray<float> input(buff, shapeInfo);
     
     std::vector<int> dimensions = {0,1,2};
-    Nd4jIndex tadLength = shape::tadLength(input.getShapeInfo(), dimensions.data(), dimensions.size());
-    Nd4jIndex numTads = input.lengthOf() / tadLength;
+    Nd4jLong tadLength = shape::tadLength(input.getShapeInfo(), dimensions.data(), dimensions.size());
+    Nd4jLong numTads = input.lengthOf() / tadLength;
     
     shape::TAD tad(input.getShapeInfo(), dimensions.data(), dimensions.size());
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
 
-    int tadShapeInfo[shape::shapeInfoLength(tad.tadOnlyShapeInfo[0])];
+    Nd4jLong tadShapeInfo[shape::shapeInfoLength(tad.tadOnlyShapeInfo[0])];
     std::memcpy(tadShapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
 
     float* tadBuff = input.getBuffer() + tad.tadOffsets[0];
@@ -169,13 +169,13 @@ TEST_F(TadTests, TestShapeTad_2) {
     
     NDArrayFactory<float>::linspace(1, input);
 
-    NDArray<float> expected('c', {4,1});    
+    NDArray<float> expected('c', {4,1});
 
     std::vector<int> dimensions = {2,3};
     Nd4jIndex tadLength = shape::tadLength(input.getShapeInfo(), dimensions.data(), dimensions.size());
     Nd4jIndex numTads = input.lengthOf() / tadLength;
     shape::TAD tad(input.getShapeInfo(), dimensions.data(), dimensions.size());
-    tad.createTadOnlyShapeInfo();    
+    tad.createTadOnlyShapeInfo();
     
     for(int i=0; i<8; i++)
         std::cout<<tad.tadOnlyShapeInfo[i]<<" ";

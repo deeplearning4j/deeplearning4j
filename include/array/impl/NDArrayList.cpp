@@ -101,7 +101,7 @@ namespace nd4j {
         nd4j::ops::concat<T> op;
         std::vector<NDArray<T>*> inputs;
         std::vector<T> targs;
-        std::vector<int> iargs({0});
+        std::vector<Nd4jLong> iargs({0});
 
         for (int e = 0; e < _elements.load(); e++)
             inputs.emplace_back(_chunks[e]);
@@ -162,7 +162,7 @@ namespace nd4j {
 
     template <typename T>
     NDArray<T> *NDArrayList<T>::pick(std::vector<int> &indices) {
-        std::vector<int> shape(_shape);
+        std::vector<Nd4jLong> shape(_shape);
 
         //shape.insert(shape.begin() + _axis, indices.size());
         shape[_axis] = indices.size();

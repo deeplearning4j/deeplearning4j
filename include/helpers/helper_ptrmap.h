@@ -115,8 +115,8 @@ namespace nd4j {
          * @param aggregateIdx
          * @return
          */
-        ptr_def int **getShapeArguments(int aggregateIdx) {
-            int **sPtr = (int **)getArguments(batchLimit);
+        ptr_def Nd4jLong **getShapeArguments(int aggregateIdx) {
+            Nd4jLong **sPtr = (Nd4jLong **)getArguments(batchLimit);
 
             return sPtr + (aggregateIdx * maxShapeArguments);
         }

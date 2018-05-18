@@ -13,16 +13,16 @@ namespace helpers {
     // this method MUST be platform-specific
 
     template <typename T, int NUM_BLOCK_DIMS, bool B2S>
-    void _execute(T *ptrSpace, const int *space_shape, const int *space_strides, const int *block_shape, const int *pad_start, const int *block_offsets, T *ptrBatch, const int *batch_shape, const int *batch_strides);
+    void _execute(T *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, T *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides);
 
 
     template <typename T, int NUM_BLOCK_DIMS, bool B2S>
-    FORCEINLINE void _prepare(NDArray<T> * space, NDArray<T> *batch, const int block_array[NUM_BLOCK_DIMS], const int padding_array[NUM_BLOCK_DIMS * 2]) {
+    FORCEINLINE void _prepare(NDArray<T> * space, NDArray<T> *batch, const Nd4jLong block_array[NUM_BLOCK_DIMS], const Nd4jLong padding_array[NUM_BLOCK_DIMS * 2]) {
 
-        int pad_start[NUM_BLOCK_DIMS];
-        int block_shape[NUM_BLOCK_DIMS];
-        int space_shape[NUM_BLOCK_DIMS];
-        int batch_shape[NUM_BLOCK_DIMS];
+        Nd4jLong pad_start[NUM_BLOCK_DIMS];
+        Nd4jLong block_shape[NUM_BLOCK_DIMS];
+        Nd4jLong space_shape[NUM_BLOCK_DIMS];
+        Nd4jLong batch_shape[NUM_BLOCK_DIMS];
 
         const int batch_size = batch->sizeAt(0);
         const int space_size = space->sizeAt(0);
@@ -35,21 +35,21 @@ namespace helpers {
             batch_shape[block_dim] = batch->sizeAt(block_dim + 1);
         }
 
-        int *space_strides = space->stridesOf();
-        int *batch_strides = batch->stridesOf();
+        auto space_strides = space->stridesOf();
+        auto batch_strides = batch->stridesOf();
 
         // TODO: this loop should be moved to _execute phase
         for (int batch_b = 0; batch_b < batch_size; ++batch_b) {
-            const int space_b = batch_b % space_size;
-            int block_index = batch_b / space_size;
-            int block_offsets[NUM_BLOCK_DIMS];
-            for (int block_dim = NUM_BLOCK_DIMS - 1; block_dim >= 0; --block_dim) {
+            const Nd4jLong space_b = batch_b % space_size;
+            Nd4jLong block_index = batch_b / space_size;
+            Nd4jLong block_offsets[NUM_BLOCK_DIMS];
+            for (Nd4jLong block_dim = NUM_BLOCK_DIMS - 1; block_dim >= 0; --block_dim) {
                 block_offsets[block_dim] = block_dim > 0 ? block_index % block_shape[block_dim] : block_index;
                 block_index /= block_shape[block_dim];
             }
 
-            int space_offset = space_b * space_strides[0];
-            int batch_offset = batch_b * batch_strides[0];
+            Nd4jLong space_offset = space_b * space_strides[0];
+            Nd4jLong batch_offset = batch_b * batch_strides[0];
 
             _execute<T, NUM_BLOCK_DIMS, B2S>(space->buffer() + space_offset, space_shape, &space_strides[1], block_shape, pad_start, block_offsets, batch->buffer() + batch_offset, batch_shape, &batch_strides[1]);
         }
@@ -57,7 +57,7 @@ namespace helpers {
 
 
     template <typename T>
-    FORCEINLINE Nd4jStatus _spaceToBatch(int internal_block_dims, NDArray<T> *input, NDArray<T> *output, std::vector<int> &internal_input_shape, std::vector<int> &internal_output_shape, int *block_shape, int *paddings) {
+    FORCEINLINE Nd4jStatus _spaceToBatch(int internal_block_dims, NDArray<T> *input, NDArray<T> *output, std::vector<Nd4jLong> &internal_input_shape, std::vector<Nd4jLong> &internal_output_shape, Nd4jLong *block_shape, Nd4jLong *paddings) {
         auto in = input->reshape('c', internal_input_shape);
         auto out = output->reshape('c', internal_output_shape);
         switch (internal_block_dims) {
@@ -86,7 +86,7 @@ namespace helpers {
 
 
     template <typename T>
-    FORCEINLINE Nd4jStatus _batchToSpace(int internal_block_dims, NDArray<T> *input, NDArray<T> *output, std::vector<int> &internal_input_shape, std::vector<int> &internal_output_shape, int *block_shape, int *crops) {
+    FORCEINLINE Nd4jStatus _batchToSpace(int internal_block_dims, NDArray<T> *input, NDArray<T> *output, std::vector<Nd4jLong> &internal_input_shape, std::vector<Nd4jLong> &internal_output_shape, Nd4jLong *block_shape, Nd4jLong *crops) {
         auto in = input->reshape('c', internal_input_shape);
         auto out = output->reshape('c', internal_output_shape);
         switch (internal_block_dims) {

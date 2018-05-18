@@ -52,9 +52,9 @@ DECLARE_SYN(Pack, stack);
 DECLARE_SHAPE_FN(stack) {
 	
 	// check whether input dimension is within rank range
-	int* inShapeInfo = inputShape->at(0);
-	int rank = inShapeInfo[0];
-	int dim = INT_ARG(0);
+	auto inShapeInfo = inputShape->at(0);
+	int rank = shape::rank(inShapeInfo);
+	auto dim = INT_ARG(0);
 	if(dim < 0 ) 
 		dim += rank + 1;
 
@@ -62,27 +62,27 @@ DECLARE_SHAPE_FN(stack) {
  		REQUIRE_TRUE(dim <= inShapeInfo[0], 0, "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !", inShapeInfo[0], dim);
 	
 	if(rank == 0) {
-		int* outShapeInfo = nullptr;
- 		ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), int);
+		Nd4jLong* outShapeInfo = nullptr;
+ 		ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
   		outShapeInfo[0] = 1;
   		outShapeInfo[1] = block.width();
   		outShapeInfo[2] = 1;
   		outShapeInfo[3] = 1;
   		outShapeInfo[4] = 0;
-  		outShapeInfo[5] = (int)shape::order(inShapeInfo);
+  		outShapeInfo[5] = (Nd4jLong) shape::order(inShapeInfo);
   		return SHAPELIST(outShapeInfo);
 	}
 	
 	//the rank of output ShapeInfo is larger by one compared to input ShapeInfo
-	std::vector<int> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
+	std::vector<Nd4jLong> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
 	
 	// insert (int) block.width() at dim position of input shape to get output shape	
-	outShape.insert(outShape.begin() + dim, (int) block.width());						
+	outShape.insert(outShape.begin() + dim, (Nd4jLong) block.width());						
 	
 	// evaluate output ShapeInfo
 	int newRank = outShape.size();
-	int* outShapeInfo = nullptr;
-  	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(newRank), int);
+	Nd4jLong* outShapeInfo = nullptr;
+  	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(newRank), Nd4jLong);
   	outShapeInfo[0] = newRank;
   	
   	for(int i=1; i <= newRank; ++i)

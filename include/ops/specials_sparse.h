@@ -22,8 +22,8 @@ namespace nd4j {
         * @param rank
         * @param x
         */
-            static void printIndex(int *indices, int rank, int x);
-            static bool ltIndices(int *indices, int rank, Nd4jIndex x, Nd4jIndex y);
+            static void printIndex(Nd4jLong *indices, int rank, int x);
+            static bool ltIndices(Nd4jLong *indices, int rank, Nd4jLong x, Nd4jLong y);
 
             /**
             * Returns true, if x > y, false otherwise
@@ -33,15 +33,15 @@ namespace nd4j {
             * @param y
             * @return
             */
-            static bool gtIndices(int *indices, int rank, Nd4jIndex x, Nd4jIndex y);
+            static bool gtIndices(Nd4jLong *indices, int rank, Nd4jLong x, Nd4jLong y);
 
-            static void swapEverything(int *indices, T *array, int rank, Nd4jIndex x, Nd4jIndex y);
+            static void swapEverything(Nd4jLong *indices, T *array, int rank, Nd4jLong x, Nd4jLong y);
 
-            static void coo_quickSort_parallel_internal(int *indices, T* array, Nd4jIndex left, Nd4jIndex right, int cutoff, int rank);
+            static void coo_quickSort_parallel_internal(Nd4jLong *indices, T* array, Nd4jLong left, Nd4jLong right, int cutoff, int rank);
 
-            static void coo_quickSort_parallel(int *indices, T* array, Nd4jIndex lenArray, int numThreads, int rank);
+            static void coo_quickSort_parallel(Nd4jLong *indices, T* array, Nd4jLong lenArray, int numThreads, int rank);
 
-            static void sortCooIndicesGeneric(int *indices, T *values, Nd4jIndex length, int rank);
+            static void sortCooIndicesGeneric(Nd4jLong *indices, T *values, Nd4jLong length, int rank);
         };
     }
 }

@@ -32,7 +32,7 @@ namespace nd4j {
         std::atomic<int> _counter;
 
         // reference shape
-        std::vector<int> _shape;
+        std::vector<Nd4jLong> _shape;
 
         // unstack axis
         int _axis = 0;

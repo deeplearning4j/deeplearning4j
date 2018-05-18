@@ -38,9 +38,8 @@ namespace nd4j {
                 auto var = block.getVariable(e);
                 if (var->variableType() == VariableType::NDARRAY) {
                     auto inShape = inputShape->at(e);
-                    int *newShape;
-                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
-                    memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
+                    Nd4jLong *newShape;
+                    COPY_SHAPE(inShape, newShape);
 
                     shapeList->push_back(newShape);
                 }

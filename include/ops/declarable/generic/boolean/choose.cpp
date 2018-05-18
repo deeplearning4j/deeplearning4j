@@ -33,7 +33,7 @@ nd4j::NDArray<T>  * processCondition(int mode,nd4j::NDArray<T> *arg, nd4j::NDArr
             //for comparison
             nd4j::NDArray<T> arg1 = *arg;
             nd4j::NDArray<T> comp1 = *comp;
-            for (Nd4jIndex i = 0; i < arg->lengthOf(); i++) {
+            for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
                 T result2 = processElementCondition<T>(mode,arg1(i),comp1(0));
                 if(result2 > 0) {
                     output->putScalar(numResults, arg1(i));
@@ -45,7 +45,7 @@ nd4j::NDArray<T>  * processCondition(int mode,nd4j::NDArray<T> *arg, nd4j::NDArr
             //Other input for compare could be an ndarray or a secondary scalar
             //for comparison
             nd4j::NDArray<T> arg1 = *arg;
-            for (Nd4jIndex i = 0; i < arg->lengthOf(); i++) {
+            for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
                 T result2 = processElementCondition<T>(mode,arg1(i),compScalar);
                 if(result2 > 0) {
                     output->putScalar(numResults, arg1(i));
@@ -59,7 +59,7 @@ nd4j::NDArray<T>  * processCondition(int mode,nd4j::NDArray<T> *arg, nd4j::NDArr
         nd4j::NDArray<T> arg1 = *arg;
         //Other input for compare could be an ndarray or a secondary scalar
         //for comparison
-        for (Nd4jIndex i = 0; i < arg->lengthOf(); i++) {
+        for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
             T result2 = processElementCondition<T>(mode,arg1(i),compScalar);
             if(result2 > 0) {
                 output->putScalar(numResults, arg1(i));
@@ -132,7 +132,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(choose) {
-            int *shape;
+            Nd4jLong *shape;
             int rank;
             if(block.width() > 1) {
                 auto first = INPUT_VARIABLE(0);
@@ -152,10 +152,10 @@ namespace nd4j {
                 rank = first->rankOf();
             }
 
-            int* newShape;
+            Nd4jLong* newShape;
             COPY_SHAPE(shape, newShape);
 
-            int *shapeScalar = ShapeUtils<T>::createScalarShapeInfo(block.workspace());
+            auto shapeScalar = ShapeUtils<T>::createScalarShapeInfo(block.workspace());
 
             return SHAPELIST(newShape, shapeScalar);
         }

@@ -8,7 +8,7 @@ table FlatVariable {
     id:IntPair; // ID of the Variable, in format of IntPair.first is node Id, IntPair.second is output index of the node
     name:string; // symbolic ID of the Variable (if defined)
 
-    shape:[int]; // shape is absolutely optional. either shape or ndarray might be set
+    shape:[long]; // shape is absolutely optional. either shape or ndarray might be set
     ndarray:FlatArray;
 
     device:int; // default is -1, which means _auto_

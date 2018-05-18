@@ -28,8 +28,8 @@ namespace nd4j {
             for (int e = 0; e < inputShape->size(); e++) {
                 auto inShape = inputShape->at(e);
 
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+                Nd4jLong *newshape;
+                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
                 shape::shapeVector(shape::rank(inShape), newshape);
 
                 shapeList->push_back(newshape);

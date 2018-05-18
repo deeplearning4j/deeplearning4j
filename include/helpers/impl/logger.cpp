@@ -35,4 +35,19 @@ namespace nd4j {
         printf("}\n");
         fflush(stdout);
     }
+
+    #ifdef __CUDACC__
+    __host__
+#endif
+     void Logger::printv(const char *format, std::vector<Nd4jLong>& vec) {
+        printf("%s: {", format);
+        for(int e = 0; e < vec.size(); e++) {
+            auto v = vec[e];
+            printf("%lld", (long long) v);
+            if (e < vec.size() - 1)
+                printf(", ");
+        }
+        printf("}\n");
+        fflush(stdout);
+    }
 }

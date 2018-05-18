@@ -32,12 +32,12 @@ public final class FlatNode extends Table {
   public int output(int j) { int o = __offset(20); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int outputLength() { int o = __offset(20); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer outputAsByteBuffer() { return __vector_as_bytebuffer(20, 4); }
-  public float extraParams(int j) { int o = __offset(22); return o != 0 ? bb.getFloat(__vector(o) + j * 4) : 0; }
+  public double extraParams(int j) { int o = __offset(22); return o != 0 ? bb.getDouble(__vector(o) + j * 8) : 0; }
   public int extraParamsLength() { int o = __offset(22); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer extraParamsAsByteBuffer() { return __vector_as_bytebuffer(22, 4); }
-  public int extraInteger(int j) { int o = __offset(24); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
+  public ByteBuffer extraParamsAsByteBuffer() { return __vector_as_bytebuffer(22, 8); }
+  public long extraInteger(int j) { int o = __offset(24); return o != 0 ? bb.getLong(__vector(o) + j * 8) : 0; }
   public int extraIntegerLength() { int o = __offset(24); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer extraIntegerAsByteBuffer() { return __vector_as_bytebuffer(24, 4); }
+  public ByteBuffer extraIntegerAsByteBuffer() { return __vector_as_bytebuffer(24, 8); }
   public int dimensions(int j) { int o = __offset(26); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
   public int dimensionsLength() { int o = __offset(26); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer dimensionsAsByteBuffer() { return __vector_as_bytebuffer(26, 4); }
@@ -103,11 +103,11 @@ public final class FlatNode extends Table {
   public static int createOutputVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
   public static void startOutputVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static void addExtraParams(FlatBufferBuilder builder, int extraParamsOffset) { builder.addOffset(9, extraParamsOffset, 0); }
-  public static int createExtraParamsVector(FlatBufferBuilder builder, float[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addFloat(data[i]); return builder.endVector(); }
-  public static void startExtraParamsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static int createExtraParamsVector(FlatBufferBuilder builder, double[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addDouble(data[i]); return builder.endVector(); }
+  public static void startExtraParamsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
   public static void addExtraInteger(FlatBufferBuilder builder, int extraIntegerOffset) { builder.addOffset(10, extraIntegerOffset, 0); }
-  public static int createExtraIntegerVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
-  public static void startExtraIntegerVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static int createExtraIntegerVector(FlatBufferBuilder builder, long[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addLong(data[i]); return builder.endVector(); }
+  public static void startExtraIntegerVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
   public static void addDimensions(FlatBufferBuilder builder, int dimensionsOffset) { builder.addOffset(11, dimensionsOffset, 0); }
   public static int createDimensionsVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
   public static void startDimensionsVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }

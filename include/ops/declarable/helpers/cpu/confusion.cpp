@@ -15,8 +15,8 @@ namespace helpers {
 
 #pragma omp parallel for if(labels->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)                    
         for (int j = 0; j < labels->lengthOf(); ++j){
-            Nd4jIndex label = (*labels)(j);
-            Nd4jIndex pred = (*predictions)(j);
+            Nd4jLong label = (*labels)(j);
+            Nd4jLong pred = (*predictions)(j);
             T value = (weights == nullptr ? (T)1.0 : (*weights)(j));
             (*arrs->at(label))(pred) = value;
         }

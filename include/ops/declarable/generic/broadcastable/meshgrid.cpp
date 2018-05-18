@@ -43,21 +43,21 @@ DECLARE_SHAPE_FN(meshgrid) {
     bool swapFirst2Dims = block.getIArguments()->size() > 0 ? (bool)INT_ARG(0) : true;
     
     int rank = block.width();
-    int* outShapeInfo = nullptr;
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
+    Nd4jLong* outShapeInfo = nullptr;
+    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
     outShapeInfo[0] = rank;    
     for(int i = 1; i <= rank; ++i)
         outShapeInfo[i] = (int)shape::length(inputShape->at(i - 1));
     
     if(swapFirst2Dims && rank > 1)
-        math::nd4j_swap<int>(outShapeInfo[1], outShapeInfo[2]);
+        math::nd4j_swap<Nd4jLong>(outShapeInfo[1], outShapeInfo[2]);
     
     shape::updateStrides(outShapeInfo, shape::order(inputShape->at(0)));
 
     auto shapes = SHAPELIST();
     shapes->push_back(outShapeInfo);
     
-    int* tempShapeInfo = nullptr;
+    Nd4jLong* tempShapeInfo = nullptr;
     for(int i = 2; i <= rank; ++i) {
         COPY_SHAPE(outShapeInfo, tempShapeInfo);
         shapes->push_back(tempShapeInfo);

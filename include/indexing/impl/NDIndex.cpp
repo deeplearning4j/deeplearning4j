@@ -6,7 +6,7 @@
 
 namespace nd4j {
 
-    int NDIndex::stride() {
+    Nd4jLong NDIndex::stride() {
         return _stride;
     }
 
@@ -14,12 +14,12 @@ namespace nd4j {
         _indices.push_back(-1);
     }
 
-    nd4j::NDIndexPoint::NDIndexPoint(int point) : nd4j::NDIndex() {
+    nd4j::NDIndexPoint::NDIndexPoint(Nd4jLong point) : nd4j::NDIndex() {
         this->_indices.push_back(point);
     }
 
 
-    nd4j::NDIndexInterval::NDIndexInterval(int start, int end, int stride) : nd4j::NDIndex() {
+    nd4j::NDIndexInterval::NDIndexInterval(Nd4jLong start, Nd4jLong end, Nd4jLong stride) : nd4j::NDIndex() {
         this->_stride = stride;
         for (int e = start; e < end; e+= stride)
             this->_indices.push_back(e);
@@ -33,7 +33,7 @@ namespace nd4j {
         return _indices.size() == 1 && _indices.at(0) >= 0;
     }
 
-    std::vector<int> &nd4j::NDIndex::getIndices() {
+    std::vector<Nd4jLong> &nd4j::NDIndex::getIndices() {
         return _indices;
     }
 
@@ -42,11 +42,11 @@ namespace nd4j {
         return new NDIndexAll();
     }
 
-    nd4j::NDIndex *nd4j::NDIndex::point(int pt) {
+    nd4j::NDIndex *nd4j::NDIndex::point(Nd4jLong pt) {
         return new NDIndexPoint(pt);
     }
 
-    nd4j::NDIndex *nd4j::NDIndex::interval(int start, int end, int stride) {
+    nd4j::NDIndex *nd4j::NDIndex::interval(Nd4jLong start, Nd4jLong end, Nd4jLong stride) {
         return new NDIndexInterval(start, end, stride);
     }
 }

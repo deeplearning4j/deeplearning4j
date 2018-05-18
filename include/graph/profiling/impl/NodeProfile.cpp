@@ -21,63 +21,63 @@ namespace nd4j {
             nd4j_printf("      PREP: INPUT: %lld ns; SHAPE: %lld ns; ARRAY: %lld ns;\n", _inputTime / _merges, _shapeTime / _merges, _arrayTime / _merges);
         };
 
-        Nd4jIndex NodeProfile::getActivationsSize() {
+        Nd4jLong NodeProfile::getActivationsSize() {
             return _memoryActivations;
         }
 
-        void NodeProfile::setShapeFunctionTime(Nd4jIndex time) {
+        void NodeProfile::setShapeFunctionTime(Nd4jLong time) {
             _shapeTime = time;
         }
 
-        void NodeProfile::setArrayTime(Nd4jIndex time) {
+        void NodeProfile::setArrayTime(Nd4jLong time) {
             _arrayTime = time;
         }
 
-        void NodeProfile::setInputTime(Nd4jIndex time) {
+        void NodeProfile::setInputTime(Nd4jLong time) {
             _inputTime = time;
         }
 
-        Nd4jIndex NodeProfile::getTemporarySize() {
+        Nd4jLong NodeProfile::getTemporarySize() {
             return _memoryTemporary;
         }
             
-        Nd4jIndex NodeProfile::getObjectsSize() {
+        Nd4jLong NodeProfile::getObjectsSize() {
             return _memoryObjects;
         }
 
-        Nd4jIndex NodeProfile::getTotalSize() {
+        Nd4jLong NodeProfile::getTotalSize() {
             return _memoryTotal;
         }
 
-        void NodeProfile::setBuildTime(Nd4jIndex time) {
+        void NodeProfile::setBuildTime(Nd4jLong time) {
             _buildTime = time;
         }
         
-        void NodeProfile::setPreparationTime(Nd4jIndex time) {
+        void NodeProfile::setPreparationTime(Nd4jLong time) {
             _preparationTime = time;
         }
         
-        void NodeProfile::setExecutionTime(Nd4jIndex time) {
+        void NodeProfile::setExecutionTime(Nd4jLong time) {
             _executionTime = time;
         }
 
-        void NodeProfile::setTotalTime(Nd4jIndex time) {
+        void NodeProfile::setTotalTime(Nd4jLong time) {
             _totalTime = time;
         }
 
-        void NodeProfile::setActivationsSize(Nd4jIndex bytes) {
+        void NodeProfile::setActivationsSize(Nd4jLong bytes) {
             _memoryActivations = bytes;
         }
             
-        void NodeProfile::setTemporarySize(Nd4jIndex bytes) {
+        void NodeProfile::setTemporarySize(Nd4jLong bytes) {
             _memoryTemporary = bytes;
         }
             
-        void NodeProfile::setObjectsSize(Nd4jIndex bytes) {
+        void NodeProfile::setObjectsSize(Nd4jLong bytes) {
             _memoryObjects = bytes;
         }
 
-        void NodeProfile::setTotalSize(Nd4jIndex bytes) {
+        void NodeProfile::setTotalSize(Nd4jLong bytes) {
             _memoryTotal = bytes;
         }
 

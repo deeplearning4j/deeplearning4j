@@ -26,7 +26,7 @@ namespace nd4j {
             std::string _opName;
 
             // hash is used for ops lookup in OpRegistrator
-            Nd4jIndex _hash = -1;
+            Nd4jLong _hash = -1;
 
             // minimal required/expected number of inputs/outpus for this given op
             int _numInputs = 1;
@@ -99,7 +99,7 @@ namespace nd4j {
             int getNumberOfInputs();
 
             // this method returns hash code for this operation
-            Nd4jIndex getHash();
+            Nd4jLong getHash();
 
             // this method returns minimal expected number of outputs
             int getNumberOfOutputs();
@@ -119,7 +119,7 @@ namespace nd4j {
             // this method allows to set specifc opNum
             void setOpNum(int opNum);
 
-            void setHash(Nd4jIndex hash);
+            void setHash(Nd4jLong hash);
 
             void setInputType(InputType type);
             InputType inputType();

@@ -67,14 +67,14 @@ namespace nd4j {
             const int kH           = weights->shapeOf()[3];
             const int kW           = weights->shapeOf()[4];
 
-            const Nd4jIndex inputWidth   = input->shapeOf()[4];
-            const Nd4jIndex inputHeight  = input->shapeOf()[3];
-            const Nd4jIndex inputDepth   = input->shapeOf()[2];
-            const Nd4jIndex outputDepth  = (inputDepth - 1) * dT - 2*pT + (dilationT * (kT - 1) + 1) + aT;
-            const Nd4jIndex outputHeight = (inputHeight - 1) * dH - 2*pH + (dilationH * (kH - 1) + 1) + aH;
-            const Nd4jIndex outputWidth  = (inputWidth - 1) * dW - 2*pW + (dilationW * (kW - 1) + 1) + aW;
+            const Nd4jLong inputWidth   = input->shapeOf()[4];
+            const Nd4jLong inputHeight  = input->shapeOf()[3];
+            const Nd4jLong inputDepth   = input->shapeOf()[2];
+            const Nd4jLong outputDepth  = (inputDepth - 1) * dT - 2*pT + (dilationT * (kT - 1) + 1) + aT;
+            const Nd4jLong outputHeight = (inputHeight - 1) * dH - 2*pH + (dilationH * (kH - 1) + 1) + aH;
+            const Nd4jLong outputWidth  = (inputWidth - 1) * dW - 2*pW + (dilationW * (kW - 1) + 1) + aW;
 
-            const Nd4jIndex batchSize = input->shapeOf()[0];
+            const Nd4jLong batchSize = input->shapeOf()[0];
 
             REQUIRE_TRUE(output->isSameShape({ (int) batchSize, (int)nOutputPlane, (int)outputDepth, (int)outputHeight, (int)outputWidth}), 0, "Output should have shape of [%i, %i, %i, %i, %i], but got [%i, %i, %i, %i, %i] instead", (int) batchSize, (int)nOutputPlane, (int)outputDepth, (int)outputHeight, (int)outputWidth, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->sizeAt(4));
 
@@ -126,8 +126,8 @@ namespace nd4j {
         }
         DECLARE_SHAPE_FN(fullconv3d) {
 
-            int* input = inputShape->at(0);
-            int* weights = inputShape->at(1);
+            Nd4jLong* input = inputShape->at(0);
+            Nd4jLong* weights = inputShape->at(1);
 
             // strides
             int dT = INT_ARG(0);
@@ -152,10 +152,10 @@ namespace nd4j {
             // bias
             bool biasUsed = INT_ARG(12) != 0;
 
-            int *shapeOf;
-            int *newShape;
-            ALLOCATE(shapeOf, block.getWorkspace(), 5, int);
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(5), int);
+            Nd4jLong *shapeOf;
+            Nd4jLong *newShape;
+            ALLOCATE(shapeOf, block.getWorkspace(), 5, Nd4jLong);
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(5), Nd4jLong);
 
             const int nInputPlane  = weights[1];
             const int nOutputPlane = weights[2];
@@ -164,14 +164,14 @@ namespace nd4j {
             const int kW           = weights[5];
 
             const int batchSize          = input[1];
-            const Nd4jIndex inputWidth   = input[5];
-            const Nd4jIndex inputHeight  = input[4];
-            const Nd4jIndex inputDepth   = input[3];
-            const Nd4jIndex outputDepth  = (inputDepth - 1) * dT - 2*pT + (dilationT * (kT - 1) + 1) + aT;
-            const Nd4jIndex outputHeight = (inputHeight - 1) * dH - 2*pH + (dilationH * (kH - 1) + 1) + aH;
-            const Nd4jIndex outputWidth  = (inputWidth - 1) * dW - 2*pW + (dilationW * (kW - 1) + 1) + aW;
+            const Nd4jLong inputWidth   = input[5];
+            const Nd4jLong inputHeight  = input[4];
+            const Nd4jLong inputDepth   = input[3];
+            const Nd4jLong outputDepth  = (inputDepth - 1) * dT - 2*pT + (dilationT * (kT - 1) + 1) + aT;
+            const Nd4jLong outputHeight = (inputHeight - 1) * dH - 2*pH + (dilationH * (kH - 1) + 1) + aH;
+            const Nd4jLong outputWidth  = (inputWidth - 1) * dW - 2*pW + (dilationW * (kW - 1) + 1) + aW;
 
-            nd4j::ArrayUtils::toIntPtr({(int) batchSize, (int)nOutputPlane, (int)outputDepth, (int)outputHeight, (int)outputWidth}, shapeOf);
+            nd4j::ArrayUtils::toLongPtr({(Nd4jLong) batchSize, (Nd4jLong)nOutputPlane, (Nd4jLong)outputDepth, (Nd4jLong)outputHeight, (Nd4jLong)outputWidth}, shapeOf);
 
             shape::shapeBuffer(5, shapeOf, newShape);
 
@@ -217,14 +217,14 @@ namespace nd4j {
             const int kH           = (int)weights->shapeOf()[3];
             const int kW           = (int)weights->shapeOf()[4];
 
-            const Nd4jIndex inputWidth   = input->shapeOf()[4];
-            const Nd4jIndex inputHeight  = input->shapeOf()[3];
-            const Nd4jIndex inputDepth   = input->shapeOf()[2];
-            const Nd4jIndex outputDepth  = (inputDepth - 1) * dT - 2*pT + (dilationT * (kT - 1) + 1) + aT;
-            const Nd4jIndex outputHeight = (inputHeight - 1) * dH - 2*pH + (dilationH * (kH - 1) + 1) + aH;
-            const Nd4jIndex outputWidth  = (inputWidth - 1) * dW - 2*pW + (dilationW * (kW - 1) + 1) + aW;
+            const Nd4jLong inputWidth   = input->shapeOf()[4];
+            const Nd4jLong inputHeight  = input->shapeOf()[3];
+            const Nd4jLong inputDepth   = input->shapeOf()[2];
+            const Nd4jLong outputDepth  = (inputDepth - 1) * dT - 2*pT + (dilationT * (kT - 1) + 1) + aT;
+            const Nd4jLong outputHeight = (inputHeight - 1) * dH - 2*pH + (dilationH * (kH - 1) + 1) + aH;
+            const Nd4jLong outputWidth  = (inputWidth - 1) * dW - 2*pW + (dilationW * (kW - 1) + 1) + aW;
 
-            const Nd4jIndex batchSize = input->shapeOf()[0];
+            const Nd4jLong batchSize = input->shapeOf()[0];
 
 
             REQUIRE_TRUE(output->isSameShape({(int) batchSize, (int) nInputPlane, (int) inputDepth, (int) inputHeight, (int) inputWidth}) ,0, "Output should have shape of [%i, %i, %i, %i, %i], but got [%i, %i, %i, %i, %i] instead", (int) batchSize, (int) nInputPlane, (int) inputDepth, (int) inputHeight, (int) inputWidth, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->sizeAt(4));
@@ -273,9 +273,9 @@ namespace nd4j {
         }
         DECLARE_SHAPE_FN(fullconv3d_bp) {
             // output shape equals to input shape, all out of sudden
-            int* newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
-            memcpy(newShape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
+            Nd4jLong* newShape;
+            COPY_SHAPE(inputShape->at(0), newShape);
+
             return SHAPELIST(newShape);
         }
 
@@ -318,12 +318,12 @@ namespace nd4j {
             int kW           = (int)gradWeight->shapeOf()[4];
 
 
-            const Nd4jIndex inputWidth   = input->shapeOf()[4];
-            const Nd4jIndex inputHeight  = input->shapeOf()[3];
-            const Nd4jIndex inputDepth   = input->shapeOf()[2];
-            const Nd4jIndex outputDepth  = (inputDepth - 1) * dT - 2*pT + (dilationT * (kT - 1) + 1) + aT;
-            const Nd4jIndex outputHeight = (inputHeight - 1) * dH - 2*pH + (dilationH * (kH - 1) + 1) + aH;
-            const Nd4jIndex outputWidth  = (inputWidth - 1) * dW - 2*pW + (dilationW * (kW - 1) + 1) + aW;
+            const Nd4jLong inputWidth   = input->shapeOf()[4];
+            const Nd4jLong inputHeight  = input->shapeOf()[3];
+            const Nd4jLong inputDepth   = input->shapeOf()[2];
+            const Nd4jLong outputDepth  = (inputDepth - 1) * dT - 2*pT + (dilationT * (kT - 1) + 1) + aT;
+            const Nd4jLong outputHeight = (inputHeight - 1) * dH - 2*pH + (dilationH * (kH - 1) + 1) + aH;
+            const Nd4jLong outputWidth  = (inputWidth - 1) * dW - 2*pW + (dilationW * (kW - 1) + 1) + aW;
 
 
             REQUIRE_TRUE(gradWeight->isContiguous(), 0, "gradWight should be continuous");
@@ -351,9 +351,9 @@ namespace nd4j {
                 //         columns->getBuffer()
                 // );
                 ConvolutionUtils<T>::vol2col(*tadEpsilon, *columns, dT, dH, dW, pT, pH, pW, dilationT, dilationH, dilationW);
-                const Nd4jIndex n = columns->shapeOf()[0];   // nOutputPlane * kt * kh * kw
-                const Nd4jIndex m = tadInput->shapeOf()[0];   // nInputPlane
-                const Nd4jIndex k = columns->shapeOf()[1];
+                const Nd4jLong n = columns->shapeOf()[0];   // nOutputPlane * kt * kh * kw
+                const Nd4jLong m = tadInput->shapeOf()[0];   // nInputPlane
+                const Nd4jLong k = columns->shapeOf()[1];
 
                 nd4j::blas::GEMM<T>::op('f', 't', 'n',
                                         n, m, k,
@@ -363,8 +363,8 @@ namespace nd4j {
                                         1,
                                         gradWeight->getBuffer(), n);
 
-                const Nd4jIndex m_ = nOutputPlane;
-                const Nd4jIndex k_ = outputDepth * outputHeight * outputWidth;
+                const Nd4jLong m_ = nOutputPlane;
+                const Nd4jLong k_ = outputDepth * outputHeight * outputWidth;
 
 
                 if (gradBias) {

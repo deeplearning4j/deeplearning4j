@@ -40,7 +40,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(moments) {
-            std::vector<int> axis = *block.getIArguments();
+            auto axis = *block.getIArguments();
             auto input = INPUT_VARIABLE(0);
 
             // axis might be dynamic (i.e. tf mode)
@@ -58,13 +58,9 @@ namespace nd4j {
             }
             //std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
 
-            int* meanShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
-            int* varianceShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
-            auto shapeList = SHAPELIST(); 
-            shapeList->push_back(meanShape);
-            shapeList->push_back(varianceShape);
-
-            return shapeList;
+            auto meanShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
+            auto varianceShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
+            return SHAPELIST(meanShape, varianceShape); 
         }
     }
 

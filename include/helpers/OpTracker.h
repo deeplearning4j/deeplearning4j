@@ -38,7 +38,7 @@ namespace nd4j {
         int totalOperations();
 
         void storeOperation(nd4j::graph::OpType opType, const OpDescriptor& descriptor);
-        void storeOperation(nd4j::graph::OpType opType, const char* opName, const Nd4jIndex opNum);
+        void storeOperation(nd4j::graph::OpType opType, const char* opName, const Nd4jLong opNum);
 
         const char* exportOperations();
     };

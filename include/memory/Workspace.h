@@ -34,10 +34,10 @@ namespace nd4j {
             bool _allocatedHost = false;
             bool _allocatedDevice = false;
 
-            std::atomic<Nd4jIndex> _offset;
+            std::atomic<Nd4jLong> _offset;
 
-            Nd4jIndex _initialSize = 0L;
-            Nd4jIndex _currentSize = 0L;
+            Nd4jLong _initialSize = 0L;
+            Nd4jLong _currentSize = 0L;
 
             std::mutex _mutexAllocation;
             std::mutex _mutexSpills;
@@ -46,29 +46,29 @@ namespace nd4j {
 
             std::vector<void*> _spills;
 
-            std::atomic<Nd4jIndex> _spillsSize;
-            std::atomic<Nd4jIndex> _cycleAllocations;
+            std::atomic<Nd4jLong> _spillsSize;
+            std::atomic<Nd4jLong> _cycleAllocations;
 
-            void init(Nd4jIndex bytes);
+            void init(Nd4jLong bytes);
             void freeSpills();
         public:
             explicit Workspace(ExternalWorkspace *external);
-            explicit Workspace(Nd4jIndex initialSize = 0);
+            explicit Workspace(Nd4jLong initialSize = 0);
             ~Workspace();
 
-            Nd4jIndex getAllocatedSize();
-            Nd4jIndex getCurrentSize();
-            Nd4jIndex getCurrentOffset();
-            Nd4jIndex getSpilledSize();
-            Nd4jIndex getUsedSize();
+            Nd4jLong getAllocatedSize();
+            Nd4jLong getCurrentSize();
+            Nd4jLong getCurrentOffset();
+            Nd4jLong getSpilledSize();
+            Nd4jLong getUsedSize();
 
-            void expandBy(Nd4jIndex numBytes);
-            void expandTo(Nd4jIndex numBytes);
+            void expandBy(Nd4jLong numBytes);
+            void expandTo(Nd4jLong numBytes);
 
 //            bool resizeSupported();
 
-            void* allocateBytes(Nd4jIndex numBytes);
-            void* allocateBytes(MemoryType type, Nd4jIndex numBytes);
+            void* allocateBytes(Nd4jLong numBytes);
+            void* allocateBytes(MemoryType type, Nd4jLong numBytes);
 
             void scopeIn();
             void scopeOut();

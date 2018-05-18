@@ -17,16 +17,16 @@ namespace nd4j {
         private:
             static HashHelper* _INSTANCE;
 
-            Nd4jIndex _byteTable[256];
-            const Nd4jIndex HSTART = 0xBB40E64DA205B064L;
-            const Nd4jIndex HMULT = 7664345821815920749L;
+            Nd4jLong _byteTable[256];
+            const Nd4jLong HSTART = 0xBB40E64DA205B064L;
+            const Nd4jLong HMULT = 7664345821815920749L;
 
             bool _isInit = false;
             std::mutex _locker;
 
         public:
             static HashHelper* getInstance();
-            Nd4jIndex getLongHash(std::string& str);
+            Nd4jLong getLongHash(std::string& str);
         };
     }
 }

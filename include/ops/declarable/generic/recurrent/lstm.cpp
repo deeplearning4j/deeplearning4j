@@ -76,15 +76,15 @@ CUSTOM_OP_IMPL(lstm, 8, 2, false, 3, 2) {
 
 DECLARE_SHAPE_FN(lstm) {    
 
-    int* xShapeInfo  = inputShape->at(0);                    // input [time x bS x inSize]
-    int* h0ShapeInfo = inputShape->at(1);                    // initial cell output (at time step = 0) [bS x numProj], in case of projection=false -> numProj == numUnits !!!
-    int* c0ShapeInfo = inputShape->at(2);                    // initial cell state  (at time step = 0) [bS x numUnits],
+    auto xShapeInfo  = inputShape->at(0);                    // input [time x bS x inSize]
+    auto h0ShapeInfo = inputShape->at(1);                    // initial cell output (at time step = 0) [bS x numProj], in case of projection=false -> numProj == numUnits !!!
+    auto c0ShapeInfo = inputShape->at(2);                    // initial cell state  (at time step = 0) [bS x numUnits],
 
-    int* WxShapeInfo = inputShape->at(3);                   // input-to-hidden  weights, [inSize  x 4*numUnits]
-    int* WhShapeInfo = inputShape->at(4);                   // hidden-to-hidden weights, [numProj x 4*numUnits]
-    int* WcShapeInfo = inputShape->at(5);                   // diagonal weights for peephole connections [3*numUnits]
-    int* WpShapeInfo = inputShape->at(6);                   // projection weights [numUnits x numProj]
-    int* bShapeInfo  = inputShape->at(7);                   // biases, [4*numUnits]
+    auto WxShapeInfo = inputShape->at(3);                   // input-to-hidden  weights, [inSize  x 4*numUnits]
+    auto WhShapeInfo = inputShape->at(4);                   // hidden-to-hidden weights, [numProj x 4*numUnits]
+    auto WcShapeInfo = inputShape->at(5);                   // diagonal weights for peephole connections [3*numUnits]
+    auto WpShapeInfo = inputShape->at(6);                   // projection weights [numUnits x numProj]
+    auto bShapeInfo  = inputShape->at(7);                   // biases, [4*numUnits]
 
 
 
@@ -121,9 +121,9 @@ DECLARE_SHAPE_FN(lstm) {
 
     
     // evaluate output shapeInfos
-    int *hShapeInfo(nullptr), *cShapeInfo(nullptr);
-    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);      // [time x bS x numProj]
-    ALLOCATE(cShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);      // [time x bS x numUnits]
+    Nd4jLong *hShapeInfo(nullptr), *cShapeInfo(nullptr);
+    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);      // [time x bS x numProj]
+    ALLOCATE(cShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);      // [time x bS x numUnits]
             
     hShapeInfo[0] = cShapeInfo[0] = rank;
     hShapeInfo[1] = cShapeInfo[1] = time;

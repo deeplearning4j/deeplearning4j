@@ -34,11 +34,11 @@ CUSTOM_OP_IMPL(parallel_stack, -1, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(parallel_stack) {
 	
-	int* inShapeInfo = inputShape->at(0);
+	auto inShapeInfo = inputShape->at(0);
 	int rank = inShapeInfo[0];
 
-	int* outShapeInfo = nullptr;
-	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank+1), int);
+	Nd4jLong* outShapeInfo = nullptr;
+	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank+1), Nd4jLong);
 
 	outShapeInfo[0] = rank + 1;
 	outShapeInfo[1] = block.width();

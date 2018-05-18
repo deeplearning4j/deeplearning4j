@@ -48,9 +48,9 @@ namespace ops {
         int oH = iH / block_size;
         int oW = iW / block_size;
 
-        int *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
-        std::array<int, 4> shape;
+        Nd4jLong *newShape;
+        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
+        std::array<Nd4jLong, 4> shape;
         if (isNHWC) 
             shape = {{bS, oH, oW, oD }};
         else 

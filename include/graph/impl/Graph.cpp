@@ -6,6 +6,7 @@
 #include <helpers/EnumUtils.h>
 #include <graph/FlatUtils.h>
 #include <NativeOps.h>
+#include <vector>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/OpRegistrator.h>
 
@@ -28,13 +29,13 @@ namespace nd4j {
         };
 
         template <typename T>
-        Nd4jIndex Graph<T>::estimateRequiredMemory() {
+        Nd4jLong Graph<T>::estimateRequiredMemory() {
 
-            Nd4jIndex result = 0L;
-            Nd4jIndex lastStep = 0L;
+            Nd4jLong result = 0L;
+            Nd4jLong lastStep = 0L;
 
-            std::vector<int *> shapes;
-            std::map<std::pair<int,int>, int*> shapesMap;
+            std::vector<Nd4jLong *> shapes;
+            std::map<std::pair<int,int>, Nd4jLong*> shapesMap;
 
             int cntFD = 0;
 
@@ -66,7 +67,7 @@ namespace nd4j {
                         auto in = node->input()->at(0);
 
                         auto block = node->getContextPrototype();
-                        std::vector<int*> inputShapes;
+                        std::vector<Nd4jLong*> inputShapes;
                         int *oldShape;
                         for (auto v: *node->input()) {
                             nd4j_debug("     inputs for estimation are are: %i:%i\n", v.first, v.second);
@@ -85,7 +86,7 @@ namespace nd4j {
                         int cnt = 0;
                         for (auto newShape: *outSha->asVector()) {
                             std::pair<int, int> pairAddr(node->id(), cnt++);
-                            std::pair<std::pair<int, int>, int *> pairShape(pairAddr, newShape);
+                            std::pair<std::pair<int, int>, Nd4jLong*> pairShape(pairAddr, newShape);
 
                             shapesMap.insert(pairShape);
 
@@ -105,11 +106,11 @@ namespace nd4j {
                             auto x = _variableSpace->getVariable(in);
                             auto z = _variableSpace->getVariable(node->id());
 
-                            int *newShape = new int[shape::shapeInfoLength(x->getNDArray()->getShapeInfo())];
+                            auto newShape = new Nd4jLong[shape::shapeInfoLength(x->getNDArray()->getShapeInfo())];
                             memcpy(newShape, x->getNDArray()->getShapeInfo(), shape::shapeInfoByteLength(x->getNDArray()->getShapeInfo()));
 
                             std::pair<int, int> pairAddr(node->id(), 0);
-                            std::pair<std::pair<int, int>, int *> pairShape(pairAddr, newShape);
+                            std::pair<std::pair<int, int>, Nd4jLong*> pairShape(pairAddr, newShape);
 
                             shapesMap.insert(pairShape);
 
@@ -120,11 +121,11 @@ namespace nd4j {
                         } else {
                             auto prevShape = shapesMap.at(in);
 
-                            int *newShape = new int[shape::shapeInfoLength(prevShape)];
+                            auto newShape = new Nd4jLong[shape::shapeInfoLength(prevShape)];
                             memcpy(newShape, prevShape, shape::shapeInfoByteLength(prevShape));
 
                             std::pair<int, int> pairAddr(node->id(), 0);
-                            std::pair<std::pair<int, int>, int *> pairShape(pairAddr, newShape);
+                            std::pair<std::pair<int, int>, Nd4jLong*> pairShape(pairAddr, newShape);
 
                             shapesMap.insert(pairShape);
 
@@ -135,11 +136,11 @@ namespace nd4j {
                         }
 
                     } else if (node->getOpClass() == OpClass_REDUCTION) {
-                        int *newShape = nullptr;
+                        Nd4jLong *newShape = nullptr;
 
                         // if that's scalar output - we don't give a fuck about previous node
                         if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
-                            newShape = new int[8];
+                            newShape = new Nd4jLong[8];
 
                             newShape[0] = 2;
                             newShape[1] = 1;
@@ -153,7 +154,7 @@ namespace nd4j {
                         } else {
                             auto in = node->input()->at(0);
 
-                            int *oldShape = nullptr;
+                            Nd4jLong *oldShape = nullptr;
                             // calculate tads here
                             if (in.first < 0) {
                                 auto x = _variableSpace->getVariable(in)->getNDArray();
@@ -165,13 +166,13 @@ namespace nd4j {
                             }
 
                             //shape::TAD tad(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
-                            Nd4jIndex numTads = shape::tadLength(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
-                            int *shape = new int[2]{1, (int) numTads};
+                            Nd4jLong numTads = shape::tadLength(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
+                            auto shape = new Nd4jLong[2]{1, (int) numTads};
                             newShape = shape::shapeBuffer(2, shape);
                         }
 
                         std::pair<int, int> pairAddr(node->id(), 0);
-                        std::pair<std::pair<int, int>, int *> pairShape(pairAddr, newShape);
+                        std::pair<std::pair<int, int>, Nd4jLong*> pairShape(pairAddr, newShape);
 
                         shapesMap.insert(pairShape);
 
@@ -530,8 +531,6 @@ namespace nd4j {
             for ( fit = _unmapped.begin(); fit != _unmapped.end(); fit++ ) {
                 int tK = fit->first;
                 int tF = _unmappedMap.at(cnts++);
-
-                nd4j_printf("Firtst: %i; tF: %i\n", tK, tF);
             }
 
             int buildCnt = 0;
@@ -546,13 +545,13 @@ namespace nd4j {
                 // first pass for unmapped nodes, we try to build tale here
                 typename std::map<int, Node<T> *>::iterator it;
                 int cntf = 0;
-                nd4j_printf("-----------\n","");
+                nd4j_debug("-----------\n","");
                 for ( it = _unmapped.begin(); it != _unmapped.end(); it++ ) {
                     auto node = it->second;
                     int tK = it->first;
                     int tF = _unmappedMap.at(cntf++);
 
-                    nd4j_printf("tK: %i; tF: %i\n", tK, tF);
+                    //nd4j_printf("tK: %i; tF: %i\n", tK, tF);
                 //for (int f = 0; f < sz; f++) {
                 //    auto node = _unmapped.at(_unmappedMap.at(f));
                 
@@ -888,8 +887,8 @@ namespace nd4j {
 #ifndef __CUDABLAS__
             // we temporary skip this random init
             NativeOps nativeOps;
-            uint64_t *buffer = new uint64_t[1000000];
-            nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 119, 1000000, (Nd4jPointer) buffer); 
+            auto buffer = new uint64_t[1000000];
+            auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 119, 1000000, (Nd4jPointer) buffer);
             this->_variableSpace->setRNG(rng);
 #endif
 
@@ -1284,11 +1283,11 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jIndex Graph<T>::hashCode() {
+        Nd4jLong Graph<T>::hashCode() {
             if (!_built.load())
                 this->buildGraph();
 
-            Nd4jIndex hash = 0L;
+            Nd4jLong hash = 0L;
             std::string localStamp;
             /**
              * Plan is:

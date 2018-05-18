@@ -123,7 +123,7 @@ namespace nd4j {
                 }
         };
 
-        void vectorize(std::vector<int>& input_shape) {
+        void vectorize(std::vector<Nd4jLong>& input_shape) {
             if (input_shape.size() == 2 && input_shape[0] == 1) {
                 int v = input_shape[1];
                 input_shape.clear();
@@ -131,7 +131,7 @@ namespace nd4j {
             }
         }
 
-        bool _preprocess_strided_slice(IndicesList* indicesList, std::vector<int>* final_shape, std::vector<int>& input_shape, std::vector<int>& begin, std::vector<int>& end, std::vector<int>& strides, int begin_mask, int ellipsis_mask, int end_mask, int new_axis_mask, int shrink_axis_mask, bool* is_identity, bool* is_simple_slice, bool* slice_dim0) {
+        bool _preprocess_strided_slice(IndicesList* indicesList, std::vector<Nd4jLong>* final_shape, std::vector<Nd4jLong>& input_shape, std::vector<int>& begin, std::vector<int>& end, std::vector<int>& strides, int begin_mask, int ellipsis_mask, int end_mask, int new_axis_mask, int shrink_axis_mask, bool* is_identity, bool* is_simple_slice, bool* slice_dim0) {
             std::vector<int> preshape;
 
             bool ellipsis_seen = false;
@@ -352,8 +352,8 @@ namespace nd4j {
             }
 
             IndicesList indices;
-            std::vector<int> input_shape = x->getShapeAsVector();
-            std::vector<int> final_shape;
+            auto input_shape = x->getShapeAsVector();
+            std::vector<Nd4jLong> final_shape;
             bool is_identity;
             bool is_simple_slice;
             bool is_dim0;
@@ -404,9 +404,9 @@ namespace nd4j {
 
             // if that's live - shape will be resolved in runtime
             if (dim_values == 0) {
-                int *newShape;
-                std::vector<int> shape({1, 1});
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
+                Nd4jLong *newShape;
+                std::vector<Nd4jLong> shape({1, 1});
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
                 shape::shapeBuffer(shape.size(), shape.data(), newShape);
 
                 return SHAPELIST(newShape);
@@ -426,9 +426,9 @@ namespace nd4j {
             ShapeUtils<T>::copyVectorPart(end, args, elements, elements);
             ShapeUtils<T>::copyVectorPart(strides, args, elements, elements * 2);
 
-            int *newShape;
-            std::vector<int> input_shape(shape::rank(inShape));
-            std::vector<int> shape;
+            Nd4jLong *newShape;
+            std::vector<Nd4jLong> input_shape(shape::rank(inShape));
+            std::vector<Nd4jLong> shape;
             
             for (int e = 0; e < shape::rank(inShape); e++)
                 input_shape[e] = shape::shapeOf(inShape)[e];
@@ -441,21 +441,7 @@ namespace nd4j {
             vectorize(input_shape);
             bool result = _preprocess_strided_slice(nullptr, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
 
-            //nd4j_printv("shape after shrink: ", shape);
-            
-            // scalar edge case
-            /*
-            if (shape.empty()) {
-                shape.emplace_back(1);
-                shape.emplace_back(1);
-            } else if (shape.size() == 1) {
-                shape.insert(shape.begin(), 1);
-            }
-             */
-
-            //nd4j_printv("shape after normalization: ", shape);
-
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
             shape::shapeBuffer(shape.size(), shape.data(), newShape);
 
             return SHAPELIST(newShape);
@@ -532,8 +518,8 @@ namespace nd4j {
             }
 
             IndicesList indices;
-            std::vector<int> input_shape = x->getShapeAsVector();
-            std::vector<int> final_shape;
+            auto input_shape = x->getShapeAsVector();
+            std::vector<Nd4jLong> final_shape;
             bool is_identity;
             bool is_simple_slice;
             bool is_dim0;
@@ -551,8 +537,7 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(strided_slice_bp) {
             auto inShape = inputShape->at(0);
-            int *newShape;
-
+            Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
 
             return SHAPELIST(newShape);

@@ -51,7 +51,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 DECLARE_SHAPE_FN(pad) {
 
 	// check shape of paddings 
-	int* inputShapeInfo = inputShape->at(0);
+	auto inputShapeInfo = inputShape->at(0);
     NDArray<T>* paddings = INPUT_VARIABLE(1);
     const int rank =  inputShapeInfo[0];    	
 
@@ -60,8 +60,8 @@ DECLARE_SHAPE_FN(pad) {
 	std::string currentPaddingsShape  = ShapeUtils<T>::shapeAsString(paddings);
 	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", expectedPaddingsShape.c_str(), currentPaddingsShape.c_str());
 		
-	int* outShapeInfo = nullptr;
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
+	Nd4jLong* outShapeInfo = nullptr;
+    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
     outShapeInfo[0] = rank;
     for(int i=1; i <= rank; ++i)
     	outShapeInfo[i] = inputShapeInfo[i] + (*paddings)(i-1,0) + (*paddings)(i-1,1);

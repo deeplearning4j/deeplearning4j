@@ -12,7 +12,7 @@ namespace nd4j {
     namespace ops {
         REDUCTION_OP_IMPL(argmin, 1, 1, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
-            std::vector<int> axis = *block.getIArguments();
+            auto axis = *block.getIArguments();
 
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
@@ -20,7 +20,7 @@ namespace nd4j {
                 axis.resize(vector->lengthOf());
                 helpers::adjustAxis(input, vector, axis);
 
-                int* shape = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), axis, *input, false);
+                auto shape = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), axis, *input, false);
                 auto output = new NDArray<T>(shape, false, block.getWorkspace());
 
                 input->template applyIndexReduce<simdOps::IndexMin<T>>(output, axis);

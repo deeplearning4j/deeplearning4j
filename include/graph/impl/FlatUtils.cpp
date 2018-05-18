@@ -14,16 +14,16 @@ namespace nd4j {
             return std::pair<int, int>(pair->first(), pair->second());
         }
 
-        std::pair<Nd4jIndex, Nd4jIndex> FlatUtils::fromLongPair(LongPair *pair) {
-            return std::pair<Nd4jIndex, Nd4jIndex>(pair->first(), pair->second());
+        std::pair<Nd4jLong, Nd4jLong> FlatUtils::fromLongPair(LongPair *pair) {
+            return std::pair<Nd4jLong, Nd4jLong>(pair->first(), pair->second());
         }
 
         template<typename T>
         NDArray<T> *FlatUtils::fromFlatArray(const nd4j::graph::FlatArray *flatArray) {
-            int * newShape = new int[shape::shapeInfoLength((int *)flatArray->shape()->data())];
-            memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength((int *)flatArray->shape()->data()));
+            auto newShape = new Nd4jLong[shape::shapeInfoLength((Nd4jLong *)flatArray->shape()->data())];
+            memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength((Nd4jLong *)flatArray->shape()->data()));
 
-            T * newBuffer = new T[shape::length(newShape)];
+            auto newBuffer = new T[shape::length(newShape)];
             DataTypeConversions<T>::convertType(newBuffer, (void *) flatArray->buffer()->data(), DataTypeUtils::fromFlatDataType(flatArray->dtype()), ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  shape::length(newShape));
             auto array = new NDArray<T>(newBuffer, newShape);
             array->triggerAllocationFlag(true, true);

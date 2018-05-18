@@ -143,6 +143,105 @@ nd4j.graph.LongPair.endLongPair = function(builder) {
 /**
  * @constructor
  */
+nd4j.graph.LongTriple = function() {
+  /**
+   * @type {flatbuffers.ByteBuffer}
+   */
+  this.bb = null;
+
+  /**
+   * @type {number}
+   */
+  this.bb_pos = 0;
+};
+
+/**
+ * @param {number} i
+ * @param {flatbuffers.ByteBuffer} bb
+ * @returns {nd4j.graph.LongTriple}
+ */
+nd4j.graph.LongTriple.prototype.__init = function(i, bb) {
+  this.bb_pos = i;
+  this.bb = bb;
+  return this;
+};
+
+/**
+ * @param {flatbuffers.ByteBuffer} bb
+ * @param {nd4j.graph.LongTriple=} obj
+ * @returns {nd4j.graph.LongTriple}
+ */
+nd4j.graph.LongTriple.getRootAsLongTriple = function(bb, obj) {
+  return (obj || new nd4j.graph.LongTriple).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+};
+
+/**
+ * @returns {flatbuffers.Long}
+ */
+nd4j.graph.LongTriple.prototype.first = function() {
+  var offset = this.bb.__offset(this.bb_pos, 4);
+  return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
+};
+
+/**
+ * @returns {flatbuffers.Long}
+ */
+nd4j.graph.LongTriple.prototype.second = function() {
+  var offset = this.bb.__offset(this.bb_pos, 6);
+  return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
+};
+
+/**
+ * @returns {flatbuffers.Long}
+ */
+nd4j.graph.LongTriple.prototype.third = function() {
+  var offset = this.bb.__offset(this.bb_pos, 8);
+  return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ */
+nd4j.graph.LongTriple.startLongTriple = function(builder) {
+  builder.startObject(3);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Long} first
+ */
+nd4j.graph.LongTriple.addFirst = function(builder, first) {
+  builder.addFieldInt64(0, first, builder.createLong(0, 0));
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Long} second
+ */
+nd4j.graph.LongTriple.addSecond = function(builder, second) {
+  builder.addFieldInt64(1, second, builder.createLong(0, 0));
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Long} third
+ */
+nd4j.graph.LongTriple.addThird = function(builder, third) {
+  builder.addFieldInt64(2, third, builder.createLong(0, 0));
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.LongTriple.endLongTriple = function(builder) {
+  var offset = builder.endObject();
+  return offset;
+};
+
+/**
+ * @constructor
+ */
 nd4j.graph.IntPair = function() {
   /**
    * @type {flatbuffers.ByteBuffer}

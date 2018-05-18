@@ -37,9 +37,8 @@ namespace nd4j {
             DataType newType = DataTypeUtils::fromInt(it);
 
             // FIXME: remove memcpy here
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
-            memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
+            Nd4jLong *newShape;
+            COPY_SHAPE(inShape, newShape);
 
             // TODO: put sign of dtype into shapeinfo?
 

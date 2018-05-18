@@ -79,7 +79,7 @@ namespace nd4j {
             return ~v;
         }
 
-        static Nd4jIndex FORCEINLINE flip_bits(Nd4jIndex v) {
+        static Nd4jLong FORCEINLINE flip_bits(Nd4jLong v) {
             return ~v;
         }
     };

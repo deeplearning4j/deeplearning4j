@@ -21,25 +21,25 @@ namespace nd4j {
             }
         }
 
-        void FlowPath::setInnerTime(int nodeId, Nd4jIndex time) {
+        void FlowPath::setInnerTime(int nodeId, Nd4jLong time) {
             ensureNode(nodeId);
 
             _states[nodeId].setInnerTime(time);
         }
 
-        void FlowPath::setOuterTime(int nodeId, Nd4jIndex time) {
+        void FlowPath::setOuterTime(int nodeId, Nd4jLong time) {
             ensureNode(nodeId);
 
             _states[nodeId].setOuterTime(time);
         }
 
-        Nd4jIndex FlowPath::innerTime(int nodeId) {
+        Nd4jLong FlowPath::innerTime(int nodeId) {
             ensureNode(nodeId);
 
             return _states[nodeId].innerTime();
         }
 
-        Nd4jIndex FlowPath::outerTime(int nodeId) {
+        Nd4jLong FlowPath::outerTime(int nodeId) {
             ensureNode(nodeId);
 
             return _states[nodeId].outerTime();
@@ -69,53 +69,53 @@ namespace nd4j {
             _states[nodeId].markBranch(index);
         }
 
-        bool FlowPath::isFrameActive(Nd4jIndex frameId) {
+        bool FlowPath::isFrameActive(Nd4jLong frameId) {
             ensureFrame(frameId);
 
             return _frames[frameId].wasActivated();
         }
 
-        void FlowPath::markFrameActive(Nd4jIndex frameId, bool isActive) {
+        void FlowPath::markFrameActive(Nd4jLong frameId, bool isActive) {
             ensureFrame(frameId);
 
             _frames[frameId].markActivated(isActive);
         }
 
-        bool FlowPath::isRewindPlanned(Nd4jIndex frameId) {
+        bool FlowPath::isRewindPlanned(Nd4jLong frameId) {
             return _frames[frameId].isRewindPlanned();
         }
 
-        void FlowPath::planRewind(Nd4jIndex frameId, bool reallyRewind) {
+        void FlowPath::planRewind(Nd4jLong frameId, bool reallyRewind) {
             _frames[frameId].planRewind(reallyRewind);
         }
 
-        int FlowPath::getRewindPosition(Nd4jIndex frameId) {
+        int FlowPath::getRewindPosition(Nd4jLong frameId) {
             return _frames[frameId].getRewindPosition();
         }
 
-        void FlowPath::setRewindPosition(Nd4jIndex frameId, int position) {
+        void FlowPath::setRewindPosition(Nd4jLong frameId, int position) {
             _frames[frameId].setRewindPosition(position);
         }
 
-        void FlowPath::setRewindPositionOnce(Nd4jIndex frameId, int position) {
+        void FlowPath::setRewindPositionOnce(Nd4jLong frameId, int position) {
             _frames[frameId].setRewindPositionOnce(position);
         }
 
-        void FlowPath::registerFrame(Nd4jIndex frameId) {
+        void FlowPath::registerFrame(Nd4jLong frameId) {
             if (_frames.count(frameId) == 0)
                 ensureFrame(frameId);
         }
 
-        void FlowPath::forgetFrame(Nd4jIndex frameId) {
+        void FlowPath::forgetFrame(Nd4jLong frameId) {
             if (_frames.count(frameId) > 0)
                 _frames.erase(frameId);
         }
 
-        void FlowPath::incrementNumberOfCycles(Nd4jIndex frameId) {
+        void FlowPath::incrementNumberOfCycles(Nd4jLong frameId) {
             _frames[frameId].incrementNumberOfCycles();
         }
 
-        Nd4jIndex FlowPath::getNumberOfCycles(Nd4jIndex frameId) {
+        Nd4jLong FlowPath::getNumberOfCycles(Nd4jLong frameId) {
             return _frames[frameId].getNumberOfCycles();
         }
 

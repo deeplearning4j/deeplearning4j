@@ -8,12 +8,12 @@
 class BroadcastMultiDimTest : public testing::Test {
 public:
     int dimensions[2] = {0,2};
-    int inputShapeBuffer[10] = {3,2,3,5,15,5,1,0,1,99};
+    Nd4jLong inputShapeBuffer[10] = {3,2,3,5,15,5,1,0,1,99};
     float inputData[30] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0,20.0,21.0,22.0,23.0,24.0,25.0,26.0,27.0,28.0,29.0,30.0};
     float dataAssertion[30] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,0.0,0.0,21.0,22.0,23.0,0.0,0.0,26.0,27.0,28.0,0.0,0.0};
     float result[30] = {0.0};
     float broadcastData[10] = {1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0,0.0};
-    int broadcastShapeInfo[8] = {2,2,5,5,1,0,1,99};
+    Nd4jLong broadcastShapeInfo[8] = {2,2,5,5,1,0,1,99};
     int opNum = 2;
     int dimensionLength = 2;
 };

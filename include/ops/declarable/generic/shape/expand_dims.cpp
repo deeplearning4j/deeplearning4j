@@ -26,7 +26,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(axis >= 0 && axis <= input->rankOf()+1, 0, "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", input->rankOf() + 1, axis);
 
-            std::vector<int> shape;
+            std::vector<Nd4jLong> shape;
             for(int e = 0; e < input->rankOf(); e++)
                 shape.emplace_back(input->sizeAt(e));
 
@@ -46,18 +46,18 @@ namespace nd4j {
 
             // 0D scalar edge case
             if (shape::rank(inShape) == 0) {
-                int* newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+                Nd4jLong* newShape;
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
 
-                int x = 1;
+                Nd4jLong x = 1;
                 shape::shapeBuffer(1, &x, newShape);
                 return SHAPELIST(newShape);
             }
 
             // FIXME: temp workaround for TF
             if (shape::isScalar(inShape)) {
-                int* newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
+                Nd4jLong* newShape;
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
 
                 shape::shapeBuffer(2, shape::shapeOf(inShape), newShape);
                 return SHAPELIST(newShape);
@@ -71,10 +71,10 @@ namespace nd4j {
             if (axis < 0)
                 axis += x_rank + 1;
 
-            int* newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank+1), int);
+            Nd4jLong* newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank+1), Nd4jLong);
 
-            std::vector<int> shape;
+            std::vector<Nd4jLong> shape;
             for(int e = 0; e < x_rank; e++)
                 shape.emplace_back(shape::shapeOf(inShape)[e]);
 

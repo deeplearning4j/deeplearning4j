@@ -43,10 +43,10 @@ CUSTOM_OP_IMPL(random_crop, 2, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(random_crop) {
     auto in = INPUT_VARIABLE(1);
-    std::vector<int> shape(in->lengthOf());
+    std::vector<Nd4jLong> shape(in->lengthOf());
 
-    int *newShape;
-    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
+    Nd4jLong *newShape;
+    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
     for (int e = 0; e < shape.size(); e++)
         shape[e] = (*in)(e);
 

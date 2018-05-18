@@ -48,9 +48,9 @@ namespace nd4j {
                     axis[e] = ca;
             }
             //std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
-            int* scalarShape = ShapeUtils<T>::createScalarShapeInfo(block.workspace());
-            int* sumShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
-            int* squareShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
+            auto scalarShape = ShapeUtils<T>::createScalarShapeInfo(block.workspace());
+            auto sumShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
+            auto squareShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
             auto shapeList = SHAPELIST(scalarShape, sumShape, squareShape); 
             if (block.numT() > 0)
                 shapeList->push_back(ShapeUtils<T>::createScalarShapeInfo(block.workspace()));

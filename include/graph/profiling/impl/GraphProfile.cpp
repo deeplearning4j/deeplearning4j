@@ -20,39 +20,39 @@ namespace nd4j {
             _timings.clear();
         }
 
-        void GraphProfile::addToTotal(Nd4jIndex bytes) {
+        void GraphProfile::addToTotal(Nd4jLong bytes) {
             _memoryTotal += bytes;
         }
 
-        void GraphProfile::addToActivations(Nd4jIndex bytes) {
+        void GraphProfile::addToActivations(Nd4jLong bytes) {
             _memoryActivations += bytes;
         }
         
-        void GraphProfile::addToTemporary(Nd4jIndex bytes) {
+        void GraphProfile::addToTemporary(Nd4jLong bytes) {
             _memoryTemporary += bytes;
         }
         
-        void GraphProfile::addToObjects(Nd4jIndex bytes) {
+        void GraphProfile::addToObjects(Nd4jLong bytes) {
             _memoryObjects += bytes;
         }
 
-        void GraphProfile::setBuildTime(Nd4jIndex nanos) {
+        void GraphProfile::setBuildTime(Nd4jLong nanos) {
             _buildTime = nanos;
         }
 
-        void GraphProfile::setExecutionTime(Nd4jIndex nanos) {
+        void GraphProfile::setExecutionTime(Nd4jLong nanos) {
             _executionTime = nanos;
         }
 
 
-        Nd4jIndex GraphProfile::currentTime() {
+        Nd4jLong GraphProfile::currentTime() {
             auto t = std::chrono::system_clock::now();
             auto v = std::chrono::time_point_cast<std::chrono::nanoseconds> (t);
             auto epoch = v.time_since_epoch();
-            return (Nd4jIndex) std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
+            return (Nd4jLong) std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
         }
         
-        Nd4jIndex GraphProfile::relativeTime(Nd4jIndex time) {
+        Nd4jLong GraphProfile::relativeTime(Nd4jLong time) {
             auto t1 = currentTime();
             return t1 - time;
         }
@@ -74,7 +74,7 @@ namespace nd4j {
             }
             auto t0 = _timers[k];
             auto t1 = std::chrono::system_clock::now();
-            auto v = (Nd4jIndex) std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+            auto v = (Nd4jLong) std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
 
             _timings[k] = v;
             _timers.erase(k);
@@ -87,7 +87,7 @@ namespace nd4j {
             
         void GraphProfile::spotEvent(const char *name) {
             auto t = std::chrono::system_clock::now();
-            auto d = (Nd4jIndex) std::chrono::duration_cast<std::chrono::nanoseconds>(t - _last).count();
+            auto d = (Nd4jLong) std::chrono::duration_cast<std::chrono::nanoseconds>(t - _last).count();
             std::string k = name;
             _timings[k] = d;
             updateLast();
@@ -147,10 +147,10 @@ namespace nd4j {
             nd4j_printf("Graph profile: %i executions\n", _merges);
             nd4j_printf("\nMemory:\n", "");
 
-            Nd4jIndex tmp = 0L;
-            Nd4jIndex obj = 0L;
-            Nd4jIndex act = 0L;
-            Nd4jIndex ttl = 0L;
+            Nd4jLong tmp = 0L;
+            Nd4jLong obj = 0L;
+            Nd4jLong act = 0L;
+            Nd4jLong ttl = 0L;
             for (auto v: _profiles) {
                 tmp += v->getTemporarySize();
                 obj += v->getObjectsSize();

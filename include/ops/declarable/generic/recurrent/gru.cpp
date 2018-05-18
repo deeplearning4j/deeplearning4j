@@ -54,11 +54,11 @@ CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(gru) {    
 
-    const int* xShapeInfo  = inputShape->at(0);                     // input [time x bS x inSize]
-    const int* h0ShapeInfo = inputShape->at(1);                     // initial cell output [bS x numUnits], that is at time step t=0
-    const int* WxShapeInfo = inputShape->at(2);                     // input-to-hidden weights, [inSize   x 3*numUnits] 
-    const int* WhShapeInfo = inputShape->at(3);                     // hidden-to-hidden weights, [numUnits x 3*numUnits]     
-    const int* bShapeInfo  = inputShape->at(4);                     // biases, [3*numUnits] 
+    const Nd4jLong* xShapeInfo  = inputShape->at(0);                     // input [time x bS x inSize]
+    const Nd4jLong* h0ShapeInfo = inputShape->at(1);                     // initial cell output [bS x numUnits], that is at time step t=0
+    const Nd4jLong* WxShapeInfo = inputShape->at(2);                     // input-to-hidden weights, [inSize   x 3*numUnits] 
+    const Nd4jLong* WhShapeInfo = inputShape->at(3);                     // hidden-to-hidden weights, [numUnits x 3*numUnits]     
+    const Nd4jLong* bShapeInfo  = inputShape->at(4);                     // biases, [3*numUnits] 
 
     const int rank     = xShapeInfo[0];              // = 3    
     const int time     = xShapeInfo[1];
@@ -82,15 +82,15 @@ DECLARE_SHAPE_FN(gru) {
 
 
     // evaluate output shapeInfo
-    int *hShapeInfo(nullptr);
-    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
+    Nd4jLong *hShapeInfo(nullptr);
+    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
             
     hShapeInfo[0] = rank;
     hShapeInfo[1] = time;
     hShapeInfo[2] = bS;
     hShapeInfo[3] = numUnits;
     
-    shape::updateStrides(hShapeInfo, shape::order(const_cast<int*>(h0ShapeInfo)));
+    shape::updateStrides(hShapeInfo, shape::order(const_cast<Nd4jLong*>(h0ShapeInfo)));
          
     return SHAPELIST(hShapeInfo);
 }   

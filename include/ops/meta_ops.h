@@ -44,7 +44,7 @@ namespace metaOps {
          */
 
         // will be called for reduce, reduce3
-        op_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+        op_def static T postProcess(T reduction, Nd4jLong n, T *params) {
             /*
              * We assume, that this method won't be EVER called
              */
@@ -101,7 +101,7 @@ namespace metaOps {
 		 */
 
 		// will be called for reduce, reduce3
-		meta_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+		meta_def static T postProcess(T reduction, Nd4jLong n, T *params) {
 			Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
 			T *paramsA = reinterpret_cast<T *> (wrap[0]);
 			T *paramsB = reinterpret_cast<T *> (wrap[1]);
@@ -145,7 +145,7 @@ namespace metaOps {
             return OpTypeB::op(OpTypeA::op(d1, paramsA), paramsB);
         }
 
-		meta_def static T postProcess(T reduction, Nd4jIndex n, T *params) {
+		meta_def static T postProcess(T reduction, Nd4jLong n, T *params) {
             Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (params);
 //            T *paramsA = reinterpret_cast<T *> (wrap[0]);
             T *paramsB = reinterpret_cast<T *> (wrap[1]);

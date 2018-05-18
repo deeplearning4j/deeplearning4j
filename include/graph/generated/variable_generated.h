@@ -28,8 +28,8 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
-  const flatbuffers::Vector<int32_t> *shape() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_SHAPE);
+  const flatbuffers::Vector<int64_t> *shape() const {
+    return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_SHAPE);
   }
   const FlatArray *ndarray() const {
     return GetPointer<const FlatArray *>(VT_NDARRAY);
@@ -61,7 +61,7 @@ struct FlatVariableBuilder {
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(FlatVariable::VT_NAME, name);
   }
-  void add_shape(flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape) {
+  void add_shape(flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape) {
     fbb_.AddOffset(FlatVariable::VT_SHAPE, shape);
   }
   void add_ndarray(flatbuffers::Offset<FlatArray> ndarray) {
@@ -86,7 +86,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<IntPair> id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0) {
   FlatVariableBuilder builder_(_fbb);
@@ -102,14 +102,14 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<IntPair> id = 0,
     const char *name = nullptr,
-    const std::vector<int32_t> *shape = nullptr,
+    const std::vector<int64_t> *shape = nullptr,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0) {
   return nd4j::graph::CreateFlatVariable(
       _fbb,
       id,
       name ? _fbb.CreateString(name) : 0,
-      shape ? _fbb.CreateVector<int32_t>(*shape) : 0,
+      shape ? _fbb.CreateVector<int64_t>(*shape) : 0,
       ndarray,
       device);
 }

@@ -7,7 +7,7 @@
 
 #ifdef __CUDACC__
 
-__device__ inline int getDevicePosition(int *xShapeInfo, int index) {
+__device__ inline int getDevicePosition(Nd4jLong *xShapeInfo, int index) {
     int xEWS = shape::elementWiseStride(xShapeInfo);
 
     if (xEWS == 1) {
@@ -15,13 +15,13 @@ __device__ inline int getDevicePosition(int *xShapeInfo, int index) {
     } else if (xEWS > 1) {
         return index * xEWS;
     } else {
-        int xCoord[MAX_RANK];
+        Nd4jLong xCoord[MAX_RANK];
         int xRank = shape::rank(xShapeInfo);
-        int *xShape = shape::shapeOf(xShapeInfo);
-        int *xStride = shape::stride(xShapeInfo);
+        auto xShape = shape::shapeOf(xShapeInfo);
+        auto xStride = shape::stride(xShapeInfo);
 
         shape::ind2subC(xRank, xShape, index, xCoord);
-        int xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+        auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
 
         return xOffset;
     }
@@ -29,7 +29,7 @@ __device__ inline int getDevicePosition(int *xShapeInfo, int index) {
 
 template<typename T>
 __device__
- void bitonic_sort_step(T *x, int *xShapeInfo, int j, int k, int length, bool descending) {
+ void bitonic_sort_step(T *x, Nd4jLong *xShapeInfo, int j, int k, int length, bool descending) {
 
     unsigned int i, ixj; /* Sorting partners: i and ixj */
     i = threadIdx.x + blockDim.x * blockIdx.x;
@@ -66,7 +66,7 @@ __device__
 
 template<typename T>
 __device__
- void bitonic_arbitrary_step(T *x, int *xShapeInfo, int window, int length,  int reverse, bool descending) {
+ void bitonic_arbitrary_step(T *x, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending) {
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
     int half = window>>1;
 
@@ -140,7 +140,7 @@ __device__
 
 template<typename T>
 __device__
-void oes_tad(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
+void oes_tad(T *x, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
     __shared__ int xLength;
     __shared__ int xTadLength;
     __shared__ int numTads;
@@ -249,42 +249,42 @@ void oes_tad(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *ta
 
 
 
-extern "C" __global__ void cudaBitonicSortFloat(float *x, int *xShapeInfo, int j, int k, int length, bool descending) {
+extern "C" __global__ void cudaBitonicSortFloat(float *x, Nd4jLong *xShapeInfo, int j, int k, int length, bool descending) {
     bitonic_sort_step<float>(x, xShapeInfo, j, k, length, descending);
 }
 
-extern "C" __global__ void cudaBitonicSortDouble(double *x, int *xShapeInfo, int j, int k, int length, bool descending) {
+extern "C" __global__ void cudaBitonicSortDouble(double *x, Nd4jLong *xShapeInfo, int j, int k, int length, bool descending) {
     bitonic_sort_step<double>(x, xShapeInfo, j, k, length, descending);
 }
 
-extern "C" __global__ void cudaBitonicSortHalf(float16 *x, int *xShapeInfo, int j, int k, int length, bool descending) {
+extern "C" __global__ void cudaBitonicSortHalf(float16 *x, Nd4jLong *xShapeInfo, int j, int k, int length, bool descending) {
     bitonic_sort_step<float16>(x, xShapeInfo, j, k, length, descending);
 }
 
 
-extern "C" __global__ void cudaSortFloat(float *x, int *xShapeInfo, int window, int length,  int reverse, bool descending) {
+extern "C" __global__ void cudaSortFloat(float *x, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending) {
     bitonic_arbitrary_step<float>(x, xShapeInfo, window, length, reverse, descending);
 }
 
-extern "C" __global__ void cudaSortDouble(double *x, int *xShapeInfo, int window, int length, int reverse, bool descending) {
+extern "C" __global__ void cudaSortDouble(double *x, Nd4jLong *xShapeInfo, int window, int length, int reverse, bool descending) {
     bitonic_arbitrary_step<double>(x, xShapeInfo, window, length, reverse, descending);
 }
 
-extern "C" __global__ void cudaSortHalf(float16 *x, int *xShapeInfo, int window, int length, int reverse, bool descending) {
+extern "C" __global__ void cudaSortHalf(float16 *x, Nd4jLong *xShapeInfo, int window, int length, int reverse, bool descending) {
     bitonic_arbitrary_step<float16>(x, xShapeInfo, window, length, reverse, descending);
 }
 
-extern "C" __global__ void cudaSortTadFloat(float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
+extern "C" __global__ void cudaSortTadFloat(float *x, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
     //bitonic_sort_step<float>(x, xShapeInfo, j, k, descending);
     oes_tad<float>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets,  descending);
 }
 
-extern "C" __global__ void cudaSortTadDouble(double *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
+extern "C" __global__ void cudaSortTadDouble(double *x,Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
     //bitonic_sort_step<float>(x, xShapeInfo, j, k, descending);
     oes_tad<double>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }
 
-extern "C" __global__ void cudaSortTadHalf(float16 *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, bool descending) {
+extern "C" __global__ void cudaSortTadHalf(float16 *x, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
     //bitonic_sort_step<float>(x, xShapeInfo, j, k, descending);
     oes_tad<float16>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }

@@ -2,6 +2,7 @@
 //Released under MIT License
 //license available in LICENSE file, or at http://www.opensource.org/licenses/mit-license.php
 
+#include <pointercast.h>
 #include"cnpy.h"
 
 
@@ -91,8 +92,12 @@ char* cnpy::loadFile(char const *path) {
         length = ftell (f);
         fseek (f, 0, SEEK_SET);
         buffer = (char*) malloc ((length+ 1) * sizeof(char));
+
+        // just getting rid of compiler warning
+        Nd4jLong fps = 0;
+
         if (buffer) {
-            fread (buffer, sizeof(char), length, f);
+            fps += fread (buffer, sizeof(char), length, f);
         }
 
         fclose (f);

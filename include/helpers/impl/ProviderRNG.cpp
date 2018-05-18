@@ -10,7 +10,7 @@ namespace nd4j {
     
 ProviderRNG::ProviderRNG() {
 
-    Nd4jIndex *buffer = new Nd4jIndex[100000];
+    Nd4jLong *buffer = new Nd4jLong[100000];
     NativeOps nativeOps;    
     std::lock_guard<std::mutex> lock(_mutex);
     #ifndef __CUDABLAS__

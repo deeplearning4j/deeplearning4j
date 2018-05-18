@@ -22,30 +22,6 @@ namespace nd4j {
                 OVERWRITE_RESULT(tZ);
             }
 
-            /*
-			if (!x->isScalar() && !y->isScalar() && x->lengthOf() == y->lengthOf()) {
-				REQUIRE_OK(this->validateInputLengthMatch(block));
-				// REQUIRE_OK(this->validateInputDimensionsMatch(block));
-				x->template applyPairwiseTransform<simdOps::Divide<T>>(y, z, nullptr);
-	
-            } else if (!x->isScalar() && y->isScalar()) {
-               x->template applyScalar<simdOps::Divide<T>>(*y, z);
-
-            } else if (x->isScalar() && !y->isScalar()) {
-                y->template applyScalar<simdOps::Divide<T>>(*x, z);
-            }						
-			else if (x->isScalar() && y->isScalar()) { // (x->isScalar() && y->isScalar())
-				z->putScalar(0, x->getScalar(0) / y->getScalar(0));
-            }else if (ShapeUtils<T>::areShapesBroadcastable(*x, *y)) {
-                auto tZ = x->template applyTrueBroadcast<simdOps::Divide<T>>(y);
-                OVERWRITE_RESULT(tZ);
-            } else {
-                auto sx = ShapeUtils<T>::shapeAsString(*x);
-                auto sy = ShapeUtils<T>::shapeAsString(*y);
-                REQUIRE_TRUE(false, 0, "Divide: shapes should be equal, or broadcastable. But got %s vs %s instead", sx.c_str(), sy.c_str());
-            }
-            */
-
 			return ND4J_STATUS_OK;
         }
 
@@ -55,33 +31,29 @@ namespace nd4j {
             auto y = inputShape->at(1);
 
             if (shape::equalsSoft(x, y)) {
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(x), int);
-                REPLICATE_SHAPE(x, newshape);
+                Nd4jLong *newshape;
+                COPY_SHAPE(x, newshape);
 
                 shapeList->push_back(newshape);
             } else if (shape::isScalar(x) && !shape::isScalar(y)) {
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(y), int);
-                REPLICATE_SHAPE(y, newshape);
+                Nd4jLong *newshape;
+                COPY_SHAPE(y, newshape);
 
                 shapeList->push_back(newshape);
             } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(x), int);
-                REPLICATE_SHAPE(x, newshape);
+                Nd4jLong *newshape;
+                COPY_SHAPE(x, newshape);
 
                 shapeList->push_back(newshape);
             } else if (ShapeUtils<T>::areShapesBroadcastable(x, y)) {
-                int *newshape = nullptr;
+                Nd4jLong *newshape = nullptr;
                 ShapeUtils<T>::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
 
                 shapeList->push_back(newshape);
             } else {
                 // in this case we'll throw exception later
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(x), int);
-                REPLICATE_SHAPE(x, newshape);
+                Nd4jLong *newshape;
+                COPY_SHAPE(x, newshape);
 
                 shapeList->push_back(newshape);
             }
@@ -113,13 +85,11 @@ namespace nd4j {
             // eps always has shape of x
             // grad always has shape of y
 
-            int *shapeE;
-            int *shapeG;
-            ALLOCATE(shapeE, block.getWorkspace(), shape::shapeInfoLength(x), int);
-            ALLOCATE(shapeG, block.getWorkspace(), shape::shapeInfoLength(y), int);
+            Nd4jLong *shapeE;
+            Nd4jLong *shapeG;
 
-            REPLICATE_SHAPE(x, shapeE);
-            REPLICATE_SHAPE(y, shapeG);
+            COPY_SHAPE(x, shapeE);
+            COPY_SHAPE(y, shapeG);
 
             auto shapeList = SHAPELIST(shapeE, shapeG);
 

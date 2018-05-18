@@ -38,7 +38,7 @@ namespace ops {
 
     DECLARE_SHAPE_FN(depth_to_space) {
         auto in = inputShape->at(0);
-        int block_size = INT_ARG(0);
+        auto block_size = INT_ARG(0);
         bool isNHWC = INT_ARG(1) == 1;
 
         int bS = shape::sizeAt(in, 0);
@@ -50,9 +50,9 @@ namespace ops {
         int oH = iH * block_size;
         int oW = iW * block_size;
 
-        int *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
-        std::array<int, 4> shape;
+        Nd4jLong *newShape;
+        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
+        std::array<Nd4jLong, 4> shape;
         if (isNHWC) 
             shape = {{bS, oH, oW, oD }};
         else 

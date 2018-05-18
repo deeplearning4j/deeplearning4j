@@ -36,10 +36,10 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(random_exponential) {
             auto in = INPUT_VARIABLE(0);
-            auto shape = in->template asVectorT<int>();
+            auto shape = in->template asVectorT<Nd4jLong>();
 
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
+            Nd4jLong *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
             shape::shapeBuffer(shape.size(), shape.data(), newShape);
 
             return SHAPELIST(newShape);

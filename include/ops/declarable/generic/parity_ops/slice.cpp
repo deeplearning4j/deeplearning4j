@@ -53,8 +53,8 @@ namespace nd4j {
             ShapeUtils<T>::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
             ShapeUtils<T>::copyVectorPart(end, *(block.getIArguments()), x_rank, x_rank);
 
-            int *newShape;
-            std::vector<int> shape;
+            Nd4jLong *newShape;
+            std::vector<Nd4jLong> shape;
             for (int e = 0; e < x_rank; e++) {
                 int stop = end[e];
                 int start = begin[e];
@@ -62,7 +62,7 @@ namespace nd4j {
                 shape.push_back(stop);
             }
 
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank), int);
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank), Nd4jLong);
             shape::shapeBuffer(x_rank, shape.data(), newShape);
 
             return SHAPELIST(newShape);
@@ -102,8 +102,7 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(slice_bp) {
             auto inShape = inputShape->at(0);
-            int *newShape;
-
+            Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
 
             return SHAPELIST(newShape);

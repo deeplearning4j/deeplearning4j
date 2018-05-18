@@ -54,7 +54,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_1) {
 
     auto vec = original.asByteVector();
 
-    auto fShape = builder.CreateVector(original.getShapeInfoAsVector());
+    auto fShape = builder.CreateVector(original.getShapeInfoAsFlatVector());
     auto fBuffer = builder.CreateVector(vec);
     auto fVid = CreateIntPair(builder, 1, 12);
 
@@ -88,7 +88,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_2) {
 
     auto vec = original.asByteVector();
 
-    auto fShape = builder.CreateVector(original.getShapeInfoAsVector());
+    auto fShape = builder.CreateVector(original.getShapeInfoAsFlatVector());
     auto fBuffer = builder.CreateVector(vec);
     auto fVid = CreateIntPair(builder, 1, 12);
 
@@ -125,7 +125,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_3) {
 
     auto vec = original.asByteVector();
 
-    auto fShape = builder.CreateVector(original.getShapeInfoAsVector());
+    auto fShape = builder.CreateVector(original.getShapeInfoAsFlatVector());
     auto fBuffer = builder.CreateVector(vec);
     auto fVid = CreateIntPair(builder, 1, 12);
 
@@ -160,7 +160,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_4) {
 
     auto vec = original.asByteVector();
 
-    auto fShape = builder.CreateVector(original.getShapeInfoAsVector());
+    auto fShape = builder.CreateVector(original.getShapeInfoAsFlatVector());
     auto fVid = CreateIntPair(builder, 37, 12);
 
     auto flatVar = CreateFlatVariable(builder, fVid, 0, fShape, 0);

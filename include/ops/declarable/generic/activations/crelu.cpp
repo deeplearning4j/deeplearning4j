@@ -32,13 +32,13 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(crelu) {
             auto inShape = inputShape->at(0);
-            std::vector<int> shape;
+            std::vector<Nd4jLong> shape;
             for (int e = 0; e < shape::rank(inShape); e++)
                 shape.emplace_back(shape::shapeOf(inShape)[e]);
             
             shape[shape.size()-1] *= 2;
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
+            Nd4jLong *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
             if (shape::order(inShape) == 'c')
                 shape::shapeBuffer(shape.size(), shape.data(), newShape);
             else
@@ -86,9 +86,8 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(crelu_bp) {
             auto inShape = inputShape->at(0);
-            int* newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
-            memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
+            Nd4jLong* newShape;
+            COPY_SHAPE(inShape, newShape);
 
             return SHAPELIST(newShape);
         }

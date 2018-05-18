@@ -12,11 +12,11 @@ namespace nd4j {
         CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
             NDArray<T>* output;
-            std::vector<int> reps(input->rankOf());
+            std::vector<Nd4jLong> reps(input->rankOf());
             bool overwrite = false;
 
             if (block.getIArguments()->size() >= input->rankOf()) {
-                reps = *(block.getIArguments());
+                reps = ArrayUtils::toLongVector(*(block.getIArguments()));
 
                 output = OUTPUT_VARIABLE(0);
             } else if (block.width() > 1) {
@@ -47,13 +47,13 @@ namespace nd4j {
             auto inShape = inputShape->at(0);
 
             if (block.width() > 1) {
-                int* repsVectorShape = inputShape->at(1);
+                auto repsVectorShape = inputShape->at(1);
                 REQUIRE_TRUE(shape::length(repsVectorShape) == shape::rank(inShape), 0, "TILE op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !", shape::length(repsVectorShape), shape::rank(inShape));
             }
 
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
-            std::vector<int> shape(shape::rank(inShape));
+            Nd4jLong *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
+            std::vector<Nd4jLong> shape(shape::rank(inShape));
 
             for (int e = 0; e < shape::rank(inShape); e++)
                 shape[e] = shape::sizeAt(inShape, e);
@@ -70,7 +70,7 @@ namespace nd4j {
                     shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
             } else {
                 auto r = INPUT_VARIABLE(1);
-                auto reps = r->template asVectorT<int>();
+                auto reps = r->template asVectorT<Nd4jLong>();
 
                 // runtime evaluation, sorry
                 for (int e = 0; e < shape.size(); e++)

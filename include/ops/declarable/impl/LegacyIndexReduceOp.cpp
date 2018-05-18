@@ -29,10 +29,10 @@ namespace nd4j {
         ShapeList *LegacyIndexReduceOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
-            int *newShape;
+            Nd4jLong *newShape;
             if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)) {
                 // in this case we just return scalar
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
                 newShape[0] = 2;
                 newShape[1] = 1;
                 newShape[2] = 1;

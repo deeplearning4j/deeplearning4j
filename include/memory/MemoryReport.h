@@ -11,8 +11,8 @@ namespace nd4j {
     namespace memory {
         class MemoryReport {
         private:
-            Nd4jIndex _vm = 0;
-            Nd4jIndex _rss = 0;
+            Nd4jLong _vm = 0;
+            Nd4jLong _rss = 0;
 
         public:
             MemoryReport() = default;
@@ -25,11 +25,11 @@ namespace nd4j {
             bool operator == (const MemoryReport& other) const;
             bool operator != (const MemoryReport& other) const;
 
-            Nd4jIndex getVM() const;
-            void setVM(Nd4jIndex vm);
+            Nd4jLong getVM() const;
+            void setVM(Nd4jLong vm);
 
-            Nd4jIndex getRSS() const;
-            void setRSS(Nd4jIndex rss);
+            Nd4jLong getRSS() const;
+            void setRSS(Nd4jLong rss);
         };
     }
 }

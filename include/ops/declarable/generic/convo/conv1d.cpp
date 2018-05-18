@@ -49,7 +49,7 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 4) {
     if (bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV1D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
-    std::vector<int> reshapeForInput, reshapeForOutput, reshapeForWeights;
+    std::vector<Nd4jLong> reshapeForInput, reshapeForOutput, reshapeForWeights;
     if(!isNCW) {
         reshapeForInput   = {input->sizeAt(0), 1, input->sizeAt(1), input->sizeAt(2)};                  // [bS, iW, iC] -> [bS, 1, iW, iC]
         reshapeForOutput  = {output->sizeAt(0), 1, output->sizeAt(1), output->sizeAt(2)};               // [bS, oW, oC] -> [bS, 1, oW, oC]
@@ -77,9 +77,9 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 4) {
 
 DECLARE_SHAPE_FN(conv1d) {
 
-    int* inputShapeInfo   = inputShape->at(0);
-    int* weightsShapeInfo = inputShape->at(1);
-    int* biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;
+    auto inputShapeInfo   = inputShape->at(0);
+    auto weightsShapeInfo = inputShape->at(1);
+    Nd4jLong* biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;
 
     int kW = INT_ARG(0);                                                        // filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
@@ -112,8 +112,8 @@ DECLARE_SHAPE_FN(conv1d) {
     int oH, oW;                                         // output height, width
     ConvolutionUtils<T>::calcOutSizePool2D(oH,oW,  1,kW,  1,sW,  0,pW,  1,1,  1,iW, isSameMode);
 
-    int* outputShapeInfo = nullptr;
-    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
+    Nd4jLong* outputShapeInfo = nullptr;
+    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
     outputShapeInfo[0] = 3;
     outputShapeInfo[1] = bS;
@@ -178,7 +178,7 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 4) {
     if(bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV1D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
-    std::vector<int> reshapeForInput, reshapeForGradO, reshapeForWeights;
+    std::vector<Nd4jLong> reshapeForInput, reshapeForGradO, reshapeForWeights;
     if(!isNCW) {
         reshapeForInput   = {input->sizeAt(0), 1, input->sizeAt(1), input->sizeAt(2)};                  // [bS, iW, iC] -> [bS, 1, iW, iC]
         reshapeForGradO   = {gradO->sizeAt(0), 1, gradO->sizeAt(1), gradO->sizeAt(2)};                  // [bS, oW, oC] -> [bS, 1, oW, oC]
@@ -210,10 +210,10 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 4) {
 
 DECLARE_SHAPE_FN(conv1d_bp) {
 
-    int* inputShapeInfo   = inputShape->at(0);                                               // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
-    int* weightsShapeInfo = inputShape->at(1);                                               // [kW, iC, oC] (NWC) or [oC, iC, kW] (NCW)
-    int* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;                 // [oC]
-    int* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);       // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW), epsilon_next
+    auto inputShapeInfo   = inputShape->at(0);                                               // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
+    auto weightsShapeInfo = inputShape->at(1);                                               // [kW, iC, oC] (NWC) or [oC, iC, kW] (NCW)
+    Nd4jLong* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;                 // [oC]
+    Nd4jLong* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);       // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW), epsilon_next
 
     const int rank = 3;
     REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM CONV1D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);
@@ -250,12 +250,12 @@ DECLARE_SHAPE_FN(conv1d_bp) {
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM CONV1D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
 
-    int* gradIshapeInfo(nullptr), *gradWshapeInfo(nullptr);
+    Nd4jLong* gradIshapeInfo(nullptr), *gradWshapeInfo(nullptr);
     COPY_SHAPE(inputShapeInfo, gradIshapeInfo);
     COPY_SHAPE(weightsShapeInfo, gradWshapeInfo);
 
     if(biasShapeInfo) {
-        int* gradBshapeInfo(nullptr);
+        Nd4jLong* gradBshapeInfo(nullptr);
         COPY_SHAPE(biasShapeInfo, gradBshapeInfo);
         return SHAPELIST(gradIshapeInfo, gradWshapeInfo, gradBshapeInfo);
     }

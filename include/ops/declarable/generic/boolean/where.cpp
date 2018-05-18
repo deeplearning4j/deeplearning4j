@@ -62,11 +62,11 @@ namespace nd4j {
                 NDArrayList<T> list(0, true);
                 int cnt = 0;
 
-                int idx[MAX_RANK];
+                Nd4jLong idx[MAX_RANK];
                 for (int e = 0; e < condition->lengthOf(); e++) {
                     shape::ind2subC(condition->rankOf(), condition->shapeOf(), e, idx);
 
-                    Nd4jIndex offset = shape::getOffset(0, condition->shapeOf(), condition->stridesOf(), idx, condition->rankOf());
+                    auto offset = shape::getOffset(0, condition->shapeOf(), condition->stridesOf(), idx, condition->rankOf());
                     T v = condition->buffer()[offset];
                     if (v != (T) 0.0f) {
                         auto array = new NDArray<T>('c', {1, condition->rankOf()});
@@ -87,17 +87,16 @@ namespace nd4j {
         DECLARE_SHAPE_FN(Where) {
             if (block.width() == 3) {
                 auto inShape = inputShape->at(1);
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
-                memcpy(newshape, inShape, shape::shapeInfoByteLength(inShape));
+                Nd4jLong *newshape;
+                COPY_SHAPE(inShape, newshape);
 
                 return SHAPELIST(newshape);
             } else {
                 // FIXME: we can't estimate result here in this case
                 auto inShape = inputShape->at(0);
 
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+                Nd4jLong *newshape;
+                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
                 newshape[0] = 2;
                 newshape[1] = 10;

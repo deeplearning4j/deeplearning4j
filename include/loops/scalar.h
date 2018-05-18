@@ -40,47 +40,47 @@ namespace functions {
 #ifdef __CUDACC__
 
             __host__
-            static void executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, T *x, int xStride, T *result, int resultStride, T scalar, T *extraParams, Nd4jIndex n);
+            static void executeCudaStrided(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, T *x, Nd4jLong xStride, T *result, Nd4jLong resultStride, T scalar, T *extraParams, Nd4jLong n);
 
             __host__
-            static void executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, T *x, int *xShapeInfo, T *result, int *resultShapeInfo, T scalar, T *extraParams);
+            static void executeCudaShaped(dim3& launchDims, Nd4jPointer *extraPointers, int opNum, T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams);
 
             __host__
-            static void executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, T *x, int *xShapeInfo, T *z, int *zShapeInfo, T *scalars, T *extraParams, int *dimension, int dimensionLength);
+            static void executeCudaAlongDimension(dim3& launchDims, Nd4jPointer *extraPointers,int opNum, T *x, Nd4jLong *xShapeInfo, T *z, Nd4jLong *zShapeInfo, T *scalars, T *extraParams, int *dimension, int dimensionLength);
 
 
             template<typename OpType>
             __device__
-            static void transformCuda(T *x, int *xShapeInfo, T *extraParams, T *z, int *zShapeInfo, T *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *tadShapeInfoZ, Nd4jIndex *tadOffsetsZ);
+            static void transformCuda(T *x, Nd4jLong *xShapeInfo, T *extraParams, T *z, Nd4jLong *zShapeInfo, T *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
             template<typename OpType>
             __device__
-            static void transformCuda(T scalar, T *dy, int *shapeInfo, T *params, T *result, int *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
-
-
-            template<typename OpType>
-            __device__
-            static void transform(Nd4jIndex n, T scalar, T *dy, T *params, T *result, int *indexes, int *allocationBuffer, UnifiedSharedMemory *manager);
+            static void transformCuda(T scalar, T *dy, Nd4jLong *shapeInfo, T *params, T *result,Nd4jLong *resultShapeInfo, int *allocationBuffer, UnifiedSharedMemory *manager);
 
 
             template<typename OpType>
             __device__
-	        static void transformCuda(Nd4jIndex n, T dx, T *dy, int incy, T *params, T *result, int resultStride, int *allocationBuffer, UnifiedSharedMemory *manager);
+            static void transform(Nd4jLong n, T scalar, T *dy, T *params, T *result, Nd4jLong *indexes, int *allocationBuffer, UnifiedSharedMemory *manager);
+
+
+            template<typename OpType>
+            __device__
+	        static void transformCuda(Nd4jLong n, T dx, T *dy, Nd4jLong incy, T *params, T *result, Nd4jLong resultStride, int *allocationBuffer, UnifiedSharedMemory *manager);
 
 /*
 #include "cuda/scalar_temp.cu"
 */
 #endif
             template <typename OpType>
-            static void transform(T *x, int *xShapeInfo, T *extraParams, T *z, int *zShapeInfo, T *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *tadShapeInfoZ, Nd4jIndex *tadOffsetsZ);
+            static void transform(T *x, Nd4jLong *xShapeInfo, T *extraParams, T *z, Nd4jLong *zShapeInfo, T *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-            static void transform(int opNum, T *x, int *xShapeInfo, T *extraParams, T *z, int *zShapeInfo, T *scalars, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffsets, int *tadShapeInfoZ, Nd4jIndex *tadOffsetsZ);
+            static void transform(int opNum, T *x, Nd4jLong *xShapeInfo, T *extraParams, T *z, Nd4jLong *zShapeInfo, T *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-            static void transform(const int opNum, T *x, int *xShapeInfo, T *result, int *resultShapeInfo, T scalar, T *extraParams, int *indexes, int *resultIndexes);
+            static void transform(const int opNum, T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
 
-            static void transform(const int opNum, T *x, int xStride, T *result, int resultStride, T scalar, T *extraParams, const Nd4jIndex n);
+            static void transform(const int opNum, T *x, Nd4jLong xStride, T *result, Nd4jLong resultStride, T scalar, T *extraParams, const Nd4jLong n);
 
-            static void transform(const int opNum, T *x, int *xShapeInfo, T *result, int *resultShapeInfo, T scalar, T *extraParams);
+            static void transform(const int opNum, T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams);
 
 
 
@@ -98,7 +98,7 @@ namespace functions {
          */
 
             template <typename OpType>
-            static void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo, T scalar, T *extraParams, int *indexes, int *resultIndexes);
+            static void transform(T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams, Nd4jLong *indexes, Nd4jLong *resultIndexes);
 
 
 
@@ -120,7 +120,7 @@ namespace functions {
          */
 
             template<typename OpType>
-            static  void transform(T *x, int *xShapeInfo, T *result, int *resultShapeInfo, T scalar, T *extraParams);
+            static  void transform(T *x, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T scalar, T *extraParams);
 
 
             /**
@@ -136,7 +136,7 @@ namespace functions {
              */
 
             template<typename OpType>
-            static void transform(T *x, int xStride, T *result, int resultStride, T scalar, T *extraParams, const Nd4jIndex n);
+            static void transform(T *x, Nd4jLong xStride, T *result, Nd4jLong resultStride, T scalar, T *extraParams, const Nd4jLong n);
         };
     }
 }

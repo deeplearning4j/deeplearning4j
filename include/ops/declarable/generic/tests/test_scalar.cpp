@@ -20,8 +20,8 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(test_scalar) {
-            int *newShape;
-            ALLOCATE(newShape, block.workspace(), shape::shapeInfoLength(2), int);
+            Nd4jLong *newShape;
+            ALLOCATE(newShape, block.workspace(), shape::shapeInfoLength(2), Nd4jLong);
 
             newShape[0] = 2;
             newShape[1] = 1;

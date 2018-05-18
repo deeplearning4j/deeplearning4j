@@ -59,7 +59,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 	NDArray<T>* weightsBroad = weights;	
 	if(!weights->isScalar() && !weights->isSameShape(&weightedLosses)) {
 		// evaluate repeat dimensions for tile operation
-		std::vector<int> reps(weightedLosses.rankOf());
+		std::vector<Nd4jLong> reps(weightedLosses.rankOf());
 		for(int i = 0; i < reps.size(); ++i)
 			reps[i] = weightedLosses.shapeOf()[i] / weights->shapeOf()[i];
 		weightsBroad = new NDArray<T>(weights->tile(reps));
@@ -128,20 +128,20 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
 DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
 	
-	int* logitsShapeInfo  = inputShape->at(0);
-    int* labelsShapeInfo  = inputShape->at(2);
+	auto logitsShapeInfo  = inputShape->at(0);
+    auto labelsShapeInfo  = inputShape->at(2);
 
 	// labels and logits must have the same shapes 
     REQUIRE_TRUE(shape::shapeEquals(logitsShapeInfo, labelsShapeInfo), 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly!", ShapeUtils<T>::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(logitsShapeInfo).c_str());    
 
 	std::vector<int> dimensions = {-1};
-    int* reducedShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(labelsShapeInfo), dimensions, labelsShapeInfo, false, true, block.getWorkspace());
+    auto reducedShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(labelsShapeInfo), dimensions, labelsShapeInfo, false, true, block.getWorkspace());
    
     // if scalar is required
     const int rank = 2;
     if(INT_ARG(0) != 0) {
     	RELEASE(reducedShapeInfo, block.workspace());
-    	ALLOCATE(reducedShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
+    	ALLOCATE(reducedShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
     	reducedShapeInfo[0] = rank;
     	reducedShapeInfo[1] = reducedShapeInfo[2] = reducedShapeInfo[3] = reducedShapeInfo[4] = 1;
     	reducedShapeInfo[5] = 0;

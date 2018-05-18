@@ -27,7 +27,7 @@ namespace helpers {
         else {
             REQUIRE_TRUE(reduceShape->lengthOf() <= input->rankOf(), 0, "dropout: Noise shape should be fittable to input");
         
-            std::vector<int> dims(reduceShape->lengthOf());
+            std::vector<Nd4jLong> dims(reduceShape->lengthOf());
         
             bool fit = true;
 

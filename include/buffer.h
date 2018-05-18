@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <dll.h>
 
- //Question: Should the indexes here really be int? Isn't size_t or Nd4jIndex more appropriate?
+ //Question: Should the indexes here really be int? Isn't size_t or Nd4jLong more appropriate?
 namespace nd4j {
 	namespace buffer {
 /**
@@ -204,7 +204,7 @@ __host__ void copyDataFromGpu(Buffer <T> **buffer, cudaStream_t stream) {
 		void allocBuffer(Buffer<T> **buffer, int length) {
 			Buffer<T> *bufferRef = *buffer;
 			bufferRef->length = length;
-			bufferRef->data = (T *) malloc(sizeof(T) * length);
+			bufferRef->data = reinterpret_cast<T *>(malloc(sizeof(T) * length));
 
 			CHECK_ALLOC(bufferRef->data, "Failed to allocate new buffer");
 #ifdef __CUDACC__
@@ -260,7 +260,7 @@ __host__ void copyDataFromGpu(Buffer <T> **buffer, cudaStream_t stream) {
 
 			T *gData;
 			T **gDataRef = &(gData);
-			checkCudaErrors(cudaMalloc((void **) gDataRef, sizeof(T) * length));
+			checkCudaErrors(cudaMalloc(reinterpret_cast<void **>(gDataRef), sizeof(T) * length));
 			ret->gData = gData;
 			checkCudaErrors(cudaMemcpyAsync(ret->gData, ret->data, sizeof(T) * length, cudaMemcpyHostToDevice, stream));
 			return ret;

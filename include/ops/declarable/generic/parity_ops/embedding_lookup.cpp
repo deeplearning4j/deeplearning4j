@@ -40,16 +40,16 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
 
 DECLARE_SHAPE_FN(embedding_lookup) {
 
-    int* inShapeInfo = inputShape->at(0);
-    int* indecesShapeInfo = inputShape->at(1);
+    auto inShapeInfo = inputShape->at(0);
+    auto indecesShapeInfo = inputShape->at(1);
     int inRank = shape::rank(inShapeInfo);
 
     int outRank = inRank; 
 
-    int* outShapeInfo = nullptr;
+    Nd4jLong* outShapeInfo = nullptr;
     
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), int);
-    std::vector<int> shapeInfo(outRank);
+    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+    std::vector<Nd4jLong> shapeInfo(outRank);
 
     shapeInfo[0] = indecesShapeInfo[1]; // vector - how many elements
     for (int e = 1; e < outRank; e++)

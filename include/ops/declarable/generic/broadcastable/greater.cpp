@@ -28,33 +28,29 @@ namespace nd4j {
             auto y = inputShape->at(1);
 
             if (shape::equalsSoft(x, y)) {
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(x), int);
-                REPLICATE_SHAPE(x, newshape);
+                Nd4jLong *newshape;
+                COPY_SHAPE(x, newshape);
 
                 shapeList->push_back(newshape);
             } else if (shape::isScalar(x) && !shape::isScalar(y)) {
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(y), int);
-                REPLICATE_SHAPE(y, newshape);
+                Nd4jLong *newshape;
+                COPY_SHAPE(y, newshape);
 
                 shapeList->push_back(newshape);
             } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(x), int);
-                REPLICATE_SHAPE(x, newshape);
+                Nd4jLong *newshape;
+                COPY_SHAPE(x, newshape);
 
                 shapeList->push_back(newshape);
             } else if (ShapeUtils<T>::areShapesBroadcastable(x, y)) {
-                int *newshape = nullptr;
+                Nd4jLong *newshape = nullptr;
                 ShapeUtils<T>::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
 
                 shapeList->push_back(newshape);
             } else {
                 // in this case we'll throw exception later
-                int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(x), int);
-                REPLICATE_SHAPE(x, newshape);
+                Nd4jLong *newshape;
+                COPY_SHAPE(x, newshape);
 
                 shapeList->push_back(newshape);
             }

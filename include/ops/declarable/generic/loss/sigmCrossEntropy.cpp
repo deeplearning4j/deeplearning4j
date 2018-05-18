@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 	NDArray<T>* weightsBroad = weights;	
 	if(!weights->isScalar() && !weights->isSameShape(logits)) {
 		// evaluate repeat dimensions for tile operation
-		std::vector<int> reps;
+		std::vector<Nd4jLong> reps;
 		for(int i = 0; i < labels->rankOf(); ++i)
 			reps.emplace_back(labels->shapeOf()[i] / weights->shapeOf()[i]);
 		weightsBroad = new NDArray<T>(weights->tile(reps));
@@ -116,15 +116,15 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 
 DECLARE_SHAPE_FN(sigm_cross_entropy_loss) {
 
-	int* logitsShapeInfo  = inputShape->at(0);
-    int* labelsShapeInfo  = inputShape->at(2);
+	auto logitsShapeInfo  = inputShape->at(0);
+    auto labelsShapeInfo  = inputShape->at(2);
 
 	// labels and logits must have the same shapes 
     REQUIRE_TRUE(shape::shapeEquals(logitsShapeInfo, labelsShapeInfo), 0, "SIGM_CROSS_ENTROPY_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly!", ShapeUtils<T>::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(logitsShapeInfo).c_str());    
 
-    int* outShapeInfo = nullptr;
+    Nd4jLong* outShapeInfo = nullptr;
     if(INT_ARG(0) != 0) {			// in this case output is scalar
-    	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2) /*rank=2*/, int);
+    	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2) /*rank=2*/, Nd4jLong);
     	outShapeInfo[0] = 2;
     	outShapeInfo[1] = outShapeInfo[2] = outShapeInfo[3] = outShapeInfo[4] = 1;
     	outShapeInfo[5] = 0;
@@ -132,7 +132,7 @@ DECLARE_SHAPE_FN(sigm_cross_entropy_loss) {
     	outShapeInfo[7] = 99;
     }
     else {							// in this case output has the same shape as labels
-    	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(labelsShapeInfo[0]), int);
+    	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(labelsShapeInfo[0]), Nd4jLong);
     	outShapeInfo[0] = labelsShapeInfo[0];
     	for(int i = 1; i <= outShapeInfo[0]; ++i)
     		outShapeInfo[i] = labelsShapeInfo[i];

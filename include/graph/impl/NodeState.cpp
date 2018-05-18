@@ -10,19 +10,19 @@ namespace nd4j {
             _id = id;
         }
 
-        void NodeState::setInnerTime(Nd4jIndex time) {
+        void NodeState::setInnerTime(Nd4jLong time) {
             _inner = time;
         }
 
-        void NodeState::setOuterTime(Nd4jIndex time) {
+        void NodeState::setOuterTime(Nd4jLong time) {
             _outer = time;
         }
 
-        Nd4jIndex NodeState::innerTime() {
+        Nd4jLong NodeState::innerTime() {
             return _inner;
         }
 
-        Nd4jIndex NodeState::outerTime() {
+        Nd4jLong NodeState::outerTime() {
             return _outer;
         }
 

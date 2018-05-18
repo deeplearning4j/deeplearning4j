@@ -60,15 +60,14 @@ namespace nd4j {
                 }
             }
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(select) {
             auto inShape = inputShape->at(1);
 
-            int *newshape;
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
-            memcpy(newshape, inShape, shape::shapeInfoByteLength(inShape));
+            Nd4jLong *newshape;
+            COPY_SHAPE(inShape, newshape);
 
             return SHAPELIST(newshape);
         }

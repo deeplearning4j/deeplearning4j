@@ -50,7 +50,7 @@ DECLARE_SHAPE_FN(clip_by_global_norm) {
     for (int e = 0; e < block.width(); e++) {
         auto in = inputShape->at(e);
                 
-        int* newShape;
+        Nd4jLong* newShape;
         COPY_SHAPE(in, newShape);
         shapeList->push_back(newShape);
     }

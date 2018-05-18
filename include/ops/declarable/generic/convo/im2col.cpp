@@ -58,8 +58,8 @@ namespace nd4j {
             bool isSameMode = INT_ARG(8) > 0;
 
             // output is always 6d for im2col
-            int* zShape;
-            ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(6), int);
+            Nd4jLong* zShape;
+            ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(6), Nd4jLong);
 
             int oY = 0;
             int oX = 0;

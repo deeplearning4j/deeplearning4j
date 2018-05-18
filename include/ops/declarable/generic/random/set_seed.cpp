@@ -13,13 +13,13 @@ namespace nd4j {
         CUSTOM_OP_IMPL(set_seed, -2, 1, false, 0, -2) {
             REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be defined in Graph");
             auto rng = block.getRNG();
-            Nd4jIndex seed = 0;
+            Nd4jLong seed = 0;
             if (block.getIArguments()->size() > 0) {
                 seed = INT_ARG(0);
             } else if (block.width() > 0) {
                 auto input = INPUT_VARIABLE(0);
                 REQUIRE_TRUE(input->isScalar(),0 ,"SetSeed: Seed operand should be scalar");
-                seed = (Nd4jIndex) input->getScalar(0);
+                seed = (Nd4jLong) input->getScalar(0);
             } else {
                 REQUIRE_TRUE(false, 0, "SetSeed: either IArg or scalr input should be provided");
             }
@@ -32,8 +32,8 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(set_seed) {
-            int *newshape;
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+            Nd4jLong *newshape;
+            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
             newshape[0] = 2;
             newshape[1] = 1;

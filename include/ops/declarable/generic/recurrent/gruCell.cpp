@@ -53,11 +53,11 @@ CUSTOM_OP_IMPL(gruCell, 5, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(gruCell) {    
     
-    const int* xShapeInfo  = inputShape->at(0);                     // input [bS x inSize]
-    const int* h0ShapeInfo = inputShape->at(1);                     // previous cell output [bS x numUnits],  that is at previous time step t-1
-    const int* WxShapeInfo = inputShape->at(2);                     // input-to-hidden weights, [inSize   x 3*numUnits]
-    const int* WhShapeInfo = inputShape->at(3);                     // hidden-to-hidden weights, [numUnits x 3*numUnits]
-    const int* bShapeInfo  = inputShape->at(4);                     // biases, [3*numUnits]
+    const Nd4jLong* xShapeInfo  = inputShape->at(0);                     // input [bS x inSize]
+    const Nd4jLong* h0ShapeInfo = inputShape->at(1);                     // previous cell output [bS x numUnits],  that is at previous time step t-1
+    const Nd4jLong* WxShapeInfo = inputShape->at(2);                     // input-to-hidden weights, [inSize   x 3*numUnits]
+    const Nd4jLong* WhShapeInfo = inputShape->at(3);                     // hidden-to-hidden weights, [numUnits x 3*numUnits]
+    const Nd4jLong* bShapeInfo  = inputShape->at(4);                     // biases, [3*numUnits]
 
     const int rank     = xShapeInfo[0];              // = 2
     const int bS       = xShapeInfo[1];
@@ -77,14 +77,14 @@ DECLARE_SHAPE_FN(gruCell) {
     REQUIRE_TRUE(wxShape == wxCorrectShape, 0, "GRUCELL operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", wxCorrectShape.c_str(), wxShape.c_str());
     REQUIRE_TRUE(whShape == whCorrectShape, 0, "GRUCELL operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", whCorrectShape.c_str(), whShape.c_str());
     REQUIRE_TRUE(bShape  == bCorrectShape,  0, "GRUCELL operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
-    int *hShapeInfo(nullptr);
-    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);// [bS x numUnits]
+    Nd4jLong *hShapeInfo(nullptr);
+    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);// [bS x numUnits]
 
     hShapeInfo[0] = rank;
     hShapeInfo[1] = bS;
     hShapeInfo[2] = numUnits;
 
-    shape::updateStrides(hShapeInfo, shape::order(const_cast<int*>(h0ShapeInfo)));
+    shape::updateStrides(hShapeInfo, shape::order(const_cast<Nd4jLong*>(h0ShapeInfo)));
     return SHAPELIST(hShapeInfo);
 
 

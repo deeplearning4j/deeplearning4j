@@ -13,14 +13,14 @@ namespace nd4j {
         class FrameState {
         private:
             std::string _name;
-            Nd4jIndex _id = 0;
+            Nd4jLong _id = 0;
             int _numberOfCycles = 0;
             bool _activated = false;
 
             bool _rewindPlanned = false;
             int _rewindPosition = -1;
         public:
-             FrameState(Nd4jIndex id = 0);
+             FrameState(Nd4jLong id = 0);
             ~FrameState() = default;
 
             /**

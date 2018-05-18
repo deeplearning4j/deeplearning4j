@@ -84,8 +84,8 @@ namespace nd4j {
         DECLARE_SYN(avgpool, avgpool2d);
 
         DECLARE_SHAPE_FN(avgpool2d) {
-            int* inShape = inputShape->at(0);
-            int* shapeOf = shape::shapeOf(inShape);
+            auto inShape = inputShape->at(0);
+            auto shapeOf = shape::shapeOf(inShape);
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
             std::vector<int> argI = *(block.getIArguments());
@@ -116,8 +116,8 @@ namespace nd4j {
             ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
             // allocate memory for new shape
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
+            Nd4jLong* newShapeInfo = nullptr;
+            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, Nd4jLong);
             if (isNCHW) {
                 newShapeInfo[0] = 4;        // rank
                 newShapeInfo[1] = bS;
@@ -173,7 +173,7 @@ namespace nd4j {
                 isEpsilonDup = true;
             }
 
-            int strideToCompare[] = {oH*oW, iD*oH*oW, oW, 1};
+            Nd4jLong strideToCompare[] = {oH*oW, iD*oH*oW, oW, 1};
             if (!cOrderStrides && shape::strideDescendingCAscendingF(epsilon->getShapeInfo())) {
                 cOrderStrides = true;
             }
@@ -221,9 +221,8 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(avgpool2d_bp) {
             // FIXME: memcpy should be removed
-            int* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
-            memcpy(newShapeInfo, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
+            Nd4jLong* newShapeInfo = nullptr;
+            COPY_SHAPE(inputShape->at(0), newShapeInfo);
             return SHAPELIST(newShapeInfo);
         }
     }

@@ -25,14 +25,13 @@ CUSTOM_OP_IMPL(trace, 1, 1, false, 0, 0) {
 
 
 DECLARE_SHAPE_FN(trace) {
-
-    int* inShapeInfo = inputShape->at(0);
+    auto inShapeInfo = inputShape->at(0);
 
     REQUIRE_TRUE(inShapeInfo[0] >= 2, 0, "TRACE op: the rank of input array must be >=2, but got %i instead!", inShapeInfo[0]);    
     const int rank = inShapeInfo[0] - 2;
 
-    int* outShapeInfo(nullptr);
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int); 
+    Nd4jLong* outShapeInfo(nullptr);
+    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong); 
 
     outShapeInfo[0] = rank;
     for(int i=1; i <= rank; ++i)

@@ -182,8 +182,8 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jIndex nd4j::graph::VariableSpace<T>::externalMemory() {
-            Nd4jIndex size = 0;
+        Nd4jLong nd4j::graph::VariableSpace<T>::externalMemory() {
+            Nd4jLong size = 0;
             for (auto n: _external) {
                 size += n->getNDArray()->memoryFootprint();
             }
@@ -192,8 +192,8 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jIndex nd4j::graph::VariableSpace<T>::internalMemory() {
-            Nd4jIndex size = 0;
+        Nd4jLong nd4j::graph::VariableSpace<T>::internalMemory() {
+            Nd4jLong size = 0;
             for (auto n: _internal) {
                 size += n->getNDArray()->memoryFootprint();
             }
@@ -202,7 +202,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jIndex nd4j::graph::VariableSpace<T>::totalMemory() {
+        Nd4jLong nd4j::graph::VariableSpace<T>::totalMemory() {
             return externalMemory() + internalMemory();
         }
 

@@ -46,8 +46,8 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 DECLARE_SHAPE_FN(gather) {
 
 	// check shape of paddings 
-	int* inputShapeInfo  = inputShape->at(0);
-	int* outputShapeInfo = nullptr;
+	auto inputShapeInfo  = inputShape->at(0);
+	Nd4jLong* outputShapeInfo = nullptr;
 
 	int axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
 	int inputRank = inputShapeInfo[0];
@@ -57,7 +57,7 @@ DECLARE_SHAPE_FN(gather) {
     REQUIRE_TRUE(axis < inputRank, 0, "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", axis, inputRank);
 
 	if (block.width() > 1) {
-		int* indicesShapeInfo = inputShape->at(1);
+		auto indicesShapeInfo = inputShape->at(1);
     
     	int indicesRank = indicesShapeInfo[0];
         
@@ -67,7 +67,7 @@ DECLARE_SHAPE_FN(gather) {
     		indicesRank = 1;
 
     	int outputRank = inputRank + indicesRank - 1;
-    	ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), int);
+    	ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), Nd4jLong);
     	// fill output shapeInfo
     	outputShapeInfo[0] = outputRank;
     	int shapeIdx = 1;    
@@ -88,7 +88,7 @@ DECLARE_SHAPE_FN(gather) {
 		int indicesRank = block.numI() == 2 ? 0 : 1;
 
 		int outputRank = inputRank + indicesRank - 1;
-		ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), int);
+		ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), Nd4jLong);
 
 		// building shape manually
 		outputShapeInfo[0] = outputRank;

@@ -16,19 +16,19 @@ namespace nd4j {
     namespace sparse {
 
         template <typename T>
-        void SparseUtils<T>::printIndex(int *indices, int rank, int x) {
+        void SparseUtils<T>::printIndex(Nd4jLong *indices, int rank, int x) {
             printf(" [");
             for (int e = 0; e < rank; e++) {
                 if (e > 0)
                     printf(", ");
 
-                printf("%i", indices[x * rank + e]);
+                printf("%lld", (long long) indices[x * rank + e]);
             }
             printf("] ");
         }
 
         template <typename T>
-        bool SparseUtils<T>::ltIndices(int *indices, int rank, Nd4jIndex x, Nd4jIndex y) {
+        bool SparseUtils<T>::ltIndices(Nd4jLong *indices, int rank, Nd4jLong x, Nd4jLong y) {
             for (int e = 0; e < rank; e++) {
                 int idxX = indices[x * rank + e];
                 int idxY = indices[y * rank + e];
@@ -45,7 +45,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        bool SparseUtils<T>::gtIndices(int *indices, int rank, Nd4jIndex x, Nd4jIndex y) {
+        bool SparseUtils<T>::gtIndices(Nd4jLong *indices, int rank, Nd4jLong x, Nd4jLong y) {
             for (int e = 0; e < rank; e++) {
                 // we're comparing indices one by one, starting from outer dimension
                 int idxX = indices[x * rank + e];
@@ -61,7 +61,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        void SparseUtils<T>::swapEverything(int *indices, T *array, int rank, Nd4jIndex x, Nd4jIndex y) {
+        void SparseUtils<T>::swapEverything(Nd4jLong *indices, T *array, int rank, Nd4jLong x, Nd4jLong y) {
             // swap indices
             for (int e = 0; e < rank; e++) {
                 int tmp = indices[x * rank + e];
@@ -76,10 +76,10 @@ namespace nd4j {
         }
 
         template<typename T>
-        void SparseUtils<T>::coo_quickSort_parallel_internal(int *indices, T* array, Nd4jIndex left, Nd4jIndex right, int cutoff, int rank) {
+        void SparseUtils<T>::coo_quickSort_parallel_internal(Nd4jLong *indices, T* array, Nd4jLong left, Nd4jLong right, int cutoff, int rank) {
 
-            Nd4jIndex i = left, j = right;
-            Nd4jIndex pvt = (left + right) / 2;
+            Nd4jLong i = left, j = right;
+            Nd4jLong pvt = (left + right) / 2;
 
 
             {
@@ -116,7 +116,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        void SparseUtils<T>::coo_quickSort_parallel(int *indices, T* array, Nd4jIndex lenArray, int numThreads, int rank){
+        void SparseUtils<T>::coo_quickSort_parallel(Nd4jLong *indices, T* array, Nd4jLong lenArray, int numThreads, int rank){
 
             int cutoff = 1000;
 
@@ -131,7 +131,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        void SparseUtils<T>::sortCooIndicesGeneric(int *indices, T *values, Nd4jIndex length, int rank) {
+        void SparseUtils<T>::sortCooIndicesGeneric(Nd4jLong *indices, T *values, Nd4jLong length, int rank) {
 #ifdef _OPENMP
             coo_quickSort_parallel(indices, values, length, omp_get_max_threads(), rank);
 #else

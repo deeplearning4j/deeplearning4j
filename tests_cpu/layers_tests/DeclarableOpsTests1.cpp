@@ -457,7 +457,7 @@ TEST_F(DeclarableOpsTests1, SubtractMatrices1) {
 }
 
 TEST_F(DeclarableOpsTests1, TestRng1) {
-    Nd4jIndex *buffer = new Nd4jIndex[100000];
+    Nd4jLong *buffer = new Nd4jLong[100000];
 
     NativeOps nativeOps;
 
@@ -899,7 +899,7 @@ TEST_F(DeclarableOpsTests1, TestMatMul1) {
         y->putScalar(e, e+1);
 
     float _expB[]{135.0, 310.0, 485.0, 150.0, 350.0, 550.0, 165.0, 390.0, 615.0};
-    int _expS[] {2, 3, 3, 1, 3, 0, 1, 102};
+    Nd4jLong _expS[] {2, 3, 3, 1, 3, 0, 1, 102};
 
     NDArray<float> exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
@@ -1184,8 +1184,8 @@ TEST_F(DeclarableOpsTests1, ReverseDivideScalarScalar1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Reshapeas1) {
-    const std::vector<int> xShape = {5,4,3};
-    const std::vector<int> yShape = {3,5,4};
+    const std::vector<Nd4jLong> xShape = {5,4,3};
+    const std::vector<Nd4jLong> yShape = {3,5,4};
     
     auto x = new NDArray<float>('c', xShape);
     auto y = new NDArray<float>('f', yShape);
@@ -1334,11 +1334,11 @@ TEST_F(DeclarableOpsTests1, TestLegacyExecution2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestGemv1) {
     auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
-    auto xShape = new int[8] {2, 5, 3, 3, 1, 0, 1, 99};
+    auto xShape = new Nd4jLong[8] {2, 5, 3, 3, 1, 0, 1, 99};
     auto x = new NDArray<float>(xBuffer, xShape);
 
     auto yBuffer = new float[3]{2.f, 4.f, 6.f};
-    auto yShape = new int[8] {2, 3, 1, 1, 1, 0, 1, 99};
+    auto yShape = new Nd4jLong[8] {2, 3, 1, 1, 1, 0, 1, 99};
     auto y = new NDArray<float>(yBuffer, yShape);
 
     auto z = new NDArray<float>('f', {5, 1});
@@ -1358,8 +1358,8 @@ TEST_F(DeclarableOpsTests1, TestGemv1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Reshape1) {
-    const std::vector<int> xShape = {5,4,3};
-    const std::vector<int> yShape = {3,5,4};    
+    const std::vector<Nd4jLong> xShape = {5,4,3};
+    const std::vector<Nd4jLong> yShape = {3,5,4};    
     
     NDArray<float>* x = new NDArray<float>('c', xShape);    
     NDArray<float>* y = new NDArray<float>('f', yShape);    
@@ -1388,8 +1388,8 @@ TEST_F(DeclarableOpsTests1, Reshape1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Reshape2) {
-    const std::vector<int> xShape = {5,4,3};
-    const std::vector<int> yShape = {3,5,4};    
+    const std::vector<Nd4jLong> xShape = {5,4,3};
+    const std::vector<Nd4jLong> yShape = {3,5,4};    
     
     NDArray<float>* x = new NDArray<float>('c', xShape);    
     NDArray<float>* y = new NDArray<float>('f', yShape);    
@@ -1498,7 +1498,7 @@ TEST_F(DeclarableOpsTests1, TestScatterUpdate1) {
 TEST_F(DeclarableOpsTests1, Repeat1) {
     
     float eBuffer[8] = {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
-    int eShape[8] = {2, 4, 2, 2, 1, 0, 1, 99};
+    Nd4jLong eShape[8] = {2, 4, 2, 2, 1, 0, 1, 99};
     NDArray<float>* x = new NDArray<float>('c', {2, 2});
     NDArray<float>* exp = new NDArray<float>(eBuffer, eShape);
     for (int e = 0; e < x->lengthOf(); e++)
@@ -1590,8 +1590,8 @@ TEST_F(DeclarableOpsTests1, Transpose2) {
 // in-place
 TEST_F(DeclarableOpsTests1, Permute1) {
 
-    const int shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-    const int shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};    
+    const Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
+    const Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};    
     const std::vector<int> perm = {2, 0, 1};    
     NDArray<float>* x = new NDArray<float>(shapeX,true);
     NDArray<float>* exp = new NDArray<float>(shapeExp,true);
@@ -1619,8 +1619,8 @@ TEST_F(DeclarableOpsTests1, Permute1) {
 // not-in-place
 TEST_F(DeclarableOpsTests1, Permute2) {      
 
-    const int shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-    const int shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};    
+    const Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
+    const Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};    
     const std::vector<int> perm = {2, 0, 1};    
     NDArray<float>* x = new NDArray<float>(shapeX, true);
     NDArray<float>* exp = new NDArray<float>(shapeExp, true);
@@ -1631,7 +1631,7 @@ TEST_F(DeclarableOpsTests1, Permute2) {
 
     Context<float>* block = new Context<float>(1, variableSpace, false);  // not-in-place
     block->fillInputs({-1});
-    std::vector<int>* arguments = block->getIArguments();   
+    auto arguments = block->getIArguments();   
     *arguments = perm;      // set dimensions to be permuted
     
     nd4j::ops::permute<float> permute;
@@ -1648,8 +1648,8 @@ TEST_F(DeclarableOpsTests1, Permute2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestArgumentsValidation1) {
-    const int shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-    const int shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
+    const Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
+    const Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, -1, 99};
     const std::vector<int> perm = {2, 0, 1};
     NDArray<float>* x = new NDArray<float>(shapeX);
     NDArray<float>* exp = new NDArray<float>(shapeExp);
@@ -1729,7 +1729,7 @@ TEST_F(DeclarableOpsTests1, TestReductionShape1) {
 
     nd4j::ops::testreduction<float> testop;
 
-    int* inP = new int[shape::shapeInfoLength(input->getShapeInfo())];
+    auto inP = new Nd4jLong[shape::shapeInfoLength(input->getShapeInfo())];
     memcpy(inP, input->getShapeInfo(), shape::shapeInfoByteLength(input->rankOf()));
 
     auto inshape = new ShapeList(inP);
@@ -2262,7 +2262,7 @@ TEST_F(DeclarableOpsTests1, Pnormpool2d1) {
 TEST_F(DeclarableOpsTests1, IsMax1) {
 
     float xBuff[]   = {1,2,3,4,5,6,7,8,9};
-    int xShape[]    = {2,3,3,3,1,0,1,99};
+    Nd4jLong xShape[]    = {2,3,3,3,1,0,1,99};
     float expBuff[] = {0,0,1,0,0,1,0,0,1};
 
     auto x = new NDArray<float>(xBuff, xShape);
@@ -2388,7 +2388,7 @@ TEST_F(DeclarableOpsTests1, PnormPool2dBP) {
     Context<float>* block = new Context<float>(1, variableSpace, false);
     block->fillInputs({-1});
     block->fillInputs({-2});
-    std::vector<int>* argI = block->getIArguments();
+    auto argI = block->getIArguments();
     *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 3};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - divisor    
     std::vector<float>* argT = block->getTArguments();
     *argT = {0.000001};
@@ -2406,7 +2406,7 @@ TEST_F(DeclarableOpsTests1, PnormPool2dBP) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, CompactLaunchTests1) {
-    int _expS[] = {4, 2, 3, 8, 8, 192, 64, 8, 1, 0, 1, 99};
+    Nd4jLong _expS[] = {4, 2, 3, 8, 8, 192, 64, 8, 1, 0, 1, 99};
     double _expB[] = {6276.0,   12831.0,   19668.0,   26790.0,   27012.0,   20703.0,   14100.0,    7200.0,    13719.0,   28023.0,   42918.0,   58410.0,   58902.0,   45105.0,   30693.0,   15660.0,    22389.0,   45696.0,   69930.0,   95100.0,   95910.0,   73386.0,   49899.0,   25440.0,    32346.0,   65970.0,  100884.0,  137100.0,  138276.0,  105726.0,   71838.0,   36600.0,    33726.0,   68790.0,  105204.0,  142980.0,  144156.0,  110226.0,   74898.0,   38160.0,    27555.0,   56154.0,   85806.0,  116520.0,  117474.0,   89748.0,   60933.0,   31020.0,    19917.0,   40557.0,   61926.0,   84030.0,   84714.0,   64671.0,   43875.0,   22320.0,    10752.0,   21879.0,   33384.0,   45270.0,   45636.0,   34815.0,   23604.0,   12000.0,    7551.0,   15456.0,   23718.0,   32340.0,   32562.0,   24978.0,   17025.0,    8700.0,    16569.0,   33873.0,   51918.0,   70710.0,   71202.0,   54555.0,   37143.0,   18960.0,    27114.0,   55371.0,   84780.0,  115350.0,  116160.0,   88911.0,   60474.0,   30840.0,    39246.0,   80070.0,  122484.0,  166500.0,  167676.0,  128226.0,   87138.0,   44400.0,    40626.0,   82890.0,  126804.0,  172380.0,  173556.0,  132726.0,   90198.0,   45960.0,    33180.0,   67629.0,  103356.0,  140370.0,  141324.0,  107973.0,   73308.0,   37320.0,    23967.0,   48807.0,   74526.0,  101130.0,  101814.0,   77721.0,   52725.0,   26820.0,    12927.0,   26304.0,   40134.0,   54420.0,   54786.0,   41790.0,   28329.0,   14400.0,    8826.0,   18081.0,   27768.0,   37890.0,   38112.0,   29253.0,   19950.0,   10200.0,    19419.0,   39723.0,   60918.0,   83010.0,   83502.0,   64005.0,   43593.0,   22260.0,    31839.0,   65046.0,   99630.0,  135600.0,  136410.0,  104436.0,   71049.0,   36240.0,    46146.0,   94170.0,  144084.0,  195900.0,  197076.0,  150726.0,  102438.0,   52200.0,    47526.0,   96990.0,  148404.0,  201780.0,  202956.0,  155226.0,  105498.0,   53760.0,    38805.0,   79104.0,  120906.0,  164220.0,  165174.0,  126198.0,   85683.0,   43620.0,    28017.0,   57057.0,   87126.0,  118230.0,  118914.0,   90771.0,   61575.0,   31320.0,    15102.0,   30729.0,   46884.0,   63570.0,   63936.0,   48765.0,   33054.0,   16800.0,    17220.0,   34863.0,   52932.0,   71430.0,   72228.0,   54831.0,   36996.0,   18720.0,    36327.0,   73527.0,  111606.0,  150570.0,  152214.0,  115521.0,   77925.0,   39420.0,    57381.0,  116112.0,  176202.0,  237660.0,  240198.0,  182250.0,  122907.0,   62160.0,    80442.0,  162738.0,  246900.0,  332940.0,  336420.0,  255198.0,  172062.0,   87000.0,    84702.0,  171318.0,  259860.0,  350340.0,  353820.0,  268338.0,  180882.0,   91440.0,    66867.0,  135210.0,  205038.0,  276360.0,  279042.0,  211572.0,  142581.0,   72060.0,    46845.0,   94701.0,  143574.0,  193470.0,  195306.0,  148047.0,   99747.0,   50400.0,    24576.0,   49671.0,   75288.0,  101430.0,  102372.0,   77583.0,   52260.0,   26400.0,    22095.0,   44688.0,   67782.0,   91380.0,   92178.0,   69906.0,   47121.0,   23820.0,    46377.0,   93777.0,  142206.0,  191670.0,  193314.0,  146571.0,   98775.0,   49920.0,    72906.0,  147387.0,  223452.0,  301110.0,  303648.0,  230175.0,  155082.0,   78360.0,    101742.0,  205638.0,  311700.0,  419940.0,  423420.0,  320898.0,  216162.0,  109200.0,    106002.0,  214218.0,  324660.0,  437340.0,  440820.0,  334038.0,  224982.0,  113640.0,    83292.0,  168285.0,  254988.0,  343410.0,  346092.0,  262197.0,  176556.0,   89160.0,    58095.0,  117351.0,  177774.0,  239370.0,  241206.0,  182697.0,  122997.0,   62100.0,    30351.0,   61296.0,   92838.0,  124980.0,  125922.0,   95358.0,   64185.0,   32400.0,    26970.0,   54513.0,   82632.0,  111330.0,  112128.0,   84981.0,   57246.0,   28920.0,    56427.0,  114027.0,  172806.0,  232770.0,  234414.0,  177621.0,  119625.0,   60420.0,    88431.0,  178662.0,  270702.0,  364560.0,  367098.0,  278100.0,  187257.0,   94560.0,    123042.0,  248538.0,  376500.0,  506940.0,  510420.0,  386598.0,  260262.0,  131400.0,    127302.0,  257118.0,  389460.0,  524340.0,  527820.0,  399738.0,  269082.0,  135840.0,    99717.0,  201360.0,  304938.0,  410460.0,  413142.0,  312822.0,  210531.0,  106260.0,    69345.0,  140001.0,  211974.0,  285270.0,  287106.0,  217347.0,  146247.0,   73800.0,    36126.0,   72921.0,  110388.0,  148530.0,  149472.0,  113133.0,   76110.0,   38400.0,};
     NDArray<double> exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
@@ -2431,7 +2431,7 @@ TEST_F(DeclarableOpsTests1, CompactLaunchTests1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, CompactLaunchTests2) {
-    int _expS[] = {4, 2, 3, 8, 8, 192, 64, 8, 1, 0, 1, 99};
+    Nd4jLong _expS[] = {4, 2, 3, 8, 8, 192, 64, 8, 1, 0, 1, 99};
     double _expB[] = {6276.0,   12831.0,   19668.0,   26790.0,   27012.0,   20703.0,   14100.0,    7200.0,    13719.0,   28023.0,   42918.0,   58410.0,   58902.0,   45105.0,   30693.0,   15660.0,    22389.0,   45696.0,   69930.0,   95100.0,   95910.0,   73386.0,   49899.0,   25440.0,    32346.0,   65970.0,  100884.0,  137100.0,  138276.0,  105726.0,   71838.0,   36600.0,    33726.0,   68790.0,  105204.0,  142980.0,  144156.0,  110226.0,   74898.0,   38160.0,    27555.0,   56154.0,   85806.0,  116520.0,  117474.0,   89748.0,   60933.0,   31020.0,    19917.0,   40557.0,   61926.0,   84030.0,   84714.0,   64671.0,   43875.0,   22320.0,    10752.0,   21879.0,   33384.0,   45270.0,   45636.0,   34815.0,   23604.0,   12000.0,    7551.0,   15456.0,   23718.0,   32340.0,   32562.0,   24978.0,   17025.0,    8700.0,    16569.0,   33873.0,   51918.0,   70710.0,   71202.0,   54555.0,   37143.0,   18960.0,    27114.0,   55371.0,   84780.0,  115350.0,  116160.0,   88911.0,   60474.0,   30840.0,    39246.0,   80070.0,  122484.0,  166500.0,  167676.0,  128226.0,   87138.0,   44400.0,    40626.0,   82890.0,  126804.0,  172380.0,  173556.0,  132726.0,   90198.0,   45960.0,    33180.0,   67629.0,  103356.0,  140370.0,  141324.0,  107973.0,   73308.0,   37320.0,    23967.0,   48807.0,   74526.0,  101130.0,  101814.0,   77721.0,   52725.0,   26820.0,    12927.0,   26304.0,   40134.0,   54420.0,   54786.0,   41790.0,   28329.0,   14400.0,    8826.0,   18081.0,   27768.0,   37890.0,   38112.0,   29253.0,   19950.0,   10200.0,    19419.0,   39723.0,   60918.0,   83010.0,   83502.0,   64005.0,   43593.0,   22260.0,    31839.0,   65046.0,   99630.0,  135600.0,  136410.0,  104436.0,   71049.0,   36240.0,    46146.0,   94170.0,  144084.0,  195900.0,  197076.0,  150726.0,  102438.0,   52200.0,    47526.0,   96990.0,  148404.0,  201780.0,  202956.0,  155226.0,  105498.0,   53760.0,    38805.0,   79104.0,  120906.0,  164220.0,  165174.0,  126198.0,   85683.0,   43620.0,    28017.0,   57057.0,   87126.0,  118230.0,  118914.0,   90771.0,   61575.0,   31320.0,    15102.0,   30729.0,   46884.0,   63570.0,   63936.0,   48765.0,   33054.0,   16800.0,    17220.0,   34863.0,   52932.0,   71430.0,   72228.0,   54831.0,   36996.0,   18720.0,    36327.0,   73527.0,  111606.0,  150570.0,  152214.0,  115521.0,   77925.0,   39420.0,    57381.0,  116112.0,  176202.0,  237660.0,  240198.0,  182250.0,  122907.0,   62160.0,    80442.0,  162738.0,  246900.0,  332940.0,  336420.0,  255198.0,  172062.0,   87000.0,    84702.0,  171318.0,  259860.0,  350340.0,  353820.0,  268338.0,  180882.0,   91440.0,    66867.0,  135210.0,  205038.0,  276360.0,  279042.0,  211572.0,  142581.0,   72060.0,    46845.0,   94701.0,  143574.0,  193470.0,  195306.0,  148047.0,   99747.0,   50400.0,    24576.0,   49671.0,   75288.0,  101430.0,  102372.0,   77583.0,   52260.0,   26400.0,    22095.0,   44688.0,   67782.0,   91380.0,   92178.0,   69906.0,   47121.0,   23820.0,    46377.0,   93777.0,  142206.0,  191670.0,  193314.0,  146571.0,   98775.0,   49920.0,    72906.0,  147387.0,  223452.0,  301110.0,  303648.0,  230175.0,  155082.0,   78360.0,    101742.0,  205638.0,  311700.0,  419940.0,  423420.0,  320898.0,  216162.0,  109200.0,    106002.0,  214218.0,  324660.0,  437340.0,  440820.0,  334038.0,  224982.0,  113640.0,    83292.0,  168285.0,  254988.0,  343410.0,  346092.0,  262197.0,  176556.0,   89160.0,    58095.0,  117351.0,  177774.0,  239370.0,  241206.0,  182697.0,  122997.0,   62100.0,    30351.0,   61296.0,   92838.0,  124980.0,  125922.0,   95358.0,   64185.0,   32400.0,    26970.0,   54513.0,   82632.0,  111330.0,  112128.0,   84981.0,   57246.0,   28920.0,    56427.0,  114027.0,  172806.0,  232770.0,  234414.0,  177621.0,  119625.0,   60420.0,    88431.0,  178662.0,  270702.0,  364560.0,  367098.0,  278100.0,  187257.0,   94560.0,    123042.0,  248538.0,  376500.0,  506940.0,  510420.0,  386598.0,  260262.0,  131400.0,    127302.0,  257118.0,  389460.0,  524340.0,  527820.0,  399738.0,  269082.0,  135840.0,    99717.0,  201360.0,  304938.0,  410460.0,  413142.0,  312822.0,  210531.0,  106260.0,    69345.0,  140001.0,  211974.0,  285270.0,  287106.0,  217347.0,  146247.0,   73800.0,    36126.0,   72921.0,  110388.0,  148530.0,  149472.0,  113133.0,   76110.0,   38400.0,};
     NDArray<double> exp(_expB, _expS);
     exp.triggerAllocationFlag(false, false);
@@ -2922,7 +2922,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_bp2) {
     epsilon.setBuffer(epsilonBuff);
     expected.setBuffer(expectedBuff);
     
-    std::initializer_list<int> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 0, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    std::initializer_list<Nd4jLong> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 0, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
     nd4j::ops::maxpool2d_bp<double> op;
     nd4j::ResultSet<double>*  results = op.execute({&input, &epsilon}, {}, argI);
@@ -2953,7 +2953,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_bp2) {
     epsilon.setBuffer(epsilonBuff);
     expected.setBuffer(expectedBuff);
     
-    std::initializer_list<int> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    std::initializer_list<Nd4jLong> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
     nd4j::ops::avgpool2d_bp<double> op;
     nd4j::ResultSet<double>*  results = op.execute({&input, &epsilon}, {}, argI);
@@ -3193,9 +3193,9 @@ TEST_F(DeclarableOpsTests1, Stack_1) {
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
-    int shape1[]    = {2, 3, 4, 4, 1, 0, 1, 99};
-    int shape2[]    = {2, 3, 4, 4, 1, 0, 1, 99};
-    int expShape[]  = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    Nd4jLong shape1[]    = {2, 3, 4, 4, 1, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 3, 4, 4, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);
     NDArray<float> input2(buff2, shape2);
@@ -3218,9 +3218,9 @@ TEST_F(DeclarableOpsTests1, Stack_2) {
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {1,  2,  3,  4, 13, 14, 16, 16, 5,  6,  7,  8, 17, 18, 19, 20, 9, 10, 11, 12, 21, 22, 23, 24};
-    int shape1[]    = {2, 3, 4, 4, 1, 0, 1, 99};
-    int shape2[]    = {2, 3, 4, 4, 1, 0, 1, 99};
-    int expShape[]  = {3, 3, 2, 4, 8, 4, 1, 0, 1, 99};
+    Nd4jLong shape1[]    = {2, 3, 4, 4, 1, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 3, 4, 4, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 3, 2, 4, 8, 4, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);
     NDArray<float> input2(buff2, shape2);
@@ -3243,9 +3243,9 @@ TEST_F(DeclarableOpsTests1, Stack_3) {
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
-    int shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
-    int shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
-    int expShape[]  = {3, 2, 1, 12, 12, 12, 1, 0, 1, 99};
+    Nd4jLong shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 2, 1, 12, 12, 12, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);
     NDArray<float> input2(buff2, shape2);
@@ -3267,9 +3267,9 @@ TEST_F(DeclarableOpsTests1, Stack_4) {
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
-    int shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
-    int shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
-    int expShape[]  = {3, 1, 2, 12, 24, 12, 1, 0, 1, 99};
+    Nd4jLong shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 1, 2, 12, 24, 12, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);
     NDArray<float> input2(buff2, shape2);
@@ -3291,9 +3291,9 @@ TEST_F(DeclarableOpsTests1, Stack_5) {
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
-    int shape1[]    = {2, 12, 1, 1,  1, 0, 1, 99};
-    int shape2[]    = {2, 12, 1, 1,  1, 0, 1, 99};
-    int expShape[]  = {3, 2, 12, 1, 12, 1, 1, 0, 1, 99};
+    Nd4jLong shape1[]    = {2, 12, 1, 1,  1, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 12, 1, 1,  1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 2, 12, 1, 12, 1, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);
     NDArray<float> input2(buff2, shape2);
@@ -3315,9 +3315,9 @@ TEST_F(DeclarableOpsTests1, Stack_6) {
     float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
     float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {1 ,13 ,2 ,14 ,3 ,16 ,4 ,16 ,5 ,17 ,6 ,18 ,7 ,19 ,8 ,20 ,9 ,21 ,10 ,22 ,11 ,23 ,12 ,24};
-    int shape1[]    = {2, 12, 1, 1, 12, 0, 1, 99};
-    int shape2[]    = {2, 12, 1, 1, 12, 0, 1, 99};
-    int expShape[]  = {3, 12, 2, 1, 2, 1, 1, 0, 1, 99};
+    Nd4jLong shape1[]    = {2, 12, 1, 1, 12, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 12, 1, 1, 12, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 12, 2, 1, 2, 1, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);
     NDArray<float> input2(buff2, shape2);
@@ -3339,8 +3339,8 @@ TEST_F(DeclarableOpsTests1, Stack_7) {
 
     float buff1[]   = {1};    
     float expBuff[] = {1, 1, 1};
-    int shape1[]    = {2, 1, 1, 1, 1, 0, 1, 99};    
-    int expShape[]  = {3, 3, 1, 1, 1, 1, 1, 0, 1, 99};
+    Nd4jLong shape1[]    = {2, 1, 1, 1, 1, 0, 1, 99};    
+    Nd4jLong expShape[]  = {3, 3, 1, 1, 1, 1, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);    
     NDArray<float> expected(expBuff, expShape);
@@ -3360,8 +3360,8 @@ TEST_F(DeclarableOpsTests1, Stack_8) {
 
     float buff1[]   = {1};    
     float expBuff[] = {1, 1, 1};
-    int shape1[]    = {1, 1, 1, 0, 1, 99};    
-    int expShape[]  = {2, 3, 1, 1, 1, 0, 1, 99};    
+    Nd4jLong shape1[]    = {1, 1, 1, 0, 1, 99};    
+    Nd4jLong expShape[]  = {2, 3, 1, 1, 1, 0, 1, 99};    
 
     NDArray<float> input1(buff1, shape1);    
     NDArray<float> expected(expBuff, expShape);
@@ -3381,8 +3381,8 @@ TEST_F(DeclarableOpsTests1, Stack_9) {
 
     float buff1[]   = {1};    
     float expBuff[] = {1, 1, 1};
-    int shape1[]    = {2, 1, 1, 1, 1, 0, 1, 99};    
-    int expShape[]  = {3, 1, 3, 1, 3, 1, 1, 0, 1, 99};
+    Nd4jLong shape1[]    = {2, 1, 1, 1, 1, 0, 1, 99};    
+    Nd4jLong expShape[]  = {3, 1, 3, 1, 3, 1, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);    
     NDArray<float> expected(expBuff, expShape);
@@ -3402,8 +3402,8 @@ TEST_F(DeclarableOpsTests1, Stack_10) {
 
     float buff1[]   = {1};    
     float expBuff[] = {1, 1, 1};
-    int shape1[]    = {1, 1, 1, 0, 1, 99};    
-    int expShape[]  = {2, 1, 3, 1, 1, 0, 1, 99};
+    Nd4jLong shape1[]    = {1, 1, 1, 0, 1, 99};    
+    Nd4jLong expShape[]  = {2, 1, 3, 1, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);    
     NDArray<float> expected(expBuff, expShape);
@@ -3423,7 +3423,7 @@ TEST_F(DeclarableOpsTests1, Stack_10) {
 
 
 TEST_F(DeclarableOpsTests1, Test_Range_Integer_1) {
-    NDArray<float> exp({4});
+    NDArray<float> exp('c', {4});
     NDArrayFactory<float>::linspace(1, exp);
 
     nd4j::ops::range<float> op;
@@ -3443,7 +3443,7 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_1) {
 
 
 TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
-    NDArray<float> exp({4});
+    NDArray<float> exp('c', {4});
     NDArrayFactory<float>::linspace(1, exp);
 
     NDArray<float> start('c', {1, 1});
@@ -3472,7 +3472,7 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
 
 
 TEST_F(DeclarableOpsTests1, Test_Range_Integer_3) {
-    NDArray<float> exp({4});
+    NDArray<float> exp('c', {4});
     NDArrayFactory<float>::linspace(1, exp);
 
     nd4j::ops::range<float> op;
@@ -3691,7 +3691,7 @@ TEST_F(DeclarableOpsTests1, Reverse_1 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1.};
-    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
     // int shapeInfo[] = {2, 2, 12, 12, 1, 0, 1, 99};
 
     NDArray<float> input(inBuff, shapeInfo);
@@ -3716,7 +3716,7 @@ TEST_F(DeclarableOpsTests1, Reverse_2 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1.};
-    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
     // int shapeInfo[] = {2, 2, 12, 12, 1, 0, 1, 99};
 
     NDArray<float> input(inBuff, shapeInfo);
@@ -3741,7 +3741,7 @@ TEST_F(DeclarableOpsTests1, Reverse_3 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1., 24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13.};
-    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
 
     NDArray<float> input(inBuff, shapeInfo);
     NDArray<float> expected(expBuff, shapeInfo);
@@ -3766,7 +3766,7 @@ TEST_F(DeclarableOpsTests1, Reverse_4 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {16,15,14,13,    20,19,18,17,       24,23,22,21,    4,3,2,1,    8,7,6,5,      12,11,10,9,};
-    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
 
     NDArray<float> input(inBuff, shapeInfo);
     NDArray<float> expected(expBuff, shapeInfo);
@@ -3791,7 +3791,7 @@ TEST_F(DeclarableOpsTests1, Reverse_5 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16., 9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4.};
-    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
 
     NDArray<float> input(inBuff, shapeInfo);
     NDArray<float> expected(expBuff, shapeInfo);
@@ -3815,7 +3815,7 @@ TEST_F(DeclarableOpsTests1, Reverse_6 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {4., 3., 2., 1., 8., 7., 6., 5., 12., 11., 10., 9., 16., 15., 14., 13., 20., 19., 18., 17., 24., 23., 22., 21.};
-    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
 
     NDArray<float> input(inBuff, shapeInfo);
     NDArray<float> expected(expBuff, shapeInfo);
@@ -3841,7 +3841,7 @@ TEST_F(DeclarableOpsTests1, Reverse_7 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4., 21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16.};
-    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
 
     NDArray<float> input(inBuff, shapeInfo);
     NDArray<float> expected(expBuff, shapeInfo);
@@ -3867,7 +3867,7 @@ TEST_F(DeclarableOpsTests1, Reverse_8 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {9., 10., 11., 12., 5., 6., 7., 8., 1., 2., 3., 4., 21., 22., 23., 24., 17., 18., 19., 20., 13., 14., 15., 16.};
-    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
 
     NDArray<float> input(inBuff, shapeInfo);
     NDArray<float> expected(expBuff, shapeInfo);
@@ -3893,7 +3893,7 @@ TEST_F(DeclarableOpsTests1, Reverse_9 ) {
 
     float inBuff[]  = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24};
     float expBuff[] = {13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.};
-    int shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    Nd4jLong shapeInfo[] = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
 
     NDArray<float> input(inBuff, shapeInfo);
     NDArray<float> expected(expBuff, shapeInfo);

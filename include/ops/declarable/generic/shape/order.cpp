@@ -20,11 +20,12 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(order) {
             auto input = inputShape->at(0);
-            int *newShape;
+            Nd4jLong *newShape;
 
             auto isFOrder = INT_ARG(0) == 1;
 
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), int);
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(input), Nd4jLong
+            );
 
             if (isFOrder)
                 shape::shapeBufferFortran(shape::rank(input), shape::shapeOf(input), newShape);

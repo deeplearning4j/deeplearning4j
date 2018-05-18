@@ -11,13 +11,13 @@
 template <typename T, typename OpClass>
 __device__ void reduceSimpleGeneric(
         T *dx,
-        int *xShapeInfo,
+        Nd4jLong *xShapeInfo,
         T *extraParams,
         T *result,
-        int *resultShapeInfo,
+        Nd4jLong *resultShapeInfo,
         int *dimension,
         int dimensionLength,
-        T *reductionBuffer, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
+        T *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
     __shared__ UnifiedSharedMemory *manager;
 
@@ -46,15 +46,15 @@ __device__ void reduceSimpleGeneric(
 template <typename T, typename OpClass>
 __device__ void reduceSimpleGeneric1D(
         T *dx,
-        int *xShapeInfo,
+        Nd4jLong *xShapeInfo,
         T *extraParams,
         T *result,
-        int *resultShapeInfo,
+        Nd4jLong *resultShapeInfo,
         int *dimension,
         int dimensionLength,
         T *reductionBuffer,
-        int *tadOnlyShapeInfo,
-        Nd4jIndex *tadOffsets) {
+        Nd4jLong *tadOnlyShapeInfo,
+        Nd4jLong *tadOffsets) {
 
     functions::reduce::ReduceFunction<T>::template transformCuda1D<OpClass>(
             dx,
@@ -70,15 +70,15 @@ __device__ void reduceSimpleGeneric1D(
 template <typename T, typename OpClass>
 __device__ void reduceSimpleGeneric3D(
         T *dx,
-        int *xShapeInfo,
+        Nd4jLong *xShapeInfo,
         T *extraParams,
         T *result,
-        int *resultShapeInfo,
+        Nd4jLong *resultShapeInfo,
         int *dimension,
         int dimensionLength,
         T *reductionBuffer,
-        int *tadOnlyShapeInfo,
-        Nd4jIndex *tadOffsets) {
+        Nd4jLong *tadOnlyShapeInfo,
+        Nd4jLong *tadOffsets) {
 
     functions::reduce::ReduceFunction<T>::template transformCuda3D<OpClass>(
             dx,
@@ -97,13 +97,13 @@ __device__ void reduceSimpleGeneric3D(
 template <typename T, typename OpClass>
 __device__ void reduceScalarGeneric(
         T *dx,
-        int *xShapeInfo,
+        Nd4jLong *xShapeInfo,
         T *extraParams,
         T *result,
-        int *resultShapeInfo,
+        Nd4jLong *resultShapeInfo,
         int *dimension,
         int dimensionLength,
-        T *reductionBuffer, int *tadOnlyShapeInfo) {
+        T *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
 
     __shared__ UnifiedSharedMemory *manager;
 
@@ -126,31 +126,31 @@ __device__ void reduceScalarGeneric(
 };
 
 // reduceScalar
-DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, float, INPUT(float *x, int *xShapeInfo, float *extraParams, float *z, int *zShapeInfo, int *dimension, int dimensionLength, float *reductionBuffer, int *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, double, INPUT(double *x, int *xShapeInfo, double *extraParams, double *z, int *zShapeInfo, int *dimension, int dimensionLength, double *reductionBuffer, int *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, float16, INPUT(float16 *x, int *xShapeInfo, float16 *extraParams, float16 *z, int *zShapeInfo, int *dimension, int dimensionLength, float16 *reductionBuffer, int *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, float, INPUT(float *x, Nd4jLong *xShapeInfo, float *extraParams, float *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, float *reductionBuffer, Nd4jLong *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, double, INPUT(double *x, Nd4jLong *xShapeInfo, double *extraParams, double *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceScalarSimple_, reduceScalarGeneric, float16, INPUT(float16 *x, Nd4jLong *xShapeInfo, float16 *extraParams, float16 *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo), PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
 // reduce1D
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, float, INPUT(float *x, int *xShape, float *extraParams, float *z, int *zShape, int *dimension, int dimensionLength, float *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, double, INPUT(double *x, int *xShape, double *extraParams, double *z, int *zShape, int *dimension, int dimensionLength, double *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, float16, INPUT(float16 *x, int *xShape, float16 *extraParams, float16 *z, int *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, float, INPUT(float *x, Nd4jLong *xShape, float *extraParams, float *z, Nd4jLong *zShape, int *dimension, int dimensionLength, float *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, double, INPUT(double *x, Nd4jLong *xShape, double *extraParams, double *z, Nd4jLong *zShape, int *dimension, int dimensionLength, double *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric1D_, reduceSimpleGeneric1D, float16, INPUT(float16 *x, Nd4jLong *xShape, float16 *extraParams, float16 *z, Nd4jLong *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 
 // reduce3D
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, float, INPUT(float *x, int *xShape, float *extraParams, float *z, int *zShape, int *dimension, int dimensionLength, float *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, double, INPUT(double *x, int *xShape, double *extraParams, double *z, int *zShape, int *dimension, int dimensionLength, double *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, float16, INPUT(float16 *x, int *xShape, float16 *extraParams, float16 *z, int *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, float, INPUT(float *x, Nd4jLong *xShape, float *extraParams, float *z, Nd4jLong *zShape, int *dimension, int dimensionLength, float *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, double, INPUT(double *x, Nd4jLong *xShape, double *extraParams, double *z, Nd4jLong *zShape, int *dimension, int dimensionLength, double *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGeneric3D_, reduceSimpleGeneric3D, float16, INPUT(float16 *x, Nd4jLong *xShape, float16 *extraParams, float16 *z, Nd4jLong *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 
 // reduceXD
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float, INPUT(float *x, int *xShape, float *extraParams, float *z, int *zShape, int *dimension, int dimensionLength, float *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, double, INPUT(double *x, int *xShape, double *extraParams, double *z, int *zShape, int *dimension, int dimensionLength, double *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
-DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float16, INPUT(float16 *x, int *xShape, float16 *extraParams, float16 *z, int *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float, INPUT(float *x, Nd4jLong *xShape, float *extraParams, float *z, Nd4jLong *zShape, int *dimension, int dimensionLength, float *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, double, INPUT(double *x, Nd4jLong *xShape, double *extraParams, double *z, Nd4jLong *zShape, int *dimension, int dimensionLength, double *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
+DISPATCH_KERNEL_SIMPLE(reduceSimpleGenericXD_, reduceSimpleGeneric, float16, INPUT(float16 *x, Nd4jLong *xShape, float16 *extraParams, float16 *z, Nd4jLong *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets), PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
 
 
 namespace functions {
     namespace reduce {
 
             template <>
-            _CUDA_H void ReduceFunction<float>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float *x, int *xShapeInfo, float *extraParams, float *z, int *zShapeInfo, int *dimension, int dimensionLength, float *reductionBuffer, int *tadOnlyShapeInfo) {
+            _CUDA_H void ReduceFunction<float>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float *x, Nd4jLong *xShapeInfo, float *extraParams, float *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, float *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
                 
                 DISPATCH_SIMPLE(reduceScalarSimple, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
@@ -158,7 +158,7 @@ namespace functions {
             }
 
             template <>
-            _CUDA_H void ReduceFunction<float16>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float16 *x, int *xShapeInfo, float16 *extraParams, float16 *z, int *zShapeInfo, int *dimension, int dimensionLength, float16 *reductionBuffer, int *tadOnlyShapeInfo) {
+            _CUDA_H void ReduceFunction<float16>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float16 *x, Nd4jLong *xShapeInfo, float16 *extraParams, float16 *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
                 
                 DISPATCH_SIMPLE(reduceScalarSimple, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
@@ -166,7 +166,7 @@ namespace functions {
             }
 
             template <>
-            _CUDA_H void ReduceFunction<double>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, double *x, int *xShapeInfo, double *extraParams, double *z, int *zShapeInfo, int *dimension, int dimensionLength, double *reductionBuffer, int *tadOnlyShapeInfo) {
+            _CUDA_H void ReduceFunction<double>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, double *x, Nd4jLong *xShapeInfo, double *extraParams, double *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
                 
                 DISPATCH_SIMPLE(reduceScalarSimple, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
@@ -174,7 +174,7 @@ namespace functions {
             }
 
             template <>
-            _CUDA_H void ReduceFunction<float>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, float *x, int *xShape, float *extraParams, float *z, int *zShape, int *dimension, int dimensionLength, float *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
+            _CUDA_H void ReduceFunction<float>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, float *x, Nd4jLong *xShape, float *extraParams, float *z, Nd4jLong *zShape, int *dimension, int dimensionLength, float *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
                 if (rank == 1) {
                     DISPATCH_SIMPLE(reduceSimpleGeneric1D, float, PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
                 } else if (rank <= 3) {
@@ -187,7 +187,7 @@ namespace functions {
             }
 
             template <>
-            _CUDA_H void ReduceFunction<float16>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, float16 *x, int *xShape, float16 *extraParams, float16 *z, int *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
+            _CUDA_H void ReduceFunction<float16>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, float16 *x, Nd4jLong *xShape, float16 *extraParams, float16 *z, Nd4jLong *zShape, int *dimension, int dimensionLength, float16 *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
                 if (rank == 1) {
                     DISPATCH_SIMPLE(reduceSimpleGeneric1D, float16, PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
                 } else if (rank <= 3) {
@@ -200,7 +200,7 @@ namespace functions {
             }
 
             template <>
-            _CUDA_H void ReduceFunction<double>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, double *x, int *xShape, double *extraParams, double *z, int *zShape, int *dimension, int dimensionLength, double *reductionPointer, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
+            _CUDA_H void ReduceFunction<double>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, double *x, Nd4jLong *xShape, double *extraParams, double *z, Nd4jLong *zShape, int *dimension, int dimensionLength, double *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
                 if (rank == 1) {
                     DISPATCH_SIMPLE(reduceSimpleGeneric1D, double, PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
@@ -225,13 +225,13 @@ namespace functions {
             template <typename T>
             template <typename OpType>
 			__device__ void ReduceFunction<T>::transformCuda1D(T *dx,
-				int *xShapeInfo,
+				Nd4jLong *xShapeInfo,
 				T *extraParams,
 				T *result,
-				int *resultShapeInfo,
+				Nd4jLong *resultShapeInfo,
 				int *dimension,
 				int dimensionLength,
-				T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
+				T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
                 if (OpType::requiresSpecialAccumulation) {
                     OpType::execSpecialCuda(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
@@ -253,7 +253,7 @@ namespace functions {
 				__syncthreads();
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-					Nd4jIndex tadOffsetForBlock = tadOffsets[r];
+					Nd4jLong tadOffsetForBlock = tadOffsets[r];
 					T *rX = dx + tadOffsetForBlock;
 
 					sPartials[threadIdx.x] = OpType::startingValue(rX);
@@ -264,9 +264,9 @@ namespace functions {
 					    }
 					} else {
                         __shared__ int tadRank;
-				        __shared__ int *tadShape;
-				        __shared__ int *tadStride;
-				        int xCoord[MAX_RANK];
+				        __shared__ Nd4jLong *tadShape;
+				        __shared__ Nd4jLong *tadStride;
+				        Nd4jLong xCoord[MAX_RANK];
 				        if (threadIdx.x == 0) {
                             tadRank = shape::rank(tadOnlyShapeInfo);
                             tadShape = shape::shapeOf(tadOnlyShapeInfo);
@@ -276,7 +276,7 @@ namespace functions {
 
                         for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						    shape::ind2subC(tadRank, tadShape, i, xCoord);
-						    Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+						    auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
 						    sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					    }
@@ -301,18 +301,18 @@ namespace functions {
             template <typename OpType>
 			__device__ void ReduceFunction<T>::execScalarCuda(
 				T *dx,
-				int *xShapeInfo,
+				Nd4jLong *xShapeInfo,
 				T *extraParams,
 				T *result,
-				int *resultShapeInfo,
+				Nd4jLong *resultShapeInfo,
 				T *reductionBuffer,
 				UnifiedSharedMemory *manager,
-				int *tadOnlyShapeInfo) {
+				Nd4jLong *tadOnlyShapeInfo) {
 				int elementWiseStride = shape::elementWiseStride(xShapeInfo);
 
-				int n = shape::length(xShapeInfo);
+				auto n = shape::length(xShapeInfo);
 
-				int tid = blockDim.x * blockIdx.x + threadIdx.x;
+				auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
 				//shared memory space for storing intermediate results
 				T *sPartials = (T *)manager->getSharedReductionBuffer();
@@ -326,8 +326,8 @@ namespace functions {
 				}
 				else {
 				    __shared__ int rank;
-				    __shared__ int *xShape;
-				    __shared__ int *xStride;
+				    __shared__ Nd4jLong *xShape;
+				    __shared__ Nd4jLong *xStride;
 				    if (threadIdx.x == 0) {
                         rank = shape::rank(xShapeInfo);
                         xShape = shape::shapeOf(xShapeInfo);
@@ -335,12 +335,12 @@ namespace functions {
 				    }
 				    __syncthreads();
 
-					int ind2sub[MAX_RANK];
+					Nd4jLong ind2sub[MAX_RANK];
 
 					for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
 						shape::ind2subC(rank, xShape, i, ind2sub);
 
-						Nd4jIndex offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
+						auto offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[offset], extraParams), extraParams);
 					}
 				}
@@ -401,13 +401,13 @@ namespace functions {
             template <typename OpType>
 			__device__ void ReduceFunction<T>::transformCuda3D(
 				T *dx,
-				int *xShapeInfo,
+				Nd4jLong *xShapeInfo,
 				T *extraParams,
 				T *result,
-				int *resultShapeInfo,
+				Nd4jLong *resultShapeInfo,
 				int *dimension,
 				int dimensionLength,
-				T *reductionBuffer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets) {
+				T *reductionBuffer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
                 if (OpType::requiresSpecialAccumulation) {
                     OpType::execSpecialCuda(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
@@ -420,8 +420,8 @@ namespace functions {
 				__shared__ int tadLength;
 				__shared__ int tadRank;
 				__shared__ int numTads;
-				__shared__ int *tadShape;
-				__shared__ int *tadStride;
+				__shared__ Nd4jLong *tadShape;
+				__shared__ Nd4jLong *tadStride;
 				if (threadIdx.x == 0) {
 				    extern __shared__ unsigned char shmem[];
 				    sPartials = (T *) shmem;
@@ -434,16 +434,16 @@ namespace functions {
 				}
 				__syncthreads();
 
-				int xCoord[3];
+				Nd4jLong xCoord[3];
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-					Nd4jIndex tadOffsetForBlock = tadOffsets[r];
+					Nd4jLong tadOffsetForBlock = tadOffsets[r];
 
 					sPartials[threadIdx.x] = OpType::startingValue(dx + tadOffsetForBlock);
 
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						shape::ind2subC(tadRank, tadShape, i, xCoord);
-						Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+						Nd4jLong xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					}
@@ -462,16 +462,16 @@ namespace functions {
             template <typename OpType>
 			__device__ void ReduceFunction<T>::transformCudaXD(
 				T *dx,
-				int *xShapeInfo,
+				Nd4jLong *xShapeInfo,
 				T *extraParams,
 				T *result,
-				int *resultShapeInfo,
+				Nd4jLong *resultShapeInfo,
 				int *dimension,
 				int dimensionLength,
 				T *reductionBuffer,
 				UnifiedSharedMemory *manager,
-				int *tadOnlyShapeInfo,
-				Nd4jIndex *tadOffsets) {
+				Nd4jLong *tadOnlyShapeInfo,
+				Nd4jLong *tadOffsets) {
 
                 if (OpType::requiresSpecialAccumulation) {
                     OpType::execSpecialCuda(dx, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, reductionBuffer, manager, tadOnlyShapeInfo, tadOffsets);
@@ -485,8 +485,8 @@ namespace functions {
 				__shared__ int tadLength;
 				__shared__ int tadRank;
 				__shared__ int numTads;
-				__shared__ int *tadShape;
-				__shared__ int *tadStride;
+				__shared__ Nd4jLong *tadShape;
+				__shared__ Nd4jLong *tadStride;
 				if (threadIdx.x == 0) {
 				    extern __shared__ unsigned char shmem[];
 				    sPartials = (T *) shmem;
@@ -499,16 +499,16 @@ namespace functions {
 				}
 				__syncthreads();
 
-				int xCoord[MAX_RANK];
+				Nd4jLong xCoord[MAX_RANK];
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-					Nd4jIndex tadOffsetForBlock = tadOffsets[r];
+					Nd4jLong tadOffsetForBlock = tadOffsets[r];
 
 					sPartials[threadIdx.x] = OpType::startingValue(dx + tadOffsetForBlock);
 
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						shape::ind2subC(tadRank, tadShape, i, xCoord);
-						Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+						Nd4jLong xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					}
@@ -526,11 +526,11 @@ namespace functions {
 
             template <typename T>
             template <typename OpType>
-			__device__ void ReduceFunction<T>::aggregatePartials(T *sPartials, int tid, int numItems, T *extraParams) {
+			__device__ void ReduceFunction<T>::aggregatePartials(T *sPartials, Nd4jLong tid, Nd4jLong numItems, T *extraParams) {
 				// start the shared memory loop on the next power of 2 less
 				// than the block size.  If block size is not a power of 2,
 				// accumulate the intermediate sums in the remainder range.
-				int floorPow2 = numItems;
+				Nd4jLong floorPow2 = numItems;
 
 				if (floorPow2 & (floorPow2 - 1)) {
 					while (floorPow2 & (floorPow2 - 1)) {
@@ -544,7 +544,7 @@ namespace functions {
 				}
 
 
-				for (int activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
+				for (Nd4jLong activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
 					if (tid < activeThreads && tid + activeThreads < numItems) {
 						sPartials[tid] = OpType::update(sPartials[tid], sPartials[tid + activeThreads], extraParams);
 					}
@@ -552,12 +552,12 @@ namespace functions {
 				}
 			}
 
-        BUILD_CALL_1(template __device__ void ReduceFunction<float>::execScalarCuda, float, (float*, int*, float*, float*, int*, float*, UnifiedSharedMemory *, int*), REDUCE_OPS)
-        BUILD_CALL_1(template __device__ void ReduceFunction<float16>::execScalarCuda, float16, (float16*, int*, float16*, float16*, int*, float16*, UnifiedSharedMemory *, int*), REDUCE_OPS)
-        BUILD_CALL_1(template __device__ void ReduceFunction<double>::execScalarCuda, double, (double*, int*, double*, double*, int*, double*, UnifiedSharedMemory *, int*), REDUCE_OPS)
+        BUILD_CALL_1(template __device__ void ReduceFunction<float>::execScalarCuda, float, (float*, Nd4jLong*, float*, float*, Nd4jLong*, float*, UnifiedSharedMemory *, Nd4jLong*), REDUCE_OPS)
+        BUILD_CALL_1(template __device__ void ReduceFunction<float16>::execScalarCuda, float16, (float16*, Nd4jLong*, float16*, float16*, Nd4jLong*, float16*, UnifiedSharedMemory *, Nd4jLong*), REDUCE_OPS)
+        BUILD_CALL_1(template __device__ void ReduceFunction<double>::execScalarCuda, double, (double*, Nd4jLong*, double*, double*, Nd4jLong*, double*, UnifiedSharedMemory *, Nd4jLong*), REDUCE_OPS)
 
-        BUILD_CALL_1(template __device__ void ReduceFunction<float>::aggregatePartials, float, (float*, int, int, float*), REDUCE_OPS)
-        BUILD_CALL_1(template __device__ void ReduceFunction<float16>::aggregatePartials, float16, (float16*, int, int, float16*), REDUCE_OPS)
-        BUILD_CALL_1(template __device__ void ReduceFunction<double>::aggregatePartials, double, (double*, int, int, double*), REDUCE_OPS)
+        BUILD_CALL_1(template __device__ void ReduceFunction<float>::aggregatePartials, float, (float*, Nd4jLong, Nd4jLong, float*), REDUCE_OPS)
+        BUILD_CALL_1(template __device__ void ReduceFunction<float16>::aggregatePartials, float16, (float16*, Nd4jLong, Nd4jLong, float16*), REDUCE_OPS)
+        BUILD_CALL_1(template __device__ void ReduceFunction<double>::aggregatePartials, double, (double*, Nd4jLong, Nd4jLong, double*), REDUCE_OPS)
     }
 }

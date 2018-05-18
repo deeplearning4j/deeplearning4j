@@ -20,8 +20,8 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(get_seed) {
-            int *newshape;
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+            Nd4jLong *newshape;
+            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
             newshape[0] = 2;
             newshape[1] = 1;

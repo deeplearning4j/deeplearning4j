@@ -20,8 +20,8 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
         DECLARE_SHAPE_FN(rank) {
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), int);
+            Nd4jLong *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
 
             shape::shapeScalar(newShape);
 

@@ -49,10 +49,10 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
 
 DECLARE_SHAPE_FN(sruCell) {
 
-    int* xtShapeInfo   = inputShape->at(0);               // input [bS x inSize], bS - batch size, inSize - number of features
-    int* ct_1ShapeInfo = inputShape->at(1);               // previous cell state ct  [bS x inSize], that is at previous time step t-1   
-    int* wShapeInfo    = inputShape->at(2);               // weights [inSize x 3*inSize]
-    int* bShapeInfo    = inputShape->at(3);               // biases [2*inSize]
+    auto xtShapeInfo   = inputShape->at(0);               // input [bS x inSize], bS - batch size, inSize - number of features
+    auto ct_1ShapeInfo = inputShape->at(1);               // previous cell state ct  [bS x inSize], that is at previous time step t-1   
+    auto wShapeInfo    = inputShape->at(2);               // weights [inSize x 3*inSize]
+    auto bShapeInfo    = inputShape->at(3);               // biases [2*inSize]
 
     const int rank   = xtShapeInfo[0];
     const int bS     = xtShapeInfo[1];    
@@ -71,9 +71,9 @@ DECLARE_SHAPE_FN(sruCell) {
     REQUIRE_TRUE(correctBShape    == bShape,    0, "SRUCELL operation: wrong shape of biases, expected is %s, but got %s instead !", correctBShape.c_str(), bShape.c_str()); 
     
     // evaluate output shapeInfos
-    int *hShapeInfo(nullptr), *cShapeInfo(nullptr);
-    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);      // [bS x numProj]
-    ALLOCATE(cShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);      // [bS x numUnits]
+    Nd4jLong *hShapeInfo(nullptr), *cShapeInfo(nullptr);
+    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);      // [bS x numProj]
+    ALLOCATE(cShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);      // [bS x numUnits]
             
     hShapeInfo[0] = cShapeInfo[0] = rank;
     hShapeInfo[1] = cShapeInfo[1] = bS;

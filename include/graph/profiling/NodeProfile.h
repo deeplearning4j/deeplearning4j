@@ -16,62 +16,62 @@ namespace nd4j {
             int _id;
             std::string _name;
 
-            Nd4jIndex _merges = 1L;
+            Nd4jLong _merges = 1L;
 
             // time spent during deserialization
-            Nd4jIndex _buildTime = 0L;
+            Nd4jLong _buildTime = 0L;
             
             // time spent before op execution
-            Nd4jIndex _preparationTime = 0L;
+            Nd4jLong _preparationTime = 0L;
 
             // time spent for op execution
-            Nd4jIndex _executionTime = 0L;
+            Nd4jLong _executionTime = 0L;
 
             // total time spent during node execution
-            Nd4jIndex _totalTime = 0L;
+            Nd4jLong _totalTime = 0L;
 
             // time spent for output shape creation
-            Nd4jIndex _shapeTime = 0L;
+            Nd4jLong _shapeTime = 0L;
 
             // time spent for output arrays creation
-            Nd4jIndex _arrayTime = 0L;
+            Nd4jLong _arrayTime = 0L;
 
-            Nd4jIndex _inputTime = 0L;
+            Nd4jLong _inputTime = 0L;
 
             // amount of memory used for outputs
-            Nd4jIndex _memoryActivations = 0L;
+            Nd4jLong _memoryActivations = 0L;
 
             // amount of memory used internally for temporary arrays
-            Nd4jIndex _memoryTemporary = 0L;
+            Nd4jLong _memoryTemporary = 0L;
 
             // amount of memory used internally for objects
-            Nd4jIndex _memoryObjects = 0L;
+            Nd4jLong _memoryObjects = 0L;
 
             // total amount of memory used during execution
-            Nd4jIndex _memoryTotal = 0L;
+            Nd4jLong _memoryTotal = 0L;
         public:
             NodeProfile() = default;
             ~NodeProfile() = default;
 
             explicit NodeProfile(int id, const char *name);
 
-            void setBuildTime(Nd4jIndex time);
-            void setPreparationTime(Nd4jIndex time);
-            void setExecutionTime(Nd4jIndex time);
-            void setTotalTime(Nd4jIndex time);
-            void setShapeFunctionTime(Nd4jIndex time);
-            void setArrayTime(Nd4jIndex time);
-            void setInputTime(Nd4jIndex time);
+            void setBuildTime(Nd4jLong time);
+            void setPreparationTime(Nd4jLong time);
+            void setExecutionTime(Nd4jLong time);
+            void setTotalTime(Nd4jLong time);
+            void setShapeFunctionTime(Nd4jLong time);
+            void setArrayTime(Nd4jLong time);
+            void setInputTime(Nd4jLong time);
 
-            void setActivationsSize(Nd4jIndex bytes);
-            void setTemporarySize(Nd4jIndex bytes);
-            void setObjectsSize(Nd4jIndex bytes);
-            void setTotalSize(Nd4jIndex bytes);
+            void setActivationsSize(Nd4jLong bytes);
+            void setTemporarySize(Nd4jLong bytes);
+            void setObjectsSize(Nd4jLong bytes);
+            void setTotalSize(Nd4jLong bytes);
 
-            Nd4jIndex getActivationsSize();
-            Nd4jIndex getTemporarySize();
-            Nd4jIndex getObjectsSize();
-            Nd4jIndex getTotalSize();
+            Nd4jLong getActivationsSize();
+            Nd4jLong getTemporarySize();
+            Nd4jLong getObjectsSize();
+            Nd4jLong getTotalSize();
 
             std::string& name();
 

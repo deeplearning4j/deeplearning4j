@@ -66,8 +66,8 @@ namespace nd4j {
             auto inShape = inputShape->at(0);
 
             // FIXME: remove memcpy
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
+            Nd4jLong *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
             memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
 
             return SHAPELIST(newShape);

@@ -67,9 +67,9 @@ namespace nd4j {
                     }
 
                     REQUIRE_TRUE(input->isVector(), 0, "Uniform requires pure shape as first argument");
-                    std::vector<int> shape(input->lengthOf());
+                    std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (int) input->getScalar(e);
+                        shape[e] = (Nd4jLong) input->getScalar(e);
 
                     auto z = new NDArray<T>('c', shape, block.getWorkspace());
 
@@ -140,9 +140,9 @@ namespace nd4j {
 
                     REQUIRE_TRUE(input->isVector(), 0, "Gaussian requires pure shape as first argument");
 
-                    std::vector<int> shape(input->lengthOf());
+                    std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (int) input->getScalar(e);
+                        shape[e] = (Nd4jLong) input->getScalar(e);
 
                     auto z = new NDArray<T>('c', shape, block.getWorkspace());
 
@@ -167,9 +167,9 @@ namespace nd4j {
 
                     REQUIRE_TRUE(input->isVector(), 0, "Bernoulli requires pure shape as first argument");
 
-                    std::vector<int> shape(input->lengthOf());
+                    std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (int) input->getScalar(e);
+                        shape[e] = (Nd4jLong) input->getScalar(e);
 
                     auto z = new NDArray<T>('c', shape, block.getWorkspace());
 
@@ -199,9 +199,9 @@ namespace nd4j {
 
                     REQUIRE_TRUE(input->isVector(), 0, "Binomial requires pure shape as first argument");
 
-                    std::vector<int> shape(input->lengthOf());
+                    std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (int) input->getScalar(e);
+                        shape[e] = (Nd4jLong) input->getScalar(e);
 
                     auto z = new NDArray<T>('c', shape, block.getWorkspace());
 
@@ -230,9 +230,9 @@ namespace nd4j {
 
                     REQUIRE_TRUE(input->isVector(), 0, "LogNormal requires pure shape as first argument");
 
-                    std::vector<int> shape(input->lengthOf());
+                    std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (int) input->getScalar(e);
+                        shape[e] = (Nd4jLong) input->getScalar(e);
 
                     auto z = new NDArray<T>('c', shape, block.getWorkspace());
 
@@ -261,9 +261,9 @@ namespace nd4j {
 
                     REQUIRE_TRUE(input->isVector(), 0, "TruncatedNormal requires pure shape as first argument");
 
-                    std::vector<int> shape(input->lengthOf());
+                    std::vector<Nd4jLong> shape(input->lengthOf());
                     for (int e = 0; e < input->lengthOf(); e++)
-                        shape[e] = (int) input->getScalar(e);
+                        shape[e] = (Nd4jLong) input->getScalar(e);
 
                     auto z = new NDArray<T>('c', shape, block.getWorkspace());
 
@@ -323,10 +323,8 @@ namespace nd4j {
         ShapeList *LegacyRandomOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
-            // FIXME: remove memcpy
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
-            memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
+            Nd4jLong *newShape;
+            COPY_SHAPE(inShape, newShape);
 
             return SHAPELIST(newShape);
         }

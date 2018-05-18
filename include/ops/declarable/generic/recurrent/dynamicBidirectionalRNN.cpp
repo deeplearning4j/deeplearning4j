@@ -79,7 +79,7 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
     	*seqLen = time;                                        // set each element of seqLen to be equal to time
     }
 
-    std::initializer_list<int> dimsForReverse = timeMajor ? std::initializer_list<int>{0,1} : std::initializer_list<int>{1,0};
+    std::initializer_list<Nd4jLong> dimsForReverse = timeMajor ? std::initializer_list<Nd4jLong>{0,1} : std::initializer_list<Nd4jLong>{1,0};
 
     // reverse x     
     nd4j::ops::reverse_sequence<T> reverse;
@@ -161,11 +161,11 @@ DECLARE_SHAPE_FN(dynamic_bidirectional_rnn) {
         REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(maxTimeStep)  == ShapeUtils<T>::shapeAsString({bS}), 0, "DYNAMIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but got %s instead !", bS, ShapeUtils<T>::shapeAsString(maxTimeStep).c_str()); 
 
     // evaluate output shapeInfos
-    int *hFWShapeInfo(nullptr), *hBWShapeInfo(nullptr), *hFWFinalPrevShapeInfo(nullptr), *hBWFinalPrevShapeInfo(nullptr);
-    ALLOCATE(hFWShapeInfo,          block.getWorkspace(), shape::shapeInfoLength(inRank), int);
-    ALLOCATE(hBWShapeInfo,          block.getWorkspace(), shape::shapeInfoLength(inRank), int);
-    ALLOCATE(hFWFinalPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), int);
-    ALLOCATE(hBWFinalPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), int);
+    Nd4jLong *hFWShapeInfo(nullptr), *hBWShapeInfo(nullptr), *hFWFinalPrevShapeInfo(nullptr), *hBWFinalPrevShapeInfo(nullptr);
+    ALLOCATE(hFWShapeInfo,          block.getWorkspace(), shape::shapeInfoLength(inRank), Nd4jLong);
+    ALLOCATE(hBWShapeInfo,          block.getWorkspace(), shape::shapeInfoLength(inRank), Nd4jLong);
+    ALLOCATE(hFWFinalPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), Nd4jLong);
+    ALLOCATE(hBWFinalPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), Nd4jLong);
 
     hFWShapeInfo[0]          = hBWShapeInfo[0]          = inRank;    
     hFWShapeInfo[1]          = hBWShapeInfo[1]          = timeMajor ? time : bS;

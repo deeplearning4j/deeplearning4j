@@ -9,12 +9,12 @@ namespace nd4j {
     Intervals::Intervals(): _content({{}}) {}
         
     // constructor
-    Intervals::Intervals(const std::initializer_list<std::vector<int>>& content ): _content(content) {}
-    Intervals::Intervals(const std::vector<std::vector<int>>& content ): _content(content) {}
+    Intervals::Intervals(const std::initializer_list<std::vector<Nd4jLong>>& content ): _content(content) {}
+    Intervals::Intervals(const std::vector<std::vector<Nd4jLong>>& content ): _content(content) {}
     
     //////////////////////////////////////////////////////////////////////////
     // accessing operator
-    std::vector<int> Intervals::operator[](const int i) const {
+    std::vector<Nd4jLong> Intervals::operator[](const Nd4jLong i) const {
         
         return *(_content.begin() + i);
     }

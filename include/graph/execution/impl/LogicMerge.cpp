@@ -56,7 +56,7 @@ namespace nd4j {
 
                     auto array = var->getNDArray();
 
-                    array->printIndexedBuffer("propagated");
+                    //array->printIndexedBuffer("propagated");
 
                     lvar->setNDArray(array);
                     lvar->markReadOnly(true);

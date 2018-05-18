@@ -90,7 +90,7 @@ TEST_F(GraphStateTests, Stateful_Execution_1) {
 
     auto state = nativeOps.getGraphStateFloat(117L);
 
-    Nd4jIndex scopes[] = {22, 33};
+    Nd4jLong scopes[] = {22, 33};
     auto status = nativeOps.execCustomOpWithScopeFloat(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
     ASSERT_EQ(Status::THROW(), status);
 
@@ -105,7 +105,7 @@ TEST_F(GraphStateTests, Stateful_Execution_2) {
     state->registerScope(22);
     state->registerScope(33);
 
-    Nd4jIndex scopes[] = {22, 33};
+    Nd4jLong scopes[] = {22, 33};
     auto status = nativeOps.execCustomOpWithScopeFloat(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
     
     // it's no-op: just LogicScope
@@ -176,7 +176,7 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     // so, at the end of body, initial variables will be updated
     state->defineReturn(33, 5, args5);
 
-    Nd4jIndex scopes[] = {22, 33};
+    Nd4jLong scopes[] = {22, 33};
 
     // we're executing while loop
     auto status = nativeOps.execCustomOpWithScopeFloat(nullptr, state, 0, scopes, 2, ptrBuffers, ptrShapes, 3, outBuffers, outShapes, 3);
@@ -262,7 +262,7 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     state->defineReturn(44, 20, args20);
 
 
-    Nd4jIndex scopes[] = {22, 33, 44};
+    Nd4jLong scopes[] = {22, 33, 44};
 
     // we're executing conditional op
     auto status = nativeOps.execCustomOpWithScopeFloat(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);
@@ -340,7 +340,7 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     state->defineReturn(44, 20, args20);
 
 
-    Nd4jIndex scopes[] = {22, 33, 44};
+    Nd4jLong scopes[] = {22, 33, 44};
 
     // we're executing conditional op
     auto status = nativeOps.execCustomOpWithScopeFloat(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);

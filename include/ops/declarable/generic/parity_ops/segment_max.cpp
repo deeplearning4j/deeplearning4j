@@ -27,14 +27,14 @@ namespace nd4j {
 
             NDArray<T>* idxVector = INPUT_VARIABLE(1);
 
-            int* in = inputShape->at(0);
+            auto in = inputShape->at(0);
             int outRank = shape::rank(in);
-            int* outputShape = nullptr;
+            Nd4jLong* outputShape = nullptr;
             T val = (*idxVector)(idxVector->lengthOf() - 1);
 
             int numOfClasses = static_cast<int>(val) + 1;
 
-            ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), int);
+            ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
 
             outputShape[0] = outRank;
             outputShape[1] = numOfClasses;

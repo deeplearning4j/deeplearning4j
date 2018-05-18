@@ -17,7 +17,7 @@ namespace nd4j {
         class ND4J_EXPORT FlowPath {
         private:
             std::map<int, NodeState> _states;
-            std::map<Nd4jIndex, FrameState> _frames;
+            std::map<Nd4jLong, FrameState> _frames;
 
             void ensureNode(int nodeId);
             void ensureFrame(int nodeId);
@@ -27,11 +27,11 @@ namespace nd4j {
             FlowPath() = default;
             ~FlowPath() = default;
 
-            void setInnerTime(int nodeId, Nd4jIndex time);
-            void setOuterTime(int nodeId, Nd4jIndex time);
+            void setInnerTime(int nodeId, Nd4jLong time);
+            void setOuterTime(int nodeId, Nd4jLong time);
 
-            Nd4jIndex innerTime(int nodeId);
-            Nd4jIndex outerTime(int nodeId);
+            Nd4jLong innerTime(int nodeId);
+            Nd4jLong outerTime(int nodeId);
 
             bool isNodeActive(int nodeId);
             void markNodeActive(int nodeId, bool isActive);
@@ -44,21 +44,21 @@ namespace nd4j {
 
             // Frame-related methods
 
-            void registerFrame(Nd4jIndex frameId);
-            void forgetFrame(Nd4jIndex frameId);
+            void registerFrame(Nd4jLong frameId);
+            void forgetFrame(Nd4jLong frameId);
 
-            bool isFrameActive(Nd4jIndex frameId);
-            void markFrameActive(Nd4jIndex frameId, bool isActive);
+            bool isFrameActive(Nd4jLong frameId);
+            void markFrameActive(Nd4jLong frameId, bool isActive);
 
-            bool isRewindPlanned(Nd4jIndex frameId);
-            void planRewind(Nd4jIndex frameId, bool reallyRewind);
+            bool isRewindPlanned(Nd4jLong frameId);
+            void planRewind(Nd4jLong frameId, bool reallyRewind);
 
-            int getRewindPosition(Nd4jIndex frameId);
-            void setRewindPosition(Nd4jIndex frameId, int position);
-            void setRewindPositionOnce(Nd4jIndex frameId, int position);
+            int getRewindPosition(Nd4jLong frameId);
+            void setRewindPosition(Nd4jLong frameId, int position);
+            void setRewindPositionOnce(Nd4jLong frameId, int position);
 
-            void incrementNumberOfCycles(Nd4jIndex frameId);
-            Nd4jIndex getNumberOfCycles(Nd4jIndex frameId);
+            void incrementNumberOfCycles(Nd4jLong frameId);
+            Nd4jLong getNumberOfCycles(Nd4jLong frameId);
 
             GraphProfile* profile();
         };

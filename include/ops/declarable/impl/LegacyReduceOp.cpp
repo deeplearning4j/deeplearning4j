@@ -84,7 +84,7 @@ namespace nd4j {
                     auto s = x->shapeInfo();
                     auto e = block.numT() > 0 ? block.getTArguments()->data() : nullptr;
 
-                    x->printIndexedBuffer("x");
+                    //x->printIndexedBuffer("x");
 
                     // scalar
                     T res = NativeOpExcutioner<T>::execReduceScalar(opNum, b, s, e);
@@ -110,12 +110,14 @@ namespace nd4j {
 
                     // keepDims processing, for TF compatibility
                     if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
-                        std::vector<int> newshape(z->getShapeAsVector());
+                        z->printShapeInfo("z shape before");
+                        std::vector<Nd4jLong> newshape(z->getShapeAsVector());
                         for (int e = 0; e < axis.size(); e++) {
                             auto a = axis.at(e);
                             newshape.insert(newshape.begin() + a, 1);
                         }
                         z->reshapei(z->ordering(), newshape);
+                        z->printShapeInfo("z shape after");
                     }
 
                     OVERWRITE_RESULT(z);
@@ -133,7 +135,7 @@ namespace nd4j {
         ShapeList *LegacyReduceOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
-            int *newShape;
+            Nd4jLong *newShape;
 
             bool allAxes = false;
 
@@ -142,7 +144,7 @@ namespace nd4j {
 
             if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                 // in this case we just return scalar
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
                 newShape[0] = 2;
                 newShape[1] = 1;
                 newShape[2] = 1;

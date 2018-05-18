@@ -45,28 +45,28 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(onehot) {
-            int *inShape = inputShape->at(0);
+            auto inShape = inputShape->at(0);
 
             auto depth = INT_ARG(0);
             auto axis = INT_ARG(1);
 
-            int *newShape;
+            Nd4jLong *newShape;
             int rank = shape::rank(inShape);
             if (shape::isVector(inShape)) {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(rank), int);
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
-                int* shape;
-                ALLOCATE(shape, block.getWorkspace(), rank, int);
-                memcpy(shape, shape::shapeOf(inShape), rank * sizeof(int));
+                Nd4jLong* shape;
+                ALLOCATE(shape, block.getWorkspace(), rank, Nd4jLong);
+                memcpy(shape, shape::shapeOf(inShape), rank * sizeof(Nd4jLong));
 
                 ShapeUtils<T>::insertDimension(rank, shape, axis, depth);
                 shape::shapeBuffer(rank, shape, newShape);
 
                 RELEASE(shape, block.getWorkspace());
             } else {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(rank+1), int);
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(rank+1), Nd4jLong);
 
-                std::vector<int> shape;
+                std::vector<Nd4jLong> shape;
                 for (int e = 0; e < rank; e++)
                     shape.push_back(shape::shapeOf(inShape)[e]);
 

@@ -28,15 +28,15 @@ CUSTOM_OP_IMPL(triu, 1, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(triu) {
 
-	int* inShapeInfo = inputShape->at(0);
+	auto inShapeInfo = inputShape->at(0);
 
     REQUIRE_TRUE(inShapeInfo[0] > 0, 0, "TRIU OP: the rank of input array must be > 0, but got %i instead !", inShapeInfo[0]);
 
     int rank = (inShapeInfo[0] == 1) ? 2 : inShapeInfo[0];
     
-    int* outShapeInfo = nullptr;
-	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);    
-    memcpy(outShapeInfo, inShapeInfo, (1 + rank) * sizeof(int));                     // copy rank and dimensions values only
+    Nd4jLong *outShapeInfo = nullptr;
+	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);    
+    memcpy(outShapeInfo, inShapeInfo, (1 + rank) * sizeof(Nd4jLong));                     // copy rank and dimensions values only
 
     if(inShapeInfo[0] == 1) {
         outShapeInfo[0] = rank; 
@@ -71,12 +71,12 @@ CUSTOM_OP_IMPL(triu_bp, 2, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(triu_bp) {
 
-    int* gradOShapeInfo = inputShape->at(1);
+    auto gradOShapeInfo = inputShape->at(1);
     int rank = gradOShapeInfo[0];
 
-    int* outShapeInfo = nullptr;
-    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);    
-    memcpy(outShapeInfo, gradOShapeInfo, (1 + rank) * sizeof(int));                     // copy rank and dimensions values only    
+    Nd4jLong* outShapeInfo = nullptr;
+    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);    
+    memcpy(outShapeInfo, gradOShapeInfo, (1 + rank) * sizeof(Nd4jLong));                     // copy rank and dimensions values only    
 
     shape::updateStrides(outShapeInfo, shape::order(inputShape->at(0)));
 

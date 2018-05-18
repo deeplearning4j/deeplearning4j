@@ -40,7 +40,7 @@ namespace nd4j {
                 return ND4J_STATUS_OK;
             }
 
-            std::vector<int> shape;
+            std::vector<Nd4jLong> shape;
             if (axis.size() == 0) {
                 for (int d = 0; d < input->rankOf(); d++)
                     if (input->sizeAt(d) > 1)
@@ -68,13 +68,13 @@ namespace nd4j {
         DECLARE_SHAPE_FN(squeeze) {
             auto shapeList = SHAPELIST();
 
-            int* newShape;
+            Nd4jLong* newShape;
             auto in = inputShape->at(0);
             auto rank = shape::rank(in);
             auto length = shape::length(in);
 
             if (rank == 0 || (rank == 1 && length == 1)) {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), int);
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
                 newShape[0] = 0;
                 newShape[1] = 0;
                 newShape[2] = 1;
@@ -110,7 +110,7 @@ namespace nd4j {
             auto order = shape::order(in);
             auto oldShape = shape::shapeOf(in);
 
-            std::vector<int> shape;
+            std::vector<Nd4jLong> shape;
             if (axis.size() == 0) {
                 for (int d = 0; d < rank; d++)
                     if (oldShape[d] > 1)
@@ -125,7 +125,7 @@ namespace nd4j {
             }
 
             if (shape.size() == 0) {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), int);
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
                 newShape[0] = 0;
                 newShape[1] = 0;
                 newShape[2] = 1;
@@ -135,7 +135,7 @@ namespace nd4j {
                 return shapeList;
             }
 
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
             if (order == 'c')
                 shape::shapeBuffer(shape.size(), shape.data(), newShape);
             else

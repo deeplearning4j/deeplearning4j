@@ -9,8 +9,8 @@
 
 class EuclideanTest : public testing::Test {
 public:
-    int yShape[4] = {4,4};
-    int xShape[2] = {1,4};
+    Nd4jLong yShape[4] = {4,4};
+    Nd4jLong xShape[2] = {1,4};
     float y[16] ={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
     float x[4] = {1,2,3,4};
     int dimension[1] = {1};
@@ -23,11 +23,11 @@ public:
 };
 
 TEST_F(EuclideanTest,Test1) {
-    int *shapeBuffer = shape::shapeBuffer(2,yShape);
-    int *xShapeBuffer = shape::shapeBuffer(2,xShape);
+    auto shapeBuffer = shape::shapeBuffer(2,yShape);
+    auto xShapeBuffer = shape::shapeBuffer(2,xShape);
 
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
-    int *tadShapeBuffer = nd4j::ShapeUtils<float>::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
+    auto tadShapeBuffer = nd4j::ShapeUtils<float>::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
             functions::reduce3::Reduce3<float>::exec(opNum,
                                              x,
                                              xShapeBuffer,

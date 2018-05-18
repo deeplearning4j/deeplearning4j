@@ -29,7 +29,7 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
     nd4j::ops::conv2d<float> op;
 
     std::vector<float> tArgs({});
-    std::vector<int> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
+    std::vector<Nd4jLong> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
 
     Nd4jPointer ptrs[] = {(Nd4jPointer) input.getShapeInfo(), (Nd4jPointer) weights.getShapeInfo()};
 
@@ -37,11 +37,11 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
 
     ASSERT_EQ(1, shapeList->size());
 
-    ASSERT_EQ(exp.rankOf(), shape::rank((int *)shapeList->at(0)));
-    ASSERT_EQ(exp.sizeAt(0), shape::shapeOf((int *)shapeList->at(0))[0]);
-    ASSERT_EQ(exp.sizeAt(1), shape::shapeOf((int *)shapeList->at(0))[1]);
-    ASSERT_EQ(exp.sizeAt(2), shape::shapeOf((int *)shapeList->at(0))[2]);
-    ASSERT_EQ(exp.sizeAt(3), shape::shapeOf((int *)shapeList->at(0))[3]);
+    ASSERT_EQ(exp.rankOf(), shape::rank((Nd4jLong *)shapeList->at(0)));
+    ASSERT_EQ(exp.sizeAt(0), shape::shapeOf((Nd4jLong *)shapeList->at(0))[0]);
+    ASSERT_EQ(exp.sizeAt(1), shape::shapeOf((Nd4jLong *)shapeList->at(0))[1]);
+    ASSERT_EQ(exp.sizeAt(2), shape::shapeOf((Nd4jLong *)shapeList->at(0))[2]);
+    ASSERT_EQ(exp.sizeAt(3), shape::shapeOf((Nd4jLong *)shapeList->at(0))[3]);
 
     //int *ptr = (int *) shapeList[0];
     //delete[] ptr;
@@ -61,7 +61,7 @@ TEST_F(JavaInteropTests, TestShapeExposure2) {
     nd4j::ops::shape_of<float> op;
 
     std::vector<float> tArgs({});
-    std::vector<int> iArgs({});
+    std::vector<Nd4jLong> iArgs({});
 
 
     Nd4jPointer ptrs[] = {(Nd4jPointer) input.getShapeInfo()};
@@ -70,8 +70,8 @@ TEST_F(JavaInteropTests, TestShapeExposure2) {
 
     ASSERT_EQ(1, shapeList->size());
 
-    ASSERT_EQ(exp.rankOf(), shape::rank((int *)shapeList->at(0)));
-    ASSERT_EQ(exp.sizeAt(0), shape::shapeOf((int *)shapeList->at(0))[0]);
+    ASSERT_EQ(exp.rankOf(), shape::rank((Nd4jLong *)shapeList->at(0)));
+    ASSERT_EQ(exp.sizeAt(0), shape::shapeOf((Nd4jLong *)shapeList->at(0))[0]);
 
     nativeOps.deleteShapeList((Nd4jPointer) shapeList);
 }
@@ -98,7 +98,7 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
     NativeOps nativeOps;
     nd4j::ops::split_v<float> op;
     
-    int iArgs[] = {1};
+    Nd4jLong iArgs[] = {1};
     auto hash = op.getOpHash();
 
     auto shapeList = nativeOps.calculateOutputShapesFloat(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1);
@@ -144,7 +144,7 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
 
     NativeOps nativeOps;
 
-    int exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0, 0};
+    Nd4jLong exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0, 0};
 
     nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 4, ptrsOutBuffers, ptrsOutShapes, 1,
                                 nullptr, 0, exp, 9, false);
@@ -178,7 +178,7 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
 
     NativeOps nativeOps;
 
-    int exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0};
+    Nd4jLong exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0};
 
     nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, false);
 
@@ -199,7 +199,7 @@ TEST_F(JavaInteropTests, TestPooling2d_1) {
     Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
     Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
 
-    std::vector<int> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1 , 1, 1});
+    std::vector<Nd4jLong> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1 , 1, 1});
 
     nd4j::ops::pooling2d<float> op;
 
@@ -223,7 +223,7 @@ TEST_F(JavaInteropTests, TestMaxPooling2d_1) {
     Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
     Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
 
-    std::vector<int> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
+    std::vector<Nd4jLong> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
 
     nd4j::ops::maxpool2d<float> op;
 
@@ -257,7 +257,7 @@ TEST_F(JavaInteropTests, TestCol2Im_1) {
 
     NativeOps nativeOps;
 
-    int exp[] = {1, 1, 1, 1, 4, 5, 1, 1, 1};
+    Nd4jLong exp[] = {1, 1, 1, 1, 4, 5, 1, 1, 1};
 
     nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, false);
 
@@ -283,7 +283,7 @@ TEST_F(JavaInteropTests, TestPNorm_1) {
 
     nd4j::ops::pnormpool2d<float> op;
 
-    int exp[] = {2, 2, 1, 1, 0, 0, 1, 1, 0, 2, 0, 0};
+    Nd4jLong exp[] = {2, 2, 1, 1, 0, 0, 1, 1, 0, 2, 0, 0};
 
     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
     Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
@@ -367,7 +367,7 @@ TEST_F(JavaInteropTests, Test_Synonyms_3) {
 TEST_F(JavaInteropTests, Test_GraphReuse_1) {
     NativeOps nativeOps;
 
-    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/reduce_dim.fb");
+    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/reduce_dim_false.fb");
 
     nativeOps.registerGraphFloat(nullptr, 119, (Nd4jPointer) data);
 
@@ -392,7 +392,7 @@ TEST_F(JavaInteropTests, Test_GraphReuse_2) {
     NativeOps nativeOps;
 
     // we load graph from file, because we're not in java here, and dont have buffer ready
-    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/reduce_dim.fb");
+    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/reduce_dim_false.fb");
 
     // we ensure that there's no such a graph stored earlier
     ASSERT_FALSE(GraphHolder::getInstance()->hasGraph<float>(119));
@@ -602,7 +602,7 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_3) {
     Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
     Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
 
-    int iArgs[] = {1};
+    Nd4jLong iArgs[] = {1};
 
     NativeOps nativeOps;
     auto hash = op.getOpHash();
@@ -631,7 +631,7 @@ TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
 
     NativeOps ops;
 
-    auto pl = nd4j::graph::readFlatBuffers("./resources/simpleif_0_java.fb");
+    auto pl = nd4j::graph::readFlatBuffers("./resources/simpleif_0_1.fb");
     auto ptr = ops.executeFlatGraphFloat(nullptr, pl);
 
     Environment::getInstance()->setDebug(false);

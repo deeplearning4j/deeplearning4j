@@ -55,7 +55,7 @@ TEST_F(SessionLocalTests, BasicTests_2) {
 
     float lastValue = 0.0f;
     for (int e = 1; e <= 4; e++) {
-        auto varSpace = storage.localVariableSpace((Nd4jIndex) e);
+        auto varSpace = storage.localVariableSpace((Nd4jLong) e);
 
         auto arr = varSpace->getVariable(-1)->getNDArray();
 

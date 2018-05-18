@@ -29,8 +29,8 @@ namespace ops {
     CUSTOM_OP_IMPL(space_to_batch, 1, 1, false, 0, -2) {
         auto input = INPUT_VARIABLE(0);
 
-        std::vector<int> block_shape;
-        std::vector<int> padding_shape;
+        std::vector<Nd4jLong> block_shape;
+        std::vector<Nd4jLong> padding_shape;
 
         bool order_changed = false;
         if (input->ordering() != 'c') {
@@ -56,8 +56,8 @@ namespace ops {
             REQUIRE_TRUE(padding->rankOf() == 2, 0, "SpaceToBatch: padding should have rank of 2, but got %i instead", padding->rankOf());
             REQUIRE_TRUE(padding->columns() == 2 && blocks->lengthOf() == padding->rows(), 0, "SpaceToBatch: padding should have M rows and 2 columns");
 
-            block_shape = blocks->template asVectorT<int>();
-            padding_shape = padding->template asVectorT<int>();
+            block_shape = blocks->template asVectorT<Nd4jLong>();
+            padding_shape = padding->template asVectorT<Nd4jLong>();
 
         } else if (block.numI() > 0) {
             int totalArgs = block.numI();
@@ -117,9 +117,9 @@ namespace ops {
             return Status::OK();
         }
 
-        std::vector<int> internal_input_shape;
-        std::vector<int> internal_output_shape;
-        std::vector<int> external_output_shape;
+        std::vector<Nd4jLong> internal_input_shape;
+        std::vector<Nd4jLong> internal_output_shape;
+        std::vector<Nd4jLong> external_output_shape;
 
         external_output_shape.emplace_back(input->sizeAt(0) * block_shape_product);
         int input_batch_size = input->sizeAt(0);
@@ -157,8 +157,8 @@ namespace ops {
         internal_input_shape.emplace_back(depth);
         internal_output_shape.emplace_back(depth);
 
-        int* internal_paddings = &padding_shape.data()[2 * removed_prefix_block_dims];
-        int* internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
+        Nd4jLong* internal_paddings = &padding_shape.data()[2 * removed_prefix_block_dims];
+        Nd4jLong* internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
 
         helpers::_spaceToBatch(internal_block_dims, input, output, internal_input_shape, internal_output_shape, internal_block_shape, internal_paddings);
 
@@ -234,18 +234,18 @@ namespace ops {
 
         if (internal_block_dims == 0) {
             // just return input shape here
-            int *newShape;
+            Nd4jLong *newShape;
             COPY_SHAPE(in, newShape);
             return SHAPELIST(newShape);   
         }
 
         // go full route otherwise
-        std::vector<int> internal_input_shape;
-        std::vector<int> internal_output_shape;
-        std::vector<int> external_output_shape;
+        std::vector<Nd4jLong> internal_input_shape;
+        std::vector<Nd4jLong> internal_output_shape;
+        std::vector<Nd4jLong> external_output_shape;
 
         external_output_shape.emplace_back(shape::sizeAt(in, 0) * block_shape_product);
-        int input_batch_size = shape::sizeAt(in, 0);
+        Nd4jLong input_batch_size = shape::sizeAt(in, 0);
         for (int block_dim = 0; block_dim < removed_prefix_block_dims; block_dim++) {
             const int size = shape::sizeAt(in, block_dim + 1);
             input_batch_size *= size;
@@ -255,13 +255,13 @@ namespace ops {
         internal_output_shape.emplace_back(input_batch_size * block_shape_product);
 
         for (int block_dim = removed_prefix_block_dims; block_dim < block_dims - removed_suffix_block_dims; block_dim++) {
-            const int pad_start = padding_shape[2 * block_dim];
-            const int pad_end = padding_shape[2 * block_dim + 1];
+            const Nd4jLong pad_start = padding_shape[2 * block_dim];
+            const Nd4jLong pad_end = padding_shape[2 * block_dim + 1];
 
-            const int input_size = shape::sizeAt(in, block_dim + 1);
-            const int block_shape_value = block_shape[block_dim];
-            const int padded_size = input_size + pad_start + pad_end;
-            const int output_size = padded_size / block_shape_value;
+            const Nd4jLong input_size = shape::sizeAt(in, block_dim + 1);
+            const Nd4jLong block_shape_value = block_shape[block_dim];
+            const Nd4jLong padded_size = input_size + pad_start + pad_end;
+            const Nd4jLong output_size = padded_size / block_shape_value;
 
             // FIXME: validation required here
 
@@ -272,7 +272,7 @@ namespace ops {
 
         int depth = 1;
         for (int dim = block_dims - removed_suffix_block_dims + 1; dim < xRank; dim++) {
-            const int size = shape::sizeAt(in, dim);
+            const Nd4jLong size = shape::sizeAt(in, dim);
             external_output_shape.emplace_back(size);
             depth *= size;
         }
@@ -280,8 +280,8 @@ namespace ops {
         internal_input_shape.emplace_back(depth);
         internal_output_shape.emplace_back(depth);
 
-        int *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) external_output_shape.size()), int);
+        Nd4jLong *newShape;
+        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) external_output_shape.size()), Nd4jLong);
 
         // we always give out C order here
         shape::shapeBuffer((int) external_output_shape.size(), external_output_shape.data(), newShape);

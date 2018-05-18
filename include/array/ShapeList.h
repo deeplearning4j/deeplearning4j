@@ -11,25 +11,25 @@
 namespace nd4j {
     class ND4J_EXPORT ShapeList {
     protected:
-        std::vector<int*> _shapes;
+        std::vector<Nd4jLong*> _shapes;
 
         bool _autoremovable = false;
         bool _workspace = false;
     public:
-        ShapeList(int* shape = nullptr);
-        ShapeList(std::initializer_list<int*> shapes);
-        ShapeList(std::initializer_list<int*> shapes, bool isWorkspace);
-        ShapeList(std::vector<int*>& shapes);
+        ShapeList(Nd4jLong* shape = nullptr);
+        ShapeList(std::initializer_list<Nd4jLong*> shapes);
+        ShapeList(std::initializer_list<Nd4jLong*> shapes, bool isWorkspace);
+        ShapeList(std::vector<Nd4jLong*>& shapes);
         //ShapeList(bool autoRemovable);
 
         ~ShapeList();
 
-        std::vector<int*>* asVector();
+        std::vector<Nd4jLong*>* asVector();
         void destroy();
         int size();
-        int* at(int idx);
-        void push_back(int *shape);
-        void push_back(std::vector<int>& shape);
+        Nd4jLong* at(int idx);
+        void push_back(Nd4jLong *shape);
+        void push_back(std::vector<Nd4jLong>& shape);
 
         /**
          * PLEASE NOTE: This method should be called ONLY if shapes were generated at workspaces. Otherwise you'll get memory leak

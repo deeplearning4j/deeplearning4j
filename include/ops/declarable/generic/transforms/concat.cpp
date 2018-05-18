@@ -37,7 +37,7 @@ namespace nd4j {
 
             if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
                 printf("Shape %i: ", 0);
-                shape::printShapeInfoLinear((int *) shapes[0]);
+                shape::printShapeInfoLinear((Nd4jLong *) shapes[0]);
             }
 
             for (int e = 1; e < elements; e++) {
@@ -50,7 +50,7 @@ namespace nd4j {
 
                 if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
                     printf("Shape %i: ", e);
-                    shape::printShapeInfoLinear((int *) shapes[e]);
+                    shape::printShapeInfoLinear((Nd4jLong *) shapes[e]);
                 }
             }
             if (nd4j::Environment::getInstance()->isDebugAndVerbose())
@@ -78,13 +78,13 @@ namespace nd4j {
         DECLARE_SYN(concatv2, concat);
         
         DECLARE_SHAPE_FN(concat) {
-            int* inp = inputShape->at(0);
+            auto inp = inputShape->at(0);
             int _dimension = INT_ARG(0);
 
-            int* last = inputShape->at(inputShape->size() - 1);
+            auto last = inputShape->at(inputShape->size() - 1);
 
-            int elements = (int) inputShape->size();
-            int *newShape;
+            Nd4jLong elements = (int) inputShape->size();
+            Nd4jLong *newShape;
 
 
             { // special cases for 0D concat
@@ -98,7 +98,7 @@ namespace nd4j {
 
                 // all scalars
                 if (allScalars) {
-                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
 
                     shape::shapeBuffer(1, &elements, newShape);
                     return SHAPELIST(newShape);
@@ -106,8 +106,8 @@ namespace nd4j {
 
                 // any scalar
                 if (hasScalars) {
-                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
-                    int length = shape::length(inp);
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
+                    Nd4jLong length = shape::length(inp);
                     for (int i = 1; i < elements; i++) {
                        length += shape::length(inputShape->at(i));
                     }
@@ -118,7 +118,7 @@ namespace nd4j {
             }
 
             
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inp), int);
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inp), Nd4jLong);
 
             if (_dimension < 0)
                 _dimension += shape::rank(inp);
@@ -175,8 +175,8 @@ namespace nd4j {
 
             for (int e = 0; e < inputShape->size() - 1; e++) {
                 auto inShape = inputShape->at(e);
-                int* newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
+                Nd4jLong* newShape;
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), Nd4jLong);
                 memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
 
                 shapeList->push_back(newShape);

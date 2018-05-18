@@ -24,8 +24,8 @@ namespace helpers {
         int last = shape->lengthOf() - 1;
         
         functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
-        Nd4jIndex maxIndex = output->argMax();
-        Nd4jIndex startPos = (*output)(maxIndex);
+        Nd4jLong maxIndex = output->argMax();
+        Nd4jLong startPos = (*output)(maxIndex);
         int lastDim = input->sizeAt(-1);
         nd4j_printf("Before processing: %i %i. Output length %i\n", maxIndex, startPos, output->lengthOf());
         int pos = 0;

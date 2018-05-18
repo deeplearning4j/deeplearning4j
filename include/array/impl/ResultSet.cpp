@@ -17,13 +17,13 @@ namespace nd4j {
                 if (var->ndarray() != nullptr) {
                     array = nd4j::graph::FlatUtils::fromFlatArray<T>(var->ndarray());
                 } else if (var->shape() != nullptr) {
-                    std::vector<int> shapeInfo;
+                    std::vector<Nd4jLong> shapeInfo;
                     for (int i = 0; i < var->shape()->size(); i++) {
                         shapeInfo.emplace_back(var->shape()->Get(i));
                     }
 
                     // we just create empty array here
-                    std::vector<int> shape;
+                    std::vector<Nd4jLong> shape;
                     for (int i = 0; i < shapeInfo.at(0); i++) {
                         shape.emplace_back(shapeInfo.at(i + 1));
                     }

@@ -47,9 +47,7 @@ namespace nd4j {
         ShapeList *LegacyTransformOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
-            int *newShape;
-            //ALLOCATE(newShape, ctx.getWorkspace(), shape::shapeInfoLength(inShape), int);
-            //memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
+            Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
 
             return SHAPELIST(newShape);

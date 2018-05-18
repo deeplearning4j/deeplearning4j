@@ -121,8 +121,8 @@ struct FlatArray FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_DTYPE = 8,
     VT_BYTEORDER = 10
   };
-  const flatbuffers::Vector<int32_t> *shape() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_SHAPE);
+  const flatbuffers::Vector<int64_t> *shape() const {
+    return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_SHAPE);
   }
   const flatbuffers::Vector<int8_t> *buffer() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_BUFFER);
@@ -148,7 +148,7 @@ struct FlatArray FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct FlatArrayBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_shape(flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape) {
+  void add_shape(flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape) {
     fbb_.AddOffset(FlatArray::VT_SHAPE, shape);
   }
   void add_buffer(flatbuffers::Offset<flatbuffers::Vector<int8_t>> buffer) {
@@ -174,7 +174,7 @@ struct FlatArrayBuilder {
 
 inline flatbuffers::Offset<FlatArray> CreateFlatArray(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<flatbuffers::Vector<int8_t>> buffer = 0,
     DataType dtype = DataType_INHERIT,
     ByteOrder byteOrder = ByteOrder_LE) {
@@ -188,13 +188,13 @@ inline flatbuffers::Offset<FlatArray> CreateFlatArray(
 
 inline flatbuffers::Offset<FlatArray> CreateFlatArrayDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<int32_t> *shape = nullptr,
+    const std::vector<int64_t> *shape = nullptr,
     const std::vector<int8_t> *buffer = nullptr,
     DataType dtype = DataType_INHERIT,
     ByteOrder byteOrder = ByteOrder_LE) {
   return nd4j::graph::CreateFlatArray(
       _fbb,
-      shape ? _fbb.CreateVector<int32_t>(*shape) : 0,
+      shape ? _fbb.CreateVector<int64_t>(*shape) : 0,
       buffer ? _fbb.CreateVector<int8_t>(*buffer) : 0,
       dtype,
       byteOrder);

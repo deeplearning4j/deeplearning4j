@@ -37,13 +37,13 @@ typedef union
 
 #ifdef __CUDACC__
 template<typename S, typename T>
-__device__ inline void convertKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
+__device__ inline void convertKernelGeneric(void *dx, Nd4jLong N, void *dz) {
     S *x = reinterpret_cast<S *> (dx);
     T *z = reinterpret_cast<T *> (dz);
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    for (Nd4jIndex i = tid; i < N; i+= blockDim.x * gridDim.x) {
+    for (Nd4jLong i = tid; i < N; i+= blockDim.x * gridDim.x) {
         z[i] = (T) ((float) x[i]);
     }
 };
@@ -52,12 +52,12 @@ __device__ inline void convertKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
  * PLEASE NOTE: This kernel doesn't allow loop for data. Basically: grid will be huge.
  */
 template<typename T>
-__device__ inline void encoderKernelP1Generic(void *dx, Nd4jIndex N, void *dz, float threshold) {
+__device__ inline void encoderKernelP1Generic(void *dx, Nd4jLong N, void *dz, float threshold) {
     T *x = reinterpret_cast<T *> (dx);
     int *z = reinterpret_cast<int *> (dz);
 
     //basically, for phase One we want do calculation: how many eligible values we have, and which blocks will be holding data
-    Nd4jIndex tid = blockIdx.x * blockDim.x + threadIdx.x;
+    Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     int pass = tid < N && nd4j::math::nd4j_abs<T>(x[tid]) >= (T) threshold ? 1 : 0;
     int bp=__syncthreads_count(pass);
@@ -266,7 +266,7 @@ __global__ void uniformAdd(int *g_data, int *uniforms, int n, int blockOffset, i
  * This kernel does prefix sum in parallel, to calculate offsets for each block
  */
 template<typename T>
-__device__ inline void encoderKernelP2Generic(void *dx, Nd4jIndex n, void *dz) {
+__device__ inline void encoderKernelP2Generic(void *dx, Nd4jLong n, void *dz) {
  // TODO: to be remove
 }
 
@@ -276,11 +276,11 @@ __device__ inline void encoderKernelP2Generic(void *dx, Nd4jIndex n, void *dz) {
  * Based on: https://github.com/knotman90/cuStreamComp <-- efficient CUDA stream compaction algorithm
  */
 template<typename T>
-__device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+__device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jLong N, void *dz) {
     T *x = reinterpret_cast<T *> (dx);
     int *z = reinterpret_cast<int *> (dz);
 
-    Nd4jIndex tid = blockIdx.x * blockDim.x + threadIdx.x;
+    Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
 	extern __shared__ int warpTotals[];
 
     // fetch block offset only once
@@ -339,7 +339,7 @@ __device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jIndex 
  *   PLEASE NOTE: Z is expected to be memset to 0
 */
 template<typename T>
-__device__ inline void decoderKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
+__device__ inline void decoderKernelGeneric(void *dx, Nd4jLong N, void *dz) {
     int *x = reinterpret_cast<int *> (dx);
     T *z = reinterpret_cast<T *> (dz);
 
@@ -365,7 +365,7 @@ __device__ inline void decoderKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
 }
 
 template<typename T>
-__device__ inline void cudaDecodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
+__device__ inline void cudaDecodeBitmapGeneric(void *dx, Nd4jLong N, T *dz) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     __shared__ T *shmem;
     __shared__ FloatBits fb;
@@ -418,7 +418,7 @@ __device__ inline void cudaDecodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
 
 
 template<typename T>
-__device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
+__device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     __shared__ int counter;
@@ -523,74 +523,74 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
     }
 }
 
-extern "C" __global__ void cudaEncodeBitmapFloat(float *dx, Nd4jIndex N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
+extern "C" __global__ void cudaEncodeBitmapFloat(float *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
     cudaEncodeBitmapGeneric<float>(dx, N, dz, scalar, reductionBuffer, threshold);
 }
 
-extern "C" __global__ void cudaEncodeBitmapDouble(double *dx, Nd4jIndex N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
+extern "C" __global__ void cudaEncodeBitmapDouble(double *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
     cudaEncodeBitmapGeneric<double>(dx, N, dz, scalar, reductionBuffer, threshold);
 }
 
-extern "C" __global__ void cudaEncodeBitmapHalf(float16 *dx, Nd4jIndex N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
+extern "C" __global__ void cudaEncodeBitmapHalf(float16 *dx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
     cudaEncodeBitmapGeneric<float16>(dx, N, dz, scalar, reductionBuffer, threshold);
 }
 
-extern "C" __global__ void cudaDecodeBitmapFloat(void *dx, Nd4jIndex N, float *dz) {
+extern "C" __global__ void cudaDecodeBitmapFloat(void *dx, Nd4jLong N, float *dz) {
     cudaDecodeBitmapGeneric<float>(dx, N, dz);
 }
 
-extern "C" __global__ void cudaDecodeBitmapDouble(void *dx, Nd4jIndex N, double *dz) {
+extern "C" __global__ void cudaDecodeBitmapDouble(void *dx, Nd4jLong N, double *dz) {
     cudaDecodeBitmapGeneric<double>(dx, N, dz);
 }
 
-extern "C" __global__ void cudaDecodeBitmapHalf(void *dx, Nd4jIndex N, float16 *dz) {
+extern "C" __global__ void cudaDecodeBitmapHalf(void *dx, Nd4jLong N, float16 *dz) {
     cudaDecodeBitmapGeneric<float16>(dx, N, dz);
 }
 
 
-extern "C" __global__ void encoderKernelP1Float(void *dx, Nd4jIndex N, void *dz, float threshold) {
+extern "C" __global__ void encoderKernelP1Float(void *dx, Nd4jLong N, void *dz, float threshold) {
     encoderKernelP1Generic<float>(dx, N, dz, threshold);
 }
 
-extern "C" __global__ void encoderKernelP1Double(void *dx, Nd4jIndex N, void *dz, float threshold) {
+extern "C" __global__ void encoderKernelP1Double(void *dx, Nd4jLong N, void *dz, float threshold) {
     encoderKernelP1Generic<double>(dx, N, dz, threshold);
 }
 
-extern "C" __global__ void encoderKernelP1Half(void *dx, Nd4jIndex N, void *dz, float threshold) {
+extern "C" __global__ void encoderKernelP1Half(void *dx, Nd4jLong N, void *dz, float threshold) {
     encoderKernelP1Generic<float16>(dx, N, dz, threshold);
 }
 
-extern "C" __global__ void encoderKernelP2Float(int *dx, Nd4jIndex N, int *dz) {
+extern "C" __global__ void encoderKernelP2Float(int *dx, Nd4jLong N, int *dz) {
     encoderKernelP2Generic<float>(dx, N, dz);
 }
 
-extern "C" __global__ void encoderKernelP3Float(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+extern "C" __global__ void encoderKernelP3Float(void *dx, int *offsets, Nd4jLong N, void *dz) {
     encoderKernelP3Generic<float>(dx, offsets, N, dz);
 }
 
-extern "C" __global__ void encoderKernelP3Double(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+extern "C" __global__ void encoderKernelP3Double(void *dx, int *offsets, Nd4jLong N, void *dz) {
     encoderKernelP3Generic<double>(dx, offsets, N, dz);
 }
 
-extern "C" __global__ void encoderKernelP3Half(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+extern "C" __global__ void encoderKernelP3Half(void *dx, int *offsets, Nd4jLong N, void *dz) {
     encoderKernelP3Generic<float16>(dx, offsets, N, dz);
 }
 
-extern "C" __global__ void decoderKernelFloat(void *dx, Nd4jIndex N, void *dz) {
+extern "C" __global__ void decoderKernelFloat(void *dx, Nd4jLong N, void *dz) {
     decoderKernelGeneric<float>(dx, N, dz);
 }
 
-extern "C" __global__ void decoderKernelDouble(void *dx, Nd4jIndex N, void *dz) {
+extern "C" __global__ void decoderKernelDouble(void *dx, Nd4jLong N, void *dz) {
     decoderKernelGeneric<double>(dx, N, dz);
 }
 
-extern "C" __global__ void decoderKernelHalf(void *dx, Nd4jIndex N, void *dz) {
+extern "C" __global__ void decoderKernelHalf(void *dx, Nd4jLong N, void *dz) {
     decoderKernelGeneric<float16>(dx, N, dz);
 }
 #endif
 
 template<typename S, typename T>
-void convertGeneric(void *dx, Nd4jIndex N, void *dz) {
+void convertGeneric(void *dx, Nd4jLong N, void *dz) {
     S *x = reinterpret_cast<S *> (dx);
     T *z = reinterpret_cast<T *> (dz);
 
@@ -611,7 +611,7 @@ void convertGeneric(void *dx, Nd4jIndex N, void *dz) {
 
 
 template <typename T>
-void convertToThreshold(void *dx, Nd4jIndex N, void *dz) {
+void convertToThreshold(void *dx, Nd4jLong N, void *dz) {
     // we suppose that first 4 bytes are integer, second 4 bytes are float
     // integer: enc length
     // integer: dec length
@@ -670,7 +670,7 @@ void convertToThreshold(void *dx, Nd4jIndex N, void *dz) {
 }
 
 template <typename T>
-void convertFromThreshold(void *dx, Nd4jIndex N, void *dz) {
+void convertFromThreshold(void *dx, Nd4jLong N, void *dz) {
     FloatBits fb;
     T *z = (T *) dz;
     int *x = (int *) dx;
@@ -693,7 +693,7 @@ void convertFromThreshold(void *dx, Nd4jIndex N, void *dz) {
  * TypeDef:
  *     void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);
  */
-void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd4jIndex N, int dstType, Nd4jPointer z) {
+void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd4jLong N, int dstType, Nd4jPointer z) {
     void *dx = reinterpret_cast<void *> (x);
     void *dz = reinterpret_cast<void *> (z);
 

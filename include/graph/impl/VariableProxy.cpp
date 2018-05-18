@@ -190,17 +190,17 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jIndex VariableProxy<T>::externalMemory() {
+        Nd4jLong VariableProxy<T>::externalMemory() {
             return _backed->externalMemory() + _current->externalMemory();
         }
 
         template <typename T>
-        Nd4jIndex VariableProxy<T>::internalMemory() {
+        Nd4jLong VariableProxy<T>::internalMemory() {
             return _backed->internalMemory() + _current->internalMemory();
         }
 
         template <typename T>
-        Nd4jIndex VariableProxy<T>::totalMemory() {
+        Nd4jLong VariableProxy<T>::totalMemory() {
             return _backed->totalMemory() + _current->totalMemory();
         }
 

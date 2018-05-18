@@ -14,7 +14,7 @@
 namespace nd4j {
     class CudaLaunchHelper {
     public:
-        static Triple getFlatLaunchParams(Nd4jIndex length, int SM, int CORES, int SHARED_MEMORY);
+        static Triple getFlatLaunchParams(Nd4jLong length, int SM, int CORES, int SHARED_MEMORY);
 
     };
 }

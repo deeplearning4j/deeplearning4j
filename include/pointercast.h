@@ -5,8 +5,10 @@
 #ifndef NATIVEOPERATIONS_POINTERCAST_H
 #define NATIVEOPERATIONS_POINTERCAST_H
 
+#include <stdint.h>
+
 typedef void* Nd4jPointer;
-typedef long long Nd4jIndex;
+typedef long long Nd4jLong;
 typedef int Nd4jStatus;
 
 #define ND4J_STATUS_OK            0

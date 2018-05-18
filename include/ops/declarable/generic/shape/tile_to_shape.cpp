@@ -14,9 +14,9 @@ namespace ops {
         auto output = OUTPUT_VARIABLE(0);
 
         if (block.isInplace()) {
-            input->tileToShape(*block.getIArguments());
+            //input->tileToShape(*block.getIArguments());
         } else {
-            input->tileToShape(*block.getIArguments(), output);
+            //input->tileToShape(*block.getIArguments(), output);
         }
 
         return Status::OK();
@@ -26,13 +26,15 @@ namespace ops {
         auto in = inputShape->at(0);
 
         // output shape always equals to arguments
-        int *newShape;
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(block.numI()), int);
+        Nd4jLong *newShape;
+        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(block.numI()), Nd4jLong);
+
+        auto conv = ArrayUtils::toLongVector(*block.getIArguments());
 
         if (shape::order(in) == 'c')
-            shape::shapeBuffer(block.numI(), block.getIArguments()->data(), newShape);
-        else 
-            shape::shapeBufferFortran(block.numI(), block.getIArguments()->data(), newShape);
+            shape::shapeBuffer(block.numI(), conv.data(), newShape);
+        else
+            shape::shapeBufferFortran(block.numI(), conv.data(), newShape);
 
         return SHAPELIST(newShape);
     }
@@ -61,7 +63,7 @@ namespace ops {
     DECLARE_SHAPE_FN(tile_to_shape_bp) {
         auto in = inputShape->at(0);
 
-        int *newShape;
+        Nd4jLong *newShape;
         COPY_SHAPE(in, newShape);
 
         return SHAPELIST(newShape);

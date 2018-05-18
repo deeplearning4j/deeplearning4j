@@ -1,1 +1,0 @@
-Reference NativeLayers implementation for x86_64 architecture

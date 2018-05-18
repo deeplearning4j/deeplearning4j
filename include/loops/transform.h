@@ -49,63 +49,63 @@ namespace functions {
 	template<typename OpType>
 	static  __device__ void transformCuda(
 			T *dy,
-			int *shapeInfo,
+			Nd4jLong *shapeInfo,
 			T *params,
 			T *result,
-			int *resultShapeInfo,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets);
+			Nd4jLong *resultShapeInfo,
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 	template<typename OpType>
 	static  __device__ void transformCuda(
-			Nd4jIndex n,
+			Nd4jLong n,
 			T *dy,
-			int incy,
+			Nd4jLong incy,
 			T *params,
 			T *result,
-			int resultStride,
+			Nd4jLong resultStride,
 			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager);
 
 	static  __device__ void transformCuda(
 			const int opNum,
 			T *dy,
-			int *shapeInfo,
+			Nd4jLong *shapeInfo,
 			T *params,
 			T *result,
-			int *resultShapeInfo,
+			Nd4jLong *resultShapeInfo,
 			int *allocationPointer,
 			T *reductionPointer,
-			UnifiedSharedMemory *manager, int *tadShapeInfo, Nd4jIndex *tadOffsets);
+			UnifiedSharedMemory *manager, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 
 	static  __device__ void transformCuda(
 			const int opNum,
-			Nd4jIndex n,
+			Nd4jLong n,
 			T *dy,
-			int incy,
+			Nd4jLong incy,
 			T *params,
 			T *result,
-			int resultStride,
+			Nd4jLong resultStride,
 			int *allocationPointer,
 			T *reductionPointer,
 			UnifiedSharedMemory *manager);
 
-	static _CUDA_H void executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, Nd4jIndex n, T *x, int xStride, T *extraParams, T *z, int zStride, int *allocationPointer, T *reductionPointer);
+	static _CUDA_H void executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, Nd4jLong n, T *x, Nd4jLong xStride, T *extraParams, T *z, Nd4jLong zStride, int *allocationPointer, T *reductionPointer);
 	
-	static _CUDA_H void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, T *x, int *xShape, int xRank, T *extraParams, T *z, int *zShape, int zRank, int *allocationPointer, T *reductionPointer,  int *tadShapeInfo, Nd4jIndex *tadOffsets);
+	static _CUDA_H void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, T *x, Nd4jLong *xShape, int xRank, T *extraParams, T *z, Nd4jLong *zShape, int zRank, int *allocationPointer, T *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 #endif
 
 
-			static void exec(int opNum, T *dx, int xStride, T *result, int resultStride, T *extraParams, const int n);
+			static void exec(int opNum, T *dx, Nd4jLong xStride, T *result, Nd4jLong resultStride, T *extraParams, const Nd4jLong n);
 
-			static void exec(int opNum, T *dx, int *xShapeInfo, T *result, int *resultShapeInfo, T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets);
+			static void exec(int opNum, T *dx, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 
 			template<typename OpType>
-			static ND4J_EXPORT void exec(T *dx, int *xShapeInfo, T *result, int *resultShapeInfo, T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets);
+			static ND4J_EXPORT void exec(T *dx, Nd4jLong *xShapeInfo, T *result, Nd4jLong *resultShapeInfo, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
 			template <typename OpType>
-			static ND4J_EXPORT void exec(T *dx, int xStride, T *result, int resultStride, T *extraParams, const int n);
+			static ND4J_EXPORT void exec(T *dx, Nd4jLong xStride, T *result, Nd4jLong resultStride, T *extraParams, const Nd4jLong n);
         };
     }
 }

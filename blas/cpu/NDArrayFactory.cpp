@@ -38,14 +38,15 @@ namespace nd4j {
         if (dimensions.size() > 1)
             std::sort (copy.begin(), copy.end());
 
-        Nd4jIndex tadLength = shape::tadLength(ndArray->getShapeInfo(), copy.data(), copy.size());
-        Nd4jIndex numTads = ndArray->lengthOf() / tadLength;
+        Nd4jLong tadLength = shape::tadLength(ndArray->getShapeInfo(), copy.data(), copy.size());
+        Nd4jLong numTads = ndArray->lengthOf() / tadLength;
 
         std::unique_ptr<shape::TAD> tad(new shape::TAD(ndArray->getShapeInfo(), copy.data(), copy.size()));
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        int* shapeInfo = new int[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
+        // FIXME: why we're not using workspaces here?
+        auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
         std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
 
         for (auto idx: indices) {
@@ -91,14 +92,14 @@ namespace nd4j {
         if(copy.back() >= ndArray->rankOf())
             throw "NDArrayFactory::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !";
 
-        Nd4jIndex tadLength = shape::tadLength(ndArray->getShapeInfo(), copy.data(), copy.size());
-        Nd4jIndex numTads = ndArray->lengthOf() / tadLength;
+        Nd4jLong tadLength = shape::tadLength(ndArray->getShapeInfo(), copy.data(), copy.size());
+        Nd4jLong numTads = ndArray->lengthOf() / tadLength;
 
         std::unique_ptr<shape::TAD> tad(new shape::TAD(ndArray->getShapeInfo(), copy.data(), copy.size()));
         tad->createTadOnlyShapeInfo();
         tad->createOffsets();
 
-        int* shapeInfo = new int[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
+        auto shapeInfo = new Nd4jLong[shape::shapeInfoLength(tad->tadOnlyShapeInfo[0])];
         std::memcpy(shapeInfo, tad->tadOnlyShapeInfo, shape::shapeInfoByteLength(tad->tadOnlyShapeInfo));
 
         for (int idx = 0; idx < numTads; idx++ ) {
@@ -129,8 +130,9 @@ namespace nd4j {
     template<typename T>
     nd4j::NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, const std::vector<int>& axes_0, const std::vector<int>& axes_1) {
 
-        std::vector<int> permutAt, permutBt, shapeAt, shapeBt;        
-        std::vector<int> outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
+        std::vector<int> permutAt, permutBt;
+        std::vector<Nd4jLong> shapeAt, shapeBt;        
+        auto outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
 
         NDArray<T>* aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b));
 
@@ -167,8 +169,9 @@ namespace nd4j {
     template<typename T>
     void nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC) {
 
-        std::vector<int> permutAt, permutBt, shapeAt, shapeBt;
-        std::vector<int> outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_a, axes_b, permutAt, permutBt, shapeAt, shapeBt);
+        std::vector<int> permutAt, permutBt;
+        std::vector<Nd4jLong> shapeAt, shapeBt;
+        auto outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_a, axes_b, permutAt, permutBt, shapeAt, shapeBt);
 
         NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b)), *cP(c), *cPR(c);
 
@@ -213,7 +216,7 @@ namespace nd4j {
 #ifndef __JAVACPP_HACK__
 //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    void nd4j::NDArrayFactory<T>::tensorDot(const NDArray<T>* a, const NDArray<T>* b, NDArray<T>* c, const std::vector<std::vector<int>>& modifA, const std::vector<std::vector<int>>& modifB, const std::vector<std::vector<int>>& modifC) {
+    void nd4j::NDArrayFactory<T>::tensorDot(const NDArray<T>* a, const NDArray<T>* b, NDArray<T>* c, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB, const std::vector<std::vector<Nd4jLong>>& modifC) {
 
         NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b));
         std::string whatToDoWithA, whatToDoWithB, whatToDoWithC;         // "" - nothing; "p" - permutation; "r" - reshaping; "pr" - permutation+reshaping; "rp" - reshaping/permutation, and so on; if another string is produced - throw exception
@@ -270,7 +273,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, const std::vector<std::vector<int>>& modifA, const std::vector<std::vector<int>>& modifB) {
+    NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB) {
 
         NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b));
         std::string whatToDoWithA, whatToDoWithB;         // "" - nothing; "p" - permutation only; "r" - reshaping only; "pr" - permutation+reshaping; "rp" - reshaping/permutation; another string - throw exception
@@ -325,7 +328,7 @@ namespace nd4j {
                     throw "Numbers of rows/columns should match";
                 }
 
-                std::vector<int> newShape;
+                std::vector<Nd4jLong> newShape;
                 if (A->rankOf() > B->rankOf())
                     for (int e = 0; e < A->rankOf() - 2; e++)
                         newShape.emplace_back(A->sizeAt(e));
@@ -380,7 +383,7 @@ namespace nd4j {
             } else {
                 //int dims = A->rankOf();
 
-                std::vector<int> newShape;
+                std::vector<Nd4jLong> newShape;
                 for (int e = 0; e < A->rankOf() - 2; e++)
                     if (A->sizeAt(e) != B->sizeAt(e)) {
                         nd4j_printf("Dimension [%i] differs for A and B: %i vs %i", e, A->sizeAt(e), B->sizeAt(e));
@@ -401,7 +404,7 @@ namespace nd4j {
                 newShape.push_back(pRows);
                 newShape.push_back(pCols);
 
-                //Nd4jIndex prod = shape::prodLong(newShape.data(), newShape.size());
+                //Nd4jLong prod = shape::prodLong(newShape.data(), newShape.size());
 
                 if (result == nullptr)
                     result = new NDArray<T>('c', newShape);
@@ -462,9 +465,9 @@ namespace nd4j {
             result = new NDArray<T>('f', {A->rows(), B->columns()});
         }
             
-        int *aShape = A->shapeOf();
-        int *bShape = B->shapeOf();
-        int *cShape = result->shapeOf();
+        auto aShape = A->shapeOf();
+        auto bShape = B->shapeOf();
+        auto cShape = result->shapeOf();
 
         char rOrder;
 
@@ -542,9 +545,9 @@ namespace nd4j {
             nd4j_debug("Using provided GEMM pointer\n","");
 
             if (sizeof(T) == 4)
-                BlasHelper::getInstance()->sgemm()(CblasColMajor, transA, transB, M, N, K, (float) alpha, (float *) pA->getBuffer(), lda, (float *) pB->getBuffer(), ldb, (float) beta, (float *) pC->getBuffer(), ldc);
+                BlasHelper::getInstance()->sgemm()(CblasColMajor, transA, transB, M, N, K, (float) alpha, reinterpret_cast<float *>(pA->getBuffer()), lda, reinterpret_cast<float *>(pB->getBuffer()), ldb, (float) beta, reinterpret_cast<float *>(pC->getBuffer()), ldc);
             else if (sizeof(T) == 8)
-                BlasHelper::getInstance()->dgemm()(CblasColMajor, transA, transB, M, N, K, (double) alpha, (double *) pA->getBuffer(), lda, (double *) pB->getBuffer(), ldb, (double) beta, (double *) pC->getBuffer(), ldc);
+                BlasHelper::getInstance()->dgemm()(CblasColMajor, transA, transB, M, N, K, (double) alpha, reinterpret_cast<double *>(pA->getBuffer()), lda, reinterpret_cast<double *>(pB->getBuffer()), ldb, (double) beta, reinterpret_cast<double *>(pC->getBuffer()), ldc);
             else
                 nd4j::blas::GEMM<T>::op(rOrder, transA, transB, M, N, K, alpha, pA->getBuffer(), lda, pB->getBuffer(), ldb, beta, pC->getBuffer(), ldc);
         } else {
@@ -597,9 +600,9 @@ namespace nd4j {
                 auto layout = A->ordering() == 'f' ? CblasColMajor : CblasRowMajor;
 
                 if (sizeof(T) == 4)
-                    BlasHelper::getInstance()->sgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (float) alpha, (float *) A->getBuffer(), layout == CblasColMajor ? A->rows() : A->columns(), (float *) B->getBuffer(), 1, (float) beta, (float *) result->getBuffer(), 1);
+                    BlasHelper::getInstance()->sgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (float) alpha, reinterpret_cast<float *>(A->getBuffer()), layout == CblasColMajor ? A->rows() : A->columns(), reinterpret_cast<float *>(B->getBuffer()), 1, (float) beta, reinterpret_cast<float *>(result->getBuffer()), 1);
                 else if (sizeof(T) == 8)
-                    BlasHelper::getInstance()->dgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (double) alpha, (double *) A->getBuffer(), layout == CblasColMajor ? A->rows() : A->columns(), (double *) B->getBuffer(), 1, (double) beta, (double *) result->getBuffer(), 1);
+                    BlasHelper::getInstance()->dgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (double) alpha, reinterpret_cast<double *>(A->getBuffer()), layout == CblasColMajor ? A->rows() : A->columns(), reinterpret_cast<double *>(B->getBuffer()), 1, (double) beta, reinterpret_cast<double *>(result->getBuffer()), 1);
                 else
                     nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->rows(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
             } else {
@@ -656,10 +659,10 @@ namespace nd4j {
     }
 
     template<typename T>
-    NDArray<T>* NDArrayFactory<T>::linspace(T from, T to, Nd4jIndex numElements) {
+    NDArray<T>* NDArrayFactory<T>::linspace(T from, T to, Nd4jLong numElements) {
         auto result = new NDArray<T>('c', {1, (int)numElements});
 
-        for (Nd4jIndex e = 0; e < numElements; e++) {
+        for (Nd4jLong e = 0; e < numElements; e++) {
             T step = (T) e / ((T) numElements - (T) 1.0f);
             result->getBuffer()[e] = (from * ((T) 1.0f - step) + step * to);
         }
@@ -670,8 +673,8 @@ namespace nd4j {
     template<typename T>
     void NDArrayFactory<T>::linspace(T from, NDArray<T>& arr, T step) {
         
-        int size = arr.lengthOf();
-        for (Nd4jIndex i = 0; i < size; ++i)
+        Nd4jLong size = arr.lengthOf();
+        for (Nd4jLong i = 0; i < size; ++i)
             arr(i) = from + (step * i);
     }
 
@@ -679,8 +682,8 @@ namespace nd4j {
     NDArray<T>* NDArrayFactory<T>::createUninitialized(NDArray<T>* other) {
         auto workspace = other->getWorkspace();
 
-        int* newShape;
-        ALLOCATE(newShape, workspace, shape::shapeInfoLength(other->getShapeInfo()), int);
+        Nd4jLong* newShape;
+        ALLOCATE(newShape, workspace, shape::shapeInfoLength(other->getShapeInfo()), Nd4jLong);
         memcpy(newShape, other->getShapeInfo(), shape::shapeInfoByteLength(other->getShapeInfo()));
 
         T* buffer;
@@ -700,14 +703,14 @@ namespace nd4j {
     }
 
     template <typename T>
-    NDArray<T>* NDArrayFactory<T>::valueOf(std::initializer_list<int> shape, T value, char order) {
+    NDArray<T>* NDArrayFactory<T>::valueOf(std::initializer_list<Nd4jLong> shape, T value, char order) {
         auto result = new NDArray<T>(order, shape);
         result->assign(value);
         return result;
     }
 
     template <typename T>
-    NDArray<T>* NDArrayFactory<T>::valueOf(std::vector<int>& shape, T value, char order) {
+    NDArray<T>* NDArrayFactory<T>::valueOf(std::vector<Nd4jLong>& shape, T value, char order) {
         auto result = new NDArray<T>(order, shape);
         result->assign(value);
         return result;
@@ -723,8 +726,8 @@ namespace nd4j {
             else
                 result->assign(vectors.at(0));
         } else {
-            Nd4jPointer* buffers = new Nd4jPointer[vectors.size()];
-            Nd4jPointer* shapes = new Nd4jPointer[vectors.size()];
+            auto buffers = new Nd4jPointer[vectors.size()];
+            auto shapes = new Nd4jPointer[vectors.size()];
 
             NDArray<T> *first = vectors.at(0);
 
@@ -734,7 +737,7 @@ namespace nd4j {
             buffers[0] = (Nd4jPointer) first->buffer();
             shapes[0] = (Nd4jPointer) first->shapeInfo();
 
-            std::vector<int> shape((unsigned int)first->rankOf());
+            std::vector<Nd4jLong> shape((unsigned int)first->rankOf());
             for (int e = 0; e < first->rankOf(); e++)
                 shape[e] = first->sizeAt(e);
 

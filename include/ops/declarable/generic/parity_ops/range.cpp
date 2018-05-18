@@ -88,7 +88,7 @@ namespace nd4j {
                 if (output->lengthOf() == data.size()) {
                     memcpy(output->buffer(), data.data(), data.size() * sizeof(T));
                 } else {
-                    auto array = new nd4j::NDArray<T>({(int) data.size()}, block.getWorkspace());
+                    auto array = new nd4j::NDArray<T>({(Nd4jLong) data.size()}, block.getWorkspace());
                     memcpy(array->buffer(), data.data(), data.size() * sizeof(T));
 
                     //block.pushNDArrayToVariableSpace(block.nodeId(), 0, array);
@@ -101,14 +101,14 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
         DECLARE_SHAPE_FN(range) {
-            int *newShape;
-            std::vector<int> shape;
+            Nd4jLong *newShape;
+            std::vector<Nd4jLong> shape;
             if (block.getIArguments()->size() > 0) {
-                int start = INT_ARG(0);
-                int stop = INT_ARG(1);
-                int step = INT_ARG(2);
+                auto start = INT_ARG(0);
+                auto stop = INT_ARG(1);
+                auto step = INT_ARG(2);
 
-                int cnt = 0;
+                Nd4jLong cnt = 0;
                 T e = (T) start;
                 if (start > stop) {
                     while (e > (T) stop) {
@@ -128,7 +128,7 @@ namespace nd4j {
                 T stop = T_ARG(1);
                 T step = T_ARG(2);
 
-                int cnt = 0;
+                Nd4jLong cnt = 0;
                 T e = start;
                 if (start > stop) {
                     while (e > stop) {
@@ -148,7 +148,7 @@ namespace nd4j {
                 shape.emplace_back(119);
             }
             
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
             //shape::shapeBuffer(1, shape.data(), newShape);
             shape::shapeVector(shape[0], newShape);
 

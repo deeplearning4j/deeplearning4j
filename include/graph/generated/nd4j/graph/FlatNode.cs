@@ -33,10 +33,10 @@ public struct FlatNode : IFlatbufferObject
   public int Output(int j) { int o = __p.__offset(20); return o != 0 ? __p.bb.GetInt(__p.__vector(o) + j * 4) : (int)0; }
   public int OutputLength { get { int o = __p.__offset(20); return o != 0 ? __p.__vector_len(o) : 0; } }
   public ArraySegment<byte>? GetOutputBytes() { return __p.__vector_as_arraysegment(20); }
-  public float ExtraParams(int j) { int o = __p.__offset(22); return o != 0 ? __p.bb.GetFloat(__p.__vector(o) + j * 4) : (float)0; }
+  public double ExtraParams(int j) { int o = __p.__offset(22); return o != 0 ? __p.bb.GetDouble(__p.__vector(o) + j * 8) : (double)0; }
   public int ExtraParamsLength { get { int o = __p.__offset(22); return o != 0 ? __p.__vector_len(o) : 0; } }
   public ArraySegment<byte>? GetExtraParamsBytes() { return __p.__vector_as_arraysegment(22); }
-  public int ExtraInteger(int j) { int o = __p.__offset(24); return o != 0 ? __p.bb.GetInt(__p.__vector(o) + j * 4) : (int)0; }
+  public long ExtraInteger(int j) { int o = __p.__offset(24); return o != 0 ? __p.bb.GetLong(__p.__vector(o) + j * 8) : (long)0; }
   public int ExtraIntegerLength { get { int o = __p.__offset(24); return o != 0 ? __p.__vector_len(o) : 0; } }
   public ArraySegment<byte>? GetExtraIntegerBytes() { return __p.__vector_as_arraysegment(24); }
   public int Dimensions(int j) { int o = __p.__offset(26); return o != 0 ? __p.bb.GetInt(__p.__vector(o) + j * 4) : (int)0; }
@@ -104,11 +104,11 @@ public struct FlatNode : IFlatbufferObject
   public static VectorOffset CreateOutputVector(FlatBufferBuilder builder, int[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddInt(data[i]); return builder.EndVector(); }
   public static void StartOutputVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static void AddExtraParams(FlatBufferBuilder builder, VectorOffset extraParamsOffset) { builder.AddOffset(9, extraParamsOffset.Value, 0); }
-  public static VectorOffset CreateExtraParamsVector(FlatBufferBuilder builder, float[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddFloat(data[i]); return builder.EndVector(); }
-  public static void StartExtraParamsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static VectorOffset CreateExtraParamsVector(FlatBufferBuilder builder, double[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddDouble(data[i]); return builder.EndVector(); }
+  public static void StartExtraParamsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
   public static void AddExtraInteger(FlatBufferBuilder builder, VectorOffset extraIntegerOffset) { builder.AddOffset(10, extraIntegerOffset.Value, 0); }
-  public static VectorOffset CreateExtraIntegerVector(FlatBufferBuilder builder, int[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddInt(data[i]); return builder.EndVector(); }
-  public static void StartExtraIntegerVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static VectorOffset CreateExtraIntegerVector(FlatBufferBuilder builder, long[] data) { builder.StartVector(8, data.Length, 8); for (int i = data.Length - 1; i >= 0; i--) builder.AddLong(data[i]); return builder.EndVector(); }
+  public static void StartExtraIntegerVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(8, numElems, 8); }
   public static void AddDimensions(FlatBufferBuilder builder, VectorOffset dimensionsOffset) { builder.AddOffset(11, dimensionsOffset.Value, 0); }
   public static VectorOffset CreateDimensionsVector(FlatBufferBuilder builder, int[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddInt(data[i]); return builder.EndVector(); }
   public static void StartDimensionsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }

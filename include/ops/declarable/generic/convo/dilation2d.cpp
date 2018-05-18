@@ -76,7 +76,7 @@ namespace ops {
         std::vector<int> strides(4);
         std::vector<int> rates(4);
 
-        int *newShape;
+        Nd4jLong *newShape;
 
         if (block.width() > 2) {
             auto r = INPUT_VARIABLE(2);
@@ -87,7 +87,7 @@ namespace ops {
             rates = r->template asVectorT<int>();
         } else {
             if (block.numI() < 9) {
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), int);
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
                 shape::shapeScalar(newShape);
                 return SHAPELIST(newShape);
             }
@@ -107,8 +107,8 @@ namespace ops {
 
         helpers::_dilation_hw(input, weights, strides, rates, isSameShape, &stride_rows, &stride_cols, &rate_rows, &rate_cols, &pad_top, &pad_left, &out_rows, &out_cols);
 
-        std::array<int, 4> shape = {{batch_size, out_rows, out_cols, depth}};
-        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
+        std::array<Nd4jLong, 4> shape = {{batch_size, out_rows, out_cols, depth}};
+        ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
         shape::shapeBuffer(4, shape.data(), newShape);
 
         return SHAPELIST(newShape);

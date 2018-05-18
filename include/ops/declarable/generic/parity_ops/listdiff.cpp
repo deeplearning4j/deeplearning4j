@@ -70,8 +70,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(saved > 0, 0, "ListDiff: no matches found");
 
-            int *shapeX = ShapeUtils<T>::createVectorShapeInfo(saved, block.workspace());
-            int *shapeY = ShapeUtils<T>::createVectorShapeInfo(saved, block.workspace());
+            auto shapeX = ShapeUtils<T>::createVectorShapeInfo(saved, block.workspace());
+            auto shapeY = ShapeUtils<T>::createVectorShapeInfo(saved, block.workspace());
 
             return SHAPELIST(shapeX, shapeY);
         }

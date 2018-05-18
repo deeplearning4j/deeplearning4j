@@ -18,7 +18,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        VariableSpace<T>* SessionLocalStorage<T>::localVariableSpace(Nd4jIndex sessionId) {
+        VariableSpace<T>* SessionLocalStorage<T>::localVariableSpace(Nd4jLong sessionId) {
             _mutex.lock();
             auto varSpace = _threadVariableSpace.at(sessionId);
             _mutex.unlock();
@@ -40,7 +40,7 @@ namespace nd4j {
 
 
         template <typename T>
-        Nd4jIndex SessionLocalStorage<T>::getThreadId() {
+        Nd4jLong SessionLocalStorage<T>::getThreadId() {
 #ifdef __APPLE__
             // syscall?
 #elif _WIN32
@@ -62,7 +62,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        void SessionLocalStorage<T>::endSession(Nd4jIndex sessionId) {
+        void SessionLocalStorage<T>::endSession(Nd4jLong sessionId) {
             // we should delete specific holders here
             _mutex.lock();
             auto vs = _threadVariableSpace[sessionId];
@@ -87,7 +87,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jIndex SessionLocalStorage<T>::getSessionId() {
+        Nd4jLong SessionLocalStorage<T>::getSessionId() {
             auto tid = getThreadId();
 
             _mutex.lock();
@@ -99,11 +99,11 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jIndex nd4j::graph::SessionLocalStorage<T>::startSession() {
+        Nd4jLong nd4j::graph::SessionLocalStorage<T>::startSession() {
             auto tid = getThreadId();
 
             nd4j_debug("Adding ThreadId: %i;\n", (int) tid);
-            Nd4jIndex ntid = _sessionCounter++;
+            Nd4jLong ntid = _sessionCounter++;
             _mutex.lock();
 
             _threadSession[tid] = ntid;

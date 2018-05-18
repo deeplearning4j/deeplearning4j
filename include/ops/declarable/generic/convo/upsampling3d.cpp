@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(upsampling3d, 1, 1, false, 0, 3) {
         
 DECLARE_SHAPE_FN(upsampling3d) {
     
-    int* inputShapeInfo = inputShape->at(0);
+    auto inputShapeInfo = inputShape->at(0);
     
     REQUIRE_TRUE(inputShapeInfo[0] == 5, 0, "UPSAMPLING2D op: input should be 5D, but got %i instead!", inputShapeInfo[0]);
 
@@ -43,8 +43,8 @@ DECLARE_SHAPE_FN(upsampling3d) {
     const int factorW = INT_ARG(2);
     const int isNCDHW = block.getIArguments()->size() > 3 ? INT_ARG(3) : 0;       // 1-NCDHW,  0-NDHWC
 
-    int* outputShapeInfo = nullptr;
-    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo[0]), int);
+    Nd4jLong *outputShapeInfo = nullptr;
+    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo[0]), Nd4jLong);
 
     outputShapeInfo[0] = inputShapeInfo[0];
     outputShapeInfo[1] = inputShapeInfo[1];
@@ -91,7 +91,7 @@ DECLARE_SHAPE_FN(upsampling3d_bp) {
     REQUIRE_TRUE(inputShape->at(0)[0] == 5, 0, "UPSAMPLING3D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
     REQUIRE_TRUE(inputShape->at(1)[0] == 5, 0, "UPSAMPLING3D_BP op: output's gradient array must be 4D, but got %i instead!", inputShape->at(1)[0]);
     
-    int* gradIShapeInfo(nullptr);
+    Nd4jLong *gradIShapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIShapeInfo);
     
     return SHAPELIST(gradIShapeInfo);

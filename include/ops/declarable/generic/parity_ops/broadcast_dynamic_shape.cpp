@@ -30,14 +30,14 @@ namespace nd4j {
             auto theFirst = inputShape->at(0);
             auto theSecond = inputShape->at(1);
 
-            int theFirstLen = shape::sizeAt(theFirst, -1);
-            int theSecondLen = shape::sizeAt(theSecond, -1);
+            auto theFirstLen = shape::sizeAt(theFirst, -1);
+            auto theSecondLen = shape::sizeAt(theSecond, -1);
 
-            int* newshape;
+            Nd4jLong* newshape;
     
-            int shapeLength = nd4j::math::nd4j_max(theFirstLen, theSecondLen);
+            auto shapeLength = nd4j::math::nd4j_max(theFirstLen, theSecondLen);
 
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
             shape::shapeVector(shapeLength,  newshape);
 
             shapeList->push_back(newshape); 

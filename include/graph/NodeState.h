@@ -12,10 +12,10 @@ namespace nd4j {
         class NodeState {
         private:
             // inner time spent on specific node
-            Nd4jIndex _inner = 0;
+            Nd4jLong _inner = 0;
 
             // outer time spent on specific node
-            Nd4jIndex _outer = 0;
+            Nd4jLong _outer = 0;
             
             // flag that shows if node is active or disabled (i.e. after Switch op)
             bool _active = true;
@@ -30,11 +30,11 @@ namespace nd4j {
             NodeState(int id = 0);
             ~NodeState() = default;
 
-            void setInnerTime(Nd4jIndex time);
-            void setOuterTime(Nd4jIndex time);
+            void setInnerTime(Nd4jLong time);
+            void setOuterTime(Nd4jLong time);
 
-            Nd4jIndex innerTime();
-            Nd4jIndex outerTime();
+            Nd4jLong innerTime();
+            Nd4jLong outerTime();
 
             void markActive(bool isActive);
             bool isActive();

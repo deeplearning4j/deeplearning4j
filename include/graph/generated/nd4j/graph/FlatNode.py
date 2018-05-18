@@ -142,14 +142,14 @@ class FlatNode(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(22))
         if o != 0:
             a = self._tab.Vector(o)
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4))
+            return self._tab.Get(flatbuffers.number_types.Float64Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 8))
         return 0
 
     # FlatNode
     def ExtraParamsAsNumpy(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(22))
         if o != 0:
-            return self._tab.GetVectorAsNumpy(flatbuffers.number_types.Float32Flags, o)
+            return self._tab.GetVectorAsNumpy(flatbuffers.number_types.Float64Flags, o)
         return 0
 
     # FlatNode
@@ -164,14 +164,14 @@ class FlatNode(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(24))
         if o != 0:
             a = self._tab.Vector(o)
-            return self._tab.Get(flatbuffers.number_types.Int32Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 4))
+            return self._tab.Get(flatbuffers.number_types.Int64Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 8))
         return 0
 
     # FlatNode
     def ExtraIntegerAsNumpy(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(24))
         if o != 0:
-            return self._tab.GetVectorAsNumpy(flatbuffers.number_types.Int32Flags, o)
+            return self._tab.GetVectorAsNumpy(flatbuffers.number_types.Int64Flags, o)
         return 0
 
     # FlatNode
@@ -246,9 +246,9 @@ def FlatNodeAddDataType(builder, dataType): builder.PrependInt8Slot(7, dataType,
 def FlatNodeAddOutput(builder, output): builder.PrependUOffsetTRelativeSlot(8, flatbuffers.number_types.UOffsetTFlags.py_type(output), 0)
 def FlatNodeStartOutputVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def FlatNodeAddExtraParams(builder, extraParams): builder.PrependUOffsetTRelativeSlot(9, flatbuffers.number_types.UOffsetTFlags.py_type(extraParams), 0)
-def FlatNodeStartExtraParamsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def FlatNodeStartExtraParamsVector(builder, numElems): return builder.StartVector(8, numElems, 8)
 def FlatNodeAddExtraInteger(builder, extraInteger): builder.PrependUOffsetTRelativeSlot(10, flatbuffers.number_types.UOffsetTFlags.py_type(extraInteger), 0)
-def FlatNodeStartExtraIntegerVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def FlatNodeStartExtraIntegerVector(builder, numElems): return builder.StartVector(8, numElems, 8)
 def FlatNodeAddDimensions(builder, dimensions): builder.PrependUOffsetTRelativeSlot(11, flatbuffers.number_types.UOffsetTFlags.py_type(dimensions), 0)
 def FlatNodeStartDimensionsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def FlatNodeAddDevice(builder, device): builder.PrependInt32Slot(12, device, 0)

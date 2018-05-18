@@ -35,15 +35,10 @@ namespace nd4j {
 
     public:
 
-#ifdef __CUDACC__
-        __host__
-#endif
-        static void info(const char *format, ...);
+        static void _CUDA_H info(const char *format, ...);
 
-#ifdef __CUDACC__
-        __host__
-#endif
-        static void printv(const char *format, std::vector<int>& vec);
+        static void _CUDA_H printv(const char *format, std::vector<int>& vec);
+        static void _CUDA_H printv(const char *format, std::vector<Nd4jLong>& vec);
     };
 
 }

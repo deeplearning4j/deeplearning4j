@@ -22,18 +22,18 @@ namespace nd4j {
         DECLARE_SHAPE_FN(matrix_determinant) {
             auto inShape = inputShape->at(0);
 
-            int* determinantShape;
+            Nd4jLong* determinantShape;
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
                 determinantShape = shape::createScalarShapeInfo();
             }
             else if (targetRank == 1) { // vector 
-                ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), int);
+                ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
                 shape::shapeVector(shape::sizeAt(inShape, 0), determinantShape);
             }
             else { // only two last dimensions are excluded
-                ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), int);
+                ALLOCATE(determinantShape, block.getWorkspace(), shape::shapeInfoLength(targetRank), Nd4jLong);
 
                 if (shape::order(inShape) == 'c')
                     shape::shapeBuffer(targetRank, shape::shapeOf(inShape), determinantShape);

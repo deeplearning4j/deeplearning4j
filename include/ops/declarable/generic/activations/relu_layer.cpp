@@ -35,8 +35,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(relu_layer) {
-
-            int* outputShape = ShapeUtils<T>::matrixProductShape(inputShape->at(0), inputShape->at(1), false, false, block.getWorkspace()); 
+            auto outputShape = ShapeUtils<T>::matrixProductShape(inputShape->at(0), inputShape->at(1), false, false, block.getWorkspace()); 
             
             return SHAPELIST(outputShape);
         }

@@ -18,7 +18,7 @@ namespace nd4j {
             REQUIRE_TRUE(list->height() == indices->lengthOf(), 1, "Number of indicies should be equal to number of elements in list, but got [%i] indices instead", indices->lengthOf());
 
             // first of all we need to get shapes
-            std::vector<int> shape({0});
+            std::vector<Nd4jLong> shape({0});
             for (int e = 0; e < list->height(); e++) {
                 auto array = list->readRaw(e);
                 shape[0] += array->sizeAt(0);

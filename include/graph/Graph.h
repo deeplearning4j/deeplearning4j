@@ -74,7 +74,7 @@ namespace nd4j {
             Nd4jStatus buildGraph();
 
             // this method will return estimated memory size (in bytes) required for 1 full graph execution round
-            Nd4jIndex estimateRequiredMemory();
+            Nd4jLong estimateRequiredMemory();
 
             // this method returns number of root nodes in this graph
             int rootNodes();
@@ -190,7 +190,7 @@ namespace nd4j {
             /**
              * This method returns hash of given Graph instance
              */
-            Nd4jIndex hashCode();
+            Nd4jLong hashCode();
 
             /**
              * PLEASE NOTE: This method will be moved to private section

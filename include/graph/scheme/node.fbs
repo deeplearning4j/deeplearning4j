@@ -16,8 +16,8 @@ table FlatNode {
     inputPaired:[IntPair]; //list of input variables or nodes, in format of IntPair.first is node Id, IntPair.second is output index of the node
     dataType:DataType; // to be removed
     output:[int]; // ID's of connected nodes for this node
-    extraParams:[float]; // extra params for this op (if any)
-    extraInteger:[int]; // optional integer extra params
+    extraParams:[double]; // extra params for this op (if any)
+    extraInteger:[long]; // optional integer extra params
     dimensions:[int]; // dimension for this operation
     device:int; // default is -1, which means _auto_
     scalar:float; // optional scalar. used in scalar ops & SummaryStats

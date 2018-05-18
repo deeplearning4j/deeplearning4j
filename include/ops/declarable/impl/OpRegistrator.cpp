@@ -14,25 +14,25 @@ namespace nd4j {
 
         template <typename OpName>
         __registratorFloat<OpName>::__registratorFloat() {
-            OpName *ptr = new OpName();
+            auto ptr = new OpName();
             OpRegistrator::getInstance()->registerOperationFloat(ptr);
         }
 
         template <typename OpName>
         __registratorHalf<OpName>::__registratorHalf() {
-            OpName *ptr = new OpName();
+            auto ptr = new OpName();
             OpRegistrator::getInstance()->registerOperationHalf(ptr);
         }
 
         template <typename OpName>
         __registratorDouble<OpName>::__registratorDouble() {
-            OpName *ptr = new OpName();
+            auto ptr = new OpName();
             OpRegistrator::getInstance()->registerOperationDouble(ptr);
         }
 
         template <typename OpName>
         __registratorSynonymFloat<OpName>::__registratorSynonymFloat(const char *name, const char *oname) {
-            OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationFloat(oname);
+            auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance()->getOperationFloat(oname));
             if (ptr == nullptr) {
                 std::string newName(name);
                 std::string oldName(oname);
@@ -45,7 +45,7 @@ namespace nd4j {
 
         template <typename OpName>
         __registratorSynonymHalf<OpName>::__registratorSynonymHalf(const char *name, const char *oname) {
-            OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationHalf(oname);
+            auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance()->getOperationHalf(oname));
             if (ptr == nullptr) {
                 std::string newName(name);
                 std::string oldName(oname);
@@ -58,7 +58,7 @@ namespace nd4j {
 
         template <typename OpName>
         __registratorSynonymDouble<OpName>::__registratorSynonymDouble(const char *name, const char *oname) {
-            OpName *ptr = (OpName *) OpRegistrator::getInstance()->getOperationDouble(oname);
+            auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance()->getOperationDouble(oname));
             if (ptr == nullptr) {
                 std::string newName(name);
                 std::string oldName(oname);
@@ -80,8 +80,8 @@ namespace nd4j {
         }
 
 
-        void OpRegistrator::updateMSVC(Nd4jIndex newHash, std::string& oldName) {
-            std::pair<Nd4jIndex, std::string> pair(newHash, oldName);
+        void OpRegistrator::updateMSVC(Nd4jLong newHash, std::string& oldName) {
+            std::pair<Nd4jLong, std::string> pair(newHash, oldName);
             _msvc.insert(pair);
         }
 
@@ -184,7 +184,7 @@ namespace nd4j {
             _declarablesF.insert(pair);
 
             auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(str);
-            std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float>*> pair2(hash, op);
+            std::pair<Nd4jLong, nd4j::ops::DeclarableOp<float>*> pair2(hash, op);
             _declarablesLF.insert(pair2);
 
             //nd4j_printf("Adding op [%s]:[%lld]\n", name, hash);
@@ -197,7 +197,7 @@ namespace nd4j {
             _declarablesD.insert(pair);
 
             auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(str);
-            std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<double>*> pair2(hash, op);
+            std::pair<Nd4jLong, nd4j::ops::DeclarableOp<double>*> pair2(hash, op);
             _declarablesLD.insert(pair2);
             return true;
         }
@@ -208,7 +208,7 @@ namespace nd4j {
             _declarablesH.insert(pair);
 
             auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(str);
-            std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float16>*> pair2(hash, op);
+            std::pair<Nd4jLong, nd4j::ops::DeclarableOp<float16>*> pair2(hash, op);
             _declarablesLH.insert(pair2);
             return true;
         }
@@ -254,7 +254,7 @@ namespace nd4j {
         }
 
 
-        nd4j::ops::DeclarableOp<float> *OpRegistrator::getOperationFloat(Nd4jIndex hash) {
+        nd4j::ops::DeclarableOp<float> *OpRegistrator::getOperationFloat(Nd4jLong hash) {
             if (!_declarablesLF.count(hash)) {
                 if (!_msvc.count(hash)) {
                     nd4j_printf("Unknown F operation requested by hash: [%lld]\n", hash);
@@ -266,7 +266,7 @@ namespace nd4j {
                     auto op = _declarablesF.at(str);
                     auto oHash = op->getOpDescriptor()->getHash();
 
-                    std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float>*> pair(oHash, op);
+                    std::pair<Nd4jLong, nd4j::ops::DeclarableOp<float>*> pair(oHash, op);
                     _declarablesLF.insert(pair);
 
                     _locker.unlock();
@@ -277,7 +277,7 @@ namespace nd4j {
         }
 
 
-        nd4j::ops::DeclarableOp<float16> *OpRegistrator::getOperationHalf(Nd4jIndex hash) {
+        nd4j::ops::DeclarableOp<float16> *OpRegistrator::getOperationHalf(Nd4jLong hash) {
             if (!_declarablesLH.count(hash)) {
                 if (!_msvc.count(hash)) {
                     nd4j_printf("Unknown H operation requested by hash: [%lld]\n", hash);
@@ -289,7 +289,7 @@ namespace nd4j {
                     auto op = _declarablesH.at(str);
                     auto oHash = op->getOpDescriptor()->getHash();
 
-                    std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<float16>*> pair(oHash, op);
+                    std::pair<Nd4jLong, nd4j::ops::DeclarableOp<float16>*> pair(oHash, op);
                     _declarablesLH.insert(pair);
 
                     _locker.unlock();
@@ -321,7 +321,7 @@ namespace nd4j {
         }
 
 
-        nd4j::ops::DeclarableOp<double> *OpRegistrator::getOperationDouble(Nd4jIndex hash) {
+        nd4j::ops::DeclarableOp<double> *OpRegistrator::getOperationDouble(Nd4jLong hash) {
             if (!_declarablesLD.count(hash)) {
                 if (!_msvc.count(hash)) {
                     nd4j_printf("Unknown D operation requested by hash: [%lld]\n", hash);
@@ -333,7 +333,7 @@ namespace nd4j {
                     auto op = _declarablesD.at(str);
                     auto oHash = op->getOpDescriptor()->getHash();
 
-                    std::pair<Nd4jIndex, nd4j::ops::DeclarableOp<double>*> pair(oHash, op);
+                    std::pair<Nd4jLong, nd4j::ops::DeclarableOp<double>*> pair(oHash, op);
                     _declarablesLD.insert(pair);
 
                     _locker.unlock();
@@ -353,17 +353,17 @@ namespace nd4j {
         }
 
         template <>
-        DeclarableOp<float> * OpRegistrator::getOperationT<float>(Nd4jIndex hash) {
+        DeclarableOp<float> * OpRegistrator::getOperationT<float>(Nd4jLong hash) {
             return this->getOperationFloat(hash);
         }
 
         template <>
-        DeclarableOp<float16> * OpRegistrator::getOperationT<float16>(Nd4jIndex hash) {
+        DeclarableOp<float16> * OpRegistrator::getOperationT<float16>(Nd4jLong hash) {
             return this->getOperationHalf(hash);
         }
 
         template <>
-        DeclarableOp<double> * OpRegistrator::getOperationT<double>(Nd4jIndex hash) {
+        DeclarableOp<double> * OpRegistrator::getOperationT<double>(Nd4jLong hash) {
             return this->getOperationDouble(hash);
         }
 
@@ -372,8 +372,8 @@ namespace nd4j {
         }
 
         template <>
-        std::vector<Nd4jIndex> OpRegistrator::getAllHashes<float>() {
-            std::vector<Nd4jIndex> result;
+        std::vector<Nd4jLong> OpRegistrator::getAllHashes<float>() {
+            std::vector<Nd4jLong> result;
 
             for (auto &v:_declarablesLF) {
                 result.emplace_back(v.first);
@@ -383,8 +383,8 @@ namespace nd4j {
         }
 
         template <>
-        std::vector<Nd4jIndex> OpRegistrator::getAllHashes<double>() {
-            std::vector<Nd4jIndex> result;
+        std::vector<Nd4jLong> OpRegistrator::getAllHashes<double>() {
+            std::vector<Nd4jLong> result;
 
             for (auto &v:_declarablesLD) {
                 result.emplace_back(v.first);
@@ -394,8 +394,8 @@ namespace nd4j {
         }
 
         template <>
-        std::vector<Nd4jIndex> OpRegistrator::getAllHashes<float16>() {
-            std::vector<Nd4jIndex> result;
+        std::vector<Nd4jLong> OpRegistrator::getAllHashes<float16>() {
+            std::vector<Nd4jLong> result;
 
             for (auto &v:_declarablesLH) {
                 result.emplace_back(v.first);

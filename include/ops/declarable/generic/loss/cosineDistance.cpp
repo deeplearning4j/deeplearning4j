@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 	NDArray<T>* weightsBroad = weights;	
 	if(!weights->isScalar() && !weights->isSameShape(output)) {
 		// evaluate repeat dimensions for tile operation
-		std::vector<int> reps;
+		std::vector<Nd4jLong> reps;
 		for(int i = 0; i < output->rankOf(); ++i)
 			reps.emplace_back(labels->shapeOf()[i] / weights->shapeOf()[i]);
 		weightsBroad = new NDArray<T>(weights->tile(reps));
@@ -112,8 +112,8 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 DECLARE_SHAPE_FN(cosine_distance_loss) {
 
 	// labels and predictions must have the same shapes 
-	int* predictionsShapeInfo = inputShape->at(0);
-    int* labelsShapeInfo  	  = inputShape->at(2);
+	auto predictionsShapeInfo = inputShape->at(0);
+    auto labelsShapeInfo  	  = inputShape->at(2);
 
     // labels and predictions must have the same shapes
     REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, predictionsShapeInfo), 0, "COSINE_DISTANCE_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(predictionsShapeInfo).c_str());
@@ -123,9 +123,9 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
     	dim += labelsShapeInfo[0];
  
  	// evaluate output shapeInfo
-    int* outShapeInfo = nullptr;
+    Nd4jLong* outShapeInfo = nullptr;
     if(INT_ARG(0) != 0) {			// in this case output is scalar
-    	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2) /*rank=2*/, int);
+    	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2) /*rank=2*/, Nd4jLong);
     	outShapeInfo[0] = 2;
     	outShapeInfo[1] = outShapeInfo[2] = outShapeInfo[3] = outShapeInfo[4] = 1;
     	outShapeInfo[5] = 0;

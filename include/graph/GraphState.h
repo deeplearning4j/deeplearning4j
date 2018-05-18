@@ -24,7 +24,7 @@ namespace graph {
     class ND4J_EXPORT GraphState {
     protected:
         // id of this GraphState instance
-        Nd4jIndex _id = 0;
+        Nd4jLong _id = 0;
 
         // map of scopes. Scope id is used as key, since it's referred in calls later anyway
         std::map<int, Scope<T> *> _scopes;
@@ -35,14 +35,14 @@ namespace graph {
         Graph<T> *_graph;
 
     public:
-        explicit GraphState(Nd4jIndex id);
+        explicit GraphState(Nd4jLong id);
         ~GraphState();
 
         /**
          *
          * @return
          */
-        Nd4jIndex id();
+        Nd4jLong id();
 
         /**
          * This method adds scope to this state tracker
@@ -96,7 +96,7 @@ namespace graph {
          * @param type
          * @return
          */
-        Nd4jStatus attachOpToScope(int scopeId, Nd4jIndex opNum, int type, ArgumentsList inputs);
+        Nd4jStatus attachOpToScope(int scopeId, Nd4jLong opNum, int type, ArgumentsList inputs);
 
         /**
          * This method adds return statement to specified scope

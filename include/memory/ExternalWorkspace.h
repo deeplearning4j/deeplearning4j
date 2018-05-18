@@ -15,19 +15,19 @@ namespace nd4j {
             void *_ptrH = nullptr;
             void *_ptrD = nullptr;
 
-            Nd4jIndex _sizeH = 0L;
-            Nd4jIndex _sizeD = 0L;
+            Nd4jLong _sizeH = 0L;
+            Nd4jLong _sizeD = 0L;
         public:
             ExternalWorkspace() = default;
             ~ExternalWorkspace() = default;
 
-            ExternalWorkspace(Nd4jPointer ptrH, Nd4jIndex sizeH, Nd4jPointer ptrD, Nd4jIndex sizeD);
+            ExternalWorkspace(Nd4jPointer ptrH, Nd4jLong sizeH, Nd4jPointer ptrD, Nd4jLong sizeD);
             
             void *pointerHost();
             void *pointerDevice();
 
-            Nd4jIndex sizeHost();
-            Nd4jIndex sizeDevice();
+            Nd4jLong sizeHost();
+            Nd4jLong sizeDevice();
         };
     }
 }

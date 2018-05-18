@@ -26,7 +26,7 @@ namespace nd4j {
             DataType _dataType;
             OpType _opType;
             ContextPrototype<T>* _protoContext = nullptr;
-            Nd4jIndex _opNum;
+            Nd4jLong _opNum;
             int _id;
             std::vector<std::pair<int, int>> _input;
             std::vector<std::pair<int, int>> _output;
@@ -75,7 +75,7 @@ namespace nd4j {
             int _rewindNode = -1;
             std::pair<int, int> _rewindLayer = {-1, -1};
 
-            Nd4jIndex _frameId = -1;
+            Nd4jLong _frameId = -1;
 
         public:
             Node(OpType opType = OpType_TRANSFORM, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<T> tArgs = {}, std::initializer_list<int> iArgs = {});
@@ -87,13 +87,13 @@ namespace nd4j {
             DataType dataType();
             ContextPrototype<T>* protoContext();
             OpType opType();
-            Nd4jIndex opNum();
+            Nd4jLong opNum();
             int id();
             std::vector<std::pair<int,int>> *input();
             std::vector<std::pair<int, int>> *output();
 
-            Nd4jIndex getFrameId();
-            void setFrameId(Nd4jIndex frameId);
+            Nd4jLong getFrameId();
+            void setFrameId(Nd4jLong frameId);
 
             int getRewindNode();
             void setRewindNode(int nodeId);
@@ -164,8 +164,8 @@ namespace nd4j {
             OpClass getOpClass();
 
             // these methods are used for internal profiling
-            void setOuterTime(Nd4jIndex time);
-            void setInnerTime(Nd4jIndex time);
+            void setOuterTime(Nd4jLong time);
+            void setInnerTime(Nd4jLong time);
 
             // methods related to scopes
             bool isScoped();

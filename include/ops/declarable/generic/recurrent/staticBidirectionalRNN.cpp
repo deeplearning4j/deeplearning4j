@@ -48,11 +48,11 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     REQUIRE_TRUE(WxFW->rankOf() == 2, 0, "STATIC_BIDIRECTIONAL_RNN custom operation: input-to-hidden weights array (for forward  RNN) must have rank = 2, but got %i instead !", WxFW->rankOf());    
     REQUIRE_TRUE(WxBW->rankOf() == 2, 0, "STATIC_BIDIRECTIONAL_RNN custom operation: input-to-hidden weights array (for backward RNN) must have rank = 2, but got %i instead !", WxBW->rankOf());    
 
-    const int inRank     = x->rankOf();
-    const int time       = x->sizeAt(0);
-    const int bS         = x->sizeAt(1);
-    const int numUnitsFW = WxFW->sizeAt(1);
-    const int numUnitsBW = WxBW->sizeAt(1);
+    const Nd4jLong inRank     = x->rankOf();
+    const Nd4jLong time       = x->sizeAt(0);
+    const Nd4jLong bS         = x->sizeAt(1);
+    const Nd4jLong numUnitsFW = WxFW->sizeAt(1);
+    const Nd4jLong numUnitsBW = WxBW->sizeAt(1);
 
     REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(WhFW) == ShapeUtils<T>::shapeAsString({numUnitsFW, numUnitsFW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of hidden-to-hidden weights array (for forward  RNN), expected is %s but got %s instead !", ShapeUtils<T>::shapeAsString({numUnitsFW, numUnitsFW}).c_str(), ShapeUtils<T>::shapeAsString(WhFW).c_str());     
     REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(WhBW) == ShapeUtils<T>::shapeAsString({numUnitsBW, numUnitsBW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of hidden-to-hidden weights array (for backward RNN), expected is %s but got %s instead !", ShapeUtils<T>::shapeAsString({numUnitsBW, numUnitsBW}).c_str(), ShapeUtils<T>::shapeAsString(WhBW).c_str()); 
@@ -105,17 +105,17 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
 
 DECLARE_SHAPE_FN(static_bidirectional_rnn) {    
 
-	int* xShapeInfo     = inputShape->at(0);         // input [time x bS x inSize]
-	int* WxFWShapeInfo  = inputShape->at(1);         // input-to-hidden  weights for forward  RNN, [inSize  x numUnitsFW]
-    int* WhFWShapeInfo  = inputShape->at(2);         // hidden-to-hidden weights for forward  RNN, [numUnitsFW x numUnitsFW]
-    int* bFWShapeInfo   = inputShape->at(3);         // biases for forward  RNN, [2*numUnitsFW]
-    int* WxBWShapeInfo  = inputShape->at(4);         // input-to-hidden  weights for backward RNN, [inSize  x numUnitsBW]
-    int* WhBWShapeInfo  = inputShape->at(5);         // hidden-to-hidden weights for backward RNN, [numUnitsBW x numUnitsBW]
-	int* bBWShapeInfo   = inputShape->at(6);         // biases for backward RNN, [2*numUnitsBW]
+	auto xShapeInfo     = inputShape->at(0);         // input [time x bS x inSize]
+	auto WxFWShapeInfo  = inputShape->at(1);         // input-to-hidden  weights for forward  RNN, [inSize  x numUnitsFW]
+    auto WhFWShapeInfo  = inputShape->at(2);         // hidden-to-hidden weights for forward  RNN, [numUnitsFW x numUnitsFW]
+    auto bFWShapeInfo   = inputShape->at(3);         // biases for forward  RNN, [2*numUnitsFW]
+    auto WxBWShapeInfo  = inputShape->at(4);         // input-to-hidden  weights for backward RNN, [inSize  x numUnitsBW]
+    auto WhBWShapeInfo  = inputShape->at(5);         // hidden-to-hidden weights for backward RNN, [numUnitsBW x numUnitsBW]
+	auto bBWShapeInfo   = inputShape->at(6);         // biases for backward RNN, [2*numUnitsBW]
 
-	int* h0FWShapeInfo = nullptr;					// initial cell output for forward  RNN (at time step = 0) [bS x numUnitsFW]
-	int* h0BWShapeInfo = nullptr;			    	// initial cell output for backward RNN (at time step = 0) [bS x numUnitsBW]
-	int* maxTimeStepShapeInfo = nullptr;       		// vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
+	Nd4jLong* h0FWShapeInfo = nullptr;					// initial cell output for forward  RNN (at time step = 0) [bS x numUnitsFW]
+	Nd4jLong* h0BWShapeInfo = nullptr;			    	// initial cell output for backward RNN (at time step = 0) [bS x numUnitsBW]
+	Nd4jLong* maxTimeStepShapeInfo = nullptr;       		// vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
 
 	switch(block.width()) {
 		case 8:
@@ -154,10 +154,10 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
         REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(maxTimeStepShapeInfo)  == ShapeUtils<T>::shapeAsString({bS}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but got %s instead !", bS, ShapeUtils<T>::shapeAsString(maxTimeStepShapeInfo).c_str());
 
     // evaluate output shapeInfos
-    int *hShapeInfo(nullptr), *hFWFinalPrevShapeInfo(nullptr), *hBWFinalPrevShapeInfo(nullptr);
-    ALLOCATE(hShapeInfo,            block.getWorkspace(), shape::shapeInfoLength(inRank), int);
-    ALLOCATE(hFWFinalPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), int);
-    ALLOCATE(hBWFinalPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), int);
+    Nd4jLong *hShapeInfo(nullptr), *hFWFinalPrevShapeInfo(nullptr), *hBWFinalPrevShapeInfo(nullptr);
+    ALLOCATE(hShapeInfo,            block.getWorkspace(), shape::shapeInfoLength(inRank), Nd4jLong);
+    ALLOCATE(hFWFinalPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), Nd4jLong);
+    ALLOCATE(hBWFinalPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), Nd4jLong);
 
     hShapeInfo[0]     		 = inRank;
     hFWFinalPrevShapeInfo[0] = hBWFinalPrevShapeInfo[0] = inRank-1;

@@ -18,7 +18,7 @@ namespace nd4j {
         NDArray<T> *y = INPUT_VARIABLE(1);
 
         NDArray<T>* z = OUTPUT_VARIABLE(0);
-        std::vector<int> shapeNew(y->shapeOf(), y->shapeOf() + y->rankOf());
+        std::vector<Nd4jLong> shapeNew(y->shapeOf(), y->shapeOf() + y->rankOf());
         char order = y->ordering();
 
         if (x->reshapei(order, shapeNew)) {
@@ -33,13 +33,12 @@ namespace nd4j {
     
     DECLARE_SHAPE_FN(reshapeas) {
     
-    int* inputShapeInfo = inputShape->at(1);    
+    auto inputShapeInfo = inputShape->at(1);    
     int shapeInfoLength = inputShapeInfo[0]*2 + 4;
 
     // FIXME: remove memcpy
-    int* outputShapeInfo(nullptr);
-    ALLOCATE(outputShapeInfo, block.getWorkspace(), shapeInfoLength, int); 
-    memcpy(outputShapeInfo, inputShapeInfo, shapeInfoLength*sizeof(int));
+    Nd4jLong* outputShapeInfo(nullptr);
+    COPY_SHAPE(inputShapeInfo, outputShapeInfo);
     
     return SHAPELIST(outputShapeInfo);
 }

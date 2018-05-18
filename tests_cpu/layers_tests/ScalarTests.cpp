@@ -135,9 +135,7 @@ TEST_F(ScalarTests, Test_Concat_3) {
 
 TEST_F(ScalarTests, Test_ExpandDims_1) {
     NDArray<float> x(2.0f);
-    std::vector<int> vecS({1});
-    std::vector<float> vecD({2.0f});
-    NDArray<float> exp('c', vecS, vecD);
+    NDArray<float> exp('c', {1}, {2.0f});
 
     nd4j::ops::expand_dims<float> op;
     auto result = op.execute({&x}, {}, {0});

@@ -57,7 +57,7 @@ extern "C" {
 #define MS_SYNC         2
 #define MS_INVALIDATE   4
 
-void _mmap(Nd4jIndex* result, size_t length, const char *fileName);
+void _mmap(Nd4jLong* result, size_t length, const char *fileName);
 void*   mmap(void *addr, size_t len, int prot, int flags, int fildes, OffsetType off);
 int     munmap(void *addr, size_t len);
 int     _mprotect(void *addr, size_t len, int prot);
@@ -115,7 +115,7 @@ static DWORD __map_mmap_prot_file(const int prot)
     return desiredAccess;
 }
 
-void _mmap(Nd4jIndex* result, size_t length, const char *fileName) {
+void _mmap(Nd4jLong* result, size_t length, const char *fileName) {
     HANDLE fm, h;
 
     void * map = MAP_FAILED;
@@ -180,8 +180,8 @@ void _mmap(Nd4jIndex* result, size_t length, const char *fileName) {
         throw std::runtime_error("MapViewOfFile failed");
     }
 
-    result[0] = reinterpret_cast<Nd4jIndex>(map);
-    result[1] = reinterpret_cast<Nd4jIndex>(h);
+    result[0] = reinterpret_cast<Nd4jLong>(map);
+    result[1] = reinterpret_cast<Nd4jLong>(h);
 }
 
 void* mmap(void *addr, size_t len, int prot, int flags, int files, OffsetType off)

@@ -19,13 +19,13 @@ class FlatBuffersTest : public testing::Test {
 public:
     int alpha = 0;
 
-    int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
-    int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
+    Nd4jLong *cShape = new Nd4jLong[8]{2, 2, 2, 2, 1, 0, 1, 99};
+    Nd4jLong *fShape = new Nd4jLong[8]{2, 2, 2, 1, 2, 0, 1, 102};
 
     FlatBuffersTest() {
         Environment::getInstance()->setDebug(false);
         Environment::getInstance()->setVerbose(false);
-        Environment::getInstance()->setProfiling(true);
+        Environment::getInstance()->setProfiling(false);
     }
 
     ~FlatBuffersTest() {
@@ -75,7 +75,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto array = new NDArray<float>('c', {5, 5});
     array->assign(-2.0f);
 
-    auto fShape = builder.CreateVector(array->getShapeInfoAsVector());
+    auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
     auto fBuffer = builder.CreateVector(array->asByteVector());
 
     auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DataType::DataType_FLOAT);
@@ -523,12 +523,14 @@ TEST_F(FlatBuffersTest, ReadStridedSlice_1) {
 
 
 TEST_F(FlatBuffersTest, ReduceDim_1) {
-    
-    NDArray<float> exp('c', (std::vector<int>){3});
+    NDArray<float> exp('c', {3});
     exp.assign(3.0);
 
 
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim.fb");
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_false.fb");
+
+    //graph->printOut();
+
     auto variableSpace = graph->getVariableSpace();
 
 
@@ -544,7 +546,7 @@ TEST_F(FlatBuffersTest, ReduceDim_1) {
 
     ASSERT_TRUE(variableSpace->hasVariable(3));
 
-    auto result = variableSpace->getVariable(4)->getNDArray();
+    auto result = variableSpace->getVariable(3)->getNDArray();
 
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));
@@ -552,14 +554,47 @@ TEST_F(FlatBuffersTest, ReduceDim_1) {
     delete graph;
 }
 
+TEST_F(FlatBuffersTest, ReduceDim_2) {
+    NDArray<float> exp('c', {3, 1});
+    exp.assign(3.0);
+
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim_true.fb");
+
+    //graph->printOut();
+
+    auto variableSpace = graph->getVariableSpace();
+
+
+    ASSERT_TRUE(variableSpace->hasVariable(1));
+    ASSERT_TRUE(variableSpace->hasVariable(2));
+
+    auto x = variableSpace->getVariable(1)->getNDArray();
+    auto y = variableSpace->getVariable(2)->getNDArray();
+
+    Nd4jStatus status = GraphExecutioner<float>::execute(graph);
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    ASSERT_TRUE(variableSpace->hasVariable(3));
+
+    auto result = variableSpace->getVariable(3)->getNDArray();
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete graph;
+}
+
+
 TEST_F(FlatBuffersTest, Ae_00) {
     nd4j::ops::rank<float> op1;
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
 
-    NDArray<float> exp('c', {5, 4}, {0.951276f, 0.501379f, 0.501368f, 0.968136f, -0.951359f, 0.499845f, -0.501381f, 0.976955f, -0.000073f, 0.499154f, 0.000098f, 0.972500f, -0.019765f, -0.499479f, -0.005979f, -0.965330f, 0.016531f, -0.500842f, 0.004861f, -0.965910f});
+    NDArray<float> exp('c', {5, 4}, {0.32454616f, -0.06604697f, 0.22593613f, 0.43166467f, -0.18320604f, 0.00102305f, -0.06963076f, 0.25266643f, 0.07568010f, -0.03009197f, 0.07805517f, 0.33180334f, -0.06220427f, 0.07249600f, -0.06726961f, -0.22998397f, -0.06343779f, 0.07384885f, -0.06891008f,  -0.23745790f});
 
-    graph->printOut();
+//    graph->printOut();
 
     ASSERT_EQ(OutputMode_VARIABLE_SPACE, graph->getExecutorConfiguration()->_outputMode);
 
@@ -579,11 +614,11 @@ TEST_F(FlatBuffersTest, Ae_00) {
 TEST_F(FlatBuffersTest, expand_dims) {
     nd4j::ops::rank<float> op1;
 
-    NDArray<float> exp('c', {3, 1, 4}, {-0.136331f, -0.608995f, 0.361580f, -0.082446f, 0.843615f, 0.755323f, 1.083639f, 1.629809f, 0.749157f, 2.765640f, -0.521926f, 1.402359f});
+    NDArray<float> exp('c', {3, 1, 4}, {-0.95938617f, -1.20301781f, 1.22260064f, 0.50172403f, 0.59972949f, 0.78568028f, 0.31609724f, 1.51674747f, 0.68013491f, -0.05227458f, 0.25903158f, 1.13243439f});
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/expand_dim.fb");
 
-    graph->printOut();
+//    graph->printOut();
 
     auto result = GraphExecutioner<float>::execute(graph);
     ASSERT_EQ(ND4J_STATUS_OK, result);
@@ -602,10 +637,10 @@ TEST_F(FlatBuffersTest, transpose) {
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/transpose.fb");
 
-    graph->printOut();
+    //graph->printOut();
 
-    //auto result = GraphExecutioner<float>::execute(graph);
-    //ASSERT_EQ(ND4J_STATUS_OK, result);
+    auto result = GraphExecutioner<float>::execute(graph);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
 
     delete graph;
 }

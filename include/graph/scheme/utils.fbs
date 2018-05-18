@@ -5,6 +5,12 @@ table LongPair {
     second:long; // second
 }
 
+table LongTriple {
+    first:long;
+    second:long;
+    third:long;
+}
+
 table IntPair {
     first:int;
     second:int;

@@ -12,7 +12,7 @@ This kind of operations is actually split into multiple subtypes, based on eleme
 Despite differences between these operations, they are all using XZ/XYZ three-operand design, where X and Y are inputs, and Z is output.
 Data access in these operations is usually trivial, and loop based. I.e. most trivial loop for scalar transform will look like this:
 ```c++
-for (Nd4jIndex i = start; i < end; i++) {
+for (Nd4jLong i = start; i < end; i++) {
     result[i] = OpType::op(x[i], scalar, extraParams);
 }
 ```
@@ -101,7 +101,7 @@ DECLARE_SHAPE_FN(tear) {
 
     shape::TAD tad(inShape, dims.data(), (int) dims.size());
     tad.createTadOnlyShapeInfo();
-    Nd4jIndex numTads = shape::tadLength(inShape, dims.data(), (int) dims.size());
+    Nd4jLong numTads = shape::tadLength(inShape, dims.data(), (int) dims.size());
 
     auto result = SHAPELIST();
     for (int e = 0; e < numTads; e++) {
@@ -183,5 +183,5 @@ We have number of utility macros, suitable for custom ops. Here they are:
 - **REQUIRE_TRUE**(...): this macro takes condition, and evaluates it. If evaluation doesn't end up as True - exception is raised, and specified message is printed out.
 - **LAMBDA_T**(X) and **LAMBDA_TT**(X, Y): lambda declaration for `NDArray::applyLambda` and `NDArray::applyPairwiseLambda`
 - **COPY_SHAPE**(SRC, TGT): this macro allocates memory for TGT pointer and copies shape from SRC pointer 
-- **ILAMBDA_T**(X) and **ILAMBDA_TT**(X, Y): lambda declaration for indexed lambdas, index argument is passed in as Nd4jIndex (aka **long long**)
+- **ILAMBDA_T**(X) and **ILAMBDA_TT**(X, Y): lambda declaration for indexed lambdas, index argument is passed in as Nd4jLong (aka **long long**)
 - **FORCEINLINE**: platform-specific definition for functions inlining

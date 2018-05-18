@@ -23,8 +23,8 @@ namespace nd4j {
         */
         template <typename T>
         ShapeList *BooleanOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
-            int *shapeNew;
-            ALLOCATE(shapeNew, block.getWorkspace(), shape::shapeInfoLength(2), int);
+            Nd4jLong *shapeNew;
+            ALLOCATE(shapeNew, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
             shapeNew[0] = 2;
             shapeNew[1] = 1;
             shapeNew[2] = 1;

@@ -43,9 +43,9 @@ namespace nd4j {
             }
 
             for (int e = 0; e < 2; e++) { // 2 element tuple at output
-                int* newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), int);
-                std::vector<int> internalShape(shapeRank);
+                Nd4jLong* newshape;
+                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), Nd4jLong);
+                std::vector<Nd4jLong> internalShape(shapeRank);
                 for (int e = 0 ; e < shapeRank - 1; ++e)
                     internalShape[e] = shape::sizeAt(in, e);
                 internalShape[shapeRank - 1] = k;

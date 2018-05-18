@@ -16,8 +16,8 @@ namespace nd4j {
             nd4j::graph::ExecutionMode _executionMode;
             nd4j::graph::OutputMode _outputMode;
             bool _timestats;
-            Nd4jIndex _footprintForward = 0L;
-            Nd4jIndex _footprintBackward = 0L;
+            Nd4jLong _footprintForward = 0L;
+            Nd4jLong _footprintBackward = 0L;
             Direction _direction = Direction_FORWARD_ONLY;
 
             ExecutorConfiguration(const nd4j::graph::FlatConfiguration *conf = nullptr);

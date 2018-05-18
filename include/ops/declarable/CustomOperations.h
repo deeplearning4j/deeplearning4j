@@ -24,6 +24,7 @@
 #include <ops/declarable/headers/tests.h>
 #include <dll.h>
 #include <Status.h>
+#include <helpers/ArrayUtils.h>
 
 
 namespace nd4j {

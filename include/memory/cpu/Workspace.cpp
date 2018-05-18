@@ -32,7 +32,7 @@ namespace nd4j {
             }
         };
 
-        Workspace::Workspace(Nd4jIndex initialSize) {
+        Workspace::Workspace(Nd4jLong initialSize) {
             if (initialSize > 0) {
                 this->_ptrHost = (char *) malloc(initialSize);
 
@@ -50,7 +50,7 @@ namespace nd4j {
             this->_spillsSize = 0;
         }
 
-        void Workspace::init(Nd4jIndex bytes) {
+        void Workspace::init(Nd4jLong bytes) {
             if (this->_currentSize < bytes) {
                 if (this->_allocatedHost && !_externalized)
                     free((void *)this->_ptrHost);
@@ -65,11 +65,11 @@ namespace nd4j {
             }
         }
 
-        void Workspace::expandBy(Nd4jIndex numBytes) {
+        void Workspace::expandBy(Nd4jLong numBytes) {
             this->init(_currentSize + numBytes);
         }
 
-        void Workspace::expandTo(Nd4jIndex numBytes) {
+        void Workspace::expandTo(Nd4jLong numBytes) {
             this->init(numBytes);
         }
 
@@ -92,20 +92,20 @@ namespace nd4j {
             freeSpills();
         }
 
-        Nd4jIndex Workspace::getUsedSize() {
+        Nd4jLong Workspace::getUsedSize() {
             return getCurrentOffset();
         }
 
-        Nd4jIndex Workspace::getCurrentSize() {
+        Nd4jLong Workspace::getCurrentSize() {
             return _currentSize;
         }
 
-        Nd4jIndex Workspace::getCurrentOffset() {
+        Nd4jLong Workspace::getCurrentOffset() {
             return _offset.load();
         }
 
 
-        void* Workspace::allocateBytes(Nd4jIndex numBytes) {
+        void* Workspace::allocateBytes(Nd4jLong numBytes) {
             if (numBytes < 1) {
                 nd4j_printf("Bad number of bytes requested for allocation: %i\n", numBytes);
                 throw std::invalid_argument("Number of bytes for allocation should be positive");
@@ -144,7 +144,7 @@ namespace nd4j {
             return result;
         }
 
-        Nd4jIndex Workspace::getAllocatedSize() {
+        Nd4jLong Workspace::getAllocatedSize() {
             return getCurrentSize() + getSpilledSize();
         }
 
@@ -158,11 +158,11 @@ namespace nd4j {
             _offset = 0;
         }
 
-        Nd4jIndex Workspace::getSpilledSize() {
+        Nd4jLong Workspace::getSpilledSize() {
             return _spillsSize.load();
         }
 
-        void* Workspace::allocateBytes(nd4j::memory::MemoryType type, Nd4jIndex numBytes) {
+        void* Workspace::allocateBytes(nd4j::memory::MemoryType type, Nd4jLong numBytes) {
             if (type == DEVICE)
                 throw "CPU backend doesn't have device memory";
 
@@ -171,7 +171,7 @@ namespace nd4j {
 
         Workspace* Workspace::clone() {
             // for clone we take whatever is higher: current allocated size, or allocated size of current loop
-            Workspace* res = new Workspace(nd4j::math::nd4j_max<Nd4jIndex >(this->getCurrentSize(), this->_cycleAllocations.load()));
+            Workspace* res = new Workspace(nd4j::math::nd4j_max<Nd4jLong >(this->getCurrentSize(), this->_cycleAllocations.load()));
             return res;
         }
     }

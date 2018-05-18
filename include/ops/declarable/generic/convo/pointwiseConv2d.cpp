@@ -49,9 +49,9 @@ CUSTOM_OP_IMPL(pointwise_conv2d, 2, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(pointwise_conv2d) {
     
-    int* inputShapeInfo  = inputShape->at(0);                                   // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    int* weightsShapeInfo  = inputShape->at(1);                                 // [1,  1,  iC, oC] (NHWC) or [oC, iC,  1,  1] (NCHW)  
-    int* biasShapeInfo = block.width() > 2 ? inputShape->at(2) : nullptr;       // [oC]
+    Nd4jLong* inputShapeInfo  = inputShape->at(0);                                   // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    Nd4jLong* weightsShapeInfo  = inputShape->at(1);                                 // [1,  1,  iC, oC] (NHWC) or [oC, iC,  1,  1] (NCHW)  
+    Nd4jLong* biasShapeInfo = block.width() > 2 ? inputShape->at(2) : nullptr;       // [oC]
 
     const int rank = 4;
     REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM POINTWISECONV2D OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);
@@ -76,7 +76,7 @@ DECLARE_SHAPE_FN(pointwise_conv2d) {
     if (biasShapeInfo) 
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "POINTWISECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));    
 
-    int* outputShapeInfo = nullptr;
+    Nd4jLong* outputShapeInfo = nullptr;
     COPY_SHAPE(inputShapeInfo, outputShapeInfo);  
 
     // do not forget to put oC instead of iC in outputShapeInfo

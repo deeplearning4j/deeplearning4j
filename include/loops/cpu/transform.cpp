@@ -10,7 +10,7 @@ namespace functions {
     namespace transform {
 
         template <typename T>
-        void Transform<T>::exec(int opNum, T *dx, int xStride, T *result, int resultStride, T *extraParams, const int n) {
+        void Transform<T>::exec(int opNum, T *dx, Nd4jLong xStride, T *result, Nd4jLong resultStride, T *extraParams, const Nd4jLong n) {
             DISPATCH_BY_OPNUM(exec, PARAMS(dx, xStride, result, resultStride, extraParams, n), TRANSFORM_OPS);
 		}
 
@@ -18,10 +18,10 @@ namespace functions {
         void Transform<T>::exec(
 				int opNum,
 				T *dx,
-				int *xShapeInfo,
+				Nd4jLong *xShapeInfo,
 				T *result,
-				int *resultShapeInfo,
-				T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
+				Nd4jLong *resultShapeInfo,
+				T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
                     DISPATCH_BY_OPNUM(exec, PARAMS(dx, xShapeInfo, result, resultShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
 		}
 
@@ -29,32 +29,32 @@ namespace functions {
         template<typename OpType>
 		void _CUDA_H Transform<T>::exec(
                     T *dx,
-                    int *xShapeInfo,
+                    Nd4jLong *xShapeInfo,
                     T *result,
-                    int *resultShapeInfo,
-                    T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
+                    Nd4jLong *resultShapeInfo,
+                    T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
                 if(OpType::requiresSpecial) {
                     OpType::execSpecial(dx,xShapeInfo,result,resultShapeInfo,extraParams, tadShapeInfo, tadOffsets);
                     return;
                 }
 
-                int n = shape::length(xShapeInfo);
-                int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-                int resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
+                auto n = shape::length(xShapeInfo);
+                auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                auto resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 
                 if(xElementWiseStride >= 1 && resultElementWiseStride >= 1 && shape::order(xShapeInfo) == shape::order(resultShapeInfo)) {
                     exec<OpType>(dx,xElementWiseStride,result,resultElementWiseStride,extraParams,n);
                 }
                 else {
-                    int shapeIter[MAX_RANK];
-                    int coord[MAX_RANK];
+                    Nd4jLong shapeIter[MAX_RANK];
+                    Nd4jLong coord[MAX_RANK];
                     int dim;
-                    int xStridesIter[MAX_RANK];
-                    int resultStridesIter[MAX_RANK];
-                    int *xShape = shape::shapeOf(xShapeInfo);
-                    int *xStride = shape::stride(xShapeInfo);
-                    int *resultStride = shape::stride(resultShapeInfo);
+                    Nd4jLong xStridesIter[MAX_RANK];
+                    Nd4jLong resultStridesIter[MAX_RANK];
+                    auto xShape = shape::shapeOf(xShapeInfo);
+                    auto xStride = shape::stride(xShapeInfo);
+                    auto resultStride = shape::stride(resultShapeInfo);
                     int rank = shape::rank(xShapeInfo);
                     if(PrepareTwoRawArrayIter<T>(rank,
                                                  xShape,
@@ -91,11 +91,11 @@ namespace functions {
         template <typename T>
         template <typename OpType>
 		void _CUDA_H Transform<T>::exec(T *dx,
-                             int xStride,
+                             Nd4jLong xStride,
                              T *result,
-                             int resultStride,
+                             Nd4jLong resultStride,
                              T *extraParams,
-                             const int n) {
+                             const Nd4jLong n) {
 
                 int elementsPerThread = n / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
@@ -113,7 +113,7 @@ namespace functions {
                         if (end > n) end = n;
 
 #pragma omp simd
-                        for (Nd4jIndex i = start; i < end; i++) {
+                        for (Nd4jLong i = start; i < end; i++) {
                             result[i] = OpType::op(dx[i], extraParams);
                         }
                     }
@@ -127,7 +127,7 @@ namespace functions {
                         if (end > n) end = n;
 
 #pragma omp simd
-                        for (Nd4jIndex i = start; i < end; i++) {
+                        for (Nd4jLong i = start; i < end; i++) {
                             result[i*resultStride] = OpType::op(dx[i * xStride], extraParams);
                     }
                 }
@@ -139,12 +139,12 @@ namespace functions {
         template class ND4J_EXPORT Transform<double>;
 
 
-        BUILD_CALL_1(template void Transform<float>::exec, float, (float*, int*, float*, int*, float*, int*, Nd4jIndex*), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, int*, float16*, int*, float16*, int*, Nd4jIndex*), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<double>::exec, double, (double*, int*, double*, int*, double*, int*, Nd4jIndex*), TRANSFORM_OPS)
+        BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
+        BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
+        BUILD_CALL_1(template void Transform<double>::exec, double, (double*, Nd4jLong*, double*, Nd4jLong*, double*, Nd4jLong*, Nd4jLong*), TRANSFORM_OPS)
 
-        BUILD_CALL_1(template void Transform<float>::exec, float, (float*, int, float*, int, float*, const int), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, int, float16*, int, float16*, const int), TRANSFORM_OPS)
-        BUILD_CALL_1(template void Transform<double>::exec, double, (double*, int, double*, int, double*, const int), TRANSFORM_OPS)
+        BUILD_CALL_1(template void Transform<float>::exec, float, (float*, Nd4jLong, float*, Nd4jLong, float*, const Nd4jLong), TRANSFORM_OPS)
+        BUILD_CALL_1(template void Transform<float16>::exec, float16, (float16*, Nd4jLong, float16*, Nd4jLong, float16*, const Nd4jLong), TRANSFORM_OPS)
+        BUILD_CALL_1(template void Transform<double>::exec, double, (double*, Nd4jLong, double*, Nd4jLong, double*, const Nd4jLong), TRANSFORM_OPS)
     }
 }

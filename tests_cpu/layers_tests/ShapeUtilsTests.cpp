@@ -17,7 +17,7 @@ public:
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, BasicInject1) {
-    std::vector<int> shape({1, 4});
+    std::vector<Nd4jLong> shape({1, 4});
 
     ShapeUtils<float>::insertDimension(2, shape.data(), -1, 3);
     ASSERT_EQ(4, shape.at(0));
@@ -26,7 +26,7 @@ TEST_F(ShapeUtilsTests, BasicInject1) {
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, BasicInject2) {
-    std::vector<int> shape({1, 4});
+    std::vector<Nd4jLong> shape({1, 4});
 
     ShapeUtils<float>::insertDimension(2, shape.data(), 0, 3);
     ASSERT_EQ(3, shape.at(0));
@@ -55,14 +55,14 @@ TEST_F(ShapeUtilsTests, AxisConversionTest_2) {
 TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_1)
 {
 
-    int xShapeInfo[]   = {3, 3, 2, 2, 4, 2, 1, 0, 1, 99};
-    int yShapeInfo[]   = {2,    1, 2,    2, 1, 0, 1, 99};
-    int expShapeInfo[] = {3, 3, 2, 2, 4, 2, 1, 0, 1, 99};
+    Nd4jLong xShapeInfo[]   = {3, 3, 2, 2, 4, 2, 1, 0, 1, 99};
+    Nd4jLong yShapeInfo[]   = {2,    1, 2,    2, 1, 0, 1, 99};
+    Nd4jLong expShapeInfo[] = {3, 3, 2, 2, 4, 2, 1, 0, 1, 99};
 
     NDArray<float> x(xShapeInfo);
     NDArray<float> y(yShapeInfo);
 
-    int *newShapeInfo = nullptr;
+    Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils<float>::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
         
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
@@ -74,14 +74,14 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_1)
 TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_2)
 {
 
-    int xShapeInfo[]   = {4, 8, 1, 6, 1, 6,   6,  1, 1, 0, 1, 99};    
-    int yShapeInfo[]   = {3,    7, 1, 5,      5,  5, 1, 0, 1, 99};
-    int expShapeInfo[] = {4, 8, 7, 6, 5, 210, 30, 5, 1, 0, 1, 99};    
+    Nd4jLong xShapeInfo[]   = {4, 8, 1, 6, 1, 6,   6,  1, 1, 0, 1, 99};    
+    Nd4jLong yShapeInfo[]   = {3,    7, 1, 5,      5,  5, 1, 0, 1, 99};
+    Nd4jLong expShapeInfo[] = {4, 8, 7, 6, 5, 210, 30, 5, 1, 0, 1, 99};    
 
     NDArray<float> x(xShapeInfo);
     NDArray<float> y(yShapeInfo);
 
-    int *newShapeInfo = nullptr;
+    Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils<float>::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
         
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
@@ -93,14 +93,14 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_2)
 TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_3)
 {
 
-    int xShapeInfo[]   = {3, 15, 3, 5, 15, 5, 1, 0, 1, 99};
-    int yShapeInfo[]   = {3, 15, 1, 5,  5, 5, 1, 0, 1, 99};
-    int expShapeInfo[] = {3, 15, 3, 5, 15, 5, 1, 0, 1, 99};
+    Nd4jLong xShapeInfo[]   = {3, 15, 3, 5, 15, 5, 1, 0, 1, 99};
+    Nd4jLong yShapeInfo[]   = {3, 15, 1, 5,  5, 5, 1, 0, 1, 99};
+    Nd4jLong expShapeInfo[] = {3, 15, 3, 5, 15, 5, 1, 0, 1, 99};
 
     NDArray<float> x(xShapeInfo);
     NDArray<float> y(yShapeInfo);
 
-    int *newShapeInfo = nullptr;
+    Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils<float>::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
         
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));    
@@ -112,14 +112,14 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_3)
 TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_4)
 {
 
-    int xShapeInfo[]   = {3, 8, 1, 3,  3, 3, 1, 0, 1, 99};
-    int yShapeInfo[]   = {2,    4, 3,     3, 1, 0, 1, 99};    
-    int expShapeInfo[] = {3, 8, 4, 3, 12, 3, 1, 0, 1, 99};
+    Nd4jLong xShapeInfo[]   = {3, 8, 1, 3,  3, 3, 1, 0, 1, 99};
+    Nd4jLong yShapeInfo[]   = {2,    4, 3,     3, 1, 0, 1, 99};    
+    Nd4jLong expShapeInfo[] = {3, 8, 4, 3, 12, 3, 1, 0, 1, 99};
 
     NDArray<float> x(xShapeInfo);
     NDArray<float> y(yShapeInfo);
 
-    int *newShapeInfo = nullptr;
+    Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils<float>::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
     //for(int i=0; i<2*newShapeInfo[0]+4; ++i)
     //        std::cout<<newShapeInfo[i]<<" ";
@@ -138,7 +138,7 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test1)
     NDArray<float> expected('c', {2,4,5});    
     std::vector<int> dimensions = {1};
 
-    int *newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo());    
+    auto newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo());    
     
     ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
 
@@ -153,7 +153,7 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test2)
     NDArray<float> expected('c', {2,1,4,5});
     std::vector<int> dimensions = {1};
 
-    int *newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
+    auto newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
     
     ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
 
@@ -168,7 +168,7 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test3)
     NDArray<float> expected('c', {1,1,1,5});
     std::vector<int> dimensions = {0,1,2};
 
-    int *newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
+    auto newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
     
     ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
 
@@ -183,7 +183,7 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test4)
     NDArray<float> expected('c', {1,1,1,1});
     std::vector<int> dimensions = {0,1,2,3};
 
-    int *newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
+    auto newShapeInfo = ShapeUtils<float>::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);    
     
     ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
 
@@ -204,7 +204,7 @@ TEST_F(ShapeUtilsTests, Test_Backward_Axis_1) {
     NDArray<float> y('c', {4, 3});
     std::vector<int> exp({0});
 
-    std::vector<int> z = ShapeUtils<float>::evalBroadcastBackwardAxis(y.shapeInfo(), x.shapeInfo());
+    auto z = ShapeUtils<float>::evalBroadcastBackwardAxis(y.shapeInfo(), x.shapeInfo());
 
     ASSERT_EQ(exp, z);
 }
@@ -214,7 +214,7 @@ TEST_F(ShapeUtilsTests, Test_Backward_Axis_2) {
     NDArray<float> y('c', {4, 1, 3});
     std::vector<int> exp({0, 2});
 
-    std::vector<int> z = ShapeUtils<float>::evalBroadcastBackwardAxis(y.shapeInfo(), x.shapeInfo());
+    auto z = ShapeUtils<float>::evalBroadcastBackwardAxis(y.shapeInfo(), x.shapeInfo());
 
     ASSERT_EQ(exp, z);
 }
@@ -225,7 +225,7 @@ TEST_F(ShapeUtilsTests, Test_Backward_Axis_3) {
     NDArray<float> y('c', {2, 1, 1, 3});
     std::vector<int> exp({1, 2});
 
-    std::vector<int> z = ShapeUtils<float>::evalBroadcastBackwardAxis(y.shapeInfo(), x.shapeInfo());
+    auto z = ShapeUtils<float>::evalBroadcastBackwardAxis(y.shapeInfo(), x.shapeInfo());
 
     ASSERT_EQ(exp, z);
 }

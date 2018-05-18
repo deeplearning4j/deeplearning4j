@@ -29,7 +29,7 @@ namespace nd4j {
             _map[opType].emplace_back(descriptor);
     }
 
-    void OpTracker::storeOperation(nd4j::graph::OpType opType, const char* opName, const Nd4jIndex opNum) {
+    void OpTracker::storeOperation(nd4j::graph::OpType opType, const char* opName, const Nd4jLong opNum) {
         OpDescriptor descriptor(0, opName, false);
         descriptor.setOpNum((int) opNum);
         descriptor.setHash(-1);

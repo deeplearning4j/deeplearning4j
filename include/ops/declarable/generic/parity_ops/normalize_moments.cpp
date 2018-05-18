@@ -54,11 +54,10 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(normalize_moments) {
-    
-            int* in = inputShape->at(1);
+            auto in = inputShape->at(1);
 
-            int* meanShape = nullptr;
-            int* varianceShape = nullptr;
+            Nd4jLong* meanShape = nullptr;
+            Nd4jLong* varianceShape = nullptr;
 
             COPY_SHAPE_EX(in, meanShape, block.getWorkspace());
             COPY_SHAPE_EX(in, varianceShape, block.getWorkspace());

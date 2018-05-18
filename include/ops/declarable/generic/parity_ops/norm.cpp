@@ -14,7 +14,7 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             NDArray<T> *output = nullptr;
 
-            int mode = (int) T_ARG(0);
+            auto mode = (int) T_ARG(0);
             std::vector<int> dims = *block.getIArguments();
             bool overwrite = false;
 
@@ -24,15 +24,8 @@ namespace nd4j {
                 auto axisVector = INPUT_VARIABLE(1);
                 dims.resize(axisVector->lengthOf());
                 helpers::adjustAxis(input, axisVector, dims);
-//                for (int e = 0; e < vector->lengthOf(); e++) {
-//                    int ca = (int) vector->getScalar(e);
-//                    if (ca < 0)
-//                        ca += input->rankOf();
-//
-//                    dims.emplace_back(ca);
-//                }
 
-                int* shape = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), dims, *input, false, true);
+                auto shape = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), dims, *input, false, true);
                 output = new NDArray<T>(shape, false, block.getWorkspace());
 
                 overwrite = true;

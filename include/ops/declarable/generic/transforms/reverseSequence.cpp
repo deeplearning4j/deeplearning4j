@@ -38,8 +38,8 @@ CUSTOM_OP_IMPL(reverse_sequence, 2, 1, false, 0, 2) {
 
 DECLARE_SHAPE_FN(reverse_sequence) {
 
-    int* inShapeInfo = inputShape->at(0);
-    int* seqLenShapeInfo = inputShape->at(1);
+    auto inShapeInfo = inputShape->at(0);
+    auto seqLenShapeInfo = inputShape->at(1);
 
     int seqDim = INT_ARG(0);
     int batchDim = block.numI() > 1 ? INT_ARG(1) : 0;
@@ -50,7 +50,7 @@ DECLARE_SHAPE_FN(reverse_sequence) {
     REQUIRE_TRUE(batchDim < inShapeInfo[0], 0, "REVERSE_SEQUENSE operation: input integer parameter batchDim must be smaller than input array rank, but got %i and %i correspondingly !", batchDim, inShapeInfo[0]);
     REQUIRE_TRUE(seqDim < inShapeInfo[0], 0, "REVERSE_SEQUENSE operation: input integer parameter seqDim must be smaller than input array rank, but got %i  and %i correspondingly !", seqDim, inShapeInfo[0]);
     
-    int* outShapeInfo = nullptr;
+    Nd4jLong* outShapeInfo = nullptr;
     COPY_SHAPE(inShapeInfo, outShapeInfo);
         
     return SHAPELIST(outShapeInfo);

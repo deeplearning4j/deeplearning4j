@@ -12,8 +12,8 @@ namespace helpers {
     template <typename T>
     void sequenceMask(NDArray<T>* input, NDArray<T>* output, int maxIndex) {
 #pragma omp parallel for if(maxIndex > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
-        for (Nd4jIndex i = 0; i < maxIndex; i++)
-            for(Nd4jIndex k = 0; k < input->lengthOf(); k++)
+        for (Nd4jLong i = 0; i < maxIndex; i++)
+            for(Nd4jLong k = 0; k < input->lengthOf(); k++)
                 if (i < static_cast<int>((*input)(k)))
                     (*output)(k * maxIndex + i) = T(1.0);
     }

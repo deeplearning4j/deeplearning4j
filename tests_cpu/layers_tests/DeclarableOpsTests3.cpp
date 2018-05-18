@@ -12,8 +12,7 @@ class DeclarableOpsTests3 : public testing::Test {
 public:
 
     DeclarableOpsTests3() {
-        printf("\n");
-        fflush(stdout);
+//
     }
 };
 
@@ -21,7 +20,7 @@ public:
 TEST_F(DeclarableOpsTests3, Test_Tile_1) {
     NDArray<float> x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
     NDArray<float> rep_vector('c', {1, 2}, {2, 2});
-    std::vector<int> reps({2, 2});
+    std::vector<Nd4jLong> reps({2, 2});
 
     auto exp = x.tile(reps);
 
@@ -39,7 +38,7 @@ TEST_F(DeclarableOpsTests3, Test_Tile_1) {
 
 TEST_F(DeclarableOpsTests3, Test_Tile_2) {
     NDArray<float> x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
-    std::vector<int> reps({2, 2});
+    std::vector<Nd4jLong> reps({2, 2});
 
     auto exp = x.tile(reps);
 

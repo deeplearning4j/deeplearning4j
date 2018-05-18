@@ -16,16 +16,16 @@
 
 #include "pointercast.h"
 
-static inline Nd4jIndex microTime() {
+static inline Nd4jLong microTime() {
 #ifdef WIN32
     LARGE_INTEGER freq, count;
     QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&count);
-    return (Nd4jIndex)count.QuadPart/freq.QuadPart;
+    return (Nd4jLong)count.QuadPart/freq.QuadPart;
 #else
     timeval tv;
     gettimeofday(&tv, NULL);
-    return (Nd4jIndex)tv.tv_sec*1000000 + tv.tv_usec;
+    return (Nd4jLong)tv.tv_sec*1000000 + tv.tv_usec;
 #endif
 }
 

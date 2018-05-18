@@ -112,8 +112,8 @@ namespace nd4j {
                 tad.createTadOnlyShapeInfo();
                 tad.createOffsets();
 
-                int *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
-                Nd4jIndex* tadOffsets = tad.tadOffsets;
+                Nd4jLong *tadShapeShapeInfo = tad.tadOnlyShapeInfo;
+                Nd4jLong* tadOffsets = tad.tadOffsets;
 
                 int tadLength = shape::tadLength(x->getShapeInfo(), dimensions.data(), dimensionsLength);
                 int tads = x->lengthOf() / tadLength;
@@ -122,8 +122,8 @@ namespace nd4j {
                 int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-                int tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
-                int zEWS = tadEWS;
+                auto tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
+                auto zEWS = tadEWS;
 
                 int span = (tads / num_threads) + 8;
 
@@ -175,15 +175,15 @@ namespace nd4j {
                             int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
                             num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-                            int offset = tadOffsets[r];
-                            int shapeIter[MAX_RANK];
-                            int coord[MAX_RANK];
+                            Nd4jLong offset = tadOffsets[r];
+                            Nd4jLong shapeIter[MAX_RANK];
+                            Nd4jLong coord[MAX_RANK];
                             int dim;
-                            int xStridesIter[MAX_RANK];
-                            int resultStridesIter[MAX_RANK];
-                            int *xShape = shape::shapeOf(tadShapeShapeInfo);
-                            int *xStride = shape::stride(tadShapeShapeInfo);
-                            int *resultStride = shape::stride(tadShapeShapeInfo);
+                            Nd4jLong xStridesIter[MAX_RANK];
+                            Nd4jLong resultStridesIter[MAX_RANK];
+                            Nd4jLong *xShape = shape::shapeOf(tadShapeShapeInfo);
+                            Nd4jLong *xStride = shape::stride(tadShapeShapeInfo);
+                            Nd4jLong *resultStride = shape::stride(tadShapeShapeInfo);
                             int rank = shape::rank(tadShapeShapeInfo);
                             T *xPointer = x->getBuffer() + offset;
                             T *resultPointer = z->getBuffer() + offset;

@@ -29,8 +29,8 @@ DECLARE_SHAPE_FN(tri) {
     const int cols = block.getIArguments()->size() > 1 ? INT_ARG(1) : rows;
     const int rank = 2;
 
-    int* outShapeInfo = nullptr;
-	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
+    Nd4jLong* outShapeInfo = nullptr;
+	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
     outShapeInfo[0] = rank;
     outShapeInfo[1] = rows;

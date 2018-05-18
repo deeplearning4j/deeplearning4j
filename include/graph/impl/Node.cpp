@@ -19,13 +19,13 @@ namespace nd4j {
     namespace graph {
 
         template <typename T>
-        void nd4j::graph::Node<T>::setOuterTime(Nd4jIndex time){
+        void nd4j::graph::Node<T>::setOuterTime(Nd4jLong time){
 //            if (hasBlockAttached())
 //                _block->setOuterTime(time);
         }
 
         template <typename T>
-        void nd4j::graph::Node<T>::setInnerTime(Nd4jIndex time){
+        void nd4j::graph::Node<T>::setInnerTime(Nd4jLong time){
 //            if (hasBlockAttached())
 //                _block->setInnerTime(time);
         }
@@ -91,12 +91,12 @@ namespace nd4j {
         }
 
         template<typename T>
-        Nd4jIndex Node<T>::getFrameId() {
+        Nd4jLong Node<T>::getFrameId() {
             return _frameId;
         }
 
         template<typename T>
-        void Node<T>::setFrameId(Nd4jIndex frameId) {
+        void Node<T>::setFrameId(Nd4jLong frameId) {
             _frameId = frameId;
         }
 
@@ -298,7 +298,7 @@ namespace nd4j {
         }
 
         template <typename T>
-        Nd4jIndex nd4j::graph::Node<T>::opNum() {
+        Nd4jLong nd4j::graph::Node<T>::opNum() {
             return _opNum;
         }
 
@@ -476,7 +476,7 @@ namespace nd4j {
                 if (node->extraParams() != nullptr && node->extraParams()->size() > 0) {
                     _extraParams = new T[node->extraParams()->size()];
                     for (int e = 0; e < (int) node->extraParams()->size(); e++) {
-                        _extraParams[e] = (T) node->extraParams()->Get(e);
+                        _extraParams[e] = static_cast<T>(node->extraParams()->Get(e));
                     }
                 }
 
@@ -491,7 +491,7 @@ namespace nd4j {
                 if (this->opType() == OpType_LOGIC && this->opNum() == 100L) {
                     if (node->extraInteger()->size() < 1) {
                         nd4j_printf("Node_%i is type of Enter, but has no FrameID defined\n", this->id());
-                        throw "Enter node must have FrameID specified";
+                        throw std::runtime_error("Enter node must have FrameID specified");
                     }
 
                     this->setFrameId(node->extraInteger()->Get(0));
@@ -515,7 +515,7 @@ namespace nd4j {
 
                         if (node->extraParams() != nullptr && node->extraParams()->size() > 0)
                             for (int e = 0; e < (int) node->extraParams()->size(); e++) {
-                                block->getTArguments()->emplace_back((T) node->extraParams()->Get(e));
+                                block->getTArguments()->emplace_back(static_cast<T>(node->extraParams()->Get(e)));
                             }
 
                         this->setContextPrototype(block);
@@ -535,7 +535,7 @@ namespace nd4j {
 
                         if (node->extraParams() != nullptr && node->extraParams()->size() > 0)
                             for (int e = 0; e < (int) node->extraParams()->size(); e++) {
-                                block->getTArguments()->emplace_back((T) node->extraParams()->Get(e));
+                                block->getTArguments()->emplace_back(static_cast<T>(node->extraParams()->Get(e)));
                             }
 
                         this->setContextPrototype(block);
@@ -547,7 +547,7 @@ namespace nd4j {
                         auto op = nd4j::ops::OpRegistrator::getInstance()->template getOperationT<T>(this->opNum());
                         if (op == nullptr) {
                             nd4j_verbose("Can't find operation: %lld\n", this->opNum());
-                            throw "Boom";
+                            throw std::runtime_error("Can't find requested operation");
                         }
 
                         auto block = new ContextPrototype<T>(this->id());
@@ -558,8 +558,9 @@ namespace nd4j {
 
                         if (node->extraInteger() != nullptr)
                             for (uint32_t e = 0; e < node->extraInteger()->size(); e++) {
-                                int v = node->extraInteger()->Get(e);
-                                block->getIArguments()->push_back(v);
+                                auto v = node->extraInteger()->Get(e);
+                                // FIXME: remove this static_cast, iArgs should be Nd4jLong
+                                block->getIArguments()->emplace_back(static_cast<int>(v));
                             }
 
                         if (node->extraParams() != nullptr)

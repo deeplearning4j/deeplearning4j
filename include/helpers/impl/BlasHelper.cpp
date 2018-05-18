@@ -92,7 +92,7 @@ namespace nd4j {
     }
 
     template <>
-    bool BlasHelper::hasGEMM<Nd4jIndex>() {
+    bool BlasHelper::hasGEMM<Nd4jLong>() {
         return false;
     }
 

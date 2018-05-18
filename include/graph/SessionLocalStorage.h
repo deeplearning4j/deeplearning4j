@@ -16,28 +16,28 @@ namespace nd4j{
         template <typename T>
         class SessionLocalStorage {
         protected:
-            std::atomic<Nd4jIndex> _sessionCounter;
-            std::map<Nd4jIndex, Nd4jIndex> _threadSession;
-            std::map<Nd4jIndex, VariableSpace<T>*> _threadVariableSpace;
+            std::atomic<Nd4jLong> _sessionCounter;
+            std::map<Nd4jLong, Nd4jLong> _threadSession;
+            std::map<Nd4jLong, VariableSpace<T>*> _threadVariableSpace;
 
             VariableSpace<T>* _variableSpace;
             Stash<T>* _stash;
 
             std::mutex _mutex;
 
-            Nd4jIndex getSessionId();
-            Nd4jIndex getThreadId();
+            Nd4jLong getSessionId();
+            Nd4jLong getThreadId();
         public:
             SessionLocalStorage(VariableSpace<T>* variableSpace = nullptr, Stash<T>* stash = nullptr);
 
             ~SessionLocalStorage();
 
             VariableSpace<T>* localVariableSpace();
-            VariableSpace<T>* localVariableSpace(Nd4jIndex sessionId);
+            VariableSpace<T>* localVariableSpace(Nd4jLong sessionId);
 
 
-            Nd4jIndex startSession();
-            void endSession(Nd4jIndex sessionId);
+            Nd4jLong startSession();
+            void endSession(Nd4jLong sessionId);
             void endSession();
 
             int numberOfSessions();

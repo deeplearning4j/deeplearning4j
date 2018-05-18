@@ -41,15 +41,15 @@ namespace nd4j {
 #endif
             };
 
-            std::map<Nd4jIndex, std::string> _msvc;
+            std::map<Nd4jLong, std::string> _msvc;
 
-            std::map<Nd4jIndex, nd4j::ops::DeclarableOp<float> *> _declarablesLF;
+            std::map<Nd4jLong, nd4j::ops::DeclarableOp<float> *> _declarablesLF;
             std::map<std::string, nd4j::ops::DeclarableOp<float> *> _declarablesF;
 
-            std::map<Nd4jIndex, nd4j::ops::DeclarableOp<double> *> _declarablesLD;
+            std::map<Nd4jLong, nd4j::ops::DeclarableOp<double> *> _declarablesLD;
             std::map<std::string, nd4j::ops::DeclarableOp<double> *> _declarablesD;
 
-            std::map<Nd4jIndex, nd4j::ops::DeclarableOp<float16> *> _declarablesLH;
+            std::map<Nd4jLong, nd4j::ops::DeclarableOp<float16> *> _declarablesLH;
             std::map<std::string, nd4j::ops::DeclarableOp<float16> *> _declarablesH;
 
             std::vector<nd4j::ops::DeclarableOp<float> *> _uniqueF;
@@ -68,7 +68,7 @@ namespace nd4j {
             static void sigIntHandler(int sig);
             static void sigSegVHandler(int sig);
 
-            void updateMSVC(Nd4jIndex newHash, std::string& oldName);
+            void updateMSVC(Nd4jLong newHash, std::string& oldName);
 
             template <typename T>
             std::string local_to_string(T value);
@@ -98,19 +98,19 @@ namespace nd4j {
             nd4j::ops::DeclarableOp<float> *getOperationFloat(std::string& name);
 
 
-            nd4j::ops::DeclarableOp<float> *getOperationFloat(Nd4jIndex hash);
-            nd4j::ops::DeclarableOp<float16> *getOperationHalf(Nd4jIndex hash);
+            nd4j::ops::DeclarableOp<float> *getOperationFloat(Nd4jLong hash);
+            nd4j::ops::DeclarableOp<float16> *getOperationHalf(Nd4jLong hash);
             nd4j::ops::DeclarableOp<float16>* getOperationHalf(const char *name);
             nd4j::ops::DeclarableOp<float16> *getOperationHalf(std::string& name);
             nd4j::ops::DeclarableOp<double >* getOperationDouble(const char *name);
-            nd4j::ops::DeclarableOp<double> *getOperationDouble(Nd4jIndex hash);
+            nd4j::ops::DeclarableOp<double> *getOperationDouble(Nd4jLong hash);
             nd4j::ops::DeclarableOp<double> *getOperationDouble(std::string& name);
 
             template <typename T>
-            DeclarableOp<T> * getOperationT(Nd4jIndex hash);
+            DeclarableOp<T> * getOperationT(Nd4jLong hash);
 
             template <typename T>
-            std::vector<Nd4jIndex> getAllHashes();
+            std::vector<Nd4jLong> getAllHashes();
 
             int numberOfOperations();
     };
