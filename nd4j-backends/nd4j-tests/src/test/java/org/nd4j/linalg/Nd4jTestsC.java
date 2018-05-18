@@ -6414,6 +6414,21 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, arr2);
     }
 
+    @Test
+    public void testTearPile_1() {
+        val source = Nd4j.rand(new int[]{10, 15});
+
+        val list = Nd4j.tear(source, 1);
+
+        // just want to ensure that axis is right one
+        assertEquals(10, list.length);
+
+        val result = Nd4j.pile(list);
+
+        assertEquals(source.shapeInfoDataBuffer(), result.shapeInfoDataBuffer());
+        assertEquals(source, result);
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;

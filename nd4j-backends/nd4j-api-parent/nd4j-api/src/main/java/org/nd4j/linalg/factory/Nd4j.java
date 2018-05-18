@@ -6635,7 +6635,7 @@ public class Nd4j {
      */
     public static INDArray pile(INDArray... arrays) {
         // if we have vectors as input, it's just vstack use case
-        if (arrays[0].isRowVector()) {
+        if (arrays[0].isRowVector() && arrays[0].rank() == 2) {
             return Nd4j.vstack(arrays);
         }
 
@@ -6679,10 +6679,8 @@ public class Nd4j {
             throw new ND4JIllegalStateException("Target dimensions number should be less tensor rank");
 
         for (int e = 0; e < dimensions.length; e++)
-            if (dimensions[e] < 1)
+            if (dimensions[e] < 0)
                 throw new ND4JIllegalStateException("Target dimensions can't have negative values");
-
-
 
         return factory().tear(tensor, dimensions);
     }
