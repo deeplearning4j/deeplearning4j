@@ -17,10 +17,10 @@ import org.nd4j.linalg.api.shape.Shape;
 @Slf4j
 public class KerasFlattenRnnPreprocessor extends BaseInputPreProcessor {
 
-    private int tsLength;
-    private int depth;
+    private long tsLength;
+    private long depth;
 
-    public KerasFlattenRnnPreprocessor(int depth, int tsLength) {
+    public KerasFlattenRnnPreprocessor(long depth, long tsLength) {
         super();
         this.tsLength = Math.abs(tsLength);
         this.depth = depth;

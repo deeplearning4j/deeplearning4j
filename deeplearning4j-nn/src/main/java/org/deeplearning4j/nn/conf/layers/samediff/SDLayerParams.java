@@ -23,15 +23,15 @@ import java.util.*;
 @Data
 public class SDLayerParams implements Serializable {
 
-    private Map<String,int[]> weightParams = new LinkedHashMap<>();
-    private Map<String,int[]> biasParams = new LinkedHashMap<>();
+    private Map<String,long[]> weightParams = new LinkedHashMap<>();
+    private Map<String,long[]> biasParams = new LinkedHashMap<>();
 
     @JsonIgnore private List<String> paramsList;
     @JsonIgnore private List<String> weightParamsList;
     @JsonIgnore private List<String> biasParamsList;
 
-    public SDLayerParams(@JsonProperty("weightParams") Map<String,int[]> weightParams,
-                                @JsonProperty("biasParams") Map<String,int[]> biasParams){
+    public SDLayerParams(@JsonProperty("weightParams") Map<String,long[]> weightParams,
+                                @JsonProperty("biasParams") Map<String,long[]> biasParams){
         this.weightParams = weightParams;
         this.biasParams = biasParams;
     }
@@ -43,7 +43,7 @@ public class SDLayerParams implements Serializable {
      * @param paramKey   The parameter key (name) for the weight parameter
      * @param paramShape Shape of the weight parameter array
      */
-    public void addWeightParam(@NonNull String paramKey, @NonNull int... paramShape) {
+    public void addWeightParam(@NonNull String paramKey, @NonNull long... paramShape) {
         Preconditions.checkArgument(paramShape.length > 0, "Provided weight parameter shape is" +
                 " invalid: length 0 provided for shape. Parameter: " + paramKey);
         weightParams.put(paramKey, paramShape);
@@ -59,7 +59,7 @@ public class SDLayerParams implements Serializable {
      * @param paramKey   The parameter key (name) for the bias parameter
      * @param paramShape Shape of the bias parameter array
      */
-    public void addBiasParam(@NonNull String paramKey, @NonNull int[] paramShape) {
+    public void addBiasParam(@NonNull String paramKey, @NonNull long[] paramShape) {
         Preconditions.checkArgument(paramShape.length > 0, "Provided mia- parameter shape is" +
                 " invalid: length 0 provided for shape. Parameter: " + paramKey);
         biasParams.put(paramKey, paramShape);
@@ -113,8 +113,8 @@ public class SDLayerParams implements Serializable {
      * @return Map of parameter shapes, by parameter
      */
     @JsonIgnore
-    public Map<String, int[]> getParamShapes() {
-        Map<String, int[]> map = new LinkedHashMap<>();
+    public Map<String, long[]> getParamShapes() {
+        Map<String, long[]> map = new LinkedHashMap<>();
         map.putAll(weightParams);
         map.putAll(biasParams);
         return map;
@@ -140,12 +140,12 @@ public class SDLayerParams implements Serializable {
         return equals(weightParams, s.weightParams) && equals(biasParams, s.biasParams);
     }
 
-    private static boolean equals(Map<String,int[]> first, Map<String,int[]> second){
+    private static boolean equals(Map<String,long[]> first, Map<String,long[]> second){
         //Helper method - Lombok equals method seems to have trouble with arrays...
         if(!first.keySet().equals(second.keySet())){
             return false;
         }
-        for(Map.Entry<String,int[]> e : first.entrySet()){
+        for(Map.Entry<String,long[]> e : first.entrySet()){
             if(!Arrays.equals(e.getValue(), second.get(e.getKey()))){
                 return false;
             }

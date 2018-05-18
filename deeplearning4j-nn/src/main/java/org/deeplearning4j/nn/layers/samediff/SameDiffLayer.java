@@ -170,10 +170,10 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         val inputShape = input.shape().clone();
 //        inputShape[0] = -1;                                       //TODO THIS DOESN'T ENABLE VARIABLE SIZE MINIBATCHES
         SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
-        Map<String,int[]> paramShapes = layerConf().getLayerParams().getParamShapes();
+        Map<String,long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
         Map<String,SDVariable> params = new LinkedHashMap<>();
         for(String s : paramShapes.keySet()){
-            int[] ps = paramShapes.get(s);
+            val ps = paramShapes.get(s);
             SDVariable v = sameDiff.var(s, ps);
             params.put(s, v);
         }

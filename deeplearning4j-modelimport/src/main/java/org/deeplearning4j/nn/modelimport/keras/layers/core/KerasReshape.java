@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -37,7 +38,7 @@ import java.util.Map;
  */
 public class KerasReshape extends KerasLayer {
 
-    private int[] targetShape;
+    private long[] targetShape;
 
 
     /**
@@ -68,7 +69,9 @@ public class KerasReshape extends KerasLayer {
         if (innerConfig.containsKey(targetShape)) {
             @SuppressWarnings("unchecked")
             List<Integer> targetShapeList = (List<Integer>) innerConfig.get(targetShape);
-            this.targetShape = ArrayUtil.toArray(targetShapeList);
+
+            // FIXME: int cast
+            this.targetShape = ArrayUtil.toLongArray(ArrayUtil.toArray(targetShapeList));
         }
 
     }
@@ -99,28 +102,28 @@ public class KerasReshape extends KerasLayer {
         InputPreProcessor preprocessor = null;
         if (inputType[0] instanceof InputType.InputTypeConvolutional) {
             InputType.InputTypeConvolutional it = (InputType.InputTypeConvolutional) inputType[0];
-            int[] inputShape = new int[] {it.getChannels(), it.getHeight(), it.getWidth()};
+            val inputShape = new long[] {it.getChannels(), it.getHeight(), it.getWidth()};
             switch (this.getDimOrder()) {
                 case THEANO: // Theano is channels first
                     if (this.kerasMajorVersion == 1) {
-                        targetShape = new int[] {targetShape[1], targetShape[0], targetShape[2]};
+                        targetShape = new long[] {targetShape[1], targetShape[0], targetShape[2]};
                     }
                     preprocessor = new ReshapePreprocessor(inputShape, targetShape);
                     break;
                 case NONE: // TF is now the default, channels last
                 case TENSORFLOW:
                     if (inputShape[0] != targetShape[0]) {
-                        targetShape = new int[] {targetShape[2], targetShape[0], targetShape[1]};
+                        targetShape = new long[] {targetShape[2], targetShape[0], targetShape[1]};
                     }
                     preprocessor = new ReshapePreprocessor(inputShape, targetShape);
             }
         } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
             InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType[0];
-            int[] inputShape = new int[]{it.getSize(), it.getTimeSeriesLength()};
+            val inputShape = new long[]{it.getSize(), it.getTimeSeriesLength()};
             preprocessor = new ReshapePreprocessor(inputShape, this.targetShape);
         } else if (inputType[0] instanceof InputType.InputTypeFeedForward) {
             InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
-            int[] inputShape = new int[]{it.getSize()};
+            val inputShape = new long[]{it.getSize()};
             preprocessor = new ReshapePreprocessor(inputShape, this.targetShape);
         }
         return preprocessor;

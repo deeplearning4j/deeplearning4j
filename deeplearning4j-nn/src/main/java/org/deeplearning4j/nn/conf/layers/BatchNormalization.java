@@ -160,7 +160,7 @@ public class BatchNormalization extends FeedForwardLayer {
 
         //TODO CuDNN helper etc
 
-        int numParams = initializer().numParams(this);
+        val numParams = initializer().numParams(this);
         int updaterStateSize = 0;
 
         for (String s : BatchNormalizationParamInitializer.keys()) {

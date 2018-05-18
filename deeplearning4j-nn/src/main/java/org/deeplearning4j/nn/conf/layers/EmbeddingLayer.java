@@ -64,8 +64,8 @@ public class EmbeddingLayer extends FeedForwardLayer {
         InputType outputType = getOutputType(-1, inputType);
 
         val actElementsPerEx = outputType.arrayElementsPerExample();
-        int numParams = initializer().numParams(this);
-        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
+        val numParams = initializer().numParams(this);
+        val updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         //Embedding layer does not use caching.
         //Inference: no working memory - just activations (pullRows)

@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import junit.framework.TestCase;
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Model;
@@ -48,7 +49,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                                         .nOut(nHiddenUnits).activation(Activation.TANH).build())
                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         final GravesBidirectionalLSTM layer =
                         (GravesBidirectionalLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
@@ -58,19 +59,19 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
         final INDArray dataSingleExampleTimeLength1 = Nd4j.ones(1, nIn, 1);
         final INDArray activations1 = layer.activate(dataSingleExampleTimeLength1, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations1.shape(), new int[] {1, nHiddenUnits, 1});
+        assertArrayEquals(activations1.shape(), new long[] {1, nHiddenUnits, 1});
 
         final INDArray dataMultiExampleLength1 = Nd4j.ones(10, nIn, 1);
         final INDArray activations2 = layer.activate(dataMultiExampleLength1, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations2.shape(), new int[] {10, nHiddenUnits, 1});
+        assertArrayEquals(activations2.shape(), new long[] {10, nHiddenUnits, 1});
 
         final INDArray dataSingleExampleLength12 = Nd4j.ones(1, nIn, 12);
         final INDArray activations3 = layer.activate(dataSingleExampleLength12, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations3.shape(), new int[] {1, nHiddenUnits, 12});
+        assertArrayEquals(activations3.shape(), new long[] {1, nHiddenUnits, 12});
 
         final INDArray dataMultiExampleLength15 = Nd4j.ones(10, nIn, 15);
         final INDArray activations4 = layer.activate(dataMultiExampleLength15, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations4.shape(), new int[] {10, nHiddenUnits, 15});
+        assertArrayEquals(activations4.shape(), new long[] {10, nHiddenUnits, 15});
     }
 
     @Test
@@ -95,7 +96,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                                         .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build())
                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         GravesBidirectionalLSTM lstm =
                         (GravesBidirectionalLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
@@ -128,16 +129,16 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         assertNotNull(inWeightGradientB);
         assertNotNull(recurrentWeightGradientB);
 
-        assertArrayEquals(biasGradientF.shape(), new int[] {1, 4 * lstmNHiddenUnits});
-        assertArrayEquals(inWeightGradientF.shape(), new int[] {nIn, 4 * lstmNHiddenUnits});
-        assertArrayEquals(recurrentWeightGradientF.shape(), new int[] {lstmNHiddenUnits, 4 * lstmNHiddenUnits + 3});
+        assertArrayEquals(biasGradientF.shape(), new long[] {1, 4 * lstmNHiddenUnits});
+        assertArrayEquals(inWeightGradientF.shape(), new long[] {nIn, 4 * lstmNHiddenUnits});
+        assertArrayEquals(recurrentWeightGradientF.shape(), new long[] {lstmNHiddenUnits, 4 * lstmNHiddenUnits + 3});
 
-        assertArrayEquals(biasGradientB.shape(), new int[] {1, 4 * lstmNHiddenUnits});
-        assertArrayEquals(inWeightGradientB.shape(), new int[] {nIn, 4 * lstmNHiddenUnits});
-        assertArrayEquals(recurrentWeightGradientB.shape(), new int[] {lstmNHiddenUnits, 4 * lstmNHiddenUnits + 3});
+        assertArrayEquals(biasGradientB.shape(), new long[] {1, 4 * lstmNHiddenUnits});
+        assertArrayEquals(inWeightGradientB.shape(), new long[] {nIn, 4 * lstmNHiddenUnits});
+        assertArrayEquals(recurrentWeightGradientB.shape(), new long[] {lstmNHiddenUnits, 4 * lstmNHiddenUnits + 3});
 
         assertNotNull(nextEpsilon);
-        assertArrayEquals(nextEpsilon.shape(), new int[] {miniBatchSize, nIn, timeSeriesLength});
+        assertArrayEquals(nextEpsilon.shape(), new long[] {miniBatchSize, nIn, timeSeriesLength});
 
         //Check update:
         for (String s : outGradient.gradientForVariable().keySet()) {
@@ -162,7 +163,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                                         .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build())
                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         final GravesBidirectionalLSTM lstm =
                         (GravesBidirectionalLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
@@ -195,11 +196,11 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
     }
 
     static private void reverseColumnsInPlace(final INDArray x) {
-        final int N = x.size(1);
+        final long N = x.size(1);
         final INDArray x2 = x.dup();
 
         for (int t = 0; t < N; t++) {
-            final int b = N - t - 1;
+            final long b = N - t - 1;
             //clone?
             x.putColumn(t, x2.getColumn(b));
         }
@@ -221,7 +222,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                         .build();
 
 
-        int numParams = confBidirectional.getLayer().initializer().numParams(confBidirectional);
+        long numParams = confBidirectional.getLayer().initializer().numParams(confBidirectional);
         INDArray params = Nd4j.create(1, numParams);
         final GravesBidirectionalLSTM bidirectionalLSTM = (GravesBidirectionalLSTM) confBidirectional.getLayer()
                         .instantiate(confBidirectional, null, 0, params, true);
@@ -265,9 +266,9 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                                         .weightInit(WeightInit.ZERO).activation(Activation.TANH).build())
                         .build();
 
-        int numParams = confForwards.getLayer().initializer().numParams(confForwards);
+        long numParams = confForwards.getLayer().initializer().numParams(confForwards);
         INDArray params = Nd4j.create(1, numParams);
-        int numParamsBD = confBidirectional.getLayer().initializer().numParams(confBidirectional);
+        long numParamsBD = confBidirectional.getLayer().initializer().numParams(confBidirectional);
         INDArray paramsBD = Nd4j.create(1, numParamsBD);
         final GravesBidirectionalLSTM bidirectionalLSTM = (GravesBidirectionalLSTM) confBidirectional.getLayer()
                         .instantiate(confBidirectional, null, 0, paramsBD, true);

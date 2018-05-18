@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.graph.graphnodes;
 
+import lombok.val;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -49,7 +50,7 @@ public class TestGraphNodes {
 
         mergeNode.setInputs(first, second);
         INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(new int[] {3, 10}, out.shape());
+        assertArrayEquals(new long[] {3, 10}, out.shape());
 
         assertEquals(first, out.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4)));
         assertEquals(second, out.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 10)));
@@ -71,7 +72,7 @@ public class TestGraphNodes {
 
         mergeNode.setInputs(first, second);
         INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(new int[] {3, 10, 5}, out.shape());
+        assertArrayEquals(new long[] {3, 10, 5}, out.shape());
 
         assertEquals(first, out.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4), NDArrayIndex.all()));
         assertEquals(second, out.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 10), NDArrayIndex.all()));
@@ -92,7 +93,7 @@ public class TestGraphNodes {
 
         mergeNode.setInputs(first, second);
         INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(new int[] {1, 2, 2, 2}, out.shape());
+        assertArrayEquals(new long[] {1, 2, 2, 2}, out.shape());
 
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
@@ -113,7 +114,7 @@ public class TestGraphNodes {
 
         mergeNode.setInputs(first, second);
         out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(new int[] {1, 4, 3, 3}, out.shape());
+        assertArrayEquals(new long[] {1, 4, 3, 3}, out.shape());
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -330,7 +331,7 @@ public class TestGraphNodes {
         stack.setInputs(in0, in1, in2);
         Pair<INDArray, MaskState> p =
                         stack.feedForwardMaskArrays(new INDArray[] {mask0, mask1, mask2}, MaskState.Active, 5);
-        assertArrayEquals(new int[] {15, 7}, p.getFirst().shape());
+        assertArrayEquals(new long[] {15, 7}, p.getFirst().shape());
         assertEquals(MaskState.Active, p.getSecond());
 
         INDArray out = stack.doForward(false, LayerWorkspaceMgr.noWorkspaces());
@@ -503,13 +504,13 @@ public class TestGraphNodes {
         Nd4j.getRandom().setSeed(12345);
         GraphVertex reshapeVertex = new ReshapeVertex(null, "", -1, 'c', new int[] {-1, 736}, null);
 
-        int[] inputShape = new int[] {1, 1, 1, 736};
+        val inputShape = new long[] {1, 1, 1, 736};
         INDArray input = Nd4j.create(inputShape);
 
         reshapeVertex.setInputs(input);
         INDArray out = reshapeVertex.doForward(false, LayerWorkspaceMgr.noWorkspaces());
 
-        assertArrayEquals(new int[] {1, 736}, out.shape());
+        assertArrayEquals(new long[] {1, 736}, out.shape());
 
         reshapeVertex.setEpsilon(out);
         INDArray[] backward = reshapeVertex.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond();
@@ -579,13 +580,13 @@ public class TestGraphNodes {
         assertEquals(1, out.length);
         assertNotNull(out[0]);
 
-        assertArrayEquals(new int[]{10, numLabelClasses}, out[0].shape());
+        assertArrayEquals(new long[]{10, numLabelClasses}, out[0].shape());
 
         Map<String,INDArray> acts = updatedModel.feedForward(input, false);
 
         assertEquals(4, acts.size());   //2 layers + input + vertex output
         assertNotNull(acts.get("laststepoutput"));
-        assertArrayEquals(new int[]{10, numLabelClasses}, acts.get("laststepoutput").shape());
+        assertArrayEquals(new long[]{10, numLabelClasses}, acts.get("laststepoutput").shape());
 
         String toString = out[0].toString();
     }

@@ -18,10 +18,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -76,8 +73,8 @@ public class DenseLayer extends FeedForwardLayer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType outputType = getOutputType(-1, inputType);
 
-        int numParams = initializer().numParams(this);
-        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
+        val numParams = initializer().numParams(this);
+        val updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;

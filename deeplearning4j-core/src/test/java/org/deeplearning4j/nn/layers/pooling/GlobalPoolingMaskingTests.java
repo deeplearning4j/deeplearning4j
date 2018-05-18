@@ -137,7 +137,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             int numSteps = width - 1;
             INDArray subset = inToBeMasked.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.all(),
                             NDArrayIndex.all(), NDArrayIndex.interval(0, numSteps));
-            assertArrayEquals(new int[] {1, depthIn, height, 5}, subset.shape());
+            assertArrayEquals(new long[] {1, depthIn, height, 5}, subset.shape());
 
             INDArray outSubset = net.output(subset);
             INDArray outMaskedSubset = outMasked.getRow(0);
@@ -200,7 +200,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
             int numSteps = height - 1;
             INDArray subset = inToBeMasked.get(NDArrayIndex.interval(0, 0, true), NDArrayIndex.all(),
                             NDArrayIndex.interval(0, numSteps), NDArrayIndex.all());
-            assertArrayEquals(new int[] {1, depthIn, 5, width}, subset.shape());
+            assertArrayEquals(new long[] {1, depthIn, 5, width}, subset.shape());
 
             INDArray outSubset = net.output(subset);
             INDArray outMaskedSubset = outMasked.getRow(0);
@@ -267,7 +267,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                 int numSteps = width - i;
                 INDArray subset = inToBeMasked.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(),
                                 NDArrayIndex.all(), NDArrayIndex.interval(0, numSteps));
-                assertArrayEquals(new int[] {1, depthIn, height, width - i}, subset.shape());
+                assertArrayEquals(new long[] {1, depthIn, height, width - i}, subset.shape());
 
                 INDArray outSubset = net.output(subset);
                 INDArray outMaskedSubset = outMasked.getRow(i);
@@ -326,7 +326,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
                 int numSteps = height - i;
                 INDArray subset = inToBeMasked.get(NDArrayIndex.interval(i, i, true), NDArrayIndex.all(),
                                 NDArrayIndex.interval(0, numSteps), NDArrayIndex.all());
-                assertArrayEquals(new int[] {1, depthIn, height - i, width}, subset.shape());
+                assertArrayEquals(new long[] {1, depthIn, height - i, width}, subset.shape());
 
                 INDArray outSubset = net.output(subset);
                 INDArray outMaskedSubset = outMasked.getRow(i);

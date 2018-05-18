@@ -288,7 +288,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         if (layerConf.isLockGammaBeta()) {
             if (helper != null && input.rank() == 4) {
                 //TODO: don't create these each iteration, when using cudnn
-                int[] gammaBetaShape = new int[] {1, layerConf().getNOut()};
+                val gammaBetaShape = new long[] {1, layerConf().getNOut()};
                 gamma = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getGamma());
                 beta = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getBeta());
             }

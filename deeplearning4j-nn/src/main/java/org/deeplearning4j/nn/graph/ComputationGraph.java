@@ -4167,7 +4167,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return 0;
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
-        return ffl.getNOut();
+
+        // FIXME: int cast
+        return (int) ffl.getNOut();
     }
 
     /**
@@ -4191,7 +4193,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return 0;
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
-        return ffl.getNIn();
+
+        // FIXME: int cast
+        return (int) ffl.getNIn();
     }
 
     /**

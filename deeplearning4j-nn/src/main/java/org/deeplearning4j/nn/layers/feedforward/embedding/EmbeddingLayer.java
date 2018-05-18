@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
@@ -96,7 +97,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
                                             + layerId());
         }
 
-        int nIn = layerConf().getNIn();
+        val nIn = layerConf().getNIn();
 
         // FIXME: int cast
         int[] indexes = new int[(int) input.length()];

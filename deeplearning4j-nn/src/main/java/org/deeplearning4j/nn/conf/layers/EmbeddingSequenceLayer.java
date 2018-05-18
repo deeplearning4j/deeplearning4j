@@ -76,8 +76,8 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
         InputType outputType = getOutputType(-1, inputType);
 
         val actElementsPerEx = outputType.arrayElementsPerExample();
-        int numParams = initializer().numParams(this);
-        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
+        val numParams = initializer().numParams(this);
+        val updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         return new LayerMemoryReport.Builder(layerName, EmbeddingSequenceLayer.class, inputType, outputType)
                 .standardMemory(numParams, updaterStateSize)

@@ -158,7 +158,8 @@ public class ShiftVertexTest extends BaseDL4JTest {
         manual_weights.put("output_b", c);
 
         // First things first, let's calculate the score.
-        int batchsz = input.shape()[0];
+        // FIXME: int cast
+        int batchsz = (int) input.shape()[0];
         INDArray z = input.mmul(W).add(b.repmat(batchsz, 1));
         INDArray a = a1.getActivation(z.dup(), true).add(sf); // activation modifies it's input!!
         INDArray q = a.mmul(V).add(c.repmat(batchsz, 1));

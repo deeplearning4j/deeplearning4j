@@ -635,8 +635,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         INDArray scoresWithRegularization = net.scoreExamples(ds, true);
         INDArray scoresNoRegularization = net.scoreExamples(ds, false);
 
-        assertArrayEquals(new int[]{3, 1}, scoresWithRegularization.shape());
-        assertArrayEquals(new int[]{3, 1}, scoresNoRegularization.shape());
+        assertArrayEquals(new long[]{3, 1}, scoresWithRegularization.shape());
+        assertArrayEquals(new long[]{3, 1}, scoresNoRegularization.shape());
 
         for (int i = 0; i < 3; i++) {
             DataSet singleEx = new DataSet(input.getRow(i), output.getRow(i));
@@ -1169,7 +1169,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals(1, out.length);
         assertNotNull(out[0]);
 
-        assertArrayEquals(new int[]{minibatch, 1, 36, 48}, out[0].shape());
+        assertArrayEquals(new long[]{minibatch, 1, 36, 48}, out[0].shape());
     }
 
     @Test

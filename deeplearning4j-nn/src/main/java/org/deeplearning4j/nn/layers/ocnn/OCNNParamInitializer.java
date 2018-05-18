@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.ocnn;
 
 import static  org.nd4j.linalg.indexing.NDArrayIndex.*;
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -41,20 +42,20 @@ public class OCNNParamInitializer extends DefaultParamInitializer {
     }
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
 
     @Override
-    public int numParams(Layer layer) {
+    public long numParams(Layer layer) {
         org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = ( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) layer;
-        int nIn = ocnnOutputLayer.getNIn();
-        int hiddenLayer = ocnnOutputLayer.getHiddenSize();
+        val nIn = ocnnOutputLayer.getNIn();
+        val hiddenLayer = ocnnOutputLayer.getHiddenSize();
 
-        int firstLayerWeightLength =  hiddenLayer;
-        int secondLayerLength = nIn * hiddenLayer;
-        int rLength = 1;
+        val firstLayerWeightLength =  hiddenLayer;
+        val secondLayerLength = nIn * hiddenLayer;
+        val rLength = 1;
         return firstLayerWeightLength + secondLayerLength + rLength;
     }
 
@@ -87,11 +88,11 @@ public class OCNNParamInitializer extends DefaultParamInitializer {
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = ( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf.getLayer();
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
-        int nIn = ocnnOutputLayer.getNIn();
+        val nIn = ocnnOutputLayer.getNIn();
         int hiddenLayer = ocnnOutputLayer.getHiddenSize();
 
-        int firstLayerWeightLength =  hiddenLayer;
-        int secondLayerLength = nIn * hiddenLayer;
+        val firstLayerWeightLength =  hiddenLayer;
+        val secondLayerLength = nIn * hiddenLayer;
         int rLength = 1;
         INDArray weightView = paramsView.get(point(0),interval(0, firstLayerWeightLength))
                 .reshape(1,hiddenLayer);
@@ -119,11 +120,11 @@ public class OCNNParamInitializer extends DefaultParamInitializer {
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer ocnnOutputLayer = ( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf.getLayer();
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
-        int nIn = ocnnOutputLayer.getNIn();
-        int hiddenLayer = ocnnOutputLayer.getHiddenSize();
+        val nIn = ocnnOutputLayer.getNIn();
+        val hiddenLayer = ocnnOutputLayer.getHiddenSize();
 
-        int firstLayerWeightLength =  hiddenLayer;
-        int secondLayerLength = nIn * hiddenLayer;
+        val firstLayerWeightLength =  hiddenLayer;
+        val secondLayerLength = nIn * hiddenLayer;
 
         INDArray weightView = gradientView.get(point(0),interval(0, firstLayerWeightLength))
                 .reshape('f',1,hiddenLayer);

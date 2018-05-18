@@ -209,8 +209,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        int paramSize = initializer().numParams(this);
-        int updaterStateSize = (int) getIUpdater().stateSize(paramSize);
+        val paramSize = initializer().numParams(this);
+        val updaterStateSize = (int) getIUpdater().stateSize(paramSize);
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.eval.EvaluationBinary;
@@ -121,8 +122,8 @@ public class TestMasking extends BaseDL4JTest {
 
         for (INDArray labelMask : labelMasks) {
 
-            int minibatch = labelMask.size(0);
-            int nOut = labelMask.size(1);
+            val minibatch = labelMask.size(0);
+            val nOut = labelMask.size(1);
 
             for (int i = 0; i < lossFunctions.length; i++) {
                 ILossFunction lf = lossFunctions[i];

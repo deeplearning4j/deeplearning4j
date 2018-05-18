@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.samediff.testlayers;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.val;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -33,8 +34,8 @@ public class SameDiffConv extends BaseSameDiffLayer {
     //Order to match 'vanilla' conv layer implementation, for easy comparison
     private static final List<String> PARAM_KEYS = Arrays.asList(ConvolutionParamInitializer.BIAS_KEY, ConvolutionParamInitializer.WEIGHT_KEY);
 
-    private int nIn;
-    private int nOut;
+    private long nIn;
+    private long nOut;
     private Activation activation;
     private int[] kernel;
     private int[] stride;
@@ -83,10 +84,10 @@ public class SameDiffConv extends BaseSameDiffLayer {
     @Override
     public void defineParameters(SDLayerParams params) {
         params.clear();
-        int[] weightsShape = new int[]{nOut, nIn, kernel[0], kernel[1]};
+        val weightsShape = new long[]{nOut, nIn, kernel[0], kernel[1]};
         params.addWeightParam(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
         if(hasBias) {
-            int[] biasShape = new int[]{1, nOut};
+            val biasShape = new long[]{1, nOut};
             params.addBiasParam(ConvolutionParamInitializer.BIAS_KEY, biasShape);
         }
     }

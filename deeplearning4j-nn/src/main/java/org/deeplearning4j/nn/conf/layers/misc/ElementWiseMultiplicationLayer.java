@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.conf.layers.misc;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -81,8 +78,8 @@ public class ElementWiseMultiplicationLayer extends org.deeplearning4j.nn.conf.l
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType outputType = getOutputType(-1, inputType);
 
-        int numParams = initializer().numParams(this);
-        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
+        val numParams = initializer().numParams(this);
+        val updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;

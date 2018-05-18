@@ -743,7 +743,7 @@ public class LSTMHelpers {
 
         InputType outputType = lstmLayer.getOutputType(-1, inputType);
 
-        int numParams = lstmLayer.initializer().numParams(lstmLayer);
+        val numParams = lstmLayer.initializer().numParams(lstmLayer);
         int updaterSize = (int) lstmLayer.getIUpdater().stateSize(numParams);
 
         //Memory use during forward pass:

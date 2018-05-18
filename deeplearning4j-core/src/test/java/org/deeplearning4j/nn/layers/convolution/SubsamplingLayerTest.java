@@ -58,7 +58,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         assertEquals(containedExpectedOut, containedOutput);
 
         INDArray output = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
-        assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, featureMapWidth, featureMapHeight},
+        assertTrue(Arrays.equals(new long[] {nExamples, nChannelsIn, featureMapWidth, featureMapHeight},
                         output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4); // channels retained
     }
@@ -76,7 +76,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         assertEquals(containedExpectedOut, containedOutput);
 
         INDArray output = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
-        assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, featureMapWidth, featureMapHeight},
+        assertTrue(Arrays.equals(new long[] {nExamples, nChannelsIn, featureMapWidth, featureMapHeight},
                         output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4); // channels retained
     }
@@ -104,7 +104,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
 
         INDArray input2 = getData();
         layer.activate(input2, false, LayerWorkspaceMgr.noWorkspaces());
-        int depth = input2.size(1);
+        long depth = input2.size(1);
 
         epsilon = Nd4j.ones(5, depth, featureMapHeight, featureMapWidth);
 

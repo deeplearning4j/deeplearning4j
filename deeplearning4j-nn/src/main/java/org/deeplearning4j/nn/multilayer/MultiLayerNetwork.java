@@ -548,7 +548,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             //First: Work out total length of (backprop) params
             int paramLength = 0;
-            int[] nParamsPerLayer = new int[nLayers];
+            val nParamsPerLayer = new long[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
                 nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf);
@@ -661,7 +661,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             //First: Work out total length of params
             int paramLength = 0;
-            int[] nParamsPerLayer = new int[nLayers];
+            val nParamsPerLayer = new long[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
                 nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf);
@@ -2068,7 +2068,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public void fit(INDArray examples, int[] labels) {
         org.deeplearning4j.nn.conf.layers.OutputLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.OutputLayer) getOutputLayer().conf().getLayer();
-        fit(examples, FeatureUtil.toOutcomeMatrix(labels, layerConf.getNOut()));
+
+        // FIXME: int cast
+        fit(examples, FeatureUtil.toOutcomeMatrix(labels, (int) layerConf.getNOut()));
     }
 
 
@@ -3472,7 +3474,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             return 0;
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
-        return ffl.getNOut();
+
+        // FIXME: int cast
+        return (int) ffl.getNOut();
     }
 
     /**
@@ -3496,7 +3500,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             return 0;
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
-        return ffl.getNIn();
+
+        // FIXME: int cast
+        return (int) ffl.getNIn();
     }
 
     /**

@@ -49,7 +49,7 @@ public class TestVAE extends BaseDL4JTest {
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
                         (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
 
-        int allParams = vae.initializer().numParams(c);
+        long allParams = vae.initializer().numParams(c);
 
         //                  Encoder         Encoder -> p(z|x)       Decoder         //p(x|z)
         int expNumParams = (10 * 12 + 12) + (12 * (2 * 5) + (2 * 5)) + (5 * 13 + 13) + (13 * (2 * 10) + (2 * 10));
@@ -92,8 +92,8 @@ public class TestVAE extends BaseDL4JTest {
 
             //        net.output(in);
             List<INDArray> out = net.feedForward(in);
-            assertArrayEquals(new int[] {1, 10}, out.get(0).shape());
-            assertArrayEquals(new int[] {1, 5}, out.get(1).shape());
+            assertArrayEquals(new long[] {1, 10}, out.get(0).shape());
+            assertArrayEquals(new long[] {1, 5}, out.get(1).shape());
         }
     }
 
@@ -111,7 +111,7 @@ public class TestVAE extends BaseDL4JTest {
         org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder vae =
                         (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) c.getLayer();
 
-        int allParams = vae.initializer().numParams(c);
+        long allParams = vae.initializer().numParams(c);
 
         MultiLayerNetwork net = new MultiLayerNetwork(mlc);
         net.init();
@@ -358,11 +358,11 @@ public class TestVAE extends BaseDL4JTest {
 
                 Nd4j.getRandom().setSeed(12345);
                 INDArray reconstructionProb = layer.reconstructionProbability(data, 50);
-                assertArrayEquals(new int[] {minibatch, 1}, reconstructionProb.shape());
+                assertArrayEquals(new long[] {minibatch, 1}, reconstructionProb.shape());
 
                 Nd4j.getRandom().setSeed(12345);
                 INDArray reconstructionLogProb = layer.reconstructionLogProbability(data, 50);
-                assertArrayEquals(new int[] {minibatch, 1}, reconstructionLogProb.shape());
+                assertArrayEquals(new long[] {minibatch, 1}, reconstructionLogProb.shape());
 
                 //                System.out.println(reconstructionDistributions[i]);
                 for (int j = 0; j < minibatch; j++) {
@@ -424,7 +424,7 @@ public class TestVAE extends BaseDL4JTest {
 
                 Nd4j.getRandom().setSeed(12345);
                 INDArray reconstructionError = layer.reconstructionError(data);
-                assertArrayEquals(new int[] {minibatch, 1}, reconstructionError.shape());
+                assertArrayEquals(new long[] {minibatch, 1}, reconstructionError.shape());
 
                 for (int j = 0; j < minibatch; j++) {
                     double re = reconstructionError.getDouble(j);
