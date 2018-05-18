@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.params;
 
+import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
@@ -33,15 +34,15 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
 
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
     @Override
-    public int numParams(Layer layer) {
+    public long numParams(Layer layer) {
         SimpleRnn c = (SimpleRnn)layer;
-        int nIn = c.getNIn();
-        int nOut = c.getNOut();
+        val nIn = c.getNIn();
+        val nOut = c.getNOut();
         return nIn * nOut + nOut * nOut + nOut;
     }
 
@@ -73,8 +74,8 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         SimpleRnn c = (SimpleRnn)conf.getLayer();
-        int nIn = c.getNIn();
-        int nOut = c.getNOut();
+        val nIn = c.getNIn();
+        val nOut = c.getNOut();
 
         Map<String,INDArray> m;
 
@@ -82,7 +83,7 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
             Distribution dist = Distributions.createDistribution(c.getDist());
 
             m = getSubsets(paramsView, nIn, nOut, false);
-            INDArray w = WeightInitUtil.initWeights(nIn, nOut, new int[]{nIn, nOut}, c.getWeightInit(), dist, 'f', m.get(WEIGHT_KEY));
+            INDArray w = WeightInitUtil.initWeights(nIn, nOut, new long[]{nIn, nOut}, c.getWeightInit(), dist, 'f', m.get(WEIGHT_KEY));
             m.put(WEIGHT_KEY, w);
 
             WeightInit rwInit;
@@ -96,7 +97,7 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
                 rwInit = c.getWeightInit();
             }
 
-            INDArray rw = WeightInitUtil.initWeights(nOut, nOut, new int[]{nOut, nOut}, rwInit, rwDist, 'f', m.get(RECURRENT_WEIGHT_KEY));
+            INDArray rw = WeightInitUtil.initWeights(nOut, nOut, new long[]{nOut, nOut}, rwInit, rwDist, 'f', m.get(RECURRENT_WEIGHT_KEY));
             m.put(RECURRENT_WEIGHT_KEY, rw);
         } else {
             m = getSubsets(paramsView, nIn, nOut, true);
@@ -112,14 +113,14 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         SimpleRnn c = (SimpleRnn)conf.getLayer();
-        int nIn = c.getNIn();
-        int nOut = c.getNOut();
+        val nIn = c.getNIn();
+        val nOut = c.getNOut();
 
         return getSubsets(gradientView, nIn, nOut, true);
     }
 
-    private static Map<String,INDArray> getSubsets(INDArray in, int nIn, int nOut, boolean reshape){
-        int pos = nIn * nOut;
+    private static Map<String,INDArray> getSubsets(INDArray in, long nIn, long nOut, boolean reshape){
+        long pos = nIn * nOut;
         INDArray w = in.get(point(0), interval(0, pos));
         INDArray rw = in.get(point(0), interval(pos, pos + nOut * nOut));
         pos += nOut * nOut;

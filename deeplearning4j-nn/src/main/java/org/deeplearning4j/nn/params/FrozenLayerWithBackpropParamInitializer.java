@@ -27,12 +27,12 @@ public class FrozenLayerWithBackpropParamInitializer implements ParamInitializer
     }
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
     @Override
-    public int numParams(Layer layer) {
+    public long numParams(Layer layer) {
         FrozenLayerWithBackprop fl = (FrozenLayerWithBackprop) layer;
         ParamInitializer initializer = fl.getUnderlying().initializer();
         return initializer.numParams(fl.getUnderlying());

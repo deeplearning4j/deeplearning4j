@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -82,5 +83,17 @@ public class VPTreeSerializationTests {
 
         assertEquals(points, treeA.getItems());
         assertEquals(points, treeB.getItems());
+    }
+
+    @Test
+    //@Ignore
+    public void testBigTrees_1() throws Exception {
+        val list = new ArrayList<DataPoint>();
+
+        for (int e = 0; e < 3200000; e++) {
+            val dp = new DataPoint(e, Nd4j.rand(new long[] {1, 300}));
+        }
+
+        log.info("DataPoints created");
     }
 }

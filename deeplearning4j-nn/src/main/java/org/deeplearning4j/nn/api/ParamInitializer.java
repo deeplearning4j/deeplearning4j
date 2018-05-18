@@ -32,9 +32,9 @@ import java.util.Map;
  */
 public interface ParamInitializer {
 
-    int numParams(NeuralNetConfiguration conf);
+    long numParams(NeuralNetConfiguration conf);
 
-    int numParams(org.deeplearning4j.nn.conf.layers.Layer layer);
+    long numParams(org.deeplearning4j.nn.conf.layers.Layer layer);
 
     /**
      * Get a list of all parameter keys given the layer configuration

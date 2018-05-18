@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -89,7 +86,7 @@ public class DropoutLayer extends FeedForwardLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        int actElementsPerEx = inputType.arrayElementsPerExample();
+        val actElementsPerEx = inputType.arrayElementsPerExample();
         //During inference: not applied. During  backprop: dup the input, in case it's used elsewhere
         //But: this will be counted in the activations
         //(technically inference memory is over-estimated as a result)

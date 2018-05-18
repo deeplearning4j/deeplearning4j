@@ -163,7 +163,7 @@ public class GlobalPoolingLayer extends Layer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType outputType = getOutputType(-1, inputType);
 
-        int fwdTrainInferenceWorkingPerEx = 0;
+        long fwdTrainInferenceWorkingPerEx = 0;
         //Here: we'll assume we are doing 'full array' global pooling.
         //For max/avg/sum pooling, no working memory (GlobalPoolingLayer.activateHelperFullArray
         //But for pnorm, we have working memory

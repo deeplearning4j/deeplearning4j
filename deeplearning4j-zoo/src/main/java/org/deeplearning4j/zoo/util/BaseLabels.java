@@ -59,12 +59,13 @@ public abstract class BaseLabels implements Labels {
 
     @Override
     public List<List<ClassPrediction>> decodePredictions(INDArray predictions, int n) {
-        int rows = predictions.size(0);
-        int cols = predictions.size(1);
+        // FIXME: int cast
+        int rows = (int) predictions.size(0);
+        int cols = (int) predictions.size(1);
         if (predictions.isColumnVectorOrScalar()) {
             predictions = predictions.ravel();
-            rows = predictions.size(0);
-            cols = predictions.size(1);
+            rows = (int) predictions.size(0);
+            cols = (int) predictions.size(1);
         }
         List<List<ClassPrediction>> descriptions = new ArrayList<>();
         for (int batch = 0; batch < rows; batch++) {

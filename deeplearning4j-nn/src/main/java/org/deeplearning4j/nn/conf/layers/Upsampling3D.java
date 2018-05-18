@@ -17,10 +17,7 @@
  */
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -81,10 +78,12 @@ public class Upsampling3D extends BaseUpsamplingLayer {
                     + "\"): Expected CNN3D input, got " + inputType);
         }
         InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
-        int inHeight = i.getHeight();
-        int inWidth = i.getWidth();
-        int inDepth = i.getDepth();
-        int inChannels = i.getChannels();
+
+        // FIXME: int cast
+        int inHeight = (int) i.getHeight();
+        int inWidth = (int) i.getWidth();
+        int inDepth = (int) i.getDepth();
+        int inChannels = (int) i.getChannels();
 
         return InputType.convolutional3D(
                 size[0] * inDepth,size[1] * inHeight, size[2] * inWidth,  inChannels);
@@ -106,11 +105,11 @@ public class Upsampling3D extends BaseUpsamplingLayer {
                 (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
 
         // During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        int im2colSizePerEx = c.getChannels() & outputType.getDepth() * outputType.getHeight()
+        val im2colSizePerEx = c.getChannels() & outputType.getDepth() * outputType.getHeight()
                 * outputType.getWidth() * size[0] * size[1] * size[2];
 
         // Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
-        int trainingWorkingSizePerEx = im2colSizePerEx;
+        long trainingWorkingSizePerEx = im2colSizePerEx;
         if (getIDropout() != null) {
             //Dup on the input before dropout, but only for training
             trainingWorkingSizePerEx += inputType.arrayElementsPerExample();

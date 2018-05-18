@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.params;
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,7 +43,7 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
     public final static String VISIBLE_BIAS_KEY = "v" + DefaultParamInitializer.BIAS_KEY;
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
                         (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
         return super.numParams(conf) + layerConf.getNIn();
@@ -54,9 +55,9 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
 
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
                         (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
-        int nWeightParams = nIn * nOut;
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut();
+        val nWeightParams = nIn * nOut;
 
         INDArray visibleBiasView = paramsView.get(NDArrayIndex.point(0),
                         NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nIn));
@@ -71,7 +72,7 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
         org.deeplearning4j.nn.conf.layers.BasePretrainNetwork layerConf =
                         (org.deeplearning4j.nn.conf.layers.BasePretrainNetwork) conf.getLayer();
         if (initializeParameters) {
-            INDArray ret = Nd4j.valueArrayOf(layerConf.getNIn(), layerConf.getVisibleBiasInit());
+            INDArray ret = Nd4j.valueArrayOf(new long[]{1, layerConf.getNIn()}, layerConf.getVisibleBiasInit());
             visibleBiasView.assign(ret);
         }
         return visibleBiasView;
@@ -84,9 +85,9 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
 
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
-        int nWeightParams = nIn * nOut;
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut();
+        val nWeightParams = nIn * nOut;
 
         INDArray vBiasView = gradientView.get(NDArrayIndex.point(0),
                         NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nIn));

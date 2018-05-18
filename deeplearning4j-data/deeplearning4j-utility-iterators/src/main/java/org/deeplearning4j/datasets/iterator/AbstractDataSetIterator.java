@@ -186,8 +186,9 @@ public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
                     Pair<T, T> pair = iterator.next();
                     if (numFeatures < 1) {
                         if (pair.getFirst() instanceof INDArray) {
-                            numFeatures = ((INDArray) pair.getFirst()).length();
-                            numLabels = ((INDArray) pair.getSecond()).length();
+                            // FIXME: int cast
+                            numFeatures = (int) ((INDArray) pair.getFirst()).length();
+                            numLabels = (int) ((INDArray) pair.getSecond()).length();
                         } else if (pair.getFirst() instanceof float[]) {
                             numFeatures = ((float[]) pair.getFirst()).length;
                             numLabels = ((float[]) pair.getSecond()).length;

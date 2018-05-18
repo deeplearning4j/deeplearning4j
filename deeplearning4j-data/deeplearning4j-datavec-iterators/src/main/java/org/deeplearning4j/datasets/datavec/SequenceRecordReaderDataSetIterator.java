@@ -272,7 +272,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             fm = RecordReaderDataSetIterator.getOrNull(mds.getFeaturesMaskArrays(), 0); //Per-example masking only on the input -> same for both
 
             //Can assume 3d features here
-            f = Nd4j.createUninitialized(new int[] {f1.size(0), f1.size(1) + f2.size(1), f1.size(2)});
+            f = Nd4j.createUninitialized(new long[] {f1.size(0), f1.size(1) + f2.size(1), f1.size(2)});
             f.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(0, f1.size(1)), NDArrayIndex.all()},
                             f1);
             f.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(f1.size(1), f1.size(1) + f2.size(1)),
@@ -346,8 +346,9 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         DataSet ds = mdsToDataSet(mds);
 
         if (totalOutcomes == -1) {
-            inputColumns = ds.getFeatures().size(1);
-            totalOutcomes = ds.getLabels().size(1);
+            // FIXME: int cast
+            inputColumns = (int) ds.getFeatures().size(1);
+            totalOutcomes = (int) ds.getLabels().size(1);
         }
 
         return ds;
@@ -377,8 +378,10 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     private void preLoad() {
         stored = next();
         useStored = true;
-        inputColumns = stored.getFeatureMatrix().size(1);
-        totalOutcomes = stored.getLabels().size(1);
+
+        // FIXME: int cast
+        inputColumns = (int) stored.getFeatureMatrix().size(1);
+        totalOutcomes = (int) stored.getLabels().size(1);
     }
 
     @Override

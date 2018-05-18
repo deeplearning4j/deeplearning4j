@@ -97,7 +97,7 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        int actElementsPerEx = inputType.arrayElementsPerExample();
+        val actElementsPerEx = inputType.arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(layerName, ActivationLayer.class, inputType, inputType)
                         .standardMemory(0, 0) //No params

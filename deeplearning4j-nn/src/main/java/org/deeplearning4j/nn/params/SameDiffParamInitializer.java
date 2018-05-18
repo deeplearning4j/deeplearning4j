@@ -26,12 +26,12 @@ public class SameDiffParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
     @Override
-    public int numParams(Layer layer) {
+    public long numParams(Layer layer) {
         AbstractSameDiffLayer sd = (AbstractSameDiffLayer)layer;
         Map<String,int[]> m = sd.getLayerParams().getParamShapes();
         int n = 0;

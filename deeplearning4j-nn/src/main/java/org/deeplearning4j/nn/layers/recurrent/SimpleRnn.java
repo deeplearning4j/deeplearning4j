@@ -163,7 +163,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         applyDropOutIfNecessary(training, workspaceMgr);
         val m = input.size(0);
         val tsLength = input.size(2);
-        int nOut = layerConf().getNOut();
+        val nOut = layerConf().getNOut();
 
         INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, training, workspaceMgr);
         INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr);

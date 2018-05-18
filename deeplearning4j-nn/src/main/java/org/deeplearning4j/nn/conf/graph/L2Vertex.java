@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -94,7 +95,7 @@ public class L2Vertex extends GraphVertex {
         //Working memory for training:
         //1 for each example (fwd pass) + output size (1 per ex) + input size + output size... in addition to the returned eps arrays
         //output size == input size here
-        int trainWorkingSizePerEx = 3 + 2 * inputTypes[0].arrayElementsPerExample();
+        val trainWorkingSizePerEx = 3 + 2 * inputTypes[0].arrayElementsPerExample();
 
         return new LayerMemoryReport.Builder(null, L2Vertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
                         .workingMemory(0, 0, 0, trainWorkingSizePerEx).cacheMemory(0, 0) //No caching

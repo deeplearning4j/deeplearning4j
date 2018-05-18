@@ -78,7 +78,7 @@ public class AutoEncoder extends BasePretrainNetwork {
         //Because of supervised + unsupervised modes: we'll assume unsupervised, which has the larger memory requirements
         InputType outputType = getOutputType(-1, inputType);
 
-        int actElementsPerEx = outputType.arrayElementsPerExample() + inputType.arrayElementsPerExample();
+        val actElementsPerEx = outputType.arrayElementsPerExample() + inputType.arrayElementsPerExample();
         int numParams = initializer().numParams(this);
         int updaterStateSize = (int) getIUpdater().stateSize(numParams);
 

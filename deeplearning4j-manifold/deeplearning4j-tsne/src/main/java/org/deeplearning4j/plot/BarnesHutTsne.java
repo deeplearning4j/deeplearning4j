@@ -45,6 +45,7 @@ import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -591,7 +592,8 @@ public class BarnesHutTsne implements Model {
 
             if (useAdaGrad) {
                 if (adaGrad == null) {
-                    adaGrad = new AdaGrad(gradient.shape(), learningRate);
+                    // FIXME: int cast
+                    adaGrad = new AdaGrad(ArrayUtil.toInts(gradient.shape()), learningRate);
                     adaGrad.setStateViewArray(Nd4j.zeros(gradient.shape()).reshape(1, gradChange.length()),
                             gradChange.shape(), gradient.ordering(), true);
                 }

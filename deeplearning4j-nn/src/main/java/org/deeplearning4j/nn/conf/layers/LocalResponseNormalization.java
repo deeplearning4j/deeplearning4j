@@ -108,7 +108,7 @@ public class LocalResponseNormalization extends Layer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        int actElementsPerEx = inputType.arrayElementsPerExample();
+        val actElementsPerEx = inputType.arrayElementsPerExample();
 
         //Forward pass: 3x input size as working memory, in addition to output activations
         //Backward pass: 2x input size as working memory, in addition to epsilons

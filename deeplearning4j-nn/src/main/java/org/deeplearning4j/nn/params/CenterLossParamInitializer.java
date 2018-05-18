@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.params;
 
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -46,11 +47,11 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
     public final static String CENTER_KEY = "cL";
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut(); // also equal to numClasses
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut(); // also equal to numClasses
         return nIn * nOut + nOut + nIn * nOut; //weights + bias + embeddings
     }
 
@@ -61,12 +62,12 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut(); // also equal to numClasses
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut(); // also equal to numClasses
 
-        int wEndOffset = nIn * nOut;
-        int bEndOffset = wEndOffset + nOut;
-        int cEndOffset = bEndOffset + nIn * nOut;
+        val wEndOffset = nIn * nOut;
+        val bEndOffset = wEndOffset + nOut;
+        val cEndOffset = bEndOffset + nIn * nOut;
 
         INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, wEndOffset));
         INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(wEndOffset, bEndOffset));
@@ -88,12 +89,12 @@ public class CenterLossParamInitializer extends DefaultParamInitializer {
         org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer) conf.getLayer();
 
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut(); // also equal to numClasses
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut(); // also equal to numClasses
 
-        int wEndOffset = nIn * nOut;
-        int bEndOffset = wEndOffset + nOut;
-        int cEndOffset = bEndOffset + nIn * nOut; // note: numClasses == nOut
+        val wEndOffset = nIn * nOut;
+        val bEndOffset = wEndOffset + nOut;
+        val cEndOffset = bEndOffset + nIn * nOut; // note: numClasses == nOut
 
         INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, wEndOffset))
                         .reshape('f', nIn, nOut);

@@ -1,6 +1,7 @@
 package org.deeplearning4j.optimize.solvers.accumulation;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,7 +30,7 @@ public class EncodedGradientsAccumulatorTest {
 
 
         for (int numWorkers : workers) {
-            int bufferSize = EncodedGradientsAccumulator.getOptimalBufferSize(numParams, numWorkers, 2);
+            val bufferSize = EncodedGradientsAccumulator.getOptimalBufferSize(numParams, numWorkers, 2);
             log.info("Workers: {}; Buffer size: {} bytes", numWorkers, bufferSize);
             EncodedGradientsAccumulator accumulator =
                             new EncodedGradientsAccumulator(numWorkers, handler, bufferSize, 2, null);

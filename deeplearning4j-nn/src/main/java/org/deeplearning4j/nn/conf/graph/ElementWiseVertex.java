@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
+import lombok.val;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -134,9 +135,11 @@ public class ElementWiseVertex extends GraphVertex {
         } else {
             //CNN inputs... also check that the channels, width and heights match:
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
-            int fd = firstConv.getChannels();
-            int fw = firstConv.getWidth();
-            int fh = firstConv.getHeight();
+
+            // FIXME: int cast
+            val fd = (int) firstConv.getChannels();
+            val fw = (int) firstConv.getWidth();
+            val fh = (int) firstConv.getHeight();
 
             for (int i = 1; i < vertexInputs.length; i++) {
                 if (vertexInputs[i].getType() != InputType.Type.CNN) {
@@ -148,9 +151,10 @@ public class ElementWiseVertex extends GraphVertex {
 
                 InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
 
-                int od = otherConv.getChannels();
-                int ow = otherConv.getWidth();
-                int oh = otherConv.getHeight();
+                // FIXME: int cast
+                val od = (int) otherConv.getChannels();
+                val ow = (int) otherConv.getWidth();
+                val oh = (int) otherConv.getHeight();
 
                 if (fd != od || fw != ow || fh != oh) {
                     throw new InvalidInputTypeException(
