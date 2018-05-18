@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -200,28 +201,30 @@ public class GradientCheckUtil {
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = mln.params().dup(); //need dup: params are a *view* of full parameters
 
-        int nParams = originalParams.length();
+        val nParams = originalParams.length();
 
         Map<String, INDArray> paramTable = mln.paramTable();
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
-        int[] paramEnds = new int[paramNames.size()];
+        val paramEnds = new long[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
         Map<String,Integer> stepSizeForParam;
         if(subset){
             stepSizeForParam = new HashMap<>();
-            stepSizeForParam.put(paramNames.get(0), Math.max(1, paramTable.get(paramNames.get(0)).length() / maxPerParam));
+            stepSizeForParam.put(paramNames.get(0), (int) Math.max(1, paramTable.get(paramNames.get(0)).length() / maxPerParam));
         } else {
             stepSizeForParam = null;
         }
         for (int i = 1; i < paramEnds.length; i++) {
-            int n = paramTable.get(paramNames.get(i)).length();
+            val n = paramTable.get(paramNames.get(i)).length();
             paramEnds[i] = paramEnds[i - 1] + n;
             if(subset){
-                int ss = n / maxPerParam;
+                long ss = n / maxPerParam;
                 if(ss == 0){
                     ss = n;
                 }
-                stepSizeForParam.put(paramNames.get(i), ss);
+
+                // FIXME: int cast
+                stepSizeForParam.put(paramNames.get(i), (int) ss);
             }
         }
 
@@ -241,7 +244,7 @@ public class GradientCheckUtil {
         int currParamNameIdx = 0;
 
         INDArray params = mln.params(); //Assumption here: params is a view that we can modify in-place
-        for (int i = 0; i < nParams; ) {
+        for (long i = 0; i < nParams; ) {
             //Get param name
             if (i >= paramEnds[currParamNameIdx]) {
                 currParamNameIdx++;
@@ -304,7 +307,7 @@ public class GradientCheckUtil {
                                 + numericalGradient + ", relError= " + relError);
             }
 
-            int step;
+            long step;
             if(subset){
                 step = stepSizeForParam.get(paramName);
                 if(i + step > paramEnds[currParamNameIdx]+1){
@@ -318,7 +321,7 @@ public class GradientCheckUtil {
         }
 
         if (print) {
-            int nPass = nParams - totalNFailures;
+            val nPass = nParams - totalNFailures;
             log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
                             + totalNFailures + " failed. Largest relative error = " + maxError);
         }
@@ -440,11 +443,11 @@ public class GradientCheckUtil {
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = graph.params().dup(); //need dup: params are a *view* of full parameters
 
-        int nParams = originalParams.length();
+        val nParams = originalParams.length();
 
         Map<String, INDArray> paramTable = graph.paramTable();
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
-        int[] paramEnds = new int[paramNames.size()];
+        val paramEnds = new long[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
         for (int i = 1; i < paramEnds.length; i++) {
             paramEnds[i] = paramEnds[i - 1] + paramTable.get(paramNames.get(i)).length();
@@ -455,7 +458,7 @@ public class GradientCheckUtil {
         double maxError = 0.0;
         MultiDataSet mds = new MultiDataSet(inputs, labels, fMask, lMask);
         INDArray params = graph.params(); //Assumption here: params is a view that we can modify in-place
-        for (int i = 0; i < nParams; i++) {
+        for (long i = 0; i < nParams; i++) {
             //Get param name
             if (i >= paramEnds[currParamNameIdx]) {
                 currParamNameIdx++;
@@ -519,7 +522,7 @@ public class GradientCheckUtil {
         }
 
         if (print) {
-            int nPass = nParams - totalNFailures;
+            val nPass = nParams - totalNFailures;
             log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
                             + totalNFailures + " failed. Largest relative error = " + maxError);
         }
@@ -564,11 +567,11 @@ public class GradientCheckUtil {
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = layer.params().dup(); //need dup: params are a *view* of full parameters
 
-        int nParams = originalParams.length();
+        val nParams = originalParams.length();
 
         Map<String, INDArray> paramTable = layer.paramTable();
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
-        int[] paramEnds = new int[paramNames.size()];
+        val paramEnds = new long[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
         for (int i = 1; i < paramEnds.length; i++) {
             paramEnds[i] = paramEnds[i - 1] + paramTable.get(paramNames.get(i)).length();
@@ -644,7 +647,7 @@ public class GradientCheckUtil {
         }
 
         if (print) {
-            int nPass = nParams - totalNFailures;
+            val nPass = nParams - totalNFailures;
             log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
                             + totalNFailures + " failed. Largest relative error = " + maxError);
         }

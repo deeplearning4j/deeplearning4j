@@ -64,7 +64,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
-        int[] indexes = new int[input.length()];
+        // FIXME: int cast
+        int[] indexes = new int[(int) input.length()];
         for (int i = 0; i < indexes.length; i++) {
             indexes[i] = input.getInt(i, 0);
         }
@@ -96,7 +97,9 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         }
 
         int nIn = layerConf().getNIn();
-        int[] indexes = new int[input.length()];
+
+        // FIXME: int cast
+        int[] indexes = new int[(int) input.length()];
         for (int i = 0; i < indexes.length; i++) {
             indexes[i] = input.getInt(i, 0);
 

@@ -81,7 +81,8 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray delta2d = lossFunction.computeGradient(labels2d, input2d.dup(input2d.ordering()), layerConf().getActivationFn(), maskReshaped);
 
-        INDArray delta3d = TimeSeriesUtils.reshape2dTo3d(delta2d, input.size(0), workspaceMgr, ArrayType.ACTIVATION_GRAD);
+        // FIXME: int cast
+        INDArray delta3d = TimeSeriesUtils.reshape2dTo3d(delta2d, (int) input.size(0), workspaceMgr, ArrayType.ACTIVATION_GRAD);
 
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
@@ -115,7 +116,8 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
 
     @Override
     public int numLabels() {
-        return labels.size(1);
+        // FIXME: int cast
+        return (int) labels.size(1);
     }
 
     @Override
@@ -251,7 +253,8 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
         //scoreArray: shape [minibatch*timeSeriesLength, 1]
         //Reshape it to [minibatch, timeSeriesLength] then sum over time step
 
-        INDArray scoreArrayTs = TimeSeriesUtils.reshapeVectorToTimeSeriesMask(scoreArray, input.size(0));
+        // FIXME: int cast
+        INDArray scoreArrayTs = TimeSeriesUtils.reshapeVectorToTimeSeriesMask(scoreArray, (int) input.size(0));
         INDArray summedScores = scoreArrayTs.sum(1);
 
         double l1l2 = fullNetworkL1 + fullNetworkL2;

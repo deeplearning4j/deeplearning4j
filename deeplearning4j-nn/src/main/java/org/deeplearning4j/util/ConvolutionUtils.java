@@ -19,6 +19,7 @@
 package org.deeplearning4j.util;
 
 
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -67,8 +68,9 @@ public class ConvolutionUtils {
     public static int[] getDeconvolutionOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                                    ConvolutionMode convolutionMode, int[] dilation) {
 
-        int hIn = inputData.size(2);
-        int wIn = inputData.size(3);
+        // FIXME: int cast
+        int hIn = (int) inputData.size(2);
+        int wIn = (int) inputData.size(3);
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         boolean atrous = (eKernel == kernel);
 
@@ -101,8 +103,9 @@ public class ConvolutionUtils {
      */
     public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                       ConvolutionMode convolutionMode, int[] dilation) {
-        int inH = inputData.size(2);
-        int inW = inputData.size(3);
+        // FIXME: int cast
+        int inH = (int) inputData.size(2);
+        int inW = (int) inputData.size(3);
 
         //Determine the effective kernel size, accounting for dilation
         //http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions
@@ -439,7 +442,7 @@ public class ConvolutionUtils {
         if (in.rank() != 4)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 4, got rank " + in.rank()
                     + " with shape " + Arrays.toString(in.shape()));
-        int[] shape = in.shape();
+        val shape = in.shape();
 
         //Reshape: from [n,c,h,w] to [n*h*w,c]
 
@@ -481,8 +484,8 @@ public class ConvolutionUtils {
 
         //Use workaround for: https://github.com/deeplearning4j/nd4j/issues/2066
 
-        int[] s = output.shape();
-        INDArray bMask = workspaceMgr.create(type, new int[]{s[0], 1, s[2], s[3]}, 'c');
+        val s = output.shape();
+        INDArray bMask = workspaceMgr.create(type, new long[]{s[0], 1, s[2], s[3]}, 'c');
         Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 1));
 
         INDArray bMaskPermute = bMask.permute(0, 2, 3).dup('c');  //Not sure if dup is strictly necessary...

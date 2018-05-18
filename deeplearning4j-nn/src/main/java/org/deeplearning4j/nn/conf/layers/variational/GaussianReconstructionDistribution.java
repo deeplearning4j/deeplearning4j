@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
 import lombok.Data;
+import lombok.val;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -62,7 +63,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
 
     @Override
     public double negLogProbability(INDArray x, INDArray preOutDistributionParams, boolean average) {
-        int size = preOutDistributionParams.size(1) / 2;
+        val size = preOutDistributionParams.size(1) / 2;
 
         INDArray[] logProbArrays = calcLogProbArrayExConstants(x, preOutDistributionParams);
         double logProb = x.size(0) * size * NEG_HALF_LOG_2PI - 0.5 * logProbArrays[0].sumNumber().doubleValue()
@@ -77,7 +78,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
 
     @Override
     public INDArray exampleNegLogProbability(INDArray x, INDArray preOutDistributionParams) {
-        int size = preOutDistributionParams.size(1) / 2;
+        val size = preOutDistributionParams.size(1) / 2;
 
         INDArray[] logProbArrays = calcLogProbArrayExConstants(x, preOutDistributionParams);
 
@@ -88,7 +89,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         INDArray output = preOutDistributionParams.dup();
         activationFn.getActivation(output, false);
 
-        int size = output.size(1) / 2;
+        val size = output.size(1) / 2;
         INDArray mean = output.get(NDArrayIndex.all(), NDArrayIndex.interval(0, size));
         INDArray logStdevSquared = output.get(NDArrayIndex.all(), NDArrayIndex.interval(size, 2 * size));
 
@@ -105,7 +106,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         INDArray output = preOutDistributionParams.dup();
         activationFn.getActivation(output, true);
 
-        int size = output.size(1) / 2;
+        val size = output.size(1) / 2;
         INDArray mean = output.get(NDArrayIndex.all(), NDArrayIndex.interval(0, size));
         INDArray logStdevSquared = output.get(NDArrayIndex.all(), NDArrayIndex.interval(size, 2 * size));
 
@@ -136,7 +137,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         INDArray output = preOutDistributionParams.dup();
         activationFn.getActivation(output, true);
 
-        int size = output.size(1) / 2;
+        val size = output.size(1) / 2;
         INDArray mean = output.get(NDArrayIndex.all(), NDArrayIndex.interval(0, size));
         INDArray logStdevSquared = output.get(NDArrayIndex.all(), NDArrayIndex.interval(size, 2 * size));
 
@@ -149,7 +150,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
 
     @Override
     public INDArray generateAtMean(INDArray preOutDistributionParams) {
-        int size = preOutDistributionParams.size(1) / 2;
+        val size = preOutDistributionParams.size(1) / 2;
         INDArray mean = preOutDistributionParams.get(NDArrayIndex.all(), NDArrayIndex.interval(0, size)).dup();
         activationFn.getActivation(mean, false);
 
