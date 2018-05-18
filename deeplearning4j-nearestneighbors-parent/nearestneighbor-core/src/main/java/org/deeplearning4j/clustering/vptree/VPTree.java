@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,7 +46,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @Builder
 @AllArgsConstructor
-public class VPTree {
+public class VPTree implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     public static final String EUCLIDEAN = "euclidean";
     private double tau;
@@ -57,14 +59,19 @@ public class VPTree {
     private String similarityFunction;
     @Getter
     private boolean invert = false;
-    private ExecutorService executorService;
+    private transient ExecutorService executorService;
     @Getter
     private int workers = 1;
     private AtomicInteger size = new AtomicInteger(0);
 
-    private ThreadLocal<INDArray> scalars = new ThreadLocal<>();
+    private transient ThreadLocal<INDArray> scalars = new ThreadLocal<>();
 
-    WorkspaceConfiguration workspaceConfiguration;
+    private WorkspaceConfiguration workspaceConfiguration;
+
+    protected VPTree() {
+        // method for serialization only
+        scalars = new ThreadLocal<>();
+    }
 
     /**
      *
@@ -107,21 +114,21 @@ public class VPTree {
      * @param invert whether to invert the metric (different optimization objective)
      */
     public VPTree(List<DataPoint> items, String similarityFunction, int workers, boolean invert) {
-        if (this.items == null) {
-            this.items = Nd4j.create(items.size(), items.get(0).getPoint().columns());
-        }
-
         this.workers = workers;
 
-        for (int i = 0; i < items.size(); i++) {
-            //itemsList.add(items.get(i).getPoint());
-            this.items.putRow(i, items.get(i).getPoint());
-        }
+        val list = new INDArray[items.size()];
+
+        // build list of INDArrays first
+        for (int i = 0; i < items.size(); i++)
+            list[i] = items.get(i).getPoint();
+            //this.items.putRow(i, items.get(i).getPoint());
+
+        // just stack them out with concat :)
+        this.items = Nd4j.pile(list);
 
         this.invert = invert;
         this.similarityFunction = similarityFunction;
         root = buildFromPoints(this.items);
-
     }
 
 
@@ -247,6 +254,9 @@ public class VPTree {
      * @return the distance between the two points
      */
     public float distance(INDArray arr1, INDArray arr2) {
+        if (scalars == null)
+            scalars = new ThreadLocal<>();
+
         if (scalars.get() == null)
             scalars.set(Nd4j.scalar(0.0));
 
@@ -559,13 +569,15 @@ public class VPTree {
     }
 
     @Data
-    public static class Node {
+    public static class Node implements Serializable {
+        private static final long serialVersionUID = 2L;
+
         private int index;
         private float threshold;
         private Node left, right;
         private INDArray point;
-        protected Future<Node> futureLeft;
-        protected Future<Node> futureRight;
+        protected transient Future<Node> futureLeft;
+        protected transient Future<Node> futureRight;
 
         public Node(int index, float threshold) {
             this.index = index;
