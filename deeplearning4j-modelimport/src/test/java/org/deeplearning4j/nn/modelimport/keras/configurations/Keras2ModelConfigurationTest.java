@@ -207,7 +207,7 @@ public class Keras2ModelConfigurationTest {
         model.init();
         INDArray input = Nd4j.create(50, 500, 1500);
         INDArray out = model.output(input);
-        assertTrue(Arrays.equals(out.shape(), new int[]{50, 64}));
+        assertTrue(Arrays.equals(out.shape(), new long[]{50, 64}));
     }
 
 

@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.impl.graph.scoring;
 
+import lombok.val;
 import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -114,7 +115,7 @@ class ScoreExamplesWithKeyFunctionAdapter<K>
             while (iterator.hasNext() && nExamples < batchSize) {
                 Tuple2<K, MultiDataSet> t2 = iterator.next();
                 MultiDataSet ds = t2._2();
-                int n = ds.getFeatures(0).size(0);
+                val n = ds.getFeatures(0).size(0);
                 if (n != 1)
                     throw new IllegalStateException("Cannot score examples with one key per data set if "
                                     + "data set contains more than 1 example (numExamples: " + n + ")");

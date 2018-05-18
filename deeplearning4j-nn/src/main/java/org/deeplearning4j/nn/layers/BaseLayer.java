@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers;
 
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -99,7 +100,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
-        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{W.size(0), delta.size(0)}, 'f');
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{W.size(0), delta.size(0)}, 'f');
         epsilonNext = W.mmuli(delta.transpose(),epsilonNext).transpose();   //W.mmul(delta.transpose()).transpose();
 
         weightNoiseParams.clear();
@@ -435,7 +436,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             INDArray newB;
             INDArray newVB = null;
 
-            int totalParams = w.length();
+            long totalParams = w.length();
             if (vb != null) {
                 newB = vb.dup();
                 newVB = b.dup();

@@ -217,7 +217,7 @@ public class CompositeReconstructionDistribution implements ReconstructionDistri
     private INDArray randomSample(INDArray preOutDistributionParams, boolean isMean) {
         int inputSoFar = 0;
         int paramsSoFar = 0;
-        INDArray out = Nd4j.createUninitialized(new int[] {preOutDistributionParams.size(0), totalSize});
+        INDArray out = Nd4j.createUninitialized(new long[] {preOutDistributionParams.size(0), totalSize});
         for (int i = 0; i < distributionSizes.length; i++) {
             int thisDataSize = distributionSizes[i];
             int thisParamsSize = reconstructionDistributions[i].distributionInputSize(thisDataSize);

@@ -114,10 +114,11 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        int miniBatch = input.size(0);
-        int inDepth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inDepth = (int) input.size(1);
+        int inH = (int) input.size(2);
+        int inW = (int) input.size(3);
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
@@ -156,8 +157,9 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //subsampling doesn't have weights and thus gradients are not calculated for this layer
         //only scale and reshape epsilon
-        int inputHeight = input().size(-2);
-        int inputWidth = input().size(-1);
+        // FIXME: int cast
+        int inputHeight = (int) input().size(-2);
+        int inputWidth = (int) input().size(-1);
         Gradient retGradient = new DefaultGradient();
 
         //Epsilons in shape: [miniBatch, channels, outH, outW]
@@ -181,7 +183,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         }
         if (!cOrderStrides && Shape.strideDescendingCAscendingF(epsilon)) {
             cOrderStrides = true;
-        } else if (!Arrays.equals(new int[] {outH * outW, inDepth * outH * outW, outW, 1}, epsilon.stride())) {
+        } else if (!Arrays.equals(new long[] {outH * outW, inDepth * outH * outW, outW, 1}, epsilon.stride())) {
             //Unexpected/unusual strides, not either (a) or (b) cases above
             epsilon = epsilon.dup('c');
             cOrderStrides = true;
@@ -300,10 +302,11 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                             + layerId());
         }
 
-        int miniBatch = input.size(0);
-        int inDepth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inDepth = (int) input.size(1);
+        int inH = (int) input.size(2);
+        int inW = (int) input.size(3);
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();

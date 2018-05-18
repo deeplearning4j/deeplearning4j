@@ -46,7 +46,7 @@ import java.util.Arrays;
 public class UnstackVertex extends BaseGraphVertex {
     private int from;
     private int stackSize;
-    private int forwardShape[];
+    private long forwardShape[];
     private int step;
 
     public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from, int stackSize) {
@@ -77,7 +77,9 @@ public class UnstackVertex extends BaseGraphVertex {
 
         // once we know the inputs, save the shape and interval size for doBackward
         this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
-        this.step = inputs[0].size(0) / stackSize;
+
+        // FIXME: int cast
+        this.step = (int) inputs[0].size(0) / stackSize;
         int start = from * step;
         int end = (from + 1) * step;
 

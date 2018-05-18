@@ -19,6 +19,7 @@
 package org.deeplearning4j.util;
 
 
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 
@@ -61,15 +63,16 @@ public class Convolution3DUtils {
                                         ConvolutionMode convolutionMode, int[] dilation, boolean isNCDHW) {
 
         // NCDHW vs. NDHWC
-        int inD = isNCDHW ? inputData.size(2) : inputData.size(1);
-        int inH = isNCDHW ? inputData.size(3) : inputData.size(2);
-        int inW = isNCDHW ? inputData.size(4) : inputData.size(3);
+        int inD = (int) (isNCDHW ? inputData.size(2) : inputData.size(1));
+        int inH = (int) (isNCDHW ? inputData.size(3) : inputData.size(2));
+        int inW = (int) (isNCDHW ? inputData.size(4) : inputData.size(3));
 
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         boolean atrous = (eKernel == kernel);
 
-        int[] inShape = new int[]{inD, inH, inW};
-        validateShapes(inputData.shape(), eKernel, strides, padding, convolutionMode, dilation, inShape, atrous);
+        // FIXME: int cast
+        val inShape = new int[]{inD, inH, inW};
+        validateShapes(ArrayUtil.toInts(inputData.shape()), eKernel, strides, padding, convolutionMode, dilation, inShape, atrous);
 
         if (convolutionMode == ConvolutionMode.Same) {
             int outD = (int) Math.ceil(inD / ((double) strides[0]));

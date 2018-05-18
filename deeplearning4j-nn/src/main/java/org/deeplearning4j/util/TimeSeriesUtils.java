@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.util;
 
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -67,7 +68,7 @@ public class TimeSeriesUtils {
         if (timeSeriesMask.ordering() != 'f')
             timeSeriesMask = timeSeriesMask.dup('f');
 
-        return timeSeriesMask.reshape('f', new int[] {timeSeriesMask.length(), 1});
+        return timeSeriesMask.reshape('f', new long[] {timeSeriesMask.length(), 1});
     }
 
 
@@ -83,7 +84,7 @@ public class TimeSeriesUtils {
         if (timeSeriesMask.ordering() != 'f' || !Shape.hasDefaultStridesForShape(timeSeriesMask))
             timeSeriesMask = workspaceMgr.dup(arrayType, timeSeriesMask, 'f');
 
-        return workspaceMgr.leverageTo(arrayType, timeSeriesMask.reshape('f', new int[] {timeSeriesMask.length(), 1}));
+        return workspaceMgr.leverageTo(arrayType, timeSeriesMask.reshape('f', new long[] {timeSeriesMask.length(), 1}));
     }
 
     /**
@@ -95,9 +96,9 @@ public class TimeSeriesUtils {
         if (!timeSeriesMaskAsVector.isVector())
             throw new IllegalArgumentException("Cannot reshape mask: expected vector");
 
-        int timeSeriesLength = timeSeriesMaskAsVector.length() / minibatchSize;
+        val timeSeriesLength = timeSeriesMaskAsVector.length() / minibatchSize;
 
-        return timeSeriesMaskAsVector.reshape('f', new int[] {minibatchSize, timeSeriesLength});
+        return timeSeriesMaskAsVector.reshape('f', new long[] {minibatchSize, timeSeriesLength});
     }
 
     public static INDArray reshapePerOutputTimeSeriesMaskTo2d(INDArray perOutputTimeSeriesMask) {
@@ -123,7 +124,7 @@ public class TimeSeriesUtils {
     public static INDArray reshape3dTo2d(INDArray in) {
         if (in.rank() != 3)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3");
-        int[] shape = in.shape();
+        val shape = in.shape();
         if (shape[0] == 1)
             return in.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
         if (shape[2] == 1)
@@ -135,7 +136,7 @@ public class TimeSeriesUtils {
     public static INDArray reshape3dTo2d(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if (in.rank() != 3)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3");
-        int[] shape = in.shape();
+        val shape = in.shape();
         INDArray ret;
         if (shape[0] == 1) {
             ret = in.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
@@ -152,7 +153,7 @@ public class TimeSeriesUtils {
         if (in.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         //Based on: RnnToFeedForwardPreProcessor
-        int[] shape = in.shape();
+        val shape = in.shape();
         if (in.ordering() != 'f')
             in = Shape.toOffsetZeroCopy(in, 'f');
         INDArray reshaped = in.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
@@ -164,7 +165,7 @@ public class TimeSeriesUtils {
         if (in.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         //Based on: RnnToFeedForwardPreProcessor
-        int[] shape = in.shape();
+        val shape = in.shape();
         if (in.ordering() != 'f') {
             in = workspaceMgr.dup(arrayType, in, 'f');
         }
@@ -187,7 +188,8 @@ public class TimeSeriesUtils {
             in = in.dup('f');
         }
 
-        int[] idxs = new int[in.size(2)];
+        // FIXME: int cast
+        int[] idxs = new int[(int) in.size(2)];
         int j=0;
         for( int i=idxs.length-1; i>=0; i--){
             idxs[j++] = i;
@@ -214,7 +216,8 @@ public class TimeSeriesUtils {
             in = workspaceMgr.dup(arrayType, in, 'f');
         }
 
-        int[] idxs = new int[in.size(2)];
+        // FIXME: int cast
+        int[] idxs = new int[(int) in.size(2)];
         int j=0;
         for( int i=idxs.length-1; i>=0; i--){
             idxs[j++] = i;
@@ -222,7 +225,7 @@ public class TimeSeriesUtils {
 
         INDArray inReshape = in.reshape('f', in.size(0)*in.size(1), in.size(2));
 
-        INDArray outReshape = workspaceMgr.create(arrayType, new int[]{inReshape.size(0), idxs.length}, 'f');
+        INDArray outReshape = workspaceMgr.create(arrayType, new long[]{inReshape.size(0), idxs.length}, 'f');
         Nd4j.pullRows(inReshape, outReshape, 0, idxs);
         return workspaceMgr.leverageTo(arrayType, outReshape.reshape('f', in.size(0), in.size(1), in.size(2)));
 
@@ -256,7 +259,8 @@ public class TimeSeriesUtils {
                     + " with shape " + Arrays.toString(mask.shape()));
         }
 
-        int[] idxs = new int[mask.size(1)];
+        // FIXME: int cast
+        int[] idxs = new int[(int) mask.size(1)];
         int j=0;
         for( int i=idxs.length-1; i>=0; i--){
             idxs[j++] = i;
@@ -283,13 +287,14 @@ public class TimeSeriesUtils {
                     + " with shape " + Arrays.toString(mask.shape()));
         }
 
-        int[] idxs = new int[mask.size(1)];
+        // FIXME: int cast
+        int[] idxs = new int[(int) mask.size(1)];
         int j=0;
         for( int i=idxs.length-1; i>=0; i--){
             idxs[j++] = i;
         }
 
-        INDArray ret = workspaceMgr.createUninitialized(arrayType, new int[]{mask.size(0), idxs.length}, 'f');
+        INDArray ret = workspaceMgr.createUninitialized(arrayType, new long[]{mask.size(0), idxs.length}, 'f');
 
         return Nd4j.pullRows(mask, ret, 0, idxs);
 
@@ -320,12 +325,14 @@ public class TimeSeriesUtils {
         int[] fwdPassTimeSteps;
         INDArray out;
         if (mask == null) {
+
+            // FIXME: int cast
             //No mask array -> extract same (last) column for all
-            int lastTS = pullFrom.size(2) - 1;
+            int lastTS = (int) pullFrom.size(2) - 1;
             out = pullFrom.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
-            int[] outShape = new int[] {pullFrom.size(0), pullFrom.size(1)};
+            val outShape = new long[] {pullFrom.size(0), pullFrom.size(1)};
             out = Nd4j.create(outShape);
 
             //Want the index of the last non-zero entry in the mask array
@@ -356,12 +363,14 @@ public class TimeSeriesUtils {
         int[] fwdPassTimeSteps;
         INDArray out;
         if (mask == null) {
+
+            // FIXME: int cast
             //No mask array -> extract same (last) column for all
-            int lastTS = pullFrom.size(2) - 1;
+            int lastTS = (int) pullFrom.size(2) - 1;
             out = pullFrom.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
-            int[] outShape = new int[] {pullFrom.size(0), pullFrom.size(1)};
+            val outShape = new long[] {pullFrom.size(0), pullFrom.size(1)};
             out = Nd4j.create(outShape);
 
             //Want the index of the last non-zero entry in the mask array

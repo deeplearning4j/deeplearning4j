@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -46,7 +47,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     private String inputName;
     private int inputIdx;
     /** Shape of the forward pass activations */
-    private int[] fwdPassShape;
+    private long[] fwdPassShape;
     /** Indexes of the time steps that were extracted, for each example */
     private int[] fwdPassTimeSteps;
 
@@ -87,22 +88,24 @@ public class LastTimeStepVertex extends BaseGraphVertex {
 
         INDArray out;
         if (mask == null) {
+            // FIXME: int cast
             //No mask array -> extract same (last) column for all
-            int lastTS = inputs[0].size(2) - 1;
+            int lastTS = (int) inputs[0].size(2) - 1;
             out = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
             out = workspaceMgr.dup(ArrayType.ACTIVATIONS, out);
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
-            int[] outShape = new int[] {inputs[0].size(0), inputs[0].size(1)};
+            val outShape = new long[] {inputs[0].size(0), inputs[0].size(1)};
             out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape);
 
             //Want the index of the last non-zero entry in the mask array.
             //Check a little here by using mulRowVector([0,1,2,3,...]) and argmax
-            int maxTsLength = fwdPassShape[2];
+            // FIXME: int cast
+            int maxTsLength = (int) fwdPassShape[2];
             INDArray row = Nd4j.linspace(0, maxTsLength - 1, maxTsLength);
             INDArray temp = mask.mulRowVector(row);
             INDArray lastElementIdx = Nd4j.argMax(temp, 1);
-            fwdPassTimeSteps = new int[fwdPassShape[0]];
+            fwdPassTimeSteps = new int[(int)fwdPassShape[0]];
             for (int i = 0; i < fwdPassTimeSteps.length; i++) {
                 fwdPassTimeSteps[i] = (int) lastElementIdx.getDouble(i);
             }

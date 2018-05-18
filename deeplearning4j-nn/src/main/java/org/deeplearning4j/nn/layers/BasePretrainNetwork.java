@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers;
 
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -162,9 +163,9 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         //pretrain = 3 sets of params (inc. visible bias); backprop = 2
 
         List<String> parameterList = conf.variables();
-        int paramLength = 0;
+        long paramLength = 0;
         for (String s : parameterList) {
-            int len = getParam(s).length();
+            val len = getParam(s).length();
             paramLength += len;
         }
 

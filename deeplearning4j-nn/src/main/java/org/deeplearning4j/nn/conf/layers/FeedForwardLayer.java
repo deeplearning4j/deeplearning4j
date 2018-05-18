@@ -127,6 +127,18 @@ public abstract class FeedForwardLayer extends BaseLayer {
         }
 
         /**
+         * Number of inputs for the layer (usually the size of the last layer). <br>
+         * Note that for Convolutional layers, this is the input channels, otherwise is the previous layer size.
+         *
+         * @param nIn Number of inputs for the layer
+         */
+        public T nIn(long nIn) {
+            // FIXME: int cast
+            this.nIn = (int) nIn;
+            return (T) this;
+        }
+
+        /**
          * Number of outputs - used to set the layer size (number of units/nodes for the current layer).
          * Note that this is equivalent to {@link #units(int)}
          *
@@ -134,6 +146,17 @@ public abstract class FeedForwardLayer extends BaseLayer {
          */
         public T nOut(int nOut) {
             this.nOut = nOut;
+            return (T) this;
+        }
+
+        /**
+         * Number of outputs - used to set the layer size (number of units/nodes for the current layer).
+         * Note that this is equivalent to {@link #units(int)}
+         *
+         * @param nOut Number of outputs / layer size
+         */
+        public T nOut(long nOut) {
+            this.nOut = (int) nOut;
             return (T) this;
         }
 

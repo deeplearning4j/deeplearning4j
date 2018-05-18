@@ -100,7 +100,9 @@ public class SameDiffParamInitializer implements ParamInitializer {
             int[] sh = paramShapes.get(s);
             int length = ArrayUtil.prod(sh);
             INDArray sub = view.get(point(0), interval(soFar, soFar + length));
-            if(!Arrays.equals(sub.shape(), sh)){
+
+            // FIXME: int cast
+            if(!Arrays.equals(ArrayUtil.toInts(sub.shape()), sh)){
                 sub = sub.reshape(sdl.paramReshapeOrder(s), sh); //TODO do we want to allow users to override initialization order?
             }
             out.put(s, sub);

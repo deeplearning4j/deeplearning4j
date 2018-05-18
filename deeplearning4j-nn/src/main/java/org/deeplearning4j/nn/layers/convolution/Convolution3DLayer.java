@@ -57,12 +57,13 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         boolean isNCDHW = layerConfig.getDataFormat() == Convolution3D.DataFormat.NCDHW;
 
-        int miniBatch = input.size(0);
-        int inD = isNCDHW ? input.size(2) : input.size(1);
-        int inH = isNCDHW ? input.size(3) : input.size(2);
-        int inW = isNCDHW ? input.size(4) : input.size(3);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inD = (int) (isNCDHW ? input.size(2) : input.size(1));
+        int inH = (int) (isNCDHW ? input.size(3) : input.size(2));
+        int inW = (int) (isNCDHW ? input.size(4) : input.size(3));
 
-        int outEpsChannels = isNCDHW ? weights.size(1) : weights.size(3);
+        int outEpsChannels = (int) (isNCDHW ? weights.size(1) : weights.size(3));
 
         int[] dilation = layerConfig.getDilation();
         int[] kernel = layerConfig.getKernelSize();
@@ -168,15 +169,15 @@ public class Convolution3DLayer extends ConvolutionLayer {
                     + " " + layerId());
         }
 
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inputChannels = (int) (isNCDHW ? input.size(1) : input.size(4));
+        int inD =(int) (isNCDHW ? input.size(2) : input.size(1));
+        int inH = (int) (isNCDHW ? input.size(3) : input.size(2));
+        int inW = (int) (isNCDHW ? input.size(4) : input.size(3));
 
-        int miniBatch = input.size(0);
-        int inputChannels = isNCDHW ? input.size(1) : input.size(4);
-        int inD = isNCDHW ? input.size(2) : input.size(1);
-        int inH = isNCDHW ? input.size(3) : input.size(2);
-        int inW = isNCDHW ? input.size(4) : input.size(3);
-
-        int outWeightChannels = isNCDHW ? weights.size(0) : weights.size(4);
-        int inWeightChannels = isNCDHW ? weights.size(1) : weights.size(3);
+        int outWeightChannels = (int) (isNCDHW ? weights.size(0) : weights.size(4));
+        int inWeightChannels = (int) (isNCDHW ? weights.size(1) : weights.size(3));
 
         if (inputChannels != inWeightChannels) {
             String layerName = conf.getLayer().getLayerName();

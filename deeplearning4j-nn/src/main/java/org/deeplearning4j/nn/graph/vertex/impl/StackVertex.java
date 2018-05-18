@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -44,7 +45,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
  */
 public class StackVertex extends BaseGraphVertex {
 
-    private int[][] lastInputShapes;
+    private long[][] lastInputShapes;
 
     public StackVertex(ComputationGraph graph, String name, int vertexIndex) {
         this(graph, name, vertexIndex, null, null);
@@ -72,8 +73,8 @@ public class StackVertex extends BaseGraphVertex {
         // what we want to do is make a stacked output (e.g.: [3 x nExamples, nSize])
         lastInputShapes = null;
         int nStack = inputs.length;
-        int[] inShape = inputs[0].shape();
-        int[] outShape = new int[inShape.length];
+        val inShape = inputs[0].shape();
+        val outShape = new long[inShape.length];
 
         // create the new shape
         outShape[0] = nStack * inShape[0];
@@ -84,10 +85,10 @@ public class StackVertex extends BaseGraphVertex {
         boolean variableLengthTS = false;
         if (inShape.length == 3) {
             //RNN data - check for variable length time series
-            int minLength = inputs[0].size(2);
-            int maxLength = minLength;
+            long minLength = inputs[0].size(2);
+            long maxLength = minLength;
             for (int i = 1; i < inputs.length; i++) {
-                int thisLength = inputs[i].size(2);
+                long thisLength = inputs[i].size(2);
                 minLength = Math.min(minLength, thisLength);
                 maxLength = Math.max(maxLength, thisLength);
             }
@@ -101,8 +102,8 @@ public class StackVertex extends BaseGraphVertex {
 
             outShape[2] = maxLength;
             INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape);
-            int numExamples = inputs[0].size(0);
-            lastInputShapes = new int[inputs.length][0];
+            long numExamples = inputs[0].size(0);
+            lastInputShapes = new long[inputs.length][0];
             for (int i = 0; i < inputs.length; i++) {
                 out.put(new INDArrayIndex[] {NDArrayIndex.interval(i * numExamples, (i + 1) * numExamples),
                                 NDArrayIndex.all(), NDArrayIndex.interval(0, inputs[i].size(2))}, inputs[i]);
@@ -132,7 +133,7 @@ public class StackVertex extends BaseGraphVertex {
         int nStack = inputs.length;
         INDArray[] out = new INDArray[nStack];
 
-        int step = epsilon.size(0) / nStack;
+        long step = epsilon.size(0) / nStack;
 
         for (int i = 0; i < nStack; i++) {
             switch (epsilon.rank()) {
@@ -184,8 +185,8 @@ public class StackVertex extends BaseGraphVertex {
         //Given masks are all either 1d (column vector) or 2d (examples, timeSeriesLength) we can just vStack the masks
         //However: variable length TS might have different length masks...
         boolean allSameLength = true;
-        int size1_ex0 = maskArrays[0].size(1);
-        int maxLength = size1_ex0;
+        long size1_ex0 = maskArrays[0].size(1);
+        long maxLength = size1_ex0;
         for (int i = 1; i < maskArrays.length; i++) {
             allSameLength &= (size1_ex0 == maskArrays[i].size(1));
             maxLength = Math.max(maxLength, maskArrays[i].size(1));
@@ -194,7 +195,7 @@ public class StackVertex extends BaseGraphVertex {
         if (allSameLength) {
             return new Pair<>(Nd4j.vstack(maskArrays), currentMaskState);
         } else {
-            int numExamples = maskArrays[0].size(0);
+            long numExamples = maskArrays[0].size(0);
             INDArray outMask = Nd4j.create(maskArrays.length * numExamples, maxLength);
             for (int i = 0; i < maskArrays.length; i++) {
                 outMask.put(new INDArrayIndex[] {NDArrayIndex.interval(i * numExamples, (i + 1) * numExamples),

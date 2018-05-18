@@ -105,7 +105,7 @@ class FeedForwardWithKeyFunctionAdapter<K>
         List<K> keyList = new ArrayList<>(batchSize);
         List<Integer> origSizeList = new ArrayList<>();
 
-        int[] firstShape = null;
+        long[] firstShape = null;
         boolean sizesDiffer = false;
         int tupleCount = 0;
         while (iterator.hasNext()) {
@@ -124,7 +124,9 @@ class FeedForwardWithKeyFunctionAdapter<K>
             featuresList.add(t2._2()._1());
             fMaskList.add(t2._2()._2());
             keyList.add(t2._1());
-            origSizeList.add(t2._2()._1().size(0));
+
+            // FIXME: int cast
+            origSizeList.add((int) t2._2()._1().size(0));
             tupleCount++;
         }
 

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.convolution;
 
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -59,13 +60,14 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         INDArray depthWiseWeights =
                 getParamWithNoise(DepthwiseConvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
-        int miniBatch = input.size(0);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inH = (int) input.size(2);
+        int inW = (int) input.size(3);
 
-        int inDepth = depthWiseWeights.size(1);
-        int kH = depthWiseWeights.size(2);
-        int kW = depthWiseWeights.size(3);
+        int inDepth = (int) depthWiseWeights.size(1);
+        int kH = (int) depthWiseWeights.size(2);
+        int kW = (int) depthWiseWeights.size(3);
 
         int[] dilation = layerConf().getDilation();
         int[] kernel = layerConf().getKernelSize();
@@ -149,8 +151,9 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
                     : "") + " " + layerId());
         }
 
-        int inDepth = depthWiseWeights.size(1);
-        int depthMultiplier = depthWiseWeights.size(0);
+        // FIXME: int cast
+        int inDepth = (int) depthWiseWeights.size(1);
+        int depthMultiplier = (int) depthWiseWeights.size(0);
         int outDepth = depthMultiplier * inDepth;
 
         if (input.size(1) != inDepth) {
@@ -164,8 +167,8 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
                     + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
                     + layerId());
         }
-        int kH = depthWiseWeights.size(2);
-        int kW = depthWiseWeights.size(3);
+        int kH = (int) depthWiseWeights.size(2);
+        int kW = (int) depthWiseWeights.size(3);
 
         int[] dilation = layerConf().getDilation();
         int[] kernel = layerConf().getKernelSize();
@@ -175,8 +178,10 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation);
+
+            // FIXME: int cast
             pad = ConvolutionUtils.getSameModeTopLeftPadding(
-                    outSize, new int[]{input.size(2), input.size(3)}, kernel, strides, dilation);
+                    outSize, new int[]{(int) input.size(2), (int) input.size(3)}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation);
@@ -185,9 +190,9 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         int outH = outSize[0];
         int outW = outSize[1];
 
-        int miniBatch = input.size(0);
+        val miniBatch = input.size(0);
         INDArray output = workspaceMgr.create(
-                ArrayType.ACTIVATIONS, new int[]{miniBatch, outDepth, outH, outW}, 'c');
+                ArrayType.ACTIVATIONS, new long[]{miniBatch, outDepth, outH, outW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 

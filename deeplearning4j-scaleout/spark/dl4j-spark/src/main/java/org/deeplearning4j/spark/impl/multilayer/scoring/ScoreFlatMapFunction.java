@@ -13,6 +13,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
+import lombok.val;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,7 +63,9 @@ class ScoreFlatMapFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Dat
         while (iter.hasNext()) {
             DataSet ds = iter.next();
             double score = network.score(ds, false);
-            int numExamples = ds.getFeatureMatrix().size(0);
+
+            // FIXME: int cast
+            val numExamples = (int) ds.getFeatureMatrix().size(0);
             out.add(new Tuple2<>(numExamples, score * numExamples));
         }
 

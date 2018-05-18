@@ -85,8 +85,10 @@ class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult>
                 if (stats)
                     s.logNextDataSetBefore();
                 MultiDataSet next = batchedIterator.next();
+
+                // FIXME: int cast
                 if (stats)
-                    s.logNextDataSetAfter(next.getFeatures(0).size(0));
+                    s.logNextDataSetAfter((int) next.getFeatures(0).size(0));
 
                 if (stats) {
                     s.logProcessMinibatchBefore();

@@ -42,8 +42,9 @@ public class PortableDataStreamDataSetIterator extends BaseDataSetIterator<Porta
             ds = load(iter.next());
         }
 
-        totalOutcomes = ds.getLabels().size(1);
-        inputColumns = ds.getFeatureMatrix().size(1);
+        // FIXME: int cast
+        totalOutcomes = (int) ds.getLabels().size(1);
+        inputColumns = (int) ds.getFeatureMatrix().size(1);
         batch = ds.numExamples();
 
         if (preprocessor != null)

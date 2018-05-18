@@ -79,12 +79,13 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
+        // FIXME: int cast
         // Assumes NCDHW order
-        int miniBatch = input.size(0);
-        int inChannels = input.size(1);
-        int inD = input.size(2);
-        int inH = input.size(3);
-        int inW = input.size(4);
+        int miniBatch = (int) input.size(0);
+        int inChannels = (int) input.size(1);
+        int inD = (int) input.size(2);
+        int inH = (int) input.size(3);
+        int inW = (int) input.size(4);
 
         int[] intArgs = new int[] {1}; // 1 is channels first
 
@@ -125,11 +126,12 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             return preOutput;
         }
 
-        int miniBatch = input.size(0);
-        int inChannels = input.size(1);
-        int inD = input.size(2);
-        int inH = input.size(3);
-        int inW = input.size(4);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inChannels = (int) input.size(1);
+        int inD = (int) input.size(2);
+        int inH = (int) input.size(3);
+        int inW = (int) input.size(4);
 
         int[] size = getSize();
         int outD = inD * size[0];

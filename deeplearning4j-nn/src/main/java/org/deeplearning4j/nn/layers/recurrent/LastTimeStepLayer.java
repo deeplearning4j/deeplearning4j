@@ -30,7 +30,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 public class LastTimeStepLayer extends BaseWrapperLayer {
 
     private int[] lastTimeStepIdxs;
-    private int[] origOutputShape;
+    private long[] origOutputShape;
 
     public LastTimeStepLayer(@NonNull Layer underlying){
         super(underlying);

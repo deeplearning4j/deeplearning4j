@@ -222,9 +222,9 @@ public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<Paramet
             }
         }
 
-
+        // FIXME: int cast
         if (configuration.isCollectTrainingStats())
-            stats.logFitEnd(dataSet.getFeatures(0).size(0));
+            stats.logFitEnd((int) dataSet.getFeatures(0).size(0));
 
         Nd4j.getExecutioner().commit();
 

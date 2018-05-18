@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.NonNull;
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
@@ -126,7 +127,7 @@ public class BidirectionalLayer implements RecurrentLayer {
         INDArray eFwd;
         INDArray eBwd;
 
-        int n = epsilon.size(1)/2;
+        val n = epsilon.size(1)/2;
         switch (layerConf.getMode()){
             case ADD:
                 eFwd = epsilon;
@@ -279,7 +280,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     @Override
     public void setParamsViewArray(INDArray params) {
         this.paramsView = params;
-        int n = params.length();
+        val n = params.length();
         fwd.setParamsViewArray(params.get(point(0), interval(0, n)));
         bwd.setParamsViewArray(params.get(point(0), interval(n, 2*n)));
     }
@@ -296,7 +297,7 @@ public class BidirectionalLayer implements RecurrentLayer {
                     + ", got array of length " + gradients.length());
 
         this.gradientView = gradients;
-        int n = gradients.length() / 2;
+        val n = gradients.length() / 2;
         INDArray g1 = gradients.get(point(0), interval(0,n));
         INDArray g2 = gradients.get(point(0), interval(n, 2*n));
         fwd.setBackpropGradientsViewArray(g1);

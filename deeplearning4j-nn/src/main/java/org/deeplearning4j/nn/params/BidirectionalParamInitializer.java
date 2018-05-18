@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.params;
 
+import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
@@ -88,7 +89,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        int n = paramsView.length()/2;
+        val n = paramsView.length()/2;
         INDArray forwardView = paramsView.get(point(0), interval(0, n));
         INDArray backwardView = paramsView.get(point(0), interval(n, 2*n));
 
@@ -145,7 +146,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        int n = gradientView.length()/2;
+        val n = gradientView.length()/2;
         INDArray forwardView = gradientView.get(point(0), interval(0, n));
         INDArray backwardView = gradientView.get(point(0), interval(n, 2*n));
 

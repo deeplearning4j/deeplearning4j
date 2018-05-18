@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.convolution;
 
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -65,14 +66,15 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
         INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
-        int miniBatch = input.size(0);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inH = (int) input.size(2);
+        int inW = (int) input.size(3);
 
-        int inDepth = weights.size(0);
+        int inDepth = (int) weights.size(0);
 
-        int kH = weights.size(2);
-        int kW = weights.size(3);
+        int kH = (int) weights.size(2);
+        int kW = (int) weights.size(3);
 
         int[] dilation = layerConf().getDilation();
         int[] kernel = layerConf().getKernelSize();
@@ -159,8 +161,9 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                     + " " + layerId());
         }
 
-        int inDepth = weights.size(0);
-        int outDepth = weights.size(1);
+        // FIXME: int cast
+        int inDepth = (int) weights.size(0);
+        int outDepth = (int) weights.size(1);
 
         if (input.size(1) != inDepth) {
             String layerName = conf.getLayer().getLayerName();
@@ -172,8 +175,8 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                     + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
                     + layerId());
         }
-        int kH = weights.size(2);
-        int kW = weights.size(3);
+        int kH = (int) weights.size(2);
+        int kW = (int) weights.size(3);
 
         int[] dilation = layerConf().getDilation();
         int[] kernel = layerConf().getKernelSize();
@@ -182,8 +185,9 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
+            // FIXME: int cast
             outSize = ConvolutionUtils.getDeconvolutionOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {input.size(2), input.size(3)}, kernel,
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int) input.size(2), (int) input.size(3)}, kernel,
                     strides, dilation );
         } else {
             pad = layerConf().getPadding();
@@ -194,8 +198,8 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         int outW = outSize[1];
 
 
-        int miniBatch = input.size(0);
-        INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, new int[]{miniBatch, outDepth, outH, outW}, 'c');
+        val miniBatch = input.size(0);
+        INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, new long[]{miniBatch, outDepth, outH, outW}, 'c');
 
         int sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 

@@ -60,7 +60,7 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private int[] shape;
+    private long[] shape;
 
     /**
      * @param inputDepth  input channels

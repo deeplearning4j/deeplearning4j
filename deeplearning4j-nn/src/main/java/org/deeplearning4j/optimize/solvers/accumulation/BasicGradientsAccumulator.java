@@ -43,7 +43,7 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
     protected transient AtomicLong extCounter = new AtomicLong(0);
 
     // FIXME: this mechanics should be improved i think.
-    protected int[] shape;
+    protected long[] shape;
     protected char ordering;
 
     protected int parties = 0;

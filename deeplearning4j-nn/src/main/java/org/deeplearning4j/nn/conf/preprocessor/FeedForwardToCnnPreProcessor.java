@@ -57,7 +57,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private int[] shape;
+    private long[] shape;
 
     /**
      * Reshape to a channels x rows x columns tensor

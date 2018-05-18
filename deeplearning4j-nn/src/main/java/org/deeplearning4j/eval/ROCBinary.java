@@ -2,6 +2,7 @@ package org.deeplearning4j.eval;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.val;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
 import org.deeplearning4j.eval.serde.ROCArraySerializer;
@@ -78,7 +79,8 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
             return;
         }
 
-        int n = labels.size(1);
+        // FIXME: int cast
+        int n = (int) labels.size(1);
         if (underlying == null) {
             underlying = new ROC[n];
             for (int i = 0; i < n; i++) {
@@ -110,7 +112,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
                 } else {
                     int nonMaskedCount = m.sumNumber().intValue();
                     rowsToPull = new int[nonMaskedCount];
-                    int maskSize = m.size(0);
+                    val maskSize = m.size(0);
                     int used = 0;
                     for (int j = 0; j < maskSize; j++) {
                         if (m.getDouble(j) != 0.0) {

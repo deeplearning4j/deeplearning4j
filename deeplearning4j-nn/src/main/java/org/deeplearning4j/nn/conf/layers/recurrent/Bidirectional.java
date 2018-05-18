@@ -93,7 +93,7 @@ public class Bidirectional extends Layer {
         c1.setLayer(fwd);
         c2.setLayer(bwd);
 
-        int n = layerParamsView.length() / 2;
+        long n = layerParamsView.length() / 2;
         INDArray fp = layerParamsView.get(point(0), interval(0,n));
         INDArray bp = layerParamsView.get(point(0), interval(n, 2*n));
         org.deeplearning4j.nn.api.layers.RecurrentLayer f

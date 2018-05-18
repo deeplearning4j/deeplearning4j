@@ -102,13 +102,13 @@ class GraphFeedForwardWithKeyFunctionAdapter<K>
         List<K> keyList = new ArrayList<>(batchSize);
         List<Integer> origSizeList = new ArrayList<>();
 
-        int[][] firstShapes = null;
+        long[][] firstShapes = null;
         boolean sizesDiffer = false;
         int tupleCount = 0;
         while (iterator.hasNext()) {
             Tuple2<K, INDArray[]> t2 = iterator.next();
             if (firstShapes == null) {
-                firstShapes = new int[t2._2().length][0];
+                firstShapes = new long[t2._2().length][0];
                 for (int i = 0; i < firstShapes.length; i++) {
                     firstShapes[i] = t2._2()[i].shape();
                 }
@@ -124,7 +124,9 @@ class GraphFeedForwardWithKeyFunctionAdapter<K>
             }
             featuresList.add(t2._2());
             keyList.add(t2._1());
-            origSizeList.add(t2._2()[0].size(0));
+
+            // FIXME: int cast
+            origSizeList.add((int) t2._2()[0].size(0));
             tupleCount++;
         }
 
@@ -144,7 +146,7 @@ class GraphFeedForwardWithKeyFunctionAdapter<K>
             while (nextIdx < featuresList.size() && examplesInBatch < batchSize) {
                 INDArray[] f = featuresList.get(nextIdx);
                 if (firstShapes == null) {
-                    firstShapes = new int[f.length][0];
+                    firstShapes = new long[f.length][0];
                     for (int i = 0; i < firstShapes.length; i++) {
                         firstShapes[i] = f[i].shape();
                     }
