@@ -33,15 +33,14 @@ import static junit.framework.TestCase.assertTrue;
 
 public class FullModelComparisons {
 
-    ClassLoader classLoader = getClass().getClassLoader();
+    ClassLoader classLoader = FullModelComparisons.class.getClassLoader();
 
     @Test
     public void lstmTest() throws IOException, UnsupportedKerasConfigurationException,
             InvalidKerasConfigurationException, InterruptedException {
 
-        String modelPath = "fullconfigs/lstm/lstm_th_keras_2_config.json";
-        String weightsPath = "fullconfigs/lstm/lstm_th_keras_2_weights.h5";
-
+        String modelPath = "modelimport/keras/fullconfigs/lstm/lstm_th_keras_2_config.json";
+        String weightsPath = "modelimport/keras/fullconfigs/lstm/lstm_th_keras_2_weights.h5";
 
         ClassPathResource modelResource = new ClassPathResource(modelPath, classLoader);
         ClassPathResource weightsResource = new ClassPathResource(weightsPath, classLoader);
@@ -125,9 +124,11 @@ public class FullModelComparisons {
         TestCase.assertEquals(b.getDouble(0, 0), 0.06636357, 1e-7);
 
         SequenceRecordReader reader = new CSVSequenceRecordReader(0, ";");
-        ClassPathResource dataResource = new ClassPathResource("fullconfigs/lstm/", classLoader);
+        ClassPathResource dataResource = new ClassPathResource(
+                "data/", classLoader);
+        System.out.print(dataResource.getFile().getAbsolutePath());
         reader.initialize(new NumberedFileInputSplit(dataResource.getFile().getAbsolutePath()
-                + "/data/sequences/%d.csv", 0, 282));
+                + "/sequences/%d.csv", 0, 282));
 
         DataSetIterator dataSetIterator = new SequenceRecordReaderDataSetIterator(
                 reader, 1, -1, 12, true);
@@ -144,7 +145,8 @@ public class FullModelComparisons {
         }
         INDArray dl4jPredictions = Nd4j.create(preds);
 
-        ClassPathResource predResource = new ClassPathResource("fullconfigs/lstm/predictions.npy", classLoader);
+        ClassPathResource predResource = new ClassPathResource(
+                "modelimport/keras/fullconfigs/lstm/predictions.npy", classLoader);
         INDArray kerasPredictions = Nd4j.createFromNpyFile(predResource.getFile());
 
         for (int i = 0; i < 283; i++) {
@@ -163,7 +165,7 @@ public class FullModelComparisons {
     public void cnnBatchNormTest() throws IOException, UnsupportedKerasConfigurationException,
             InvalidKerasConfigurationException {
 
-        String modelPath = "fullconfigs/cnn/cnn_batch_norm.h5";
+        String modelPath = "modelimport/keras/fullconfigs/cnn/cnn_batch_norm.h5";
 
 
         ClassPathResource modelResource = new ClassPathResource(modelPath, classLoader);
@@ -178,14 +180,16 @@ public class FullModelComparisons {
 
         System.out.println(model.summary());
 
-        ClassPathResource inputResource = new ClassPathResource("fullconfigs/cnn/input.npy", classLoader);
+        ClassPathResource inputResource = new ClassPathResource(
+                "modelimport/keras/fullconfigs/cnn/input.npy", classLoader);
         INDArray input = Nd4j.createFromNpyFile(inputResource.getFile());
         input = input.permute(0, 3, 1, 2);
         assertTrue(Arrays.equals(input.shape(), new int[] {5, 3, 10, 10}));
 
         INDArray output = model.output(input);
 
-        ClassPathResource outputResource = new ClassPathResource("fullconfigs/cnn/predictions.npy", classLoader);
+        ClassPathResource outputResource = new ClassPathResource(
+                "modelimport/keras/fullconfigs/cnn/predictions.npy", classLoader);
         INDArray kerasOutput = Nd4j.createFromNpyFile(outputResource.getFile());
 
         for (int i = 0; i < 5; i++) {
