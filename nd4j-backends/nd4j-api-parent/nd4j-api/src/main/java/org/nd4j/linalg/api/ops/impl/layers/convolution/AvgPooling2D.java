@@ -121,7 +121,7 @@ public class AvgPooling2D extends DynamicCustomOp {
 
     private void addArgs() {
         addIArgument(
-                new int[]{config.getKh(),
+                new long[]{config.getKh(),
                         config.getKw(),
                         config.getSy(),
                         config.getSx(),

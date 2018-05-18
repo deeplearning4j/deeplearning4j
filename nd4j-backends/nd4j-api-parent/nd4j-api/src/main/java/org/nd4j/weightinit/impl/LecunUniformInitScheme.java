@@ -23,7 +23,7 @@ public class LecunUniformInitScheme extends BaseWeightInitScheme {
     }
 
     @Override
-    public INDArray doCreate(int[] shape, INDArray paramsView) {
+    public INDArray doCreate(long[] shape, INDArray paramsView) {
         double b = 3.0 / Math.sqrt(fanIn);
         return  Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-b, b));
     }

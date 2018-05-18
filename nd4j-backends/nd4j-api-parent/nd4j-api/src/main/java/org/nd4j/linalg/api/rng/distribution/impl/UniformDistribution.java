@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.rng.distribution.impl;
 
+import lombok.val;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
 import org.apache.commons.math3.exception.util.LocalizedFormats;
@@ -202,8 +203,8 @@ public class UniformDistribution extends BaseDistribution {
             return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.UniformDistribution(
                     ret, lower, upper), random);
         } else {
-            Iterator<int[]> idxIter = new NdIndexIterator(ret.shape()); //For consistent values irrespective of c vs. fortran ordering
-            int len = ret.length();
+            val idxIter = new NdIndexIterator(ret.shape()); //For consistent values irrespective of c vs. fortran ordering
+            long len = ret.length();
             for (int i = 0; i < len; i++) {
                 ret.putScalar(idxIter.next(), sample());
             }

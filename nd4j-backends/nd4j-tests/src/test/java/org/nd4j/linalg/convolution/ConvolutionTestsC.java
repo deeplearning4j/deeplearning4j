@@ -417,8 +417,10 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
         int outH = (int)Math.ceil(input.size(2)/(double)s[0]);
         int outW = (int)Math.ceil(input.size(3)/(double)s[1]);
-        int totalPadH = (outH-1)*s[0] + k[0] - input.size(2);
-        int totalPadW = (outW-1)*s[1] + k[1] - input.size(3);
+
+        // FIXME: int cast
+        int totalPadH = (outH-1)*s[0] + k[0] - (int) input.size(2);
+        int totalPadW = (outW-1)*s[1] + k[1] - (int) input.size(3);
 
         int topPad = totalPadH/2;
         int bottomPad = totalPadH - topPad;
@@ -471,8 +473,10 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
 
     protected static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding, boolean convolutionModeSame) {
-        int inH = inputData.size(2);
-        int inW = inputData.size(3);
+
+        //FIXME: int cast
+        int inH = (int) inputData.size(2);
+        int inW = (int) inputData.size(3);
 
         if (convolutionModeSame != true && (kernel[0] <= 0 || kernel[0] > inH + 2 * padding[0])) {
             throw new ND4JIllegalStateException();

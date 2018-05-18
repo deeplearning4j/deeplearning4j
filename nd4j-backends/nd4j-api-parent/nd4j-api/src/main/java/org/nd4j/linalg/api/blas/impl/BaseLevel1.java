@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.blas.impl;
 
+import lombok.val;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -32,7 +33,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      * @return the vector-vector dot product of X and Y
      */
     @Override
-    public double dot(int n, double alpha, INDArray X, INDArray Y) {
+    public double dot(long n, double alpha, INDArray X, INDArray Y) {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, X, Y);
 
@@ -59,7 +60,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     }
 
     @Override
-    public double dot(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
+    public double dot(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         if (supportsDataBufferL1Ops()) {
             if (x.dataType() == DataBuffer.Type.FLOAT) {
                 return sdot(n, x, offsetX, incrX, y, offsetY, incrY);
@@ -69,10 +70,10 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
                 return hdot(n, x, offsetX, incrX, y, offsetY, incrY);
             }
         } else {
-            int[] shapex = {1, n};
-            int[] shapey = {1, n};
-            int[] stridex = {incrX, incrX};
-            int[] stridey = {incrY, incrY};
+            long[] shapex = {1, n};
+            long[] shapey = {1, n};
+            long[] stridex = {incrX, incrX};
+            long[] stridey = {incrY, incrY};
             INDArray arrX = Nd4j.create(x, shapex, stridex, offsetX, 'c');
             INDArray arrY = Nd4j.create(x, shapey, stridey, offsetY, 'c');
             return dot(n, 0.0, arrX, arrY);
@@ -89,7 +90,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      * @return
      */
     @Override
-    public IComplexNumber dot(int n, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y) {
+    public IComplexNumber dot(long n, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y) {
         throw new UnsupportedOperationException();
     }
 
@@ -159,7 +160,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     }
 
     @Override
-    public double asum(int n, DataBuffer x, int offsetX, int incrX) {
+    public double asum(long n, DataBuffer x, int offsetX, int incrX) {
         if (supportsDataBufferL1Ops()) {
             if (x.dataType() == DataBuffer.Type.FLOAT) {
                 return sasum(n, x, offsetX, incrX);
@@ -169,8 +170,8 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
                 return hasum(n, x, offsetX, incrX);
             }
         } else {
-            int[] shapex = {1, n};
-            int[] stridex = {incrX, incrX};
+            long[] shapex = {1, n};
+            long[] stridex = {incrX, incrX};
             INDArray arrX = Nd4j.create(x, shapex, stridex, offsetX, 'c');
             return asum(arrX);
         }
@@ -191,7 +192,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     }
 
     @Override
-    public int iamax(int n, INDArray arr, int stride) {
+    public int iamax(long n, INDArray arr, int stride) {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, arr);
 
@@ -205,7 +206,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     }
 
     @Override
-    public int iamax(int n, DataBuffer x, int offsetX, int incrX) {
+    public int iamax(long n, DataBuffer x, int offsetX, int incrX) {
         if (supportsDataBufferL1Ops()) {
             if (x.dataType() == DataBuffer.Type.FLOAT) {
                 return isamax(n, x, offsetX, incrX);
@@ -213,8 +214,8 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
                 return isamax(n, x, offsetX, incrX);
             }
         } else {
-            int[] shapex = {1, n};
-            int[] stridex = {incrX, incrX};
+            long[] shapex = {1, n};
+            long[] stridex = {incrX, incrX};
             INDArray arrX = Nd4j.create(x, shapex, stridex, offsetX, 'c');
             return iamax(n, arrX, incrX);
         }
@@ -345,7 +346,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     /**copy a vector to another vector.
      */
     @Override
-    public void copy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
+    public void copy(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
 
 
         if (supportsDataBufferL1Ops()) {
@@ -355,10 +356,10 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
                 scopy(n, x, offsetX, incrX, y, offsetY, incrY);
             }
         } else {
-            int[] shapex = {1, n};
-            int[] shapey = {1, n};
-            int[] stridex = {incrX, incrX};
-            int[] stridey = {incrY, incrY};
+            long[] shapex = {1, n};
+            long[] shapey = {1, n};
+            long[] stridex = {incrX, incrX};
+            long[] stridey = {incrY, incrY};
             INDArray arrX = Nd4j.create(x, shapex, stridex, offsetX, 'c');
             INDArray arrY = Nd4j.create(x, shapey, stridey, offsetY, 'c');
             copy(arrX, arrY);
@@ -392,7 +393,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      * @param y
      */
     @Override
-    public void axpy(int n, double alpha, INDArray x, INDArray y) {
+    public void axpy(long n, double alpha, INDArray x, INDArray y) {
 
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, x, y);
@@ -412,7 +413,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     }
 
     @Override
-    public void axpy(int n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
+    public void axpy(long n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         if (supportsDataBufferL1Ops()) {
             if (x.dataType() == DataBuffer.Type.DOUBLE) {
                 daxpy(n, alpha, x, offsetX, incrX, y, offsetY, incrY);
@@ -422,10 +423,10 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
                 haxpy(n, (float) alpha, x, offsetX, incrX, y, offsetY, incrY);
             }
         } else {
-            int[] shapex = {1, n};
-            int[] shapey = {1, n};
-            int[] stridex = {incrX, incrX};
-            int[] stridey = {incrY, incrY};
+            long[] shapex = {1, n};
+            long[] shapey = {1, n};
+            long[] stridex = {incrX, incrX};
+            long[] stridey = {incrY, incrY};
             INDArray arrX = Nd4j.create(x, shapex, stridex, offsetX, 'c');
             INDArray arrY = Nd4j.create(x, shapey, stridey, offsetY, 'c');
             axpy(n, alpha, arrX, arrY);
@@ -441,7 +442,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      * @param y
      */
     @Override
-    public void axpy(int n, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y) {
+    public void axpy(long n, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y) {
         if (x.data().dataType() == DataBuffer.Type.DOUBLE)
             zaxpy(n, alpha.asDouble(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
         else
@@ -471,7 +472,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      * @param s
      */
     @Override
-    public void rot(int N, INDArray X, INDArray Y, double c, double s) {
+    public void rot(long N, INDArray X, INDArray Y, double c, double s) {
 
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, X, Y);
@@ -497,7 +498,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      * @param s
      */
     @Override
-    public void rot(int N, IComplexNDArray X, IComplexNDArray Y, IComplexNumber c, IComplexNumber s) {
+    public void rot(long N, IComplexNDArray X, IComplexNDArray Y, IComplexNumber c, IComplexNumber s) {
         throw new UnsupportedOperationException();
     }
 
@@ -538,7 +539,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      * @param X
      */
     @Override
-    public void scal(int N, double alpha, INDArray X) {
+    public void scal(long N, double alpha, INDArray X) {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, X);
 
@@ -560,7 +561,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      * @param X
      */
     @Override
-    public void scal(int N, IComplexNumber alpha, IComplexNDArray X) {
+    public void scal(long N, IComplexNumber alpha, IComplexNDArray X) {
         if (X.data().dataType() == DataBuffer.Type.DOUBLE)
             zscal(N, alpha.asDouble(), X, BlasBufferUtil.getBlasStride(X));
         else
@@ -575,80 +576,80 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     * Prototypes for level 1 BLAS functions (complex are recast as routines)
     * ===========================================================================
     */
-    protected abstract float sdsdot(int N, float alpha, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract float sdsdot(long N, float alpha, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract double dsdot(int N, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract double dsdot(long N, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract float hdot(int N, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract float hdot(long N, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract float hdot(int N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY);
+    protected abstract float hdot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY);
 
-    protected abstract float sdot(int N, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract float sdot(long N, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract float sdot(int N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY);
+    protected abstract float sdot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY);
 
-    protected abstract double ddot(int N, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract double ddot(long N, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract double ddot(int N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY);
+    protected abstract double ddot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY);
 
     /*
      * Functions having prefixes Z and C only
      */
-    protected abstract void cdotu_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
+    protected abstract void cdotu_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
                     IComplexNDArray dotu);
 
-    protected abstract void cdotc_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
+    protected abstract void cdotc_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
                     IComplexNDArray dotc);
 
-    protected abstract void zdotu_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
+    protected abstract void zdotu_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
                     IComplexNDArray dotu);
 
-    protected abstract void zdotc_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
+    protected abstract void zdotc_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY,
                     IComplexNDArray dotc);
 
 
     /*
      * Functions having prefixes S D SC DZ
      */
-    protected abstract float snrm2(int N, INDArray X, int incX);
+    protected abstract float snrm2(long N, INDArray X, int incX);
 
-    protected abstract float hasum(int N, INDArray X, int incX);
+    protected abstract float hasum(long N, INDArray X, int incX);
 
-    protected abstract float hasum(int N, DataBuffer X, int offsetX, int incX);
+    protected abstract float hasum(long N, DataBuffer X, int offsetX, int incX);
 
-    protected abstract float sasum(int N, INDArray X, int incX);
+    protected abstract float sasum(long N, INDArray X, int incX);
 
-    protected abstract float sasum(int N, DataBuffer X, int offsetX, int incX);
+    protected abstract float sasum(long N, DataBuffer X, int offsetX, int incX);
 
-    protected abstract double dnrm2(int N, INDArray X, int incX);
+    protected abstract double dnrm2(long N, INDArray X, int incX);
 
-    protected abstract double dasum(int N, INDArray X, int incX);
+    protected abstract double dasum(long N, INDArray X, int incX);
 
-    protected abstract double dasum(int N, DataBuffer X, int offsetX, int incX);
+    protected abstract double dasum(long N, DataBuffer X, int offsetX, int incX);
 
-    protected abstract float scnrm2(int N, IComplexNDArray X, int incX);
+    protected abstract float scnrm2(long N, IComplexNDArray X, int incX);
 
-    protected abstract float scasum(int N, IComplexNDArray X, int incX);
+    protected abstract float scasum(long N, IComplexNDArray X, int incX);
 
-    protected abstract double dznrm2(int N, IComplexNDArray X, int incX);
+    protected abstract double dznrm2(long N, IComplexNDArray X, int incX);
 
-    protected abstract double dzasum(int N, IComplexNDArray X, int incX);
+    protected abstract double dzasum(long N, IComplexNDArray X, int incX);
 
 
     /*
      * Functions having standard 4 prefixes (S D C Z)
      */
-    protected abstract int isamax(int N, INDArray X, int incX);
+    protected abstract int isamax(long N, INDArray X, int incX);
 
-    protected abstract int isamax(int N, DataBuffer X, int offsetX, int incX);
+    protected abstract int isamax(long N, DataBuffer X, int offsetX, int incX);
 
-    protected abstract int idamax(int N, INDArray X, int incX);
+    protected abstract int idamax(long N, INDArray X, int incX);
 
-    protected abstract int idamax(int N, DataBuffer X, int offsetX, int incX);
+    protected abstract int idamax(long N, DataBuffer X, int offsetX, int incX);
 
-    protected abstract int icamax(int N, IComplexNDArray X, int incX);
+    protected abstract int icamax(long N, IComplexNDArray X, int incX);
 
-    protected abstract int izamax(int N, IComplexNDArray X, int incX);
+    protected abstract int izamax(long N, IComplexNDArray X, int incX);
 
     /*
      * ===========================================================================
@@ -659,44 +660,44 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     /*
      * Routines with standard 4 prefixes (s, d, c, z)
      */
-    protected abstract void sswap(int N, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract void sswap(long N, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract void scopy(int N, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract void scopy(long N, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract void scopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
+    protected abstract void scopy(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
 
-    protected abstract void haxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract void haxpy(long N, float alpha, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract void saxpy(long N, float alpha, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract void haxpy(int N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
+    protected abstract void haxpy(long N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
                     int incrY);
 
-    protected abstract void saxpy(int N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
+    protected abstract void saxpy(long N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
                     int incrY);
 
-    protected abstract void dswap(int N, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract void dswap(long N, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract void dcopy(int N, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract void dcopy(long N, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract void dcopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
+    protected abstract void dcopy(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
 
-    protected abstract void daxpy(int N, double alpha, INDArray X, int incX, INDArray Y, int incY);
+    protected abstract void daxpy(long N, double alpha, INDArray X, int incX, INDArray Y, int incY);
 
-    protected abstract void daxpy(int N, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
+    protected abstract void daxpy(long N, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY,
                     int incrY);
 
-    protected abstract void cswap(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
+    protected abstract void cswap(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
 
-    protected abstract void ccopy(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
+    protected abstract void ccopy(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
 
-    protected abstract void caxpy(int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
+    protected abstract void caxpy(long N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
 
-    protected abstract void zswap(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
+    protected abstract void zswap(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
 
-    protected abstract void zcopy(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
+    protected abstract void zcopy(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY);
 
-    protected abstract void zaxpy(int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y,
+    protected abstract void zaxpy(long N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y,
                     int incY);
 
 
@@ -707,33 +708,33 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
 
     protected abstract void srotmg(float d1, float d2, float b1, float b2, INDArray P);
 
-    protected abstract void srot(int N, INDArray X, int incX, INDArray Y, int incY, float c, float s);
+    protected abstract void srot(long N, INDArray X, int incX, INDArray Y, int incY, float c, float s);
 
-    protected abstract void srotm(int N, INDArray X, int incX, INDArray Y, int incY, INDArray P);
+    protected abstract void srotm(long N, INDArray X, int incX, INDArray Y, int incY, INDArray P);
 
     protected abstract void drotg(double a, double b, double c, double s);
 
     protected abstract void drotmg(double d1, double d2, double b1, double b2, INDArray P);
 
-    protected abstract void drot(int N, INDArray X, int incX, INDArray Y, int incY, double c, double s);
+    protected abstract void drot(long N, INDArray X, int incX, INDArray Y, int incY, double c, double s);
 
 
-    protected abstract void drotm(int N, INDArray X, int incX, INDArray Y, int incY, INDArray P);
+    protected abstract void drotm(long N, INDArray X, int incX, INDArray Y, int incY, INDArray P);
 
     /*
          * Routines with S D C Z CS and ZD prefixes
          */
-    protected abstract void sscal(int N, float alpha, INDArray X, int incX);
+    protected abstract void sscal(long N, float alpha, INDArray X, int incX);
 
-    protected abstract void dscal(int N, double alpha, INDArray X, int incX);
+    protected abstract void dscal(long N, double alpha, INDArray X, int incX);
 
-    protected abstract void cscal(int N, IComplexFloat alpha, IComplexNDArray X, int incX);
+    protected abstract void cscal(long N, IComplexFloat alpha, IComplexNDArray X, int incX);
 
-    protected abstract void zscal(int N, IComplexDouble alpha, IComplexNDArray X, int incX);
+    protected abstract void zscal(long N, IComplexDouble alpha, IComplexNDArray X, int incX);
 
-    protected abstract void csscal(int N, float alpha, IComplexNDArray X, int incX);
+    protected abstract void csscal(long N, float alpha, IComplexNDArray X, int incX);
 
-    protected abstract void zdscal(int N, double alpha, IComplexNDArray X, int incX);
+    protected abstract void zdscal(long N, double alpha, IComplexNDArray X, int incX);
 
     @Override
     public boolean supportsDataBufferL1Ops() {

@@ -1,5 +1,6 @@
 package org.nd4j.jita.allocator.tad;
 
+import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
@@ -55,7 +56,7 @@ public class BasicTADManager implements TADManager {
         //     logger.info("Original shape info before TAD: {}", array.shapeInfoDataBuffer());
         //    logger.info("dimension: {}, tadLength: {}, offsetLength for TAD: {}", Arrays.toString(dimension),tadLength, offsetLength);
 
-        DataBuffer outputBuffer = new CudaIntDataBuffer(targetRank * 2 + 4);
+        DataBuffer outputBuffer = new CudaLongDataBuffer(targetRank * 2 + 4);
         DataBuffer offsetsBuffer = new CudaLongDataBuffer(offsetLength);
 
         AtomicAllocator.getInstance().getAllocationPoint(outputBuffer).tickHostWrite();
@@ -68,8 +69,8 @@ public class BasicTADManager implements TADManager {
         Pointer targetPointer = AddressRetriever.retrieveHostPointer(outputBuffer);
         Pointer offsetsPointer = AddressRetriever.retrieveHostPointer(offsetsBuffer);
         if(!isScalar)
-            nativeOps.tadOnlyShapeInfo((IntPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
-                    (IntPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
+            nativeOps.tadOnlyShapeInfo((LongPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
+                    (LongPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
 
         else  {
             outputBuffer.put(0,2);

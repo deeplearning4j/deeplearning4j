@@ -82,6 +82,10 @@ public class LongBuffer extends BaseDataBuffer {
         super(data, copy);
     }
 
+    public LongBuffer(long[] data, boolean copy) {
+        super(data, copy);
+    }
+
     public LongBuffer(float[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
@@ -121,6 +125,10 @@ public class LongBuffer extends BaseDataBuffer {
 
     public LongBuffer(float[] data) {
         super(data);
+    }
+
+    public LongBuffer(long[] data) {
+        super(data, true);
     }
 
     @Override

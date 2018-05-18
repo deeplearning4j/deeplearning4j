@@ -673,7 +673,7 @@ public abstract class DifferentialFunction {
      * the output shape for this op
      * @return
      */
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
         throw new UnsupportedOperationException();
     }
 

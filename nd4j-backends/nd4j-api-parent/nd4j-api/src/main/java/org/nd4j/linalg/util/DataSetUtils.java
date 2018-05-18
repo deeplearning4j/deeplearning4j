@@ -121,7 +121,7 @@ public class DataSetUtils {
 		oinfo += ".rows: " + in_INDA.rows() + "; ";
 		oinfo += ".columns: " + in_INDA.columns() + "; ";
 		oinfo += ".rank: " + in_INDA.rank() + "; ";
-		oinfo += ".shape: " + BTools.getSIntA( in_INDA.shape() ) + "; ";
+		oinfo += ".shape: " + BTools.getSIntA( ArrayUtil.toInts(in_INDA.shape()) ) + "; ";
 		oinfo += ".length: " + in_INDA.length() + "; ";
 		oinfo += ".size( 0 ): " + in_INDA.size( 0 ) + "; ";
 		sis.info( oinfo );
@@ -134,7 +134,7 @@ public class DataSetUtils {
 			oinfo += ".rows: " + ot_INDA.rows() + "; ";
 			oinfo += ".columns: " + ot_INDA.columns() + "; ";
 			oinfo += ".rank: " + ot_INDA.rank() + "; ";
-			oinfo += ".shape: " + BTools.getSIntA( ot_INDA.shape() ) + "; ";
+			oinfo += ".shape: " + BTools.getSIntA( ArrayUtil.toInts(ot_INDA.shape()) ) + "; ";
 			oinfo += ".length: " + ot_INDA.length() + "; ";
 			oinfo += ".size( 0 ): " + ot_INDA.size( 0 ) + "; ";
 			sis.info( oinfo );
@@ -162,8 +162,8 @@ public class DataSetUtils {
 		InfoValues iv;
 		//
 		double j_Dbl = -1;
-		//
-		int i_CharsCount = BTools.getIndexCharsCount( in_INDA.rows() - 1 );
+		// FIXME: int cast
+		int i_CharsCount = BTools.getIndexCharsCount( (int) in_INDA.rows() - 1 );
 		//
 		oinfo = "";
 		oinfo += BTools.getMtLvESS( mtLv );
@@ -185,7 +185,7 @@ public class DataSetUtils {
 			//
 			int c_I = 0;
 			//
-			for ( int j = in_INDA.columns() - 1; j >= 0; j-- ) {
+			for ( int j = (int) in_INDA.columns() - 1; j >= 0; j-- ) {
 				//
 				if ( c_I > c_End_I ) break;
 				//
@@ -203,7 +203,8 @@ public class DataSetUtils {
 			c_I = 0;
 			//
 			if ( ot_INDA != null ) {
-				for ( int j = ot_INDA.columns() - 1; j >= 0; j-- ) {
+				// FIXME: int cast
+				for ( int j = (int) ot_INDA.columns() - 1; j >= 0; j-- ) {
 					//
 					if ( c_I > c_End_I ) break;
 					//
@@ -318,7 +319,7 @@ public class DataSetUtils {
 		oinfo += "rows: " + INDA.rows() + "; ";
 		oinfo += "columns: " + INDA.columns() + "; ";
 		oinfo += "rank: " + INDA.rank() + "; ";
-		oinfo += "shape: " + BTools.getSIntA( INDA.shape() ) + "; ";
+		oinfo += "shape: " + BTools.getSIntA(ArrayUtil.toInts( INDA.shape()) ) + "; ";
 		oinfo += "length: " + INDA.length() + "; ";
 		oinfo += "size( 0 ): " + INDA.size( 0 ) + "; ";
 		sis.info( oinfo );
@@ -329,8 +330,8 @@ public class DataSetUtils {
 		InfoValues iv;
 		//
 		double j_Dbl = -1;
-		//
-		int i_CharsCount = BTools.getIndexCharsCount( INDA.rows() - 1 );
+		// FIXME: int cast
+		int i_CharsCount = BTools.getIndexCharsCount( (int) INDA.rows() - 1 );
 		//
 		if ( !turned ) { //= standard
 			oinfo = "";
@@ -349,8 +350,8 @@ public class DataSetUtils {
 				iv.vsL.add( BTools.getSInt( i, i_CharsCount ) );
 				//
 				int c_I = 0;
-				//
-				for ( int j = INDA.columns() - 1; j >= 0; j-- ) {
+				// FIXME: int cast
+				for ( int j =  (int) INDA.columns() - 1; j >= 0; j-- ) {
 					//
 					if ( c_I > c_End_I ) break;
 					//

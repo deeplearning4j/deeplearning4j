@@ -1,5 +1,6 @@
 package org.nd4j.linalg.checkutil;
 
+import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -53,10 +54,10 @@ public class NDArrayCreationUtil {
      * Each NDArray in the returned array has been obtained by applying an operation such as transpose, tensorAlongDimension,
      * etc to an original array.
      */
-    public static List<Pair<INDArray, String>> getAllTestMatricesWithShape(int rows, int cols, int seed) {
+    public static List<Pair<INDArray, String>> getAllTestMatricesWithShape(long rows, long cols, long seed) {
         List<Pair<INDArray, String>> all = new ArrayList<>();
         Nd4j.getRandom().setSeed(seed);
-        all.add(new Pair<>(Nd4j.linspace(1, rows * cols, rows * cols).reshape(rows, cols),
+        all.add(new Pair<>(Nd4j.linspace(1L, rows * cols, rows * cols).reshape(rows, cols),
                         "Nd4j..linspace(1,rows * cols,rows * cols).reshape(rows,cols)"));
 
         all.add(getTransposedMatrixWithShape(rows, cols, seed));
@@ -122,21 +123,21 @@ public class NDArrayCreationUtil {
         return new Pair<>(out.transpose(), "getTransposedMatrixWithShape(" + rows + "," + cols + "," + seed + ")");
     }
 
-    public static Pair<INDArray, String> getTransposedMatrixWithShape(int rows, int cols, int seed) {
+    public static Pair<INDArray, String> getTransposedMatrixWithShape(long rows, long cols, long seed) {
         Nd4j.getRandom().setSeed(seed);
         INDArray out = Nd4j.linspace(1, rows * cols, rows * cols).reshape(cols, rows);
         return new Pair<>(out.transpose(), "getTransposedMatrixWithShape(" + rows + "," + cols + "," + seed + ")");
     }
 
-    public static List<Pair<INDArray, String>> getSubMatricesWithShape(int rows, int cols, int seed) {
+    public static List<Pair<INDArray, String>> getSubMatricesWithShape(long rows, long cols, long seed) {
         return getSubMatricesWithShape(Nd4j.order(), rows, cols, seed);
     }
 
-    public static List<Pair<INDArray, String>> getSubMatricesWithShape(char ordering, int rows, int cols, int seed) {
+    public static List<Pair<INDArray, String>> getSubMatricesWithShape(char ordering, long rows, long cols, long seed) {
         //Create 3 identical matrices. Could do get() on single original array, but in-place modifications on one
         //might mess up tests for another
         Nd4j.getRandom().setSeed(seed);
-        int[] shape = new int[] {2 * rows + 4, 2 * cols + 4};
+        long[] shape = new long[] {2 * rows + 4, 2 * cols + 4};
         int len = ArrayUtil.prod(shape);
         INDArray orig = Nd4j.linspace(1, len, len).reshape(ordering, shape);
         INDArray first = orig.get(NDArrayIndex.interval(0, rows), NDArrayIndex.interval(0, cols));
@@ -157,8 +158,8 @@ public class NDArrayCreationUtil {
 
 
 
-    public static List<Pair<INDArray, String>> getTensorAlongDimensionMatricesWithShape(char ordering, int rows,
-                    int cols, int seed) {
+    public static List<Pair<INDArray, String>> getTensorAlongDimensionMatricesWithShape(char ordering, long rows,
+                    long cols, long seed) {
         Nd4j.getRandom().setSeed(seed);
         //From 3d NDArray: do various tensors. One offset 0, one offset > 0
         //[0,1], [0,2], [1,0], [1,2], [2,0], [2,1]
@@ -166,13 +167,13 @@ public class NDArrayCreationUtil {
 
         INDArray temp01 = Nd4j.linspace(1, cols * rows * 4, cols * rows * 4).reshape(cols, rows, 4);
         out[0] = temp01.javaTensorAlongDimension(0, 0, 1).reshape(rows, cols);
-        int[] temp01Shape = new int[] {cols, rows, 4};
+        long[] temp01Shape = new long[] {cols, rows, 4};
         int len = ArrayUtil.prod(temp01Shape);
         temp01 = Nd4j.linspace(1, len, len).reshape(temp01Shape);
         out[1] = temp01.javaTensorAlongDimension(2, 0, 1).reshape(rows, cols);
 
         Nd4j.getRandom().setSeed(seed);
-        INDArray temp02 = Nd4j.linspace(1, len, len).reshape(new int[] {cols, 4, rows});
+        INDArray temp02 = Nd4j.linspace(1, len, len).reshape(new long[] {cols, 4, rows});
         out[2] = temp02.javaTensorAlongDimension(0, 0, 2).reshape(rows, cols);
         temp02 = Nd4j.linspace(1, len, len).reshape(cols, 4, rows);
         out[3] = temp02.javaTensorAlongDimension(2, 0, 2).reshape(rows, cols);
@@ -206,26 +207,26 @@ public class NDArrayCreationUtil {
         return list;
     }
 
-    public static List<Pair<INDArray, String>> getTensorAlongDimensionMatricesWithShape(int rows, int cols, int seed) {
+    public static List<Pair<INDArray, String>> getTensorAlongDimensionMatricesWithShape(long rows, long cols, long seed) {
         return getTensorAlongDimensionMatricesWithShape(Nd4j.order(), rows, cols, seed);
     }
 
 
-    public static Pair<INDArray, String> getPermutedWithShape(char ordering, int rows, int cols, int seed) {
+    public static Pair<INDArray, String> getPermutedWithShape(char ordering, long rows, long cols, long seed) {
         Nd4j.getRandom().setSeed(seed);
-        int len = rows * cols;
+        long len = rows * cols;
         INDArray arr = Nd4j.linspace(1, len, len).reshape(cols, rows);
         return new Pair<>(arr.permute(1, 0), "getPermutedWithShape(" + rows + "," + cols + "," + seed + ")");
     }
 
-    public static Pair<INDArray, String> getPermutedWithShape(int rows, int cols, int seed) {
+    public static Pair<INDArray, String> getPermutedWithShape(long rows, long cols, long seed) {
         return getPermutedWithShape(Nd4j.order(), rows, cols, seed);
     }
 
 
-    public static Pair<INDArray, String> getReshapedWithShape(char ordering, int rows, int cols, int seed) {
+    public static Pair<INDArray, String> getReshapedWithShape(char ordering, long rows, long cols, long seed) {
         Nd4j.getRandom().setSeed(seed);
-        int[] origShape = new int[3];
+        long[] origShape = new long[3];
         if (rows % 2 == 0) {
             origShape[0] = rows / 2;
             origShape[1] = cols;
@@ -246,12 +247,15 @@ public class NDArrayCreationUtil {
                         "getReshapedWithShape(" + rows + "," + cols + "," + seed + ")");
     }
 
-    public static Pair<INDArray, String> getReshapedWithShape(int rows, int cols, int seed) {
+    public static Pair<INDArray, String> getReshapedWithShape(long rows, long cols, long seed) {
         return getReshapedWithShape(Nd4j.order(), rows, cols, seed);
     }
 
+    public static List<Pair<INDArray, String>> getAll3dTestArraysWithShape(int seed, int[] shape) {
+        return getAll3dTestArraysWithShape(seed, ArrayUtil.toLongArray(shape));
+    }
 
-    public static List<Pair<INDArray, String>> getAll3dTestArraysWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> getAll3dTestArraysWithShape(long seed, long... shape) {
         if (shape.length != 3)
             throw new IllegalArgumentException("Shape is not length 3");
 
@@ -260,7 +264,7 @@ public class NDArrayCreationUtil {
         String baseMsg = "getAll3dTestArraysWithShape(" + seed + "," + Arrays.toString(shape) + ").get(";
 
 
-        int len = ArrayUtil.prod(shape);
+        val len = ArrayUtil.prodLong(shape);
         //Basic 3d in C and F orders:
         Nd4j.getRandom().setSeed(seed);
         INDArray stdC = Nd4j.linspace(1, len, len).reshape('c', shape);
@@ -283,33 +287,37 @@ public class NDArrayCreationUtil {
         return list;
     }
 
-    public static List<Pair<INDArray, String>> get3dSubArraysWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> get3dSubArraysWithShape(int seed, int[] shape) {
+        return get3dSubArraysWithShape(seed, ArrayUtil.toLongArray(shape));
+    }
+
+    public static List<Pair<INDArray, String>> get3dSubArraysWithShape(long seed, long... shape) {
         List<Pair<INDArray, String>> list = new ArrayList<>();
         String baseMsg = "get3dSubArraysWithShape(" + seed + "," + Arrays.toString(shape) + ")";
         //Create and return various sub arrays:
         Nd4j.getRandom().setSeed(seed);
-        int[] newShape1 = Arrays.copyOf(shape, shape.length);
+        val newShape1 = Arrays.copyOf(shape, shape.length);
         newShape1[0] += 5;
         int len = ArrayUtil.prod(newShape1);
         INDArray temp1 = Nd4j.linspace(1, len, len).reshape(newShape1);
         INDArray subset1 = temp1.get(NDArrayIndex.interval(2, shape[0] + 2), NDArrayIndex.all(), NDArrayIndex.all());
         list.add(new Pair<>(subset1, baseMsg + ".get(0)"));
 
-        int[] newShape2 = Arrays.copyOf(shape, shape.length);
+        val newShape2 = Arrays.copyOf(shape, shape.length);
         newShape2[1] += 5;
         int len2 = ArrayUtil.prod(newShape2);
         INDArray temp2 = Nd4j.linspace(1, len2, len2).reshape(newShape2);
         INDArray subset2 = temp2.get(NDArrayIndex.all(), NDArrayIndex.interval(3, shape[1] + 3), NDArrayIndex.all());
         list.add(new Pair<>(subset2, baseMsg + ".get(1)"));
 
-        int[] newShape3 = Arrays.copyOf(shape, shape.length);
+        val newShape3 = Arrays.copyOf(shape, shape.length);
         newShape3[2] += 5;
         int len3 = ArrayUtil.prod(newShape3);
         INDArray temp3 = Nd4j.linspace(1, len3, len3).reshape(newShape3);
         INDArray subset3 = temp3.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(4, shape[2] + 4));
         list.add(new Pair<>(subset3, baseMsg + ".get(2)"));
 
-        int[] newShape4 = Arrays.copyOf(shape, shape.length);
+        val newShape4 = Arrays.copyOf(shape, shape.length);
         newShape4[0] += 5;
         newShape4[1] += 5;
         newShape4[2] += 5;
@@ -322,7 +330,11 @@ public class NDArrayCreationUtil {
         return list;
     }
 
-    public static List<Pair<INDArray, String>> get3dTensorAlongDimensionWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> get3dTensorAlongDimensionWithShape(int seed, int[] shape) {
+        return get3dTensorAlongDimensionWithShape(seed, ArrayUtil.toLongArray(shape));
+    }
+
+    public static List<Pair<INDArray, String>> get3dTensorAlongDimensionWithShape(long seed, long... shape) {
         List<Pair<INDArray, String>> list = new ArrayList<>();
         String baseMsg = "get3dTensorAlongDimensionWithShape(" + seed + "," + Arrays.toString(shape) + ")";
 
@@ -331,7 +343,7 @@ public class NDArrayCreationUtil {
 
         Nd4j.getRandom().setSeed(seed);
         //            int[] shape4d1 = {shape[2],shape[1],shape[0],3};
-        int[] shape4d1 = {shape[0], shape[1], shape[2], 3};
+        val shape4d1 = new long[]{shape[0], shape[1], shape[2], 3};
         int lenshape4d1 = ArrayUtil.prod(shape4d1);
         INDArray orig1a = Nd4j.linspace(1, lenshape4d1, lenshape4d1).reshape(shape4d1);
         INDArray tad1a = orig1a.javaTensorAlongDimension(0, 0, 1, 2);
@@ -341,19 +353,19 @@ public class NDArrayCreationUtil {
         list.add(new Pair<>(tad1a, baseMsg + ".get(0)"));
         list.add(new Pair<>(tad1b, baseMsg + ".get(1)"));
 
-        int[] shape4d2 = {3, shape[0], shape[1], shape[2]};
+        long[] shape4d2 = {3, shape[0], shape[1], shape[2]};
         int lenshape4d2 = ArrayUtil.prod(shape4d2);
         INDArray orig2 = Nd4j.linspace(1, lenshape4d2, lenshape4d2).reshape(shape4d2);
         INDArray tad2 = orig2.javaTensorAlongDimension(1, 1, 2, 3);
         list.add(new Pair<>(tad2, baseMsg + ".get(2)"));
 
-        int[] shape4d3 = {shape[0], shape[1], 3, shape[2]};
+        long[] shape4d3 = {shape[0], shape[1], 3, shape[2]};
         int lenshape4d3 = ArrayUtil.prod(shape4d3);
         INDArray orig3 = Nd4j.linspace(1, lenshape4d3, lenshape4d3).reshape(shape4d3);
         INDArray tad3 = orig3.javaTensorAlongDimension(1, 1, 3, 0);
         list.add(new Pair<>(tad3, baseMsg + ".get(3)"));
 
-        int[] shape4d4 = {shape[0], 3, shape[1], shape[2]};
+        long[] shape4d4 = {shape[0], 3, shape[1], shape[2]};
         int lenshape4d4 = ArrayUtil.prod(shape4d4);
         INDArray orig4 = Nd4j.linspace(1, lenshape4d4, lenshape4d4).reshape(shape4d4);
         INDArray tad4 = orig4.javaTensorAlongDimension(1, 2, 0, 3);
@@ -362,9 +374,13 @@ public class NDArrayCreationUtil {
         return list;
     }
 
-    public static List<Pair<INDArray, String>> get3dPermutedWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> get3dPermutedWithShape(int seed, int[] shape) {
+        return get3dPermutedWithShape(seed, ArrayUtil.toLongArray(shape));
+    }
+
+    public static List<Pair<INDArray, String>> get3dPermutedWithShape(long seed, long... shape) {
         Nd4j.getRandom().setSeed(seed);
-        int[] createdShape = {shape[1], shape[2], shape[0]};
+        long[] createdShape = {shape[1], shape[2], shape[0]};
         int lencreatedShape = ArrayUtil.prod(createdShape);
         INDArray arr = Nd4j.linspace(1, lencreatedShape, lencreatedShape).reshape(createdShape);
         INDArray permuted = arr.permute(2, 0, 1);
@@ -372,9 +388,13 @@ public class NDArrayCreationUtil {
                         "get3dPermutedWithShape(" + seed + "," + Arrays.toString(shape) + ").get(0)"));
     }
 
-    public static List<Pair<INDArray, String>> get3dReshapedWithShape(int seed, int... shape) {
+    public static List<Pair<INDArray, String>> get3dReshapedWithShape(int seed, int[] shape) {
+        return get3dReshapedWithShape(seed, ArrayUtil.toLongArray(shape));
+    }
+
+    public static List<Pair<INDArray, String>> get3dReshapedWithShape(long seed, long... shape) {
         Nd4j.getRandom().setSeed(seed);
-        int[] shape2d = {shape[0] * shape[2], shape[1]};
+        long[] shape2d = {shape[0] * shape[2], shape[1]};
         int lenshape2d = ArrayUtil.prod(shape2d);
         INDArray array2d = Nd4j.linspace(1, lenshape2d, lenshape2d).reshape(shape2d);
         INDArray array3d = array2d.reshape(shape);
@@ -393,8 +413,8 @@ public class NDArrayCreationUtil {
         //Basic 4d in C and F orders:
         Nd4j.getRandom().setSeed(seed);
         int len = ArrayUtil.prod(shape);
-        INDArray stdC = Nd4j.linspace(1, len, len).reshape('c', shape);
-        INDArray stdF = Nd4j.linspace(1, len, len).reshape('f', shape);
+        INDArray stdC = Nd4j.linspace(1, len, len).reshape('c', ArrayUtil.toLongArray(shape));
+        INDArray stdF = Nd4j.linspace(1, len, len).reshape('f', ArrayUtil.toLongArray(shape));
         list.add(new Pair<>(stdC, baseMsg + "0)/Nd4j.rand(" + Arrays.toString(shape) + ",'c')"));
         list.add(new Pair<>(stdF, baseMsg + "1)/Nd4j.rand(" + Arrays.toString(shape) + ",'f')"));
 
@@ -421,7 +441,7 @@ public class NDArrayCreationUtil {
         int[] newShape1 = Arrays.copyOf(shape, shape.length);
         newShape1[0] += 5;
         int len = ArrayUtil.prod(newShape1);
-        INDArray temp1 = Nd4j.linspace(1, len, len).reshape(newShape1);
+        INDArray temp1 = Nd4j.linspace(1, len, len).reshape(ArrayUtil.toLongArray(newShape1));
         INDArray subset1 = temp1.get(NDArrayIndex.interval(2, shape[0] + 2), NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.all());
         list.add(new Pair<>(subset1, baseMsg + ".get(0)"));
@@ -429,7 +449,7 @@ public class NDArrayCreationUtil {
         int[] newShape2 = Arrays.copyOf(shape, shape.length);
         newShape2[1] += 5;
         int len2 = ArrayUtil.prod(newShape2);
-        INDArray temp2 = Nd4j.linspace(1, len2, len2).reshape(newShape2);
+        INDArray temp2 = Nd4j.linspace(1, len2, len2).reshape(ArrayUtil.toLongArray(newShape2));
         INDArray subset2 = temp2.get(NDArrayIndex.all(), NDArrayIndex.interval(3, shape[1] + 3), NDArrayIndex.all(),
                         NDArrayIndex.all());
         list.add(new Pair<>(subset2, baseMsg + ".get(1)"));
@@ -437,7 +457,7 @@ public class NDArrayCreationUtil {
         int[] newShape3 = Arrays.copyOf(shape, shape.length);
         newShape3[2] += 5;
         int len3 = ArrayUtil.prod(newShape3);
-        INDArray temp3 = Nd4j.linspace(1, len3, len3).reshape(newShape3);
+        INDArray temp3 = Nd4j.linspace(1, len3, len3).reshape(ArrayUtil.toLongArray(newShape3));
         INDArray subset3 = temp3.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(4, shape[2] + 4),
                         NDArrayIndex.all());
         list.add(new Pair<>(subset3, baseMsg + ".get(2)"));
@@ -445,7 +465,7 @@ public class NDArrayCreationUtil {
         int[] newShape4 = Arrays.copyOf(shape, shape.length);
         newShape4[3] += 5;
         int len4 = ArrayUtil.prod(newShape4);
-        INDArray temp4 = Nd4j.linspace(1, len4, len4).reshape(newShape4);
+        INDArray temp4 = Nd4j.linspace(1, len4, len4).reshape(ArrayUtil.toLongArray(newShape4));
         INDArray subset4 = temp4.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.interval(3, shape[3] + 3));
         list.add(new Pair<>(subset4, baseMsg + ".get(3)"));
@@ -456,7 +476,7 @@ public class NDArrayCreationUtil {
         newShape5[2] += 5;
         newShape5[3] += 5;
         int len5 = ArrayUtil.prod(newShape5);
-        INDArray temp5 = Nd4j.linspace(1, len5, len5).reshape(newShape5);
+        INDArray temp5 = Nd4j.linspace(1, len5, len5).reshape(ArrayUtil.toLongArray(newShape5));
         INDArray subset5 = temp5.get(NDArrayIndex.interval(4, shape[0] + 4), NDArrayIndex.interval(3, shape[1] + 3),
                         NDArrayIndex.interval(2, shape[2] + 2), NDArrayIndex.interval(1, shape[3] + 1));
         list.add(new Pair<>(subset5, baseMsg + ".get(4)"));
@@ -473,9 +493,9 @@ public class NDArrayCreationUtil {
         Nd4j.getRandom().setSeed(seed);
         int[] shape4d1 = {3, shape[0], shape[1], shape[2], shape[3]};
         int len = ArrayUtil.prod(shape4d1);
-        INDArray orig1a = Nd4j.linspace(1, len, len).reshape(shape4d1);
+        INDArray orig1a = Nd4j.linspace(1, len, len).reshape(ArrayUtil.toLongArray(shape4d1));
         INDArray tad1a = orig1a.javaTensorAlongDimension(0, 1, 2, 3, 4);
-        INDArray orig1b = Nd4j.linspace(1, len, len).reshape(shape4d1);
+        INDArray orig1b = Nd4j.linspace(1, len, len).reshape(ArrayUtil.toLongArray(shape4d1));
         INDArray tad1b = orig1b.javaTensorAlongDimension(2, 1, 2, 3, 4);
 
         list.add(new Pair<>(tad1a, baseMsg + ".get(0)"));
@@ -483,19 +503,19 @@ public class NDArrayCreationUtil {
 
         int[] shape4d2 = {3, shape[0], shape[1], shape[2], shape[3]};
         int len2 = ArrayUtil.prod(shape4d2);
-        INDArray orig2 = Nd4j.linspace(1, len2, len2).reshape(shape4d2);
+        INDArray orig2 = Nd4j.linspace(1, len2, len2).reshape(ArrayUtil.toLongArray(shape4d2));
         INDArray tad2 = orig2.javaTensorAlongDimension(1, 3, 4, 2, 1);
         list.add(new Pair<>(tad2, baseMsg + ".get(2)"));
 
         int[] shape4d3 = {shape[0], shape[1], 3, shape[2], shape[3]};
         int len3 = ArrayUtil.prod(shape4d3);
-        INDArray orig3 = Nd4j.linspace(1, len3, len3).reshape(shape4d3);
+        INDArray orig3 = Nd4j.linspace(1, len3, len3).reshape(ArrayUtil.toLongArray(shape4d3));
         INDArray tad3 = orig3.javaTensorAlongDimension(1, 4, 1, 3, 0);
         list.add(new Pair<>(tad3, baseMsg + ".get(3)"));
 
         int[] shape4d4 = {shape[0], shape[1], shape[2], shape[3], 3};
         int len4 = ArrayUtil.prod(shape4d4);
-        INDArray orig4 = Nd4j.linspace(1, len4, len4).reshape(shape4d4);
+        INDArray orig4 = Nd4j.linspace(1, len4, len4).reshape(ArrayUtil.toLongArray(shape4d4));
         INDArray tad4 = orig4.javaTensorAlongDimension(1, 2, 0, 3, 1);
         list.add(new Pair<>(tad4, baseMsg + ".get(4)"));
 
@@ -515,7 +535,7 @@ public class NDArrayCreationUtil {
         Nd4j.getRandom().setSeed(seed);
         int[] shape2d = {shape[0] * shape[2], shape[1] * shape[3]};
         INDArray array2d = Nd4j.rand(shape2d);
-        INDArray array3d = array2d.reshape(shape);
+        INDArray array3d = array2d.reshape(ArrayUtil.toLongArray(shape));
         return Collections.singletonList(new Pair<>(array3d,
                         "get4dReshapedWithShape(" + seed + "," + Arrays.toString(shape) + ").get(0)"));
     }
@@ -654,7 +674,7 @@ public class NDArrayCreationUtil {
         Nd4j.getRandom().setSeed(seed);
         int[] shape2d = {shape[0] * shape[2], shape[4], shape[1] * shape[3]};
         INDArray array3d = Nd4j.rand(shape2d);
-        INDArray array5d = array3d.reshape(shape);
+        INDArray array5d = array3d.reshape(ArrayUtil.toLongArray(shape));
         return Collections.singletonList(new Pair<>(array5d,
                         "get5dReshapedWithShape(" + seed + "," + Arrays.toString(shape) + ").get(0)"));
     }
@@ -764,7 +784,7 @@ public class NDArrayCreationUtil {
         Nd4j.getRandom().setSeed(seed);
         int[] shape3d = {shape[0] * shape[2], shape[4] * shape[5], shape[1] * shape[3]};
         INDArray array3d = Nd4j.rand(shape3d);
-        INDArray array6d = array3d.reshape(shape);
+        INDArray array6d = array3d.reshape(ArrayUtil.toLongArray(shape));
         return Collections.singletonList(new Pair<>(array6d,
                         "get6dReshapedWithShape(" + seed + "," + Arrays.toString(shape) + ").get(0)"));
     }
@@ -781,7 +801,7 @@ public class NDArrayCreationUtil {
     public static int[][] getRandomBroadCastShape(long seed, int rank, int numShapes) {
         Nd4j.getRandom().setSeed(seed);
         INDArray coinFlip = Nd4j.getDistributions().createBinomial(1, 0.5).sample(new int[] {numShapes, rank});
-        int[][] ret = new int[coinFlip.rows()][coinFlip.columns()];
+        int[][] ret = new int[(int) coinFlip.rows()][(int) coinFlip.columns()];
         for (int i = 0; i < coinFlip.rows(); i++) {
             for (int j = 0; j < coinFlip.columns(); j++) {
                 int set = coinFlip.getInt(i, j);
@@ -810,6 +830,19 @@ public class NDArrayCreationUtil {
     public static int[] broadcastToShape(int[] inputShapeWithOnes, long seed) {
         Nd4j.getRandom().setSeed(seed);
         int[] shape = new int[inputShapeWithOnes.length];
+        for (int i = 0; i < shape.length; i++) {
+            if (inputShapeWithOnes[i] == 1) {
+                shape[i] = Nd4j.getRandom().nextInt(9) + 1;
+            } else
+                shape[i] = inputShapeWithOnes[i];
+        }
+
+        return shape;
+    }
+
+    public static long[] broadcastToShape(long[] inputShapeWithOnes, long seed) {
+        Nd4j.getRandom().setSeed(seed);
+        val shape = new long[inputShapeWithOnes.length];
         for (int i = 0; i < shape.length; i++) {
             if (inputShapeWithOnes[i] == 1) {
                 shape[i] = Nd4j.getRandom().nextInt(9) + 1;

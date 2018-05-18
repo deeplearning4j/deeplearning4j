@@ -87,7 +87,7 @@ public class Fill extends DynamicCustomOp {
 
 
     @Override
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
 
         int numArgs = args().length;
         if(numArgs < 1)
@@ -99,13 +99,13 @@ public class Fill extends DynamicCustomOp {
         else {
             if(shape.length() == 1) {
                 if(shape.getDouble(0) < 1)
-                    return Arrays.asList(new int[]{1,1});
+                    return Arrays.asList(new long[]{1,1});
                 else
-                    return Arrays.asList(new int[]{1,shape.getInt(0)});
+                    return Arrays.asList(new long[]{1,shape.getInt(0)});
             }
         }
 
-        return Arrays.asList(shape.data().asInt());
+        return Arrays.asList(shape.data().asLong());
     }
 
     @Override

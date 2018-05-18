@@ -3,6 +3,7 @@ package org.nd4j.autodiff.gradcheck;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -115,21 +116,21 @@ public class GradCheckMisc {
 
     @Test
     public void testExpandDimsGradient() {
-        int[] origShape = new int[]{3, 4};
+        val origShape = new long[]{3, 4};
 
         boolean first = true;
         for (int i = 0; i < 3; i++) {
 
-            int[] expExpandShape;
+            long[] expExpandShape;
             switch (i) {
                 case 0:
-                    expExpandShape = new int[]{1, 3, 4};
+                    expExpandShape = new long[]{1, 3, 4};
                     break;
                 case 1:
-                    expExpandShape = new int[]{3, 1, 4};
+                    expExpandShape = new long[]{3, 1, 4};
                     break;
                 case 2:
-                    expExpandShape = new int[]{3, 4, 1};
+                    expExpandShape = new long[]{3, 4, 1};
                     break;
                 default:
                     throw new RuntimeException();
@@ -162,11 +163,11 @@ public class GradCheckMisc {
 
     @Test
     public void testSqueezeGradient() {
-        int[] origShape = new int[]{3, 4, 5};
+        val origShape = new long[]{3, 4, 5};
 
         for (int i = 0; i < 3; i++) {
 
-            int[] shape = origShape.clone();
+            val shape = origShape.clone();
             shape[i] = 1;
 
             for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, shape)) {
@@ -178,16 +179,16 @@ public class GradCheckMisc {
                 //Using stdev here: mean/sum would backprop the same gradient for each input...
                 SDVariable stdev = sd.standardDeviation("out", squeeze, true);
 
-                int[] expShapePostSqueeze;
+                long[] expShapePostSqueeze;
                 switch (i) {
                     case 0:
-                        expShapePostSqueeze = new int[]{4, 5};
+                        expShapePostSqueeze = new long[]{4, 5};
                         break;
                     case 1:
-                        expShapePostSqueeze = new int[]{3, 5};
+                        expShapePostSqueeze = new long[]{3, 5};
                         break;
                     case 2:
-                        expShapePostSqueeze = new int[]{3, 4};
+                        expShapePostSqueeze = new long[]{3, 4};
                         break;
                     default:
                         throw new RuntimeException();
@@ -281,7 +282,7 @@ public class GradCheckMisc {
                 try {
                     INDArray out = sd.execAndEndResult();
                     assertNotNull(out);
-                    assertArrayEquals(new int[]{1, 1}, out.shape());
+                    assertArrayEquals(new long[]{1, 1}, out.shape());
 
 //                    System.out.println(sd.asFlatPrint());
 
@@ -375,7 +376,7 @@ public class GradCheckMisc {
                 try {
                     INDArray out = sd.execAndEndResult();
                     assertNotNull(out);
-                    assertArrayEquals(new int[]{1, 1}, out.shape());
+                    assertArrayEquals(new long[]{1, 1}, out.shape());
 
 //                    System.out.println(sd.asFlatPrint());
 
@@ -402,21 +403,21 @@ public class GradCheckMisc {
         List<String> allFailed = new ArrayList<>();
 
         //Test cases: in1Shape, in2Shape, shapeOf(op(in1,in2))
-        List<Triple<int[],int[], int[]>> testCases = new ArrayList<>();
-        testCases.add(new Triple<>(new int[]{3,1}, new int[]{1,4}, new int[]{3,4}));
-        testCases.add(new Triple<>(new int[]{3,1}, new int[]{3,4}, new int[]{3,4}));
-        testCases.add(new Triple<>(new int[]{3,4}, new int[]{1,4}, new int[]{3,4}));
-        testCases.add(new Triple<>(new int[]{3,4,1}, new int[]{1,1,5}, new int[]{3,4,5}));
-        testCases.add(new Triple<>(new int[]{3,4,1}, new int[]{3,1,5}, new int[]{3,4,5}));
-        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{1,4,1}, new int[]{3,4,5}));
-        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{1,4,5}, new int[]{3,4,5}));
-        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{3,4,5}, new int[]{3,4,5}));
-        testCases.add(new Triple<>(new int[]{3,1,1,1}, new int[]{1,4,5,6}, new int[]{3,4,5,6}));
-        testCases.add(new Triple<>(new int[]{1,1,1,6}, new int[]{3,4,5,6}, new int[]{3,4,5,6}));
-        testCases.add(new Triple<>(new int[]{1,4,5,1}, new int[]{3,1,1,6}, new int[]{3,4,5,6}));
-        testCases.add(new Triple<>(new int[]{1,6}, new int[]{3,4,5,1}, new int[]{3,4,5,6}));
+        List<Triple<long[],long[], long[]>> testCases = new ArrayList<>();
+        testCases.add(new Triple<>(new long[]{3,1}, new long[]{1,4}, new long[]{3,4}));
+        testCases.add(new Triple<>(new long[]{3,1}, new long[]{3,4}, new long[]{3,4}));
+        testCases.add(new Triple<>(new long[]{3,4}, new long[]{1,4}, new long[]{3,4}));
+        testCases.add(new Triple<>(new long[]{3,4,1}, new long[]{1,1,5}, new long[]{3,4,5}));
+        testCases.add(new Triple<>(new long[]{3,4,1}, new long[]{3,1,5}, new long[]{3,4,5}));
+        testCases.add(new Triple<>(new long[]{3,1,5}, new long[]{1,4,1}, new long[]{3,4,5}));
+        testCases.add(new Triple<>(new long[]{3,1,5}, new long[]{1,4,5}, new long[]{3,4,5}));
+        testCases.add(new Triple<>(new long[]{3,1,5}, new long[]{3,4,5}, new long[]{3,4,5}));
+        testCases.add(new Triple<>(new long[]{3,1,1,1}, new long[]{1,4,5,6}, new long[]{3,4,5,6}));
+        testCases.add(new Triple<>(new long[]{1,1,1,6}, new long[]{3,4,5,6}, new long[]{3,4,5,6}));
+        testCases.add(new Triple<>(new long[]{1,4,5,1}, new long[]{3,1,1,6}, new long[]{3,4,5,6}));
+        testCases.add(new Triple<>(new long[]{1,6}, new long[]{3,4,5,1}, new long[]{3,4,5,6}));
 
-        for (Triple<int[],int[],int[]> p : testCases) {
+        for (val p : testCases) {
 
             for (int i = 0; i < 6; i++) {
 
@@ -479,7 +480,7 @@ public class GradCheckMisc {
                 try {
                     INDArray out = sd.execAndEndResult();
                     assertNotNull(out);
-                    assertArrayEquals(new int[]{1, 1}, out.shape());
+                    assertArrayEquals(new long[]{1, 1}, out.shape());
 
                     INDArray bcOut = bcOp.getArr();
                     assertNotNull(bcOp);

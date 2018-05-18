@@ -60,7 +60,7 @@ public class Rank extends DynamicCustomOp {
             val resultLength = Nd4j.scalar(inputShape.length);
             val thisResultId = outputVertex;
             initWith.putArrayForVarName(thisResultId, resultLength);
-            initWith.putShapeForVarName(thisResultId, new int[]{1, 1});
+            initWith.putShapeForVarName(thisResultId, new long[]{1, 1});
         }
     }
 
@@ -85,9 +85,9 @@ public class Rank extends DynamicCustomOp {
     }
 
     @Override
-    public List<int[]> calculateOutputShape() {
-        List<int[]> ret = new ArrayList<>();
-        ret.add(new int[]{});
+    public List<long[]> calculateOutputShape() {
+        List<long[]> ret = new ArrayList<>();
+        ret.add(new long[]{});
         return ret;
     }
 

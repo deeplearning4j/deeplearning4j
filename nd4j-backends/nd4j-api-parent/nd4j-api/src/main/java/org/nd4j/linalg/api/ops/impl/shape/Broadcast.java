@@ -33,8 +33,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Broadcast extends DynamicCustomOp {
-    private int[] shape;
-    public Broadcast(SameDiff sameDiff,SDVariable iX, int[] shape) {
+    private long[] shape;
+    public Broadcast(SameDiff sameDiff,SDVariable iX, long[] shape) {
         super(null,sameDiff,new SDVariable[]{iX});
         this.shape = shape;
     }
@@ -44,7 +44,7 @@ public class Broadcast extends DynamicCustomOp {
 
 
     @Override
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
         return Arrays.asList(shape);
     }
 

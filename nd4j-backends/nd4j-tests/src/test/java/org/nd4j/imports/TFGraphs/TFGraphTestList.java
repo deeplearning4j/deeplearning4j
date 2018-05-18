@@ -25,7 +25,8 @@ import java.util.Map;
 @RunWith(Parameterized.class)
 public class TFGraphTestList {
     public static String[] modelNames = new String[]{
-            "add_n",
+            "conv_0",
+            /*"add_n",
             "ae",
             "ae_00",
             "bias_add",
@@ -68,7 +69,7 @@ public class TFGraphTestList {
             "transform_0",
             "transpose_00",
             "unstack",
-            //"yolov2_608x608"
+            //"yolov2_608x608"*/
 
     };
 
@@ -79,8 +80,8 @@ public class TFGraphTestList {
     }
 
     //change this to SAMEDIFF for samediff
-    public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
-    //public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
+    //public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
+    public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
     // public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.JUST_PRINT;
 
     public static String modelDir = TFGraphTestAllHelper.COMMON_BASE_DIR; //this is for later if we want to check in models separately for samediff and libnd4j

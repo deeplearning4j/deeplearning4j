@@ -23,31 +23,31 @@ public class CpuLevel1 extends BaseLevel1 {
     private Nd4jBlas nd4jBlas = (Nd4jBlas) Nd4j.factory().blas();
 
     @Override
-    protected float sdsdot(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        return cblas_sdsdot(N, alpha, (FloatPointer) X.data().addressPointer(), incX,
+    protected float sdsdot(long N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
+        return cblas_sdsdot((int) N, alpha, (FloatPointer) X.data().addressPointer(), incX,
                         (FloatPointer) Y.data().addressPointer(), incY);
     }
 
     @Override
-    protected double dsdot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        return cblas_dsdot(N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(),
+    protected double dsdot(long N, INDArray X, int incX, INDArray Y, int incY) {
+        return cblas_dsdot((int) N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(),
                         incY);
     }
 
     @Override
-    protected float hdot(int N, INDArray X, int incX, INDArray Y, int incY) {
+    protected float hdot(long N, INDArray X, int incX, INDArray Y, int incY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected float hdot(int N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
+    protected float hdot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
+    protected float sdot(long N, INDArray X, int incX, INDArray Y, int incY) {
         if (incX >= 1 && incY >= 1) {
-            return cblas_sdot(N, (FloatPointer) X.data().addressPointer(), incX,
+            return cblas_sdot((int) N, (FloatPointer) X.data().addressPointer(), incX,
                             (FloatPointer) Y.data().addressPointer(), incY);
         } else {
             // non-EWS dot variant
@@ -58,14 +58,14 @@ public class CpuLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected float sdot(int N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
+    protected float sdot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
+    protected double ddot(long N, INDArray X, int incX, INDArray Y, int incY) {
         if (incX >= 1 && incY >= 1) {
-            return cblas_ddot(N, (DoublePointer) X.data().addressPointer(), incX,
+            return cblas_ddot((int) N, (DoublePointer) X.data().addressPointer(), incX,
                             (DoublePointer) Y.data().addressPointer(), incY);
         } else {
             // non-EWS dot variant
@@ -76,213 +76,213 @@ public class CpuLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected double ddot(int N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
+    protected double ddot(long N, DataBuffer X, int offsetX, int incX, DataBuffer Y, int offsetY, int incY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void cdotu_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
+    protected void cdotu_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void cdotc_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
+    protected void cdotc_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void zdotu_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void zdotc_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
+    protected void zdotu_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    protected float snrm2(int N, INDArray X, int incX) {
-        return cblas_snrm2(N, (FloatPointer) X.data().addressPointer(), incX);
-
-    }
-
-    @Override
-    protected float sasum(int N, INDArray X, int incX) {
-        return cblas_sasum(N, (FloatPointer) X.data().addressPointer(), incX);
-    }
-
-    @Override
-    protected float sasum(int N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected double dnrm2(int N, INDArray X, int incX) {
-        return cblas_dnrm2(N, (DoublePointer) X.data().addressPointer(), incX);
-    }
-
-    @Override
-    protected double dasum(int N, INDArray X, int incX) {
-        return cblas_dasum(N, (DoublePointer) X.data().addressPointer(), incX);
-    }
-
-    @Override
-    protected double dasum(int N, DataBuffer X, int offsetX, int incX) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected float scnrm2(int N, IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected float scasum(int N, IComplexNDArray X, int incX) {
+    protected void zdotc_sub(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    protected double dznrm2(int N, IComplexNDArray X, int incX) {
+    protected float snrm2(long N, INDArray X, int incX) {
+        return cblas_snrm2((int) N, (FloatPointer) X.data().addressPointer(), incX);
+
+    }
+
+    @Override
+    protected float sasum(long N, INDArray X, int incX) {
+        return cblas_sasum((int) N, (FloatPointer) X.data().addressPointer(), incX);
+    }
+
+    @Override
+    protected float sasum(long N, DataBuffer X, int offsetX, int incX) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected double dnrm2(long N, INDArray X, int incX) {
+        return cblas_dnrm2((int) N, (DoublePointer) X.data().addressPointer(), incX);
+    }
+
+    @Override
+    protected double dasum(long N, INDArray X, int incX) {
+        return cblas_dasum((int) N, (DoublePointer) X.data().addressPointer(), incX);
+    }
+
+    @Override
+    protected double dasum(long N, DataBuffer X, int offsetX, int incX) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected float scnrm2(long N, IComplexNDArray X, int incX) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    protected float scasum(long N, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    protected double dzasum(int N, IComplexNDArray X, int incX) {
+    protected double dznrm2(long N, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    protected int isamax(int N, INDArray X, int incX) {
-        return (int) cblas_isamax(N, (FloatPointer) X.data().addressPointer(), incX);
+    protected double dzasum(long N, IComplexNDArray X, int incX) {
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
-    protected int isamax(int N, DataBuffer X, int offsetX, int incX) {
+    protected int isamax(long N, INDArray X, int incX) {
+        return (int) cblas_isamax((int) N, (FloatPointer) X.data().addressPointer(), incX);
+    }
+
+    @Override
+    protected int isamax(long N, DataBuffer X, int offsetX, int incX) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected int idamax(int N, INDArray X, int incX) {
-        return (int) cblas_idamax(N, (DoublePointer) X.data().addressPointer(), incX);
+    protected int idamax(long N, INDArray X, int incX) {
+        return (int) cblas_idamax((int) N, (DoublePointer) X.data().addressPointer(), incX);
     }
 
     @Override
-    protected int idamax(int N, DataBuffer X, int offsetX, int incX) {
+    protected int idamax(long N, DataBuffer X, int offsetX, int incX) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected int icamax(int N, IComplexNDArray X, int incX) {
+    protected int icamax(long N, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected int izamax(int N, IComplexNDArray X, int incX) {
+    protected int izamax(long N, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void sswap(int N, INDArray X, int incX, INDArray Y, int incY) {
-        cblas_sswap(N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY);
+    protected void sswap(long N, INDArray X, int incX, INDArray Y, int incY) {
+        cblas_sswap((int) N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY);
     }
 
     @Override
-    protected void scopy(int N, INDArray X, int incX, INDArray Y, int incY) {
-        cblas_scopy(N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY);
+    protected void scopy(long N, INDArray X, int incX, INDArray Y, int incY) {
+        cblas_scopy((int) N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY);
     }
 
     @Override
-    protected void scopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
+    protected void scopy(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void haxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
+    protected void haxpy(long N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        cblas_saxpy(N, alpha, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(),
+    protected void saxpy(long N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
+        cblas_saxpy((int) N, alpha, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(),
                         incY);
     }
 
     @Override
-    public void haxpy(int n, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
+    public void haxpy(long n, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void saxpy(int n, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
+    public void saxpy(long n, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    protected void dswap(int N, INDArray X, int incX, INDArray Y, int incY) {
-        cblas_dswap(N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(),
+    protected void dswap(long N, INDArray X, int incX, INDArray Y, int incY) {
+        cblas_dswap((int) N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(),
                         incY);
     }
 
     @Override
-    protected void dcopy(int N, INDArray X, int incX, INDArray Y, int incY) {
-        cblas_dcopy(N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(),
+    protected void dcopy(long N, INDArray X, int incX, INDArray Y, int incY) {
+        cblas_dcopy((int) N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(),
                         incY);
     }
 
     @Override
-    protected void dcopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
+    protected void dcopy(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void daxpy(int N, double alpha, INDArray X, int incX, INDArray Y, int incY) {
-        cblas_daxpy(N, alpha, (DoublePointer) X.data().addressPointer(), incX,
+    protected void daxpy(long N, double alpha, INDArray X, int incX, INDArray Y, int incY) {
+        cblas_daxpy((int) N, alpha, (DoublePointer) X.data().addressPointer(), incX,
                         (DoublePointer) Y.data().addressPointer(), incY);
 
     }
 
     @Override
-    public void daxpy(int n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
+    public void daxpy(long n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void cswap(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+    protected void cswap(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void ccopy(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void caxpy(int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+    protected void ccopy(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    protected void zswap(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+    protected void caxpy(long N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    protected void zcopy(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+    protected void zswap(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    protected void zaxpy(int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+    protected void zcopy(long N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    protected void zaxpy(long N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
         throw new UnsupportedOperationException();
 
     }
@@ -300,14 +300,14 @@ public class CpuLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected void srot(int N, INDArray X, int incX, INDArray Y, int incY, float c, float s) {
-        cblas_srot(N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY, c,
+    protected void srot(long N, INDArray X, int incX, INDArray Y, int incY, float c, float s) {
+        cblas_srot((int) N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY, c,
                         s);
     }
 
     @Override
-    protected void srotm(int N, INDArray X, int incX, INDArray Y, int incY, INDArray P) {
-        cblas_srotm(N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY,
+    protected void srotm(long N, INDArray X, int incX, INDArray Y, int incY, INDArray P) {
+        cblas_srotm((int) N, (FloatPointer) X.data().addressPointer(), incX, (FloatPointer) Y.data().addressPointer(), incY,
                         (FloatPointer) P.data().addressPointer());
 
     }
@@ -324,58 +324,58 @@ public class CpuLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected void drot(int N, INDArray X, int incX, INDArray Y, int incY, double c, double s) {
-        cblas_drot(N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(), incY,
+    protected void drot(long N, INDArray X, int incX, INDArray Y, int incY, double c, double s) {
+        cblas_drot((int) N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(), incY,
                         c, s);
     }
 
 
     @Override
-    protected void drotm(int N, INDArray X, int incX, INDArray Y, int incY, INDArray P) {
-        cblas_drotm(N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(), incY,
+    protected void drotm(long N, INDArray X, int incX, INDArray Y, int incY, INDArray P) {
+        cblas_drotm((int) N, (DoublePointer) X.data().addressPointer(), incX, (DoublePointer) Y.data().addressPointer(), incY,
                         (DoublePointer) P.data().addressPointer());
     }
 
     @Override
-    protected void sscal(int N, float alpha, INDArray X, int incX) {
-        cblas_sscal(N, alpha, (FloatPointer) X.data().addressPointer(), incX);
+    protected void sscal(long N, float alpha, INDArray X, int incX) {
+        cblas_sscal((int) N, alpha, (FloatPointer) X.data().addressPointer(), incX);
     }
 
     @Override
-    protected void dscal(int N, double alpha, INDArray X, int incX) {
-        cblas_dscal(N, alpha, (DoublePointer) X.data().addressPointer(), incX);
+    protected void dscal(long N, double alpha, INDArray X, int incX) {
+        cblas_dscal((int) N, alpha, (DoublePointer) X.data().addressPointer(), incX);
     }
 
     @Override
-    protected void cscal(int N, IComplexFloat alpha, IComplexNDArray X, int incX) {
+    protected void cscal(long N, IComplexFloat alpha, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void zscal(int N, IComplexDouble alpha, IComplexNDArray X, int incX) {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    protected void csscal(int N, float alpha, IComplexNDArray X, int incX) {
+    protected void zscal(long N, IComplexDouble alpha, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    protected void zdscal(int N, double alpha, IComplexNDArray X, int incX) {
+    protected void csscal(long N, float alpha, IComplexNDArray X, int incX) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    protected float hasum(int N, INDArray X, int incX) {
+    protected void zdscal(long N, double alpha, IComplexNDArray X, int incX) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    protected float hasum(long N, INDArray X, int incX) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected float hasum(int N, DataBuffer X, int offsetX, int incX) {
+    protected float hasum(long N, DataBuffer X, int offsetX, int incX) {
         throw new UnsupportedOperationException();
     }
 }

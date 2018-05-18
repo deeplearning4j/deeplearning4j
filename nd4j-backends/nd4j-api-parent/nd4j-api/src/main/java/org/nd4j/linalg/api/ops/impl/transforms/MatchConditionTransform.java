@@ -49,7 +49,7 @@ public class MatchConditionTransform extends BaseTransformOp {
         this.mode = mode;
     }
 
-    public MatchConditionTransform(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double compare, double eps, int mode) {
+    public MatchConditionTransform(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double compare, double eps, int mode) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.compare = compare;
         this.eps = eps;

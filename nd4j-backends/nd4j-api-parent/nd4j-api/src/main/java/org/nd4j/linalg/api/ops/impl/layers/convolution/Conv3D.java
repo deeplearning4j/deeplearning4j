@@ -52,8 +52,8 @@ public class Conv3D extends DynamicCustomOp {
         addArgs();
 
 
-        for (int arg: iArgs())
-            System.out.println(getIArgument(arg));
+        //for (val arg: iArgs())
+        //  System.out.println(getIArgument(arg));
     }
 
 

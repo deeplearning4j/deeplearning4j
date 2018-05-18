@@ -116,13 +116,15 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
-            dsymm(Order, Side, Uplo, C.rows(), C.columns(), alpha, A, A.size(0), B, B.size(0), beta, C, C.size(0));
+            dsymm(Order, Side, Uplo, (int) C.rows(), (int) C.columns(), alpha, A, (int) A.size(0), B, (int) B.size(0), beta, C, (int) C.size(0));
         } else {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
-            ssymm(Order, Side, Uplo, C.rows(), C.columns(), (float) alpha, A, A.size(0), B, B.size(0), (float) beta, C,
-                            C.size(0));
+            ssymm(Order, Side, Uplo, (int) C.rows(), (int) C.columns(), (float) alpha, A, (int) A.size(0), B, (int) B.size(0), (float) beta, C,
+                    (int) C.size(0));
         }
 
         OpExecutionerUtil.checkForAny(C);
@@ -148,12 +150,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, C);
 
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, C);
-            dsyrk(Order, Uplo, Trans, C.rows(), 1, alpha, A, A.size(0), beta, C, C.size(0));
+            dsyrk(Order, Uplo, Trans, (int) C.rows(), 1, alpha, A, (int) A.size(0), beta, C, (int) C.size(0));
         } else {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, C);
-            ssyrk(Order, Uplo, Trans, C.rows(), 1, (float) alpha, A, A.size(0), (float) beta, C, C.size(0));
+            ssyrk(Order, Uplo, Trans, (int) C.rows(), 1, (float) alpha, A, (int) A.size(0), (float) beta, C, (int) C.size(0));
         }
 
         OpExecutionerUtil.checkForAny(C);
@@ -181,13 +185,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
-            dsyr2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha, A, A.size(0), B, B.size(0), beta, C, C.size(0));
+            dsyr2k(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), alpha, A, (int) A.size(0), B, (int) B.size(0), beta, C, (int) C.size(0));
         } else {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
-            ssyr2k(Order, Uplo, Trans, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0), (float) beta,
-                            C, C.size(0));
+            ssyr2k(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), (float) alpha, A, (int) A.size(0), B, (int) B.size(0), (float) beta, C, (int) C.size(0));
         }
 
         OpExecutionerUtil.checkForAny(C);
@@ -216,12 +221,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B, C);
-            dtrmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha, A, A.size(0), B, B.size(0));
+            dtrmm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), alpha, A, (int) A.size(0), B, (int) B.size(0));
         } else {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B, C);
-            strmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0));
+            strmm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), (float) alpha, A, (int) A.size(0), B, (int) B.size(0));
         }
 
         OpExecutionerUtil.checkForAny(C);
@@ -249,12 +256,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B);
 
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, A, B);
-            dtrsm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha, A, A.size(0), B, B.size(0));
+            dtrsm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), alpha, A, (int) A.size(0), B, (int) B.size(0));
         } else {
             DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, A, B);
-            strsm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0));
+            strsm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), (float) alpha, A, (int) A.size(0), B, (int) B.size(0));
         }
 
         OpExecutionerUtil.checkForAny(B);
@@ -314,12 +323,13 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void hemm(char Order, char Side, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
                     IComplexNumber beta, IComplexNDArray C) {
+
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zhemm(Order, Side, Uplo, B.rows(), B.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0),
-                            beta.asDouble(), C, C.size(0));
+            zhemm(Order, Side, Uplo, (int) B.rows(), (int) B.columns(), alpha.asDouble(), A, (int) A.size(0), B, (int) B.size(0), beta.asDouble(), C, (int) C.size(0));
         else
-            chemm(Order, Side, Uplo, B.rows(), B.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(),
-                            C, C.size(0));
+            chemm(Order, Side, Uplo, (int) B.rows(), (int) B.columns(), alpha.asFloat(), A, (int) A.size(0), B, (int) B.size(0), beta.asFloat(), C, (int) C.size(0));
     }
 
     /**
@@ -340,12 +350,12 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void herk(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNumber beta,
                     IComplexNDArray C) {
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zherk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), beta.asDouble(), C,
-                            C.size(0));
+            zherk(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), alpha.asDouble(), A, (int) A.size(0), beta.asDouble(), C, (int) C.size(0));
         else
-            cherk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), beta.asFloat(), C,
-                            C.size(0));
+            cherk(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), alpha.asFloat(), A, (int) A.size(0), beta.asFloat(), C, (int) C.size(0));
 
     }
 
@@ -363,11 +373,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     public void her2k(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
                     IComplexNumber beta, IComplexNDArray C) {
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zher2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0),
-                            beta.asDouble(), C, C.size(0));
+            zher2k(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), alpha.asDouble(), A, (int) A.size(0), B, (int) B.size(0), beta.asDouble(), C, (int) C.size(0));
         else
-            cher2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0),
-                            beta.asFloat(), C, C.size(0));
+            cher2k(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), alpha.asFloat(), A, (int) A.size(0), B, (int) B.size(0), beta.asFloat(), C, (int) C.size(0));
 
     }
 
@@ -390,12 +398,12 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void symm(char Order, char Side, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
                     IComplexNumber beta, IComplexNDArray C) {
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zsymm(Order, Side, Uplo, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0),
-                            beta.asDouble(), C, C.size(0));
+            zsymm(Order, Side, Uplo, (int) A.rows(), (int) A.columns(), alpha.asDouble(), A, (int) A.size(0), B, (int) B.size(0), beta.asDouble(), C, (int) C.size(0));
         else
-            csymm(Order, Side, Uplo, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(),
-                            C, C.size(0));
+            csymm(Order, Side, Uplo, (int) A.rows(), (int) A.columns(), alpha.asFloat(), A, (int) A.size(0), B, (int) B.size(0), beta.asFloat(), C, (int) C.size(0));
 
     }
 
@@ -417,12 +425,12 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void syrk(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNumber beta,
                     IComplexNDArray C) {
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zsyrk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), beta.asDouble(), C,
-                            C.size(0));
+            zsyrk(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), alpha.asDouble(), A, (int) A.size(0), beta.asDouble(), C, (int) C.size(0));
         else
-            csyrk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), beta.asFloat(), C,
-                            C.size(0));
+            csyrk(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), alpha.asFloat(), A, (int) A.size(0), beta.asFloat(), C, (int) C.size(0));
 
     }
 
@@ -445,12 +453,13 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void syr2k(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B,
                     IComplexNumber beta, IComplexNDArray C) {
+
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zsyr2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0),
-                            beta.asDouble(), C, C.size(0));
+            zsyr2k(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), alpha.asDouble(), A, (int) A.size(0), B, (int) B.size(0), beta.asDouble(), C, (int) C.size(0));
         else
-            csyr2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0),
-                            beta.asFloat(), C, C.size(0));
+            csyr2k(Order, Uplo, Trans, (int) A.rows(), (int) A.columns(), alpha.asFloat(), A, (int) A.size(0), B, (int) B.size(0), beta.asFloat(), C, (int) C.size(0));
 
     }
 
@@ -474,12 +483,12 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A,
                     IComplexNDArray B, IComplexNDArray C) {
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
-            ztrmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0),
-                            C, C.size(0));
+            ztrmm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), alpha.asDouble(), A, (int) A.size(0), B, (int) B.size(0), C, (int) C.size(0));
         else
-            ctrmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0),
-                            C, C.size(0));
+            ctrmm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), alpha.asFloat(), A, (int) A.size(0), B, (int) B.size(0), C, (int) C.size(0));
 
     }
 
@@ -503,10 +512,13 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void trsm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A,
                     IComplexNDArray B) {
+
+        // FIXME: int cast
+
         if (A.data().dataType() == DataBuffer.Type.DOUBLE)
-            ztrsm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), B, B.size(0));
+            ztrsm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), alpha.asDouble(), A, (int) A.size(0), B, (int) B.size(0));
         else
-            ctrsm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0));
+            ctrsm(Order, Side, Uplo, TransA, Diag, (int) A.rows(), (int) A.columns(), alpha.asFloat(), A, (int) A.size(0), B, (int) B.size(0));
 
     }
 

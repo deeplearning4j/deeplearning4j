@@ -43,8 +43,8 @@ public class OpExecutionerUtil {
             return true;
 
         //Strides are same as a zero offset NDArray -> all elements are contiguous (even if not offset 0)
-        int[] shape1 = x.shape();
-        int[] stridesAsInit =
+        long[] shape1 = x.shape();
+        long[] stridesAsInit =
                         (x.ordering() == 'c' ? ArrayUtil.calcStrides(shape1) : ArrayUtil.calcStridesFortran(shape1));
         boolean stridesSameAsInit = Arrays.equals(x.stride(), stridesAsInit);
         return stridesSameAsInit;
@@ -161,16 +161,16 @@ public class OpExecutionerUtil {
         long dl1 = x.data().length();
         long l2 = y.lengthLong();
         long dl2 = y.data().length();
-        int[] strides1 = x.stride();
-        int[] strides2 = y.stride();
+        long[] strides1 = x.stride();
+        long[] strides2 = y.stride();
         boolean equalStrides = Arrays.equals(strides1, strides2);
         if (l1 == dl1 && l2 == dl2 && equalStrides)
             return true;
 
         //Strides match + are same as a zero offset NDArray -> all elements are contiguous (and match)
         if (equalStrides) {
-            int[] shape1 = x.shape();
-            int[] stridesAsInit = (x.ordering() == 'c' ? ArrayUtil.calcStrides(shape1)
+            long[] shape1 = x.shape();
+            long[] stridesAsInit = (x.ordering() == 'c' ? ArrayUtil.calcStrides(shape1)
                             : ArrayUtil.calcStridesFortran(shape1));
             boolean stridesSameAsInit = Arrays.equals(strides1, stridesAsInit);
             return stridesSameAsInit;
@@ -194,17 +194,17 @@ public class OpExecutionerUtil {
         long dl2 = y.data().length();
         long l3 = z.lengthLong();
         long dl3 = z.data().length();
-        int[] strides1 = x.stride();
-        int[] strides2 = y.stride();
-        int[] strides3 = z.stride();
+        long[] strides1 = x.stride();
+        long[] strides2 = y.stride();
+        long[] strides3 = z.stride();
         boolean equalStrides = Arrays.equals(strides1, strides2) && Arrays.equals(strides1, strides3);
         if (l1 == dl1 && l2 == dl2 && l3 == dl3 && equalStrides)
             return true;
 
         //Strides match + are same as a zero offset NDArray -> all elements are contiguous (and match)
         if (equalStrides) {
-            int[] shape1 = x.shape();
-            int[] stridesAsInit = (x.ordering() == 'c' ? ArrayUtil.calcStrides(shape1)
+            long[] shape1 = x.shape();
+            long[] stridesAsInit = (x.ordering() == 'c' ? ArrayUtil.calcStrides(shape1)
                             : ArrayUtil.calcStridesFortran(shape1));
             boolean stridesSameAsInit = Arrays.equals(strides1, stridesAsInit);
             return stridesSameAsInit;
@@ -261,29 +261,31 @@ public class OpExecutionerUtil {
      * Choose tensor dimension for operations with 2 arguments: x=Op(x,y) or similar<br>
      * @see #chooseElementWiseTensorDimension(INDArray)
      */
-    public static int chooseElementWiseTensorDimension(INDArray x, INDArray y) {
+    public static long chooseElementWiseTensorDimension(INDArray x, INDArray y) {
         if (x.isVector())
             return ArrayUtil.argMax(x.shape()); //Execute along the vector
 
         //doing argMin(max(x.stride(i),y.stride(i))) minimizes the maximum
         //separation between elements (helps CPU cache) BUT might result in a huge number
         //of tiny ops - i.e., addi on NDArrays with shape [5,10^6]
-        int opAlongDimensionMinStride = ArrayUtil.argMinOfMax(x.stride(), y.stride());
+        long opAlongDimensionMinStride = ArrayUtil.argMinOfMax(x.stride(), y.stride());
 
         //doing argMax on shape gives us smallest number of largest tensors
         //but may not be optimal in terms of element separation (for CPU cache etc)
         int opAlongDimensionMaxLength = ArrayUtil.argMax(x.shape());
 
+        // FIXME: int cast
+
         //Edge case: shapes with 1s in them can have stride of 1 on the dimensions of length 1
-        if (opAlongDimensionMinStride == opAlongDimensionMaxLength || x.size(opAlongDimensionMinStride) == 1)
+        if (opAlongDimensionMinStride == opAlongDimensionMaxLength || x.size((int)opAlongDimensionMinStride) == 1)
             return opAlongDimensionMaxLength;
 
         //Using a heuristic approach here: basically if we get >= 10x as many tensors using the minimum stride
         //dimension vs. the maximum size dimension, use the maximum size dimension instead
         //The idea is to avoid choosing wrong dimension in cases like shape=[10,10^6]
         //Might be able to do better than this with some additional thought
-        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMinStride));
-        int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMaxLength));
+        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), (int) opAlongDimensionMinStride));
+        int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), (int) opAlongDimensionMaxLength));
         if (nOpsAlongMinStride <= 10 * nOpsAlongMaxLength)
             return opAlongDimensionMinStride;
         else
@@ -297,14 +299,16 @@ public class OpExecutionerUtil {
         if (x.isVector())
             return ArrayUtil.argMax(x.shape());
 
-        int opAlongDimensionMinStride = ArrayUtil.argMinOfMax(x.stride(), y.stride(), z.stride());
+        // FIXME: int cast
+
+        int opAlongDimensionMinStride = (int) ArrayUtil.argMinOfMax(x.stride(), y.stride(), z.stride());
 
         int opAlongDimensionMaxLength = ArrayUtil.argMax(x.shape());
         //Edge case: shapes with 1s in them can have stride of 1 on the dimensions of length 1
-        if (opAlongDimensionMinStride == opAlongDimensionMaxLength || x.size(opAlongDimensionMinStride) == 1)
+        if (opAlongDimensionMinStride == opAlongDimensionMaxLength || x.size((int) opAlongDimensionMinStride) == 1)
             return opAlongDimensionMaxLength;
 
-        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMinStride));
+        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), (int) opAlongDimensionMinStride));
         int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMaxLength));
         if (nOpsAlongMinStride <= 10 * nOpsAlongMaxLength)
             return opAlongDimensionMinStride;
@@ -320,10 +324,10 @@ public class OpExecutionerUtil {
      * be in increasing order
      */
     public static Tensor1DStats get1DTensorStats(INDArray array, int... dimension) {
-        int tensorLength = array.size(dimension[0]);
+        long tensorLength = array.size(dimension[0]);
 
         //As per tensorssAlongDimension:
-        int numTensors = array.tensorssAlongDimension(dimension);
+        long numTensors = array.tensorssAlongDimension(dimension);
 
         //First tensor always starts with the first element in the NDArray, regardless of dimension
         long firstTensorOffset = array.offset();

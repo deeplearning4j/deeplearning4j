@@ -116,6 +116,13 @@ public class DefaultRandom implements Random, RandomGenerator {
         return getRandomGenerator().nextGaussian();
     }
 
+
+
+    @Override
+    public INDArray nextGaussian(long[] shape) {
+        return nextGaussian(Nd4j.order(), shape);
+    }
+
     @Override
     public INDArray nextGaussian(int[] shape) {
         return nextGaussian(Nd4j.order(), shape);
@@ -123,11 +130,16 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public INDArray nextGaussian(char order, int[] shape) {
-        int length = ArrayUtil.prod(shape);
+        return nextGaussian(order, ArrayUtil.toLongArray(shape));
+    }
+
+    @Override
+    public INDArray nextGaussian(char order, long[] shape) {
+        long length = ArrayUtil.prodLong(shape);
         INDArray ret = Nd4j.create(shape, order);
 
         DataBuffer data = ret.data();
-        for (int i = 0; i < length; i++) {
+        for (long i = 0; i < length; i++) {
             data.put(i, nextGaussian());
         }
 
@@ -135,21 +147,37 @@ public class DefaultRandom implements Random, RandomGenerator {
     }
 
     @Override
-    public INDArray nextDouble(int[] shape) {
+    public INDArray nextDouble(long[] shape) {
         return nextDouble(Nd4j.order(), shape);
     }
 
     @Override
+    public INDArray nextDouble(int[] shape) {
+        return nextDouble(Nd4j.order(), shape);
+    }
+
+
+    @Override
     public INDArray nextDouble(char order, int[] shape) {
-        int length = ArrayUtil.prod(shape);
+        return nextDouble(order, ArrayUtil.toLongArray(shape));
+    }
+
+    @Override
+    public INDArray nextDouble(char order, long[] shape) {
+        long length = ArrayUtil.prodLong(shape);
         INDArray ret = Nd4j.create(shape, order);
 
         DataBuffer data = ret.data();
-        for (int i = 0; i < length; i++) {
+        for (long i = 0; i < length; i++) {
             data.put(i, nextDouble());
         }
 
         return ret;
+    }
+
+    @Override
+    public INDArray nextFloat(long[] shape) {
+        return nextFloat(Nd4j.order(), shape);
     }
 
     @Override
@@ -159,11 +187,16 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public INDArray nextFloat(char order, int[] shape) {
-        int length = ArrayUtil.prod(shape);
+        return nextFloat(order, ArrayUtil.toLongArray(shape));
+    }
+
+    @Override
+    public INDArray nextFloat(char order, long[] shape) {
+        long length = ArrayUtil.prodLong(shape);
         INDArray ret = Nd4j.create(shape, order);
 
         DataBuffer data = ret.data();
-        for (int i = 0; i < length; i++) {
+        for (long i = 0; i < length; i++) {
             data.put(i, nextFloat());
         }
 
@@ -172,6 +205,11 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public INDArray nextInt(int[] shape) {
+        return nextInt(ArrayUtil.toLongArray(shape));
+    }
+
+    @Override
+    public INDArray nextInt(long[] shape) {
         int length = ArrayUtil.prod(shape);
         INDArray ret = Nd4j.create(shape);
 
@@ -185,6 +223,12 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public INDArray nextInt(int n, int[] shape) {
+        return nextInt(n, ArrayUtil.toLongArray(shape));
+    }
+
+
+    @Override
+    public INDArray nextInt(int n, long[] shape) {
         int length = ArrayUtil.prod(shape);
         INDArray ret = Nd4j.create(shape);
 

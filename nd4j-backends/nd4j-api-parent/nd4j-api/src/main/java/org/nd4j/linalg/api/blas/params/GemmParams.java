@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.blas.params;
 
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -43,6 +44,14 @@ public @Data class GemmParams {
                             + Arrays.toString(c.shape()));
         }
 
+        if (a.columns() > Integer.MAX_VALUE || a.rows() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        if (b.columns() > Integer.MAX_VALUE || b.rows() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        if (c.columns() > Integer.MAX_VALUE || c.rows() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
 
 
         if (Nd4j.allowsSpecifyOrdering()) {
@@ -56,18 +65,18 @@ public @Data class GemmParams {
                 this.b = copyIfNeccessary(b);
                 this.c = c;
                 if (ordering == 'c') {
-                    this.m = c.columns();
-                    this.n = c.rows();
-                    this.k = a.columns();
+                    this.m = (int) c.columns();
+                    this.n = (int) c.rows();
+                    this.k = (int) a.columns();
                 } else {
-                    this.m = c.rows();
-                    this.n = c.columns();
-                    this.k = b.columns();
+                    this.m = (int) c.rows();
+                    this.n = (int) c.columns();
+                    this.k = (int) b.columns();
                 }
 
-                this.lda = a.rows();
-                this.ldb = b.rows();
-                this.ldc = c.rows();
+                this.lda = (int) a.rows();
+                this.ldb = (int) b.rows();
+                this.ldc = (int) c.rows();
 
                 this.transA = 'N';
                 this.transB = 'N';
@@ -79,15 +88,15 @@ public @Data class GemmParams {
                 this.b = b.dup(a.ordering());
                 this.c = c;
 
-                this.m = c.rows();
-                this.n = c.columns();
-                this.k = a.columns();
+                this.m = (int) c.rows();
+                this.n = (int) c.columns();
+                this.k = (int) a.columns();
 
                 this.ordering = a.ordering();
 
-                this.lda = a.rows();
-                this.ldb = b.rows();
-                this.ldc = c.rows();
+                this.lda = (int) a.rows();
+                this.ldb = (int) b.rows();
+                this.ldc = (int) c.rows();
 
                 this.transA = 'N';
                 this.transB = 'N';
@@ -102,14 +111,14 @@ public @Data class GemmParams {
             this.b = copyIfNeccessary(b);
             this.c = c;
 
-            this.m = c.rows();
-            this.n = c.columns();
-            this.k = a.columns();
+            this.m = (int) c.rows();
+            this.n = (int) c.columns();
+            this.k = (int) a.columns();
 
             //always fortran ordering
-            this.lda = (this.a.ordering() == 'f' ? this.a.rows() : this.a.columns()); //Leading dimension of a, as declared. But swap if 'c' order
-            this.ldb = (this.b.ordering() == 'f' ? this.b.rows() : this.b.columns()); //Leading dimension of b, as declared. But swap if 'c' order
-            this.ldc = c.rows();
+            this.lda = (int) (this.a.ordering() == 'f' ? this.a.rows() : this.a.columns()); //Leading dimension of a, as declared. But swap if 'c' order
+            this.ldb = (int) (this.b.ordering() == 'f' ? this.b.rows() : this.b.columns()); //Leading dimension of b, as declared. But swap if 'c' order
+            this.ldc = (int) c.rows();
 
             this.transA = (this.a.ordering() == 'c' ? 'T' : 'N');
             this.transB = (this.b.ordering() == 'c' ? 'T' : 'N');

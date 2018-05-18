@@ -47,7 +47,7 @@ public class FloorModOp extends BaseTransformOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public FloorModOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public FloorModOp(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 

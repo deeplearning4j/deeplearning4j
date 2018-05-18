@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.shape;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 
 /**
@@ -7,14 +9,14 @@ import java.util.Arrays;
  */
 public class ShapeDescriptor {
 
-    private char order;
-    private long offset;
-    private int ews;
+    @Getter private char order;
+    @Getter private long offset;
+    @Getter private int ews;
     private long hashShape = 0;
     private long hashStride = 0;
 
-    private int[] shape;
-    private int[] stride;
+    @Getter private int[] shape;
+    @Getter private int[] stride;
 
     public ShapeDescriptor(int[] shape, int[] stride, long offset, int ews, char order) {
         /*

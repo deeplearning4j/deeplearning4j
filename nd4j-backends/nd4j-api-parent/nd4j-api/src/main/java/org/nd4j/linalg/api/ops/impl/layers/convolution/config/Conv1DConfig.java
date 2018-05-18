@@ -13,7 +13,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Conv1DConfig extends BaseConvolutionConfig  {
-    private int k, s, p;
+    private long k, s, p;
     private boolean isSameMode;
     @Builder.Default
     private String dataFormat = "NWHC";

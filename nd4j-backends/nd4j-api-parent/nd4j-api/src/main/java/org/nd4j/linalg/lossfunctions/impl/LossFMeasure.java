@@ -87,7 +87,7 @@ public class LossFMeasure extends DifferentialFunction implements ILossFunction 
                     boolean average) {
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
-        int n = labels.size(1);
+        long n = labels.size(1);
         if (n != 1 && n != 2) {
             throw new UnsupportedOperationException(
                             "For binary classification: expect output size of 1 or 2. Got: " + n);

@@ -20,6 +20,7 @@
 package org.nd4j.linalg.util;
 
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.base.Preconditions;
@@ -47,6 +48,17 @@ public class ArrayUtil {
      * @return
      */
     public static boolean containsAnyNegative(int[] arr) {
+        if(arr == null)
+            return false;
+
+        for(int i = 0; i < arr.length; i++) {
+            if(arr[i] < 0)
+                return true;
+        }
+        return false;
+    }
+
+    public static boolean containsAnyNegative(long[] arr) {
         if(arr == null)
             return false;
 
@@ -133,6 +145,12 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static long[] nTimes(long n, long toReplicate) {
+        // FIXME: int cast
+        val ret = new long[(int) n];
+        Arrays.fill(ret, toReplicate);
+        return ret;
+    }
 
     /**
      * Returns true if all of the elements in the
@@ -195,6 +213,14 @@ public class ArrayUtil {
     }
 
     public static short[] toHalfs(int[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = fromFloat((float) data[i]);
+        }
+        return ret;
+    }
+
+    public static short[] toHalfs(long[] data) {
         short[] ret = new short[data.length];
         for (int i = 0; i < ret.length; i++) {
             ret[i] = fromFloat((float) data[i]);
@@ -379,12 +405,12 @@ public class ArrayUtil {
      *            to calculate the sum for
      * @return the product of this array
      */
-    public static long prodLong(List<Integer> mult) {
+    public static long prodLong(List<? extends Number> mult) {
         if (mult.size() < 1)
             return 0;
         long ret = 1;
         for (int i = 0; i < mult.size(); i++)
-            ret *= mult.get(i);
+            ret *= mult.get(i).longValue();
         return ret;
     }
 
@@ -802,6 +828,13 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static long[] toArrayLong(List<Long> list) {
+        long[] ret = new long[list.size()];
+        for (int i = 0; i < list.size(); i++)
+            ret[i] = list.get(i);
+        return ret;
+    }
+
 
     public static double[] toArrayDouble(List<Double> list) {
         double[] ret = new double[list.size()];
@@ -903,6 +936,13 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static double[] toDoubles(long[] ints) {
+        double[] ret = new double[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (double) ints[i];
+        return ret;
+    }
+
     public static double[] toDoubles(float[] ints) {
         double[] ret = new double[ints.length];
         for (int i = 0; i < ints.length; i++)
@@ -920,6 +960,13 @@ public class ArrayUtil {
 
 
     public static float[] toFloats(int[] ints) {
+        float[] ret = new float[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (float) ints[i];
+        return ret;
+    }
+
+    public static float[] toFloats(long[] ints) {
         float[] ret = new float[ints.length];
         for (int i = 0; i < ints.length; i++)
             ret[i] = (float) ints[i];
@@ -972,6 +1019,28 @@ public class ArrayUtil {
         return ret;
     }
 
+    /**
+     * Return a copy of this array with only the
+     * given index(es) remaining
+     *
+     * @param data  the data to copy
+     * @param index the index of the item to remove
+     * @return the new array with the omitted
+     * item
+     */
+    public static long[] keep(long[] data, int... index) {
+        if (index.length == data.length)
+            return data;
+
+        long[] ret = new long[index.length];
+        int count = 0;
+        for (int i = 0; i < data.length; i++)
+            if (Ints.contains(index, i))
+                ret[count++] = data[i];
+
+        return ret;
+    }
+
 
     /**
      * Return a copy of this array with the
@@ -1009,6 +1078,32 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static long[] removeIndex(long[] data, int... index) {
+        if (index.length >= data.length) {
+            throw new IllegalStateException("Illegal remove: indexes.length > data.length (index.length="
+                    + index.length + ", data.length=" + data.length + ")");
+        }
+        int offset = 0;
+        /*
+            workaround for non-existent indexes (such as Integer.MAX_VALUE)
+
+
+        for (int i = 0; i < index.length; i ++) {
+            if (index[i] >= data.length || index[i] < 0) offset++;
+        }
+        */
+
+        long[] ret = new long[data.length - index.length + offset];
+        int count = 0;
+        for (int i = 0; i < data.length; i++)
+            if (!Ints.contains(index, i)) {
+                ret[count++] = data[i];
+            }
+
+        return ret;
+    }
+
+
 
     /**
      * Zip 2 arrays in to:
@@ -1033,7 +1128,10 @@ public class ArrayUtil {
      * @param axes the axes to do the multiply
      * @return the shape for tensor matrix multiply
      */
-    public static int[] getTensorMmulShape(int[] aShape, int[] bShape, int[][] axes) {
+    public static long[] getTensorMmulShape(long[] aShape, long[] bShape, int[][] axes) {
+        // FIXME: int cast
+
+
         int validationLength = Math.min(axes[0].length, axes[1].length);
         for (int i = 0; i < validationLength; i++) {
             if (aShape[axes[0][i]] != bShape[axes[1][i]])
@@ -1069,13 +1167,13 @@ public class ArrayUtil {
 
         //if listA and listB are empty these donot initialize.
         //so initializing with {1} which will then get overriden if not empty
-        int[] oldShapeA;
+        long[] oldShapeA;
         if (listA.size() == 0) {
-            oldShapeA = new int[] {1};
+            oldShapeA = new long[] {1};
         } else {
-            oldShapeA = Ints.toArray(listA);
+            oldShapeA = Longs.toArray(listA);
             for (int i = 0; i < oldShapeA.length; i++)
-                oldShapeA[i] = aShape[oldShapeA[i]];
+                oldShapeA[i] = aShape[(int) oldShapeA[i]];
         }
 
         int n3 = 1;
@@ -1085,17 +1183,17 @@ public class ArrayUtil {
         }
 
 
-        int[] oldShapeB;
+        long[] oldShapeB;
         if (listB.size() == 0) {
-            oldShapeB = new int[] {1};
+            oldShapeB = new long[] {1};
         } else {
-            oldShapeB = Ints.toArray(listB);
+            oldShapeB = Longs.toArray(listB);
             for (int i = 0; i < oldShapeB.length; i++)
-                oldShapeB[i] = bShape[oldShapeB[i]];
+                oldShapeB[i] = bShape[(int) oldShapeB[i]];
         }
 
 
-        int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
+        long[] aPlusB = Longs.concat(oldShapeA, oldShapeB);
         return aPlusB;
     }
 
@@ -1110,6 +1208,16 @@ public class ArrayUtil {
      */
     public static int[] permute(int[] shape, int[] dimensions) {
         int[] ret = new int[shape.length];
+        for (int i = 0; i < shape.length; i++) {
+            ret[i] = shape[dimensions[i]];
+        }
+
+        return ret;
+    }
+
+
+    public static long[] permute(long[] shape, int[] dimensions) {
+        val ret = new long[shape.length];
         for (int i = 0; i < shape.length; i++) {
             ret[i] = shape[dimensions[i]];
         }
@@ -1311,6 +1419,24 @@ public class ArrayUtil {
         return result;
     }
 
+    public static long[] removeIndex(long[] data, int index) {
+        if (data == null)
+            return null;
+
+        if (index >= data.length)
+            throw new IllegalArgumentException("Unable to remove index " + index + " was >= data.length");
+        if (data.length < 1)
+            return data;
+        if (index < 0)
+            return data;
+
+        int len = data.length;
+        long[] result = new long[len - 1];
+        System.arraycopy(data, 0, result, 0, index);
+        System.arraycopy(data, index + 1, result, index, len - index - 1);
+        return result;
+    }
+
 
     /**
      * Create a copy of the given array
@@ -1397,10 +1523,39 @@ public class ArrayUtil {
     /**
      * Computes the standard packed array strides for a given shape.
      *
+     * @param shape    the shape of a matrix:
+     * @param startNum the start number for the strides
+     * @return the strides for a matrix of n dimensions
+     */
+    public static long[] calcStridesFortran(long[] shape, int startNum) {
+        if (shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
+            long[] ret = new long[2];
+            Arrays.fill(ret, startNum);
+            return ret;
+        }
+
+        int dimensions = shape.length;
+        long[] stride = new long[dimensions];
+        int st = startNum;
+        for (int j = 0; j < stride.length; j++) {
+            stride[j] = st;
+            st *= shape[j];
+        }
+
+        return stride;
+    }
+
+    /**
+     * Computes the standard packed array strides for a given shape.
+     *
      * @param shape the shape of a matrix:
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStridesFortran(int[] shape) {
+        return calcStridesFortran(shape, 1);
+    }
+
+    public static long[] calcStridesFortran(long[] shape) {
         return calcStridesFortran(shape, 1);
     }
 
@@ -1429,7 +1584,32 @@ public class ArrayUtil {
             st *= shape[j];
         }
 
+        return stride;
+    }
 
+    /**
+     * Computes the standard packed array strides for a given shape.
+     *
+     * @param shape      the shape of a matrix:
+     * @param startValue the startValue for the strides
+     * @return the strides for a matrix of n dimensions
+     */
+    public static long[] calcStrides(long[] shape, int startValue) {
+        if (shape.length == 2 && (shape[0] == 1 || shape[1] == 1)) {
+            long[] ret = new long[2];
+            Arrays.fill(ret, startValue);
+            return ret;
+        }
+
+
+        int dimensions = shape.length;
+        long[] stride = new long[dimensions];
+
+        int st = startValue;
+        for (int j = dimensions - 1; j >= 0; j--) {
+            stride[j] = st;
+            st *= shape[j];
+        }
 
         return stride;
     }
@@ -1507,6 +1687,10 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStrides(int[] shape) {
+        return calcStrides(shape, 1);
+    }
+
+    public static long[] calcStrides(long[] shape) {
         return calcStrides(shape, 1);
     }
 
@@ -1616,9 +1800,24 @@ public class ArrayUtil {
             e[i] = e[e.length - i - 1];
             e[e.length - i - 1] = temp;
         }
-
     }
 
+    public static void reverse(long[] e) {
+        for (int i = 0; i <= e.length / 2; i++) {
+            long temp = e[i];
+            e[i] = e[e.length - i - 1];
+            e[e.length - i - 1] = temp;
+        }
+    }
+
+
+    public static List<double[]> zerosMatrix(long... dimensions) {
+        List<double[]> ret = new ArrayList<>();
+        for (int i = 0; i < dimensions.length; i++) {
+            ret.add(new double[(int) dimensions[i]]);
+        }
+        return ret;
+    }
 
     public static List<double[]> zerosMatrix(int... dimensions) {
         List<double[]> ret = new ArrayList<>();
@@ -1929,6 +2128,28 @@ public class ArrayUtil {
         return ret;
     }
 
+    /**
+     * Combines a apply of long arrays in to one flat long array
+     *
+     * @param ints the int arrays to combineDouble
+     * @return one combined int array
+     */
+    public static long[] combine(long[]... ints) {
+        int length = 0;
+        for (int i = 0; i < ints.length; i++)
+            length += ints[i].length;
+        long[] ret = new long[length];
+        int count = 0;
+        for (long[] i : ints) {
+            for (int j = 0; j < i.length; j++) {
+                ret[count++] = i[j];
+            }
+        }
+
+        return ret;
+    }
+
+
     public static <E> E[] combine(E[]... arrs) {
         int length = 0;
         for (int i = 0; i < arrs.length; i++)
@@ -1953,6 +2174,13 @@ public class ArrayUtil {
     }
 
     public static double[] toDouble(int[] data) {
+        double[] ret = new double[data.length];
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = data[i];
+        return ret;
+    }
+
+    public static double[] toDouble(long[] data) {
         double[] ret = new double[data.length];
         for (int i = 0; i < ret.length; i++)
             ret[i] = data[i];
@@ -2206,6 +2434,43 @@ public class ArrayUtil {
         return result;
     }
 
+    public static long[] buildInterleavedVector(Random rng, long length) {
+        // FIXME: int cast
+        long[] result = new long[(int) length];
+
+        List<Integer> indexes = new ArrayList<>();
+        List<Integer> odds = new ArrayList<>();
+
+        // we add odd indexes only to list
+        for (int i = 1; i < result.length; i += 2) {
+            indexes.add(i);
+            odds.add(i - 1);
+        }
+
+        Collections.shuffle(indexes, rng);
+
+        // now all even elements will be interleaved with odd elements
+        for (int i = 0; i < result.length; i++) {
+            if (i % 2 == 0 && indexes.size() >= 1) {
+                int idx = indexes.get(0);
+                indexes.remove(0);
+                result[i] = idx;
+            } else
+                result[i] = -1;
+        }
+
+        // for odd tad numbers, we add special random clause for last element
+        if (length % 2 != 0) {
+            int rndClause = odds.get(rng.nextInt(odds.size()));
+            long tmp = result[rndClause];
+            result[rndClause] = result[result.length - 1];
+            result[result.length - 1] = tmp;
+        }
+
+
+        return result;
+    }
+
     protected static <T extends Object> void swap(List<T> objects, int idxA, int idxB) {
         T tmpA = objects.get(idxA);
         T tmpB = objects.get(idxB);
@@ -2234,12 +2499,43 @@ public class ArrayUtil {
         return minIdx;
     }
 
+    public static long argMinOfMax(long[] first, long[] second) {
+        long minIdx = 0;
+        long maxAtMinIdx = Math.max(first[0], second[0]);
+        for (int i = 1; i < first.length; i++) {
+            long maxAtIndex = Math.max(first[i], second[i]);
+            if (maxAtMinIdx > maxAtIndex) {
+                maxAtMinIdx = maxAtIndex;
+                minIdx = i;
+            }
+        }
+        return minIdx;
+    }
+
     public static int argMinOfMax(int[]... arrays) {
         int minIdx = 0;
         int maxAtMinIdx = Integer.MAX_VALUE;
 
         for (int i = 0; i < arrays[0].length; i++) {
             int maxAtIndex = Integer.MIN_VALUE;
+            for (int j = 0; j < arrays.length; j++) {
+                maxAtIndex = Math.max(maxAtIndex, arrays[j][i]);
+            }
+
+            if (maxAtMinIdx > maxAtIndex) {
+                maxAtMinIdx = maxAtIndex;
+                minIdx = i;
+            }
+        }
+        return minIdx;
+    }
+
+    public static long argMinOfMax(long[]... arrays) {
+        int minIdx = 0;
+        long maxAtMinIdx = Long.MAX_VALUE;
+
+        for (int i = 0; i < arrays[0].length; i++) {
+            long maxAtIndex = Long.MIN_VALUE;
             for (int j = 0; j < arrays.length; j++) {
                 maxAtIndex = Math.max(maxAtIndex, arrays[j][i]);
             }

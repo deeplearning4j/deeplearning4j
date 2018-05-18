@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.Serializable;
 
@@ -51,8 +52,11 @@ public class AdaGrad implements Serializable {
         return inputSize;
     }
 
-
     public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
+        setStateViewArray(viewArray, ArrayUtil.toLongArray(gradientShape), gradientOrder, initialize);
+    }
+
+    public void setStateViewArray(INDArray viewArray, long[] gradientShape, char gradientOrder, boolean initialize) {
         if (!viewArray.isRowVector() && !(viewArray.rank() == 2 && viewArray.columns() == 1 && viewArray.rows() == 1))
             throw new IllegalArgumentException("Invalid input: expect row vector input");
         if (initialize)

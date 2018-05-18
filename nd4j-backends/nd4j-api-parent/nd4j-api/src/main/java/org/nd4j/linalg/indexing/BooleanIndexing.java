@@ -102,7 +102,7 @@ public class BooleanIndexing {
             final AtomicBoolean a = new AtomicBoolean(ret);
             Shape.iterate(n, new CoordinateFunction() {
                 @Override
-                public void process(int[]... coord) {
+                public void process(long[]... coord) {
                     if (a.get())
                         a.compareAndSet(true, a.get() && cond.apply(n.getDouble(coord[0])));
                 }
@@ -126,7 +126,7 @@ public class BooleanIndexing {
 
         MatchCondition op = new MatchCondition(n, condition);
         INDArray arr = Nd4j.getExecutioner().exec(op, dimension);
-        boolean[] result = new boolean[arr.length()];
+        boolean[] result = new boolean[(int) arr.length()];
 
         long tadLength = Shape.getTADLength(n.shape(), dimension);
 
@@ -155,7 +155,10 @@ public class BooleanIndexing {
 
         MatchCondition op = new MatchCondition(n, condition);
         INDArray arr = Nd4j.getExecutioner().exec(op, dimension);
-        boolean[] result = new boolean[arr.length()];
+
+        // FIXME: int cast
+
+        boolean[] result = new boolean[(int) arr.length()];
 
         for (int i = 0; i < arr.length(); i++) {
             if (arr.getDouble(i) > 0)
@@ -188,7 +191,7 @@ public class BooleanIndexing {
             final AtomicBoolean a = new AtomicBoolean(ret);
             Shape.iterate(n, new CoordinateFunction() {
                 @Override
-                public void process(int[]... coord) {
+                public void process(long[]... coord) {
                     if (!a.get())
                         a.compareAndSet(false, a.get() || cond.apply(n.getDouble(coord[0])));
                 }
@@ -212,7 +215,7 @@ public class BooleanIndexing {
 
         Shape.iterate(to, new CoordinateFunction() {
             @Override
-            public void process(int[]... coord) {
+            public void process(long[]... coord) {
                 if (condition.apply(to.getDouble(coord[0])))
                     to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).doubleValue());
 
@@ -245,7 +248,7 @@ public class BooleanIndexing {
 
             Shape.iterate(to, new CoordinateFunction() {
                 @Override
-                public void process(int[]... coord) {
+                public void process(long[]... coord) {
                     if (condition.apply(to.getDouble(coord[0])))
                         to.putScalar(coord[0], dynamic.apply(to.getDouble(coord[0])).doubleValue());
 
@@ -393,7 +396,7 @@ public class BooleanIndexing {
                                   final Function<Number, Number> alternativeFunction) {
         Shape.iterate(to, new CoordinateFunction() {
             @Override
-            public void process(int[]... coord) {
+            public void process(long[]... coord) {
                 if (condition.apply(to.getDouble(coord[0]))) {
                     to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).doubleValue());
                 } else {

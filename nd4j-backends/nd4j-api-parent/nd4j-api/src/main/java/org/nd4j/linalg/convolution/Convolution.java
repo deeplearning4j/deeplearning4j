@@ -82,7 +82,7 @@ public class Convolution {
         if (col.rank() != 6)
             throw new IllegalArgumentException("col2im input array must be rank 6");
 
-        INDArray output = Nd4j.create(new int[]{col.size(0), col.size(1), h, w});
+        INDArray output = Nd4j.create(new long[]{col.size(0), col.size(1), h, w});
 
         Col2Im col2Im = Col2Im.builder()
                 .inputArrays(new  INDArray[]{col})
@@ -161,11 +161,12 @@ public class Convolution {
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
         Nd4j.getCompressor().autoDecompress(img);
         //Input: NCHW format
-        int outH = outputSize(img.size(2), kh, sy, ph, dh, isSameMode);
-        int outW = outputSize(img.size(3), kw, sx, pw, dw, isSameMode);
+        // FIXME: int cast
+        int outH = outputSize((int) img.size(2), kh, sy, ph, dh, isSameMode);
+        int outW = outputSize((int) img.size(3), kw, sx, pw, dw, isSameMode);
 
         //[miniBatch,depth,kH,kW,outH,outW]
-        INDArray out = Nd4j.create(new int[]{img.size(0), img.size(1), kh, kw, outH, outW}, 'c');
+        INDArray out = Nd4j.create(new long[]{img.size(0), img.size(1), kh, kw, outH, outW}, 'c');
 
         return im2col(img, kh, kw, sy, sx, ph, pw, dh, dw, isSameMode, out);
     }
@@ -282,13 +283,14 @@ public class Convolution {
             int oH = (int) Math.ceil(img.size(2) * 1.f / sy);
             int oW = (int) Math.ceil(img.size(3) * 1.f / sx);
 
-            output = Nd4j.createUninitialized(new int[] {img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
+            output = Nd4j.createUninitialized(new long[] {img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
         }
         else {
-            int oH = (img.size(2) - (kh + (kh-1)*(1-1)) + 2* ph)/sy + 1;
-            int oW = (img.size(3) - (kw + (kw-1)*(1-1)) + 2*pw)/sx + 1;
+            // FIXME: int cast
+            int oH = ((int) img.size(2) - (kh + (kh-1)*(1-1)) + 2* ph)/sy + 1;
+            int oW = ((int) img.size(3) - (kw + (kw-1)*(1-1)) + 2*pw)/sx + 1;
 
-            output = Nd4j.createUninitialized(new int[] {img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
+            output = Nd4j.createUninitialized(new long[] {img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
         }
 
         Im2col im2col =  Im2col.builder()

@@ -121,8 +121,8 @@ public class PCA {
      * @param count The number of samples to generate
      * @return A matrix of size <i>count</i> rows by <i>N</i> columns
      */
-    public INDArray generateGaussianSamples(int count) {
-        INDArray samples = Nd4j.randn(count, eigenvalues.columns());
+    public INDArray generateGaussianSamples(long count) {
+        INDArray samples = Nd4j.randn(new long[] {count, eigenvalues.columns()});
         INDArray factors = Transforms.pow(eigenvalues, -0.5, true);
         samples.muliRowVector(factors);
         return Nd4j.tensorMmul(eigenvectors, samples, new int[][] {{1}, {1}}).transposei().addiRowVector(mean);
@@ -180,8 +180,8 @@ public class PCA {
             A.subiRowVector(mean);
         }
 
-        int m = A.rows();
-        int n = A.columns();
+        long m = A.rows();
+        long n = A.columns();
 
         // The prepare SVD results, we'll decomp A to UxSxV'
         INDArray s = Nd4j.create(m < n ? m : n);
@@ -247,8 +247,8 @@ public class PCA {
             A.subiRowVector(mean);
         }
 
-        int m = A.rows();
-        int n = A.columns();
+        long m = A.rows();
+        long n = A.columns();
 
         // The prepare SVD results, we'll decomp A to UxSxV'
         INDArray s = Nd4j.create(m < n ? m : n);
@@ -330,8 +330,8 @@ public class PCA {
      * @return INDArray[2], an N x N covariance matrix is element 0, and the average values is element 1.
      */
     public static INDArray[] covarianceMatrix(INDArray in) {
-        int dlength = in.rows();
-        int vlength = in.columns();
+        long dlength = in.rows();
+        long vlength = in.columns();
 
         INDArray sum = Nd4j.create(vlength);
         INDArray product = Nd4j.create(vlength, vlength);

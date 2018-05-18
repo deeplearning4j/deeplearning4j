@@ -26,8 +26,10 @@ import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.LongBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.jcublas.buffer.*;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
@@ -74,8 +76,11 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             return new CudaIntDataBuffer(underlyingBuffer, length, offset);
         } else if (underlyingBuffer.dataType() == DataBuffer.Type.HALF) {
             return new CudaHalfDataBuffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataBuffer.Type.LONG) {
+            return new CudaLongDataBuffer(underlyingBuffer, length, offset);
         }
-        return null;
+
+        throw new ND4JIllegalStateException("Unknown data buffer type: " + underlyingBuffer.dataType().toString());
     }
 
     /**
@@ -156,6 +161,12 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createDouble(long offset, ByteBuffer buffer, int length) {
         return new CudaDoubleDataBuffer(buffer, length, offset);
+    }
+
+
+    @Override
+    public DataBuffer createLong(ByteBuffer buffer, int length) {
+        return new CudaLongDataBuffer(buffer, length);
     }
 
     @Override
@@ -454,6 +465,8 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer) {
         switch (type) {
+            case LONG:
+                return new CudaLongDataBuffer(pointer, indexer, length);
             case INT:
                 return new CudaIntDataBuffer(pointer, indexer, length);
             case DOUBLE:
@@ -464,7 +477,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return new CudaHalfDataBuffer(pointer, indexer, length);
         }
 
-        throw new IllegalArgumentException("Illegal opType " + type);
+        throw new IllegalArgumentException("Illegal dtype " + type);
     }
 
     /**
@@ -788,4 +801,32 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     public Class<? extends DataBuffer> doubleBufferClass() {
         return CudaDoubleDataBuffer.class;
     }
+
+
+
+    @Override
+    public DataBuffer createLong(long[] data) {
+        return createLong(data, true);
+    }
+
+    @Override
+    public DataBuffer createLong(long[] data, boolean copy) {
+        return new CudaLongDataBuffer(data, copy);
+    }
+
+    @Override
+    public DataBuffer createLong(long length) {
+        return createLong(length, true);
+    }
+
+    @Override
+    public DataBuffer createLong(long length, boolean initialize) {
+        return new CudaLongDataBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createLong(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaLongDataBuffer(length, initialize, workspace);
+    }
+
 }

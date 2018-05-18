@@ -20,10 +20,13 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.NDArrayUtil;
 
@@ -39,7 +42,7 @@ import java.util.List;
 @Slf4j
 public class NDArrayIndex implements INDArrayIndex {
 
-    private int[] indices = new int[1];
+    private long[] indices = new long[1];
     private boolean isInterval = false;
     private static NDArrayIndexEmpty EMPTY = new NDArrayIndexEmpty();
     private static NewAxis NEW_AXIS = new NewAxis();
@@ -51,7 +54,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @return the point index based
      * on the specified point
      */
-    public static INDArrayIndex point(int point) {
+    public static INDArrayIndex point(long point) {
         return new PointIndex(point);
     }
 
@@ -60,7 +63,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param shape the shape ot convert to indexes
      * @return the indexes for the given shape
      */
-    public static INDArrayIndex[] indexesFor(int... shape) {
+    public static INDArrayIndex[] indexesFor(long... shape) {
         INDArrayIndex[] ret = new INDArrayIndex[shape.length];
         for (int i = 0; i < shape.length; i++) {
             ret[i] = NDArrayIndex.point(shape[i]);
@@ -79,7 +82,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param offsets the offsets for each dimension
      * @return the offset that should be used for indexing
      */
-    public static int offset(INDArray arr, int... offsets) {
+    public static long offset(INDArray arr, long... offsets) {
         return offset(arr.stride(), offsets);
     }
 
@@ -107,13 +110,13 @@ public class NDArrayIndex implements INDArrayIndex {
     public static void updateForNewAxes(INDArray arr, INDArrayIndex... indexes) {
         int numNewAxes = NDArrayIndex.numNewAxis(indexes);
         if (numNewAxes >= 1 && (indexes[0].length() > 1 || indexes[0] instanceof NDArrayIndexAll)) {
-            List<Integer> newShape = new ArrayList<>();
-            List<Integer> newStrides = new ArrayList<>();
+            List<Long> newShape = new ArrayList<>();
+            List<Long> newStrides = new ArrayList<>();
             int currDimension = 0;
             for (int i = 0; i < indexes.length; i++) {
                 if (indexes[i] instanceof NewAxis) {
-                    newShape.add(1);
-                    newStrides.add(0);
+                    newShape.add(1L);
+                    newStrides.add(0L);
                 } else {
                     newShape.add(arr.size(currDimension));
                     newStrides.add(arr.size(currDimension));
@@ -122,13 +125,13 @@ public class NDArrayIndex implements INDArrayIndex {
             }
 
             while (currDimension < arr.rank()) {
-                newShape.add(currDimension);
-                newStrides.add(currDimension);
+                newShape.add((long) currDimension);
+                newStrides.add((long) currDimension);
                 currDimension++;
             }
 
-            int[] newShapeArr = Ints.toArray(newShape);
-            int[] newStrideArr = Ints.toArray(newStrides);
+            long[] newShapeArr = Longs.toArray(newShape);
+            long[] newStrideArr = Longs.toArray(newStrides);
 
             // FIXME: this is wrong, it breaks shapeInfo immutability
             arr.setShape(newShapeArr);
@@ -137,8 +140,8 @@ public class NDArrayIndex implements INDArrayIndex {
 
         } else {
             if (numNewAxes > 0) {
-                int[] newShape = Ints.concat(ArrayUtil.nTimes(numNewAxes, 1), arr.shape());
-                int[] newStrides = Ints.concat(new int[numNewAxes], arr.stride());
+                long[] newShape = Longs.concat(ArrayUtil.toLongArray(ArrayUtil.nTimes(numNewAxes, 1)), arr.shape());
+                long[] newStrides = Longs.concat(new long[numNewAxes], arr.stride());
                 arr.setShape(newShape);
                 arr.setStride(newStrides);
             }
@@ -158,7 +161,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param offsets the offsets for each dimension
      * @return the offset that should be used for indexing
      */
-    public static int offset(int[] strides, int[] offsets) {
+    public static long offset(long[] strides, long[] offsets) {
         int ret = 0;
 
         if (ArrayUtil.prod(offsets) == 1) {
@@ -214,7 +217,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * indexes
      * @param indices
      */
-    public NDArrayIndex(int... indices) {
+    public NDArrayIndex(long... indices) {
         this.indices = indices;
     }
 
@@ -382,6 +385,10 @@ public class NDArrayIndex implements INDArrayIndex {
      * for a particular dimension otherwise)
      */
     public static INDArrayIndex[] resolve(int[] shape, INDArrayIndex... intendedIndexes) {
+        return resolve(ArrayUtil.toLongArray(shape), intendedIndexes);
+    }
+
+    public static INDArrayIndex[] resolve(long[] shape, INDArrayIndex... intendedIndexes) {
         /**
          * If it's a vector and index asking for a scalar just return the array
          */
@@ -389,7 +396,7 @@ public class NDArrayIndex implements INDArrayIndex {
             if (Shape.isRowVectorShape(shape) && intendedIndexes.length == 1) {
                 INDArrayIndex[] ret = new INDArrayIndex[2];
                 ret[0] = NDArrayIndex.point(0);
-                int size;
+                long size;
                 if (1 == shape[0] && shape.length == 2)
                     size = shape[1];
                 else
@@ -520,6 +527,14 @@ public class NDArrayIndex implements INDArrayIndex {
         return ret;
     }
 
+    public static INDArrayIndex[] createCoveringShape(long[] shape) {
+        INDArrayIndex[] ret = new INDArrayIndex[shape.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = NDArrayIndex.interval(0, shape[i]);
+        }
+        return ret;
+    }
+
 
     /**
      * Create a range based on the given indexes.
@@ -550,10 +565,13 @@ public class NDArrayIndex implements INDArrayIndex {
 
         if (index.isMatrix()) {
 
-            NDArrayIndex[] ret = new NDArrayIndex[index.rows()];
+            if (index.rows() > Integer.MAX_VALUE)
+                throw new ND4JArraySizeException();
+
+            NDArrayIndex[] ret = new NDArrayIndex[(int) index.rows()];
             for (int i = 0; i < index.rows(); i++) {
                 INDArray row = index.getRow(i);
-                int[] nums = new int[index.getRow(i).columns()];
+                val nums = new long[(int) index.getRow(i).columns()];
                 for (int j = 0; j < row.columns(); j++) {
                     nums[j] = (int) row.getFloat(j);
                 }
@@ -567,7 +585,7 @@ public class NDArrayIndex implements INDArrayIndex {
             return ret;
 
         } else if (index.isVector()) {
-            int[] indices = NDArrayUtil.toInts(index);
+            long[] indices = NDArrayUtil.toLongs(index);
             return new NDArrayIndex[] {new NDArrayIndex(indices)};
         }
 

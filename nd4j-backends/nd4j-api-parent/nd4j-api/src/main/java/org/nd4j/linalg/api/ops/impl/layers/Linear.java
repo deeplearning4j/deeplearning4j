@@ -88,13 +88,13 @@ public class Linear extends BaseModule {
     }
 
     @Override
-    public List<int[]> calculateOutputShape() {
-        List<int[]> ret = new ArrayList<>();
-        ret.add(Shape.getMatrixMultiplyShape(inputArguments()[0].shape(),new int[]{nOut,nIn}));
+    public List<long[]> calculateOutputShape() {
+        List<long[]> ret = new ArrayList<>();
+        ret.add(Shape.getMatrixMultiplyShape(inputArguments()[0].shape(),new long[]{nOut,nIn}));
 
         ret.add(Shape.getMatrixMultiplyShape(inputArguments()[0].shape(),inputArguments()[1].transpose().shape()));
         if(biasWeightInitScheme != null) {
-            ret.add(new int[]{nOut,1});
+            ret.add(new long[]{nOut,1});
         }
         return ret;
     }
@@ -167,10 +167,10 @@ public class Linear extends BaseModule {
                                         WeightInitScheme paramsScheme,
                                         WeightInitScheme biasInitScheme) {
         if(biasInitScheme != null) {
-            return new INDArray[] {paramsScheme.create(new int[]{nOut,nIn}),biasInitScheme.create(new int[]{nOut,1})};
+            return new INDArray[] {paramsScheme.create(new long[]{nOut,nIn}),biasInitScheme.create(new long[]{nOut,1})};
         }
         else {
-            return new INDArray[] {paramsScheme.create(new int[]{nOut,nIn})};
+            return new INDArray[] {paramsScheme.create(new long[]{nOut,nIn})};
 
         }
     }
@@ -180,11 +180,11 @@ public class Linear extends BaseModule {
         if(biasWeightInitScheme != null) {
             return new DifferentialFunction[] {
                     SDVariable.builder().sameDiff(sameDiff).varName("w")
-                            .shape(new int[]{nOut,nIn}).weightInitScheme(
+                            .shape(new long[]{nOut,nIn}).weightInitScheme(
                             weightInitScheme).build(),
                     SDVariable.builder().sameDiff(sameDiff)
                             .varName("b")
-                            .shape(new int[]{nOut,1})
+                            .shape(new long[]{nOut,1})
                             .weightInitScheme(biasWeightInitScheme).build()
             };
         }
@@ -192,7 +192,7 @@ public class Linear extends BaseModule {
             return new DifferentialFunction[] {
                     SDVariable.builder().sameDiff(sameDiff)
                             .varName("w")
-                            .shape(new int[]{nOut,nIn})
+                            .shape(new long[]{nOut,nIn})
                             .weightInitScheme(new ZeroInitScheme('f'))
                             .build()
             };

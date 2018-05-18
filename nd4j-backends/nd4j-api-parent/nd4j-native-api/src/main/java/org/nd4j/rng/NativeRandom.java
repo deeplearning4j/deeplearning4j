@@ -209,6 +209,11 @@ public abstract class NativeRandom implements Random {
     }
 
     @Override
+    public INDArray nextGaussian(long[] shape) {
+        return nextGaussian(Nd4j.order(), shape);
+    }
+
+    @Override
     public INDArray nextGaussian(char order, int[] shape) {
         INDArray array = Nd4j.createUninitialized(shape, order);
         GaussianDistribution op = new GaussianDistribution(array, 0.0, 1.0);
@@ -218,7 +223,23 @@ public abstract class NativeRandom implements Random {
     }
 
     @Override
+    public INDArray nextGaussian(char order, long[] shape) {
+        INDArray array = Nd4j.createUninitialized(shape, order);
+        GaussianDistribution op = new GaussianDistribution(array, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op, this);
+
+        return array;
+    }
+
+    @Override
     public INDArray nextDouble(int[] shape) {
+        return nextDouble(Nd4j.order(), shape);
+    }
+
+
+
+    @Override
+    public INDArray nextDouble(long[] shape) {
         return nextDouble(Nd4j.order(), shape);
     }
 
@@ -232,7 +253,21 @@ public abstract class NativeRandom implements Random {
     }
 
     @Override
+    public INDArray nextDouble(char order, long[] shape) {
+        INDArray array = Nd4j.createUninitialized(shape, order);
+        UniformDistribution op = new UniformDistribution(array, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op, this);
+
+        return array;
+    }
+
+    @Override
     public INDArray nextFloat(int[] shape) {
+        return nextFloat(Nd4j.order(), shape);
+    }
+
+    @Override
+    public INDArray nextFloat(long[] shape) {
         return nextFloat(Nd4j.order(), shape);
     }
 
@@ -246,12 +281,31 @@ public abstract class NativeRandom implements Random {
     }
 
     @Override
+    public INDArray nextFloat(char order, long[] shape) {
+        INDArray array = Nd4j.createUninitialized(shape, order);
+        UniformDistribution op = new UniformDistribution(array, 0.0, 1.0);
+        Nd4j.getExecutioner().exec(op, this);
+
+        return array;
+    }
+
+    @Override
     public INDArray nextInt(int[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
+    public INDArray nextInt(long[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public INDArray nextInt(int n, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray nextInt(int n, long[] shape) {
         throw new UnsupportedOperationException();
     }
 

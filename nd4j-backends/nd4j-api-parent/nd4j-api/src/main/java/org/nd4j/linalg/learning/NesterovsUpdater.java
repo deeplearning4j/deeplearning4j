@@ -46,7 +46,7 @@ public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
     }
 
     @Override
-    public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
+    public void setStateViewArray(INDArray viewArray, long[] gradientShape, char gradientOrder, boolean initialize) {
         if (!viewArray.isRowVector())
             throw new IllegalArgumentException("Invalid input: expect row vector input");
         if (initialize)

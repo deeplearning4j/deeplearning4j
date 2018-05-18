@@ -60,7 +60,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         NesterovsUpdater grad = new NesterovsUpdater(new Nesterovs(0.5, 0.9));
-        grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new int[] {rows, cols}, 'c', true);
+        grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new long[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1, 1);
         for (int i = 0; i < W.rows(); i++)
@@ -81,7 +81,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         AdaGradUpdater grad = new AdaGradUpdater(new AdaGrad(0.1, AdaGrad.DEFAULT_ADAGRAD_EPSILON));
-        grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new int[] {rows, cols}, 'c', true);
+        grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new long[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1, 1);
         for (int i = 0; i < W.rows(); i++)
@@ -102,7 +102,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         AdaDeltaUpdater grad = new AdaDeltaUpdater(new AdaDelta());
-        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
+        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new long[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
         for (int i = 0; i < W.rows(); i++)
@@ -122,7 +122,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         AdamUpdater grad = new AdamUpdater(new Adam());
-        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
+        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new long[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
         for (int i = 0; i < W.rows(); i++)
@@ -141,7 +141,7 @@ public class UpdaterTest extends BaseNd4jTest {
         int cols = 2;
 
         NadamUpdater grad = new NadamUpdater(new Nadam());
-        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
+        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new long[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
         for (int i = 0; i < W.rows(); i++)
@@ -161,7 +161,7 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
         AdaMaxUpdater grad = new AdaMaxUpdater(new AdaMax());
-        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
+        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new long[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
         for (int i = 0; i < W.rows(); i++)

@@ -37,8 +37,8 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
     }
 
     @Override
-    public List<int[]> calculateOutputShape() {
-        List<int[]> ret = new ArrayList<>(1);
+    public List<long[]> calculateOutputShape() {
+        List<long[]> ret = new ArrayList<>(1);
         val shape = sameDiff.getShapeForVarName(args()[0].getVarName());
         if(shape != null)
             ret.add(shape);

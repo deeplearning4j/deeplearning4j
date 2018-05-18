@@ -72,10 +72,10 @@ public class LossMultiLabel extends DifferentialFunction implements ILossFunctio
         final INDArray normFactor = negative.sum(1).muli(positive.sum(1));
 
 
-        int examples = positive.size(0);
+        long examples = positive.size(0);
         for (int i = 0; i < examples; i++) {
             final INDArray locCfn = postOutput.getRow(i);
-            final int[] shape = locCfn.shape();
+            final long[] shape = locCfn.shape();
 
             final INDArray locPositive = positive.getRow(i);
             final INDArray locNegative = negative.getRow(i);

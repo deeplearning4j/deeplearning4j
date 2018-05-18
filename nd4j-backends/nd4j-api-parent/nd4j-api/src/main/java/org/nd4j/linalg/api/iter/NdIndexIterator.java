@@ -18,13 +18,13 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-public class NdIndexIterator implements Iterator<int[]> {
+public class NdIndexIterator implements Iterator<long[]> {
     private int length = -1;
     private int i = 0;
-    private int[] shape;
+    private long[] shape;
     private char order = 'c';
     private boolean cache = false;
-    private static Map<Pair<int[], Character>, LinearIndexLookup> lookupMap = new HashMap<>();
+    private static Map<Pair<long[], Character>, LinearIndexLookup> lookupMap = new HashMap<>();
     private LinearIndexLookup lookup;
 
 
@@ -38,12 +38,17 @@ public class NdIndexIterator implements Iterator<int[]> {
         this.cache = false;
     }
 
+    public NdIndexIterator(long... shape) {
+        this('c', false, shape);
+        this.cache = false;
+    }
+
     /**
      *  Pass in the shape to iterate over.
      *  Defaults to c ordering
      * @param shape the shape to iterate over
      */
-    public NdIndexIterator(char order, boolean cache, int... shape) {
+    public NdIndexIterator(char order, boolean cache, long... shape) {
         this.shape = ArrayUtil.copy(shape);
         this.length = ArrayUtil.prod(shape);
         this.order = order;
@@ -70,6 +75,10 @@ public class NdIndexIterator implements Iterator<int[]> {
      * @param shape the shape to iterate over
      */
     public NdIndexIterator(char order, int... shape) {
+        this(order, false, ArrayUtil.toLongArray(shape));
+    }
+
+    public NdIndexIterator(char order, long... shape) {
         this(order, false, shape);
     }
 
@@ -81,7 +90,7 @@ public class NdIndexIterator implements Iterator<int[]> {
 
 
     @Override
-    public int[] next() {
+    public long[] next() {
         if (lookup != null)
             return lookup.lookup(i++);
         switch (order) {

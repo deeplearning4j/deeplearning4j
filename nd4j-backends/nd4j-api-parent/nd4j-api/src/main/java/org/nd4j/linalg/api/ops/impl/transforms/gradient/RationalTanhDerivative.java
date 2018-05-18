@@ -40,7 +40,7 @@ public class RationalTanhDerivative extends BaseTransformOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public RationalTanhDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public RationalTanhDerivative(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 

@@ -51,7 +51,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     @Builder
     private SDVariable(String varName,
                        SameDiff sameDiff,
-                       int[] shape,
+                       long[] shape,
                        WeightInitScheme weightInitScheme) {
         super(sameDiff,new Object[]{});
         this.varName = varName;
@@ -70,7 +70,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             for(int i = 0; i < shape.length; i++) {
                 if(shape[i] < 0) {
                     sameDiff.addAsPlaceHolder(varName);
-                    sameDiff.setOriginalPlaceHolderShape(varName,shape);
+                    sameDiff.setOriginalPlaceHolderShape(varName, shape);
                     foundPlaceHolder = true;
                     break;
                 }
@@ -230,8 +230,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * Returns the shape of this variable
      * @return
      */
-    public int[] getShape() {
-        int[] initialShape =  sameDiff.getShapeForVarName(getVarName());
+    public long[] getShape() {
+        long[] initialShape =  sameDiff.getShapeForVarName(getVarName());
         if(initialShape == null) {
             val arr = getArr();
             if(arr != null)

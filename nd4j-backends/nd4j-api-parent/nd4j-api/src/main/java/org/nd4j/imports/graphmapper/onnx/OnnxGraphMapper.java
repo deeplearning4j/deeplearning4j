@@ -4,6 +4,7 @@ import com.github.os72.protobuf351.ByteString;
 import com.github.os72.protobuf351.Message;
 import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -431,8 +432,8 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public int[] getShapeFromAttribute(OnnxProto3.AttributeProto attributeProto) {
-        return Ints.toArray(attributeProto.getT().getDimsList());
+    public long[] getShapeFromAttribute(OnnxProto3.AttributeProto attributeProto) {
+        return Longs.toArray(attributeProto.getT().getDimsList());
     }
 
     @Override
@@ -465,7 +466,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         ByteBuffer directAlloc = ByteBuffer.allocateDirect(byteBuffer.capacity()).order(ByteOrder.nativeOrder());
         directAlloc.put(byteBuffer);
         directAlloc.rewind();
-        int[] shape = getShapeFromTensor(tensorProto);
+        long[] shape = getShapeFromTensor(tensorProto);
         DataBuffer buffer = Nd4j.createBuffer(directAlloc,type, ArrayUtil.prod(shape));
         INDArray arr = Nd4j.create(buffer).reshape(shape);
         return arr;
@@ -483,15 +484,15 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         ByteBuffer directAlloc = ByteBuffer.allocateDirect(byteBuffer.capacity()).order(ByteOrder.nativeOrder());
         directAlloc.put(byteBuffer);
         directAlloc.rewind();
-        int[] shape = getShapeFromTensor(tensor);
+        long[] shape = getShapeFromTensor(tensor);
         DataBuffer buffer = Nd4j.createBuffer(directAlloc,type, ArrayUtil.prod(shape));
         INDArray arr = Nd4j.create(buffer).reshape(shape);
         return arr;
     }
 
     @Override
-    public int[] getShapeFromTensor(onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
-        val ret = new int[Math.max(2,tensorProto.getShape().getDimCount())];
+    public long[] getShapeFromTensor(onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
+        val ret = new long[Math.max(2,tensorProto.getShape().getDimCount())];
         int dimCount = tensorProto.getShape().getDimCount();
         if(dimCount >= 2)
             for(int i = 0; i < ret.length; i++) {
@@ -515,8 +516,8 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
      * @param tensorProto the tensor to get the shape from
      * @return
      */
-    public int[] getShapeFromTensor(OnnxProto3.TensorProto tensorProto) {
-        val ret = new int[Math.max(2,tensorProto.getDimsCount())];
+    public long[] getShapeFromTensor(OnnxProto3.TensorProto tensorProto) {
+        val ret = new long[Math.max(2,tensorProto.getDimsCount())];
         int dimCount = tensorProto.getDimsCount();
         if(dimCount >= 2)
             for(int i = 0; i < ret.length; i++) {
@@ -551,8 +552,8 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public int[] getShapeFromAttr(OnnxProto3.AttributeProto attr) {
-        return Ints.toArray(attr.getT().getDimsList());
+    public long[] getShapeFromAttr(OnnxProto3.AttributeProto attr) {
+        return Longs.toArray(attr.getT().getDimsList());
     }
 
     @Override
@@ -591,7 +592,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public int[] getShape(OnnxProto3.NodeProto nodeProto) {
+    public long[] getShape(OnnxProto3.NodeProto nodeProto) {
         return null;
     }
 

@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import lombok.extern.slf4j.Slf4j;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
@@ -26,6 +27,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.LinAlgExceptions;
 
 import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,7 +53,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     protected long length = -1;
     public static final boolean isSparse = true;
     protected transient volatile DataBuffer shapeInformation;
-    protected transient volatile int[] javaShapeInformation;
+    protected transient volatile long[] javaShapeInformation;
     protected transient volatile DataBuffer sparseInformation;
     protected transient DataBuffer shape;
     protected transient DataBuffer stride;
@@ -129,7 +131,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                         INDArray row = indices.slice(i);
                         for(int j = 0; j < row.length(); j++) {
                             INDArray put = arrList.get(j).slice(row.getInt(j));
-                            put = put.reshape(Ints.concat(new int[]{1},put.shape()));
+                            put = put.reshape(Longs.concat(new long[]{1}, put.shape()));
                             arrList.set(j,put);
                         }
                     }
@@ -172,6 +174,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public int[] toIntVector() {
         return new int[0];
+    }
+
+    @Override
+    public long[] toLongVector() {
+        return new long[0];
     }
 
     @Override
@@ -303,13 +310,14 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public int length() {
-        return (int) length;
+    public long length() {
+        return length;
     }
 
     @Override
     public int nnz() {
-        return length();
+        // FIXME: int cast
+        return (int) length();
     }
 
     @Override
@@ -350,7 +358,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
 
     @Override
-    public IntBuffer shapeInfo() {
+    public LongBuffer shapeInfo() {
         return null;
     }
 
@@ -471,7 +479,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public int vectorsAlongDimension(int dimension) {
+    public long vectorsAlongDimension(int dimension) {
         return 0;
     }
 
@@ -481,7 +489,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public int tensorssAlongDimension(int... dimension) {
+    public long tensorssAlongDimension(int... dimension) {
         return 0;
     }
 
@@ -521,17 +529,17 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray putScalar(int i, double value) {
+    public INDArray putScalar(long i, double value) {
         return null;
     }
 
     @Override
-    public INDArray putScalar(int i, float value) {
+    public INDArray putScalar(long i, float value) {
         return null;
     }
 
     @Override
-    public INDArray putScalar(int i, int value) {
+    public INDArray putScalar(long i, int value) {
         return null;
     }
 
@@ -541,17 +549,42 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray putScalar(int row, int col, double value) {
+    public INDArray putScalar(long[] i, double value) {
         return null;
     }
 
     @Override
-    public INDArray putScalar(int dim0, int dim1, int dim2, double value) {
+    public INDArray putScalar(long[] i, float value) {
         return null;
     }
 
     @Override
-    public INDArray putScalar(int dim0, int dim1, int dim2, int dim3, double value) {
+    public INDArray putScalar(long[] i, int value) {
+        return null;
+    }
+
+    @Override
+    public void setStride(long... stride) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setShape(long... shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray putScalar(long row, long col, double value) {
+        return null;
+    }
+
+    @Override
+    public INDArray putScalar(long dim0, long dim1, long dim2, double value) {
+        return null;
+    }
+
+    @Override
+    public INDArray putScalar(long dim0, long dim1, long dim2, long dim3, double value) {
         return null;
     }
 
@@ -876,7 +909,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public int linearIndex(int i) {
+    public long linearIndex(long i) {
         return 0;
     }
 
@@ -916,7 +949,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray putRow(int row, INDArray toPut) {
+    public INDArray putRow(long row, INDArray toPut) {
         return null;
     }
 
@@ -926,17 +959,17 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray getScalar(int row, int column) {
+    public INDArray getScalar(long row, long column) {
         return null;
     }
 
     @Override
-    public INDArray getScalar(int i) {
+    public INDArray getScalar(long i) {
         return null;
     }
 
     @Override
-    public int index(int row, int column) {
+    public long index(long row, long column) {
         return 0;
     }
 
@@ -1107,7 +1140,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray mmul(INDArray other) {
-        int[] shape = {rows(), other.columns()};
+        long[] shape = {rows(), other.columns()};
         INDArray result = createUninitialized(shape, 'f');
         if (result.isScalar())
             return Nd4j.scalar(Nd4j.getBlasWrapper().dot(this, other));
@@ -1459,6 +1492,21 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public INDArray getScalar(long... indices) {
+        return null;
+    }
+
+    @Override
+    public float getFloat(long[] indices) {
+        return 0;
+    }
+
+    @Override
+    public double getDouble(long... indices) {
+        return 0;
+    }
+
+    @Override
     public int getInt(int... indices) {
         return 0;
     }
@@ -1474,22 +1522,22 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public double getDouble(int i) {
+    public double getDouble(long i) {
         return 0;
     }
 
     @Override
-    public double getDouble(int i, int j) {
+    public double getDouble(long i, long j) {
         return 0;
     }
 
     @Override
-    public float getFloat(int i) {
+    public float getFloat(long i) {
         return 0;
     }
 
     @Override
-    public float getFloat(int i, int j) {
+    public float getFloat(long i, long j) {
         return 0;
     }
 
@@ -1519,7 +1567,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public int slices() {
+    public long slices() {
         return 0;
     }
 
@@ -1534,12 +1582,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray slice(int i, int dimension) {
+    public INDArray slice(long i, int dimension) {
         return null;
     }
 
     @Override
-    public INDArray slice(int i) {
+    public INDArray slice(long i) {
         return null;
     }
 
@@ -1554,7 +1602,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray reshape(char order, int... newShape) {
+    public INDArray reshape(char order, long... newShape) {
         return null;
     }
 
@@ -1564,12 +1612,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray reshape(int... newShape) {
+    public INDArray reshape(long... newShape) {
         return null;
     }
 
     @Override
-    public INDArray reshape(int rows, int columns) {
+    public INDArray reshape(long rows, long columns) {
         return null;
     }
 
@@ -1609,22 +1657,27 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray getColumn(int i) {
+    public INDArray dimShuffle(Object[] rearrange, long[] newOrder, boolean[] broadCastable) {
         return null;
     }
 
     @Override
-    public INDArray getRow(int i) {
+    public INDArray getColumn(long i) {
         return null;
     }
 
     @Override
-    public int columns() {
+    public INDArray getRow(long i) {
+        return null;
+    }
+
+    @Override
+    public long columns() {
         return columns;
     }
 
     @Override
-    public int rows() {
+    public long rows() {
         return rows;
     }
 
@@ -1696,8 +1749,8 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public int[] shape() {
-        return Shape.shape(shapeInformation);
+    public long[] shape() {
+        return Shape.shape(javaShapeInformation);
     }
 
     protected DataBuffer shapeOf() {
@@ -1707,12 +1760,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public int[] stride() {
-        return shape();
+    public long[] stride() {
+        return Shape.stride(javaShapeInformation);
     }
 
     @Override
-    public int size(int dimension) {
+    public long size(int dimension) {
         if (isScalar()) {
             if (dimension == 0 || dimension == 1 || dimension < 0)
                 return (int) length;
@@ -1732,13 +1785,13 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return shapeOf().getInt(dimension);
     }
 
-    protected void setShapeInformation(Pair<DataBuffer, int[]> shapeInfo) {
+    protected void setShapeInformation(Pair<DataBuffer, long[]> shapeInfo) {
         this.shapeInformation = shapeInfo.getFirst();
         this.javaShapeInformation = shapeInfo.getSecond();
     }
 
     @Override
-    public INDArray broadcast(int... shape) {
+    public INDArray broadcast(long... shape) {
         return null;
     }
 

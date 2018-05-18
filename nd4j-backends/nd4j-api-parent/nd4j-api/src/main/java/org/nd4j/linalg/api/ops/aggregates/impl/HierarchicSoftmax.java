@@ -18,14 +18,16 @@ public class HierarchicSoftmax extends BaseAggregate {
         arguments.add(expTable);
         arguments.add(neu1e);
 
-        indexingArguments.add(neu1e.length());
-        indexingArguments.add(expTable.length());
+        // FIXME: int cast
+
+        indexingArguments.add((int) neu1e.length());
+        indexingArguments.add((int) expTable.length());
         indexingArguments.add(code);
         indexingArguments.add(0); // set isInference to false
 
         realArguments.add(lr);
 
-        this.vectorLength = neu1e.length();
+        this.vectorLength = (int) neu1e.length();
     }
 
     /**

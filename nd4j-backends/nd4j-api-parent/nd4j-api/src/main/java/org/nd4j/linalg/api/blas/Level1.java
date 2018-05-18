@@ -33,10 +33,10 @@ public interface Level1 {
      * @param Y
      * @return
      */
-    double dot(int n, double alpha, INDArray X, INDArray Y);
+    double dot(long N, double alpha, INDArray X, INDArray Y);
 
     /** Vector-vector dot product */
-    double dot(int n, DataBuffer dx, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
+    double dot(long N, DataBuffer dx, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
 
     /**
      * computes a vector-vector dot product.
@@ -46,7 +46,7 @@ public interface Level1 {
      * @param Y
      * @return
      */
-    IComplexNumber dot(int n, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y);
+    IComplexNumber dot(long N, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y);
 
     /**
      * computes the Euclidean norm of a vector.
@@ -70,7 +70,7 @@ public interface Level1 {
     double asum(INDArray arr);
 
     /** sum of magnitudes of all elements */
-    double asum(int n, DataBuffer x, int offsetX, int incrX);
+    double asum(long N, DataBuffer x, int offsetX, int incrX);
 
     /**
      * computes the sum of magnitudes
@@ -97,10 +97,10 @@ public interface Level1 {
      * @param stride  the stride for the array
      * @return
      */
-    int iamax(int n, INDArray arr, int stride);
+    int iamax(long N, INDArray arr, int stride);
 
     /** Index of largest absolute value */
-    int iamax(int n, DataBuffer x, int offsetX, int incrX);
+    int iamax(long N, DataBuffer x, int offsetX, int incrX);
 
     /**
      * finds the element of a vector that has the largest absolute value.
@@ -143,7 +143,7 @@ public interface Level1 {
      * @param x
      * @param y
      */
-    void copy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
+    void copy(long N, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
 
     void copy(IComplexNDArray x, IComplexNDArray y);
 
@@ -154,7 +154,7 @@ public interface Level1 {
      * @param x
      * @param y
      */
-    void axpy(int n, double alpha, INDArray x, INDArray y);
+    void axpy(long N, double alpha, INDArray x, INDArray y);
 
     /**
      * computes a vector-scalar product and adds the result to a vector.
@@ -168,7 +168,7 @@ public interface Level1 {
      * @param offsetY offset of first element of Y in buffer
      * @param incrY increment/stride between elements of Y in buffer
      */
-    void axpy(int n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
+    void axpy(long N, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY);
 
     /**
      *  computes a vector-scalar product and adds the result to a vector.
@@ -177,7 +177,7 @@ public interface Level1 {
      * @param x
      * @param y
      */
-    void axpy(int n, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y);
+    void axpy(long N, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y);
 
     /**
      * computes parameters for a Givens rotation.
@@ -196,7 +196,7 @@ public interface Level1 {
      * @param c
      * @param s
      */
-    void rot(int N, INDArray X, INDArray Y, double c, double s);
+    void rot(long N, INDArray X, INDArray Y, double c, double s);
 
     /**
      * performs rotation of points in the plane.
@@ -206,7 +206,7 @@ public interface Level1 {
      * @param c
      * @param s
      */
-    void rot(int N, IComplexNDArray X, IComplexNDArray Y, IComplexNumber c, IComplexNumber s);
+    void rot(long N, IComplexNDArray X, IComplexNDArray Y, IComplexNumber c, IComplexNumber s);
 
     /**
      * computes the modified parameters for a Givens rotation.
@@ -234,7 +234,7 @@ public interface Level1 {
      * @param alpha
      * @param X
      */
-    void scal(int N, double alpha, INDArray X);
+    void scal(long N, double alpha, INDArray X);
 
     /**
      *  computes a vector by a scalar product.
@@ -242,7 +242,7 @@ public interface Level1 {
      * @param alpha
      * @param X
      */
-    void scal(int N, IComplexNumber alpha, IComplexNDArray X);
+    void scal(long N, IComplexNumber alpha, IComplexNDArray X);
 
 
     /** Can we use the axpy and copy methods that take a DataBuffer instead of an INDArray with this backend? */

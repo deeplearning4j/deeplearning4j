@@ -67,7 +67,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
         int row_syn1[] = message.getPoints();
 
         if (message.getNegSamples() > 0) {
-            int rows = storage.getArray(WordVectorStorage.SYN_0).rows();
+            int rows = (int) storage.getArray(WordVectorStorage.SYN_0).rows();
             int tempArray[] = new int[message.getNegSamples() + 1];
             tempArray[0] = message.getW1();
 

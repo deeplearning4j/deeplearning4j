@@ -6,6 +6,6 @@ package org.nd4j.linalg.api.shape.loop.coordinatefunction;
  */
 public interface CoordinateFunction {
 
-    void process(int[]... coord);
+    void process(long[]... coord);
 
 }

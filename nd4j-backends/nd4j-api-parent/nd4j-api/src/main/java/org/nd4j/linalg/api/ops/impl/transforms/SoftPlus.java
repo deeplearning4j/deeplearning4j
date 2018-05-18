@@ -16,7 +16,7 @@ public class SoftPlus extends BaseTransformOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public SoftPlus(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public SoftPlus(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 

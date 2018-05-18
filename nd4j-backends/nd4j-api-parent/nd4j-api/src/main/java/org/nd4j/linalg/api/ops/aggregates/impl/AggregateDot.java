@@ -17,8 +17,10 @@ public class AggregateDot extends BaseAggregate {
         this.arguments.add(x);
         this.arguments.add(y);
 
-        this.indexingArguments.add(x.length());
-        this.vectorLength = x.length();
+        // FIXME: int cast
+
+        this.indexingArguments.add((int) x.length());
+        this.vectorLength = (int) x.length();
     }
 
     /**

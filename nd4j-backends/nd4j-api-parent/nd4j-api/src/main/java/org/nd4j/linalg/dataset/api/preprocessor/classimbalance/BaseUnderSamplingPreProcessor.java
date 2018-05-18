@@ -37,11 +37,11 @@ public abstract class BaseUnderSamplingPreProcessor {
         validateData(label, labelMask);
 
         INDArray bernoullis = Nd4j.zeros(labelMask.shape());
-        int currentTimeSliceEnd = label.size(2);
+        long currentTimeSliceEnd = label.size(2);
         //iterate over each tbptt window
         while (currentTimeSliceEnd > 0) {
 
-            int currentTimeSliceStart = Math.max(currentTimeSliceEnd - tbpttWindowSize, 0);
+            long currentTimeSliceStart = Math.max(currentTimeSliceEnd - tbpttWindowSize, 0);
 
             //get views for current time slice
             INDArray currentWindowBernoulli = bernoullis.get(NDArrayIndex.all(),

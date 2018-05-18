@@ -344,11 +344,11 @@ public class NormalDistribution extends BaseDistribution {
                         ret, mean, standardDeviation), random);
             }
         } else {
-            Iterator<int[]> idxIter = new NdIndexIterator(ret.shape()); //For consistent values irrespective of c vs. fortran ordering
-            int len = ret.length();
+            Iterator<long[]> idxIter = new NdIndexIterator(ret.shape()); //For consistent values irrespective of c vs. fortran ordering
+            long len = ret.length();
             if (means != null) {
                 for (int i = 0; i < len; i++) {
-                    int[] idx = idxIter.next();
+                    long[] idx = idxIter.next();
                     ret.putScalar(idx, standardDeviation * random.nextGaussian() + means.getDouble(idx));
                 }
             } else {

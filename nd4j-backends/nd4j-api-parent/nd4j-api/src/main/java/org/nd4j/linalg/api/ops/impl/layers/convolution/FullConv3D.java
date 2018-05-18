@@ -157,7 +157,7 @@ public class FullConv3D extends DynamicCustomOp {
     }
 
     private void addArgs() {
-        addIArgument(new int[]{
+        addIArgument(new long[]{
                 config.getDT(),
                 config.getDW(),
                 config.getDH(),

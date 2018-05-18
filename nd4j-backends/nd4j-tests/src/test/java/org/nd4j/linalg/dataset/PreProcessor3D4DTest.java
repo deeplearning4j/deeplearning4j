@@ -305,7 +305,9 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
             this.timeSteps = timeSteps;
             this.samples = samples;
             this.origin = origin;
-            numFeatures = featureScale.size(0);
+
+            // FIXME: int cast
+            numFeatures = (int) featureScale.size(0);
             maxN = samples * timeSteps;
             INDArray template = Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps);
             template = Nd4j.concat(0, Nd4j.linspace(origin, origin + timeSteps - 1, timeSteps), template);

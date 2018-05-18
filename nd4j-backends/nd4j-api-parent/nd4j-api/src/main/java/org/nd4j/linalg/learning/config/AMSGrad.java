@@ -2,6 +2,7 @@ package org.nd4j.linalg.learning.config;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AMSGradUpdater;
 import org.nd4j.linalg.learning.GradientUpdater;
@@ -68,7 +69,7 @@ public class AMSGrad implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AMSGradUpdater u = new AMSGradUpdater(this);
-        int[] gradientShape = viewArray.shape();
+        long[] gradientShape = viewArray.shape();
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
         gradientShape[1] /= 3;
         u.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);

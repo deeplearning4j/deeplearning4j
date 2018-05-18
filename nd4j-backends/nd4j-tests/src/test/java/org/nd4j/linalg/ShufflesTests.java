@@ -298,7 +298,8 @@ public class ShufflesTests extends BaseNd4jTest {
 
         public float[] measureState(INDArray data) {
             // for 3D we save 0 element for each slice.
-            float[] result = new float[data.shape()[0]];
+            // FIXME: int cast
+            float[] result = new float[(int) data.shape()[0]];
 
             for (int x = 0; x < data.shape()[0]; x++) {
                 result[x] = data.slice(x).getFloat(0);
@@ -345,7 +346,8 @@ public class ShufflesTests extends BaseNd4jTest {
         }
 
         public float[] measureState(INDArray data) {
-            float[] result = new float[data.rows()];
+            // FIXME: int cast
+            float[] result = new float[(int) data.rows()];
 
             for (int x = 0; x < data.rows(); x++) {
                 result[x] = data.getRow(x).getFloat(0);

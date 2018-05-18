@@ -37,7 +37,7 @@ public class ConcatTests extends BaseNd4jTest {
         INDArray A = Nd4j.linspace(1, 8, 8).reshape(2, 2, 2);
         INDArray B = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
         INDArray concat = Nd4j.concat(0, A, B);
-        assertTrue(Arrays.equals(new int[] {5, 2, 2}, concat.shape()));
+        assertTrue(Arrays.equals(new long[] {5, 2, 2}, concat.shape()));
 
     }
 

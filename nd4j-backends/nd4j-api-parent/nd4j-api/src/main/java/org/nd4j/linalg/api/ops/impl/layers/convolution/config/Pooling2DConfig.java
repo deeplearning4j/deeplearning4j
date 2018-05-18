@@ -13,7 +13,7 @@ import java.util.Map;
 @Data
 public class Pooling2DConfig extends BaseConvolutionConfig {
 
-    private int kh, kw, sy, sx, ph, pw, virtualHeight,virtualWidth;
+    private long kh, kw, sy, sx, ph, pw, virtualHeight,virtualWidth;
     /**
      * Extra is an optional parameter mainly for use with pnorm right now.
      * All pooling implementations take 9 parameters save pnorm.
@@ -23,8 +23,8 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
     private Pooling2D.Pooling2DType type;
     @Builder.Default private Pooling2D.Divisor divisor = Pooling2D.Divisor.EXCLUDE_PADDING;
     private boolean isSameMode;
-    @Builder.Default private int dh = 1;
-    @Builder.Default private int dw = 1;
+    @Builder.Default private long dh = 1;
+    @Builder.Default private long dw = 1;
     @Builder.Default private boolean isNHWC = false;
 
 

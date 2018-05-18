@@ -24,7 +24,7 @@ public class ReluUniformInitScheme extends BaseWeightInitScheme {
     }
 
     @Override
-    public INDArray doCreate(int[] shape, INDArray paramsView) {
+    public INDArray doCreate(long[] shape, INDArray paramsView) {
         double u = Math.sqrt(6.0 / fanIn);
         return Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-u, u)); //U(-sqrt(6/fanIn), sqrt(6/fanIn)
     }

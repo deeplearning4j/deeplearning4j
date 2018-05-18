@@ -97,12 +97,12 @@ public class Mmul extends DynamicCustomOp {
 
 
     @Override
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
         if(mMulTranspose == null)
             mMulTranspose = MMulTranspose.allFalse();
-        List<int[]> ret = new ArrayList<>(1);
-        int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(larg().getShape()) : larg().getShape();
-        int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getShape()) : rarg().getShape();
+        List<long[]> ret = new ArrayList<>(1);
+        long[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(larg().getShape()) : larg().getShape();
+        long[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getShape()) : rarg().getShape();
         if(Shape.isPlaceholderShape(aShape) || Shape.isPlaceholderShape(bShape))
             return Collections.emptyList();
 

@@ -374,7 +374,7 @@ public class RandomTests extends BaseNd4jTest {
         GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
         Nd4j.getExecutioner().exec(op1, random1);
 
-        int n = z1.length();
+        val n = z1.length();
         //using this just for the cdf
         Distribution nd = new NormalDistribution(random1, 0.0, 1.0);
         Nd4j.sort(z1, true);

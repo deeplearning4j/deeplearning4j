@@ -22,7 +22,8 @@ public class CpuLapack extends BaseLapack {
     }
 
     protected static int getLda(INDArray A) {
-        return A.ordering() == 'f' ? A.rows() : A.columns();
+        // FIXME: int cast
+        return A.ordering() == 'f' ? (int) A.rows() : (int) A.columns();
     }
 //=========================    
 // L U DECOMP

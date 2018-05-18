@@ -6,6 +6,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,15 @@ public abstract class ShapeOp extends BaseOp {
                    int[] shape,
                    boolean inPlace,
                    Object[] extraArgs) {
+        // FIXME: int cast
+        this(sameDiff, i_v, ArrayUtil.toLongArray(shape), inPlace, extraArgs);
+    }
+
+    public ShapeOp(SameDiff sameDiff,
+                   SDVariable i_v,
+                   long[] shape,
+                   boolean inPlace,
+                   Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
 
         if (i_v != null) {
@@ -68,7 +78,7 @@ public abstract class ShapeOp extends BaseOp {
     }
 
     @Override
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
         throw new UnsupportedOperationException();
     }
 

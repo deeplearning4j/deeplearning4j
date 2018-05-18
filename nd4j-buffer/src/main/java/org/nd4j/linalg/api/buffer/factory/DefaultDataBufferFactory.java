@@ -70,6 +70,8 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
         } else if (underlyingBuffer.dataType() == DataBuffer.Type.INT) {
             return new IntBuffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataBuffer.Type.LONG) {
+            return new LongBuffer(underlyingBuffer, length, offset);
         }
         return null;
     }
@@ -220,6 +222,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createInt(ByteBuffer buffer, int length) {
         return new IntBuffer(buffer, length);
+    }
+
+    @Override
+    public DataBuffer createLong(ByteBuffer buffer, int length) {
+        return new LongBuffer(buffer, length);
     }
 
     @Override
@@ -403,6 +410,31 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createLong(long[] data) {
+        return createLong(data, true);
+    }
+
+    @Override
+    public DataBuffer createLong(long[] data, boolean copy) {
+        return new LongBuffer(data, copy);
+    }
+
+    @Override
+    public DataBuffer createLong(long length) {
+        return new LongBuffer(length);
+    }
+
+    @Override
+    public DataBuffer createLong(long length, boolean initialize) {
+        return new LongBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createLong(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new LongBuffer(length, initialize, workspace);
+    }
+
+    @Override
     public DataBuffer createDouble(double[] data, boolean copy) {
         return new DoubleBuffer(data, copy);
     }
@@ -474,6 +506,8 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new DoubleBuffer(pointer, indexer, length);
             case FLOAT:
                 return new FloatBuffer(pointer, indexer, length);
+            case LONG:
+                return new LongBuffer(pointer, indexer, length);
         }
         throw new IllegalArgumentException("Invalid opType " + type);
     }

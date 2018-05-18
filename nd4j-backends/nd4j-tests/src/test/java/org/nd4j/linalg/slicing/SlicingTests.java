@@ -1,5 +1,6 @@
 package org.nd4j.linalg.slicing;
 
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -25,7 +26,7 @@ public class SlicingTests extends BaseNd4jTest {
         INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[] {4, 3, 2});
         for (int i = 0; i < arr.slices(); i++) {
             INDArray slice = arr.slice(i).slice(1);
-            int slices = slice.slices();
+            val slices = slice.slices();
             assertEquals(2, slices);
         }
 

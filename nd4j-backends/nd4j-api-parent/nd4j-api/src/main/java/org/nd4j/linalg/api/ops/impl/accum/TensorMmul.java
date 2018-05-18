@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import lombok.NoArgsConstructor;
 import lombok.val;
 import onnx.OnnxProto3;
@@ -77,10 +78,10 @@ public class TensorMmul extends DynamicCustomOp {
     }
 
     @Override
-    public List<int[]> calculateOutputShape() {
-        List<int[]> ret = new ArrayList<>(1);
-        int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(larg().getShape()) : larg().getShape();
-        int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getShape()) : rarg().getShape();
+    public List<long[]> calculateOutputShape() {
+        List<long[]> ret = new ArrayList<>(1);
+        long[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(larg().getShape()) : larg().getShape();
+        long[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getShape()) : rarg().getShape();
         if(Shape.isPlaceholderShape(aShape) || Shape.isPlaceholderShape(bShape))
             return Collections.emptyList();
 
@@ -178,14 +179,14 @@ public class TensorMmul extends DynamicCustomOp {
 
         //if listA and listB are empty these do not initialize.
         //so initializing with {1} which will then get overridden if not empty
-        int[] newShapeA = {-1, n2};
-        int[] oldShapeA;
+        long[] newShapeA = {-1, n2};
+        long[] oldShapeA;
         if (listA.size() == 0) {
-            oldShapeA = new int[] {1};
+            oldShapeA = new long[] {1};
         } else {
-            oldShapeA = Ints.toArray(listA);
+            oldShapeA = Longs.toArray(listA);
             for (int i = 0; i < oldShapeA.length; i++)
-                oldShapeA[i] = a.getShape()[oldShapeA[i]];
+                oldShapeA[i] = a.getShape()[(int) oldShapeA[i]];
         }
 
         int n3 = 1;
@@ -196,13 +197,13 @@ public class TensorMmul extends DynamicCustomOp {
 
 
         int[] newShapeB = {n3, -1};
-        int[] oldShapeB;
+        long[] oldShapeB;
         if (listB.size() == 0) {
-            oldShapeB = new int[] {1};
+            oldShapeB = new long[] {1};
         } else {
-            oldShapeB = Ints.toArray(listB);
+            oldShapeB = Longs.toArray(listB);
             for (int i = 0; i < oldShapeB.length; i++)
-                oldShapeB[i] = b.getShape()[oldShapeB[i]];
+                oldShapeB[i] = b.getShape()[(int) oldShapeB[i]];
         }
 
 
@@ -214,8 +215,8 @@ public class TensorMmul extends DynamicCustomOp {
                         .permute(b,newAxesB),newShapeB);
 
         SDVariable ret = f().mmul(at,bt);
-        int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
-        return f().reshape(ret,aPlusB);
+        long[] aPlusB = Longs.concat(oldShapeA, oldShapeB);
+        return f().reshape(ret, aPlusB);
     }
 
 

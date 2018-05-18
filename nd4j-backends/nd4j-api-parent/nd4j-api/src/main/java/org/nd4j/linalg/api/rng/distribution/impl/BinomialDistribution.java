@@ -269,11 +269,11 @@ public class BinomialDistribution extends BaseDistribution {
                                 probabilityOfSuccess), random);
             }
         } else {
-            Iterator<int[]> idxIter = new NdIndexIterator(ret.shape()); //For consistent values irrespective of c vs. fortran ordering
-            int len = ret.length();
+            Iterator<long[]> idxIter = new NdIndexIterator(ret.shape()); //For consistent values irrespective of c vs. fortran ordering
+            long len = ret.length();
             if (p != null) {
                 for (int i = 0; i < len; i++) {
-                    int[] idx = idxIter.next();
+                    long[] idx = idxIter.next();
                     org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution =
                             new org.apache.commons.math3.distribution.BinomialDistribution(
                                     (RandomGenerator) Nd4j.getRandom(), numberOfTrials,

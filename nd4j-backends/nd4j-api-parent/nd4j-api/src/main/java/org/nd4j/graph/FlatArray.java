@@ -15,9 +15,9 @@ public final class FlatArray extends Table {
   public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
   public FlatArray __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public int shape(int j) { int o = __offset(4); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
+  public long shape(int j) { int o = __offset(4); return o != 0 ? bb.getLong(__vector(o) + j * 8) : 0; }
   public int shapeLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(4, 4); }
+  public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(4, 8); }
   public byte buffer(int j) { int o = __offset(6); return o != 0 ? bb.get(__vector(o) + j * 1) : 0; }
   public int bufferLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer bufferAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
@@ -39,8 +39,8 @@ public final class FlatArray extends Table {
 
   public static void startFlatArray(FlatBufferBuilder builder) { builder.startObject(4); }
   public static void addShape(FlatBufferBuilder builder, int shapeOffset) { builder.addOffset(0, shapeOffset, 0); }
-  public static int createShapeVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
-  public static void startShapeVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static int createShapeVector(FlatBufferBuilder builder, long[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addLong(data[i]); return builder.endVector(); }
+  public static void startShapeVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
   public static void addBuffer(FlatBufferBuilder builder, int bufferOffset) { builder.addOffset(1, bufferOffset, 0); }
   public static int createBufferVector(FlatBufferBuilder builder, byte[] data) { builder.startVector(1, data.length, 1); for (int i = data.length - 1; i >= 0; i--) builder.addByte(data[i]); return builder.endVector(); }
   public static void startBufferVector(FlatBufferBuilder builder, int numElems) { builder.startVector(1, numElems, 1); }

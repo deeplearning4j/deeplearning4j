@@ -62,7 +62,7 @@ public class SlicingTestsC extends BaseNd4jTest {
             }
             System.out.println(row);
         }
-        assertArrayEquals(new int[] {5, 2}, sliceZero.shape());
+        assertArrayEquals(new long[] {5, 2}, sliceZero.shape());
         assertEquals(assertion, sliceZero);
 
         INDArray assertionTwo = Nd4j.create(new double[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, new int[] {5, 2});
@@ -113,7 +113,7 @@ public class SlicingTestsC extends BaseNd4jTest {
     public void testVectorIndexing() {
         INDArray zeros = Nd4j.create(1, 400000);
         INDArray get = zeros.get(NDArrayIndex.interval(0, 300000));
-        assertArrayEquals(new int[] {1, 300000}, get.shape());
+        assertArrayEquals(new long[] {1, 300000}, get.shape());
     }
 
 

@@ -70,10 +70,12 @@ public class AggregateCBOW extends BaseAggregate {
         indexingArguments.add(vectorLength);
         indexingArguments.add(idxSyn1.length);
         indexingArguments.add(negativeRounds);
-        indexingArguments.add(expTable.length());
+
+        // FIXME: int cast
+        indexingArguments.add((int) expTable.length());
         indexingArguments.add(vocabSize);
         indexingArguments.add(ngStarter);
-        indexingArguments.add(negTable == null ? 0 : negTable.length());
+        indexingArguments.add(negTable == null ? 0 : (int) negTable.length());
         indexingArguments.add(idxSyn0.length);
         indexingArguments.add(wordIdx);
         indexingArguments.add(0); // number of labels. 0 by default

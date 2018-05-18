@@ -39,7 +39,7 @@ public interface GradientUpdater<T extends IUpdater> {
      * @param gradientOrder
      * @param initialize   If true: the updater must initialize the view array. If false: no change to view array contents
      */
-    void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize);
+    void setStateViewArray(INDArray viewArray, long[] gradientShape, char gradientOrder, boolean initialize);
 
     /**
      * Modify the gradient to be an update. Note that this is be done in-place

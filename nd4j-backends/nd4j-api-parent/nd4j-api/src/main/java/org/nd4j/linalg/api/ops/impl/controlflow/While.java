@@ -88,7 +88,7 @@ public class While extends DifferentialFunction implements CustomOp {
         this.predicate = whileStatement.predicate;
         this.predicateExecution = whileStatement.predicateExecution;
         this.inputVars = whileStatement.inputVars;
-        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'));
+        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new long[]{1,1},new ZeroInitScheme('f'));
 
 
     }
@@ -117,7 +117,7 @@ public class While extends DifferentialFunction implements CustomOp {
         this.predicate = predicate;
         this.trueBody = trueBody;
         this.blockName = blockName;
-        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'));
+        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new long[]{1,1},new ZeroInitScheme('f'));
         parent.putFunctionForId(getOwnName(),this);
 
         parent.addArgsFor(inputVars,this);
@@ -165,8 +165,6 @@ public class While extends DifferentialFunction implements CustomOp {
     public void incrementLoopCounter() {
         numLooped++;
     }
-
-
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -488,8 +486,8 @@ public class While extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public int[] iArgs() {
-        return new int[0];
+    public long[] iArgs() {
+        return new long[0];
     }
 
     @Override
@@ -503,12 +501,17 @@ public class While extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public void addIArgument(long... arg) {
+
+    }
+
+    @Override
     public void removeIArgument(Integer arg) {
 
     }
 
     @Override
-    public Integer getIArgument(int index) {
+    public Long getIArgument(int index) {
         return null;
     }
 
@@ -577,8 +580,8 @@ public class While extends DifferentialFunction implements CustomOp {
         return 0;
     }
     @Override
-    public List<int[]> calculateOutputShape() {
-        List<int[]> ret =  new ArrayList<>();
+    public List<long[]> calculateOutputShape() {
+        List<long[]> ret =  new ArrayList<>();
         for(SDVariable var : args()) {
             ret.add(sameDiff.getShapeForVarName(var.getVarName()));
         }

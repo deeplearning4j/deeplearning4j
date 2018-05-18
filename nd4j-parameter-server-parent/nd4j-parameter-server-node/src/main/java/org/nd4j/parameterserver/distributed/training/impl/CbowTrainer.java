@@ -43,7 +43,7 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
         int row_syn1[] = message.getSyn1rows();
 
         if (message.getNegSamples() > 0) {
-            int rows = storage.getArray(WordVectorStorage.SYN_0).rows();
+            int rows = (int) storage.getArray(WordVectorStorage.SYN_0).rows();
             int tempArray[] = new int[message.getNegSamples() + 1];
             tempArray[0] = message.getW1();
 

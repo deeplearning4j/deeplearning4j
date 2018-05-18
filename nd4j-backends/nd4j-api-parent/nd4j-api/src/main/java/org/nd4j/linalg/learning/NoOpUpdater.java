@@ -38,7 +38,7 @@ public class NoOpUpdater implements GradientUpdater<NoOp> {
     }
 
     @Override
-    public void setStateViewArray(INDArray viewArray, int[] shape, char order, boolean initialize) {
+    public void setStateViewArray(INDArray viewArray, long[] shape, char order, boolean initialize) {
         //No op
     }
 

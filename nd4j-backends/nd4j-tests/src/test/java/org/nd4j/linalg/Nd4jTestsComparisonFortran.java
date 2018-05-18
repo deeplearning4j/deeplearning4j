@@ -182,7 +182,7 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
                     INDArray m = p1.getFirst();
                     INDArray v = p2.getFirst();
 
-                    RealMatrix rm = new BlockRealMatrix(m.rows(), m.columns());
+                    RealMatrix rm = new BlockRealMatrix((int) m.rows(), (int) m.columns());
                     for (int r = 0; r < m.rows(); r++) {
                         for (int c = 0; c < m.columns(); c++) {
                             double d = m.getDouble(r, c);

@@ -50,7 +50,7 @@ public class SpecialTests extends BaseNd4jTest {
 
         for (int i = 0; i < 1; i++) {
             int number = 5;
-            int start = RandomUtils.nextInt(0, x.shape()[2] - number);
+            int start = RandomUtils.nextInt(0, (int) x.shape()[2] - number);
 
             transform(getView(x, start, 5), getView(y, start, 5));
         }
@@ -116,7 +116,7 @@ public class SpecialTests extends BaseNd4jTest {
 
         List<INDArray> views = new ArrayList<>();
         for (int i = 0; i < matrix.rows() / 2; i++) {
-            views.add(matrix.getRow(RandomUtils.nextInt(0, matrix.rows())));
+            views.add(matrix.getRow(RandomUtils.nextInt(0, (int) matrix.rows())));
             //views.add(Nd4j.create(1, 10));
         }
 

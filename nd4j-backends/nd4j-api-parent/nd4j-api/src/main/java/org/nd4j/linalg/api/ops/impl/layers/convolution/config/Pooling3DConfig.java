@@ -10,10 +10,10 @@ import java.util.Map;
 @Data
 @Builder
 public class Pooling3DConfig extends BaseConvolutionConfig {
-    private int kT, kW, kH;
-    private int sT, sW, sH;
-    private int pT, pW, pH;
-    private int dilationT, dilationW, dilationH;
+    private long kT, kW, kH;
+    private long sT, sW, sH;
+    private long pT, pW, pH;
+    private long dilationT, dilationW, dilationH;
     private Pooling3D.Pooling3DType type;
     private boolean ceilingMode;
 

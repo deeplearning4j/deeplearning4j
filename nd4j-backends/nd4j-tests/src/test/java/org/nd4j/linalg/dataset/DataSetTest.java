@@ -18,6 +18,7 @@
 
 package org.nd4j.linalg.dataset;
 
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -56,7 +57,7 @@ public class DataSetTest extends BaseNd4jTest {
         while (iter.hasNext()) {
             DataSet next = iter.next();
             count++;
-            assertArrayEquals(new int[] {10, 4}, next.getFeatureMatrix().shape());
+            assertArrayEquals(new long[] {10, 4}, next.getFeatureMatrix().shape());
         }
 
         assertFalse(iter.hasNext());
@@ -112,7 +113,7 @@ public class DataSetTest extends BaseNd4jTest {
 
         DataSet x0 = new IrisDataSetIterator(150, 150).next();
         SplitTestAndTrain testAndTrain = x0.splitTestAndTrain(10);
-        assertArrayEquals(new int[] {10, 4}, testAndTrain.getTrain().getFeatureMatrix().shape());
+        assertArrayEquals(new long[] {10, 4}, testAndTrain.getTrain().getFeatureMatrix().shape());
         assertEquals(x0.getFeatureMatrix().getRows(ArrayUtil.range(0, 10)), testAndTrain.getTrain().getFeatureMatrix());
         assertEquals(x0.getLabels().getRows(ArrayUtil.range(0, 10)), testAndTrain.getTrain().getLabels());
 
@@ -165,8 +166,8 @@ public class DataSetTest extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         List<DataSet> list = new ArrayList<>(numExamples);
         for (int i = 0; i < numExamples; i++) {
-            INDArray in = Nd4j.rand(new int[] {1, inSize, tsLength});
-            INDArray out = Nd4j.rand(new int[] {1, labelSize, tsLength});
+            INDArray in = Nd4j.rand(new long[] {1, inSize, tsLength});
+            INDArray out = Nd4j.rand(new long[] {1, labelSize, tsLength});
             list.add(new DataSet(in, out));
         }
 
@@ -175,8 +176,8 @@ public class DataSetTest extends BaseNd4jTest {
 
         INDArray f = merged.getFeatures();
         INDArray l = merged.getLabels();
-        assertArrayEquals(new int[] {numExamples, inSize, tsLength}, f.shape());
-        assertArrayEquals(new int[] {numExamples, labelSize, tsLength}, l.shape());
+        assertArrayEquals(new long[] {numExamples, inSize, tsLength}, f.shape());
+        assertArrayEquals(new long[] {numExamples, labelSize, tsLength}, l.shape());
 
         for (int i = 0; i < numExamples; i++) {
             DataSet exp = list.get(i);
@@ -203,8 +204,8 @@ public class DataSetTest extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         List<DataSet> list = new ArrayList<>(numExamples);
         for (int i = 0; i < numExamples; i++) {
-            INDArray in = Nd4j.rand(new int[] {1, inSize, minTSLength + i});
-            INDArray out = Nd4j.rand(new int[] {1, labelSize, minTSLength + i});
+            INDArray in = Nd4j.rand(new long[] {1, inSize, minTSLength + i});
+            INDArray out = Nd4j.rand(new long[] {1, labelSize, minTSLength + i});
             list.add(new DataSet(in, out));
         }
 
@@ -214,16 +215,16 @@ public class DataSetTest extends BaseNd4jTest {
         INDArray f = merged.getFeatures();
         INDArray l = merged.getLabels();
         int expectedLength = minTSLength + numExamples - 1;
-        assertArrayEquals(new int[] {numExamples, inSize, expectedLength}, f.shape());
-        assertArrayEquals(new int[] {numExamples, labelSize, expectedLength}, l.shape());
+        assertArrayEquals(new long[] {numExamples, inSize, expectedLength}, f.shape());
+        assertArrayEquals(new long[] {numExamples, labelSize, expectedLength}, l.shape());
 
         assertTrue(merged.hasMaskArrays());
         assertNotNull(merged.getFeaturesMaskArray());
         assertNotNull(merged.getLabelsMaskArray());
         INDArray featuresMask = merged.getFeaturesMaskArray();
         INDArray labelsMask = merged.getLabelsMaskArray();
-        assertArrayEquals(new int[] {numExamples, expectedLength}, featuresMask.shape());
-        assertArrayEquals(new int[] {numExamples, expectedLength}, labelsMask.shape());
+        assertArrayEquals(new long[] {numExamples, expectedLength}, featuresMask.shape());
+        assertArrayEquals(new long[] {numExamples, expectedLength}, labelsMask.shape());
 
         //Check each row individually:
         for (int i = 0; i < numExamples; i++) {
@@ -298,8 +299,8 @@ public class DataSetTest extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         List<DataSet> list = new ArrayList<>(numExamples);
         for (int i = 0; i < numExamples; i++) {
-            INDArray in = Nd4j.rand(new int[] {1, inSize, minTSLength + i});
-            INDArray out = Nd4j.rand(new int[] {1, labelSize, minTSLength + i});
+            INDArray in = Nd4j.rand(new long[] {1, inSize, minTSLength + i});
+            INDArray out = Nd4j.rand(new long[] {1, labelSize, minTSLength + i});
 
             INDArray inMask = Nd4j.create(1, minTSLength + i);
             INDArray outMask = Nd4j.create(1, minTSLength + i);
@@ -317,16 +318,16 @@ public class DataSetTest extends BaseNd4jTest {
         INDArray f = merged.getFeatures();
         INDArray l = merged.getLabels();
         int expectedLength = minTSLength + numExamples - 1;
-        assertArrayEquals(new int[] {numExamples, inSize, expectedLength}, f.shape());
-        assertArrayEquals(new int[] {numExamples, labelSize, expectedLength}, l.shape());
+        assertArrayEquals(new long[] {numExamples, inSize, expectedLength}, f.shape());
+        assertArrayEquals(new long[] {numExamples, labelSize, expectedLength}, l.shape());
 
         assertTrue(merged.hasMaskArrays());
         assertNotNull(merged.getFeaturesMaskArray());
         assertNotNull(merged.getLabelsMaskArray());
         INDArray featuresMask = merged.getFeaturesMaskArray();
         INDArray labelsMask = merged.getLabelsMaskArray();
-        assertArrayEquals(new int[] {numExamples, expectedLength}, featuresMask.shape());
-        assertArrayEquals(new int[] {numExamples, expectedLength}, labelsMask.shape());
+        assertArrayEquals(new long[] {numExamples, expectedLength}, featuresMask.shape());
+        assertArrayEquals(new long[] {numExamples, expectedLength}, labelsMask.shape());
 
         //Check each row individually:
         for (int i = 0; i < numExamples; i++) {
@@ -420,8 +421,8 @@ public class DataSetTest extends BaseNd4jTest {
         INDArray fMerged = merged.getFeatureMatrix();
         INDArray lMerged = merged.getLabels();
 
-        assertArrayEquals(new int[] {nExamples1 + nExamples2, depth, width, height}, fMerged.shape());
-        assertArrayEquals(new int[] {nExamples1 + nExamples2, nOut}, lMerged.shape());
+        assertArrayEquals(new long[] {nExamples1 + nExamples2, depth, width, height}, fMerged.shape());
+        assertArrayEquals(new long[] {nExamples1 + nExamples2, nOut}, lMerged.shape());
 
 
         assertEquals(first, fMerged.get(interval(0, nExamples1), all(), all(), all()));
@@ -484,8 +485,8 @@ public class DataSetTest extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         List<DataSet> list = new ArrayList<>(numExamples);
         for (int i = 0; i < numExamples; i++) {
-            INDArray in = Nd4j.rand(new int[] {1, inSize, tsLength});
-            INDArray out = Nd4j.rand(new int[] {1, labelSize});
+            INDArray in = Nd4j.rand(new long[] {1, inSize, tsLength});
+            INDArray out = Nd4j.rand(new long[] {1, labelSize});
             list.add(new DataSet(in, out));
         }
 
@@ -494,8 +495,8 @@ public class DataSetTest extends BaseNd4jTest {
 
         INDArray f = merged.getFeatures();
         INDArray l = merged.getLabels();
-        assertArrayEquals(new int[] {numExamples, inSize, tsLength}, f.shape());
-        assertArrayEquals(new int[] {numExamples, labelSize}, l.shape());
+        assertArrayEquals(new long[] {numExamples, inSize, tsLength}, f.shape());
+        assertArrayEquals(new long[] {numExamples, labelSize}, l.shape());
 
         for (int i = 0; i < numExamples; i++) {
             DataSet exp = list.get(i);
@@ -591,7 +592,7 @@ public class DataSetTest extends BaseNd4jTest {
         int imgCols = 2;
 
         int nLabels = 5;
-        int[] shape = new int[] {nSamples, nChannels, imgRows, imgCols};
+        val shape = new long[] {nSamples, nChannels, imgRows, imgCols};
 
         int entries = nSamples * nChannels * imgRows * imgCols;
         int labels = nSamples * nLabels;
@@ -725,8 +726,8 @@ public class DataSetTest extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         List<DataSet> list = new ArrayList<>(numExamples);
         for (int i = 0; i < numExamples; i++) {
-            INDArray in = Nd4j.rand(new int[] {1, inSize, minTSLength + i});
-            INDArray out = Nd4j.rand(new int[] {1, labelSize, minTSLength + i});
+            INDArray in = Nd4j.rand(new long[] {1, inSize, minTSLength + i});
+            INDArray out = Nd4j.rand(new long[] {1, labelSize, minTSLength + i});
             list.add(new DataSet(in, out));
         }
 
@@ -747,8 +748,8 @@ public class DataSetTest extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         List<DataSet> list = new ArrayList<>(numExamples);
         for (int i = 0; i < numExamples; i++) {
-            INDArray in = Nd4j.rand(new int[] {1, inSize, minTSLength + i});
-            INDArray out = Nd4j.rand(new int[] {1, labelSize, minTSLength + i});
+            INDArray in = Nd4j.rand(new long[] {1, inSize, minTSLength + i});
+            INDArray out = Nd4j.rand(new long[] {1, labelSize, minTSLength + i});
             list.add(new DataSet(in, out));
         }
 
@@ -775,8 +776,8 @@ public class DataSetTest extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         List<DataSet> list = new ArrayList<>(numExamples);
         for (int i = 0; i < numExamples; i++) {
-            INDArray in = Nd4j.rand(new int[] {1, inSize, minTSLength + i});
-            INDArray out = Nd4j.rand(new int[] {1, labelSize, minTSLength + i});
+            INDArray in = Nd4j.rand(new long[] {1, inSize, minTSLength + i});
+            INDArray out = Nd4j.rand(new long[] {1, labelSize, minTSLength + i});
             list.add(new DataSet(in, out));
         }
 
@@ -786,8 +787,8 @@ public class DataSetTest extends BaseNd4jTest {
         //Reset seed
         Nd4j.getRandom().setSeed(12345);
         for (int i = 0; i < numExamples; i++) {
-            INDArray in = Nd4j.rand(new int[] {1, inSize, minTSLength + i});
-            INDArray out = Nd4j.rand(new int[] {1, labelSize, minTSLength + i});
+            INDArray in = Nd4j.rand(new long[] {1, inSize, minTSLength + i});
+            INDArray out = Nd4j.rand(new long[] {1, labelSize, minTSLength + i});
             DataSet iDataSet = new DataSet(in, out);
 
             //Checking if the features and labels are equal

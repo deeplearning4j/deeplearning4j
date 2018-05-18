@@ -1,9 +1,6 @@
 package org.nd4j.linalg.learning.config;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaMaxUpdater;
 import org.nd4j.linalg.learning.GradientUpdater;
@@ -69,7 +66,7 @@ public class AdaMax implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AdaMaxUpdater a = new AdaMaxUpdater(this);
-        int[] gradientShape = viewArray.shape();
+        long[] gradientShape = viewArray.shape();
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
         gradientShape[1] /= 2;
         a.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);

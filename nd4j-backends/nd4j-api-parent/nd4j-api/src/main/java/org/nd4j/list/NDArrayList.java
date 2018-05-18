@@ -1,5 +1,6 @@
 package org.nd4j.list;
 
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -293,7 +294,7 @@ public class NDArrayList extends  BaseNDArrayList<Double>  {
             container = Nd4j.create(10);
         }
         else if(idx >= container.length()) {
-            int max = Math.max(container.length() * 2,idx);
+            val max = Math.max(container.length() * 2,idx);
             INDArray newContainer = Nd4j.create(max);
             newContainer.put(new INDArrayIndex[]{NDArrayIndex.interval(0,container.length())},container);
             container = newContainer;

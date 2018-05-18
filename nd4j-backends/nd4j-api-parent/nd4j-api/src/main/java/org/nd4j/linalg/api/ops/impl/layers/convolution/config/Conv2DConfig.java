@@ -13,9 +13,9 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Conv2DConfig extends BaseConvolutionConfig  {
-    private int kh, kw, sy, sx, ph, pw;
-    @Builder.Default private int dh = 1;
-    @Builder.Default private int dw = 1;
+    private long kh, kw, sy, sx, ph, pw;
+    @Builder.Default private long dh = 1;
+    @Builder.Default private long dw = 1;
     private boolean isSameMode;
     @Builder.Default
     private String dataFormat = "NWHC";

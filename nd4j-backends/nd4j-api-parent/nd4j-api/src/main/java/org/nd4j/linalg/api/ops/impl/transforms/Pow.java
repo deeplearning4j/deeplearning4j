@@ -50,7 +50,7 @@ public class Pow extends BaseTransformOp {
         this.extraArgs = new Object[]{pow};
     }
 
-    public Pow(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double pow) {
+    public Pow(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double pow) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.pow = pow;
         this.extraArgs = new Object[]{pow};

@@ -1,5 +1,6 @@
 package org.nd4j.linalg.shape;
 
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -93,7 +94,7 @@ public class ShapeTests extends BaseNd4jTest {
     @Test
     public void testVectorAlongDimension() {
         INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
-        INDArray assertion = Nd4j.create(new float[] {5, 17}, new int[] {1, 2});
+        INDArray assertion = Nd4j.create(new float[] {5, 17}, new long[] {1, 2});
         INDArray vectorDimensionTest = arr.vectorAlongDimension(1, 2);
         assertEquals(assertion, vectorDimensionTest);
         INDArray zeroOne = arr.vectorAlongDimension(0, 1);
@@ -110,7 +111,7 @@ public class ShapeTests extends BaseNd4jTest {
         assertEquals(testColumn3Assertion, testColumn3);
 
 
-        INDArray v1 = Nd4j.linspace(1, 4, 4).reshape(new int[] {2, 2});
+        INDArray v1 = Nd4j.linspace(1, 4, 4).reshape(new long[] {2, 2});
         INDArray testColumnV1 = v1.vectorAlongDimension(0, 0);
         INDArray testColumnV1Assertion = Nd4j.create(new float[] {1, 2});
         assertEquals(testColumnV1Assertion, testColumnV1);
@@ -141,8 +142,8 @@ public class ShapeTests extends BaseNd4jTest {
     @Test
     public void testNoCopy() {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12);
-        INDArray arr = Shape.newShapeNoCopy(threeTwoTwo, new int[] {3, 2, 2}, true);
-        assertArrayEquals(arr.shape(), new int[] {3, 2, 2});
+        INDArray arr = Shape.newShapeNoCopy(threeTwoTwo, new long[] {3, 2, 2}, true);
+        assertArrayEquals(arr.shape(), new long[] {3, 2, 2});
     }
 
     @Test
@@ -194,7 +195,7 @@ public class ShapeTests extends BaseNd4jTest {
     @Test
     public void testDimShuffle() {
         INDArray scalarTest = Nd4j.scalar(0.0);
-        INDArray broadcast = scalarTest.dimShuffle(new Object[] {'x'}, new int[] {0, 1}, new boolean[] {true, true});
+        INDArray broadcast = scalarTest.dimShuffle(new Object[] {'x'}, new long[] {0, 1}, new boolean[] {true, true});
         assertTrue(broadcast.rank() == 3);
         INDArray rowVector = Nd4j.linspace(1, 4, 4);
         assertEquals(rowVector,
@@ -202,11 +203,11 @@ public class ShapeTests extends BaseNd4jTest {
         //add extra dimension to row vector in middle
         INDArray rearrangedRowVector =
                         rowVector.dimShuffle(new Object[] {0, 'x', 1}, new int[] {0, 1}, new boolean[] {true, true});
-        assertArrayEquals(new int[] {1, 1, 4}, rearrangedRowVector.shape());
+        assertArrayEquals(new long[] {1, 1, 4}, rearrangedRowVector.shape());
 
-        INDArray dimshuffed = rowVector.dimShuffle(new Object[] {'x', 0, 'x', 'x'}, new int[] {0, 1},
+        INDArray dimshuffed = rowVector.dimShuffle(new Object[] {'x', 0, 'x', 'x'}, new long[] {0, 1},
                         new boolean[] {true, true});
-        assertArrayEquals(new int[] {1, 1, 1, 1, 4}, dimshuffed.shape());
+        assertArrayEquals(new long[] {1, 1, 1, 1, 4}, dimshuffed.shape());
     }
 
 
@@ -224,26 +225,26 @@ public class ShapeTests extends BaseNd4jTest {
     @Test
     public void testBroadcastShapes(){
         //Test cases: in1Shape, in2Shape, shapeOf(op(in1,in2))
-        List<Triple<int[],int[], int[]>> testCases = new ArrayList<>();
-        testCases.add(new Triple<>(new int[]{3,1}, new int[]{1,4}, new int[]{3,4}));
-        testCases.add(new Triple<>(new int[]{3,1}, new int[]{3,4}, new int[]{3,4}));
-        testCases.add(new Triple<>(new int[]{3,4}, new int[]{1,4}, new int[]{3,4}));
-        testCases.add(new Triple<>(new int[]{3,4,1}, new int[]{1,1,5}, new int[]{3,4,5}));
-        testCases.add(new Triple<>(new int[]{3,4,1}, new int[]{3,1,5}, new int[]{3,4,5}));
-        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{1,4,1}, new int[]{3,4,5}));
-        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{1,4,5}, new int[]{3,4,5}));
-        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{3,4,5}, new int[]{3,4,5}));
-        testCases.add(new Triple<>(new int[]{3,1,1,1}, new int[]{1,4,5,6}, new int[]{3,4,5,6}));
-        testCases.add(new Triple<>(new int[]{1,1,1,6}, new int[]{3,4,5,6}, new int[]{3,4,5,6}));
-        testCases.add(new Triple<>(new int[]{1,4,5,1}, new int[]{3,1,1,6}, new int[]{3,4,5,6}));
-        testCases.add(new Triple<>(new int[]{1,6}, new int[]{3,4,5,1}, new int[]{3,4,5,6}));
+        List<Triple<long[], long[], long[]>> testCases = new ArrayList<>();
+        testCases.add(new Triple<>(new long[]{3,1}, new long[]{1,4}, new long[]{3,4}));
+        testCases.add(new Triple<>(new long[]{3,1}, new long[]{3,4}, new long[]{3,4}));
+        testCases.add(new Triple<>(new long[]{3,4}, new long[]{1,4}, new long[]{3,4}));
+        testCases.add(new Triple<>(new long[]{3,4,1}, new long[]{1,1,5}, new long[]{3,4,5}));
+        testCases.add(new Triple<>(new long[]{3,4,1}, new long[]{3,1,5}, new long[]{3,4,5}));
+        testCases.add(new Triple<>(new long[]{3,1,5}, new long[]{1,4,1}, new long[]{3,4,5}));
+        testCases.add(new Triple<>(new long[]{3,1,5}, new long[]{1,4,5}, new long[]{3,4,5}));
+        testCases.add(new Triple<>(new long[]{3,1,5}, new long[]{3,4,5}, new long[]{3,4,5}));
+        testCases.add(new Triple<>(new long[]{3,1,1,1}, new long[]{1,4,5,6}, new long[]{3,4,5,6}));
+        testCases.add(new Triple<>(new long[]{1,1,1,6}, new long[]{3,4,5,6}, new long[]{3,4,5,6}));
+        testCases.add(new Triple<>(new long[]{1,4,5,1}, new long[]{3,1,1,6}, new long[]{3,4,5,6}));
+        testCases.add(new Triple<>(new long[]{1,6}, new long[]{3,4,5,1}, new long[]{3,4,5,6}));
 
-        for(Triple<int[], int[], int[]> t : testCases){
-            int[] x = t.getFirst();
-            int[] y = t.getSecond();
-            int[] exp = t.getThird();
+        for(Triple<long[], long[], long[]> t : testCases){
+            val x = t.getFirst();
+            val y = t.getSecond();
+            val exp = t.getThird();
 
-            int[] act = Shape.broadcastOutputShape(x,y);
+            val act = Shape.broadcastOutputShape(x,y);
             assertArrayEquals(exp,act);
         }
     }

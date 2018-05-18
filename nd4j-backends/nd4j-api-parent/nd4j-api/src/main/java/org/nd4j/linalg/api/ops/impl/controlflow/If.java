@@ -68,9 +68,9 @@ public class If extends DifferentialFunction implements CustomOp {
         this.trueBodyExecuted = ifStatement.trueBodyExecuted;
         this.dummyResult = ifStatement.dummyResult;
         this.inputVars = ifStatement.inputVars;
-        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme());
+        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new long[]{1,1},new ZeroInitScheme());
         if(sameDiff.getShapeForVarName(dummyResult.getVarName()) == null)
-            sameDiff.putShapeForVarName(dummyResult.getVarName(),new int[]{1,1});
+            sameDiff.putShapeForVarName(dummyResult.getVarName(),new long[]{1,1});
 
 
 
@@ -96,7 +96,7 @@ public class If extends DifferentialFunction implements CustomOp {
         this.falseBody = falseBody;
         this.blockName = blockName;
         //need to add the op to the list of ops to be executed when running backwards
-        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'));
+        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new long[]{1,1},new ZeroInitScheme('f'));
         parent.addOutgoingFor(new SDVariable[]{dummyResult},this);
 
         //create a samediff sub graph for running just the execution
@@ -179,8 +179,8 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public int[] iArgs() {
-        return new int[0];
+    public long[] iArgs() {
+        return new long[0];
     }
 
     @Override
@@ -194,12 +194,17 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public void addIArgument(long... arg) {
+
+    }
+
+    @Override
     public void removeIArgument(Integer arg) {
 
     }
 
     @Override
-    public Integer getIArgument(int index) {
+    public Long getIArgument(int index) {
         return null;
     }
 
@@ -329,8 +334,8 @@ public class If extends DifferentialFunction implements CustomOp {
 
 
     @Override
-    public List<int[]> calculateOutputShape() {
-        return Arrays.asList(new int[]{1,1});
+    public List<long[]> calculateOutputShape() {
+        return Arrays.asList(new long[]{1,1});
     }
 
     @Override

@@ -49,7 +49,7 @@ public class IntDataBufferTests extends BaseNd4jTest {
         INDArray loaded = Nd4j.read(dis);
 
         assertEquals(DataBuffer.Type.INT, loaded.data().dataType());
-        assertEquals(DataBuffer.Type.INT, loaded.shapeInfoDataBuffer().dataType());
+        assertEquals(DataBuffer.Type.LONG, loaded.shapeInfoDataBuffer().dataType());
 
         assertEquals(intArray.data().length(), loaded.data().length());
 

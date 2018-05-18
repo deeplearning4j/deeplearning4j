@@ -58,7 +58,7 @@ public class IfDerivative extends If {
     }
 
     @Override
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
         return super.calculateOutputShape();
     }
 

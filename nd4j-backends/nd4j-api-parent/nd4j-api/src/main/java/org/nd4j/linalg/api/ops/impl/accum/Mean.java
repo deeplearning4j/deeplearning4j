@@ -79,7 +79,7 @@ public class Mean extends Sum {
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         //If out = mean(in), then dL/dIn = 1/N * dL/dOut  (broadcast to appropriate shape)
         //Note that N differs for "along dimension" vs. "whole array" reduce cases
-        int n = f().getReductionLength(this);
+        long n = f().getReductionLength(this);
 
         int rank = Shape.rankFromShape(arg().getShape());
         SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(rank, dimensions, i_v1.get(0));

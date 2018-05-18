@@ -2,6 +2,7 @@ package org.nd4j.linalg.dataset.api;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -68,7 +69,7 @@ public class DataSetUtil {
         //Same approach as RnnToFeedForwardPreProcessor in DL4J
         //I.e., we're effectively stacking time steps for all examples
 
-        int[] shape = data.shape();
+        val shape = data.shape();
         INDArray as2d;
         if (shape[0] == 1) {
             as2d = data.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
@@ -88,7 +89,7 @@ public class DataSetUtil {
             mask = mask.dup('f');
         }
 
-        INDArray mask1d = mask.reshape('f', new int[] {mask.length(), 1});
+        INDArray mask1d = mask.reshape('f', new long[] {mask.length(), 1});
 
         //Assume masks are 0s and 1s: then sum == number of elements
         int numElements = mask.sumNumber().intValue();
@@ -117,14 +118,14 @@ public class DataSetUtil {
     }
 
     public static INDArray tailor4d2d(@NonNull INDArray data) {
-        int instances = data.size(0);
-        int channels = data.size(1);
-        int height = data.size(2);
-        int width = data.size(3);
+        long instances = data.size(0);
+        long channels = data.size(1);
+        long height = data.size(2);
+        long width = data.size(3);
 
         INDArray in2d = Nd4j.create(channels, height * width * instances);
 
-        int tads = data.tensorssAlongDimension(3, 2, 0);
+        long tads = data.tensorssAlongDimension(3, 2, 0);
         for (int i = 0; i < tads; i++) {
             INDArray thisTAD = data.tensorAlongDimension(i, 3, 2, 0);
             in2d.putRow(i, Nd4j.toFlattened(thisTAD));
@@ -280,7 +281,7 @@ public class DataSetUtil {
      * @return Merged arrays and mask
      */
     public static Pair<INDArray, INDArray> merge2d(INDArray[] arrays, INDArray[] masks) {
-        int cols = arrays[0].columns();
+        long cols = arrays[0].columns();
 
         INDArray[] temp = new INDArray[arrays.length];
         boolean hasMasks = false;
@@ -307,14 +308,14 @@ public class DataSetUtil {
     }
 
 
-    public static INDArray mergePerOutputMasks2d(int[] outShape, INDArray[][] arrays, INDArray[][] masks,
+    public static INDArray mergePerOutputMasks2d(long[] outShape, INDArray[][] arrays, INDArray[][] masks,
                     int inOutIdx) {
         Pair<INDArray[], INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
         return mergePerOutputMasks2d(outShape, p.getFirst(), p.getSecond());
     }
 
-    public static INDArray mergePerOutputMasks2d(int[] outShape, INDArray[] arrays, INDArray[] masks) {
-        int[] numExamplesPerArr = new int[arrays.length];
+    public static INDArray mergePerOutputMasks2d(long[] outShape, INDArray[] arrays, INDArray[] masks) {
+        val numExamplesPerArr = new long[arrays.length];
         for (int i = 0; i < numExamplesPerArr.length; i++) {
             numExamplesPerArr[i] = arrays[i].size(0);
         }
@@ -323,7 +324,7 @@ public class DataSetUtil {
 
         int rowsSoFar = 0;
         for (int i = 0; i < masks.length; i++) {
-            int thisRows = numExamplesPerArr[i]; //Mask itself may be null -> all present, but may include multiple examples
+            long thisRows = numExamplesPerArr[i]; //Mask itself may be null -> all present, but may include multiple examples
             if (masks[i] == null) {
                 continue;
             }
@@ -366,9 +367,9 @@ public class DataSetUtil {
         //(c) Furthermore: mask arrays can be per-time-step (2d) or per output (3d). Per-input masks (3d feature masks)
         //    are not supported, however
 
-        int firstLength = arrays[0].size(2);
-        int size = arrays[0].size(1);
-        int maxLength = firstLength;
+        long firstLength = arrays[0].size(2);
+        long size = arrays[0].size(1);
+        long maxLength = firstLength;
 
         boolean hasMask = false;
         int maskRank = -1;
@@ -376,7 +377,7 @@ public class DataSetUtil {
         int totalExamples = 0;
         for (int i = 0; i < arrays.length; i++) {
             totalExamples += arrays[i].size(0);
-            int thisLength = arrays[i].size(2);
+            long thisLength = arrays[i].size(2);
             maxLength = Math.max(maxLength, thisLength);
             if (thisLength != firstLength)
                 lengthsDiffer = true;
@@ -402,7 +403,7 @@ public class DataSetUtil {
         if (!lengthsDiffer && !needMask) {
             //Simplest case: same length, no mask arrays
             for (int i = 0; i < arrays.length; i++) {
-                int thisNExamples = arrays[i].size(0);
+                long thisNExamples = arrays[i].size(0);
                 arr.put(new INDArrayIndex[] {NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
                                 NDArrayIndex.all(), NDArrayIndex.all()}, arrays[i]);
                 examplesSoFar += thisNExamples;
@@ -414,14 +415,14 @@ public class DataSetUtil {
                 //Standard per-example masking required
                 for (int i = 0; i < arrays.length; i++) {
                     INDArray a = arrays[i];
-                    int thisNExamples = a.size(0);
-                    int thisLength = a.size(2);
+                    long thisNExamples = a.size(0);
+                    long thisLength = a.size(2);
                     arr.put(new INDArrayIndex[] {NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
                                     NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, a);
 
                     if (masks != null && masks[i] != null && masks[i] != null) {
                         INDArray origMask = masks[i];
-                        int maskLength = origMask.size(1);
+                        long maskLength = origMask.size(1);
                         mask.put(new INDArrayIndex[] {
                                         NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
                                         NDArrayIndex.interval(0, maskLength)}, origMask);
@@ -450,8 +451,8 @@ public class DataSetUtil {
                 for (int i = 0; i < arrays.length; i++) {
                     INDArray m = masks[i];
                     INDArray a = arrays[i];
-                    int thisNExamples = a.size(0);
-                    int thisLength = a.size(2);
+                    long thisNExamples = a.size(0);
+                    long thisLength = a.size(2);
                     arr.put(new INDArrayIndex[] {NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
                                     NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, a);
 
@@ -501,12 +502,12 @@ public class DataSetUtil {
         //4d -> images. In principle: could have 2d mask arrays (per-example masks)
 
         int nExamples = 0;
-        int[] shape = arrays[0].shape();
+        long[] shape = arrays[0].shape();
         INDArray[] temp = new INDArray[arrays.length];
         boolean hasMasks = false;
         for (int i = 0; i < arrays.length; i++) {
             nExamples += arrays[i].size(0);
-            int[] thisShape = arrays[i].shape();
+            long[] thisShape = arrays[i].shape();
             if (thisShape.length != 4) {
                 throw new IllegalStateException("Cannot merge 4d arrays with non 4d arrays");
             }

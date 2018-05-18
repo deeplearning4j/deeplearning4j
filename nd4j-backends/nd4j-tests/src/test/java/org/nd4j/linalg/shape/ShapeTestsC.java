@@ -1,5 +1,6 @@
 package org.nd4j.linalg.shape;
 
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -129,13 +130,13 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testReshapePermute() {
         INDArray arrNoPermute = Nd4j.ones(5, 3, 4);
         INDArray reshaped2dNoPermute = arrNoPermute.reshape(5 * 3, 4); //OK
-        assertArrayEquals(reshaped2dNoPermute.shape(), new int[] {5 * 3, 4});
+        assertArrayEquals(reshaped2dNoPermute.shape(), new long[] {5 * 3, 4});
 
         INDArray arr = Nd4j.ones(5, 4, 3);
         INDArray permuted = arr.permute(0, 2, 1);
         assertArrayEquals(arrNoPermute.shape(), permuted.shape());
         INDArray reshaped2D = permuted.reshape(5 * 3, 4); //NullPointerException
-        assertArrayEquals(reshaped2D.shape(), new int[] {5 * 3, 4});
+        assertArrayEquals(reshaped2D.shape(), new long[] {5 * 3, 4});
     }
 
 
@@ -155,7 +156,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     @Test
     public void testOtherReshape() {
-        INDArray nd = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6}, new int[] {2, 3});
+        INDArray nd = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6}, new long[] {2, 3});
 
         INDArray slice = nd.slice(1, 0);
 
@@ -169,10 +170,10 @@ public class ShapeTestsC extends BaseNd4jTest {
     @Test
     public void testVectorAlongDimension() {
         INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
-        INDArray assertion = Nd4j.create(new float[] {3, 4}, new int[] {1, 2});
+        INDArray assertion = Nd4j.create(new float[] {3, 4}, new long[] {1, 2});
         INDArray vectorDimensionTest = arr.vectorAlongDimension(1, 2);
         assertEquals(assertion, vectorDimensionTest);
-        int vectorsAlongDimension1 = arr.vectorsAlongDimension(1);
+        val vectorsAlongDimension1 = arr.vectorsAlongDimension(1);
         assertEquals(8, vectorsAlongDimension1);
         INDArray zeroOne = arr.vectorAlongDimension(0, 1);
         assertEquals(zeroOne, Nd4j.create(new float[] {1, 3, 5}));
@@ -188,7 +189,7 @@ public class ShapeTestsC extends BaseNd4jTest {
         assertEquals(testColumn3Assertion, testColumn3);
 
 
-        INDArray v1 = Nd4j.linspace(1, 4, 4).reshape(new int[] {2, 2});
+        INDArray v1 = Nd4j.linspace(1, 4, 4).reshape(new long[] {2, 2});
         INDArray testColumnV1 = v1.vectorAlongDimension(0, 0);
         INDArray testColumnV1Assertion = Nd4j.create(new float[] {1, 3});
         assertEquals(testColumnV1Assertion, testColumnV1);
@@ -197,7 +198,7 @@ public class ShapeTestsC extends BaseNd4jTest {
         INDArray testRowV1Assertion = Nd4j.create(new float[] {2, 4});
         assertEquals(testRowV1Assertion, testRowV1);
 
-        INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[] {2, 2, 2});
+        INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new long[] {2, 2, 2});
         INDArray vectorOne = n.vectorAlongDimension(1, 2);
         INDArray assertionVectorOne = Nd4j.create(new double[] {3, 4});
         assertEquals(assertionVectorOne, vectorOne);
@@ -288,8 +289,8 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     @Test
     public void testCumSum() {
-        INDArray n = Nd4j.create(new float[] {1, 2, 3, 4}, new int[] {1, 4});
-        INDArray cumSumAnswer = Nd4j.create(new float[] {1, 3, 6, 10}, new int[] {1, 4});
+        INDArray n = Nd4j.create(new float[] {1, 2, 3, 4}, new long[] {1, 4});
+        INDArray cumSumAnswer = Nd4j.create(new float[] {1, 3, 6, 10}, new long[] {1, 4});
         INDArray cumSumTest = n.cumsum(0);
         assertEquals(getFailureMessage(), cumSumAnswer, cumSumTest);
 
@@ -307,7 +308,7 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testSumRow() {
         INDArray rowVector10 = Nd4j.ones(10);
         INDArray sum1 = rowVector10.sum(1);
-        assertArrayEquals(sum1.shape(), new int[] {1, 1});
+        assertArrayEquals(sum1.shape(), new long[] {1, 1});
         assertTrue(sum1.getDouble(0) == 10);
     }
 
@@ -315,7 +316,7 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testSumColumn() {
         INDArray colVector10 = Nd4j.ones(10, 1);
         INDArray sum0 = colVector10.sum(0);
-        assertArrayEquals(sum0.shape(), new int[] {1, 1});
+        assertArrayEquals(sum0.shape(), new long[] {1, 1});
         assertTrue(sum0.getDouble(0) == 10);
     }
 
@@ -323,17 +324,17 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testSum2d() {
         INDArray arr = Nd4j.ones(10, 10);
         INDArray sum0 = arr.sum(0);
-        assertArrayEquals(sum0.shape(), new int[] {1, 10});
+        assertArrayEquals(sum0.shape(), new long[] {1, 10});
 
         INDArray sum1 = arr.sum(1);
-        assertArrayEquals(sum1.shape(), new int[] {10, 1});
+        assertArrayEquals(sum1.shape(), new long[] {10, 1});
     }
 
     @Test
     public void testSum2dv2() {
         INDArray arr = Nd4j.ones(10, 10);
         INDArray sumBoth = arr.sum(0, 1);
-        assertArrayEquals(sumBoth.shape(), new int[] {1, 1});
+        assertArrayEquals(sumBoth.shape(), new long[] {1, 1});
         assertTrue(sumBoth.getDouble(0) == 100);
     }
 
@@ -341,11 +342,11 @@ public class ShapeTestsC extends BaseNd4jTest {
     public void testPermuteReshape() {
         INDArray arrTest = Nd4j.arange(60).reshape('c', 3, 4, 5);
         INDArray permute = arrTest.permute(2, 1, 0);
-        assertArrayEquals(new int[] {5, 4, 3}, permute.shape());
-        assertArrayEquals(new int[] {1, 5, 20}, permute.stride());
+        assertArrayEquals(new long[] {5, 4, 3}, permute.shape());
+        assertArrayEquals(new long[] {1, 5, 20}, permute.stride());
         INDArray reshapedPermute = permute.reshape(-1, 12);
-        assertArrayEquals(new int[] {5, 12}, reshapedPermute.shape());
-        assertArrayEquals(new int[] {12, 1}, reshapedPermute.stride());
+        assertArrayEquals(new long[] {5, 12}, reshapedPermute.shape());
+        assertArrayEquals(new long[] {12, 1}, reshapedPermute.stride());
 
     }
 
@@ -366,7 +367,7 @@ public class ShapeTestsC extends BaseNd4jTest {
     @Test
     public void testPutScalar() {
         //Check that the various putScalar methods have the same result...
-        int[][] shapes = new int[][] {{3, 4}, {1, 4}, {3, 1}, {3, 4, 5}, {1, 4, 5}, {3, 1, 5}, {3, 4, 1}, {1, 1, 5},
+        val shapes = new int[][] {{3, 4}, {1, 4}, {3, 1}, {3, 4, 5}, {1, 4, 5}, {3, 1, 5}, {3, 4, 1}, {1, 1, 5},
                         {3, 4, 5, 6}, {1, 4, 5, 6}, {3, 1, 5, 6}, {3, 4, 1, 6}, {3, 4, 5, 1}, {1, 1, 5, 6},
                         {3, 1, 1, 6}, {3, 1, 1, 1}};
 
@@ -380,7 +381,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
             int i = 0;
             while (iter.hasNext()) {
-                int[] currIdx = iter.next();
+                val currIdx = iter.next();
                 firstC.putScalar(currIdx, i);
                 firstF.putScalar(currIdx, i);
 

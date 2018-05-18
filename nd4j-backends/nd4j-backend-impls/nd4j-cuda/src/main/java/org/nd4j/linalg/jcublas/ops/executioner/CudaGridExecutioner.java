@@ -3,6 +3,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.val;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -562,16 +563,16 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             dimension = new int[] {Integer.MAX_VALUE};
 
 
-        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1, 1}
+        long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
                 : ArrayUtil.removeIndex(op.x().shape(), dimension);
         //ensure vector is proper shape
         if (retShape.length == 1) {
             if (dimension[0] == 0)
-                retShape = new int[] {1, retShape[0]};
+                retShape = new long[] {1, retShape[0]};
             else
-                retShape = new int[] {retShape[0], 1};
+                retShape = new long[] {retShape[0], 1};
         } else if (retShape.length == 0) {
-            retShape = new int[] {1, 1};
+            retShape = new long[] {1, 1};
         }
 
         if(op.z() == null || op.z() == op.x()){
@@ -602,16 +603,16 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             dimension = new int[] {Integer.MAX_VALUE};
 
 
-        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1, 1}
+        long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
                 : ArrayUtil.removeIndex(op.x().shape(), dimension);
         //ensure vector is proper shape
         if (retShape.length == 1) {
             if (dimension[0] == 0)
-                retShape = new int[] {1, retShape[0]};
+                retShape = new long[] {1, retShape[0]};
             else
-                retShape = new int[] {retShape[0], 1};
+                retShape = new long[] {retShape[0], 1};
         } else if (retShape.length == 0) {
-            retShape = new int[] {1, 1};
+            retShape = new long[] {1, 1};
         }
 
         /*
@@ -622,8 +623,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
             if (op.isComplexAccumulation()) {
-                int xT = op.x().tensorssAlongDimension(dimension);
-                int yT = op.y().tensorssAlongDimension(dimension);
+                val xT = op.x().tensorssAlongDimension(dimension);
+                val yT = op.y().tensorssAlongDimension(dimension);
 
                 ret = Nd4j.create(xT, yT);
             } else {
@@ -808,10 +809,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 } else {
                     nativeOps.execMetaPredicateShapeFloat(extras, first.getType().ordinal(), first.getOpNum(),
                             second.getType().ordinal(), second.getOpNum(), first.getXLength(),
-                            (FloatPointer) first.getX(), (IntPointer) first.getXShapeInfo(),
+                            (FloatPointer) first.getX(), (LongPointer) first.getXShapeInfo(),
                             (FloatPointer) yGrid.getY(), // can be null
-                            (IntPointer) yGrid.getYShapeInfo(), // cane be -1
-                            (FloatPointer) second.getZ(), (IntPointer) second.getZShapeInfo(),
+                            (LongPointer) yGrid.getYShapeInfo(), // cane be -1
+                            (FloatPointer) second.getZ(), (LongPointer) second.getZShapeInfo(),
                             (FloatPointer) first.getExtraArgs(), (FloatPointer) second.getExtraArgs(),
                             (float) scalarA, (float) scalarB);
                 }
@@ -827,10 +828,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 } else {
                     nativeOps.execMetaPredicateShapeDouble(extras, first.getType().ordinal(), first.getOpNum(),
                             second.getType().ordinal(), second.getOpNum(), first.getXLength(),
-                            (DoublePointer) first.getX(), (IntPointer) first.getXShapeInfo(),
+                            (DoublePointer) first.getX(), (LongPointer) first.getXShapeInfo(),
                             (DoublePointer) yGrid.getY(), // can be null
-                            (IntPointer) yGrid.getYShapeInfo(), // cane be -1
-                            (DoublePointer) second.getZ(), (IntPointer) second.getZShapeInfo(),
+                            (LongPointer) yGrid.getYShapeInfo(), // cane be -1
+                            (DoublePointer) second.getZ(), (LongPointer) second.getZShapeInfo(),
                             (DoublePointer) first.getExtraArgs(), (DoublePointer) second.getExtraArgs(),
                             scalarA, scalarB);
                 }
@@ -846,10 +847,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 } else {
                     nativeOps.execMetaPredicateShapeHalf(extras, first.getType().ordinal(), first.getOpNum(),
                             second.getType().ordinal(), second.getOpNum(), first.getXLength(),
-                            (ShortPointer) first.getX(), (IntPointer) first.getXShapeInfo(),
+                            (ShortPointer) first.getX(), (LongPointer) first.getXShapeInfo(),
                             (ShortPointer) yGrid.getY(), // can be null
-                            (IntPointer) yGrid.getYShapeInfo(), // cane be -1
-                            (ShortPointer) second.getZ(), (IntPointer) second.getZShapeInfo(),
+                            (LongPointer) yGrid.getYShapeInfo(), // cane be -1
+                            (ShortPointer) second.getZ(), (LongPointer) second.getZShapeInfo(),
                             (ShortPointer) first.getExtraArgs(), (ShortPointer) second.getExtraArgs(),
                             (float) scalarA, (float) scalarB);
                 }
@@ -859,10 +860,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
                 nativeOps.execMetaPredicateReduceFloat(extras, first.getType().ordinal(), first.getOpNum(),
                         second.getType().ordinal(), second.getOpNum(), (FloatPointer) first.getX(),
-                        (IntPointer) first.getXShapeInfo(), (FloatPointer) second.getY(),
-                        (IntPointer) second.getYShapeInfo(), (FloatPointer) second.getZ(),
-                        (IntPointer) second.getZShapeInfo(), (IntPointer) second.getDimensions(),
-                        second.getDimensionsLength(), (IntPointer) second.getTadShape(),
+                        (LongPointer) first.getXShapeInfo(), (FloatPointer) second.getY(),
+                        (LongPointer) second.getYShapeInfo(), (FloatPointer) second.getZ(),
+                        (LongPointer) second.getZShapeInfo(), (IntPointer) second.getDimensions(),
+                        second.getDimensionsLength(), (LongPointer) second.getTadShape(),
                         new LongPointerWrapper(second.getTadOffsets()), (FloatPointer) first.getExtraArgs(),
                         (FloatPointer) second.getExtraArgs(), (float) scalarA, 0.0f, false);
             }

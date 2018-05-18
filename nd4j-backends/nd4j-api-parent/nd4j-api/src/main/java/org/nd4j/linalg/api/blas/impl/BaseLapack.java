@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.Lapack;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -18,8 +19,12 @@ public abstract class BaseLapack implements Lapack {
     @Override
     public INDArray getrf(INDArray A) {
 
-        int m = A.rows();
-        int n = A.columns();
+        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        int m = (int) A.rows();
+        int n = (int) A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
@@ -66,8 +71,12 @@ public abstract class BaseLapack implements Lapack {
     @Override
     public void potrf(INDArray A, boolean lower) {
 
+        // FIXME: int cast
+        if (A.columns() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
         byte uplo = (byte) (lower ? 'L' : 'U'); // upper or lower part of the factor desired ?
-        int n = A.columns();
+        int n = (int) A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
@@ -108,8 +117,12 @@ public abstract class BaseLapack implements Lapack {
     @Override
     public void geqrf(INDArray A, INDArray R) {
 
-        int m = A.rows();
-        int n = A.columns();
+        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        int m = (int) A.rows();
+        int n = (int) A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}).getFirst());
@@ -158,11 +171,15 @@ public abstract class BaseLapack implements Lapack {
             throw new Error("syev: V must be the length of the matrix dimension.");
         }
 
+        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
         int status = -1;
         if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            status = dsyev(jobz, uplo, A.rows(), A, V);
+            status = dsyev(jobz, uplo, (int) A.rows(), A, V);
         } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
-            status = ssyev(jobz, uplo, A.rows(), A, V);
+            status = ssyev(jobz, uplo, (int) A.rows(), A, V);
         } else {
             throw new UnsupportedOperationException();
         }
@@ -188,8 +205,12 @@ public abstract class BaseLapack implements Lapack {
 
     @Override
     public void gesvd(INDArray A, INDArray S, INDArray U, INDArray VT) {
-        int m = A.rows();
-        int n = A.columns();
+        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        int m = (int) A.rows();
+        int n = (int) A.columns();
 
         byte jobu = (byte) (U == null ? 'N' : 'A');
         byte jobvt = (byte) (VT == null ? 'N' : 'A');
@@ -241,8 +262,12 @@ public abstract class BaseLapack implements Lapack {
      */
     @Override
     public INDArray getLFactor(INDArray A) {
-        int m = A.rows();
-        int n = A.columns();
+        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        int m = (int) A.rows();
+        int n = (int) A.columns();
 
         INDArray L = Nd4j.create(m, n);
         for (int r = 0; r < m; r++) {
@@ -262,8 +287,13 @@ public abstract class BaseLapack implements Lapack {
 
     @Override
     public INDArray getUFactor(INDArray A) {
-        int m = A.rows();
-        int n = A.columns();
+        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        int m = (int) A.rows();
+        int n = (int) A.columns();
+
         INDArray U = Nd4j.create(n, n);
 
         for (int r = 0; r < n; r++) {

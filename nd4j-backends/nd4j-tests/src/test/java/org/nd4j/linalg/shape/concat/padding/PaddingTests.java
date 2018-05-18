@@ -27,7 +27,7 @@ public class PaddingTests extends BaseNd4jTest {
     public void testAppend() {
         INDArray appendTo = Nd4j.ones(3, 3);
         INDArray ret = Nd4j.append(appendTo, 3, 1, -1);
-        assertArrayEquals(new int[] {3, 6}, ret.shape());
+        assertArrayEquals(new long[] {3, 6}, ret.shape());
 
         INDArray linspace = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray otherAppend = Nd4j.append(linspace, 3, 1.0, -1);
@@ -42,7 +42,7 @@ public class PaddingTests extends BaseNd4jTest {
     public void testPrepend() {
         INDArray appendTo = Nd4j.ones(3, 3);
         INDArray ret = Nd4j.append(appendTo, 3, 1, -1);
-        assertArrayEquals(new int[] {3, 6}, ret.shape());
+        assertArrayEquals(new long[] {3, 6}, ret.shape());
 
         INDArray linspace = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray assertion = Nd4j.create(new double[][] {{1, 1, 1, 1, 3}, {1, 1, 1, 2, 4}});

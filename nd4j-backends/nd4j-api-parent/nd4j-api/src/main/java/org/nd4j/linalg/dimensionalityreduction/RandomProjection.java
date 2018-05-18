@@ -76,8 +76,31 @@ public class RandomProjection {
         return res;
     }
 
+    public static List<Long> johnsonLindenstraussMinDim(long[] n, double... eps){
+        Boolean basicCheck = n == null || n.length == 0 || eps == null || eps.length == 0;
+        if (basicCheck)
+            throw new IllegalArgumentException("Johnson-Lindenstrauss dimension estimation requires > 0 components and at least a relative error");
+        for (double epsilon: eps){
+            if (epsilon <= 0 || epsilon >= 1) {
+                throw new IllegalArgumentException("A relative error should be in ]0, 1[");
+            }
+        }
+        List<Long> res = new ArrayList(n.length * eps.length);
+        for (double epsilon : eps){
+            double denom = (Math.pow(epsilon, 2) / 2 - Math.pow(epsilon, 3) / 3);
+            for (long components: n){
+                res.add((long) (4 * Math.log(components) / denom));
+            }
+        }
+        return res;
+    }
+
     public static List<Integer> johnsonLindenStraussMinDim(int n, double... eps){
         return johnsonLindenstraussMinDim(new int[]{n}, eps);
+    }
+
+    public static List<Long> johnsonLindenStraussMinDim(long n, double... eps){
+        return johnsonLindenstraussMinDim(new long[]{n}, eps);
     }
 
     /**
@@ -90,7 +113,7 @@ public class RandomProjection {
      * @param rng
      * @return
      */
-    private INDArray gaussianRandomMatrix(int[] shape, Random rng){
+    private INDArray gaussianRandomMatrix(long[] shape, Random rng){
         Nd4j.checkShapeValues(shape);
         INDArray res = Nd4j.create(shape);
 
@@ -99,9 +122,10 @@ public class RandomProjection {
         return res;
     }
 
-    private int[] projectionMatrixShape;
+    private long[] projectionMatrixShape;
     private INDArray _projectionMatrix;
-    private INDArray getProjectionMatrix(int[] shape, Random rng){
+
+    private INDArray getProjectionMatrix(long[] shape, Random rng){
         if (! Arrays.equals(projectionMatrixShape, shape) || _projectionMatrix == null)
             _projectionMatrix = gaussianRandomMatrix(shape, rng);
         return _projectionMatrix;
@@ -126,13 +150,24 @@ public class RandomProjection {
         return new int[]{ shape[1], components};
     }
 
+    private static long[] targetShape(long[] shape, double eps, int targetDimension, boolean auto){
+        long components = targetDimension;
+        if (auto) components = johnsonLindenStraussMinDim(shape[0], eps).get(0);
+        // JL or user spec edge cases
+        if (auto && (components <= 0 || components > shape[1])){
+            throw new ND4JIllegalStateException(String.format("Estimation led to a target dimension of %d, which is invalid", components));
+        }
+        return new long[]{ shape[1], components};
+    }
+
+
     /**
      * Compute the target shape of a suitable projection matrix
      * @param X the Data tensor
      * @param eps the relative error used in the Johnson-Lindenstrauss estimation
      * @return the shape of the projection matrix to use
      */
-    protected static int[] targetShape(INDArray X, double eps) {
+    protected static long[] targetShape(INDArray X, double eps) {
         return targetShape(X.shape(), eps, -1, true);
     }
 
@@ -142,7 +177,7 @@ public class RandomProjection {
      * @param targetDimension a desired dimension
      * @return the shape of the projection matrix to use
      */
-    protected static int[] targetShape(INDArray X, int targetDimension) {
+    protected static long[] targetShape(INDArray X, int targetDimension) {
         return targetShape(X.shape(), -1, targetDimension, false);
     }
 
@@ -153,7 +188,7 @@ public class RandomProjection {
      * @return the projected matrix
      */
     public INDArray project(INDArray data){
-        int[] tShape = targetShape(data.shape(), eps, components, autoMode);
+        long[] tShape = targetShape(data.shape(), eps, components, autoMode);
         return data.mmul(getProjectionMatrix(tShape, this.rng));
     }
 
@@ -165,7 +200,7 @@ public class RandomProjection {
      * @return
      */
     public INDArray project(INDArray data, INDArray result){
-        int[] tShape = targetShape(data.shape(), eps, components, autoMode);
+        long[] tShape = targetShape(data.shape(), eps, components, autoMode);
         return data.mmuli(getProjectionMatrix(tShape, this.rng), result);
     }
 
@@ -175,7 +210,7 @@ public class RandomProjection {
      * @return the projected matrix
      */
     public INDArray projecti(INDArray data){
-        int[] tShape = targetShape(data.shape(), eps, components, autoMode);
+        long[] tShape = targetShape(data.shape(), eps, components, autoMode);
         return data.mmuli(getProjectionMatrix(tShape, this.rng));
     }
 
@@ -187,7 +222,7 @@ public class RandomProjection {
      * @return
      */
     public INDArray projecti(INDArray data, INDArray result){
-        int[] tShape = targetShape(data.shape(), eps, components, autoMode);
+        long[] tShape = targetShape(data.shape(), eps, components, autoMode);
         return data.mmuli(getProjectionMatrix(tShape, this.rng), result);
     }
 

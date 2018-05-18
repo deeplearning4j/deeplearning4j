@@ -14,29 +14,29 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Conv3DConfig extends BaseConvolutionConfig {
-    @Builder.Default private int kT = 1;
-    @Builder.Default private int kW = 1;
-    @Builder.Default private int kH = 1;
+    @Builder.Default private long kT = 1;
+    @Builder.Default private long kW = 1;
+    @Builder.Default private long kH = 1;
 
     //strides
-    @Builder.Default private int dT = 1;
-    @Builder.Default private int dW = 1;
-    @Builder.Default private int dH = 1;
+    @Builder.Default private long dT = 1;
+    @Builder.Default private long dW = 1;
+    @Builder.Default private long dH = 1;
 
     //padding
-    @Builder.Default private int pT = 0;
-    @Builder.Default private int pW = 0;
+    @Builder.Default private long pT = 0;
+    @Builder.Default private long pW = 0;
     @Builder.Default private int pH = 0;
 
     //dilations
-    @Builder.Default private int dilationT = 1;
-    @Builder.Default private int dilationW = 1;
-    @Builder.Default private int dilationH = 1;
+    @Builder.Default private long dilationT = 1;
+    @Builder.Default private long dilationW = 1;
+    @Builder.Default private long dilationH = 1;
 
     //output padding
-    @Builder.Default private int aT = 0;
-    @Builder.Default private int aW = 0;
-    @Builder.Default private int aH = 0;
+    @Builder.Default private long aT = 0;
+    @Builder.Default private long aW = 0;
+    @Builder.Default private long aH = 0;
 
     private boolean biasUsed = false;
     private boolean isValidMode;

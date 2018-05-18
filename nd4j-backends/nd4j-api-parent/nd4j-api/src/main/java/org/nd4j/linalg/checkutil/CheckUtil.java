@@ -5,6 +5,7 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -49,13 +50,13 @@ public class CheckUtil {
 
     public static boolean checkGemm(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB,
                     double alpha, double beta, double maxRelativeDifference, double minAbsDifference) {
-        int commonDimA = (transposeA ? a.rows() : a.columns());
-        int commonDimB = (transposeB ? b.columns() : b.rows());
+        long commonDimA = (transposeA ? a.rows() : a.columns());
+        long commonDimB = (transposeB ? b.columns() : b.rows());
         if (commonDimA != commonDimB)
             throw new IllegalArgumentException("Common dimensions don't match: a.shape=" + Arrays.toString(a.shape())
                             + ", b.shape=" + Arrays.toString(b.shape()) + ", tA=" + transposeA + ", tb=" + transposeB);
-        int outRows = (transposeA ? a.columns() : a.rows());
-        int outCols = (transposeB ? b.rows() : b.columns());
+        long outRows = (transposeA ? a.columns() : a.rows());
+        long outCols = (transposeB ? b.rows() : b.columns());
         if (c.rows() != outRows || c.columns() != outCols)
             throw new IllegalArgumentException("C does not match outRows or outCols");
         if (c.offset() != 0 || c.ordering() != 'f')
@@ -132,7 +133,7 @@ public class CheckUtil {
         //No apache commons element-wise multiply, but can do this manually
 
         INDArray result = first.mul(second);
-        int[] shape = first.shape();
+        long[] shape = first.shape();
 
         INDArray expected = Nd4j.zeros(first.shape());
 
@@ -157,7 +158,7 @@ public class CheckUtil {
         //No apache commons element-wise division, but can do this manually
 
         INDArray result = first.div(second);
-        int[] shape = first.shape();
+        long[] shape = first.shape();
 
         INDArray expected = Nd4j.zeros(first.shape());
 
@@ -178,7 +179,7 @@ public class CheckUtil {
     }
 
     private static boolean checkShape(RealMatrix rmResult, INDArray result) {
-        int[] outShape = {rmResult.getRowDimension(), rmResult.getColumnDimension()};
+        long[] outShape = {rmResult.getRowDimension(), rmResult.getColumnDimension()};
         if (!Arrays.equals(outShape, result.shape())) {
             System.out.println("Failure on shape: " + Arrays.toString(result.shape()) + ", expected "
                             + Arrays.toString(outShape));
@@ -225,7 +226,7 @@ public class CheckUtil {
 
     public static boolean checkEntries(INDArray expected, INDArray actual, double maxRelativeDifference,
                     double minAbsDifference) {
-        int[] outShape = expected.shape();
+        long[] outShape = expected.shape();
         for (int i = 0; i < outShape[0]; i++) {
             for (int j = 0; j < outShape[1]; j++) {
                 double expOut = expected.getDouble(i, j);
@@ -247,8 +248,12 @@ public class CheckUtil {
     public static RealMatrix convertToApacheMatrix(INDArray matrix) {
         if (matrix.rank() != 2)
             throw new IllegalArgumentException("Input rank is not 2 (not matrix)");
-        int[] shape = matrix.shape();
-        BlockRealMatrix out = new BlockRealMatrix(shape[0], shape[1]);
+        long[] shape = matrix.shape();
+
+        if (matrix.columns() > Integer.MAX_VALUE || matrix.rows() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        BlockRealMatrix out = new BlockRealMatrix((int) shape[0], (int) shape[1]);
         for (int i = 0; i < shape[0]; i++) {
             for (int j = 0; j < shape[1]; j++) {
                 double value = matrix.getDouble(i, j);
@@ -314,7 +319,7 @@ public class CheckUtil {
     public static void printMatrixFullPrecision(INDArray matrix) {
         boolean floatType = (matrix.data().dataType() == DataBuffer.Type.FLOAT);
         printNDArrayHeader(matrix);
-        int[] shape = matrix.shape();
+        long[] shape = matrix.shape();
         for (int i = 0; i < shape[0]; i++) {
             for (int j = 0; j < shape[1]; j++) {
                 if (floatType)

@@ -85,6 +85,25 @@ public class ConstantBuffersCache extends BasicConstantHandler {
     }
 
     @Override
+    public DataBuffer getConstantBuffer(long[] array) {
+        ArrayDescriptor descriptor = new ArrayDescriptor(array);
+
+        if (!buffersCache.containsKey(descriptor)) {
+            DataBuffer buffer = Nd4j.createBufferDetached(array);
+
+            if (counter.get() < MAX_ENTRIES) {
+                counter.incrementAndGet();
+                buffersCache.put(descriptor, buffer);
+
+                bytes.addAndGet(array.length * Nd4j.sizeOfDataType());
+            }
+            return buffer;
+        }
+
+        return buffersCache.get(descriptor);
+    }
+
+    @Override
     public long getCachedBytes() {
         return bytes.get();
     }

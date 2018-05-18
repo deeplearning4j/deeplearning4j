@@ -34,7 +34,7 @@ public class BroadcastAMin extends BaseBroadcastOp {
         super(sameDiff, i_v, dimension, inPlace);
     }
 
-    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
+    public BroadcastAMin(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, dimension, extraArgs);
     }
 

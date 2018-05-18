@@ -1,6 +1,7 @@
 package org.nd4j.jita.concurrency;
 
 import lombok.NonNull;
+import lombok.val;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -238,11 +239,11 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (array.isView())
             throw new UnsupportedOperationException("It's impossible to replicate View");
 
-        int[] shape = array.shape();
-        int[] stride = array.stride();
-        int elementWiseStride = array.elementWiseStride();
-        char ordering = array.ordering();
-        int length = array.length();
+        val shape = array.shape();
+        val stride = array.stride();
+        val elementWiseStride = array.elementWiseStride();
+        val ordering = array.ordering();
+        val length = array.length();
 
         // we use this call to get device memory updated
         AtomicAllocator.getInstance().getPointer(array,

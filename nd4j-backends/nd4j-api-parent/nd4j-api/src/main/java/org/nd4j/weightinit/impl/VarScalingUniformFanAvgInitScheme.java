@@ -27,7 +27,7 @@ public class VarScalingUniformFanAvgInitScheme extends BaseWeightInitScheme {
 
 
     @Override
-    public INDArray doCreate(int[] shape, INDArray paramsView) {
+    public INDArray doCreate(long[] shape, INDArray paramsView) {
         double scalingFanAvg = 3.0 / Math.sqrt((fanIn + fanOut) / 2);
         return Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-scalingFanAvg, scalingFanAvg));
     }

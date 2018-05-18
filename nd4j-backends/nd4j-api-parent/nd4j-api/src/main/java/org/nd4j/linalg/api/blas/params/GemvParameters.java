@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.blas.params;
 import lombok.Data;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 
 /**
  * Gemv parameters:
@@ -23,21 +24,28 @@ public @Data class GemvParameters {
         this.x = x;
         this.y = y;
 
+        if (a.columns() > Integer.MAX_VALUE || a.rows() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        if (x.columns() > Integer.MAX_VALUE || x.rows() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+
         if (a.ordering() == 'f' && a.isMatrix()) {
-            this.m = a.rows();
-            this.n = a.columns();
-            this.lda = a.rows();
+            this.m = (int) a.rows();
+            this.n = (int) a.columns();
+            this.lda = (int) a.rows();
         } else if (a.ordering() == 'c' && a.isMatrix()) {
-            this.m = a.columns();
-            this.n = a.rows();
-            this.lda = a.columns();
+            this.m = (int) a.columns();
+            this.n = (int) a.rows();
+            this.lda = (int) a.columns();
             aOrdering = 'T';
         }
 
         else {
-            this.m = a.rows();
-            this.n = a.columns();
-            this.lda = a.size(0);
+            this.m = (int) a.rows();
+            this.n = (int) a.columns();
+            this.lda = (int) a.size(0);
         }
 
 

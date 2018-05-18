@@ -73,7 +73,7 @@ public class BinomialDistribution extends BaseRandomOp {
      * @param probabilities
      */
     public BinomialDistribution(@NonNull INDArray z, @NonNull INDArray probabilities) {
-        this(z, probabilities.length(), probabilities);
+        this(z, (int) probabilities.length(), probabilities);
     }
 
     @Override

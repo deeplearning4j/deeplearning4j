@@ -228,11 +228,12 @@ public abstract class BaseDistribution implements Distribution {
      * {@link #sample()} in a loop.
      */
     @Override
-    public double[] sample(int sampleSize) {
+    public double[] sample(long sampleSize) {
         if (sampleSize <= 0) {
             throw new NotStrictlyPositiveException(LocalizedFormats.NUMBER_OF_SAMPLES, sampleSize);
         }
-        double[] out = new double[sampleSize];
+        // FIXME: int cast
+        double[] out = new double[(int) sampleSize];
         for (int i = 0; i < sampleSize; i++) {
             out[i] = sample();
         }
@@ -257,10 +258,16 @@ public abstract class BaseDistribution implements Distribution {
     }
 
     @Override
+    public INDArray sample(long[] shape) {
+        INDArray ret = Nd4j.create(shape);
+        return sample(ret);
+    }
+
+    @Override
     public INDArray sample(INDArray target) {
-        Iterator<int[]> idxIter = new NdIndexIterator(target.shape()); //For consistent values irrespective of c vs. fortran ordering
-        int len = target.length();
-        for (int i = 0; i < len; i++) {
+        Iterator<long[]> idxIter = new NdIndexIterator(target.shape()); //For consistent values irrespective of c vs. fortran ordering
+        long len = target.length();
+        for (long i = 0; i < len; i++) {
             target.putScalar(idxIter.next(), sample());
         }
         return target;

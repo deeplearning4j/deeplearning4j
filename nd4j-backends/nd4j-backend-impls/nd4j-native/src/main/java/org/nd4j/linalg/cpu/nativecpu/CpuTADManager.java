@@ -1,7 +1,9 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.NonNull;
+import lombok.val;
 import org.bytedeco.javacpp.IntPointer;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
@@ -71,7 +73,7 @@ public class CpuTADManager implements TADManager {
 
                 offsetLength = array.lengthLong() / tadLength;
 
-                DataBuffer outputBuffer = new IntBuffer(targetRank * 2 + 4);
+                DataBuffer outputBuffer = new LongBuffer(targetRank * 2 + 4);
                 DataBuffer offsetsBuffer = new LongBuffer(offsetLength);
 
                 DataBuffer dimensionBuffer = constantHandler.getConstantBuffer(dimension);
@@ -81,8 +83,8 @@ public class CpuTADManager implements TADManager {
                 Pointer targetPointer = outputBuffer.addressPointer();
                 Pointer offsetsPointer = offsetsBuffer.addressPointer();
 
-                nativeOps.tadOnlyShapeInfo((IntPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
-                                (IntPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
+                nativeOps.tadOnlyShapeInfo((LongPointer) xShapeInfo, (IntPointer) dimensionPointer, dimension.length,
+                                (LongPointer) targetPointer, new LongPointerWrapper(offsetsPointer));
 
 
                 // If the line below will be uncommented, shapes from JVM will be used on native side

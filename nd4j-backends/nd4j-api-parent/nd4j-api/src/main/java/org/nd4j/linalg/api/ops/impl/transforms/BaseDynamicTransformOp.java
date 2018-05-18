@@ -26,7 +26,7 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
 
 
     @Override
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
         val args = args();
         if(args.length < 2) {
             if(args[0] == null || args[0].getShape() == null) {
@@ -51,7 +51,7 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
         }
         //Handle broadcast shape: [1,4]+[3,1] = [3,4]
         Shape.assertBroadcastable(firstArgShape, secondArgShape);
-        int[] outShape = Shape.broadcastOutputShape(firstArgShape, secondArgShape);
+        val outShape = Shape.broadcastOutputShape(firstArgShape, secondArgShape);
 
         return Collections.singletonList(outShape);
     }

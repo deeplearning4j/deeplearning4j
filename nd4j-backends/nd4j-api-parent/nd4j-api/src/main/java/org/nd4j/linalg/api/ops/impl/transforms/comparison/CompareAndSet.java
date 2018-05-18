@@ -85,7 +85,7 @@ public class CompareAndSet extends BaseTransformOp {
         this.mode = mode;
     }
 
-    public CompareAndSet(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double compare, double set, double eps, int mode) {
+    public CompareAndSet(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double compare, double set, double eps, int mode) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.compare = compare;
         this.set = set;

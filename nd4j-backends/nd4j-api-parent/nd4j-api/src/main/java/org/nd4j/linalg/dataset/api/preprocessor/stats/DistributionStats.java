@@ -69,7 +69,7 @@ public class DistributionStats implements NormalizerStats {
      * large set of data
      */
     public static class Builder implements NormalizerStats.Builder<DistributionStats> {
-        private int runningCount = 0;
+        private long runningCount = 0;
         private INDArray runningMean;
         private INDArray runningVariance;
 
@@ -104,7 +104,7 @@ public class DistributionStats implements NormalizerStats {
             }
             INDArray mean = data.mean(0);
             INDArray variance = data.var(false, 0);
-            int count = data.size(0);
+            long count = data.size(0);
 
             if (runningMean == null) {
                 // First batch

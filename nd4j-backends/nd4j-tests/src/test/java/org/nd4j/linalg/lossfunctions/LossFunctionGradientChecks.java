@@ -1,6 +1,7 @@
 package org.nd4j.linalg.lossfunctions;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -124,7 +125,7 @@ public class LossFunctionGradientChecks extends BaseNd4jTest {
 
             NdIndexIterator iter = new NdIndexIterator(l.shape());
             while (iter.hasNext()) {
-                int[] next = iter.next();
+                val next = iter.next();
 
                 double before = p.getDouble(next);
                 p.putScalar(next, before + epsilon);

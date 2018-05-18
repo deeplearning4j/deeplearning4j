@@ -35,7 +35,7 @@ public class BiasAdd extends DynamicCustomOp {
     }
 
     @Override
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
         val args = args();
         for(int i = 0; i < args.length; i++)
             if(args[i].getShape() == null)

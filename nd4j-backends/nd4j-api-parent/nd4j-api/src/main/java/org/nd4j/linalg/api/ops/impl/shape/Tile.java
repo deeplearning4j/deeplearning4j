@@ -116,7 +116,7 @@ public class Tile extends DynamicCustomOp {
     }
 
     @Override
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
         /**
          * This op is special case: we can't infer its shape before both inputs are available.
          * So if reps argument is full of 0.0s - we skip shape inference
@@ -130,12 +130,14 @@ public class Tile extends DynamicCustomOp {
             return Collections.emptyList();
 
         val array = inputArguments()[1];
-        val reps = new int[array.length()];
+
+        // FIXME: int cast
+        val reps = new long[(int) array.length()];
 
         for (int e = 0; e < reps.length; e++)
             reps[e] = (int) array.getDouble(e);
 
-        if (ArrayUtil.prod(reps) == 0)
+        if (ArrayUtil.prodLong(reps) == 0)
             return Collections.emptyList();
         else
             return Nd4j.getExecutioner().calculateOutputShape(this);

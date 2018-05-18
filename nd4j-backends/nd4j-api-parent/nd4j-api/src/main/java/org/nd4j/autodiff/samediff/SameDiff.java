@@ -101,7 +101,7 @@ public class SameDiff {
 
     private DifferentialFunctionFactory functionFactory;
     private Map<String, SDVariable> variableMap;
-    private Map<String, int[]> variableNameToShape;
+    private Map<String, long[]> variableNameToShape;
     //gradient information
     private Map<String, SDVariable> gradients;
     private Map<String, SDVariable> forwardVarForGrad;
@@ -142,7 +142,7 @@ public class SameDiff {
 
 
     private Map<String, List<String[]>> placeHolderMap;
-    private Map<String, int[]> placeHolderOriginalShapes;
+    private Map<String, long[]> placeHolderOriginalShapes;
     private Set<String> placeHolderVarNames;
     private IdentityHashMap<INDArray, SDVariable> reverseArrayLookup;
     private MemoryWorkspace workspace;
@@ -579,7 +579,7 @@ public class SameDiff {
      * @param varName the vertex id to get the shape for
      * @return the shape for the given vertex if if any.
      */
-    public int[] getShapeForVarName(String varName) {
+    public long[] getShapeForVarName(String varName) {
         if (variableNameToArr.containsKey(varName)) {
             return variableNameToArr.get(varName).shape();
         }
@@ -598,7 +598,7 @@ public class SameDiff {
      * @param varName the vertex id to associate
      * @param shape   the shape to associate with
      */
-    public void updateShapeForVarName(String varName, int[] shape) {
+    public void updateShapeForVarName(String varName, long[] shape) {
         if (shape == null) {
             throw new ND4JIllegalStateException("Null shapes not allowed!");
         }
@@ -627,7 +627,7 @@ public class SameDiff {
      * @param varName the vertex id to associate
      * @param shape   the shape to associate with
      */
-    public void putShapeForVarName(String varName, int[] shape) {
+    public void putShapeForVarName(String varName, long[] shape) {
         if (shape == null) {
             throw new ND4JIllegalStateException("Shape must not be null!");
         }
@@ -1333,6 +1333,10 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable one(String name, int[] shape) {
+        return var(name, ArrayUtil.toLongArray(shape), new ConstantInitScheme('f', 1.0));
+    }
+
+    public SDVariable one(String name, long[] shape) {
         return var(name, shape, new ConstantInitScheme('f', 1.0));
     }
 
@@ -1365,8 +1369,12 @@ public class SameDiff {
      * @param shape the shape of the array to be created
      * @return the created variable
      */
-    public SDVariable zero(String name, int[] shape) {
+    public SDVariable zero(String name, long[] shape) {
         return var(name, shape, new ZeroInitScheme());
+    }
+
+    public SDVariable zero(String name, int[] shape) {
+        return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
 
     /**
@@ -1398,7 +1406,7 @@ public class SameDiff {
      * @param weightInitScheme the weight init scheme
      * @return the created variable
      */
-    public SDVariable var(String name, int[] shape, WeightInitScheme weightInitScheme) {
+    public SDVariable var(String name, long[] shape, WeightInitScheme weightInitScheme) {
         if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
             return variableMap.get(name);
 
@@ -1433,9 +1441,12 @@ public class SameDiff {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(String name, int[] shape) {
+    public SDVariable var(String name, long[] shape) {
         return var(name, shape, new ZeroInitScheme());
+    }
 
+    public SDVariable var(String name, int[] shape) {
+        return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
 
 
@@ -5261,7 +5272,7 @@ public class SameDiff {
      * @param variableName the vertex id for the original shape
      * @param shape        the shape of the place holder
      */
-    public void setOriginalPlaceHolderShape(String variableName, int[] shape) {
+    public void setOriginalPlaceHolderShape(String variableName, long[] shape) {
         if (!isPlaceHolder(variableName)) {
             throw new ND4JIllegalStateException("Vertex id " + variableName + " does not appear to be a place holder. Did you forget to call addPlaceHolder?");
         }
@@ -5291,7 +5302,7 @@ public class SameDiff {
      * @param varName the vertex id to get the original shape for.
      * @return the set vertex
      */
-    public int[] getOriginalShapeForPlaceHolder(String varName) {
+    public long[] getOriginalShapeForPlaceHolder(String varName) {
         return placeHolderOriginalShapes.get(varName);
     }
 
@@ -6135,12 +6146,12 @@ public class SameDiff {
         val hash = getOpNum(node.opName(), node.opType());
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
-        float[] extras = node.getExtraArgs() != null ? new float[node.getExtraArgs().length] : new float[0];
+        double[] extras = node.getExtraArgs() != null ? new double[node.getExtraArgs().length] : new double[0];
         for (int e = 0; e < extras.length; e++) {
             extras[e] = ((Number) node.getExtraArgs()[e]).floatValue();
         }
 
-        int[] extraBits = null;
+        long[] extraBits = null;
         if (node.opType() == Op.Type.CUSTOM) {
             DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) node;
             extraBits = dynamicCustomOp.iArgs();
@@ -6150,9 +6161,9 @@ public class SameDiff {
             if (!framesMap.containsKey(frameName))
                 framesMap.put(frameName, idCounter.incrementAndGet());
 
-            extraBits = new int[]{framesMap.get(frameName).intValue()};
+            extraBits = new long[]{framesMap.get(frameName).intValue()};
         } else
-            extraBits = new int[]{};
+            extraBits = new long[]{};
 
         val inPaired = new ArrayList<Integer>();
 
@@ -6191,6 +6202,7 @@ public class SameDiff {
         int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         reverseMap.put(node.getOwnName(), ownId);
 
+        val dims = node.opType() == Op.Type.REDUCE && inPaired.size() == 1 && node.getDimensions() != null ? node.getDimensions() : new int[]{};
         // TODO: Adam, just put your props here, instead of empty list, and they will be saved
         List<FunctionProperties> props = new ArrayList<>();
         int properties = FunctionProperties.asFlatProperties(bufferBuilder, props);
@@ -6200,7 +6212,7 @@ public class SameDiff {
         int nodesOut = FlatNode.createOutputVector(bufferBuilder, outputIds);
         int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
         int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
-        int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getDimensions() != null ? node.getDimensions() : new int[]{});
+        int dimensions = FlatNode.createDimensionsVector(bufferBuilder, dims);
         int fname = bufferBuilder.createString(
                 outputVertexId == null ||
                         outputVertexId.length < 1 ||

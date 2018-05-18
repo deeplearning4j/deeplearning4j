@@ -27,7 +27,9 @@ public class SparseCOOGemvParameters {
             BaseSparseNDArrayCOO coo = (BaseSparseNDArrayCOO) a;
             val = coo.getIncludedValues();
             nnz = coo.nnz();
-            m = coo.rows();
+
+            // FIXME: int cast
+            m = (int) coo.rows();
             setIndexes(coo, false);
         }
     }

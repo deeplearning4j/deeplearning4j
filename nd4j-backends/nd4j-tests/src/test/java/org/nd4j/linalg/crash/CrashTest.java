@@ -40,24 +40,24 @@ public class CrashTest extends BaseNd4jTest {
      */
     @Test
     public void testNonEWSViews1() {
-        System.out.println("non-EWS 1");
+        log.debug("non-EWS 1");
         INDArray x = Nd4j.create(64, 1024, 64);
         INDArray y = Nd4j.create(64, 64, 1024);
 
         for (int i = 0; i < ITERATIONS; i++) {
-            int slice = RandomUtils.nextInt(0, x.size(0));
+            int slice = RandomUtils.nextInt(0, (int) x.size(0));
             op(x.tensorAlongDimension(slice, 1, 2), y.tensorAlongDimension(slice, 1, 2), i);
         }
     }
 
     @Test
     public void testNonEWSViews2() {
-        System.out.println("non-EWS 2");
+        log.debug("non-EWS 2");
         INDArray x = Nd4j.create(new int[] {64, 1024, 64}, 'f');
         INDArray y = Nd4j.create(new int[] {64, 64, 1024}, 'f');
 
         for (int i = 0; i < ITERATIONS; i++) {
-            int slice = RandomUtils.nextInt(0, x.size(0));
+            int slice = RandomUtils.nextInt(0, (int) x.size(0));
             op(x.tensorAlongDimension(slice, 1, 2), y.tensorAlongDimension(slice, 1, 2), i);
         }
     }
@@ -67,19 +67,20 @@ public class CrashTest extends BaseNd4jTest {
      */
     @Test
     public void testEWSViews1() {
-        System.out.println("EWS 1");
+        log.debug("EWS 1");
         INDArray x = Nd4j.create(64, 1024, 64);
         INDArray y = Nd4j.create(64, 64, 1024);
 
         for (int i = 0; i < ITERATIONS; i++) {
-            int slice = RandomUtils.nextInt(0, x.shape()[0]);
+            // FIXME: int cast
+            int slice = RandomUtils.nextInt(0, (int) x.shape()[0]);
             op(x.slice(slice), y.slice(slice), i);
         }
     }
 
     @Test
     public void testEWSViews2() {
-        System.out.println("EWS 2");
+        log.debug("EWS 2");
         INDArray x = Nd4j.create(new int[] {96, 1024, 64}, 'f');
         INDArray y = Nd4j.create(new int[] {96, 64, 1024}, 'f');
 
@@ -175,7 +176,7 @@ public class CrashTest extends BaseNd4jTest {
         // specially for views, checking here without dup and rollover
         Nd4j.gemm(x, y, false, false);
 
-        System.out.println("Iteration passed: " + i);
+        log.debug("Iteration passed: " + i);
     }
 
     @Override

@@ -60,6 +60,11 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray create(float[] data, long[] shape, long[] stride, long offset) {
+        return null;
+    }
+
+    @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, long offset) {
         return null;
     }
@@ -70,7 +75,22 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray create(double[] data, long[] shape, long[] stride, long offset) {
+        return null;
+    }
+
+    @Override
     public INDArray create(List<INDArray> list, int[] shape) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(List<INDArray> list, long[] shape) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(long rows, long columns, long[] stride, long offset) {
         return null;
     }
 
@@ -130,6 +150,11 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray pullRows(INDArray source, int sourceDimension, long[] indexes) {
+        return null;
+    }
+
+    @Override
     public INDArray pullRows(INDArray source, INDArray destination, int sourceDimension, int[] indexes) {
         return null;
     }
@@ -185,12 +210,12 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
-    public IComplexNDArray createComplex(DataBuffer data, int rows, int columns, int[] stride, long offset) {
+    public IComplexNDArray createComplex(DataBuffer data, long rows, long columns, int[] stride, long offset) {
         return null;
     }
 
     @Override
-    public INDArray create(DataBuffer data, int rows, int columns, int[] stride, long offset) {
+    public INDArray create(DataBuffer data, long rows, long columns, int[] stride, long offset) {
         return null;
     }
 
@@ -230,6 +255,11 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray create(DataBuffer data, long[] shape) {
+        return null;
+    }
+
+    @Override
     public IComplexNDArray createComplex(DataBuffer data, int[] shape) {
         return null;
     }
@@ -241,6 +271,11 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
 
     @Override
     public INDArray create(DataBuffer data, int[] shape, int[] stride, long offset) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(DataBuffer data, long[] shape, long[] stride, long offset) {
         return null;
     }
 
@@ -300,7 +335,17 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray create(long[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
     public INDArray createUninitialized(int[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray createUninitialized(long[] shape, char ordering) {
         return null;
     }
 
@@ -310,7 +355,17 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray createUninitializedDetached(long[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
     public INDArray create(DataBuffer data, int[] newShape, int[] newStride, long offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering) {
         return null;
     }
 
@@ -330,7 +385,7 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
-    public INDArray create(float[] data, int rows, int columns, int[] stride, long offset, char ordering) {
+    public INDArray create(float[] data, long rows, long columns, int[] stride, long offset, char ordering) {
         return null;
     }
 
@@ -345,12 +400,22 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray create(List<INDArray> list, long[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
     public INDArray create(double[] data, int[] shape, long offset) {
         return null;
     }
 
     @Override
     public INDArray create(double[] data, int[] shape, int[] stride, long offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(float[] data, long[] shape, long[] stride, char order, long offset) {
         return null;
     }
 
@@ -385,6 +450,16 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray create(float[] data, long[] shape, long[] stride, long offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(double[] data, long[] shape, long[] stride, long offset, char ordering) {
+        return null;
+    }
+
+    @Override
     public INDArray[] tear(INDArray tensor, int... dimensions) {
         return new INDArray[0];
     }
@@ -403,6 +478,26 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     public INDArray sortCooIndices(INDArray x) {
         //TODO
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray create(float[] data, long[] shape, long offset, Character order) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(double[] data, long[] shape, long offset, Character order) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(float[] data, long[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(double[] data, long[] shape, char ordering) {
+        return null;
     }
 
     @Override

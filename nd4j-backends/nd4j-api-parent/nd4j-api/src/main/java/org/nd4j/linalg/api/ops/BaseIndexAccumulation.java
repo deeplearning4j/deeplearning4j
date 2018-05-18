@@ -135,8 +135,8 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
 
 
     @Override
-    public List<int[]> calculateOutputShape() {
-        List<int[]> ret = new ArrayList<>(1);
+    public List<long[]> calculateOutputShape() {
+        List<long[]> ret = new ArrayList<>(1);
         if(arg().getShape() == null)
             return Collections.emptyList();
         ret.add(Shape.getReducedShape(arg().getShape(),dimensions));

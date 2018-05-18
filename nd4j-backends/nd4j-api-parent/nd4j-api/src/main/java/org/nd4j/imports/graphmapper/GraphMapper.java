@@ -207,7 +207,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @param attrType
      * @return
      */
-    int[] getShapeFromAttribute(ATTR_TYPE attrType);
+    long[] getShapeFromAttribute(ATTR_TYPE attrType);
 
     /**
      * Returns true if the given node is a place holder type
@@ -233,7 +233,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @param tensorType
      * @return
      */
-    int[] getShapeFromTensor(TENSOR_TYPE tensorType);
+    long[] getShapeFromTensor(TENSOR_TYPE tensorType);
 
 
     /**
@@ -271,7 +271,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @param attr the attribute value
      * @return the shape of the attribute if any or null
      */
-    int[] getShapeFromAttr(ATTR_TYPE attr);
+    long[] getShapeFromAttr(ATTR_TYPE attr);
 
     /**
      * Get the attribute
@@ -323,7 +323,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @param nodeType
      * @return
      */
-    int[] getShape(NODE_TYPE nodeType);
+    long[] getShape(NODE_TYPE nodeType);
 
     /**
      *

@@ -46,7 +46,7 @@ public class BasicSerDeTests extends BaseNd4jTest {
         assertEquals(Nd4j.create(new float[] {1, 2, 3, 4, 5, 6}), restored);
 
         assertEquals(8, restored.data().getElementSize());
-        assertEquals(4, restored.shapeInfoDataBuffer().getElementSize());
+        assertEquals(8, restored.shapeInfoDataBuffer().getElementSize());
 
 
 

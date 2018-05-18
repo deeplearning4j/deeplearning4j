@@ -51,7 +51,7 @@ public class BlasBufferUtil {
         if (buf.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
             return buf.data().asFloat();
         } else {
-            float[] ret = new float[buf.length()];
+            float[] ret = new float[(int) buf.length()];
             INDArray linear = buf.linearView();
 
             for (int i = 0; i < buf.length(); i++)
@@ -76,7 +76,7 @@ public class BlasBufferUtil {
             return buf.data().asDouble();
 
         } else {
-            double[] ret = new double[buf.length()];
+            double[] ret = new double[(int) buf.length()];
             INDArray linear = buf.linearView();
             for (int i = 0; i < buf.length(); i++)
                 ret[i] = linear.getDouble(i);
@@ -132,13 +132,15 @@ public class BlasBufferUtil {
      * @return
      */
     public static int getDimension(INDArray arr, boolean defaultRows) {
+        // FIXME: int cast
+
         //ignore ordering for vectors
         if (arr.isVector()) {
-            return defaultRows ? arr.rows() : arr.columns();
+            return defaultRows ? (int) arr.rows() : (int) arr.columns();
         }
         if (arr.ordering() == NDArrayFactory.C)
-            return defaultRows ? arr.columns() : arr.rows();
-        return defaultRows ? arr.rows() : arr.columns();
+            return defaultRows ? (int) arr.columns() : (int) arr.rows();
+        return defaultRows ? (int) arr.rows() : (int) arr.columns();
     }
 
 
@@ -156,10 +158,10 @@ public class BlasBufferUtil {
     public static int getLd(INDArray arr) {
         //ignore ordering for vectors
         if (arr.isVector()) {
-            return arr.size(0);
+            return (int) arr.length();
         }
 
-        return arr.ordering() == NDArrayFactory.C ? arr.size(1) : arr.size(0);
+        return arr.ordering() == NDArrayFactory.C ? (int) arr.size(1) : (int) arr.size(0);
     }
 
 

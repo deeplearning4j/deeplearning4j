@@ -53,7 +53,7 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(3, 2);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
         resolution.exec(NDArrayIndex.interval(1, 3));
-        assertFalse(Arrays.equals(arr.shape(), LongUtils.toInts(resolution.getShapes())));
+        assertFalse(Arrays.equals(arr.shape(), resolution.getShapes()));
     }
 
 

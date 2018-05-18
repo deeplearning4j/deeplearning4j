@@ -85,6 +85,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createDouble(long offset, ByteBuffer buffer, int length);
 
+    DataBuffer createLong(ByteBuffer buffer, int length);
+
     /**
      * Create a double data buffer
      *
@@ -369,6 +371,24 @@ public interface DataBufferFactory {
     DataBuffer createInt(long length, boolean initialize);
 
     DataBuffer createInt(long length, boolean initialize, MemoryWorkspace workspace);
+
+
+    DataBuffer createLong(long[] data);
+
+    DataBuffer createLong(long[] data, boolean copy);
+
+    DataBuffer createLong(long length);
+
+    /**
+     * Create an int data buffer, with optional initialization
+     *
+     * @param length the length of the data buffer
+     * @param initialize If true: initialize the buffer. If false: don't initialize.
+     * @return the create data buffer
+     */
+    DataBuffer createLong(long length, boolean initialize);
+
+    DataBuffer createLong(long length, boolean initialize, MemoryWorkspace workspace);
 
     /**
      * Creates a double data buffer

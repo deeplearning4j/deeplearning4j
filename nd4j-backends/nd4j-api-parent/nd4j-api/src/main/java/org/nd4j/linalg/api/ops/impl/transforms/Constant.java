@@ -21,7 +21,7 @@ public class Constant extends BaseTransformOp {
 
     protected Constant(SameDiff sameDiff,
                        SDVariable i_v,
-                       int[] shape,
+                       long[] shape,
                        boolean inPlace) {
         super();
         sameDiff.putShapeForVarName(i_v.getVarName(), shape);
@@ -34,7 +34,7 @@ public class Constant extends BaseTransformOp {
 
     public Constant(SameDiff sameDiff,
                     SDVariable i_v,
-                    int[] shape) {
+                    long[] shape) {
         this(sameDiff, i_v, shape, false);
     }
 

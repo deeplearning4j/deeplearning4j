@@ -19,9 +19,9 @@ public final class FlatVariable extends Table {
   public IntPair id(IntPair obj) { int o = __offset(4); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public String name() { int o = __offset(6); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
-  public int shape(int j) { int o = __offset(8); return o != 0 ? bb.getInt(__vector(o) + j * 4) : 0; }
+  public long shape(int j) { int o = __offset(8); return o != 0 ? bb.getLong(__vector(o) + j * 8) : 0; }
   public int shapeLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
-  public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(8, 4); }
+  public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(8, 8); }
   public FlatArray ndarray() { return ndarray(new FlatArray()); }
   public FlatArray ndarray(FlatArray obj) { int o = __offset(10); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public int device() { int o = __offset(12); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
@@ -45,8 +45,8 @@ public final class FlatVariable extends Table {
   public static void addId(FlatBufferBuilder builder, int idOffset) { builder.addOffset(0, idOffset, 0); }
   public static void addName(FlatBufferBuilder builder, int nameOffset) { builder.addOffset(1, nameOffset, 0); }
   public static void addShape(FlatBufferBuilder builder, int shapeOffset) { builder.addOffset(2, shapeOffset, 0); }
-  public static int createShapeVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addInt(data[i]); return builder.endVector(); }
-  public static void startShapeVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static int createShapeVector(FlatBufferBuilder builder, long[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addLong(data[i]); return builder.endVector(); }
+  public static void startShapeVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
   public static void addNdarray(FlatBufferBuilder builder, int ndarrayOffset) { builder.addOffset(3, ndarrayOffset, 0); }
   public static void addDevice(FlatBufferBuilder builder, int device) { builder.addInt(4, device, 0); }
   public static int endFlatVariable(FlatBufferBuilder builder) {

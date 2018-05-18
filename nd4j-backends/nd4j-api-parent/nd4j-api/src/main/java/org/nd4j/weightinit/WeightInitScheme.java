@@ -19,7 +19,7 @@ public interface WeightInitScheme {
      * @param paramsView the parameters view
      * @return the created array
      */
-    INDArray create(int[] shape,INDArray paramsView);
+    INDArray create(long[] shape,INDArray paramsView);
 
 
 
@@ -28,7 +28,7 @@ public interface WeightInitScheme {
      * @param shape the shape of the array
      * @return the created array
      */
-    INDArray create(int[] shape);
+    INDArray create(long... shape);
 
 
     /**

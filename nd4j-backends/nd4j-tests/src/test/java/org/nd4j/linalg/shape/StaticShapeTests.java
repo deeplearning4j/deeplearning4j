@@ -1,5 +1,6 @@
 package org.nd4j.linalg.shape;
 
+import lombok.val;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,21 +69,21 @@ public class StaticShapeTests extends BaseNd4jTest {
         lists.add(NDArrayCreationUtil.getAll5dTestArraysWithShape(12345, 3, 4, 5, 6, 7));
         lists.add(NDArrayCreationUtil.getAll6dTestArraysWithShape(12345, 3, 4, 5, 6, 7, 8));
 
-        int[][] shapes = new int[][] {{3, 4}, {1, 4}, {3, 1}, {3, 4, 5}, {3, 4, 5, 6}, {3, 1, 5, 1}, {3, 4, 5, 6, 7},
+        val shapes = new long[][] {{3, 4}, {1, 4}, {3, 1}, {3, 4, 5}, {3, 4, 5, 6}, {3, 1, 5, 1}, {3, 4, 5, 6, 7},
                         {3, 4, 5, 6, 7, 8}};
 
         for (int i = 0; i < shapes.length; i++) {
             List<Pair<INDArray, String>> list = lists.get(i);
-            int[] shape = shapes[i];
+            val shape = shapes[i];
 
             for (Pair<INDArray, String> p : list) {
                 INDArray arr = p.getFirst();
 
                 assertArrayEquals(shape, arr.shape());
 
-                int[] thisStride = arr.stride();
+                val thisStride = arr.stride();
 
-                IntBuffer ib = arr.shapeInfo();
+                val ib = arr.shapeInfo();
                 DataBuffer db = arr.shapeInfoDataBuffer();
 
                 //Check shape calculation
@@ -106,7 +107,7 @@ public class StaticShapeTests extends BaseNd4jTest {
                 //Check offset calculation:
                 NdIndexIterator iter = new NdIndexIterator(shape);
                 while (iter.hasNext()) {
-                    int[] next = iter.next();
+                    val next = iter.next();
                     long offset1 = Shape.getOffset(ib, next);
 
                     assertEquals(offset1, Shape.getOffset(db, next));

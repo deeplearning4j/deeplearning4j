@@ -47,6 +47,19 @@ public interface ConstantHandler {
     DataBuffer getConstantBuffer(int[] array);
 
     /**
+     * This method returns DataBuffer with
+     * constant equal to input array.
+     *
+     * PLEASE NOTE: This method assumes that
+     * you'll never ever change values
+     * within result DataBuffer
+     *
+     * @param array
+     * @return
+     */
+    DataBuffer getConstantBuffer(long[] array);
+
+    /**
      * This method returns DataBuffer
      * with constant equal to input array.
      *

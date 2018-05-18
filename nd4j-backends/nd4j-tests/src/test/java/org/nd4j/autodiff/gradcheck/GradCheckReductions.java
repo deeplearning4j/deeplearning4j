@@ -4,15 +4,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -26,9 +30,20 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class GradCheckReductions {
+@RunWith(Parameterized.class)
+public class GradCheckReductions extends BaseNd4jTest {
 
     private DataBuffer.Type initialType;
+
+    public GradCheckReductions(Nd4jBackend backend) {
+        super(backend);
+    }
+
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Before
     public void before() throws Exception {

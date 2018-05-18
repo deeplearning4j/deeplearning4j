@@ -33,13 +33,13 @@ public class GridPointers {
 
 
     // strides
-    private int xStride = -1;
-    private int yStride = -1;
-    private int zStride = -1;
+    private long xStride = -1;
+    private long yStride = -1;
+    private long zStride = -1;
 
-    private int xLength = 0;
-    private int yLength = 0;
-    private int zLength = 0;
+    private long xLength = 0;
+    private long yLength = 0;
+    private long zLength = 0;
 
     private char xOrder;
     private char yOrder;

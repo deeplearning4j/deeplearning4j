@@ -24,8 +24,8 @@ import java.io.IOException;
 public class StandardScaler {
     private static Logger logger = LoggerFactory.getLogger(StandardScaler.class);
     private INDArray mean, std;
-    private int runningTotal = 0;
-    private int batchCount = 0;
+    private long runningTotal = 0;
+    private long batchCount = 0;
 
     public void fit(DataSet dataSet) {
         mean = dataSet.getFeatureMatrix().mean(0);

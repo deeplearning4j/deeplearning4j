@@ -68,7 +68,7 @@ public class Nadam implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         NadamUpdater u = new NadamUpdater(this);
-        int[] gradientShape = viewArray.shape();
+        long[] gradientShape = viewArray.shape();
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
         gradientShape[1] /= 2;
         u.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);

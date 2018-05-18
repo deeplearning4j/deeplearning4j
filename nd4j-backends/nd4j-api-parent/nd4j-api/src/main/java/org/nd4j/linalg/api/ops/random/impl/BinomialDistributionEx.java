@@ -64,7 +64,8 @@ public class BinomialDistributionEx extends BaseRandomOp {
      * @param probabilities
      */
     public BinomialDistributionEx(@NonNull INDArray z, @NonNull INDArray probabilities) {
-        this(z, probabilities.length(), probabilities);
+        // FIXME: int cast
+        this(z, (int) probabilities.length(), probabilities);
     }
 
     @Override

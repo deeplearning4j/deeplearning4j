@@ -29,15 +29,15 @@ public abstract class BaseWeightInitScheme implements WeightInitScheme {
         this.order = order;
     }
 
-    public abstract INDArray doCreate(int[] shape, INDArray paramsView);
+    public abstract INDArray doCreate(long[] shape, INDArray paramsView);
 
     @Override
-    public INDArray create(int[] shape, INDArray paramsView) {
+    public INDArray create(long[] shape, INDArray paramsView) {
         return handleParamsView(doCreate(shape,paramsView),paramsView);
     }
 
     @Override
-    public INDArray create(int[] shape) {
+    public INDArray create(long... shape) {
         INDArray ret = doCreate(shape,null);
         return ret;
     }

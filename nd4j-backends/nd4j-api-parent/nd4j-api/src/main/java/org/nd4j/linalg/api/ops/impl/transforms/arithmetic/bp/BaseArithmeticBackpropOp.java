@@ -45,7 +45,7 @@ public abstract class BaseArithmeticBackpropOp extends BaseDynamicTransformOp {
     }
 
     @Override
-    public List<int[]> calculateOutputShape(){
+    public List<long[]> calculateOutputShape(){
         return Nd4j.getExecutioner().calculateOutputShape(this);
     }
 

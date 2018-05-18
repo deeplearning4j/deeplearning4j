@@ -177,19 +177,21 @@ public class DeConv2D extends DynamicCustomOp {
             dataFormat = attr.getS().toStringUtf8().toLowerCase();
         }
 
+        // FIXME: int cast
+
 
         if (dataFormat.equalsIgnoreCase("nchw")) {
             sY = tfStrides.get(2).intValue();
             sX = tfStrides.get(3).intValue();
 
-            kY = arr.size(2);
-            kX = arr.size(3);
+            kY = (int) arr.size(2);
+            kX = (int) arr.size(3);
         } else {
             sY = tfStrides.get(1).intValue();
             sX = tfStrides.get(2).intValue();
 
-            kY = arr.size(0);
-            kX = arr.size(1);
+            kY = (int) arr.size(0);
+            kX = (int) arr.size(1);
         }
 
 

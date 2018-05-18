@@ -19,7 +19,7 @@ public class OneInitScheme extends BaseWeightInitScheme {
     }
 
     @Override
-    public INDArray doCreate(int[] shape, INDArray paramsView) {
+    public INDArray doCreate(long[] shape, INDArray paramsView) {
        return Nd4j.createUninitialized(shape, order()).assign(1.0);
     }
 

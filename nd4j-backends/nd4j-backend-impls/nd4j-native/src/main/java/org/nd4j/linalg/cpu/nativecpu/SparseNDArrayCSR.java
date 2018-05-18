@@ -42,6 +42,11 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     }
 
     @Override
+    public INDArray repeat(int dimension, long... repeats) {
+        return null;
+    }
+
+    @Override
     public INDArray mmul(INDArray other, MMulTranspose mMulTranspose) {
         return null;
     }
@@ -66,6 +71,16 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
 
     @Override
     public INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose) {
+        return null;
+    }
+
+    @Override
+    public INDArray reshape(char order, int... newShape) {
+        return null;
+    }
+
+    @Override
+    public INDArray reshape(int[] shape) {
         return null;
     }
 

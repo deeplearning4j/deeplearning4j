@@ -9,7 +9,7 @@ import java.util.Map;
 @Builder
 @Data
 public class FullConv3DConfig extends BaseConvolutionConfig {
-    private int dT,dW,dH,pT,pW,pH,dilationT,dilationW,dilationH,aT,aW,aH;
+    private long dT,dW,dH,pT,pW,pH,dilationT,dilationW,dilationH,aT,aW,aH;
     private boolean biasUsed;
     private String dataFormat;
 

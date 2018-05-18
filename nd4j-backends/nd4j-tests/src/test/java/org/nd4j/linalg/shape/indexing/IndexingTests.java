@@ -1,6 +1,7 @@
 package org.nd4j.linalg.shape.indexing;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -209,7 +210,7 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray ndarray = Nd4j.create(new float[][] {{1f, 2f}, {3f, 4f}});
         INDArray subarray = ndarray.get(NDArrayIndex.point(0), NDArrayIndex.all());
         assertTrue(subarray.isRowVector());
-        int[] shape = subarray.shape();
+        val shape = subarray.shape();
         assertEquals(shape[0], 1);
         assertEquals(shape[1], 2);
     }

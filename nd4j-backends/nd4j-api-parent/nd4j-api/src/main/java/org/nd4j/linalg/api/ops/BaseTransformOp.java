@@ -125,6 +125,15 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
                            int[] shape,
                            boolean inPlace,
                            Object[] extraArgs) {
+        // FIXME: int cast !
+        this(sameDiff, i_v, ArrayUtil.toLongArray(shape), inPlace, extraArgs);
+    }
+
+    public BaseTransformOp(SameDiff sameDiff,
+                           SDVariable i_v,
+                           long[] shape,
+                           boolean inPlace,
+                           Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
 
         if (i_v != null) {
@@ -193,8 +202,8 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
 
     @Override
-    public List<int[]> calculateOutputShape() {
-        List<int[]> ret = new ArrayList<>(1);
+    public List<long[]> calculateOutputShape() {
+        List<long[]> ret = new ArrayList<>(1);
         if(arg() == null)
             throw new ND4JIllegalStateException("No arg found for op!");
 

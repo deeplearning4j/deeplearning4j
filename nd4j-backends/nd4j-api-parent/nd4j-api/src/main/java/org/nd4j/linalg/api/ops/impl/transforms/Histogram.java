@@ -46,7 +46,9 @@ public class Histogram extends BaseTransformOp {
     public Histogram(INDArray x, INDArray z) {
         setX(x);
         setZ(z);
-        numBins = z.length();
+
+        //FIXME: int cast
+        numBins = (int) z.length();
 
         double max = x.maxNumber().doubleValue();
         double min = x.minNumber().doubleValue();

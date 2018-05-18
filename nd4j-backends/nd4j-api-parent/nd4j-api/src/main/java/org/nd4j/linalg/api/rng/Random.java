@@ -172,6 +172,9 @@ public interface Random extends AutoCloseable {
      */
     INDArray nextGaussian(int[] shape);
 
+
+    INDArray nextGaussian(long[] shape);
+
     /**
      * Generate a gaussian number ndarray
      * of the specified shape and order
@@ -182,6 +185,9 @@ public interface Random extends AutoCloseable {
      */
     INDArray nextGaussian(char order, int[] shape);
 
+
+    INDArray nextGaussian(char order, long[] shape);
+
     /**
      * Generate a uniform number ndarray
      * of the specified shape
@@ -190,6 +196,8 @@ public interface Random extends AutoCloseable {
      * @return the generated gaussian numbers
      */
     INDArray nextDouble(int[] shape);
+
+    INDArray nextDouble(long[] shape);
 
     /**
      * Generate a uniform number ndarray
@@ -201,6 +209,9 @@ public interface Random extends AutoCloseable {
      */
     INDArray nextDouble(char order, int[] shape);
 
+
+    INDArray nextDouble(char order, long[] shape);
+
     /**
      * Generate a uniform number ndarray
      * of the specified shape
@@ -210,6 +221,9 @@ public interface Random extends AutoCloseable {
      */
     INDArray nextFloat(int[] shape);
 
+
+    INDArray nextFloat(long[] shape);
+
     /**
      * Generate a uniform number ndarray
      * of the specified shape
@@ -218,6 +232,8 @@ public interface Random extends AutoCloseable {
      * @return the generated uniform numbers
      */
     INDArray nextFloat(char order, int[] shape);
+
+    INDArray nextFloat(char order, long[] shape);
 
     /**
      * Generate a random set of integers
@@ -236,6 +252,8 @@ public interface Random extends AutoCloseable {
      * the shape of only integers.
      */
     INDArray nextInt(int[] shape);
+
+    INDArray nextInt(long[] shape);
 
 
     /**
@@ -256,6 +274,8 @@ public interface Random extends AutoCloseable {
      * the shape of only integers.
      */
     INDArray nextInt(int n, int[] shape);
+
+    INDArray nextInt(int n, long[] shape);
 
     /**
      * This method returns pointer to RNG state structure.

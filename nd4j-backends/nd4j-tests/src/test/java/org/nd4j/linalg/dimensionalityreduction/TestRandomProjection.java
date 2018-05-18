@@ -59,10 +59,10 @@ public class TestRandomProjection extends BaseNd4jTest {
 
     @Test
     public void testTargetShape() {
-        assertArrayEquals(targetShape(z1, 0.5), new int[]{1000, 663});
-        assertArrayEquals(targetShape(Nd4j.createUninitialized(new int[]{(int)1e2, 225}), 0.5), new int[]{225, 221});
+        assertArrayEquals(targetShape(z1, 0.5), new long[]{1000, 663});
+        assertArrayEquals(targetShape(Nd4j.createUninitialized(new int[]{(int)1e2, 225}), 0.5), new long[]{225, 221});
         // non-changing estimate
-        assertArrayEquals(targetShape(z1, 700), new int[]{1000, 700});
+        assertArrayEquals(targetShape(z1, 700), new long[]{1000, 700});
     }
 
     @Test
@@ -111,7 +111,7 @@ public class TestRandomProjection extends BaseNd4jTest {
         RandomProjection rp = new RandomProjection(0.5);
         INDArray res = Nd4j.zeros(10000, 442);
         INDArray z2 = rp.projecti(z1, res);
-        assertArrayEquals(z2.shape(), new int[]{10000, 442});
+        assertArrayEquals(new long[]{10000, 442}, z2.shape());
     }
 
     @Test

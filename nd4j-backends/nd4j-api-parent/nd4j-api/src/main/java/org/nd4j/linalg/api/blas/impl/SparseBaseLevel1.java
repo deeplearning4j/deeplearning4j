@@ -23,7 +23,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
      * @return the vector-vector dot product of X and Y
      */
     @Override
-    public double dot(int n, double alpha, INDArray X, INDArray Y) {
+    public double dot(long n, double alpha, INDArray X, INDArray Y) {
 
         if (X instanceof BaseSparseNDArray) {
             BaseSparseNDArray sparseX = (BaseSparseNDArray) X;
@@ -47,12 +47,12 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
 
     @Override
-    public double dot(int n, DataBuffer dx, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
+    public double dot(long n, DataBuffer dx, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public IComplexNumber dot(int n, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y) {
+    public IComplexNumber dot(long n, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y) {
         throw new UnsupportedOperationException();
     }
 
@@ -110,7 +110,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
 
     @Override
-    public double asum(int n, DataBuffer x, int offsetX, int incrX) {
+    public double asum(long n, DataBuffer x, int offsetX, int incrX) {
         throw new UnsupportedOperationException();
     }
 
@@ -143,12 +143,12 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     }
 
     @Override
-    public int iamax(int n, INDArray arr, int stride) {
+    public int iamax(long n, INDArray arr, int stride) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int iamax(int n, DataBuffer x, int offsetX, int incrX) {
+    public int iamax(long n, DataBuffer x, int offsetX, int incrX) {
         throw new UnsupportedOperationException();
     }
 
@@ -203,7 +203,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     }
 
     @Override
-    public void copy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
+    public void copy(long n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         throw new UnsupportedOperationException();
     }
 
@@ -222,7 +222,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
      *
      * */
     @Override
-    public void axpy(int n, double alpha, INDArray x, INDArray y) {
+    public void axpy(long n, double alpha, INDArray x, INDArray y) {
         BaseSparseNDArray sparseX = (BaseSparseNDArray) x;
         DataBuffer pointers = sparseX.getVectorCoordinates();
         switch (x.data().dataType()) {
@@ -247,12 +247,12 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     }
 
     @Override
-    public void axpy(int n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
+    public void axpy(long n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void axpy(int n, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y) {
+    public void axpy(long n, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y) {
         throw new UnsupportedOperationException();
     }
 
@@ -272,7 +272,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
      *
      * */
     @Override
-    public void rot(int N, INDArray X, INDArray Y, double c, double s) {
+    public void rot(long N, INDArray X, INDArray Y, double c, double s) {
 
 
         if (X instanceof BaseSparseNDArray) {
@@ -297,7 +297,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     }
 
     @Override
-    public void rot(int N, IComplexNDArray X, IComplexNDArray Y, IComplexNumber c, IComplexNumber s) {
+    public void rot(long N, IComplexNDArray X, IComplexNDArray Y, IComplexNumber c, IComplexNumber s) {
         throw new UnsupportedOperationException();
     }
 
@@ -320,7 +320,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
      * @param X a vector
      * */
     @Override
-    public void scal(int N, double alpha, INDArray X) {
+    public void scal(long N, double alpha, INDArray X) {
         switch (X.data().dataType()) {
             case DOUBLE:
                 dscal(N, alpha, X, 1);
@@ -338,7 +338,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     }
 
     @Override
-    public void scal(int N, IComplexNumber alpha, IComplexNDArray X) {
+    public void scal(long N, IComplexNumber alpha, IComplexNDArray X) {
         throw new UnsupportedOperationException();
     }
 
@@ -354,52 +354,52 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     * ===========================================================================
     */
 
-    protected abstract double ddoti(int N, INDArray X, DataBuffer indx, INDArray Y);
+    protected abstract double ddoti(long N, INDArray X, DataBuffer indx, INDArray Y);
 
-    protected abstract double sdoti(int N, INDArray X, DataBuffer indx, INDArray Y);
+    protected abstract double sdoti(long N, INDArray X, DataBuffer indx, INDArray Y);
 
-    protected abstract double hdoti(int N, INDArray X, DataBuffer indx, INDArray Y);
+    protected abstract double hdoti(long N, INDArray X, DataBuffer indx, INDArray Y);
 
-    protected abstract double snrm2(int N, INDArray X, int incx);
+    protected abstract double snrm2(long N, INDArray X, int incx);
 
-    protected abstract double dnrm2(int N, INDArray X, int incx);
+    protected abstract double dnrm2(long N, INDArray X, int incx);
 
-    protected abstract double hnrm2(int N, INDArray X, int incx);
+    protected abstract double hnrm2(long N, INDArray X, int incx);
 
-    protected abstract double dasum(int N, INDArray X, int incx);
+    protected abstract double dasum(long N, INDArray X, int incx);
 
-    protected abstract double sasum(int N, INDArray X, int incx);
+    protected abstract double sasum(long N, INDArray X, int incx);
 
-    protected abstract double hasum(int N, INDArray X, int incx);
+    protected abstract double hasum(long N, INDArray X, int incx);
 
-    protected abstract int isamax(int N, INDArray X, int incx);
+    protected abstract int isamax(long N, INDArray X, int incx);
 
-    protected abstract int idamax(int N, INDArray X, int incx);
+    protected abstract int idamax(long N, INDArray X, int incx);
 
-    protected abstract int ihamax(int N, INDArray X, int incx);
+    protected abstract int ihamax(long N, INDArray X, int incx);
 
-    protected abstract int isamin(int N, INDArray X, int incx);
+    protected abstract int isamin(long N, INDArray X, int incx);
 
-    protected abstract int idamin(int N, INDArray X, int incx);
+    protected abstract int idamin(long N, INDArray X, int incx);
 
-    protected abstract int ihamin(int N, INDArray X, int incx);
+    protected abstract int ihamin(long N, INDArray X, int incx);
 
-    protected abstract void daxpyi(int N, double alpha, INDArray X, DataBuffer pointers, INDArray Y);
+    protected abstract void daxpyi(long N, double alpha, INDArray X, DataBuffer pointers, INDArray Y);
 
-    protected abstract void saxpyi(int N, double alpha, INDArray X, DataBuffer pointers, INDArray Y);
+    protected abstract void saxpyi(long N, double alpha, INDArray X, DataBuffer pointers, INDArray Y);
 
-    protected abstract void haxpyi(int N, double alpha, INDArray X, DataBuffer pointers, INDArray Y);
+    protected abstract void haxpyi(long N, double alpha, INDArray X, DataBuffer pointers, INDArray Y);
 
-    protected abstract void droti(int N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s);
+    protected abstract void droti(long N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s);
 
-    protected abstract void sroti(int N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s);
+    protected abstract void sroti(long N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s);
 
-    protected abstract void hroti(int N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s);
+    protected abstract void hroti(long N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s);
 
-    protected abstract void dscal(int N, double a, INDArray X, int incx);
+    protected abstract void dscal(long N, double a, INDArray X, int incx);
 
-    protected abstract void sscal(int N, double a, INDArray X, int incx);
+    protected abstract void sscal(long N, double a, INDArray X, int incx);
 
-    protected abstract void hscal(int N, double a, INDArray X, int incx);
+    protected abstract void hscal(long N, double a, INDArray X, int incx);
 
 }

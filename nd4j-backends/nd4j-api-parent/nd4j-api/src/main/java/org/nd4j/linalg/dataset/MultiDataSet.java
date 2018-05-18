@@ -271,7 +271,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
     @Override
     public List<org.nd4j.linalg.dataset.api.MultiDataSet> asList() {
-        int nExamples = features[0].size(0);
+        long nExamples = features[0].size(0);
 
         List<org.nd4j.linalg.dataset.api.MultiDataSet> list = new ArrayList<>();
 

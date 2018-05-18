@@ -97,10 +97,10 @@ public class Unstack extends DynamicCustomOp {
     This is required because number of outputs depends on the input shape.
      */
     @Override
-    public List<int[]> calculateOutputShape() {
-        List<int[]> ret = new ArrayList<int[]>();
-        int[] inputShape = arg().getShape();
-        int[] outputShape = new int[inputShape.length - 1];
+    public List<long[]> calculateOutputShape() {
+        val ret = new ArrayList<long[]>();
+        val inputShape = arg().getShape();
+        val outputShape = new long[inputShape.length - 1];
         for (int i = 0; i < axis; i++) {
             outputShape[i] = inputShape[i];
         }

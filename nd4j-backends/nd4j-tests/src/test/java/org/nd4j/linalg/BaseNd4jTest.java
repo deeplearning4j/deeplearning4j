@@ -26,6 +26,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +75,70 @@ public abstract class BaseNd4jTest {
                 backends.add(backend);
         }
 
+    }
+    public static void assertArrayEquals(String string, Object[] expecteds, Object[] actuals) {
+        org.junit.Assert.assertArrayEquals(string, expecteds, actuals);
+    }
+
+    public static void assertArrayEquals(Object[] expecteds, Object[] actuals) {
+        org.junit.Assert.assertArrayEquals(expecteds, actuals);
+    }
+
+    public static void assertArrayEquals(String string, long[] shapeA, long[] shapeB) {
+        org.junit.Assert.assertArrayEquals(string, shapeA, shapeB);
+    }
+
+    public static void assertArrayEquals(long[] shapeA, long[] shapeB) {
+        org.junit.Assert.assertArrayEquals(shapeA, shapeB);
+    }
+
+    public static void assertArrayEquals(String string, int[] shapeA, long[] shapeB) {
+        org.junit.Assert.assertArrayEquals(string, ArrayUtil.toLongArray(shapeA), shapeB);
+    }
+
+    public static void assertArrayEquals(int[] shapeA, long[] shapeB) {
+        org.junit.Assert.assertArrayEquals(ArrayUtil.toLongArray(shapeA), shapeB);
+    }
+
+    public static void assertArrayEquals(String string, long[] shapeA, int[] shapeB) {
+        org.junit.Assert.assertArrayEquals(string, shapeA, ArrayUtil.toLongArray(shapeB));
+    }
+
+    public static void assertArrayEquals(long[] shapeA, int[] shapeB) {
+        org.junit.Assert.assertArrayEquals(shapeA, ArrayUtil.toLongArray(shapeB));
+    }
+
+    public static void assertArrayEquals(String string, int[] shapeA, int[] shapeB) {
+        org.junit.Assert.assertArrayEquals(string, shapeA, shapeB);
+    }
+
+    public static void assertArrayEquals(int[] shapeA, int[] shapeB) {
+        org.junit.Assert.assertArrayEquals(shapeA, shapeB);
+    }
+
+    public static void assertArrayEquals(String string, boolean[] shapeA, boolean[] shapeB) {
+        org.junit.Assert.assertArrayEquals(string, shapeA, shapeB);
+    }
+
+    public static void assertArrayEquals(boolean[] shapeA, boolean[] shapeB) {
+        org.junit.Assert.assertArrayEquals(shapeA, shapeB);
+    }
+
+
+    public static void assertArrayEquals(float[] shapeA, float[] shapeB, float delta) {
+        org.junit.Assert.assertArrayEquals(shapeA, shapeB, delta);
+    }
+
+    public static void assertArrayEquals(double[] shapeA, double[] shapeB, double delta) {
+        org.junit.Assert.assertArrayEquals(shapeA, shapeB, delta);
+    }
+
+    public static void assertArrayEquals(String string, float[] shapeA, float[] shapeB, float delta) {
+        org.junit.Assert.assertArrayEquals(string, shapeA, shapeB, delta);
+    }
+
+    public static void assertArrayEquals(String string, double[] shapeA, double[] shapeB, double delta) {
+        org.junit.Assert.assertArrayEquals(string, shapeA, shapeB, delta);
     }
 
     @Parameterized.Parameters(name = "{index}: backend({0})={1}")

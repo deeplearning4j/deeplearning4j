@@ -23,7 +23,7 @@ public class Enter extends BaseCompatOp {
     }
 
     @Override
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
         if(args()[0].getArr() != null) {
             return Arrays.asList(args()[0].getShape(),args()[0].getShape());
         }

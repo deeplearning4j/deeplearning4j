@@ -825,6 +825,8 @@ public class CudaZeroHandler implements MemoryHandler {
                 return p.asIntPointer();
             case HALF:
                 return p.asShortPointer();
+            case LONG:
+                return p.asLongPointer();
             default:
                 return p;
         }
@@ -864,6 +866,8 @@ public class CudaZeroHandler implements MemoryHandler {
                 return p.asIntPointer();
             case HALF:
                 return p.asShortPointer();
+            case LONG:
+                return p.asLongPointer();
             default:
                 return p;
         }

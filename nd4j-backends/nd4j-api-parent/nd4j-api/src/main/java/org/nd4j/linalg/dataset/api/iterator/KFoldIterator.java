@@ -64,17 +64,20 @@ public class KFoldIterator implements DataSetIterator {
      */
     @Override
     public int totalExamples() {
-        return singleFold.getLabels().size(0);
+        // FIXME: int cast
+        return (int) singleFold.getLabels().size(0);
     }
 
     @Override
     public int inputColumns() {
-        return singleFold.getFeatures().size(1);
+        // FIXME: int cast
+        return (int) singleFold.getFeatures().size(1);
     }
 
     @Override
     public int totalOutcomes() {
-        return singleFold.getLabels().size(1);
+        // FIXME: int cast
+        return (int) singleFold.getLabels().size(1);
     }
 
     @Override

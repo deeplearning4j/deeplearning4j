@@ -48,7 +48,7 @@ public class Xor extends BaseTransformOp {
         this.extraArgs = new Object[] {this.comparable};
     }
 
-    public Xor(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
+    public Xor(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.comparable = comparable;
         this.extraArgs = new Object[] {this.comparable};

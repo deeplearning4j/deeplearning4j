@@ -24,7 +24,7 @@ public class LegacyDropOutInverted extends BaseTransformOp {
         this.p = p;
     }
 
-    public LegacyDropOutInverted(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double p) {
+    public LegacyDropOutInverted(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double p) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.p = p;
     }

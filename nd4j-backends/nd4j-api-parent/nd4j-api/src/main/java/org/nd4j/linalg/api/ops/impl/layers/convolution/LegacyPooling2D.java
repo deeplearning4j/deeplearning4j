@@ -37,8 +37,9 @@ public class LegacyPooling2D extends BaseTransformOp {
                      Pooling2DType type, double extra, INDArray z) {
         super(x);
 
-        int outHeight = Convolution.outputSize(x.size(2), kh, sy, ph, dh, isSameMode);
-        int outWidth = Convolution.outputSize(x.size(3), kw, sx, pw, dw, isSameMode);
+        // FIXME: int csast
+        int outHeight = Convolution.outputSize((int) x.size(2), kh, sy, ph, dh, isSameMode);
+        int outWidth = Convolution.outputSize((int) x.size(3), kw, sx, pw, dw, isSameMode);
 
         this.kh = kh;
         this.kw = kw;
@@ -78,11 +79,11 @@ public class LegacyPooling2D extends BaseTransformOp {
 
     private static DataBuffer getIm2ColShape(INDArray img, int kernelHeight, int kernelWidth, int outHeight, int outWidth) {
         //number of images
-        int n = img.size(0);
+        long n = img.size(0);
         //number of channels (depth)
-        int c = img.size(1);
+        long c = img.size(1);
 
-        return Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {n, c,  kernelHeight, kernelWidth, outHeight, outWidth}, 'c').getFirst();
+        return Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {n, c,  kernelHeight, kernelWidth, outHeight, outWidth}, 'c').getFirst();
     }
 
     @Override

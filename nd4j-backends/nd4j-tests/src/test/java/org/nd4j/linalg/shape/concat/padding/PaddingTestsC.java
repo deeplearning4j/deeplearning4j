@@ -1,5 +1,6 @@
 package org.nd4j.linalg.shape.concat.padding;
 
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -79,12 +80,14 @@ public class PaddingTestsC extends BaseNd4jTest {
         //,1,1,1,1,2,2,0
         int kh = 1, kw = 1, sy = 1, sx = 1, ph = 2, pw = 2;
         INDArray linspaced = Nd4j.linspace(1, 16, 16).reshape(2, 2, 2, 2);
-        int n = linspaced.size(0);
-        int c = linspaced.size(1);
-        int h = linspaced.size(2);
-        int w = linspaced.size(3);
-        int outWidth = Convolution.outSize(h, kh, sy, ph, 1, true);
-        int outHeight = Convolution.outSize(w, kw, sx, pw, 1, true);
+        val n = linspaced.size(0);
+        val c = linspaced.size(1);
+        val h = linspaced.size(2);
+        val w = linspaced.size(3);
+
+        // FIXME: int cast
+        int outWidth = Convolution.outSize((int) h, kh, sy, ph, 1, true);
+        int outHeight = Convolution.outSize((int) w, kw, sx, pw, 1, true);
         INDArray padded = Nd4j.pad(linspaced, new int[][] {{0, 0}, {0, 0}, {ph, ph + sy - 1}, {pw, pw + sx - 1}},
                         Nd4j.PadMode.CONSTANT);
         System.out.println(padded);

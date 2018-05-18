@@ -120,8 +120,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
 
     @Override
-    public List<int[]> calculateOutputShape() {
-        List<int[]> ret = new ArrayList<>(1);
+    public List<long[]> calculateOutputShape() {
+        List<long[]> ret = new ArrayList<>(1);
         ret.add(arg().getShape());
         return ret;
     }

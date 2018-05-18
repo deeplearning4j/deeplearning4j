@@ -45,7 +45,7 @@ public class MaxOut extends BaseTransformOp {
         this.max = max;
     }
 
-    public MaxOut(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, Number max) {
+    public MaxOut(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, Number max) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.max = max;
     }

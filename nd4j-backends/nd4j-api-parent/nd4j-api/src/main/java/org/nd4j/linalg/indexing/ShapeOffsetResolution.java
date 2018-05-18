@@ -3,6 +3,7 @@ package org.nd4j.linalg.indexing;
 import com.google.common.primitives.Longs;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -77,8 +78,8 @@ public class ShapeOffsetResolution implements Serializable {
             if (indexes[0] instanceof NDArrayIndexAll && indexes.length == 1) {
 
                 offset = 0;
-                this.shapes = LongUtils.toLongs(arr.shape());
-                this.strides = LongUtils.toLongs(arr.stride());
+                this.shapes = arr.shape();
+                this.strides = arr.stride();
                 this.offsets = new long[arr.rank()];
                 return true;
             } else if (indexes[0] instanceof PointIndex && indexes[1] instanceof NDArrayIndexAll) {
@@ -319,7 +320,7 @@ public class ShapeOffsetResolution implements Serializable {
      *
      */
     public void exec(INDArrayIndex... indexes) {
-        int[] shape = arr.shape();
+        val shape = arr.shape();
 
         if (arr.isSparse()) {
             resolveFixedDimensionsCOO(indexes);

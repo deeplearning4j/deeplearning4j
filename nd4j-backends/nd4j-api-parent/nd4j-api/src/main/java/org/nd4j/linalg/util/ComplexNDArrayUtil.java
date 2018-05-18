@@ -67,7 +67,7 @@ public class ComplexNDArrayUtil {
      * @return the center portion of the array based on the
      * specified shape
      */
-    public static IComplexNDArray center(IComplexNDArray arr, int[] shape) {
+    public static IComplexNDArray center(IComplexNDArray arr, long[] shape) {
         if (arr.length() < ArrayUtil.prod(shape))
             return arr;
         for (int i = 0; i < shape.length; i++)
@@ -122,7 +122,7 @@ public class ComplexNDArrayUtil {
 
 
         if (nd.size(dimension) > n) {
-            int[] shape = ArrayUtil.copy(nd.shape());
+            long[] shape = ArrayUtil.copy(nd.shape());
             shape[dimension] = n;
             IComplexNDArray ret = Nd4j.createComplex(shape);
             IComplexNDArray ndLinear = nd.linearView();
@@ -144,7 +144,7 @@ public class ComplexNDArrayUtil {
      * @param targetShape the the new shape
      * @return the padded ndarray
      */
-    public static IComplexNDArray padWithZeros(IComplexNDArray nd, int[] targetShape) {
+    public static IComplexNDArray padWithZeros(IComplexNDArray nd, long[] targetShape) {
         if (Arrays.equals(nd.shape(), targetShape))
             return nd;
         //no padding required

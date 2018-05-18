@@ -21,6 +21,7 @@
 package org.nd4j.linalg.ops;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -393,7 +394,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray slice = arr.slice(0);
-        float[] expected = new float[slice.length()];
+        // FIXME: int cast
+        float[] expected = new float[(int) slice.length()];
         for (int i = 0; i < slice.length(); i++)
             expected[i] = (float) Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
@@ -833,14 +835,16 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         double[] sumSquares = new double[100];
         NdIndexIterator iter = new NdIndexIterator(fourd.shape());
         while (iter.hasNext()) {
-            int[] next = iter.next();
+            val next = iter.next();
             double d = fourd.getDouble(next);
-            sums[next[0]] += d;
-            sumSquares[next[0]] += d * d;
+
+            // FIXME: int cast
+            sums[(int) next[0]] += d;
+            sumSquares[(int) next[0]] += d * d;
         }
 
         double[] manualVariance = new double[100];
-        int N = (fourd.length() / sums.length);
+        val N = (fourd.length() / sums.length);
         for (int i = 0; i < sums.length; i++) {
             manualVariance[i] = (sumSquares[i] - (sums[i] * sums[i]) / N) / N;
         }
@@ -939,8 +943,12 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
             INDArray out = Nd4j.getExecutioner().exec(new EuclideanDistance(first, second), 1, 2, 3);
             for (int i = 0; i < first.tensorssAlongDimension(1, 2, 3); i++) {
-                assertEquals(first.javaTensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer(),
-                                first.tensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer());
+                val j = first.javaTensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
+                val t = first.tensorAlongDimension(i, 1, 2, 3).shapeInfoDataBuffer().asLong();
+
+                log.info("J: {}", j);
+                log.info("T: {}\n\n", t);
+                assertArrayEquals(j, t);
             }
             Pair<DataBuffer, DataBuffer> firstTadInfo =
                             Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(first, 1, 2, 3);

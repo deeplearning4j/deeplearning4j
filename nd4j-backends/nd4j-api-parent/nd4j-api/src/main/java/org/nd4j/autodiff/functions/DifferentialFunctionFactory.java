@@ -101,6 +101,10 @@ public class DifferentialFunctionFactory {
         return sameDiff.zero("one-" + UUID.randomUUID().toString(), shape);
     }
 
+    public SDVariable zero(long[] shape) {
+        return sameDiff.zero("one-" + UUID.randomUUID().toString(), shape);
+    }
+
     public SDVariable zerosLike(SDVariable input) {
         return zerosLike(null, input);
     }
@@ -112,6 +116,10 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable one(int[] shape) {
+        return one(ArrayUtil.toLongArray(shape));
+    }
+
+    public SDVariable one(long[] shape) {
         return sameDiff.one("one-" + UUID.randomUUID().toString(), shape);
     }
 
@@ -805,6 +813,10 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable broadcast(SDVariable iX, int... shape) {
+        return broadcast(iX, ArrayUtil.toLongArray(shape));
+    }
+
+    public SDVariable broadcast(SDVariable iX, long... shape) {
         return new Broadcast(sameDiff(), iX, shape).outputVariables()[0];
     }
 
@@ -884,6 +896,10 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable reshape(SDVariable iX, int[] shape) {
+        return new Reshape(sameDiff(), iX, ArrayUtil.toLongArray(shape)).outputVariables()[0];
+    }
+
+    public SDVariable reshape(SDVariable iX, long[] shape) {
         return new Reshape(sameDiff(), iX, shape).outputVariables()[0];
     }
 
@@ -1555,14 +1571,14 @@ public class DifferentialFunctionFactory {
      * @param func
      * @return
      */
-    public int getInputLength(SDVariable func) {
+    public long getInputLength(SDVariable func) {
         validateDifferentialFunctionsameDiff(func);
-        int[] inputShape = func.arg().getShape();
-        return ArrayUtil.prod(inputShape);
+        long[] inputShape = func.arg().getShape();
+        return ArrayUtil.prodLong(inputShape);
     }
 
-    public int getReductionLength(DifferentialFunction func) {
-        int[] inputShape = func.arg().getShape();
+    public long getReductionLength(DifferentialFunction func) {
+        val inputShape = func.arg().getShape();
         if (Shape.isWholeArray(inputShape, func.getDimensions())) {
             return ArrayUtil.prod(inputShape);
         }
@@ -1622,7 +1638,9 @@ public class DifferentialFunctionFactory {
                                SDVariable input) {
         validateDifferentialFunctionsameDiff(func);
         validateDifferentialFunctionsameDiff(input);
-        return tile(func, input.getShape());
+
+        // FIXME: int cast!
+        return tile(func, ArrayUtil.toInts(input.getShape()));
     }
 
 

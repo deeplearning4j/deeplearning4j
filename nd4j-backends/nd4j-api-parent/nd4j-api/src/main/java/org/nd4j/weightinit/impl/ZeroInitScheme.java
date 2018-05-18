@@ -21,7 +21,7 @@ public class ZeroInitScheme extends BaseWeightInitScheme {
     }
 
     @Override
-    public INDArray doCreate(int[] shape, INDArray paramsView) {
+    public INDArray doCreate(long[] shape, INDArray paramsView) {
         if(shape == null) {
             throw new ND4JIllegalStateException("Shape must not be null!");
         }

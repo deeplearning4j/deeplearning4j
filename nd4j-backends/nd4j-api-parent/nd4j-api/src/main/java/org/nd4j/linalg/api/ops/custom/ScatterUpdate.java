@@ -98,7 +98,7 @@ public class ScatterUpdate implements CustomOp {
     }
 
     @Override
-    public int[] iArgs() {
+    public long[] iArgs() {
         return op.iArgs();
     }
 
@@ -113,12 +113,17 @@ public class ScatterUpdate implements CustomOp {
     }
 
     @Override
+    public void addIArgument(long... arg) {
+        op.addIArgument(arg);
+    }
+
+    @Override
     public void removeIArgument(Integer arg) {
         op.removeIArgument(arg);
     }
 
     @Override
-    public Integer getIArgument(int index) {
+    public Long getIArgument(int index) {
         return op.getIArgument(index);
     }
 
@@ -188,7 +193,7 @@ public class ScatterUpdate implements CustomOp {
     }
 
     @Override
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
         return Nd4j.getExecutioner().calculateOutputShape(this);
     }
 

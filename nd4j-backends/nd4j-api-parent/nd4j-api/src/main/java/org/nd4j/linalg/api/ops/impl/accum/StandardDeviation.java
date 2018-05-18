@@ -82,7 +82,7 @@ public class StandardDeviation extends Variance {
         //dL/dIn = dL/dOut * dOut/dIn
         //dOut/dIn_i = (in_i-mean)/(stdev * (n-1))
         int origRank = Shape.rankFromShape(arg().getShape());
-        int n = f().getReductionLength(this);
+        long n = f().getReductionLength(this);
         SDVariable broadcastableStdevOut = f().reductionBroadcastableWithOrigShape(origRank, dimensions, outputVariables()[0]);
         SDVariable broadcastableMean = f().reductionBroadcastableWithOrigShape(origRank, dimensions, f().mean(arg(), dimensions));
         SDVariable diff = arg().sub(broadcastableMean);

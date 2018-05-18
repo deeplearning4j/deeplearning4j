@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.gradcheck;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -75,7 +76,7 @@ public class GradCheckUtil {
         double maxError = 0.0;
 
         for(Map.Entry<String,INDArray> entry : inputParameters.entrySet()) {
-            int nParams = entry.getValue().length();
+            long nParams = entry.getValue().length();
             INDArray params = entry.getValue().dup();
             for (int i = 0; i < nParams; i++) {
                 INDArray zeros = Nd4j.create(nParams);
@@ -119,7 +120,7 @@ public class GradCheckUtil {
                 if(gradDiff > maxRelError)
                     totalNFailures++;
                 if (print) {
-                    int nPass = nParams - totalNFailures;
+                    long nPass = nParams - totalNFailures;
                     log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
                             + totalNFailures + " failed. Largest relative error = " + maxError);
                 }
@@ -208,7 +209,7 @@ public class GradCheckUtil {
 
             String name = s.getVarName();
             INDArray a = s.getArr();
-            int n = a.length();
+            long n = a.length();
             if(print){
                 log.info("Starting test for variable \"{}\" with {} values", s.getVarName(), n);
             }
@@ -217,7 +218,7 @@ public class GradCheckUtil {
 
             int i=0;
             while(iter.hasNext()){
-                int[] idx = iter.next();
+                val idx = iter.next();
                 String strIdx = null;
                 if(print){
                     strIdx = Arrays.toString(idx).replaceAll(" ","");

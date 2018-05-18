@@ -276,7 +276,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
-    public int[] getShapeFromAttr(AttrValue attr) {
+    public long[] getShapeFromAttr(AttrValue attr) {
         return shapeFromShapeProto(attr.getShape());
     }
 
@@ -317,7 +317,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
-    public int[] getShape(NodeDef nodeDef) {
+    public long[] getShape(NodeDef nodeDef) {
         return getShapeFromAttr(nodeDef.getAttrOrThrow(SHAPE_KEY));
     }
 
@@ -444,19 +444,19 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
         val diff = importState.getSameDiff();
         if (isVariableNode(tfNode)) {
-            List<Integer> dimensions = new ArrayList<>();
+            List<Long> dimensions = new ArrayList<>();
             Map<String, AttrValue> attributes = getAttrMap(tfNode);
             if (attributes.containsKey(VALUE_ATTR_KEY)) {
                 diff.var(getName(tfNode),getArrayFrom(tfNode,importState.getGraph()));
             }
             else if (attributes.containsKey(SHAPE_KEY)) {
                 AttrValue shape = attributes.get(SHAPE_KEY);
-                int[] shapeArr = getShapeFromAttr(shape);
+                long[] shapeArr = getShapeFromAttr(shape);
                 int dims = shapeArr.length;
                 if (dims > 0) {
                     // even vector is 2d in nd4j
                     if (dims == 1)
-                        dimensions.add(1);
+                        dimensions.add(1L);
 
                     for (int e = 0; e < dims; e++) {
                         // TODO: eventually we want long shapes :(
@@ -760,9 +760,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
-    public int[] getShapeFromAttribute(AttrValue attrValue) {
+    public long[] getShapeFromAttribute(AttrValue attrValue) {
         TensorShapeProto shape = attrValue.getShape();
-        int[] ret = new int[shape.getDimCount()];
+        long[] ret = new long[shape.getDimCount()];
         for(int i = 0; i < ret.length; i++) {
             ret[i] = (int) shape.getDim(i).getSize();
         }
@@ -990,7 +990,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
-    public int[] getShapeFromTensor(NodeDef tensorProto) {
+    public long[] getShapeFromTensor(NodeDef tensorProto) {
         if(tensorProto.containsAttr("shape")) {
             return shapeFromShapeProto(tensorProto.getAttrOrThrow("shape").getShape());
 
@@ -1020,18 +1020,18 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         return nodeDef.getInputCount();
     }
 
-    private int[] shapeFromShapeProto(TensorShapeProto tensorShapeProto) {
-        int[] shape = new int[tensorShapeProto.getDimList().size()];
+    private long[] shapeFromShapeProto(TensorShapeProto tensorShapeProto) {
+        long[] shape = new long[tensorShapeProto.getDimList().size()];
         for(int i = 0; i < shape.length; i++) {
-            shape[i] = (int) tensorShapeProto.getDim(i).getSize();
+            shape[i] =  tensorShapeProto.getDim(i).getSize();
         }
 
         //shape should be mapped to a row vector
         if(shape.length < 2) {
             if(shape.length == 1)
-                shape = new int[]{1,shape[0]};
+                shape = new long[]{1,shape[0]};
             else
-                shape = new int[]{1,1};
+                shape = new long[]{1,1};
         }
 
         return shape;

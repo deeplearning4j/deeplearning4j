@@ -812,7 +812,8 @@ public class JcublasLapack extends BaseLapack {
         if (A.ordering() == 'c')
             a = A.dup('f');
 
-	int M = A.rows() ;
+        // FIXME: int cast
+	int M = (int) A.rows() ;
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -888,7 +889,8 @@ public class JcublasLapack extends BaseLapack {
         if (A.ordering() == 'c')
             a = A.dup('f');
 
-	int M = A.rows() ;
+        // FIXME: int cast
+	int M = (int) A.rows() ;
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();

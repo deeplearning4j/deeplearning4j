@@ -40,7 +40,7 @@ public class LogSoftMax extends BaseTransformOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public LogSoftMax(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public LogSoftMax(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 

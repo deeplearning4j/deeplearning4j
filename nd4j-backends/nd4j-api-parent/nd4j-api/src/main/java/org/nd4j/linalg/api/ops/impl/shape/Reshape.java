@@ -44,10 +44,10 @@ import java.util.*;
 @Slf4j
 public class Reshape extends DynamicCustomOp {
 
-    private int[] shape;
+    private long[] shape;
     private String arrName;
 
-    public Reshape(SameDiff sameDiff, SDVariable i_v, int[] shape) {
+    public Reshape(SameDiff sameDiff, SDVariable i_v, long[] shape) {
         super(null, sameDiff, new SDVariable[]{i_v});
         this.shape = shape;
         addIArgument('c');
@@ -62,7 +62,7 @@ public class Reshape extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         if (!nodeDef.containsAttr("TShape") && nodeDef.getInputCount() == 1) {
-            this.shape = new int[]{};
+            this.shape = new long[]{};
             return;
         } else if (nodeDef.getInputCount() > 1) {
             val shapeNode = nodeDef.getInput(1);
@@ -76,7 +76,7 @@ public class Reshape extends DynamicCustomOp {
 
             val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", shapeNodeInGraph, graph);
             if (arr != null) {
-                this.shape = arr.data().asInt();
+                this.shape = arr.data().asLong();
                 //all TF is c
                 addIArgument('c');
                 if (!ArrayUtil.containsAnyNegative(this.shape))
@@ -89,19 +89,19 @@ public class Reshape extends DynamicCustomOp {
         } else {
             val shape = nodeDef.getAttrOrThrow("Tshape");
             if (!shape.hasShape()) {
-                val shapeRet = new int[2];
+                val shapeRet = new long[2];
                 shapeRet[0] = 1;
                 shapeRet[1] = shape.getValueCase().getNumber();
                 this.shape = shapeRet;
             } else {
                 val shapeVals = shape.getShape().getDimList();
                 if (shapeVals.size() > 1) {
-                    this.shape = new int[shapeVals.size()];
+                    this.shape = new long[shapeVals.size()];
                     for (int i = 0; i < shapeVals.size(); i++) {
                         this.shape[i] = (int) shapeVals.get(i).getSize();
                     }
                 } else {
-                    this.shape = new int[2];
+                    this.shape = new long[2];
                     this.shape[0] = 1;
                     this.shape[1] = (int) shapeVals.get(0).getSize();
                 }
@@ -126,7 +126,7 @@ public class Reshape extends DynamicCustomOp {
         if (arrName != null) {
             val args = args();
             val firstInputShape = args[0].getShape();
-            val shapeInput = args[1].getArr().data().asInt();
+            val shapeInput = args[1].getArr().data().asLong();
             for (int i = 0; i < shapeInput.length; i++) {
                 if (shapeInput[i] < 0) {
                     shapeInput[i] = firstInputShape[i];
@@ -152,7 +152,6 @@ public class Reshape extends DynamicCustomOp {
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
         val shape = new OnnxGraphMapper().getShape(node);
         this.shape = shape;
-
     }
 
 
@@ -177,7 +176,7 @@ public class Reshape extends DynamicCustomOp {
 
 
     @Override
-    public List<int[]> calculateOutputShape() {
+    public List<long[]> calculateOutputShape() {
         return Arrays.asList(shape);
     }
 
@@ -200,7 +199,7 @@ public class Reshape extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        int[] origShape = arg().getShape();
+        val origShape = arg().getShape();
         if (origShape == null) {
             //TODO need a more robust way to do this
             throw new ND4JIllegalStateException("Cannot reshape: original array input shape is null");

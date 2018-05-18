@@ -12,22 +12,45 @@ public interface ShapeInfoProvider {
      * @param shape
      * @return
      */
-    Pair<DataBuffer, int[]> createShapeInformation(int[] shape);
+    Pair<DataBuffer, long[]> createShapeInformation(int[] shape);
 
     /**
      * This method creates shapeInformation buffer, based on shape & order being passed in
      * @param shape
      * @return
      */
-    Pair<DataBuffer, int[]> createShapeInformation(int[] shape, char order);
+    Pair<DataBuffer, long[]> createShapeInformation(int[] shape, char order);
 
     /**
      * This method creates shapeInformation buffer, based on detailed shape information being passed in
      * @param shape
      * @return
      */
-    Pair<DataBuffer, int[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride,
-                    char order);
+    Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order);
+
+
+    /**
+     * This method creates long shapeInformation buffer, based on shape being passed in
+     * @param shape
+     * @return
+     */
+    Pair<DataBuffer, long[]> createShapeInformation(long[] shape);
+
+    /**
+     * This method creates long shapeInformation buffer, based on shape & order being passed in
+     * @param shape
+     * @return
+     */
+    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, char order);
+
+    /**
+     * This method creates long shapeInformation buffer, based on detailed shape info being passed in
+     * @param shape
+     * @return
+     */
+    Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order);
+
+
 
     /**
      * This method forces cache purge, if cache is available for specific implementation

@@ -282,7 +282,7 @@ public class CustomOpsTests {
         val shapes = Nd4j.getExecutioner().calculateOutputShape(op);
 
         assertEquals(1, shapes.size());
-        assertArrayEquals(new int[]{5, 2}, shapes.get(0));
+        assertArrayEquals(new long[]{5, 2}, shapes.get(0));
     }
 
 

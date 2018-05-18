@@ -33,8 +33,8 @@ import java.util.Collection;
 public class LogEntry extends DataBufferLogEntry {
 
     private String id;
-    private int[] shape;
-    private int[] stride;
+    private long[] shape;
+    private long[] stride;
     private String ndArrayType;
 
     public LogEntry() {}
@@ -133,19 +133,19 @@ public class LogEntry extends DataBufferLogEntry {
         this.id = id;
     }
 
-    public int[] getShape() {
+    public long[] getShape() {
         return shape;
     }
 
-    public void setShape(int[] shape) {
+    public void setShape(long[] shape) {
         this.shape = shape;
     }
 
-    public int[] getStride() {
+    public long[] getStride() {
         return stride;
     }
 
-    public void setStride(int[] stride) {
+    public void setStride(long[] stride) {
         this.stride = stride;
     }
 

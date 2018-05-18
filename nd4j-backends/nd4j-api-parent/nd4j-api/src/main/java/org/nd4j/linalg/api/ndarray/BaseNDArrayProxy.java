@@ -37,7 +37,7 @@ public class BaseNDArrayProxy implements java.io.Serializable {
      * Be it cpu or gpu
      */
 
-    protected int[] arrayShape;
+    protected long[] arrayShape;
     protected long length;
     protected char arrayOrdering;
     protected transient DataBuffer data;

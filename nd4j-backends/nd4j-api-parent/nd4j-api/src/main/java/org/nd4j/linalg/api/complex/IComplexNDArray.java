@@ -63,7 +63,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the reshaped ndarray
      */
     @Override
-    IComplexNDArray reshape(int rows, int columns);
+    IComplexNDArray reshape(long rows, long columns);
 
 
     /**
@@ -704,7 +704,7 @@ public interface IComplexNDArray extends INDArray {
     void checkDimensions(INDArray other);
 
     @Override
-    IComplexNDArray reshape(char order, int... newShape);
+    IComplexNDArray reshape(char order, long... newShape);
 
     @Override
     IComplexNDArray reshape(char order, int rows, int columns);
@@ -836,7 +836,7 @@ public interface IComplexNDArray extends INDArray {
      * @return this
      */
     @Override
-    IComplexNDArray putRow(int row, INDArray toPut);
+    IComplexNDArray putRow(long row, INDArray toPut);
 
     /**
      * Insert a column in to this array
@@ -859,7 +859,7 @@ public interface IComplexNDArray extends INDArray {
      * @return a scalar indarray of the element at this index
      */
     @Override
-    IComplexNDArray getScalar(int row, int column);
+    IComplexNDArray getScalar(long row, long column);
 
     /**
      * Returns the element at the specified index
@@ -868,7 +868,7 @@ public interface IComplexNDArray extends INDArray {
      * @return a scalar ndarray of the element at this index
      */
     @Override
-    IComplexNDArray getScalar(int i);
+    IComplexNDArray getScalar(long i);
 
 
     /**
@@ -1381,7 +1381,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the reshaped ndarray
      */
     @Override
-    IComplexNDArray reshape(int... newShape);
+    IComplexNDArray reshape(long... newShape);
 
     /**
      * Flip the rows and columns of a matrix
@@ -1439,7 +1439,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the specified column
      */
     @Override
-    IComplexNDArray getColumn(int i);
+    IComplexNDArray getColumn(long i);
 
     /**
      * Returns the specified row.
@@ -1449,7 +1449,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the specified row
      */
     @Override
-    IComplexNDArray getRow(int i);
+    IComplexNDArray getRow(long i);
 
 
     /**
@@ -1459,7 +1459,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the broadcasted ndarray
      */
     @Override
-    IComplexNDArray broadcast(int[] shape);
+    IComplexNDArray broadcast(long[] shape);
 
     IComplexNDArray putScalar(int j, int i, IComplexNumber conji);
 

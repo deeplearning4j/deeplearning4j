@@ -23,7 +23,7 @@ public class ReluInitScheme extends BaseWeightInitScheme {
     }
 
     @Override
-    public INDArray doCreate(int[] shape, INDArray paramsView) {
+    public INDArray doCreate(long[] shape, INDArray paramsView) {
        return  Nd4j.randn(order(), shape).muli(FastMath.sqrt(2.0 / fanIn)); //N(0, 2/nIn);
     }
 

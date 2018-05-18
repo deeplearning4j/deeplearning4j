@@ -37,16 +37,18 @@ public interface CustomOp {
 
     INDArray[] inputArguments();
 
-    int[] iArgs();
+    long[] iArgs();
 
     double[] tArgs();
 
     void addIArgument(int... arg);
 
+    void addIArgument(long... arg);
+
 
     void removeIArgument(Integer arg);
 
-    Integer getIArgument(int index);
+    Long getIArgument(int index);
 
     int numIArguments();
 
@@ -82,7 +84,7 @@ public interface CustomOp {
      * Calculate the output shape for this op
      * @return
      */
-    List<int[]> calculateOutputShape();
+    List<long[]> calculateOutputShape();
 
     /**
      * Get the custom op descriptor if one is available.

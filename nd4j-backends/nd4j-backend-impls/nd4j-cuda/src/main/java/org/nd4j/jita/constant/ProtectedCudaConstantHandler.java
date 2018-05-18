@@ -16,10 +16,7 @@ import org.nd4j.linalg.cache.ArrayDescriptor;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaHalfDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.*;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.nativeblas.NativeOps;
@@ -244,6 +241,9 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         } else if (dataBuffer instanceof CudaHalfDataBuffer) {
             float[] data = dataBuffer.asFloat();
             return getConstantBuffer(data);
+        } else if (dataBuffer instanceof CudaLongDataBuffer) {
+            long[] data = dataBuffer.asLong();
+            return getConstantBuffer(data);
         }
 
         throw new IllegalStateException("Unknown CudaDataBuffer opType");
@@ -307,6 +307,35 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                 buffersCache.get(deviceId).put(descriptor, buffer);
 
                 bytes.addAndGet(array.length * 4);
+            }
+            return buffer;
+        } //else logger.info("Reusing constant buffer...");
+
+        return buffersCache.get(deviceId).get(descriptor);
+    }
+
+    @Override
+    public DataBuffer getConstantBuffer(long[] array) {
+        //  logger.info("getConstantBuffer(int[]) called");
+        ArrayDescriptor descriptor = new ArrayDescriptor(array);
+
+        Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
+
+        ensureMaps(deviceId);
+
+        if (!buffersCache.get(deviceId).containsKey(descriptor)) {
+            // we create new databuffer
+            //logger.info("Creating new constant buffer...");
+            DataBuffer buffer = Nd4j.createBufferDetached(array);
+
+            if (constantOffsets.get(deviceId).get() + (array.length * 8) < MAX_CONSTANT_LENGTH) {
+                buffer.setConstant(true);
+                // now we move data to constant memory, and keep happy
+                moveToConstantSpace(buffer);
+
+                buffersCache.get(deviceId).put(descriptor, buffer);
+
+                bytes.addAndGet(array.length * 8);
             }
             return buffer;
         } //else logger.info("Reusing constant buffer...");

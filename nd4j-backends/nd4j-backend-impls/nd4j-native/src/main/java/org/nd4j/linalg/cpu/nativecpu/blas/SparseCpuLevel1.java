@@ -14,6 +14,8 @@ import static org.bytedeco.javacpp.mkl_rt.*;
  */
 public class SparseCpuLevel1 extends SparseBaseLevel1 {
 
+    // FIXME: int cast !!!
+
     private SparseNd4jBlas sparseNd4jBlas = (SparseNd4jBlas) Nd4j.sparseFactory().blas();
 
     /**
@@ -24,8 +26,8 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @param Y a dense INDArray. Size at least max(indx[i])
      * */
     @Override
-    protected double ddoti(int N, INDArray X, DataBuffer indx, INDArray Y) {
-        return cblas_ddoti(N, (DoublePointer) X.data().addressPointer(),(IntPointer) indx.addressPointer(),
+    protected double ddoti(long N, INDArray X, DataBuffer indx, INDArray Y) {
+        return cblas_ddoti((int) N, (DoublePointer) X.data().addressPointer(),(IntPointer) indx.addressPointer(),
                 (DoublePointer) Y.data().addressPointer());
     }
 
@@ -37,13 +39,13 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @param Y a dense INDArray. Size at least max(indx[i])
      * */
     @Override
-    protected double sdoti(int N, INDArray X, DataBuffer indx, INDArray Y) {
-        return cblas_sdoti(N, (FloatPointer) X.data().addressPointer(),(IntPointer) indx.addressPointer(),
+    protected double sdoti(long N, INDArray X, DataBuffer indx, INDArray Y) {
+        return cblas_sdoti((int) N, (FloatPointer) X.data().addressPointer(),(IntPointer) indx.addressPointer(),
                 (FloatPointer) Y.data().addressPointer());
     }
 
     @Override
-    protected double hdoti(int N, INDArray X, DataBuffer indx, INDArray Y) {
+    protected double hdoti(long N, INDArray X, DataBuffer indx, INDArray Y) {
         throw new UnsupportedOperationException();
     }
 
@@ -54,8 +56,8 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @param incx the increment of X
      * */
     @Override
-    protected double snrm2(int N, INDArray X, int incx){
-        return cblas_snrm2(N, (FloatPointer) X.data().addressPointer(), incx);
+    protected double snrm2(long N, INDArray X, int incx){
+        return cblas_snrm2((int) N, (FloatPointer) X.data().addressPointer(), incx);
     }
 
     /**
@@ -65,12 +67,12 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @param incx the increment of X
      * */
     @Override
-    protected double dnrm2(int N, INDArray X, int incx){
-        return cblas_dnrm2(N, (DoublePointer) X.data().addressPointer(), incx);
+    protected double dnrm2(long N, INDArray X, int incx){
+        return cblas_dnrm2((int) N, (DoublePointer) X.data().addressPointer(), incx);
     }
 
     @Override
-    protected double hnrm2(int N, INDArray X, int incx){
+    protected double hnrm2(long N, INDArray X, int incx){
         throw new UnsupportedOperationException();
     }
 
@@ -83,8 +85,8 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @return the sum of magnitude of the vector elements
      * */
     @Override
-    protected double dasum(int N, INDArray X, int incrx){
-        return cblas_dasum(N, (DoublePointer) X.data().addressPointer(), incrx);
+    protected double dasum(long N, INDArray X, int incrx){
+        return cblas_dasum((int) N, (DoublePointer) X.data().addressPointer(), incrx);
     }
 
     /**
@@ -96,12 +98,12 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @return the sum of magnitude of the vector elements
      * */
     @Override
-    protected double sasum(int N, INDArray X, int incrx){
-        return cblas_sasum(N, (FloatPointer) X.data().addressPointer(), incrx);
+    protected double sasum(long N, INDArray X, int incrx){
+        return cblas_sasum((int) N, (FloatPointer) X.data().addressPointer(), incrx);
     }
 
     @Override
-    protected double hasum(int N, INDArray X, int incrx){
+    protected double hasum(long N, INDArray X, int incrx){
         throw new UnsupportedOperationException();
     }
 
@@ -114,8 +116,8 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @return the index of the element with maximum absolute value
      * */
     @Override
-    protected int isamax(int N, INDArray X, int incX) {
-        return (int) cblas_isamax(N, (FloatPointer) X.data().addressPointer(), incX);
+    protected int isamax(long N, INDArray X, int incX) {
+        return (int) cblas_isamax((int) N, (FloatPointer) X.data().addressPointer(), incX);
     }
     /**
      * Find the index of the element with maximum absolute value
@@ -126,11 +128,11 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @return the index of the element with maximum absolute value
      * */
     @Override
-    protected int idamax(int N, INDArray X, int incX) {
-        return (int) cblas_idamax(N, (DoublePointer) X.data().addressPointer(), incX);
+    protected int idamax(long N, INDArray X, int incX) {
+        return (int) cblas_idamax((int) N, (DoublePointer) X.data().addressPointer(), incX);
     }
     @Override
-    protected int ihamax(int N, INDArray X, int incX) {
+    protected int ihamax(long N, INDArray X, int incX) {
         throw new UnsupportedOperationException();
     }
 
@@ -143,8 +145,8 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @return the index of the element with minimum absolute value
      * */
     @Override
-    protected int isamin(int N, INDArray X, int incX) {
-        return (int) cblas_isamin(N, (FloatPointer) X.data().addressPointer(), incX);
+    protected int isamin(long N, INDArray X, int incX) {
+        return (int) cblas_isamin((int) N, (FloatPointer) X.data().addressPointer(), incX);
     }
 
     /**
@@ -156,11 +158,11 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @return the index of the element with minimum absolute value
      * */
     @Override
-    protected int idamin(int N, INDArray X, int incX) {
-        return (int) cblas_idamin(N, (DoublePointer) X.data().addressPointer(), incX);
+    protected int idamin(long N, INDArray X, int incX) {
+        return (int) cblas_idamin((int) N, (DoublePointer) X.data().addressPointer(), incX);
     }
     @Override
-    protected int ihamin(int N, INDArray X, int incX) {
+    protected int ihamin(long N, INDArray X, int incX) {
         throw new UnsupportedOperationException();
     }
 
@@ -175,8 +177,8 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      *
      * */
     @Override
-    protected void daxpyi(int N, double alpha, INDArray X, DataBuffer pointers, INDArray Y){
-        cblas_daxpyi(N, alpha, (DoublePointer) X.data().addressPointer(), (IntPointer) pointers.addressPointer(),
+    protected void daxpyi(long N, double alpha, INDArray X, DataBuffer pointers, INDArray Y){
+        cblas_daxpyi((int) N, alpha, (DoublePointer) X.data().addressPointer(), (IntPointer) pointers.addressPointer(),
                 (DoublePointer) Y.data().addressPointer());
     }
 
@@ -191,13 +193,13 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      *
      * */
     @Override
-    protected void saxpyi(int N, double alpha, INDArray X, DataBuffer pointers, INDArray Y) {
-        cblas_saxpyi(N, (float) alpha, (FloatPointer) X.data().addressPointer(), (IntPointer) pointers.addressPointer(),
+    protected void saxpyi(long N, double alpha, INDArray X, DataBuffer pointers, INDArray Y) {
+        cblas_saxpyi((int) N, (float) alpha, (FloatPointer) X.data().addressPointer(), (IntPointer) pointers.addressPointer(),
                 (FloatPointer) Y.data().addressPointer());
     }
 
     @Override
-    protected void haxpyi(int N, double alpha, INDArray X, DataBuffer pointers, INDArray Y){
+    protected void haxpyi(long N, double alpha, INDArray X, DataBuffer pointers, INDArray Y){
         throw new UnsupportedOperationException();
     }
 
@@ -212,8 +214,8 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @param s a scalar
      * */
     @Override
-    protected void droti(int N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s) {
-        cblas_droti(N, (DoublePointer) X.data().addressPointer(), (IntPointer) indexes.addressPointer(),
+    protected void droti(long N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s) {
+        cblas_droti((int) N, (DoublePointer) X.data().addressPointer(), (IntPointer) indexes.addressPointer(),
                 (DoublePointer) Y.data().addressPointer(), c, s);
     }
 
@@ -228,13 +230,13 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @param s a scalar
      * */
     @Override
-    protected void sroti(int N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s) {
-        cblas_sroti(N, (FloatPointer) X.data().addressPointer(), (IntPointer) indexes.addressPointer().capacity(X.columns()),
+    protected void sroti(long N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s) {
+        cblas_sroti((int) N, (FloatPointer) X.data().addressPointer(), (IntPointer) indexes.addressPointer().capacity(X.columns()),
                 (FloatPointer) Y.data().addressPointer(), (float) c, (float) s);
     }
 
     @Override
-    protected void hroti(int N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s) {
+    protected void hroti(long N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s) {
         throw new UnsupportedOperationException();
     }
 
@@ -247,8 +249,8 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @param incx the increment of the vector X
      * */
     @Override
-    protected void dscal(int N, double a, INDArray X, int incx) {
-        cblas_dscal(N, a, (DoublePointer) X.data().addressPointer(), incx);
+    protected void dscal(long N, double a, INDArray X, int incx) {
+        cblas_dscal((int) N, a, (DoublePointer) X.data().addressPointer(), incx);
     }
 
     /**
@@ -260,12 +262,12 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * @param incx the increment of the vector X
      * */
     @Override
-    protected void sscal(int N, double a, INDArray X, int incx) {
-        cblas_sscal(N, (float) a, (FloatPointer) X.data().addressPointer(), incx);
+    protected void sscal(long N, double a, INDArray X, int incx) {
+        cblas_sscal((int) N, (float) a, (FloatPointer) X.data().addressPointer(), incx);
     }
 
     @Override
-    protected void hscal(int N, double a, INDArray X, int incx) {
+    protected void hscal(long N, double a, INDArray X, int incx) {
         throw new UnsupportedOperationException();
     }
 }

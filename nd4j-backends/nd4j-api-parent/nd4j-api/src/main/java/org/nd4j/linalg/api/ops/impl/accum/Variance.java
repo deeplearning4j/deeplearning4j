@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -147,7 +148,7 @@ public class Variance extends BaseAccumulation {
         //If out = var(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         // with dOut/dIn = (in-mean) * 2/(n-1)
-        int n = f().getReductionLength(this);
+        val n = f().getReductionLength(this);
         int origRank = Shape.rankFromShape(arg().getShape());
         SDVariable broadcastableMean = f().reductionBroadcastableWithOrigShape(origRank, dimensions, f().mean(arg(), dimensions));
         SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));

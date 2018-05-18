@@ -56,7 +56,7 @@ public class DepthwiseConv2D extends DynamicCustomOp {
     }
 
     protected void addArgs() {
-        addIArgument(new int[]{config.getKh(),
+        addIArgument(new long[]{config.getKh(),
                 config.getKw(),
                 config.getSy(),
                 config.getSx(),

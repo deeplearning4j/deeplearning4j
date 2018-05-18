@@ -539,7 +539,8 @@ public class OpExecutionerTests extends BaseNd4jTest {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray slice = arr.slice(0);
-        float[] expected = new float[slice.length()];
+        // FIXME: int cast
+        float[] expected = new float[(int) slice.length()];
         for (int i = 0; i < slice.length(); i++)
             expected[i] = (float) Math.exp(slice.getDouble(i));
         Exp exp = new Exp(slice);
@@ -679,7 +680,8 @@ public class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testVariance() {
-        INDArray arr = Nd4j.create(new float[] {0.9296161f, 0.31637555f, 0.1839188f}, new int[] {1, 3}, ordering());
+        val f = new double[] {0.9296161, 0.31637555, 0.1839188};
+        INDArray arr = Nd4j.create(f, new int[] {1, 3}, ordering());
         double var = arr.varNumber().doubleValue();
 
         INDArray var1 = arr.var(1);

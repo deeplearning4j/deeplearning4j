@@ -20,7 +20,7 @@ public class IdentityInitScheme extends BaseWeightInitScheme {
     }
 
     @Override
-    public INDArray doCreate(int[] shape, INDArray paramsView) {
+    public INDArray doCreate(long[] shape, INDArray paramsView) {
         if(shape.length != 2 || shape[0] != shape[1]){
             throw new IllegalStateException("Cannot use IDENTITY init with parameters of shape "
                     + Arrays.toString(shape) + ": weights must be a square matrix for identity");

@@ -42,7 +42,7 @@ public class Step extends BaseTransformOp {
 
     }
 
-    public Step(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double cutoff) {
+    public Step(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double cutoff) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.cutoff = cutoff;
         this.extraArgs = new Object[] {cutoff};

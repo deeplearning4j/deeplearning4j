@@ -71,6 +71,10 @@ public class NDArray extends BaseNDArray {
         super(buffer, shape, stride, offset, ordering);
     }
 
+    public NDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, char ordering) {
+        super(buffer, shape, stride, offset, ordering);
+    }
+
     public NDArray(double[][] data) {
         super(data);
     }
@@ -100,6 +104,22 @@ public class NDArray extends BaseNDArray {
         super(data, shape, offset, ordering);
     }
 
+    public NDArray(float[] data, long[] shape, long offset, char ordering) {
+        super(data, shape, offset, ordering);
+    }
+
+    public NDArray(float[] data, long[] shape, long[] stride, long offset, char ordering) {
+        super(data, shape, stride, offset, ordering);
+    }
+
+    public NDArray(double[] data, long[] shape, long[] stride, long offset, char ordering) {
+        super(data, shape, stride, offset, ordering);
+    }
+
+    public NDArray(double[] data, long[] shape, long offset, char ordering) {
+        super(data, shape, offset, ordering);
+    }
+
     /**
      * Construct an ndarray of the specified shape
      * with an empty data array
@@ -113,6 +133,10 @@ public class NDArray extends BaseNDArray {
         super(shape, stride, offset, ordering);
     }
 
+    public NDArray(long[] shape, long[] stride, long offset, char ordering) {
+        super(shape, stride, offset, ordering);
+    }
+
     /**
      * Construct an ndarray of the specified shape, with optional initialization
      *
@@ -123,6 +147,10 @@ public class NDArray extends BaseNDArray {
      * @param initialize Whether to initialize the INDArray. If true: initialize. If false: don't.
      */
     public NDArray(int[] shape, int[] stride, long offset, char ordering, boolean initialize) {
+        super(shape, stride, offset, ordering, initialize);
+    }
+
+    public NDArray(long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
         super(shape, stride, offset, ordering, initialize);
     }
 
@@ -157,6 +185,10 @@ public class NDArray extends BaseNDArray {
         super(newRows, newColumns, ordering);
     }
 
+    public NDArray(long newRows, long newColumns, char ordering) {
+        super(newRows, newColumns, ordering);
+    }
+
     /**
      * Create an ndarray from the specified slices.
      * This will go through and merge all of the
@@ -168,6 +200,10 @@ public class NDArray extends BaseNDArray {
      * @param ordering
      */
     public NDArray(List<INDArray> slices, int[] shape, char ordering) {
+        super(slices, shape, ordering);
+    }
+
+    public NDArray(List<INDArray> slices, long[] shape, char ordering) {
         super(slices, shape, ordering);
     }
 
@@ -220,6 +256,10 @@ public class NDArray extends BaseNDArray {
         super(shape, stride, offset);
     }
 
+    public NDArray(long[] shape, long[] stride, long offset) {
+        super(shape, stride, offset);
+    }
+
     /**
      * Create the ndarray with
      * the specified shape and stride and an offset of 0
@@ -249,6 +289,10 @@ public class NDArray extends BaseNDArray {
         super(newRows, newColumns);
     }
 
+    public NDArray(long newRows, long newColumns) {
+        super(newRows, newColumns);
+    }
+
     /**
      * Create an ndarray from the specified slices.
      * This will go through and merge all of the
@@ -259,6 +303,10 @@ public class NDArray extends BaseNDArray {
      * @param shape  the shape of the ndarray
      */
     public NDArray(List<INDArray> slices, int[] shape) {
+        super(slices, shape);
+    }
+
+    public NDArray(List<INDArray> slices, long[] shape) {
         super(slices, shape);
     }
 
@@ -273,6 +321,10 @@ public class NDArray extends BaseNDArray {
      * @param stride
      */
     public NDArray(List<INDArray> slices, int[] shape, int[] stride) {
+        super(slices, shape, stride);
+    }
+
+    public NDArray(List<INDArray> slices, long[] shape, long[] stride) {
         super(slices, shape, stride);
     }
 
@@ -316,6 +368,10 @@ public class NDArray extends BaseNDArray {
         super(data, shape);
     }
 
+    public NDArray(DataBuffer data, long[] shape) {
+        super(data, shape);
+    }
+
     public NDArray(DataBuffer buffer, int[] shape, long offset) {
         super(buffer, shape, offset);
     }
@@ -325,6 +381,10 @@ public class NDArray extends BaseNDArray {
     }
 
     public NDArray(double[] data, int[] shape, char ordering) {
+        super(data, shape, ordering);
+    }
+
+    public NDArray(double[] data, long[] shape, char ordering) {
         super(data, shape, ordering);
     }
 

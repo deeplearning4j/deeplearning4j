@@ -14,7 +14,7 @@ public class PointIndex implements INDArrayIndex {
      *
      * @param point
      */
-    public PointIndex(int point) {
+    public PointIndex(long point) {
         this.point = point;
     }
 

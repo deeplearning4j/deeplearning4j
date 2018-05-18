@@ -61,7 +61,8 @@ public class AeronNDArraySerdeTest {
         Nd4j.getCompressor().compressi(arr, "GZIP");
         for (int i = 0; i < numTrials; i++) {
             StopWatch oldStopWatch = new StopWatch();
-            BufferedOutputStream bos = new BufferedOutputStream(new ByteArrayOutputStream(arr.length()));
+            // FIXME: int cast
+            BufferedOutputStream bos = new BufferedOutputStream(new ByteArrayOutputStream((int) arr.length()));
             DataOutputStream dos = new DataOutputStream(bos);
             oldStopWatch.start();
             Nd4j.write(arr, dos);

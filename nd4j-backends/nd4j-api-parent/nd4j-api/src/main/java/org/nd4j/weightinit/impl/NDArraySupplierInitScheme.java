@@ -25,12 +25,12 @@ public class NDArraySupplierInitScheme implements WeightInitScheme {
     }
 
     @Override
-    public INDArray create(int[] shape, INDArray paramsView) {
+    public INDArray create(long[] shape, INDArray paramsView) {
         return supplier.getArr();
     }
 
     @Override
-    public INDArray create(int[] shape) {
+    public INDArray create(long[] shape) {
         return supplier.getArr();
     }
 

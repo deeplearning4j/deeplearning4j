@@ -105,7 +105,7 @@ public class LossMixtureDensity extends DifferentialFunction implements ILossFun
     // This is done manually, but it should ultimately be done
     // through Nd4j operations in order to increase performance.
     public MixtureDensityComponents extractComponents(INDArray output) {
-        int outputSize = output.size(1);
+        long outputSize = output.size(1);
         if (outputSize != (mLabelWidth + 2) * mMixtures) {
             throw new IllegalArgumentException(
                             "Network output size " + outputSize + " must be (labels+2)*mixtures where labels = "
@@ -223,7 +223,7 @@ public class LossMixtureDensity extends DifferentialFunction implements ILossFun
      */
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        int nSamples = labels.size(0);
+        long nSamples = labels.size(0);
 
         INDArray output = activationFn.getActivation(preOutput.dup(), false);
 
@@ -336,8 +336,8 @@ public class LossMixtureDensity extends DifferentialFunction implements ILossFun
     private INDArray labelsMinusMu(INDArray labels, INDArray mu) {
         // Now that we have the mixtures, let's compute the negative
         // log likelihodd of the label against the 
-        int nSamples = labels.size(0);
-        int labelsPerSample = labels.size(1);
+        long nSamples = labels.size(0);
+        long labelsPerSample = labels.size(1);
 
         // This worked, but was actually much
         // slower than the for loop below.

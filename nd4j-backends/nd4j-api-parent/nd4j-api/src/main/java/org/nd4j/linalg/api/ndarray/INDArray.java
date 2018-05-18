@@ -30,7 +30,7 @@ import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.Serializable;
-import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.List;
 
 /**
@@ -62,7 +62,7 @@ public interface INDArray extends Serializable {
      * Shape info
      * @return
      */
-    IntBuffer shapeInfo();
+    LongBuffer shapeInfo();
 
     /**
      * Returns true if this array is a view or not
@@ -216,7 +216,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to calculate the number of vectors for
      * @return the number of possible vectors along a dimension
      */
-    int vectorsAlongDimension(int dimension);
+    long vectorsAlongDimension(int dimension);
 
     /**
      * Get the vector along a particular dimension
@@ -233,7 +233,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to calculate the number of vectors for
      * @return the number of possible vectors along a dimension
      */
-    int tensorssAlongDimension(int... dimension);
+    long tensorssAlongDimension(int... dimension);
 
     /**
      * Get the vector along a particular dimension
@@ -306,7 +306,7 @@ public interface INDArray extends Serializable {
      * @param value the value to insert
      * @return this
      */
-    INDArray putScalar(int i, double value);
+    INDArray putScalar(long i, double value);
 
     /**
      * Insert a scalar float at the specified index
@@ -315,7 +315,7 @@ public interface INDArray extends Serializable {
      * @param value Value to insert
      * @return This array
      */
-    INDArray putScalar(int i, float value);
+    INDArray putScalar(long i, float value);
 
     /**
      * Insert a scalar int at the specified index
@@ -324,7 +324,7 @@ public interface INDArray extends Serializable {
      * @param value Value to insert
      * @return This array
      */
-    INDArray putScalar(int i, int value);
+    INDArray putScalar(long i, int value);
 
     /**
      * Insert the item at the specified indices
@@ -335,6 +335,11 @@ public interface INDArray extends Serializable {
      */
     INDArray putScalar(int[] i, double value);
 
+
+    INDArray putScalar(long[] i, double value);
+    INDArray putScalar(long[] i, float value);
+    INDArray putScalar(long[] i, int value);
+
     /**
      * Insert the value at the specified indices, in a 2d (rank 2) NDArray<br>
      * Equivalent to {@link #putScalar(int[], double)} but avoids int[] creation
@@ -343,7 +348,7 @@ public interface INDArray extends Serializable {
      * @param value    Value to put
      * @return         This INDArray
      */
-    INDArray putScalar(int row, int col, double value);
+    INDArray putScalar(long row, long col, double value);
 
     /**
      * Insert the value at the specified indices, in a 3d (rank 3) NDArray<br>
@@ -354,7 +359,7 @@ public interface INDArray extends Serializable {
      * @param value    Value to put
      * @return         This INDArray
      */
-    INDArray putScalar(int dim0, int dim1, int dim2, double value);
+    INDArray putScalar(long dim0, long dim1, long dim2, double value);
 
     /**
      * Insert the value at the specified indices, in a 4d (rank 4) NDArray<br>
@@ -366,7 +371,7 @@ public interface INDArray extends Serializable {
      * @param value    Value to put
      * @return         This INDArray
      */
-    INDArray putScalar(int dim0, int dim1, int dim2, int dim3, double value);
+    INDArray putScalar(long dim0, long dim1, long dim2, long dim3, double value);
 
     /**
      * Returns the binary ndarray for "Less" comparison.
@@ -1002,7 +1007,7 @@ public interface INDArray extends Serializable {
      * @param i the index to getScalar
      * @return the linear index in to the data
      */
-    int linearIndex(int i);
+    long linearIndex(long i);
 
 
 
@@ -1067,7 +1072,10 @@ public interface INDArray extends Serializable {
      * @param repeats the number of elements to repeat on each element
      * @return
      */
+    @Deprecated
     INDArray repeat(int dimension, int... repeats);
+
+    INDArray repeat(int dimension, long... repeats);
 
 
     /**
@@ -1079,7 +1087,7 @@ public interface INDArray extends Serializable {
      * @param toPut the row to insert
      * @return this
      */
-    INDArray putRow(int row, INDArray toPut);
+    INDArray putRow(long row, INDArray toPut);
 
     /**
      * Insert a column in to this array
@@ -1100,7 +1108,7 @@ public interface INDArray extends Serializable {
      * @param column the row of the element to return
      * @return a scalar indarray of the element at this index
      */
-    INDArray getScalar(int row, int column);
+    INDArray getScalar(long row, long column);
 
     /**
      * Returns the element at the specified index
@@ -1108,7 +1116,7 @@ public interface INDArray extends Serializable {
      * @param i the index of the element to return
      * @return a scalar ndarray of the element at this index
      */
-    INDArray getScalar(int i);
+    INDArray getScalar(long i);
 
 
     /**
@@ -1118,7 +1126,7 @@ public interface INDArray extends Serializable {
      * @param column the column to getScalar the linear index for
      * @return the linear index of the given row and column
      */
-    int index(int row, int column);
+    long index(long row, long column);
 
     /**
      * Returns the square of the Euclidean distance.
@@ -1503,6 +1511,8 @@ public interface INDArray extends Serializable {
      * @return a copy of this array as a 1d int array
      */
     int[] toIntVector();
+
+    long[] toLongVector();
 
 
     /**
@@ -2037,6 +2047,9 @@ public interface INDArray extends Serializable {
     @Deprecated
     void setStride(int... stride);
 
+    @Deprecated
+    void setStride(long... stride);
+
     /**
      * Shape setter
      * @param shape
@@ -2044,6 +2057,9 @@ public interface INDArray extends Serializable {
      */
     @Deprecated
     void setShape(int... shape);
+
+    @Deprecated
+    void setShape(long... shape);
     
     /**
      * Shape and stride setter
@@ -2083,6 +2099,8 @@ public interface INDArray extends Serializable {
      */
     INDArray getScalar(int... indices);
 
+    INDArray getScalar(long... indices);
+
     /**
      * Get an integer value at the specified indices. Result will be cast to an integer, precision loss is possible.
      * @param indices Indices to get the integer at. Number of indices must match the array rank.
@@ -2097,6 +2115,8 @@ public interface INDArray extends Serializable {
      */
     double getDouble(int... indices);
 
+    double getDouble(long... indices);
+
     /**
      * Returns the elements at the the specified indices
      *
@@ -2105,6 +2125,8 @@ public interface INDArray extends Serializable {
      */
     float getFloat(int[] indices);
 
+    float getFloat(long[] indices);
+
 
     /**
      * Get the double value at the specified linear index in the array
@@ -2112,7 +2134,7 @@ public interface INDArray extends Serializable {
      * @param i Index
      * @return Double value at the specified index
      */
-    double getDouble(int i);
+    double getDouble(long i);
 
     /**
      * Get the double value at the specified indices. Can only be used for 2D (rank 2) arrays.
@@ -2121,7 +2143,7 @@ public interface INDArray extends Serializable {
      * @param j Dimension 1 (column) index
      * @return
      */
-    double getDouble(int i, int j);
+    double getDouble(long i, long j);
 
     /**
      * Return the item at the linear index i
@@ -2129,7 +2151,7 @@ public interface INDArray extends Serializable {
      * @param i the index of the item to getScalar
      * @return the item at index j
      */
-    float getFloat(int i);
+    float getFloat(long i);
 
     /**
      * Return the item at row i column j
@@ -2139,7 +2161,7 @@ public interface INDArray extends Serializable {
      * @param j the column to getScalar
      * @return the item at row i column j
      */
-    float getFloat(int i, int j);
+    float getFloat(long i, long j);
 
 
     /**
@@ -2184,7 +2206,7 @@ public interface INDArray extends Serializable {
      *
      * @return the number of slices in this ndarray
      */
-    int slices();
+    long slices();
 
     /**
      * Get the number of trailing ones in the array shape. For example, a rank 3 array with shape [10, 1, 1] would
@@ -2209,7 +2231,7 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to return the slice for
      * @return the specified slice of this ndarray
      */
-    INDArray slice(int i, int dimension);
+    INDArray slice(long i, int dimension);
 
 
     /**
@@ -2218,7 +2240,7 @@ public interface INDArray extends Serializable {
      * @param i the index of the slice to return
      * @return the specified slice of this ndarray
      */
-    INDArray slice(int i);
+    INDArray slice(long i);
 
 
     /**
@@ -2244,6 +2266,8 @@ public interface INDArray extends Serializable {
      * @param newShape the new shape of the ndarray
      * @return the reshaped ndarray
      */
+    INDArray reshape(char order, long... newShape);
+
     INDArray reshape(char order, int... newShape);
 
 
@@ -2265,8 +2289,9 @@ public interface INDArray extends Serializable {
      * @param newShape the new shape of the ndarray
      * @return the reshaped ndarray
      */
-    INDArray reshape(int... newShape);
+    INDArray reshape(long... newShape);
 
+    INDArray reshape(int[] shape);
 
     /**
      * Reshapes the ndarray (can't change the length of the ndarray). Typically this will be a view, unless reshaping
@@ -2276,7 +2301,7 @@ public interface INDArray extends Serializable {
      * @param columns the columns of the matrix
      * @return the reshaped ndarray
      */
-    INDArray reshape(int rows, int columns);
+    INDArray reshape(long rows, long columns);
 
     /**
      * Flip the rows and columns of a matrix
@@ -2351,7 +2376,7 @@ public interface INDArray extends Serializable {
      * @return the newly permuted array
      */
     INDArray dimShuffle(Object[] rearrange, int[] newOrder, boolean[] broadCastable);
-
+    INDArray dimShuffle(Object[] rearrange, long[] newOrder, boolean[] broadCastable);
 
 
     /**
@@ -2361,7 +2386,7 @@ public interface INDArray extends Serializable {
      * @param i the column to getScalar
      * @return the specified column
      */
-    INDArray getColumn(int i);
+    INDArray getColumn(long i);
 
     /**
      * Returns the specified row.
@@ -2370,21 +2395,21 @@ public interface INDArray extends Serializable {
      * @param i the row to getScalar
      * @return the specified row
      */
-    INDArray getRow(int i);
+    INDArray getRow(long i);
 
     /**
      * Returns the number of columns in this matrix (throws exception if not 2d)
      *
      * @return the number of columns in this matrix
      */
-    int columns();
+    long columns();
 
     /**
      * Returns the number of rows in this matrix (throws exception if not 2d)
      *
      * @return the number of rows in this matrix
      */
-    int rows();
+    long rows();
 
     /**
      * Returns true if the number of columns is 1
@@ -2457,7 +2482,7 @@ public interface INDArray extends Serializable {
      *
      * @return the shape of this ndarray
      */
-    int[] shape();
+    long[] shape();
 
 
     /**
@@ -2465,7 +2490,7 @@ public interface INDArray extends Serializable {
      *
      * @return the stride of this ndarray
      */
-    int[] stride();
+    long[] stride();
 
     /**
      * Return the ordering (fortran or c  'f' and 'c' respectively) of this ndarray
@@ -2479,14 +2504,14 @@ public interface INDArray extends Serializable {
      * @param dimension the dimension to return the size for
      * @return the size of the array along the specified dimension
      */
-    int size(int dimension);
+    long size(int dimension);
 
     /**
      * Returns the total number of elements in the ndarray
      *
      * @return the number of elements in the ndarray
      */
-    int length();
+    long length();
 
     /**
      * Returns the total number of elements in the ndarray
@@ -2502,7 +2527,7 @@ public interface INDArray extends Serializable {
      * @param shape the new shape of this ndarray
      * @return the broadcasted ndarray
      */
-    INDArray broadcast(int... shape);
+    INDArray broadcast(long... shape);
 
 
     /**

@@ -24,7 +24,7 @@ public class OnnxImportTest {
          */
         val importGraph = OnnxGraphMapper.getInstance().importGraph(new ClassPathResource("onnx_graphs/embedding_only.onnx").getInputStream());
         val embeddingMatrix = importGraph.getVariable("2");
-        assertArrayEquals(new int[] {100,300},embeddingMatrix.getShape());
+        assertArrayEquals(new long[] {100,300},embeddingMatrix.getShape());
        /* val onlyOp = importGraph.getFunctionForVertexId(importGraph.getVariable("3").getVertexId());
         assertNotNull(onlyOp);
         assertTrue(onlyOp instanceof Gather);

@@ -96,7 +96,7 @@ public class Eigen {
 
         // transferring the result
         IComplexNDArray E = Nd4j.createComplex(WR, WI);
-        IComplexNDArray V = Nd4j.createComplex(A.rows(), A.rows());
+        IComplexNDArray V = Nd4j.createComplex((int) A.rows(), (int) A.rows());
         for (int i = 0; i < A.rows(); i++) {
             if (E.getComplex(i).isReal()) {
                 IComplexNDArray column = Nd4j.createComplex(VR.getColumn(i));

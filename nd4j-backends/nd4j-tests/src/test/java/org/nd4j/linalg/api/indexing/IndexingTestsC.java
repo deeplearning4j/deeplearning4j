@@ -43,7 +43,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testNewAxis() {
         INDArray arr = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
         INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), newAxis(), newAxis());
-        int[] shapeAssertion = {3, 2, 1, 1, 2};
+        long[] shapeAssertion = {3, 2, 1, 1, 2};
         assertArrayEquals(shapeAssertion, get.shape());
     }
 
@@ -209,7 +209,7 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testIndexFor() {
-        int[] shape = {1, 2};
+        long[] shape = {1, 2};
         INDArrayIndex[] indexes = NDArrayIndex.indexesFor(shape);
         for (int i = 0; i < indexes.length; i++) {
             assertEquals(shape[i], indexes[i].offset());
@@ -280,7 +280,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray rowVec = Nd4j.linspace(1, 5, 5);
         INDArray get = rowVec.getRow(0); //Returning shape [1,1]
 
-        assertArrayEquals(new int[] {1, 5}, get.shape());
+        assertArrayEquals(new long[] {1, 5}, get.shape());
         assertEquals(rowVec, get);
     }
 
@@ -289,7 +289,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray colVec = Nd4j.linspace(1, 5, 5).transpose();
         INDArray get = colVec.getColumn(0); //Returning shape [1,1]
 
-        assertArrayEquals(new int[] {5, 1}, get.shape());
+        assertArrayEquals(new long[] {5, 1}, get.shape());
         assertEquals(colVec, get);
     }
 

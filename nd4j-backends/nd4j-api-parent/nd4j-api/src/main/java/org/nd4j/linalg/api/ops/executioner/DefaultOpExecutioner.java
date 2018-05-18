@@ -716,7 +716,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public List<int[]> calculateOutputShape(CustomOp op) {
+    public List<long[]> calculateOutputShape(CustomOp op) {
         throw new UnsupportedOperationException();
     }
 

@@ -23,14 +23,14 @@ public class NDArrayUtilTest extends BaseNd4jTest {
     public void testMatrixConversion() {
         int[][] nums = {{1, 2}, {3, 4}, {5, 6}};
         INDArray result = NDArrayUtil.toNDArray(nums);
-        assertArrayEquals(new int[]{2,3}, result.shape());
+        assertArrayEquals(new long[]{2,3}, result.shape());
     }
 
     @Test
     public void testVectorConversion() {
         int[] nums = {1, 2, 3, 4};
         INDArray result = NDArrayUtil.toNDArray(nums);
-        assertArrayEquals(new int[]{1, 4}, result.shape());
+        assertArrayEquals(new long[]{1, 4}, result.shape());
     }
 
 

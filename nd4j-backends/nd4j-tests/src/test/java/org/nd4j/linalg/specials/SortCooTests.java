@@ -1,8 +1,10 @@
 package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
+import org.bytedeco.javacpp.LongPointer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,19 +50,19 @@ public class SortCooTests extends BaseNd4jTest {
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;
 
-        int indices[] = new int[] {1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1};
+        val indices = new long[] {1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1};
 
         // we don't care about
         double values[] = new double[] {2, 1, 0, 3};
-        int expIndices[] = new int[] {0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1};
+        val expIndices = new long[] {0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1};
         double expValues[] = new double[] {0, 1, 2, 3};
 
-        DataBuffer idx = Nd4j.getDataBufferFactory().createInt(indices);
+        DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
         DataBuffer val = Nd4j.createBuffer(values);
 
         log.info("Old indices: {}", Arrays.toString(idx.asInt()));
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (IntPointer) idx.addressPointer(),
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) idx.addressPointer(),
                         (FloatPointer) val.addressPointer(), 4, 3);
 
 
@@ -76,17 +78,17 @@ public class SortCooTests extends BaseNd4jTest {
         if (Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;
 
-        int indices[] = new int[] {0, 0, 0, 2, 2, 2, 1, 1, 1};
+        val indices = new long[] {0, 0, 0, 2, 2, 2, 1, 1, 1};
 
         // we don't care about
         double values[] = new double[] {2, 1, 3};
-        int expIndices[] = new int[] {0, 0, 0, 1, 1, 1, 2, 2, 2};
+        val expIndices = new long[] {0, 0, 0, 1, 1, 1, 2, 2, 2};
         double expValues[] = new double[] {2, 3, 1};
 
-        DataBuffer idx = Nd4j.getDataBufferFactory().createInt(indices);
+        DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
         DataBuffer val = Nd4j.createBuffer(values);
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (IntPointer) idx.addressPointer(),
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (LongPointer) idx.addressPointer(),
                         (FloatPointer) val.addressPointer(), 3, 3);
 
         assertArrayEquals(expIndices, idx.asInt());

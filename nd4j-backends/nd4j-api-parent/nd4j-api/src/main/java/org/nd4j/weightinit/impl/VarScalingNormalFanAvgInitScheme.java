@@ -26,7 +26,7 @@ public class VarScalingNormalFanAvgInitScheme extends BaseWeightInitScheme {
 
 
     @Override
-    public INDArray doCreate(int[] shape, INDArray paramsView) {
+    public INDArray doCreate(long[] shape, INDArray paramsView) {
         return Nd4j.randn(order(), shape).divi(FastMath.sqrt((fanIn + fanOut) / 2));
     }
 

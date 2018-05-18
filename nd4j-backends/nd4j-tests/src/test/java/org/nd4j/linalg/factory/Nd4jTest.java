@@ -1,5 +1,6 @@
 package org.nd4j.linalg.factory;
 
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -137,7 +138,7 @@ public class Nd4jTest extends BaseNd4jTest {
             final String recreation = testMatrixPair.getSecond();
             final INDArray testMatrix = testMatrixPair.getFirst();
             final char ordering = testMatrix.ordering();
-            final int[] shape = testMatrix.shape();
+            val shape = testMatrix.shape();
             final int rank = testMatrix.rank();
             for (int i = -rank; i <= rank; i++) {
                 final INDArray expanded = Nd4j.expandDims(testMatrix, i);
