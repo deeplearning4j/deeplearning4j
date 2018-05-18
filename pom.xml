@@ -4,12 +4,12 @@
     <groupId>org.deeplearning4j</groupId>
     <artifactId>dl4j</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.0-alpha</version>
+    <version>1.0.0-beta</version>
     <name>dl4j</name>
     <url>http://maven.apache.org</url>
 
     <properties>
-        <dl4j.version>1.0.0-alpha</dl4j.version>
+        <dl4j.version>1.0.0-beta</dl4j.version>
     </properties>
 
     <dependencies>
