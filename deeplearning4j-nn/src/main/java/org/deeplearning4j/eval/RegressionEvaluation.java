@@ -2,6 +2,7 @@ package org.deeplearning4j.eval;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.factory.Nd4j;
@@ -171,7 +172,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         }
 
         if (!initialized) {
-            initialize(labels.size(1));
+            // FIXME: int cast
+            initialize((int) labels.size(1));
         }
         //References for the calculations is this section:
         //https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
@@ -206,7 +208,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         sumSquaredPredicted.addi(predictions.mul(predictions).sum(0));
 
 
-        int nRows = labels.size(0);
+        val nRows = labels.size(0);
 
         INDArray newExampleCountPerColumn;
         if (maskArray == null) {
@@ -320,7 +322,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
             if (exampleCountPerColumn == null) {
                 return 0;
             }
-            return exampleCountPerColumn.size(1);
+            // FIXME: int cast
+            return (int) exampleCountPerColumn.size(1);
         }
         return columnNames.size();
     }

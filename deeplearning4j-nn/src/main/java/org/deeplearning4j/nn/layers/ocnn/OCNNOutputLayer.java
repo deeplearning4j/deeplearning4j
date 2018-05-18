@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.ocnn;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -103,7 +104,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         int inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
         INDArray delta = pair.getSecond();
         //4 x 150
-        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{inputShape, delta.length()}, 'f');
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{inputShape, delta.length()}, 'f');
         epsilonNext = epsilonNext.assign(delta.broadcast(epsilonNext.shape())).transpose();
 
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
@@ -154,7 +155,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray secondTermDerivV = input.reshape('f',
                 input.size(0),getParam(V_KEY).size(0),1);
 
-        int[]  shape = new int[firstVertDerivV.shape().length];
+        val shape = new long[firstVertDerivV.shape().length];
         for(int i = 0; i < firstVertDerivV.rank(); i++) {
             shape[i] = Math.max(firstVertDerivV.size(i),secondTermDerivV.size(i));
         }

@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.updater;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
@@ -184,7 +185,7 @@ public class UpdaterBlock {
             //This can be an axpy op, saving an allocation...
             //gradientView += params * l2           i.e., dC/dw = dC0/dw + lambda/n * w where C0 is pre-l2 cost function
             //Equivalent to gradientView.addi(paramsView.mul(conf.getL2ByParam(paramName)));
-            int length = gradientView.length();
+            val length = gradientView.length();
             Nd4j.getBlasWrapper().level1().axpy(length, l2, paramsView, gradientView);
         }
         if (conf.getL1ByParam(paramName) > 0) {

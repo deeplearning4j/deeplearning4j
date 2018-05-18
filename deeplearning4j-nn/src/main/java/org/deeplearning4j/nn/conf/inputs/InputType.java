@@ -357,18 +357,19 @@ public abstract class InputType implements Serializable {
         //Note: ConvolutionalFlat and FeedForward look identical... but either should work OK if using something
         // like FeedForwardToCnnPreProcessor
 
+        // FIXME: int cast
         switch (inputArray.rank()) {
             case 2:
-                return InputType.feedForward(inputArray.size(1));
+                return InputType.feedForward((int) inputArray.size(1));
             case 3:
-                return InputType.recurrent(inputArray.size(1), inputArray.size(2));
+                return InputType.recurrent((int) inputArray.size(1), (int) inputArray.size(2));
             case 4:
                 //Order: [minibatch, channels, height, width] -> [h, w, c]
-                return InputType.convolutional(inputArray.size(2), inputArray.size(3), inputArray.size(1));
+                return InputType.convolutional((int) inputArray.size(2), (int) inputArray.size(3), (int) inputArray.size(1));
             case 5:
                 //Order: [minibatch, channels, depth, height, width] -> [d, h, w, c]
-                return InputType.convolutional3D(inputArray.size(2), inputArray.size(3),
-                        inputArray.size(4), inputArray.size(1));
+                return InputType.convolutional3D((int) inputArray.size(2), (int) inputArray.size(3),
+                        (int) inputArray.size(4), (int) inputArray.size(1));
             default:
                 throw new IllegalArgumentException(
                         "Cannot infer input type for array with shape: " + Arrays.toString(inputArray.shape()));

@@ -1,6 +1,7 @@
 package org.deeplearning4j.clustering.lsh;
 
 import lombok.Getter;
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastEqualTo;
@@ -219,9 +220,9 @@ public class RandomProjectionLSH implements LSH {
 
         INDArray shuffleIndexes = idxs[0];
         INDArray sortedDistances = idxs[1];
-        int accepted = Math.min(k, sortedDistances.shape()[1]);
+        val accepted = Math.min(k, sortedDistances.shape()[1]);
 
-        INDArray res = Nd4j.create(new int[] {accepted, inDimension});
+        INDArray res = Nd4j.create(accepted, inDimension);
         for(int i = 0; i < accepted; i++){
             res.putRow(i, bucketData.getRow(shuffleIndexes.getInt(i)));
         }

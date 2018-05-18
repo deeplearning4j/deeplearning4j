@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.pooling;
 
+import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
@@ -144,9 +145,10 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                                                     + layerId());
                 }
 
-                int h = input.size(2);
-                int w = input.size(3);
-                int maskLength = maskArray.size(1);
+                // FIXME: int cast
+                int h = (int) input.size(2);
+                int w = (int) input.size(3);
+                int maskLength = (int) maskArray.size(1);
                 if ((h != 1 && w != 1) || (h != maskLength && w != maskLength)) {
                     throw new UnsupportedOperationException(
                                     "Masked global pooling with on CNN data currently only supports data with h=1 or w=1:\n"
@@ -181,7 +183,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             //Standard/common case
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d);
         } else {
-            int[] inputShape = input.shape();
+            val inputShape = input.shape();
             if (input.rank() == 3) {
                 return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1));
             } else {
@@ -223,7 +225,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         assertInputSet(true);
 
         if (!collapseDimensions && epsilon.rank() != 2) {
-            int[] origShape = epsilon.shape();
+            val origShape = epsilon.shape();
             //Don't collapse dims case: error should be [minibatch, vectorSize, 1] or [minibatch, channels, 1, 1]
             //Reshape it to 2d, to get rid of the 1s
             epsilon = epsilon.reshape(epsilon.ordering(), origShape[0], origShape[1]);
@@ -260,7 +262,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                                 pNorm);
             } else if (input.rank() == 4) {
 
-                int h = input.size(2);
+                // FIXME: int cast
+                int h =  (int) input.size(2);
 
                 boolean maskAlongHeight = (h == maskArray.size(1));
                 epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonCnn(poolingType, input, maskArray, epsilon,

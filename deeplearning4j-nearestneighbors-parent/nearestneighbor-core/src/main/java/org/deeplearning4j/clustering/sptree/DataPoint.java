@@ -36,7 +36,7 @@ import java.io.Serializable;
 public class DataPoint implements Serializable {
     private int index;
     private INDArray point;
-    private int d;
+    private long d;
     private String functionName;
     private boolean invert = false;
 

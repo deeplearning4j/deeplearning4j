@@ -72,7 +72,7 @@ public class FullModelComparisons {
         // Need to convert from IFCO to CFOI order
         //
         INDArray W = firstLstm.getParam("W");
-        assertTrue(Arrays.equals(W.shape(), new int[]{nIn, 4 * nOut}));
+        assertTrue(Arrays.equals(W.shape(), new long[]{nIn, 4 * nOut}));
         TestCase.assertEquals(W.getDouble(0, 288), -0.30737767, 1e-7);
         TestCase.assertEquals(W.getDouble(0, 289), -0.5845409, 1e-7);
         TestCase.assertEquals(W.getDouble(1, 288), -0.44083247, 1e-7);
@@ -83,12 +83,12 @@ public class FullModelComparisons {
 
 
         INDArray RW = firstLstm.getParam("RW");
-        assertTrue(Arrays.equals(RW.shape(), new int[]{nOut, 4 * nOut}));
+        assertTrue(Arrays.equals(RW.shape(), new long[]{nOut, 4 * nOut}));
         TestCase.assertEquals(RW.getDouble(0, 288), 0.15112677, 1e-7);
 
 
         INDArray b = firstLstm.getParam("b");
-        assertTrue(Arrays.equals(b.shape(), new int[]{1, 4 * nOut}));
+        assertTrue(Arrays.equals(b.shape(), new long[]{1, 4 * nOut}));
         TestCase.assertEquals(b.getDouble(0, 288), -0.36940336, 1e-7); // Keras I
         TestCase.assertEquals(b.getDouble(0, 96), 0.6031118, 1e-7);  // Keras F
         TestCase.assertEquals(b.getDouble(0, 192), -0.13569744, 1e-7); // Keras O
@@ -108,16 +108,16 @@ public class FullModelComparisons {
         nOut = 96;
 
         W = secondLstm.getParam("W");
-        assertTrue(Arrays.equals(W.shape(), new int[]{nIn, 4 * nOut}));
+        assertTrue(Arrays.equals(W.shape(), new long[]{nIn, 4 * nOut}));
         TestCase.assertEquals(W.getDouble(0, 288), -0.7559755, 1e-7);
 
         RW = secondLstm.getParam("RW");
-        assertTrue(Arrays.equals(RW.shape(), new int[]{nOut, 4 * nOut}));
+        assertTrue(Arrays.equals(RW.shape(), new long[]{nOut, 4 * nOut}));
         TestCase.assertEquals(RW.getDouble(0, 288), -0.33184892, 1e-7);
 
 
         b = secondLstm.getParam("b");
-        assertTrue(Arrays.equals(b.shape(), new int[]{1, 4 * nOut}));
+        assertTrue(Arrays.equals(b.shape(), new long[]{1, 4 * nOut}));
         TestCase.assertEquals(b.getDouble(0, 288), -0.2223678, 1e-7);
         TestCase.assertEquals(b.getDouble(0, 96), 0.73556226, 1e-7);
         TestCase.assertEquals(b.getDouble(0, 192), -0.63227624, 1e-7);
@@ -140,7 +140,7 @@ public class FullModelComparisons {
             INDArray bsSequence = sequence.reshape(1, 4, 12); // one batch
             INDArray permuteSequence = bsSequence.permute(0, 2, 1);
             INDArray pred = model.output(permuteSequence);
-            assertTrue(Arrays.equals(pred.shape(), new int[]{1, 1}));
+            assertTrue(Arrays.equals(pred.shape(), new long[]{1, 1}));
             preds.add(pred.getDouble(0, 0));
         }
         INDArray dl4jPredictions = Nd4j.create(preds);
@@ -184,7 +184,7 @@ public class FullModelComparisons {
                 "modelimport/keras/fullconfigs/cnn/input.npy", classLoader);
         INDArray input = Nd4j.createFromNpyFile(inputResource.getFile());
         input = input.permute(0, 3, 1, 2);
-        assertTrue(Arrays.equals(input.shape(), new int[] {5, 3, 10, 10}));
+        assertTrue(Arrays.equals(input.shape(), new long[] {5, 3, 10, 10}));
 
         INDArray output = model.output(input);
 

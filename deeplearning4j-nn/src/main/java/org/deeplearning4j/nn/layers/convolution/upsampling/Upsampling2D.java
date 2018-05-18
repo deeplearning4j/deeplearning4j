@@ -81,10 +81,11 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        int miniBatch = input.size(0);
-        int inDepth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inDepth = (int) input.size(1);
+        int inH = (int) input.size(2);
+        int inW = (int) input.size(3);
 
         INDArray reshapedEpsilon =  workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
@@ -123,10 +124,11 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             return preOutput;
         }
 
-        int miniBatch = input.size(0);
-        int inDepth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inDepth = (int) input.size(1);
+        int inH = (int) input.size(2);
+        int inW = (int) input.size(3);
 
         int[] size = getSize();
         int outH = inH * size[0];

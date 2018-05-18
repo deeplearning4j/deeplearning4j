@@ -19,10 +19,7 @@
 package org.deeplearning4j.eval;
 
 import com.google.common.base.Preconditions;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.eval.serde.ConfusionMatrixDeserializer;
@@ -448,7 +445,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 guessIndex = Nd4j.argMax(guesses, 1);
             }
             INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
-            int nExamples = guessIndex.length();
+            val nExamples = guessIndex.length();
 
             for (int i = 0; i < nExamples; i++) {
                 int actual = (int) realOutcomeIndex.getDouble(i);
@@ -505,7 +502,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             //Calculate top N accuracy
             //TODO: this could be more efficient
             INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
-            int nExamples = realOutcomeIndex.length();
+            val nExamples = realOutcomeIndex.length();
             for (int i = 0; i < nExamples; i++) {
                 int labelIdx = (int) realOutcomeIndex.getDouble(i);
                 double prob = guesses.getDouble(i, labelIdx);

@@ -89,7 +89,7 @@ public class KerasReshapeTest {
         ReshapePreprocessor preprocessor = getReshapePreProcessor(conf, kerasVersion, targetShape);
         INDArray r1 = preprocessor.preProcess(Nd4j.zeros(10, 20), 10, LayerWorkspaceMgr.noWorkspaces());
         INDArray r2 = preprocessor.preProcess(Nd4j.zeros(5, 20), 5, LayerWorkspaceMgr.noWorkspaces());
-        Assert.assertArrayEquals(r2.shape(), new int[]{5, 20});
-        Assert.assertArrayEquals(r1.shape(), new int[]{10, 20});
+        Assert.assertArrayEquals(r2.shape(), new long[]{5, 20});
+        Assert.assertArrayEquals(r1.shape(), new long[]{10, 20});
     }
 }

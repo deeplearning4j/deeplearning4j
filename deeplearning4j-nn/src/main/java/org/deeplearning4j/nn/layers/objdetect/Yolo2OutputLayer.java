@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.layers.objdetect;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -99,11 +96,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         double lambdaCoord = layerConf().getLambdaCoord();
         double lambdaNoObj = layerConf().getLambdaNoObj();
 
-        int mb = input.size(0);
-        int h = input.size(2);
-        int w = input.size(3);
-        int b = layerConf().getBoundingBoxes().size(0);
-        int c = labels.size(1)-4;
+        // FIXME: int cast
+        int mb = (int) input.size(0);
+        int h = (int) input.size(2);
+        int w = (int) input.size(3);
+        int b = (int) layerConf().getBoundingBoxes().size(0);
+        int c = (int) labels.size(1)-4;
 
         //Various shape arrays, to reuse
         int[] nhw = new int[]{mb, h, w};
@@ -112,7 +110,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Infer mask array from labels. Mask array is 1_i^B in YOLO paper - i.e., whether an object is present in that
         // grid location or not. Here: we are using the fact that class labels are one-hot, and assume that values are
         // all 0s if no class label is present
-        int size1 = labels.size(1);
+        val size1 = labels.size(1);
         INDArray classLabels = labels.get(all(), interval(4,size1), all(), all());   //Shape: [minibatch, nClasses, H, W]
         INDArray maskObjectPresent = classLabels.sum(Nd4j.createUninitialized(nhw, 'c'), 1); //Shape: [minibatch, H, W]
 
@@ -373,15 +371,16 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
      * @return IOU and gradients
      */
     private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXYinGridBox, INDArray objectPresentMask){
-        int mb = labelTL.size(0);
-        int h = labelTL.size(2);
-        int w = labelTL.size(3);
-        int b = predictedWH.size(1);
+        // FIXME: int cast
+        int mb = (int) labelTL.size(0);
+        int h = (int) labelTL.size(2);
+        int w = (int) labelTL.size(3);
+        int b = (int) predictedWH.size(1);
 
         INDArray labelWH = labelBR.sub(labelTL);                //4d [mb, 2, H, W], label W/H in terms of number of grid boxes
 
-        int gridW = labelTL.size(2);
-        int gridH = labelTL.size(3);
+        int gridW = (int) labelTL.size(2);
+        int gridH = (int) labelTL.size(3);
         //Add grid positions to the predicted XY values (to get predicted XY in terms of grid cell units in image,
         // from (0 to 1 in grid cell) format)
         INDArray linspaceX = Nd4j.linspace(0, gridW-1, gridW);
@@ -614,7 +613,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Input format: [minibatch, 5B+C, H, W], with order [x,y,w,h,c]
         //Therefore: probabilities for class I is at depths 5B + classNumber
 
-        int bbs = layerConf().getBoundingBoxes().size(0);
+        val bbs = layerConf().getBoundingBoxes().size(0);
         INDArray conf = networkOutput.get(point(example), point(5*bbs + classNumber), all(), all());
         return conf;
     }

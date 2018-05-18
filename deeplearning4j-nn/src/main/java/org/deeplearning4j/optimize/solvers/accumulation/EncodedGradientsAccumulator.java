@@ -2,6 +2,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.StepFunction;
@@ -138,14 +139,14 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
      * @param queueSize
      * @return
      */
-    public static int getOptimalBufferSize(int paramsLength, int numWorkers, int queueSize) {
+    public static long getOptimalBufferSize(long paramsLength, int numWorkers, int queueSize) {
         // we add 64kb just for future proof volatility
-        int bufferSize = ((paramsLength / 16) + 65536) * numWorkers * queueSize * 4;
+        val bufferSize = ((paramsLength / 16) + 65536) * numWorkers * queueSize * 4;
         return bufferSize;
     }
 
 
-    public static int getOptimalBufferSize(Model model, int numWorkers, int queueSize) {
+    public static long getOptimalBufferSize(Model model, int numWorkers, int queueSize) {
         return getOptimalBufferSize(model.params().length(), numWorkers, queueSize);
     }
 
