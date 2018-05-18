@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 /**
  * Abstract base class for normalizers
@@ -137,8 +138,13 @@ public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> exten
 
     @Override
     public void transform(INDArray features, INDArray featuresMask) {
-        strategy.preProcess(features, featuresMask, getFeatureStats());
-    }
+        S featureStats = getFeatureStats();
+
+        if(featureStats == null){
+            throw new ND4JIllegalStateException("Features statistics were not yet calculated. Make sure to run fit() first.");
+        }
+
+        strategy.preProcess(features, featuresMask, featureStats);    }
 
     /**
      * Transform the labels. If {@link #isFitLabel()} == false, this is a no-op
