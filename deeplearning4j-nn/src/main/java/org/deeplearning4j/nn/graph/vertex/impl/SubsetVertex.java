@@ -44,7 +44,7 @@ import java.util.Arrays;
 public class SubsetVertex extends BaseGraphVertex {
     private int from;
     private int to; //inclusive
-    private int[] forwardShape;
+    private long[] forwardShape;
 
     public SubsetVertex(ComputationGraph graph, String name, int vertexIndex, int from, int to) {
         this(graph, name, vertexIndex, null, null, from, to);

@@ -56,7 +56,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
             input = input.dup('f');
         //Input: 3d activations (RNN)
         //Output: 4d activations (CNN)
-        int[] shape = input.shape();
+        val shape = input.shape();
         INDArray in2d;
         if (shape[0] == 1) {
             //Edge case: miniBatchSize = 1
@@ -79,7 +79,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
         //Output: 3d epsilons (RNN)
         if (output.ordering() != 'c' || !Shape.hasDefaultStridesForShape(output))
             output = output.dup('c');
-        int[] shape = output.shape();
+        val shape = output.shape();
         //First: reshape 4d to 2d
         INDArray twod = output.reshape('c', output.size(0), ArrayUtil.prod(output.shape()) / output.size(0));
         //Second: reshape 2d to 4d

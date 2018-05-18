@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
+import lombok.val;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -95,8 +96,8 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
 
-        int[] inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
-        int[] outShape = new int[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
+        val inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
+        val outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.reshape('c', outShape));    //Should be zero copy reshape
     }

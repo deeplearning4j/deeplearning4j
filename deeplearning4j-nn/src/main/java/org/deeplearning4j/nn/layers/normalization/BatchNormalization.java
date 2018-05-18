@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -19,6 +20,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.util.OneTimeLogger;
 
 import java.util.*;
@@ -90,8 +92,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
         INDArray nextEpsilon;
-        int[] shape = getShape(epsilon);
-        int batchSize = epsilon.size(0); // number examples in batch
+        val shape = getShape(epsilon);
+        val batchSize = epsilon.size(0); // number examples in batch
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
 
         INDArray gamma = null;
@@ -100,7 +102,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray dGlobalMeanView = gradientViews.get(BatchNormalizationParamInitializer.GLOBAL_MEAN);
         INDArray dGlobalVarView = gradientViews.get(BatchNormalizationParamInitializer.GLOBAL_VAR);
         if (layerConf.isLockGammaBeta()) {
-            int[] tempShape = new int[] {1, shape[1]};
+            val tempShape = new long[] {1, shape[1]};
             dGammaView = Nd4j.createUninitialized(tempShape, 'c');
             dBetaView = Nd4j.createUninitialized(tempShape, 'c');
         } else {
@@ -116,9 +118,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         if (helper != null && epsilon.rank() == 4) {
             //Note that cudnn does not support dense (2d) batch norm case as of v5.1
             if (layerConf.isLockGammaBeta()) {
-                gamma = Nd4j.valueArrayOf(new int[] {1, shape[1]}, layerConf.getGamma());
+                gamma = Nd4j.valueArrayOf(new long[] {1, shape[1]}, layerConf.getGamma());
             }
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, shape, gamma, dGammaView, dBetaView,
+            // FIXME: int cast
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, ArrayUtil.toInts(shape), gamma, dGammaView, dBetaView,
                             layerConf.getEps(), workspaceMgr);
             if (ret != null) {
                 ret.getFirst().setGradientFor(BatchNormalizationParamInitializer.GLOBAL_MEAN, dGlobalMeanView);
@@ -184,7 +187,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             INDArray dLdVar = dxhat.mul(xMu).sum(0, 2, 3).muli(-0.5).muli(Transforms.pow(std, -3.0, true));
 
             //dL/dmu
-            int effectiveBatchSize = input.size(0) * input.size(2) * input.size(3);
+            val effectiveBatchSize = input.size(0) * input.size(2) * input.size(3);
             INDArray dxmu1 = dxhat.sum(0, 2, 3).divi(std).negi();
             INDArray dxmu2 = xMu.sum(0, 2, 3).muli(-2.0 / effectiveBatchSize).muli(dLdVar);
             INDArray dLdmu = dxmu1.addi(dxmu2);
@@ -242,7 +245,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         // batchnorm true but need to clarify if activation before or after
 
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
-        int[] shape = getShape(x);
+        val shape = getShape(x);
 
 
         // xHat = (x-xmean) / sqrt(var + epsilon)
@@ -297,7 +300,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         if (helper != null && input.rank() == 4) {
             //Note that cudnn does not support dense (2d) batch norm case as of v5.1
             double decay = layerConf.getDecay();
-            INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN, shape, gamma, beta, globalMeanView,
+
+            // FIXME: int cast
+            INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
                             globalVarView, decay, layerConf.getEps(), workspaceMgr);
             if (ret != null) {
                 return ret;
@@ -430,15 +435,15 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         return false;
     }
 
-    public int[] getShape(INDArray x) {
+    public long[] getShape(INDArray x) {
         if (x.rank() == 2 || x.rank() == 4)
-            return new int[] {1, x.size(1)};
+            return new long[] {1, x.size(1)};
         if (x.rank() == 3) {
-            int wDim = x.size(1);
-            int hdim = x.size(2);
+            val wDim = x.size(1);
+            val hdim = x.size(2);
             if (x.size(0) > 1 && wDim * hdim == x.length())
                 throw new IllegalArgumentException("Illegal input for batch size " + layerId());
-            return new int[] {1, wDim * hdim};
+            return new long[] {1, wDim * hdim};
         } else
             throw new IllegalStateException("Unable to process input of rank " + x.rank() + " " + layerId());
     }

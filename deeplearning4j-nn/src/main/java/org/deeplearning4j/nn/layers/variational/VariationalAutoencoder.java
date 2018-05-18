@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.layers.variational;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
@@ -186,8 +183,8 @@ public class VariationalAutoencoder implements Layer {
         INDArray pzxSigmaSquared = Transforms.exp(logStdev2Z, true);
         INDArray pzxSigma = Transforms.sqrt(pzxSigmaSquared, true);
 
-        int minibatch = input.size(0);
-        int size = fwd.pzxMeanPreOut.size(1);
+        val minibatch = input.size(0);
+        val size = fwd.pzxMeanPreOut.size(1);
 
 
         Map<String, INDArray> gradientMap = new HashMap<>();
@@ -533,7 +530,8 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public int batchSize() {
-        return input.size(0);
+        // FIXME: int cast
+        return (int) input.size(0);
     }
 
     @Override
@@ -714,7 +712,7 @@ public class VariationalAutoencoder implements Layer {
             gradient.gradientForVariable().put(bKey, dLdB);
 
             if(i == 0) {
-                epsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{weights.size(0), currentDelta.size(0)}, 'f');
+                epsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{weights.size(0), currentDelta.size(0)}, 'f');
                 weights.mmuli(currentDelta.transpose(), epsilon);
                 epsilon = epsilon.transpose();
             } else {
@@ -768,7 +766,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray mW = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_W, training, workspaceMgr);
         INDArray mB = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_B, training, workspaceMgr);
 
-        INDArray pzxMean = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[]{current.size(0), mW.size(1)}, 'f');
+        INDArray pzxMean = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new long[]{current.size(0), mW.size(1)}, 'f');
         pzxMean = current.mmuli(mW, pzxMean).addiRowVector(mB);
 
 
@@ -868,7 +866,8 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public int getInputMiniBatchSize() {
-        return input.size(0);
+        // FIXME: int cast
+        return (int) input.size(0);
     }
 
     @Override
@@ -979,8 +978,8 @@ public class VariationalAutoencoder implements Layer {
         INDArray pzxSigma = Transforms.exp(logStdev2Z, false);
         Transforms.sqrt(pzxSigma, false);
 
-        int minibatch = input.size(0);
-        int size = fwd.pzxMeanPreOut.size(1);
+        val minibatch = input.size(0);
+        val size = fwd.pzxMeanPreOut.size(1);
 
         INDArray pxzw = getParamWithNoise(VariationalAutoencoderParamInitializer.PXZ_W, false, workspaceMgr);
         INDArray pxzb = getParamWithNoise(VariationalAutoencoderParamInitializer.PXZ_B, false, workspaceMgr);

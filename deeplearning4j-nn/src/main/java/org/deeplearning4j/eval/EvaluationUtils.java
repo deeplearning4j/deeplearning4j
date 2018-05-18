@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import lombok.val;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -144,7 +145,7 @@ public class EvaluationUtils {
 
 
     public static INDArray reshapeTimeSeriesTo2d(INDArray labels) {
-        int[] labelsShape = labels.shape();
+        val labelsShape = labels.shape();
         INDArray labels2d;
         if (labelsShape[0] == 1) {
             labels2d = labels.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1

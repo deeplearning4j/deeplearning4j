@@ -28,6 +28,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.val;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -98,7 +99,7 @@ class ScoreExamplesFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Mu
             int nExamples = 0;
             while (iterator.hasNext() && nExamples < batchSize) {
                 MultiDataSet ds = iterator.next();
-                int n = ds.getFeatures(0).size(0);
+                val n = ds.getFeatures(0).size(0);
                 collect.add(ds);
                 nExamples += n;
             }

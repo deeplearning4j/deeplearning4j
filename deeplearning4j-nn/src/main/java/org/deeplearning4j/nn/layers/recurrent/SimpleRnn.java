@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -81,18 +82,18 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         IActivation a = layerConf().getActivationFn();
 
-        int tsLength = input.size(2);
+        val tsLength = input.size(2);
 
         INDArray epsOut = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.shape(), 'f');
 
         INDArray dldzNext = null;
-        int end;
+        long end;
         if(tbpttBackLength > 0){
             end = Math.max(0, tsLength-tbpttBackLength);
         } else {
             end = 0;
         }
-        for( int i = tsLength-1; i>= end; i--){
+        for( long i = tsLength-1; i>= end; i--){
             INDArray dldaCurrent = epsilon.get(all(), all(), point(i));
             INDArray aCurrent = p.getFirst().get(all(), all(), point(i));
             INDArray zCurrent = p.getSecond().get(all(), all(), point(i));
@@ -160,15 +161,15 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     private Pair<INDArray,INDArray> activateHelper(INDArray prevStepOut, boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr){
         assertInputSet(false);
         applyDropOutIfNecessary(training, workspaceMgr);
-        int m = input.size(0);
-        int tsLength = input.size(2);
+        val m = input.size(0);
+        val tsLength = input.size(2);
         int nOut = layerConf().getNOut();
 
         INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, training, workspaceMgr);
         INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr);
         INDArray b = getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training, workspaceMgr);
 
-        INDArray out = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[]{m, nOut, tsLength}, 'f');
+        INDArray out = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new long[]{m, nOut, tsLength}, 'f');
         INDArray outZ = (forBackprop ? workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, out.shape()) : null);
 
         if(input.ordering() != 'f' || Shape.strideDescendingCAscendingF(input))

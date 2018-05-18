@@ -124,7 +124,8 @@ public class MLLibUtil {
         if (!arr.isVector()) {
             throw new IllegalArgumentException("passed in array must be a vector");
         }
-        double[] ret = new double[arr.length()];
+        // FIXME: int cast
+        double[] ret = new double[(int) arr.length()];
         for (int i = 0; i < arr.length(); i++) {
             ret[i] = arr.getDouble(i);
         }

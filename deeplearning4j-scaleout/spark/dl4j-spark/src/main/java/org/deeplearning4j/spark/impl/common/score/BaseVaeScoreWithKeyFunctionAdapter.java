@@ -19,6 +19,7 @@
 package org.deeplearning4j.spark.impl.common.score;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
@@ -83,7 +84,7 @@ public abstract class BaseVaeScoreWithKeyFunctionAdapter<K>
             while (iterator.hasNext() && nExamples < batchSize) {
                 Tuple2<K, INDArray> t2 = iterator.next();
                 INDArray features = t2._2();
-                int n = features.size(0);
+                val n = features.size(0);
                 if (n != 1)
                     throw new IllegalStateException("Cannot score examples with one key per data set if "
                                     + "data set contains more than 1 example (numExamples: " + n + ")");

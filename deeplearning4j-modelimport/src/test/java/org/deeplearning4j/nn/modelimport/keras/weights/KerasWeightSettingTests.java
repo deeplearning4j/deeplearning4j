@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.weights;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
@@ -110,7 +111,7 @@ public class KerasWeightSettingTests {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, true);
 
         INDArray weights = model.getLayer(0).getParam("W");
-        int[] weightShape = weights.shape();
+        val weightShape = weights.shape();
         assert (weightShape[0] == 4);
         assert (weightShape[1] == 6);
 
@@ -122,7 +123,7 @@ public class KerasWeightSettingTests {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
 
         INDArray weights = model.getLayer(0).getParam("W");
-        int[] weightShape = weights.shape();
+        val weightShape = weights.shape();
         assert (weightShape[0] == 6);
         assert (weightShape[1] == 5);
         assert (weightShape[2] == 3);
@@ -143,7 +144,7 @@ public class KerasWeightSettingTests {
         int[] inShape = new int[]{5, 5, 5};
         INDArray input = Nd4j.zeros(mb, inShape[0], inShape[1], inShape[2]);
         INDArray output = model.output(input);
-        assert Arrays.equals(output.shape(), new int[]{mb, nOut});
+        assert Arrays.equals(output.shape(), new long[]{mb, nOut});
 
     }
 
@@ -157,7 +158,7 @@ public class KerasWeightSettingTests {
 
         INDArray input = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(input);
-        assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength - kernel + 1});
+        assert Arrays.equals(output.shape(), new long[]{mb, nOut, inputLength - kernel + 1});
     }
 
     private void importBatchNormToConv2D(String modelPath) throws Exception {
@@ -171,7 +172,7 @@ public class KerasWeightSettingTests {
 
         INDArray input = Nd4j.zeros(10, 4, 6, 6);
         INDArray output = model.output(input);
-        assert Arrays.equals(output.shape(), new int[]{10, 16, 3, 3});
+        assert Arrays.equals(output.shape(), new long[]{10, 16, 3, 3});
     }
 
     private void importGraphSpaceToDepth(String modelPath) throws Exception {
@@ -181,7 +182,7 @@ public class KerasWeightSettingTests {
         INDArray input[] = new INDArray[]{Nd4j.zeros(10, 4, 6, 6), Nd4j.zeros(10, 16, 3, 3)};
         INDArray[] output = model.output(input);
         log.info(Arrays.toString(output[0].shape()));
-        assert Arrays.equals(output[0].shape(), new int[]{10, 32, 3, 3});
+        assert Arrays.equals(output[0].shape(), new long[]{10, 32, 3, 3});
     }
 
     private void importLstm(String modelPath) throws Exception {
@@ -200,13 +201,13 @@ public class KerasWeightSettingTests {
         int mb = 42;
 
         INDArray embeddingWeight = model.getLayer(0).getParam("W");
-        int[] embeddingWeightShape = embeddingWeight.shape();
+        val embeddingWeightShape = embeddingWeight.shape();
         assert (embeddingWeightShape[0] == nIn);
         assert (embeddingWeightShape[1] == outputDim);
 
         INDArray inEmbedding = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(inEmbedding);
-        assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength});
+        assert Arrays.equals(output.shape(), new long[]{mb, nOut, inputLength});
 
     }
 
@@ -225,13 +226,13 @@ public class KerasWeightSettingTests {
         int mb = 42;
 
         INDArray embeddingWeight = model.getLayer(0).getParam("W");
-        int[] embeddingWeightShape = embeddingWeight.shape();
+        val embeddingWeightShape = embeddingWeight.shape();
         assert (embeddingWeightShape[0] == nIn);
         assert (embeddingWeightShape[1] == outputDim);
 
         INDArray inEmbedding = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(inEmbedding);
-        assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength - kernel + 1});
+        assert Arrays.equals(output.shape(), new long[]{mb, nOut, inputLength - kernel + 1});
 
     }
 
