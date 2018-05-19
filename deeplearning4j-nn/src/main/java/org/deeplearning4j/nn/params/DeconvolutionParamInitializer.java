@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.params;
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
@@ -34,13 +35,13 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
 
-            int inputDepth = layerConf.getNIn();
-            int outputDepth = layerConf.getNOut();
+            val inputDepth = layerConf.getNIn();
+            val outputDepth = layerConf.getNOut();
 
             double fanIn = inputDepth * kernel[0] * kernel[1];
             double fanOut = outputDepth * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
 
-            int[] weightsShape = new int[] {inputDepth, outputDepth, kernel[0], kernel[1]};
+            val weightsShape = new long[] {inputDepth, outputDepth, kernel[0], kernel[1]};
 
             INDArray weights = WeightInitUtil.initWeights(
                     fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c', weightView);
@@ -50,7 +51,7 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
             int[] kernel = layerConf.getKernelSize();
 
             INDArray weights =  WeightInitUtil.reshapeWeights(
-                    new int[] {layerConf.getNIn(), layerConf.getNOut(), kernel[0],
+                    new long[] {layerConf.getNIn(), layerConf.getNOut(), kernel[0],
                             kernel[1]}, weightView, 'c');
 
             return weights;
@@ -64,8 +65,8 @@ public class DeconvolutionParamInitializer extends ConvolutionParamInitializer {
                 (org.deeplearning4j.nn.conf.layers.Deconvolution2D) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut();
 
         Map<String, INDArray> out = new LinkedHashMap<>();
         if(layerConf.hasBias()){

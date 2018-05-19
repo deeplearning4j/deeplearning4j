@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -777,7 +778,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     //Check zero padding activation shape
                     org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer zpl =
                             (org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer) net.getLayer(1);
-                    int[] expShape = new int[]{minibatchSize, inputDepth, height + zeroPad[0] + zeroPad[1],
+                    val expShape = new long[]{minibatchSize, inputDepth, height + zeroPad[0] + zeroPad[1],
                             width + zeroPad[2] + zeroPad[3]};
                     INDArray out = zpl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
                     assertArrayEquals(expShape, out.shape());
@@ -1109,7 +1110,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     //Check cropping activation shape
                     org.deeplearning4j.nn.layers.convolution.Cropping2DLayer cl =
                             (org.deeplearning4j.nn.layers.convolution.Cropping2DLayer) net.getLayer(1);
-                    int[] expShape = new int[]{minibatchSize, inputDepth, height - crop[0] - crop[1],
+                    val expShape = new long[]{minibatchSize, inputDepth, height - crop[0] - crop[1],
                             width - crop[2] - crop[3]};
                     INDArray out = cl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
                     assertArrayEquals(expShape, out.shape());

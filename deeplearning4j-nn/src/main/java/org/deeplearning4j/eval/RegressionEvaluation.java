@@ -39,7 +39,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     private boolean initialized;
     private List<String> columnNames;
-    private int precision;
+    private long precision;
     @JsonSerialize(using = RowVectorSerializer.class)
     @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray exampleCountPerColumn; //Necessary to account for per-output masking
@@ -79,7 +79,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * for the stats() method.
      * @param nColumns Number of columns
      */
-    public RegressionEvaluation(int nColumns) {
+    public RegressionEvaluation(long nColumns) {
         this(createDefaultColumnNames(nColumns), DEFAULT_PRECISION);
     }
 
@@ -87,7 +87,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * for the stats() method.
      * @param nColumns Number of columns
      */
-    public RegressionEvaluation(int nColumns, int precision) {
+    public RegressionEvaluation(long nColumns, long precision) {
         this(createDefaultColumnNames(nColumns), precision);
     }
 
@@ -108,7 +108,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     /** Create a regression evaluation object with specified precision for the stats() method
      * @param columnNames Names of the columns
      */
-    public RegressionEvaluation(List<String> columnNames, int precision) {
+    public RegressionEvaluation(List<String> columnNames, long precision) {
         this.precision = precision;
 
         if (columnNames == null || columnNames.isEmpty()) {
@@ -143,8 +143,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         initialized = true;
     }
 
-    private static List<String> createDefaultColumnNames(int nColumns) {
-        List<String> list = new ArrayList<>(nColumns);
+    private static List<String> createDefaultColumnNames(long nColumns) {
+        // FIXME: int cast
+        List<String> list = new ArrayList<>((int) nColumns);
         for (int i = 0; i < nColumns; i++)
             list.add("col_" + i);
         return list;
@@ -276,7 +277,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
                 maxLabelLength = Math.max(maxLabelLength, s.length());
 
             int labelWidth = maxLabelLength + 5;
-            int columnWidth = precision + 10;
+            long columnWidth = precision + 10;
 
             String resultFormat = "%-" + labelWidth + "s" +
                 "%-" + columnWidth + "." + precision + "e" + //MSE

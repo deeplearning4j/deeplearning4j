@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.solver;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -668,7 +669,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         @Override
         public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
-            int nDims = parameters.length();
+            val nDims = parameters.length();
             INDArray gradient = Nd4j.zeros(nDims);
             double x0 = parameters.getDouble(0);
             double x1 = parameters.getDouble(1);
@@ -685,7 +686,9 @@ public class TestOptimizers extends BaseDL4JTest {
             double xl = parameters.getDouble(nDims - 1);
             double xlm1 = parameters.getDouble(nDims - 2);
             double gl = 200 * (xl - xlm1 * xlm1);
-            gradient.put(0, nDims - 1, gl);
+
+            // FIXME: int cast
+            gradient.put(0, (int) nDims - 1, gl);
             Gradient g = new DefaultGradient();
             g.gradientForVariable().put("W", gradient);
             this.gradient = g;
@@ -895,7 +898,8 @@ public class TestOptimizers extends BaseDL4JTest {
 
         @Override
         public int numParams() {
-            return parameters.length();
+            // FIXME: int cast
+            return (int) parameters.length();
         }
 
         @Override

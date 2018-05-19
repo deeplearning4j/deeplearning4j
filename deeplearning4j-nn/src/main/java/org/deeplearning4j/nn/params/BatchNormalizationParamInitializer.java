@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.params;
 
+import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
@@ -31,12 +32,12 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
     @Override
-    public int numParams(Layer l) {
+    public long numParams(Layer l) {
         BatchNormalization layer = (BatchNormalization) l;
         //Parameters in batch norm:
         //gamma, beta, global mean estimate, global variance estimate
@@ -81,9 +82,9 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         // TODO setup for RNN
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        int nOut = layer.getNOut();
+        val nOut = layer.getNOut();
 
-        int meanOffset = 0;
+        long meanOffset = 0;
         if (!layer.isLockGammaBeta()) { //No gamma/beta parameters when gamma/beta are locked
             INDArray gammaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
             INDArray betaView = paramView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, 2 * nOut));
@@ -117,10 +118,10 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         BatchNormalization layer = (BatchNormalization) conf.getLayer();
-        int nOut = layer.getNOut();
+        val nOut = layer.getNOut();
 
         Map<String, INDArray> out = new LinkedHashMap<>();
-        int meanOffset = 0;
+        long meanOffset = 0;
         if (!layer.isLockGammaBeta()) {
             INDArray gammaView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
             INDArray betaView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(nOut, 2 * nOut));

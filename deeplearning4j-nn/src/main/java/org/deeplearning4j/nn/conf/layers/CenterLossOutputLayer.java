@@ -18,10 +18,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -144,10 +141,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         //Basically a dense layer, with some extra params...
         InputType outputType = getOutputType(-1, inputType);
 
-        int nParamsW = nIn * nOut;
-        int nParamsB = nOut;
-        int nParamsCenter = nIn * nOut;
-        int numParams = nParamsW + nParamsB + nParamsCenter;
+        val nParamsW = nIn * nOut;
+        val nParamsB = nOut;
+        val nParamsCenter = nIn * nOut;
+        val numParams = nParamsW + nParamsB + nParamsCenter;
 
         int updaterStateSize = (int) (getUpdaterByParam(CenterLossParamInitializer.WEIGHT_KEY).stateSize(nParamsW)
                         + getUpdaterByParam(CenterLossParamInitializer.BIAS_KEY).stateSize(nParamsB)

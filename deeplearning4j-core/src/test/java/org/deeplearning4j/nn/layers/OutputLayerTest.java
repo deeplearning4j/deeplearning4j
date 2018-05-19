@@ -65,7 +65,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         OutputLayer l = (OutputLayer) conf.getLayer().instantiate(conf,
                         Collections.<TrainingListener>singletonList(new ScoreIterationListener(1)), 0, params, true);
@@ -108,13 +108,13 @@ public class OutputLayerTest extends BaseDL4JTest {
         mln.init();
 
         INDArray out2d = mln.feedForward(input).get(2);
-        assertArrayEquals(out2d.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
+        assertArrayEquals(out2d.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
         INDArray out = mln.output(input);
-        assertArrayEquals(out.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
+        assertArrayEquals(out.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
         INDArray preout = mln.activate(input);
-        assertArrayEquals(preout.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
+        assertArrayEquals(preout.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
         //As above, but for RnnOutputLayer. Expect all activations etc. to be 3d
 
@@ -132,13 +132,13 @@ public class OutputLayerTest extends BaseDL4JTest {
         mln.init();
 
         INDArray out3d = mlnRnn.feedForward(input).get(2);
-        assertArrayEquals(out3d.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
+        assertArrayEquals(out3d.shape(), new long[] {miniBatchSize, nOut, timeSeriesLength});
 
         INDArray outRnn = mlnRnn.output(input);
-        assertArrayEquals(outRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
+        assertArrayEquals(outRnn.shape(), new long[] {miniBatchSize, nOut, timeSeriesLength});
 
         INDArray preoutRnn = mlnRnn.activate(input);
-        assertArrayEquals(preoutRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
+        assertArrayEquals(preoutRnn.shape(), new long[] {miniBatchSize, nOut, timeSeriesLength});
     }
 
     @Test
@@ -230,33 +230,33 @@ public class OutputLayerTest extends BaseDL4JTest {
 
             //Check labels and inputs for output layer:
             OutputLayer ol = (OutputLayer) mln.getOutputLayer();
-            assertArrayEquals(ol.getInput().shape(), new int[] {miniBatchSize * timeSeriesLength, layerSize});
-            assertArrayEquals(ol.getLabels().shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
+            assertArrayEquals(ol.getInput().shape(), new long[] {miniBatchSize * timeSeriesLength, layerSize});
+            assertArrayEquals(ol.getLabels().shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
             RnnOutputLayer rnnol = (RnnOutputLayer) mlnRnn.getOutputLayer();
             //assertArrayEquals(rnnol.getInput().shape(),new int[]{miniBatchSize,layerSize,timeSeriesLength});
             //Input may be set by BaseLayer methods. Thus input may end up as reshaped 2d version instead of original 3d version.
             //Not ideal, but everything else works.
-            assertArrayEquals(rnnol.getLabels().shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
+            assertArrayEquals(rnnol.getLabels().shape(), new long[] {miniBatchSize, nOut, timeSeriesLength});
 
             //Check shapes of output for both:
-            assertArrayEquals(out2d.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
+            assertArrayEquals(out2d.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
             INDArray out = mln.output(input);
-            assertArrayEquals(out.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
+            assertArrayEquals(out.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
             INDArray preout = mln.activate(input);
-            assertArrayEquals(preout.shape(), new int[] {miniBatchSize * timeSeriesLength, nOut});
+            assertArrayEquals(preout.shape(), new long[] {miniBatchSize * timeSeriesLength, nOut});
 
 
             INDArray outFFRnn = mlnRnn.feedForward(input).get(2);
-            assertArrayEquals(outFFRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
+            assertArrayEquals(outFFRnn.shape(), new long[] {miniBatchSize, nOut, timeSeriesLength});
 
             INDArray outRnn2 = mlnRnn.output(input);
-            assertArrayEquals(outRnn2.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
+            assertArrayEquals(outRnn2.shape(), new long[] {miniBatchSize, nOut, timeSeriesLength});
 
             INDArray preoutRnn = mlnRnn.activate(input);
-            assertArrayEquals(preoutRnn.shape(), new int[] {miniBatchSize, nOut, timeSeriesLength});
+            assertArrayEquals(preoutRnn.shape(), new long[] {miniBatchSize, nOut, timeSeriesLength});
         }
     }
 
@@ -419,7 +419,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                 INDArray labels2 = Nd4j.concat(0, labels2a, labels2a);
 
                 INDArray s = mln.scoreExamples(new DataSet(in2, labels2), false);
-                assertArrayEquals(new int[]{2, 1}, s.shape());
+                assertArrayEquals(new long[]{2, 1}, s.shape());
                 assertEquals(s.getDouble(0), s.getDouble(1), 1e-6);
 
                 TestUtils.testModelSerialization(mln);
@@ -512,7 +512,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                 INDArray labels2 = Nd4j.concat(0, labels2a, labels2a);
 
                 INDArray s = graph.scoreExamples(new DataSet(in2, labels2), false);
-                assertArrayEquals(new int[]{2, 1}, s.shape());
+                assertArrayEquals(new long[]{2, 1}, s.shape());
                 assertEquals(s.getDouble(0), s.getDouble(1), 1e-6);
 
                 TestUtils.testModelSerialization(graph);

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -142,7 +143,7 @@ public class TestDropout extends BaseDL4JTest {
             //Dropout occurred. Expect inputs to be either scaled 2x original, or set to 0.0 (with dropout = 0.5)
             NdIndexIterator iter = new NdIndexIterator(inCopy.shape());
             while (iter.hasNext()) {
-                int[] idx = iter.next();
+                val idx = iter.next();
                 double origValue = inCopy.getDouble(idx);
                 double doValue = l0Input.getDouble(idx);
                 if (doValue > 0.0) {

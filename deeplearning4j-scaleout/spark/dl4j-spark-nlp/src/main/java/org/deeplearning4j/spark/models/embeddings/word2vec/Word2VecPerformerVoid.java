@@ -344,7 +344,8 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
                     label = 1;
                 } else {
                     nextRandom.set(nextRandom.get() * 25214903917L + 11);
-                    target = table.getInt((int) (nextRandom.get() >> 16) % table.length());
+                    // FIXME: int cast
+                    target = table.getInt((int) (nextRandom.get() >> 16) % (int) table.length());
                     if (target == 0)
                         target = (int) nextRandom.get() % (numWords - 1) + 1;
                     if (target == w1.getIndex())

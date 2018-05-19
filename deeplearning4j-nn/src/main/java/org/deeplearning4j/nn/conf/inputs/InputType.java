@@ -65,7 +65,7 @@ public abstract class InputType implements Serializable {
     public abstract String toString();
 
     @JsonIgnore
-    public abstract int arrayElementsPerExample();
+    public abstract long arrayElementsPerExample();
 
     /**
      * Returns the shape of this InputType
@@ -74,14 +74,14 @@ public abstract class InputType implements Serializable {
      * @return int[]
      */
     @JsonIgnore
-    public abstract int[] getShape(boolean includeBatchDim);
+    public abstract long[] getShape(boolean includeBatchDim);
 
     /**
      * Returns the shape of this InputType without minibatch dimension in the returned array
      *
      * @return int[]
      */
-    public int[] getShape() {
+    public long[] getShape() {
         return getShape(false);
     }
 
@@ -91,7 +91,7 @@ public abstract class InputType implements Serializable {
      * @param size The size of the activations
      * @return InputTypeFeedForward
      */
-    public static InputType feedForward(int size) {
+    public static InputType feedForward(long size) {
         return new InputTypeFeedForward(size);
     }
 
@@ -101,7 +101,7 @@ public abstract class InputType implements Serializable {
      * @param size The size of the activations
      * @return InputTypeRecurrent
      */
-    public static InputType recurrent(int size) {
+    public static InputType recurrent(long size) {
         return new InputTypeRecurrent(size);
     }
 
@@ -112,7 +112,7 @@ public abstract class InputType implements Serializable {
      * @param timeSeriesLength Length of the input time series
      * @return InputTypeRecurrent
      */
-    public static InputType recurrent(int size, int timeSeriesLength) {
+    public static InputType recurrent(long size, long timeSeriesLength) {
         return new InputTypeRecurrent(size, timeSeriesLength);
     }
 
@@ -125,7 +125,7 @@ public abstract class InputType implements Serializable {
      * @param depth  Depth, or number of channels
      * @return InputTypeConvolutional
      */
-    public static InputType convolutional(int height, int width, int depth) {
+    public static InputType convolutional(long height, long width, long depth) {
         return new InputTypeConvolutional(height, width, depth);
     }
 
@@ -139,7 +139,7 @@ public abstract class InputType implements Serializable {
      * @param channels Number of channels of the input
      * @return InputTypeConvolutional3D
      */
-    public static InputType convolutional3D(int depth, int height, int width,  int channels) {
+    public static InputType convolutional3D(long depth, long height, long width,  long channels) {
         return new InputTypeConvolutional3D(depth, height, width, channels);
     }
 
@@ -152,7 +152,7 @@ public abstract class InputType implements Serializable {
      * @param depth  Depth of the (unflattened) data represented by this input type
      * @return InputTypeConvolutionalFlat
      */
-    public static InputType convolutionalFlat(int height, int width, int depth) {
+    public static InputType convolutionalFlat(long height, long width, long depth) {
         return new InputTypeConvolutionalFlat(height, width, depth);
     }
 
@@ -162,7 +162,7 @@ public abstract class InputType implements Serializable {
     @NoArgsConstructor
     @EqualsAndHashCode(callSuper = false)
     public static class InputTypeFeedForward extends InputType {
-        private int size;
+        private long size;
 
         @Override
         public Type getType() {
@@ -175,14 +175,14 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public int arrayElementsPerExample() {
+        public long arrayElementsPerExample() {
             return size;
         }
 
         @Override
-        public int[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new int[]{-1, size};
-            else return new int[]{size};
+        public long[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new long[]{-1, size};
+            else return new long[]{size};
         }
     }
 
@@ -191,10 +191,10 @@ public abstract class InputType implements Serializable {
     @AllArgsConstructor
     @EqualsAndHashCode(callSuper = false)
     public static class InputTypeRecurrent extends InputType {
-        private int size;
-        private int timeSeriesLength;
+        private long size;
+        private long timeSeriesLength;
 
-        public InputTypeRecurrent(int size) {
+        public InputTypeRecurrent(long size) {
             this(size, -1);
         }
 
@@ -213,7 +213,7 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public int arrayElementsPerExample() {
+        public long arrayElementsPerExample() {
             if (timeSeriesLength <= 0) {
                 throw new IllegalStateException("Cannot calculate number of array elements per example: "
                         + "time series length is not set. Use InputType.recurrent(int size, int timeSeriesLength) instead?");
@@ -222,9 +222,9 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public int[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new int[]{-1, size, timeSeriesLength};
-            else return new int[]{size, timeSeriesLength};
+        public long[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new long[]{-1, size, timeSeriesLength};
+            else return new long[]{size, timeSeriesLength};
         }
     }
 
@@ -233,9 +233,9 @@ public abstract class InputType implements Serializable {
     @EqualsAndHashCode(callSuper = false)
     @NoArgsConstructor
     public static class InputTypeConvolutional extends InputType {
-        private int height;
-        private int width;
-        private int channels;
+        private long height;
+        private long width;
+        private long channels;
 
 
         /**
@@ -245,7 +245,7 @@ public abstract class InputType implements Serializable {
          * @return number of channels, i.e. depth for 2D convolutions
          */
         @Deprecated
-        public int getDepth() {
+        public long getDepth() {
             return channels;
         }
 
@@ -255,7 +255,7 @@ public abstract class InputType implements Serializable {
          *
          **/
         @Deprecated
-        public void setDepth(int depth) {
+        public void setDepth(long depth) {
             this.channels = depth;
         }
 
@@ -270,14 +270,14 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public int arrayElementsPerExample() {
+        public long arrayElementsPerExample() {
             return height * width * channels;
         }
 
         @Override
-        public int[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new int[]{-1, channels, height, width};
-            else return new int[]{channels, height, width};
+        public long[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new long[]{-1, channels, height, width};
+            else return new long[]{channels, height, width};
         }
     }
 
@@ -286,10 +286,10 @@ public abstract class InputType implements Serializable {
     @EqualsAndHashCode(callSuper = false)
     @NoArgsConstructor
     public static class InputTypeConvolutional3D extends InputType {
-        private int depth;
-        private int height;
-        private int width;
-        private int channels;
+        private long depth;
+        private long height;
+        private long width;
+        private long channels;
 
         @Override
         public Type getType() {
@@ -302,14 +302,14 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public int arrayElementsPerExample() {
+        public long arrayElementsPerExample() {
             return height * width * depth * channels;
         }
 
         @Override
-        public int[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new int[]{-1, channels, depth, height, width};
-            else return new int[]{channels, depth, height, width};
+        public long[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new long[]{-1, channels, depth, height, width};
+            else return new long[]{channels, depth, height, width};
         }
     }
 
@@ -318,16 +318,16 @@ public abstract class InputType implements Serializable {
     @EqualsAndHashCode(callSuper = false)
     @NoArgsConstructor
     public static class InputTypeConvolutionalFlat extends InputType {
-        private int height;
-        private int width;
-        private int depth;
+        private long height;
+        private long width;
+        private long depth;
 
         @Override
         public Type getType() {
             return Type.CNNFlat;
         }
 
-        public int getFlattenedSize() {
+        public long getFlattenedSize() {
             return height * width * depth;
         }
 
@@ -341,14 +341,14 @@ public abstract class InputType implements Serializable {
         }
 
         @Override
-        public int arrayElementsPerExample() {
+        public long arrayElementsPerExample() {
             return height * width * depth;
         }
 
         @Override
-        public int[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new int[]{-1, depth, height, width};
-            else return new int[]{depth, height, width};
+        public long[] getShape(boolean includeBatchDim) {
+            if(includeBatchDim) return new long[]{-1, depth, height, width};
+            else return new long[]{depth, height, width};
         }
     }
 

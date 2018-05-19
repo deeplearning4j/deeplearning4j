@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.solver;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -156,7 +157,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                                                         .weightInit(WeightInit.XAVIER).build())
                                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         return (OutputLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
     }

@@ -18,8 +18,8 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public abstract class FeedForwardLayer extends BaseLayer {
-    protected int nIn;
-    protected int nOut;
+    protected long nIn;
+    protected long nOut;
 
     public FeedForwardLayer(Builder builder) {
         super(builder);

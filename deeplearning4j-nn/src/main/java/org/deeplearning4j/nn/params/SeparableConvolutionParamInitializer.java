@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.params;
 
 
+import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
@@ -49,23 +50,23 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
     @Override
-    public int numParams(Layer l) {
+    public long numParams(Layer l) {
         SeparableConvolution2D layerConf = (SeparableConvolution2D) l;
 
-        int depthWiseParams = numDepthWiseParams(layerConf);
-        int pointWiseParams = numPointWiseParams(layerConf);
-        int biasParams = numBiasParams(layerConf);
+        val depthWiseParams = numDepthWiseParams(layerConf);
+        val pointWiseParams = numPointWiseParams(layerConf);
+        val biasParams = numBiasParams(layerConf);
 
         return depthWiseParams + pointWiseParams + biasParams;
     }
 
-    private int numBiasParams(SeparableConvolution2D layerConf) {
-        int nOut = layerConf.getNOut();
+    private long numBiasParams(SeparableConvolution2D layerConf) {
+        val nOut = layerConf.getNOut();
         return (layerConf.hasBias() ? nOut : 0);
     }
 
@@ -76,10 +77,10 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
      * @param layerConf layer configuration of the separable conv2d layer
      * @return number of parameters of the channels-wise convolution operation
      */
-    private int numDepthWiseParams(SeparableConvolution2D layerConf) {
+    private long numDepthWiseParams(SeparableConvolution2D layerConf) {
         int[] kernel = layerConf.getKernelSize();
-        int nIn = layerConf.getNIn();
-        int depthMultiplier = layerConf.getDepthMultiplier();
+        val nIn = layerConf.getNIn();
+        val depthMultiplier = layerConf.getDepthMultiplier();
 
         return nIn * depthMultiplier * kernel[0] * kernel[1];
     }
@@ -91,10 +92,10 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
      * @param layerConf layer configuration of the separable conv2d layer
      * @return number of parameters of the point-wise convolution operation
      */
-    private int numPointWiseParams(SeparableConvolution2D layerConf) {
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
-        int depthMultiplier = layerConf.getDepthMultiplier();
+    private long numPointWiseParams(SeparableConvolution2D layerConf) {
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut();
+        val depthMultiplier = layerConf.getDepthMultiplier();
 
         return (nIn * depthMultiplier) * nOut;
     }
@@ -145,8 +146,8 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
         SeparableConvolution2D layerConf = (SeparableConvolution2D) conf.getLayer();
 
-        int depthWiseParams = numDepthWiseParams(layerConf);
-        int biasParams = numBiasParams(layerConf);
+        val depthWiseParams = numDepthWiseParams(layerConf);
+        val biasParams = numBiasParams(layerConf);
 
         INDArray depthWiseWeightView = paramsView.get(
                 NDArrayIndex.point(0), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams));
@@ -174,14 +175,14 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
                         (SeparableConvolution2D) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
-        int nIn = layerConf.getNIn();
-        int depthMultiplier = layerConf.getDepthMultiplier();
-        int nOut = layerConf.getNOut();
+        val nIn = layerConf.getNIn();
+        val depthMultiplier = layerConf.getDepthMultiplier();
+        val nOut = layerConf.getNOut();
 
         Map<String, INDArray> out = new LinkedHashMap<>();
 
-        int depthWiseParams = numDepthWiseParams(layerConf);
-        int biasParams = numBiasParams(layerConf);
+        val depthWiseParams = numDepthWiseParams(layerConf);
+        val biasParams = numBiasParams(layerConf);
 
         INDArray depthWiseWeightGradientView = gradientView.get(
                 NDArrayIndex.point(0), NDArrayIndex.interval(biasParams, biasParams + depthWiseParams))
@@ -222,19 +223,19 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
 
-            int inputDepth = layerConf.getNIn();
+            val inputDepth = layerConf.getNIn();
 
             double fanIn = inputDepth * kernel[0] * kernel[1];
             double fanOut = depthMultiplier * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
 
-            int[] weightsShape = new int[] {depthMultiplier, inputDepth, kernel[0], kernel[1]};
+            val weightsShape = new long[] {depthMultiplier, inputDepth, kernel[0], kernel[1]};
 
             return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c',
                             weightView);
         } else {
             int[] kernel = layerConf.getKernelSize();
             return WeightInitUtil.reshapeWeights(
-                            new int[] {depthMultiplier, layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
+                            new long[] {depthMultiplier, layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
         }
     }
 
@@ -251,19 +252,19 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         if (initializeParams) {
             Distribution dist = Distributions.createDistribution(layerConf.getDist());
 
-            int inputDepth = layerConf.getNIn();
-            int outputDepth = layerConf.getNOut();
+            val inputDepth = layerConf.getNIn();
+            val outputDepth = layerConf.getNOut();
 
             double fanIn = inputDepth * depthMultiplier;
             double fanOut = fanIn;
 
-            int[] weightsShape = new int[] {outputDepth, depthMultiplier * inputDepth, 1, 1};
+            val weightsShape = new long[] {outputDepth, depthMultiplier * inputDepth, 1, 1};
 
             return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c',
                     weightView);
         } else {
             return WeightInitUtil.reshapeWeights(
-                    new int[] {layerConf.getNOut(), depthMultiplier * layerConf.getNIn(), 1, 1}, weightView, 'c');
+                    new long[] {layerConf.getNOut(), depthMultiplier * layerConf.getNIn(), 1, 1}, weightView, 'c');
         }
     }
 }

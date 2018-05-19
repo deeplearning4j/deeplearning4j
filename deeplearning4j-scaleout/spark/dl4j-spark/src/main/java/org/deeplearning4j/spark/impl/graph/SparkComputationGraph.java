@@ -19,6 +19,7 @@
 package org.deeplearning4j.spark.impl.graph;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaDoubleRDD;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -546,7 +547,7 @@ public class SparkComputationGraph extends SparkListenable {
      * @return     {@link RegressionEvaluation} instance with regression performance
      */
     public RegressionEvaluation evaluateRegression(JavaRDD<DataSet> data, int minibatchSize) {
-        int nOut = ((FeedForwardLayer) network.getOutputLayer(0).conf().getLayer()).getNOut();
+        val nOut = ((FeedForwardLayer) network.getOutputLayer(0).conf().getLayer()).getNOut();
         return doEvaluation(data, new RegressionEvaluation(nOut), minibatchSize);
     }
 

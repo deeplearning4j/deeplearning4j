@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -82,7 +83,7 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
             bias = Nd4j.create(syn0.rows());
 
         if (biasAdaGrad == null || reset) {
-            biasAdaGrad = new AdaGrad(bias.shape(), lr.get());
+            biasAdaGrad = new AdaGrad(ArrayUtil.toInts(bias.shape()), lr.get());
         }
 
 
@@ -141,13 +142,13 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
     private void update(T w1, INDArray wordVector, INDArray contextVector, double gradient) {
         //gradient for word vectors
         INDArray grad1 = contextVector.mul(gradient);
-        INDArray update = weightAdaGrad.getGradient(grad1, w1.getIndex(), syn0.shape());
+        INDArray update = weightAdaGrad.getGradient(grad1, w1.getIndex(), ArrayUtil.toInts(syn0.shape()));
 
         //update vector
         wordVector.subi(update);
 
         double w1Bias = bias.getDouble(w1.getIndex());
-        double biasGradient = biasAdaGrad.getGradient(gradient, w1.getIndex(), bias.shape());
+        double biasGradient = biasAdaGrad.getGradient(gradient, w1.getIndex(), ArrayUtil.toInts(bias.shape()));
         double update2 = w1Bias - biasGradient;
         bias.putScalar(w1.getIndex(), update2);
     }

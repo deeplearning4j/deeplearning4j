@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.convolution;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -51,7 +52,7 @@ public class Upsampling2DTest extends BaseDL4JTest {
         assertEquals(containedExpectedOut, containedOutput);
 
         INDArray output = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
-        assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, outputWidth, outputHeight},
+        assertTrue(Arrays.equals(new long[] {nExamples, nChannelsIn, outputWidth, outputHeight},
                         output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4);
     }
@@ -79,7 +80,7 @@ public class Upsampling2DTest extends BaseDL4JTest {
 
         INDArray input2 = getData();
         layer.activate(input2, false, LayerWorkspaceMgr.noWorkspaces());
-        int depth = input2.size(1);
+        val depth = input2.size(1);
 
         epsilon = Nd4j.ones(5, depth, outputHeight, outputWidth);
 

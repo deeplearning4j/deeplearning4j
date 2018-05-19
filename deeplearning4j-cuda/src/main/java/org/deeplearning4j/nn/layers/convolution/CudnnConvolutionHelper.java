@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.layers.convolution;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
@@ -136,27 +137,27 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         }
         int code;
 
-        int miniBatch = input.size(0);
-        int outDepth = weights.size(0);
-        int inDepth = weights.size(1);
-        int kH = weights.size(2);
-        int kW = weights.size(3);
+        val miniBatch = input.size(0);
+        val outDepth = weights.size(0);
+        val inDepth = weights.size(1);
+        val kH = weights.size(2);
+        val kW = weights.size(3);
 
         CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
         input = args.getInput();
-        int inH = input.size(2);
-        int inW = input.size(3);
-        int[] srcStride = input.stride();
-        int[] outSize = args.getOutSize();
-        int outH = outSize[0];
-        int outW = outSize[1];
+        val inH = input.size(2);
+        val inW = input.size(3);
+        val srcStride = input.stride();
+        val outSize = args.getOutSize();
+        val outH = outSize[0];
+        val outW = outSize[1];
 
         if (!Shape.strideDescendingCAscendingF(delta)) {
             // apparently not supported by cuDNN
             delta = delta.dup();
         }
 
-        int[] deltaStride = delta.stride();
+        val deltaStride = delta.stride();
         int[] algo1 = new int[1];
         int[] algo2 = new int[1];
 
@@ -164,16 +165,16 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        code = cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
-                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]);
+        code = cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, (int) miniBatch, (int) inDepth,(int)  inH, (int) inW,
+                (int) srcStride[0], (int) srcStride[1], (int) srcStride[2], (int) srcStride[3]);
         checkCudnn(false, "cudnnSetTensor4dDescriptorEx", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
-        code = cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, outDepth, outH, outW,
-                        deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]);
+        code = cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, (int) miniBatch, (int) outDepth, (int) outH, (int) outW,
+                (int) deltaStride[0], (int) deltaStride[1], (int) deltaStride[2], (int) deltaStride[3]);
         checkCudnn(false, "cudnnSetTensor4dDescriptorEx", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
         code = cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
                         dilation[1], CUDNN_CROSS_CORRELATION, dataType);
         checkCudnn(false, "cudnnSetConvolution2dDescriptor", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
-        code = cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, TENSOR_FORMAT, outDepth, inDepth, kH, kW);
+        code = cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, TENSOR_FORMAT, (int) outDepth, (int) inDepth, (int) kH, (int) kW);
         checkCudnn(false, "cudnnSetFilter4dDescriptor", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
 
         if (mode == AlgoMode.USER_SPECIFIED && bwdFilterAlgo != null && bwdDataAlgo != null) {
@@ -246,9 +247,9 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             checkCudnn(false, "cudnnGetConvolutionBackwardDataAlgorithm", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
         }
 
-        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {miniBatch, inDepth, inH, inW}, 'c');
+        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch,(int)  inDepth, (int) inH, (int) inW}, 'c');
 
-        int[] dstStride = epsNext.stride();
+        val dstStride = epsNext.stride();
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareActionAllWrite(input, weights, weightGradView,
@@ -263,8 +264,8 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         code = cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream()));
         checkCudnn(false, "cudnnSetStream", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
 
-        code = cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
-                        dstStride[0], dstStride[1], dstStride[2], dstStride[3]);
+        code = cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, (int) miniBatch, (int) inDepth, (int) inH, (int) inW,
+                (int) dstStride[0], (int) dstStride[1], (int) dstStride[2], (int) dstStride[3]);
         checkCudnn(false, "cudnnSetTensor4dDescriptorEx", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
 
         code = cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnnContext, cudnnContext.srcTensorDesc,
@@ -284,7 +285,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             workSpace = new DataCache(Math.max(sizeInBytes1, sizeInBytes2));
         }
 
-        code = cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, TENSOR_FORMAT, dataType, 1, outDepth, 1, 1);
+        code = cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, TENSOR_FORMAT, dataType, 1, (int) outDepth, 1, 1);
         checkCudnn(false, "cudnnSetTensor4dDescriptor", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
 
         code = cudnnConvolutionBackwardBias(cudnnContext, alpha, cudnnContext.deltaTensorDesc, deltaData, beta,
@@ -332,29 +333,29 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         }
         int code;
 
-        int miniBatch = input.size(0);
-        int outDepth = weights.size(0);
-        int inDepth = weights.size(1);
-        int kH = weights.size(2);
-        int kW = weights.size(3);
+        val miniBatch = input.size(0);
+        val outDepth = weights.size(0);
+        val inDepth = weights.size(1);
+        val kH = weights.size(2);
+        val kW = weights.size(3);
 
         CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
         input = args.getInput();
-        int inH = input.size(2);
-        int inW = input.size(3);
-        int[] srcStride = input.stride();
-        int[] outSize = args.getOutSize();
+        val inH = input.size(2);
+        val inW = input.size(3);
+        val srcStride = input.stride();
+        val outSize = args.getOutSize();
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[] {miniBatch, outDepth, outSize[0], outSize[1]});
+        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[] {(int) miniBatch, (int) outDepth, outSize[0], outSize[1]});
 
-        code = cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
-                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]);
+        code = cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, (int) miniBatch, (int) inDepth, (int) inH, (int) inW,
+                (int)  srcStride[0], (int) srcStride[1], (int) srcStride[2], (int) srcStride[3]);
         checkCudnn(true, "cudnnSetTensor4dDescriptorEx", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
 
-        code = cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, TENSOR_FORMAT, outDepth, inDepth, kH, kW);
+        code = cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, TENSOR_FORMAT, (int) outDepth, (int) inDepth, (int) kH, (int) kW);
         checkCudnn(true, "cudnnSetFilter4dDescriptor", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
 
         code = cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
@@ -368,9 +369,9 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
 
         int[] algo = new int[1];
-        int[] dstStride = z.stride();
-        code = cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, outDepth, outSize[0],
-                        outSize[1], dstStride[0], dstStride[1], dstStride[2], dstStride[3]);
+        val dstStride = z.stride();
+        code = cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, (int) miniBatch, (int) outDepth, (int) outSize[0],
+                (int) outSize[1], (int) dstStride[0], (int) dstStride[1], (int) dstStride[2], (int) dstStride[3]);
         checkCudnn(true, "cudnnSetTensor4dDescriptorEx", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
 
         if (mode == AlgoMode.USER_SPECIFIED && fwdAlgo != null) {
@@ -449,7 +450,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         checkCudnn(true, "cudnnConvolutionForward", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
 
 
-        code = cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, TENSOR_FORMAT, dataType, 1, outDepth, 1, 1);
+        code = cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, TENSOR_FORMAT, dataType, 1, (int) outDepth, 1, 1);
         checkCudnn(true, "cudnnSetTensor4dDescriptor", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
 
         code = cudnnAddTensor(cudnnContext, alpha, cudnnContext.biasTensorDesc, biasData, alpha,
@@ -561,8 +562,8 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         }
 
 
-        int inH = input.size(2);
-        int inW = input.size(3);
+        val inH = input.size(2);
+        val inW = input.size(3);
 
         boolean manualPadBottom = false;
         boolean manualPadRight = false;
@@ -570,8 +571,8 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
-            padding = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
-            int[] padBottomRight = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
+            padding = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int) inH, (int) inW}, kernel, strides, dilation);
+            int[] padBottomRight = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {(int) inH, (int) inW}, kernel, strides, dilation);
             if(!Arrays.equals(padding, padBottomRight)){
                 /*
                 CuDNN - even as of 7.1 (CUDA 9.1) still doesn't have support for proper SAME mode padding (i.e., asymmetric
@@ -584,7 +585,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                 manualPadRight = (padding[1] != padBottomRight[1]);
 
                 //NCHW format
-                int[] newShape = new int[]{input.size(0), input.size(1),
+                val newShape = new long[]{input.size(0), input.size(1),
                         input.size(2) + (manualPadBottom ? 1 : 0),
                         input.size(3) + (manualPadRight ? 1 : 0)};
                 INDArray newInput = Nd4j.create(newShape);

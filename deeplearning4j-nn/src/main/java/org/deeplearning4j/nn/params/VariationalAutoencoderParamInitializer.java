@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.params;
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -58,17 +59,17 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
 
-        int nIn = layer.getNIn();
-        int nOut = layer.getNOut();
+        val nIn = layer.getNIn();
+        val nOut = layer.getNOut();
         int[] encoderLayerSizes = layer.getEncoderLayerSizes();
         int[] decoderLayerSizes = layer.getDecoderLayerSizes();
 
         int paramCount = 0;
         for (int i = 0; i < encoderLayerSizes.length; i++) {
-            int encoderLayerIn;
+            long encoderLayerIn;
             if (i == 0) {
                 encoderLayerIn = nIn;
             } else {
@@ -83,7 +84,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
         //Decoder:
         for (int i = 0; i < decoderLayerSizes.length; i++) {
-            int decoderLayerNIn;
+            long decoderLayerNIn;
             if (i == 0) {
                 decoderLayerNIn = nOut;
             } else {
@@ -93,8 +94,9 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         }
 
         //Between last decoder layer and parameters for p(x|z):
-        int nDistributionParams = layer.getOutputDistribution().distributionInputSize(nIn);
-        int lastDecLayerSize = decoderLayerSizes[decoderLayerSizes.length - 1];
+        // FIXME: int cast
+        val nDistributionParams = layer.getOutputDistribution().distributionInputSize((int) nIn);
+        val lastDecLayerSize = decoderLayerSizes[decoderLayerSizes.length - 1];
         paramCount += (lastDecLayerSize + 1) * nDistributionParams;
 
         return paramCount;
@@ -180,8 +182,8 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         Map<String, INDArray> ret = new LinkedHashMap<>();
         VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
 
-        int nIn = layer.getNIn();
-        int nOut = layer.getNOut();
+        val nIn = layer.getNIn();
+        val nOut = layer.getNOut();
         int[] encoderLayerSizes = layer.getEncoderLayerSizes();
         int[] decoderLayerSizes = layer.getDecoderLayerSizes();
 
@@ -190,13 +192,13 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
 
         int soFar = 0;
         for (int i = 0; i < encoderLayerSizes.length; i++) {
-            int encoderLayerNIn;
+            long encoderLayerNIn;
             if (i == 0) {
                 encoderLayerNIn = nIn;
             } else {
                 encoderLayerNIn = encoderLayerSizes[i - 1];
             }
-            int weightParamCount = encoderLayerNIn * encoderLayerSizes[i];
+            val weightParamCount = encoderLayerNIn * encoderLayerSizes[i];
             INDArray weightView = paramsView.get(NDArrayIndex.point(0),
                             NDArrayIndex.interval(soFar, soFar + weightParamCount));
             soFar += weightParamCount;
@@ -218,7 +220,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         }
 
         //Last encoder layer -> p(z|x)
-        int nWeightsPzx = encoderLayerSizes[encoderLayerSizes.length - 1] * nOut;
+        val nWeightsPzx = encoderLayerSizes[encoderLayerSizes.length - 1] * nOut;
         INDArray pzxWeightsMean =
                         paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
         soFar += nWeightsPzx;
@@ -252,13 +254,13 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         conf.addVariable(PZX_LOGSTD2_B);
 
         for (int i = 0; i < decoderLayerSizes.length; i++) {
-            int decoderLayerNIn;
+            long decoderLayerNIn;
             if (i == 0) {
                 decoderLayerNIn = nOut;
             } else {
                 decoderLayerNIn = decoderLayerSizes[i - 1];
             }
-            int weightParamCount = decoderLayerNIn * decoderLayerSizes[i];
+            val weightParamCount = decoderLayerNIn * decoderLayerSizes[i];
             INDArray weightView = paramsView.get(NDArrayIndex.point(0),
                             NDArrayIndex.interval(soFar, soFar + weightParamCount));
             soFar += weightParamCount;
@@ -279,7 +281,8 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         }
 
         //Finally, p(x|z):
-        int nDistributionParams = layer.getOutputDistribution().distributionInputSize(nIn);
+        // FIXME: int cast
+        int nDistributionParams = layer.getOutputDistribution().distributionInputSize((int) nIn);
         int pxzWeightCount = decoderLayerSizes[decoderLayerSizes.length - 1] * nDistributionParams;
         INDArray pxzWeightView =
                         paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + pxzWeightCount));
@@ -304,20 +307,20 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         Map<String, INDArray> ret = new LinkedHashMap<>();
         VariationalAutoencoder layer = (VariationalAutoencoder) conf.getLayer();
 
-        int nIn = layer.getNIn();
-        int nOut = layer.getNOut();
+        val nIn = layer.getNIn();
+        val nOut = layer.getNOut();
         int[] encoderLayerSizes = layer.getEncoderLayerSizes();
         int[] decoderLayerSizes = layer.getDecoderLayerSizes();
 
         int soFar = 0;
         for (int i = 0; i < encoderLayerSizes.length; i++) {
-            int encoderLayerNIn;
+            long encoderLayerNIn;
             if (i == 0) {
                 encoderLayerNIn = nIn;
             } else {
                 encoderLayerNIn = encoderLayerSizes[i - 1];
             }
-            int weightParamCount = encoderLayerNIn * encoderLayerSizes[i];
+            val weightParamCount = encoderLayerNIn * encoderLayerSizes[i];
             INDArray weightGradView = gradientView.get(NDArrayIndex.point(0),
                             NDArrayIndex.interval(soFar, soFar + weightParamCount));
             soFar += weightParamCount;
@@ -333,7 +336,7 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         }
 
         //Last encoder layer -> p(z|x)
-        int nWeightsPzx = encoderLayerSizes[encoderLayerSizes.length - 1] * nOut;
+        val nWeightsPzx = encoderLayerSizes[encoderLayerSizes.length - 1] * nOut;
         INDArray pzxWeightsMean =
                         gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + nWeightsPzx));
         soFar += nWeightsPzx;
@@ -361,13 +364,13 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         ret.put(PZX_LOGSTD2_B, pzxBiasLogStdev2);
 
         for (int i = 0; i < decoderLayerSizes.length; i++) {
-            int decoderLayerNIn;
+            long decoderLayerNIn;
             if (i == 0) {
                 decoderLayerNIn = nOut;
             } else {
                 decoderLayerNIn = decoderLayerSizes[i - 1];
             }
-            int weightParamCount = decoderLayerNIn * decoderLayerSizes[i];
+            long weightParamCount = decoderLayerNIn * decoderLayerSizes[i];
             INDArray weightView = gradientView.get(NDArrayIndex.point(0),
                             NDArrayIndex.interval(soFar, soFar + weightParamCount));
             soFar += weightParamCount;
@@ -386,7 +389,8 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         }
 
         //Finally, p(x|z):
-        int nDistributionParams = layer.getOutputDistribution().distributionInputSize(nIn);
+        // FIXME: int cast
+        int nDistributionParams = layer.getOutputDistribution().distributionInputSize((int) nIn);
         int pxzWeightCount = decoderLayerSizes[decoderLayerSizes.length - 1] * nDistributionParams;
         INDArray pxzWeightView =
                         gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + pxzWeightCount));

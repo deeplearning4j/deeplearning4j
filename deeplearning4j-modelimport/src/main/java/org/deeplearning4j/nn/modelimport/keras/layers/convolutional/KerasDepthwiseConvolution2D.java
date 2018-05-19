@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -117,7 +118,7 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
         WeightInit depthWeightInit = depthWiseInit.getFirst();
         Distribution depthDistribution = depthWiseInit.getSecond();
 
-        int nIn = getNInFromConfig(previousLayers);
+        val nIn = getNInFromConfig(previousLayers);
 
         int depthMultiplier = getDepthMultiplier(layerConfig, conf);
 
@@ -161,10 +162,10 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
         this.layer = builder.build();
     }
 
-    int getNInFromConfig(Map<String, ? extends KerasLayer> previousLayers) throws UnsupportedKerasConfigurationException {
+    long getNInFromConfig(Map<String, ? extends KerasLayer> previousLayers) throws UnsupportedKerasConfigurationException {
         int size = previousLayers.size();
         int count = 0;
-        int nIn;
+        long nIn;
         String inboundLayerName = inboundLayerNames.get(0);
         while (count <= size) {
             if (previousLayers.containsKey(inboundLayerName)) {

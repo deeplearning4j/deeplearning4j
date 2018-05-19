@@ -427,8 +427,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
             org.deeplearning4j.nn.conf.layers.FeedForwardLayer clonedLayerConf =
                     (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) clone.getLayer();
-            int nIn = clonedLayerConf.getNOut();
-            int nOut = clonedLayerConf.getNIn();
+            val nIn = clonedLayerConf.getNOut();
+            val nOut = clonedLayerConf.getNIn();
             clonedLayerConf.setNIn(nIn);
             clonedLayerConf.setNOut(nOut);
 

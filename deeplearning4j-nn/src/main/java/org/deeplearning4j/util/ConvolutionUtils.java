@@ -346,7 +346,7 @@ public class ConvolutionUtils {
      *             the number of kernels from
      * @return the number of kernels/filters to apply
      */
-    public static int numFeatureMap(NeuralNetConfiguration conf) {
+    public static long numFeatureMap(NeuralNetConfiguration conf) {
         return ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getNOut();
     }
 
@@ -516,16 +516,18 @@ public class ConvolutionUtils {
         int inH;
         int inW;
         int inDepth;
+
+        // FIXME: int cast
         if (inputType instanceof InputType.InputTypeConvolutional) {
             InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
-            inH = conv.getHeight();
-            inW = conv.getWidth();
-            inDepth = conv.getChannels();
+            inH = (int) conv.getHeight();
+            inW = (int) conv.getWidth();
+            inDepth = (int) conv.getChannels();
         } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
             InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
-            inH = conv.getHeight();
-            inW = conv.getWidth();
-            inDepth = conv.getDepth();
+            inH = (int) conv.getHeight();
+            inW = (int) conv.getWidth();
+            inDepth = (int) conv.getDepth();
         } else {
             throw new IllegalStateException(
                     "Invalid input type: expected InputTypeConvolutional or InputTypeConvolutionalFlat."

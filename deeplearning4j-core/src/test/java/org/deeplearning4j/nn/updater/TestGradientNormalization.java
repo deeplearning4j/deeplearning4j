@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.updater;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -31,7 +32,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
                                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         INDArray gradArray = Nd4j.rand(1, 220).muli(10).subi(5);
@@ -77,7 +78,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
                                         .gradientNormalization(GradientNormalization.RenormalizeL2PerParamType).build())
                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
@@ -110,7 +111,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
                                         .gradientNormalizationThreshold(threshold).build())
                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         INDArray gradArray = Nd4j.rand(1, 220).muli(10).subi(5);
@@ -166,7 +167,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
                                             .gradientNormalizationThreshold(threshold).build())
                             .build();
 
-            int numParams = conf.getLayer().initializer().numParams(conf);
+            val numParams = conf.getLayer().initializer().numParams(conf);
             INDArray params = Nd4j.create(1, numParams);
             Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
             INDArray gradArray = Nd4j.rand(1, 220).muli(t == 0 ? 0.05 : 10).subi(t == 0 ? 0 : 5);
@@ -221,7 +222,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
                                         .gradientNormalizationThreshold(threshold).build())
                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));

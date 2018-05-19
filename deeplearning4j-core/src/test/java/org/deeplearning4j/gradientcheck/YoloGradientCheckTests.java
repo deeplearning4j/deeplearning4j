@@ -193,7 +193,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
         rr.initialize(new FileSplit(jpg));
 
         int nClasses = rr.getLabels().size();
-        int depthOut = bbPriors.size(0) * (5 + nClasses);
+        long depthOut = bbPriors.size(0) * (5 + nClasses);
 
 
         DataSetIterator iter = new RecordReaderDataSetIterator(rr,2,1,1,true);

@@ -76,8 +76,10 @@ public class IteratorDataSetIterator implements DataSetIterator {
         if (inputColumns == -1) {
             //Set columns etc for later use
             DataSet temp = list.get(0);
-            inputColumns = temp.getFeatureMatrix().size(1);
-            totalOutcomes = temp.getLabels() == null ? 0 : temp.getLabels().size(1); //May be null for layerwise pretraining
+
+            // FIXME: int cast
+            inputColumns = (int) temp.getFeatureMatrix().size(1);
+            totalOutcomes = temp.getLabels() == null ? 0 : (int) temp.getLabels().size(1); //May be null for layerwise pretraining
         }
 
         DataSet out;
@@ -167,8 +169,8 @@ public class IteratorDataSetIterator implements DataSetIterator {
         if (!iterator.hasNext())
             return;
         DataSet next = iterator.next();
-        inputColumns = next.getFeatureMatrix().size(1);
-        totalOutcomes = next.getLabels().size(1);
+        inputColumns = (int) next.getFeatureMatrix().size(1);
+        totalOutcomes = (int) next.getLabels().size(1);
         queued.add(next);
     }
 }

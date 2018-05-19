@@ -27,10 +27,10 @@ public class SameDiffDense extends BaseSameDiffLayer {
     private static final List<String> B_KEYS = Collections.singletonList(DefaultParamInitializer.BIAS_KEY);
     private static final List<String> PARAM_KEYS = Arrays.asList(DefaultParamInitializer.WEIGHT_KEY, DefaultParamInitializer.BIAS_KEY);
 
-    private Map<String,int[]> paramShapes;
+    private Map<String,long[]> paramShapes;
 
-    private int nIn;
-    private int nOut;
+    private long nIn;
+    private long nOut;
     private Activation activation;
 
     protected SameDiffDense(Builder builder) {
@@ -65,8 +65,8 @@ public class SameDiffDense extends BaseSameDiffLayer {
     @Override
     public void defineParameters(SDLayerParams params) {
         params.clear();
-        params.addWeightParam(DefaultParamInitializer.WEIGHT_KEY, new int[]{nIn, nOut});
-        params.addBiasParam(DefaultParamInitializer.BIAS_KEY, new int[]{1, nOut});
+        params.addWeightParam(DefaultParamInitializer.WEIGHT_KEY, new long[]{nIn, nOut});
+        params.addBiasParam(DefaultParamInitializer.BIAS_KEY, new long[]{1, nOut});
     }
 
     @Override
@@ -76,7 +76,7 @@ public class SameDiffDense extends BaseSameDiffLayer {
                 e.getValue().assign(0.0);
             } else {
                 //Normally use 'c' order, but use 'f' for direct comparison to DL4J DenseLayer
-                WeightInitUtil.initWeights(nIn, nOut, new int[]{nIn, nOut}, weightInit, null, 'f', e.getValue());
+                WeightInitUtil.initWeights(nIn, nOut, new long[]{nIn, nOut}, weightInit, null, 'f', e.getValue());
             }
         }
     }

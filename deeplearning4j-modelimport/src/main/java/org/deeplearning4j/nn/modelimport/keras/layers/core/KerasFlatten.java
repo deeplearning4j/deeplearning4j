@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeConvolutional;
@@ -94,7 +95,7 @@ public class KerasFlatten extends KerasLayer {
             // preprocessor is set or we explicitly provide 3D input data to start with, will the its output be set
             // to RNN type. Otherwise we add this trivial preprocessor (since there's nothing to flatten).
             InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
-            int[] inputShape = new int[]{it.getSize()};
+            val inputShape = new long[]{it.getSize()};
             preprocessor = new ReshapePreprocessor(inputShape, inputShape);
         }
         return preprocessor;

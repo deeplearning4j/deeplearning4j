@@ -32,17 +32,17 @@ import java.util.Arrays;
 @Data
 @EqualsAndHashCode(exclude = {"product"})
 public class CnnToRnnPreProcessor implements InputPreProcessor {
-    private int inputHeight;
-    private int inputWidth;
-    private int numChannels;
+    private long inputHeight;
+    private long inputWidth;
+    private long numChannels;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private int product;
+    private long product;
 
     @JsonCreator
-    public CnnToRnnPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                    @JsonProperty("inputWidth") int inputWidth, @JsonProperty("numChannels") int numChannels) {
+    public CnnToRnnPreProcessor(@JsonProperty("inputHeight") long inputHeight,
+                    @JsonProperty("inputWidth") long inputWidth, @JsonProperty("numChannels") long numChannels) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
@@ -110,7 +110,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         }
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        int outSize = c.getChannels() * c.getHeight() * c.getWidth();
+        val outSize = c.getChannels() * c.getHeight() * c.getWidth();
         return InputType.recurrent(outSize);
     }
 

@@ -112,7 +112,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer model = conf.getLayer().instantiate(conf, null, 0, params, true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
@@ -123,7 +123,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
         NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(123)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer2).build();
 
-        int numParams2 = conf2.getLayer().initializer().numParams(conf);
+        long numParams2 = conf2.getLayer().initializer().numParams(conf);
         INDArray params2 = Nd4j.create(1, numParams);
         Layer model2 = conf2.getLayer().instantiate(conf2, null, 0, params2, true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
@@ -209,7 +209,7 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
     private static Layer getLayer(int nIn, int nOut, WeightInit weightInit, boolean preTrain) {
         NeuralNetConfiguration conf = getConfig(nIn, nOut, weightInit, preTrain);
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         return conf.getLayer().instantiate(conf, null, 0, params, true);
     }

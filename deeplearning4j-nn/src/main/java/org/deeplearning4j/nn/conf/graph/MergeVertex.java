@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -101,7 +102,7 @@ public class MergeVertex extends GraphVertex {
                                                     + " = " + vertexInputs[i].getType());
                 }
 
-                int thisSize;
+                long thisSize;
                 switch (vertexInputs[i].getType()) {
                     case FF:
                         thisSize = ((InputType.InputTypeFeedForward) vertexInputs[i]).getSize();
@@ -126,7 +127,7 @@ public class MergeVertex extends GraphVertex {
                 if (type == InputType.Type.FF) {
                     return InputType.feedForward(size);
                 } else {
-                    int tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
+                    val tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
                     return InputType.recurrent(size, tsLength);
                 }
             } else {
@@ -134,16 +135,18 @@ public class MergeVertex extends GraphVertex {
                 if (type == InputType.Type.FF) {
                     return InputType.feedForward(-1);
                 } else {
-                    int tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
+                    val tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
                     return InputType.recurrent(-1, tsLength);
                 }
             }
         } else {
             //CNN inputs... also check that the channels, width and heights match:
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
-            int fd = firstConv.getChannels();
-            int fw = firstConv.getWidth();
-            int fh = firstConv.getHeight();
+
+            // FIXME: int cast
+            val fd = (int) firstConv.getChannels();
+            val fw = (int) firstConv.getWidth();
+            val fh = (int) firstConv.getHeight();
 
             int depthSum = fd;
 
@@ -157,9 +160,10 @@ public class MergeVertex extends GraphVertex {
 
                 InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
 
-                int od = otherConv.getChannels();
-                int ow = otherConv.getWidth();
-                int oh = otherConv.getHeight();
+                // FIXME: int cast
+                val od = (int) otherConv.getChannels();
+                val ow = (int) otherConv.getWidth();
+                val oh = (int) otherConv.getHeight();
 
                 if (fw != ow || fh != oh) {
                     throw new InvalidInputTypeException(

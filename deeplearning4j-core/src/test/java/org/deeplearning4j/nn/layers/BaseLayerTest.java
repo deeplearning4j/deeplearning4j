@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -65,7 +66,7 @@ public class BaseLayerTest extends BaseDL4JTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .layer(new ConvolutionLayer.Builder().nIn(nIn).nOut(nOut).build()).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         return conf.getLayer().instantiate(conf, null, 0, params, true);
     }

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -44,7 +45,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
                                                         .nOut(nHiddenUnits).activation(Activation.TANH).build())
                                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         GravesLSTM layer = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
 
@@ -53,19 +54,19 @@ public class GravesLSTMTest extends BaseDL4JTest {
 
         INDArray dataSingleExampleTimeLength1 = Nd4j.ones(1, nIn, 1);
         INDArray activations1 = layer.activate(dataSingleExampleTimeLength1, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations1.shape(), new int[] {1, nHiddenUnits, 1});
+        assertArrayEquals(activations1.shape(), new long[] {1, nHiddenUnits, 1});
 
         INDArray dataMultiExampleLength1 = Nd4j.ones(10, nIn, 1);
         INDArray activations2 = layer.activate(dataMultiExampleLength1, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations2.shape(), new int[] {10, nHiddenUnits, 1});
+        assertArrayEquals(activations2.shape(), new long[] {10, nHiddenUnits, 1});
 
         INDArray dataSingleExampleLength12 = Nd4j.ones(1, nIn, 12);
         INDArray activations3 = layer.activate(dataSingleExampleLength12, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations3.shape(), new int[] {1, nHiddenUnits, 12});
+        assertArrayEquals(activations3.shape(), new long[] {1, nHiddenUnits, 12});
 
         INDArray dataMultiExampleLength15 = Nd4j.ones(10, nIn, 15);
         INDArray activations4 = layer.activate(dataMultiExampleLength15, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations4.shape(), new int[] {10, nHiddenUnits, 15});
+        assertArrayEquals(activations4.shape(), new long[] {10, nHiddenUnits, 15});
     }
 
     @Test
@@ -90,7 +91,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
                                         .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build())
                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
         lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf)));
@@ -111,12 +112,12 @@ public class GravesLSTMTest extends BaseDL4JTest {
         assertNotNull(inWeightGradient);
         assertNotNull(recurrentWeightGradient);
 
-        assertArrayEquals(biasGradient.shape(), new int[] {1, 4 * lstmNHiddenUnits});
-        assertArrayEquals(inWeightGradient.shape(), new int[] {nIn, 4 * lstmNHiddenUnits});
-        assertArrayEquals(recurrentWeightGradient.shape(), new int[] {lstmNHiddenUnits, 4 * lstmNHiddenUnits + 3});
+        assertArrayEquals(biasGradient.shape(), new long[] {1, 4 * lstmNHiddenUnits});
+        assertArrayEquals(inWeightGradient.shape(), new long[] {nIn, 4 * lstmNHiddenUnits});
+        assertArrayEquals(recurrentWeightGradient.shape(), new long[] {lstmNHiddenUnits, 4 * lstmNHiddenUnits + 3});
 
         assertNotNull(nextEpsilon);
-        assertArrayEquals(nextEpsilon.shape(), new int[] {miniBatchSize, nIn, timeSeriesLength});
+        assertArrayEquals(nextEpsilon.shape(), new long[] {miniBatchSize, nIn, timeSeriesLength});
 
         //Check update:
         for (String s : outGradient.gradientForVariable().keySet()) {
@@ -141,7 +142,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
                                         .activation(Activation.TANH).build())
                         .build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
         INDArray input = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});

@@ -455,7 +455,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
         //Also: check the score examples method...
         DataSet ds = new DataSet(input, labels, featuresMask, labelsMask);
         INDArray exampleScores = net.scoreExamples(ds, false);
-        assertArrayEquals(new int[] {minibatch, 1}, exampleScores.shape()); //One score per time series (added over each time step)
+        assertArrayEquals(new long[] {minibatch, 1}, exampleScores.shape()); //One score per time series (added over each time step)
 
         for (int i = 0; i < minibatch; i++) {
             INDArrayIndex[] idx = new INDArrayIndex[] {NDArrayIndex.interval(i, i, true), NDArrayIndex.all(),

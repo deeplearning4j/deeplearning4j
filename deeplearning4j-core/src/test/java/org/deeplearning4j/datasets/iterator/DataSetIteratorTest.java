@@ -253,8 +253,8 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         int count = 0;
         while (iter.hasNext()) {
             DataSet ds = iter.next();
-            assertArrayEquals(new int[] {batchSize, featureSize}, ds.getFeatureMatrix().shape());
-            assertArrayEquals(new int[] {batchSize, labelSize}, ds.getLabels().shape());
+            assertArrayEquals(new long[] {batchSize, featureSize}, ds.getFeatureMatrix().shape());
+            assertArrayEquals(new long[] {batchSize, labelSize}, ds.getLabels().shape());
 
             List<INDArray> fList = new ArrayList<>();
             List<INDArray> lList = new ArrayList<>();

@@ -89,18 +89,19 @@ public class TestUtils {
         return out;
     }
 
-    public static INDArray randomOneHot(int examples, int nOut){
+    public static INDArray randomOneHot(long examples, long nOut){
         return randomOneHot(examples, nOut, new Random(12345));
     }
 
-    public static INDArray randomOneHot(int examples, int nOut, long rngSeed){
+    public static INDArray randomOneHot(long examples, long nOut, long rngSeed){
         return randomOneHot(examples, nOut, new Random(rngSeed));
     }
 
-    public static INDArray randomOneHot(int examples, int nOut, Random rng){
+    public static INDArray randomOneHot(long examples, long nOut, Random rng){
         INDArray arr = Nd4j.create(examples, nOut);
         for( int i=0; i<examples; i++ ){
-            arr.putScalar(i, rng.nextInt(nOut), 1.0);
+            // FIXME: int cast
+            arr.putScalar(i, rng.nextInt((int) nOut), 1.0);
         }
         return arr;
     }

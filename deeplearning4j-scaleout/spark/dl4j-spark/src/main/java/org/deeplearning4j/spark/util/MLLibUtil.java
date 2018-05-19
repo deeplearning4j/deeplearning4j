@@ -210,8 +210,8 @@ public class MLLibUtil {
      * @param batchSize the batch size
      * @return the new rdd
      */
-    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final int numPossibleLabels,
-                    int batchSize) {
+    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final long numPossibleLabels,
+                    long batchSize) {
 
         JavaRDD<DataSet> mappedData = data.map(new Function<LabeledPoint, DataSet>() {
             @Override
@@ -233,7 +233,7 @@ public class MLLibUtil {
      */
     @Deprecated
     public static JavaRDD<DataSet> fromLabeledPoint(JavaSparkContext sc, JavaRDD<LabeledPoint> data,
-                    final int numPossibleLabels) {
+                    final long numPossibleLabels) {
         return data.map(new Function<LabeledPoint, DataSet>() {
             @Override
             public DataSet call(LabeledPoint lp) {
@@ -346,7 +346,7 @@ public class MLLibUtil {
      * @param numPossibleLabels number of possible labels
      * @return
      */
-    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final int numPossibleLabels) {
+    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final long numPossibleLabels) {
         return fromLabeledPoint(data, numPossibleLabels, false);
     }
 
@@ -357,7 +357,7 @@ public class MLLibUtil {
      * @param preCache boolean pre-cache rdd before operation
      * @return
      */
-    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final int numPossibleLabels,
+    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final long numPossibleLabels,
                     boolean preCache) {
         if (preCache && !data.getStorageLevel().useMemory()) {
             data.cache();
@@ -404,7 +404,7 @@ public class MLLibUtil {
      * @param numPossibleLabels
      * @return List of {@link DataSet}
      */
-    private static List<DataSet> fromLabeledPoint(List<LabeledPoint> labeledPoints, int numPossibleLabels) {
+    private static List<DataSet> fromLabeledPoint(List<LabeledPoint> labeledPoints, long numPossibleLabels) {
         List<DataSet> ret = new ArrayList<>();
         for (LabeledPoint point : labeledPoints) {
             ret.add(fromLabeledPoint(point, numPossibleLabels));
@@ -418,11 +418,13 @@ public class MLLibUtil {
      * @param numPossibleLabels
      * @return {@link DataSet}
      */
-    private static DataSet fromLabeledPoint(LabeledPoint point, int numPossibleLabels) {
+    private static DataSet fromLabeledPoint(LabeledPoint point, long numPossibleLabels) {
         Vector features = point.features();
         double label = point.label();
+
+        // FIXMEL int cast
         return new DataSet(Nd4j.create(features.toArray()),
-                        FeatureUtil.toOutcomeVector((int) label, numPossibleLabels));
+                        FeatureUtil.toOutcomeVector((int) label, (int) numPossibleLabels));
     }
 
 

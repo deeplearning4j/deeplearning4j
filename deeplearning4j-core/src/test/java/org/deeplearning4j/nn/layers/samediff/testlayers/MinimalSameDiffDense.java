@@ -52,8 +52,8 @@ public class MinimalSameDiffDense extends BaseSameDiffLayer {
 
     @Override
     public void defineParameters(SDLayerParams params) {
-        params.addWeightParam(DefaultParamInitializer.WEIGHT_KEY, new int[]{nIn, nOut});
-        params.addBiasParam(DefaultParamInitializer.BIAS_KEY, new int[]{1, nOut});
+        params.addWeightParam(DefaultParamInitializer.WEIGHT_KEY, new long[]{nIn, nOut});
+        params.addBiasParam(DefaultParamInitializer.BIAS_KEY, new long[]{1, nOut});
     }
 
     @Override

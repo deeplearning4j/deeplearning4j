@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -111,10 +108,11 @@ public class Subsampling3DLayer extends Layer {
                     + "\"): Expected CNN input, got " + inputType);
         }
 
+        // FIXME: int cast
         return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, kernelSize, stride, padding,
                 new int[]{1, 1, 1}, // no dilation
                 convolutionMode,
-                ((InputType.InputTypeConvolutional3D) inputType).getChannels(), layerIndex, getLayerName(),
+                (int) ((InputType.InputTypeConvolutional3D) inputType).getChannels(), layerIndex, getLayerName(),
                 Subsampling3DLayer.class);
     }
 
@@ -154,16 +152,16 @@ public class Subsampling3DLayer extends Layer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
         InputType.InputTypeConvolutional3D outputType = (InputType.InputTypeConvolutional3D) getOutputType(-1, inputType);
-        int actElementsPerEx = outputType.arrayElementsPerExample();
+        val actElementsPerEx = outputType.arrayElementsPerExample();
 
 
         //During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
-        int im2colSizePerEx =
+        val im2colSizePerEx =
                 c.getChannels() * outputType.getHeight() * outputType.getWidth() * outputType.getDepth()
                         * kernelSize[0] * kernelSize[1];
 
         //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
-        int trainingWorkingSizePerEx = im2colSizePerEx;
+        long trainingWorkingSizePerEx = im2colSizePerEx;
         if (getIDropout() != null) {
             //Dup on the input before dropout, but only for training
             trainingWorkingSizePerEx += inputType.arrayElementsPerExample();

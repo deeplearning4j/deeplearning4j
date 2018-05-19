@@ -18,7 +18,7 @@ public class CustomGradientUpdater implements GradientUpdater<CustomIUpdater> {
     }
 
     @Override
-    public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
+    public void setStateViewArray(INDArray viewArray, long[] gradientShape, char gradientOrder, boolean initialize) {
         //No op
     }
 

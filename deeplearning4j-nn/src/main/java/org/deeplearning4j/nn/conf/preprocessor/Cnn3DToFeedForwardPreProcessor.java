@@ -52,10 +52,10 @@ import static org.nd4j.linalg.api.shape.Shape.hasDefaultStridesForShape;
  */
 @Data
 public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
-    protected int inputDepth;
-    protected int inputHeight;
-    protected int inputWidth;
-    protected int numChannels;
+    protected long inputDepth;
+    protected long inputHeight;
+    protected long inputWidth;
+    protected long numChannels;
     protected boolean isNCDHW = true; // channels first ordering by default
 
     /**
@@ -66,10 +66,10 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
      * @param isNCDHW     boolean to indicate data format, i.e. channels first (NCDHW) vs. channels last (NDHWC)
      */
     @JsonCreator
-    public Cnn3DToFeedForwardPreProcessor(@JsonProperty("inputDepth") int inputDepth,
-                                          @JsonProperty("inputHeight") int inputHeight,
-                                          @JsonProperty("inputWidth") int inputWidth,
-                                          @JsonProperty("numChannels") int numChannels,
+    public Cnn3DToFeedForwardPreProcessor(@JsonProperty("inputDepth") long inputDepth,
+                                          @JsonProperty("inputHeight") long inputHeight,
+                                          @JsonProperty("inputWidth") long inputWidth,
+                                          @JsonProperty("numChannels") long numChannels,
                                           @JsonProperty("isNCDHW") boolean isNCDHW) {
         this.inputDepth = inputDepth;
         this.inputHeight = inputHeight;
@@ -156,7 +156,7 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
         }
 
         InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
-        int outSize = c.getChannels() * c.getDepth() * c.getHeight() * c.getWidth();
+        val outSize = c.getChannels() * c.getDepth() * c.getHeight() * c.getWidth();
         return InputType.feedForward(outSize);
     }
 

@@ -436,7 +436,7 @@ public class TestConvolutionModes extends BaseDL4JTest {
             int outW = (int) Math.ceil(inW / ((double) sW));
 
             System.out.println(Arrays.toString(actL0.shape()));
-            assertArrayEquals(new int[] {minibatch, (i == 0 ? 4 : inDepth), outH, outW}, actL0.shape());
+            assertArrayEquals(new long[] {minibatch, (i == 0 ? 4 : inDepth), outH, outW}, actL0.shape());
         }
     }
 }

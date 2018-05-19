@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -234,8 +235,8 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
         for (INDArray labelMask : labelMasks) {
 
-            int minibatch = labelMask.size(0);
-            int nOut = labelMask.size(1);
+            val minibatch = labelMask.size(0);
+            val nOut = labelMask.size(1);
 
             for (int i = 0; i < lossFunctions.length; i++) {
                 ILossFunction lf = lossFunctions[i];
@@ -328,8 +329,8 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
         for (INDArray labelMask : labelMasks) {
 
-            int minibatch = labelMask.size(0);
-            int tsLength = labelMask.size(2);
+            val minibatch = labelMask.size(0);
+            val tsLength = labelMask.size(2);
 
             for (int i = 0; i < lossFunctions.length; i++) {
                 ILossFunction lf = lossFunctions[i];
@@ -348,8 +349,8 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, new int[] {minibatch, nIn, tsLength},
-                                new int[] {minibatch, nOut, tsLength}, 12345);
+                INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, new long[] {minibatch, nIn, tsLength},
+                                new long[] {minibatch, nOut, tsLength}, 12345);
                 INDArray features = fl[0];
                 INDArray labels = fl[1];
 

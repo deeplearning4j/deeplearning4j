@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.parameterserver.pw;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.Loader;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
@@ -185,7 +186,7 @@ public class SharedTrainingWrapper {
 
                     int queueSize = numWorkers * 2;
 
-                    int bufferSize = trainingConfiguration.getBufferSize() > 0 ? trainingConfiguration.getBufferSize()
+                    val bufferSize = trainingConfiguration.getBufferSize() > 0 ? trainingConfiguration.getBufferSize()
                                     : EncodedGradientsAccumulator.getOptimalBufferSize(model, numWorkers, 2);
 
                     accumulator = new EncodedGradientsAccumulator.Builder(numWorkers).messageHandler(handler)

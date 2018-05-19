@@ -21,12 +21,12 @@ public class EmptyParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return 0;
     }
 
     @Override
-    public int numParams(Layer layer) {
+    public long numParams(Layer layer) {
         return 0;
     }
 

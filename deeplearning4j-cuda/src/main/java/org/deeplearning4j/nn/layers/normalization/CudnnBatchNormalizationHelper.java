@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -35,6 +36,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -113,10 +115,10 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                     INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr layerWorkspaceMgr) {
-        int miniBatch = input.size(0);
-        int depth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        val miniBatch = (int) input.size(0);
+        val depth = (int) input.size(1);
+        val inH = (int) input.size(2);
+        val inW = (int) input.size(3);
 
         Gradient retGradient = new DefaultGradient();
 
@@ -125,22 +127,23 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
             epsilon = epsilon.dup();
         }
 
-        int[] srcStride = input.stride();
-        int[] deltaStride = epsilon.stride();
+        val srcStride = ArrayUtil.toInts(input.stride());
+        val deltaStride = ArrayUtil.toInts(epsilon.stride());
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, depth, inH, inW,
-                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, depth, inH, inW,
-                        deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
+        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, (int) miniBatch, (int) depth, (int) inH, (int) inW,
+                (int) srcStride[0], (int) srcStride[1], (int) srcStride[2], (int) srcStride[3]));
+        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, (int) miniBatch, (int) depth, (int) inH, (int) inW,
+                (int) deltaStride[0], (int) deltaStride[1], (int) deltaStride[2], (int) deltaStride[3]));
 
-        INDArray nextEpsilon = layerWorkspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {miniBatch, depth, inH, inW}, 'c');
-        int[] dstStride = nextEpsilon.stride();
+        INDArray nextEpsilon = layerWorkspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch, (int) depth, (int) inH, (int) inW}, 'c');
+        val dstStride = ArrayUtil.toInts(nextEpsilon.stride());
+
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
-        int[] gammaStride = gamma.stride();
+        val gammaStride = ArrayUtil.toInts(gamma.stride());
         checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.gammaBetaTensorDesc, TENSOR_FORMAT, dataType, shape[0],
                         shape[1], shape.length > 2 ? shape[2] : 1, shape.length > 3 ? shape[3] : 1));
 
@@ -182,20 +185,22 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         //i.e., "decay" has a different meaning...
         decay = 1.0 - decay;
 
-        int miniBatch = x.size(0);
-        int inDepth = x.size(1);
-        int inH = x.size(2);
-        int inW = x.size(3);
+        val miniBatch = (int) x.size(0);
+        val inDepth = (int) x.size(1);
+        val inH = (int) x.size(2);
+        val inW = (int) x.size(3);
 
-        int[] srcStride = x.stride();
+        val srcStride = ArrayUtil.toInts(x.stride());
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
         INDArray activations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[] {miniBatch, inDepth, inH, inW}, 'c');
-        int[] dstStride = activations.stride();
+
+        val dstStride = ArrayUtil.toInts(activations.stride());
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
-        int[] gammaStride = gamma.stride();
+
+        val gammaStride = ArrayUtil.toInts(gamma.stride());
         checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.gammaBetaTensorDesc, TENSOR_FORMAT, dataType, shape[0],
                         shape[1], shape.length > 2 ? shape[2] : 1, shape.length > 3 ? shape[3] : 1));
 

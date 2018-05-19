@@ -38,12 +38,12 @@ public class BidirectionalParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
     @Override
-    public int numParams(Layer layer) {
+    public long numParams(Layer layer) {
         return 2 * underlying(layer).initializer().numParams(underlying(layer));
     }
 

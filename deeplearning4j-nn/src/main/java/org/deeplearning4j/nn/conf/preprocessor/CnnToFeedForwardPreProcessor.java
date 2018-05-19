@@ -51,9 +51,9 @@ import java.util.Arrays;
  */
 @Data
 public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
-    protected int inputHeight;
-    protected int inputWidth;
-    protected int numChannels;
+    protected long inputHeight;
+    protected long inputWidth;
+    protected long numChannels;
 
     /**
      * @param inputHeight the columns
@@ -62,14 +62,14 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
      */
 
     @JsonCreator
-    public CnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                    @JsonProperty("inputWidth") int inputWidth, @JsonProperty("numChannels") int numChannels) {
+    public CnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") long inputHeight,
+                    @JsonProperty("inputWidth") long inputWidth, @JsonProperty("numChannels") long numChannels) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
     }
 
-    public CnnToFeedForwardPreProcessor(int inputHeight, int inputWidth) {
+    public CnnToFeedForwardPreProcessor(long inputHeight, long inputWidth) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = 1;
@@ -137,7 +137,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         }
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        int outSize = c.getChannels() * c.getHeight() * c.getWidth();
+        val outSize = c.getChannels() * c.getHeight() * c.getWidth();
         return InputType.feedForward(outSize);
     }
 
