@@ -219,7 +219,7 @@ public class ParallelInferenceTest {
         assertNull(l.get(0).getSecond());
 
         assertEquals(1, input.length);
-        assertArrayEquals(new int[] {2, 100}, input[0].shape());
+        assertArrayEquals(new long[] {2, 100}, input[0].shape());
         assertEquals(1.0f, input[0].tensorAlongDimension(0, 1).meanNumber().floatValue(), 0.001);
         assertEquals(2.0f, input[0].tensorAlongDimension(1, 1).meanNumber().floatValue(), 0.001);
     }
@@ -293,17 +293,17 @@ public class ParallelInferenceTest {
 
         observable3.setPosition(0);
         out = observable3.getOutput()[0];
-        assertArrayEquals(new int[] {1, 10}, out.shape());
+        assertArrayEquals(new long[] {1, 10}, out.shape());
         assertEquals(0.0f, out.meanNumber().floatValue(), 0.01f);
 
         observable3.setPosition(1);
         out = observable3.getOutput()[0];
-        assertArrayEquals(new int[] {1, 10}, out.shape());
+        assertArrayEquals(new long[] {1, 10}, out.shape());
         assertEquals(1.0f, out.meanNumber().floatValue(), 0.01f);
 
         observable3.setPosition(2);
         out = observable3.getOutput()[0];
-        assertArrayEquals(new int[] {1, 10}, out.shape());
+        assertArrayEquals(new long[] {1, 10}, out.shape());
         assertEquals(2.0f, out.meanNumber().floatValue(), 0.01f);
     }
 
