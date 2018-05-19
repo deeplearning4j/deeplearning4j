@@ -106,6 +106,7 @@
                         <jvmArg>-Xms128m</jvmArg>
                         <jvmArg>-Xmx512m</jvmArg>
                     </jvmArgs>
+
                     <compilerPlugins combine.children="append">
                         <compilerPlugin>
                             <groupId>org.scalamacros</groupId>
@@ -113,6 +114,7 @@
                             <version>${scala.macros.version}</version>
                         </compilerPlugin>
                     </compilerPlugins>
+
                 </configuration>
             </plugin>
         </plugins>
@@ -135,21 +137,21 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.11.8</version>
+            <version>${scala.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.11</artifactId>
             <version>${spark.version}</version>
             <exclusions>
-              <exclusion>
-                <groupId>javax.servlet</groupId>
-                <artifactId>servlet-api</artifactId>
-              </exclusion>
-              <exclusion>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>jsr305</artifactId>
-              </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>jsr305</artifactId>
+                </exclusion>
             </exclusions>
 
         </dependency>
@@ -158,7 +160,7 @@
 
     <profiles>
         <profile>
-          <id>spark-2</id>
+            <id>spark-2</id>
             <activation>
                 <property>
                     <name>spark.major.version</name>
