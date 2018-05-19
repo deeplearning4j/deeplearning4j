@@ -754,7 +754,7 @@ public class Schema implements Serializable {
          * @param columnName Name of the column
          * @param shape      shape of the NDArray column. Use -1 in entries to specify as "variable length" in that dimension
          */
-        public Builder addColumnNDArray(String columnName, int[] shape) {
+        public Builder addColumnNDArray(String columnName, long[] shape) {
             return addColumn(new NDArrayMetaData(columnName, shape));
         }
 

@@ -372,7 +372,7 @@ public class ImageLoader extends BaseImageLoader {
     public static BufferedImage toImage(INDArray matrix) {
         BufferedImage img = new BufferedImage(matrix.rows(), matrix.columns(), BufferedImage.TYPE_INT_ARGB);
         WritableRaster r = img.getRaster();
-        int[] equiv = new int[matrix.length()];
+        int[] equiv = new int[(int) matrix.length()];
         for (int i = 0; i < equiv.length; i++) {
             equiv[i] = (int) matrix.getDouble(i);
         }
@@ -383,7 +383,7 @@ public class ImageLoader extends BaseImageLoader {
 
 
     private static int[] rasterData(INDArray matrix) {
-        int[] ret = new int[matrix.length()];
+        int[] ret = new int[(int) matrix.length()];
         for (int i = 0; i < ret.length; i++)
             ret[i] = (int) Math.round((double) matrix.getScalar(i).element());
         return ret;
@@ -492,9 +492,9 @@ public class ImageLoader extends BaseImageLoader {
         return scalingIfNeed(image, height, width, needAlpha);
     }
 
-    protected BufferedImage scalingIfNeed(BufferedImage image, int dstHeight, int dstWidth, boolean needAlpha) {
+    protected BufferedImage scalingIfNeed(BufferedImage image, long dstHeight, long dstWidth, boolean needAlpha) {
         if (dstHeight > 0 && dstWidth > 0 && (image.getHeight() != dstHeight || image.getWidth() != dstWidth)) {
-            Image scaled = image.getScaledInstance(dstWidth, dstHeight, Image.SCALE_SMOOTH);
+            Image scaled = image.getScaledInstance((int) dstWidth, (int) dstHeight, Image.SCALE_SMOOTH);
 
             if (needAlpha && image.getColorModel().hasAlpha() && channels == BufferedImage.TYPE_4BYTE_ABGR) {
                 return toBufferedImage(scaled, BufferedImage.TYPE_4BYTE_ABGR);

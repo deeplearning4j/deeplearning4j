@@ -127,7 +127,7 @@ public class TestObjectDetectionRecordReader {
             }
 
             INDArray lArr = ((NDArrayWritable) next.get(1)).get();
-            assertArrayEquals(new int[]{1, 4 + 2, gH, gW}, lArr.shape());
+            assertArrayEquals(new long[]{1, 4 + 2, gH, gW}, lArr.shape());
             assertEquals(expLabels, lArr);
         }
 

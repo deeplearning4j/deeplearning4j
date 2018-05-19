@@ -46,7 +46,7 @@ public class TestAnalysis extends BaseSparkTest {
 
         Schema schema = new Schema.Builder().addColumnInteger("intCol").addColumnDouble("doubleCol")
                         .addColumnTime("timeCol", DateTimeZone.UTC).addColumnCategorical("catCol", "A", "B")
-                        .addColumnNDArray("ndarray", new int[] {1, 10}).build();
+                        .addColumnNDArray("ndarray", new long[] {1, 10}).build();
 
         List<List<Writable>> data = new ArrayList<>();
         data.add(Arrays.asList((Writable) new IntWritable(0), new DoubleWritable(1.0), new LongWritable(1000),

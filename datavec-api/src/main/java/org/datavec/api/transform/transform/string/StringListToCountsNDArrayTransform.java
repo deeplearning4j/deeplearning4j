@@ -99,7 +99,7 @@ public class StringListToCountsNDArrayTransform extends BaseTransform {
                 if (t.getColumnType() != ColumnType.String)
                     throw new IllegalStateException("Cannot convert non-string type");
 
-                ColumnMetaData meta = new NDArrayMetaData(newColumnName, new int[] {vocabulary.size()});
+                ColumnMetaData meta = new NDArrayMetaData(newColumnName, new long[] {vocabulary.size()});
                 newMeta.add(meta);
             } else {
                 newMeta.add(t);

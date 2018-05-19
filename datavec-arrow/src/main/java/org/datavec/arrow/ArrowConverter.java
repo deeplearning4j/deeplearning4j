@@ -171,7 +171,7 @@ public class ArrowConverter {
     public static List<FieldVector> convertToArrowVector(INDArray from,List<String> name,ColumnType type,BufferAllocator bufferAllocator) {
         List<FieldVector> ret = new ArrayList<>();
         if(from.isVector()) {
-            int cols = from.length();
+            long cols = from.length();
             switch(type) {
                 case Double:
                     double[] fromData = from.isView() ? from.dup().data().asDouble() : from.data().asDouble();
@@ -191,7 +191,7 @@ public class ArrowConverter {
 
         }
         else {
-            int cols = from.size(1);
+            long cols = from.size(1);
             for(int i = 0; i < cols; i++) {
                 INDArray column = from.getColumn(i);
 

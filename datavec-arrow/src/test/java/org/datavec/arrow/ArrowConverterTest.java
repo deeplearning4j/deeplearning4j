@@ -147,7 +147,7 @@ public class ArrowConverterTest {
         //Convert to ArrowWritableRecordBatch - note we can't do this in general with time series...
         ArrowWritableRecordBatch wri = ArrowConverter.toArrowWritables(fieldVectors, schema.build());
         INDArray arr = ArrowConverter.toArray(wri);
-        assertArrayEquals(new int[] {5,3}, arr.shape());
+        assertArrayEquals(new long[] {5,3}, arr.shape());
 
 
         assertEquals(exp, arr);

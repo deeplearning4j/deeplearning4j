@@ -85,9 +85,9 @@ public class TestYamlJsonSerde {
     @Test
     public void testTransformProcessAndSchema() {
 
-        Schema schema = new Schema.Builder().addColumnInteger("firstCol").addColumnNDArray("nd1a", new int[] {1, 10})
-                        .addColumnNDArray("nd1b", new int[] {1, 10}).addColumnNDArray("nd2", new int[] {1, 100})
-                        .addColumnNDArray("nd3", new int[] {-1, -1}).build();
+        Schema schema = new Schema.Builder().addColumnInteger("firstCol").addColumnNDArray("nd1a", new long[] {1, 10})
+                        .addColumnNDArray("nd1b", new long[] {1, 10}).addColumnNDArray("nd2", new long[] {1, 100})
+                        .addColumnNDArray("nd3", new long[] {-1, -1}).build();
 
         TransformProcess tp = new TransformProcess.Builder(schema).integerMathOp("firstCol", MathOp.Add, 1)
                         .ndArrayColumnsMathOpTransform("added", MathOp.Add, "nd1a", "nd1b")

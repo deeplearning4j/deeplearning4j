@@ -33,7 +33,7 @@ public class TestNDArrayWritableAndSerialization {
     @Test
     public void testIsValid() {
 
-        NDArrayMetaData meta = new NDArrayMetaData("col", new int[] {1, 10});
+        NDArrayMetaData meta = new NDArrayMetaData("col", new long[] {1, 10});
 
         NDArrayWritable valid = new NDArrayWritable(Nd4j.create(1, 10));
         NDArrayWritable invalid = new NDArrayWritable(Nd4j.create(1, 5));

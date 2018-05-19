@@ -359,7 +359,7 @@ public class NativeImageLoader extends BaseImageLoader {
         boolean direct = !Loader.getPlatform().startsWith("android");
         Indexer idx = image.createIndexer(direct);
         Pointer pointer = ret.data().pointer();
-        int[] stride = ret.stride();
+        long[] stride = ret.stride();
         boolean done = false;
         PagedPointer pagedPointer = new PagedPointer(pointer, rows * cols * channels,
                         ret.data().offset() * Nd4j.sizeOfDataType(ret.data().dataType()));
@@ -507,7 +507,7 @@ public class NativeImageLoader extends BaseImageLoader {
     public INDArray asMatrix(Mat image) throws IOException {
         INDArray ret = transformImage(image, null);
 
-        return ret.reshape(ArrayUtil.combine(new int[] {1}, ret.shape()));
+        return ret.reshape(ArrayUtil.combine(new long[] {1}, ret.shape()));
     }
 
     protected INDArray transformImage(Mat image, INDArray ret) throws IOException {
@@ -696,19 +696,19 @@ public class NativeImageLoader extends BaseImageLoader {
             throw new UnsupportedOperationException("Only rank 3 (or rank 4 with size(0) == 1) arrays supported");
         }
         int rank = array.rank();
-        int[] stride = array.stride();
+        long[] stride = array.stride();
         long offset = array.data().offset();
         Pointer pointer = array.data().pointer().position(offset);
 
-        int rows = array.size(rank == 3 ? 1 : 2);
-        int cols = array.size(rank == 3 ? 2 : 3);
-        int channels = array.size(rank == 3 ? 0 : 1);
+        long rows = array.size(rank == 3 ? 1 : 2);
+        long cols = array.size(rank == 3 ? 2 : 3);
+        long channels = array.size(rank == 3 ? 0 : 1);
         boolean done = false;
 
         if (dataType < 0) {
             dataType = pointer instanceof DoublePointer ? CV_64F : CV_32F;
         }
-        Mat mat = new Mat(rows, cols, CV_MAKETYPE(dataType, channels));
+        Mat mat = new Mat(rows, cols, CV_MAKETYPE(dataType, (int) channels));
         boolean direct = !Loader.getPlatform().startsWith("android");
         Indexer matidx = mat.createIndexer(direct);
 

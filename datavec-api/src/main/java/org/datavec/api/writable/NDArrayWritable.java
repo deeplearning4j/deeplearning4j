@@ -143,7 +143,7 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         }
 
         int hash = Arrays.hashCode(array.shape());
-        int length = array.length();
+        long length = array.length();
         NdIndexIterator iter = new NdIndexIterator('c', array.shape());
         for (int i = 0; i < length; i++) {
             hash ^= MathUtils.hashCode(array.getDouble(iter.next()));
@@ -184,15 +184,15 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         }
 
         for (int i = 0; i < array.rank(); i++) {
-            if (Integer.compare(array.size(i), other.array.size(i)) != 0) {
-                return Integer.compare(array.size(i), other.array.size(i));
+            if (Long.compare(array.size(i), other.array.size(i)) != 0) {
+                return Long.compare(array.size(i), other.array.size(i));
             }
         }
 
         //At this point: same rank, length, shape
         NdIndexIterator iter = new NdIndexIterator('c', array.shape());
         while (iter.hasNext()) {
-            int[] nextPos = iter.next();
+            long[] nextPos = iter.next();
             double d1 = array.getDouble(nextPos);
             double d2 = other.array.getDouble(nextPos);
 

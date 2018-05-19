@@ -105,7 +105,7 @@ public class CSVSparkTransformTest {
          //ensure accumulation
         sequenceBatchCSVRecord.add(Arrays.asList(batchCSVRecord));
         sequenceArray = csvSparkTransform.transformSequenceArray(sequenceBatchCSVRecord);
-        assertArrayEquals(new int[]{2,2,3},Nd4jBase64.fromBase64(sequenceArray.getNdarray()).shape());
+        assertArrayEquals(new long[]{2,2,3},Nd4jBase64.fromBase64(sequenceArray.getNdarray()).shape());
 
         SequenceBatchCSVRecord transformed = csvSparkTransform.transformSequence(sequenceBatchCSVRecord);
         assertNotNull(transformed.getRecords());

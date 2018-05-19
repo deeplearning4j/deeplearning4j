@@ -45,7 +45,7 @@ public class TestNDArrayWritableTransforms {
 
         Schema s = new Schema.Builder()
 
-                        .addColumnDouble("col0").addColumnNDArray("col1", new int[] {1, 10}).addColumnString("col2")
+                        .addColumnDouble("col0").addColumnNDArray("col1", new long[] {1, 10}).addColumnString("col2")
                         .build();
 
 
@@ -67,8 +67,8 @@ public class TestNDArrayWritableTransforms {
 
         Schema s = new Schema.Builder()
 
-                        .addColumnDouble("col0").addColumnNDArray("col1", new int[] {1, 10})
-                        .addColumnNDArray("col2", new int[] {1, 10}).build();
+                        .addColumnDouble("col0").addColumnNDArray("col1", new long[] {1, 10})
+                        .addColumnNDArray("col2", new long[] {1, 10}).build();
 
 
         TransformProcess tp = new TransformProcess.Builder(s)
@@ -95,8 +95,8 @@ public class TestNDArrayWritableTransforms {
 
         Schema s = new Schema.Builder()
 
-                        .addColumnDouble("col0").addColumnNDArray("col1", new int[] {1, 10})
-                        .addColumnNDArray("col2", new int[] {1, 10}).build();
+                        .addColumnDouble("col0").addColumnNDArray("col1", new long[] {1, 10})
+                        .addColumnNDArray("col2", new long[] {1, 10}).build();
 
 
         TransformProcess tp = new TransformProcess.Builder(s).ndArrayMathFunctionTransform("col1", MathFunction.SIN)
@@ -125,8 +125,8 @@ public class TestNDArrayWritableTransforms {
 
         Schema s = new Schema.Builder()
 
-                        .addColumnDouble("col0").addColumnNDArray("col1", new int[] {1, 10})
-                        .addColumnNDArray("col2", new int[] {1, 10}).build();
+                        .addColumnDouble("col0").addColumnNDArray("col1", new long[] {1, 10})
+                        .addColumnNDArray("col2", new long[] {1, 10}).build();
 
 
         TransformProcess tp = new TransformProcess.Builder(s)

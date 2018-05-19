@@ -166,7 +166,7 @@ public class LoaderTests {
 
         CifarLoader loader = new CifarLoader(row, col, channels, train, preProcessCifar);
         DataSet data = loader.next(numExamples);
-        int shape[] = data.getFeatures().shape();
+        long shape[] = data.getFeatures().shape();
         assertEquals(shape.length, 4);
         assertEquals(shape[0], numExamples);
         assertEquals(shape[1], channels);
