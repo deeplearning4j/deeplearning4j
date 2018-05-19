@@ -262,7 +262,7 @@ public class TestPreProcessedData extends BaseSparkTest {
 
     private static String toString(INDArray rowVector, int labelIdx) {
         StringBuilder sb = new StringBuilder();
-        int length = rowVector.length();
+        long length = rowVector.length();
         for (int i = 0; i < length; i++) {
             sb.append(rowVector.getDouble(i));
             sb.append(",");

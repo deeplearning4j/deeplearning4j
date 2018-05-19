@@ -166,8 +166,8 @@ public class TrainModuleUtils {
                 layerIndex++;
 
                 Map<String, String> encoderInfo = new LinkedHashMap<>();
-                int inputSize = (i == 0 ? va.getNIn() : encLayerSizes[i - 1]);
-                int outputSize = encLayerSizes[i];
+                long inputSize = (i == 0 ? va.getNIn() : encLayerSizes[i - 1]);
+                long outputSize = encLayerSizes[i];
                 encoderInfo.put("Input Size", String.valueOf(inputSize));
                 encoderInfo.put("Layer Size", String.valueOf(outputSize));
                 encoderInfo.put("Num Parameters", String.valueOf((inputSize + 1) * outputSize));
@@ -181,8 +181,8 @@ public class TrainModuleUtils {
             layerInputs.add(Collections.singletonList(layerIndex - 1));
             layerIndex++;
             Map<String, String> latentInfo = new LinkedHashMap<>();
-            int inputSize = encLayerSizes[encLayerSizes.length - 1];
-            int outputSize = va.getNOut();
+            long inputSize = encLayerSizes[encLayerSizes.length - 1];
+            long outputSize = va.getNOut();
             latentInfo.put("Input Size", String.valueOf(inputSize));
             latentInfo.put("Layer Size", String.valueOf(outputSize));
             latentInfo.put("Num Parameters", String.valueOf((inputSize + 1) * outputSize * 2));
@@ -220,7 +220,7 @@ public class TrainModuleUtils {
             reconstructionInfo.put("Input Size", String.valueOf(inputSize));
             reconstructionInfo.put("Layer Size", String.valueOf(outputSize));
             reconstructionInfo.put("Num Parameters", String
-                    .valueOf((inputSize + 1) * va.getOutputDistribution().distributionInputSize(va.getNIn())));
+                    .valueOf((inputSize + 1) * va.getOutputDistribution().distributionInputSize((int) va.getNIn())));
             reconstructionInfo.put("Distribution", va.getOutputDistribution().toString());
             layerInfo.add(reconstructionInfo);
 

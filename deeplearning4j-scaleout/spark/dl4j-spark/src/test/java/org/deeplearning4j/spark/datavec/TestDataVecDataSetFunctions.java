@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.datavec;
 
+import lombok.val;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -276,7 +277,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
             INDArray lSpark = dsSpark.getLabels();
             INDArray lLocal = dsLocal.getLabels();
 
-            int[] s = new int[] {1, 3, 4}; //1 example, 3 values, 3 time steps
+            val s = new long[] {1, 3, 4}; //1 example, 3 values, 3 time steps
             assertArrayEquals(s, fSpark.shape());
             assertArrayEquals(s, fLocal.shape());
             assertArrayEquals(s, lSpark.shape());
@@ -367,8 +368,8 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         assertEquals(3, sparkData.size());
         assertEquals(3, localData.size());
 
-        int[] fShapeExp = new int[] {1, 3, 4}; //1 example, 3 values, 4 time steps
-        int[] lShapeExp = new int[] {1, 4, 4}; //1 example, 4 values/classes, 4 time steps (after padding)
+        val fShapeExp = new long[] {1, 3, 4}; //1 example, 3 values, 4 time steps
+        val lShapeExp = new long[] {1, 4, 4}; //1 example, 4 values/classes, 4 time steps (after padding)
         for (int i = 0; i < 3; i++) {
             //Check shapes etc. data sets order may differ for spark vs. local
             DataSet dsSpark = sparkData.get(i);
