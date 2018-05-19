@@ -133,9 +133,8 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
                 right.clear();
             } else {
                 String[] split = s.split(" ");
-                String word = split[0];
-                List<String> positive = Arrays.asList(word);
-                List<String> negative = Arrays.asList(split[1], split[2]);
+                List<String> positive = Arrays.asList(split[1], split[2]);
+                List<String> negative = Arrays.asList(split[0]);
                 String predicted = split[3];
                 String w = wordsNearest(positive, negative, 1).iterator().next();
                 if (predicted.equals(w))
