@@ -1404,7 +1404,7 @@ public class Nd4j {
         long length = ArrayUtil.prodLong(shape);
         if (type == DataBuffer.Type.INT)
             return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
-        else if (type == DataBuffer.Type.INT)
+        else if (type == DataBuffer.Type.LONG)
             return DATA_BUFFER_FACTORY_INSTANCE.createLong(length);
         else if (type == DataBuffer.Type.HALF)
             return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);

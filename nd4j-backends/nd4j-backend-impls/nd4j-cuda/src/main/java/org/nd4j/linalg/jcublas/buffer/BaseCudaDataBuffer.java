@@ -249,14 +249,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asLongPointer();
             indexer = LongIndexer.create((LongPointer) pointer);
         }
-
-        /*
-        this.wrappedBuffer = this.pointer.asByteBuffer();
-
-        if (this.wrappedBuffer == null) {
-            throw new IllegalStateException("WrappedBuffer is NULL");
-        }
-        */
     }
 
     public BaseCudaDataBuffer(long length, int elementSize, boolean initialize, @NonNull MemoryWorkspace workspace) {
@@ -310,14 +302,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
         workspaceGenerationId = workspace.getGenerationId();
-
-        /*
-        this.wrappedBuffer = this.pointer.asByteBuffer();
-
-        if (this.wrappedBuffer == null) {
-            throw new IllegalStateException("WrappedBuffer is NULL");
-        }
-        */
     }
 
     @Override
@@ -360,8 +344,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.elementSize = (byte) underlyingBuffer.getElementSize();
         this.allocationPoint = ((BaseCudaDataBuffer) underlyingBuffer).allocationPoint;
 
-        //        log.info("BCDB create for view: length: ["+ length+"], offset: ["+ offset+"], originalOffset: ["+ underlyingBuffer.originalOffset() +"], elementSize: ["+elementSize+"]");
-
         if (underlyingBuffer.dataType() == Type.DOUBLE) {
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asDoublePointer();
             indexer = DoubleIndexer.create((DoublePointer) pointer);
@@ -378,8 +360,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asLongPointer();
             indexer = LongIndexer.create((LongPointer) pointer);
         }
-
-        //this.wrappedBuffer = this.pointer.asByteBuffer();
     }
 
     public BaseCudaDataBuffer(long length) {

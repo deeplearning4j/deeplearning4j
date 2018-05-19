@@ -588,7 +588,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     protected BaseDataBuffer(long length, boolean initialize) {
-        if (length < 1)
+        if (length < 0)
             throw new IllegalArgumentException("Length must be >= 1");
         initTypeAndSize();
         this.length = length;

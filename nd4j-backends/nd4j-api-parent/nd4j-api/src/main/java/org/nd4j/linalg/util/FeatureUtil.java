@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.util;
 
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -33,9 +34,12 @@ public class FeatureUtil {
      * @param numOutcomes the number of possible outcomes
      * @return a binary label matrix used for supervised learning
      */
-    public static INDArray toOutcomeVector(int index, int numOutcomes) {
-        int[] nums = new int[numOutcomes];
-        nums[index] = 1;
+    public static INDArray toOutcomeVector(long index, long numOutcomes) {
+        if (index > Integer.MAX_VALUE || numOutcomes > Integer.MAX_VALUE)
+            throw new UnsupportedOperationException();
+
+        val nums = new int[(int) numOutcomes];
+        nums[(int) index] = 1;
         return NDArrayUtil.toNDArray(nums);
     }
 
@@ -47,10 +51,10 @@ public class FeatureUtil {
      * @param numOutcomes the number of possible outcomes
      * @return a binary label matrix used for supervised learning
      */
-    public static INDArray toOutcomeMatrix(int[] index, int numOutcomes) {
+    public static INDArray toOutcomeMatrix(int[] index, long numOutcomes) {
         INDArray ret = Nd4j.create(index.length, numOutcomes);
         for (int i = 0; i < ret.rows(); i++) {
-            int[] nums = new int[numOutcomes];
+            int[] nums = new int[(int) numOutcomes];
             nums[index[i]] = 1;
             ret.putRow(i, NDArrayUtil.toNDArray(nums));
         }
