@@ -49,8 +49,8 @@ public class TestSameDiffConv {
         assertNotNull(pt1.get(ConvolutionParamInitializer.WEIGHT_KEY));
         assertNotNull(pt1.get(ConvolutionParamInitializer.BIAS_KEY));
 
-        assertArrayEquals(new int[]{nOut, nIn, kH, kW}, pt1.get(ConvolutionParamInitializer.WEIGHT_KEY).shape());
-        assertArrayEquals(new int[]{1, nOut}, pt1.get(ConvolutionParamInitializer.BIAS_KEY).shape());
+        assertArrayEquals(new long[]{nOut, nIn, kH, kW}, pt1.get(ConvolutionParamInitializer.WEIGHT_KEY).shape());
+        assertArrayEquals(new long[]{1, nOut}, pt1.get(ConvolutionParamInitializer.BIAS_KEY).shape());
 
         TestUtils.testModelSerialization(net);
     }

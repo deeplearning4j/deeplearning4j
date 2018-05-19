@@ -244,21 +244,21 @@ public class ROCTest extends BaseDL4JTest {
         INDArray predictions3d = Nd4j.create(2, 2, 5);
         INDArray firstTSp =
                         predictions3d.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
-        assertArrayEquals(new int[] {5, 2}, firstTSp.shape());
+        assertArrayEquals(new long[] {5, 2}, firstTSp.shape());
         firstTSp.assign(predictions2d.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
 
         INDArray secondTSp =
                         predictions3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
-        assertArrayEquals(new int[] {5, 2}, secondTSp.shape());
+        assertArrayEquals(new long[] {5, 2}, secondTSp.shape());
         secondTSp.assign(predictions2d.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
 
         INDArray labels3d = Nd4j.create(2, 2, 5);
         INDArray firstTS = labels3d.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
-        assertArrayEquals(new int[] {5, 2}, firstTS.shape());
+        assertArrayEquals(new long[] {5, 2}, firstTS.shape());
         firstTS.assign(actual2d.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
 
         INDArray secondTS = labels3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
-        assertArrayEquals(new int[] {5, 2}, secondTS.shape());
+        assertArrayEquals(new long[] {5, 2}, secondTS.shape());
         secondTS.assign(actual2d.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
 
         for (int steps : new int[] {10, 0}) { //0 steps: exact

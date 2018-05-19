@@ -77,7 +77,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         BatchNormalization bN = b.build();
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(bN).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = null;
         if (numParams > 0) {
             params = Nd4j.create(1, numParams);

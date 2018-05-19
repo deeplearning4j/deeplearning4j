@@ -316,8 +316,10 @@ public class MultiLayerTest extends BaseDL4JTest {
     }
 
     public static float[] asFloat(INDArray arr) {
-        int len = arr.length();
-        float[] f = new float[len];
+        long len = arr.length();
+
+        // FIXME: int cast
+        float[] f = new float[(int) len];
         for (int i = 0; i < len; i++)
             f[i] = arr.getFloat(i);
         return f;
@@ -406,7 +408,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         Pair<Gradient, INDArray> pair = net.backpropGradient(eps, LayerWorkspaceMgr.noWorkspaces());
         INDArray epsOut = pair.getSecond();
         assertNotNull(epsOut);
-        assertArrayEquals(new int[] {miniBatch, nIn}, epsOut.shape());
+        assertArrayEquals(new long[] {miniBatch, nIn}, epsOut.shape());
 
         Gradient g = pair.getFirst();
         Map<String, INDArray> gradMap = g.gradientForVariable();
@@ -501,8 +503,8 @@ public class MultiLayerTest extends BaseDL4JTest {
         INDArray scoresWithRegularization = net.scoreExamples(ds, true);
         INDArray scoresNoRegularization = net.scoreExamples(ds, false);
 
-        assertArrayEquals(new int[] {3, 1}, scoresWithRegularization.shape());
-        assertArrayEquals(new int[] {3, 1}, scoresNoRegularization.shape());
+        assertArrayEquals(new long[] {3, 1}, scoresWithRegularization.shape());
+        assertArrayEquals(new long[] {3, 1}, scoresNoRegularization.shape());
 
         for (int i = 0; i < 3; i++) {
             DataSet singleEx = new DataSet(input.getRow(i), output.getRow(i));

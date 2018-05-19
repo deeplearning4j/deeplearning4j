@@ -67,7 +67,7 @@ public class CNNProcessorTest extends BaseDL4JTest {
                         //Test forward pass:
                         INDArray convAct_c = convProcessor.preProcess(ffInput_c, -1, LayerWorkspaceMgr.noWorkspaces());
                         INDArray convAct_f = convProcessor.preProcess(ffInput_f, -1, LayerWorkspaceMgr.noWorkspaces());
-                        int[] convShape = {miniBatch, d, rows, cols};
+                        long[] convShape = {miniBatch, d, rows, cols};
                         assertArrayEquals(convShape, convAct_c.shape());
                         assertArrayEquals(convShape, convAct_f.shape());
                         assertEquals(convAct_c, convAct_f);
@@ -171,7 +171,7 @@ public class CNNProcessorTest extends BaseDL4JTest {
                         //Test forward pass:
                         INDArray ffAct_c = convProcessor.preProcess(convInput_c, -1, LayerWorkspaceMgr.noWorkspaces());
                         INDArray ffAct_f = convProcessor.preProcess(convInput_f, -1, LayerWorkspaceMgr.noWorkspaces());
-                        int[] ffActShape = {miniBatch, d * rows * cols};
+                        long[] ffActShape = {miniBatch, d * rows * cols};
                         assertArrayEquals(ffActShape, ffAct_c.shape());
                         assertArrayEquals(ffActShape, ffAct_f.shape());
                         assertEquals(ffAct_c, ffAct_f);

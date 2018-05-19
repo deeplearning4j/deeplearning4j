@@ -492,7 +492,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @return     {@link RegressionEvaluation} instance with regression performance
      */
     public RegressionEvaluation evaluateRegression(JavaRDD<DataSet> data, int minibatchSize) {
-        int nOut = ((FeedForwardLayer) network.getOutputLayer().conf().getLayer()).getNOut();
+        long nOut = ((FeedForwardLayer) network.getOutputLayer().conf().getLayer()).getNOut();
         return doEvaluation(data, new RegressionEvaluation(nOut), minibatchSize);
     }
 
