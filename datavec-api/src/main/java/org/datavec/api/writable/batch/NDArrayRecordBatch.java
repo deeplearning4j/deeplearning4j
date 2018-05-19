@@ -43,7 +43,7 @@ import java.util.List;
 public class NDArrayRecordBatch extends AbstractWritableRecordBatch {
 
     private List<INDArray> arrays;
-    private int size;
+    private long size;
 
     public NDArrayRecordBatch(INDArray... arrays){
         this(Arrays.asList(arrays));
