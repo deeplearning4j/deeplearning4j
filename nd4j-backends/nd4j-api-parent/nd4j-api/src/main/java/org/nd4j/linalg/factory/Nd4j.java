@@ -6011,8 +6011,8 @@ public class Nd4j {
      * @param value the value to assign
      * @return the created ndarray
      */
-    public static INDArray valueArrayOf(int num, double value) {
-        INDArray ret = INSTANCE.valueArrayOf(new int[] {1, num}, value);
+    public static INDArray valueArrayOf(long num, double value) {
+        INDArray ret = INSTANCE.valueArrayOf(new long[] {1, num}, value);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -6027,7 +6027,7 @@ public class Nd4j {
      * @param value   the value to assign
      * @return the created ndarray
      */
-    public static INDArray valueArrayOf(int rows, int columns, double value) {
+    public static INDArray valueArrayOf(long rows, long columns, double value) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
