@@ -323,8 +323,10 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
             INDArray[] sorted = Nd4j.sortWithIndices(distances, 0, false);
             INDArray sort = sorted[0];
             List<String> ret = new ArrayList<>();
+
+            // FIXME: int cast
             if (top > sort.length())
-                top = sort.length();
+                top = (int) sort.length();
             //there will be a redundant word
             int end = top;
             for (int i = 0; i < end; i++) {

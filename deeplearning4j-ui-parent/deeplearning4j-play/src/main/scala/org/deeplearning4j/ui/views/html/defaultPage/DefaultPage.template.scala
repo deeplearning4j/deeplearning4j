@@ -2,9 +2,17 @@
 package org.deeplearning4j.ui.views.html.defaultPage
 
 import play.twirl.api._
+import play.twirl.api.TemplateMagic._
 
 
      object DefaultPage_Scope0 {
+import models._
+import controllers._
+import play.api.i18n._
+import views.html._
+import play.api.templates.PlayMagic._
+import play.api.mvc._
+import play.api.data._
 
 class DefaultPage extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendable,Format[play.twirl.api.HtmlFormat.Appendable]](play.twirl.api.HtmlFormat) with play.twirl.api.Template0[play.twirl.api.HtmlFormat.Appendable] {
 
@@ -184,8 +192,8 @@ Seq[Any](format.raw/*1.1*/("""<html>
 object DefaultPage extends DefaultPage_Scope0.DefaultPage
               /*
                   -- GENERATED --
-                  DATE: Thu Feb 16 18:09:33 AEDT 2017
-                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/defaultPage/DefaultPage.scala.html
+                  DATE: Fri May 18 18:41:46 PDT 2018
+                  SOURCE: C:/develop/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/defaultPage/DefaultPage.scala.html
                   HASH: 7dfb895d69ecdc3c039e34fe7a091eea7cdc962b
                   MATRIX: 655->0|1846->1163|1875->1164|1917->1178|2075->1309|2104->1310|2141->1320|2173->1324|2202->1325|2244->1339|2366->1434|2395->1435|2432->1445|2467->1452|2496->1453|2538->1467|2687->1589|2716->1590|2753->1600|2791->1610|2820->1611|2862->1625|2984->1720|3013->1721|3050->1731|3212->1912|3245->1918|4126->2934|4172->2952|5012->3952|5058->3970|5577->4636|5624->4654|6126->5289|6173->5307|6669->5948|6716->5966
                   LINES: 25->1|45->21|45->21|46->22|50->26|50->26|51->27|51->27|51->27|52->28|55->31|55->31|56->32|56->32|56->32|57->33|62->38|62->38|63->39|63->39|63->39|64->40|67->43|67->43|68->44|73->49|74->50|99->75|100->76|117->93|118->94|127->103|128->104|137->113|138->114|147->123|148->124

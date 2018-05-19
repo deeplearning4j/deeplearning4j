@@ -221,7 +221,9 @@ class SecondIterationFunctionAdapter
                     label = 1;
                 else {
                     nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
-                    int idx = Math.abs((int) (nextRandom.get() >> 16) % negativeHolder.getTable().length());
+
+                    // FIXME: int cast
+                    int idx = (int) Math.abs((int) (nextRandom.get() >> 16) % negativeHolder.getTable().length());
 
                     target = negativeHolder.getTable().getInt(idx);
                     if (target <= 0)

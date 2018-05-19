@@ -122,7 +122,9 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     public double getGradient(int column, double gradient) {
         if (adaGrad == null)
             initAdaGrad();
-        return adaGrad.getGradient(gradient, column, syn0.shape());
+
+        // FIXME: int cast
+        return adaGrad.getGradient(gradient, column, ArrayUtil.toInts(syn0.shape()));
     }
 
     @Override
@@ -367,7 +369,9 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
                     label = 1;
                 else {
                     nextRandom.set(nextRandom.get() * 25214903917L + 11);
-                    int idx = Math.abs((int) (nextRandom.get() >> 16) % table.length());
+
+                    // FIXME: int cast
+                    int idx = (int) Math.abs((int) (nextRandom.get() >> 16) % table.length());
 
                     target = table.getInt(idx);
                     if (target <= 0)
