@@ -43,6 +43,9 @@ public class OCNNOutputLayer extends BaseOutputLayer {
 
     private double nu = 0.04;
 
+    private int windowSize = 10000;
+
+
     private IActivation activation;
 
     /**
@@ -67,14 +70,16 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         this.hiddenSize = builder.hiddenLayerSize;
         this.nu = builder.nu;
         this.activation = builder.activation;
+        this.windowSize = builder.windowSize;
 
     }
 
     @JsonCreator
-    public OCNNOutputLayer(@JsonProperty("hiddenSize") int hiddenSize,@JsonProperty("nu") double nu,@JsonProperty("activation") IActivation activation) {
+    public OCNNOutputLayer(@JsonProperty("hiddenSize") int hiddenSize,@JsonProperty("nu") double nu,@JsonProperty("activation") IActivation activation,@JsonProperty("windowSize") int windowSize) {
         this.hiddenSize = hiddenSize;
         this.nu = nu;
         this.activation = activation;
+        this.windowSize = windowSize;
     }
 
     @Override
@@ -124,7 +129,15 @@ public class OCNNOutputLayer extends BaseOutputLayer {
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
         protected  int hiddenLayerSize;
         protected  double nu = 0.04;
+        protected int windowSize = 10000;
         protected IActivation activation = new ActivationIdentity();
+
+        public Builder windowSize(int windowSize) {
+            this.windowSize = windowSize;
+            return this;
+        }
+
+
         public Builder nu(double nu) {
             this.nu = nu;
             return this;
