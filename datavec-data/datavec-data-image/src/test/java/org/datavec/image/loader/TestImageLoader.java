@@ -60,7 +60,7 @@ public class TestImageLoader {
         ImageLoader loader = new ImageLoader(0, 0, ch);
         INDArray arr = loader.toINDArrayBGR(img);
 
-        int[] shape = arr.shape();
+        long[] shape = arr.shape();
         assertEquals(3, shape.length);
         assertEquals(ch, shape[0]);
         assertEquals(h, shape[1]);

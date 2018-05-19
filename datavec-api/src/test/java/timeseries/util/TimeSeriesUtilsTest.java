@@ -24,7 +24,7 @@ public class TimeSeriesUtilsTest {
         test.add(timeStep);
 
         INDArray arr = TimeSeriesWritableUtils.convertWritablesSequence(test).getFirst();
-        assertArrayEquals(new int[]{1,5,5},arr.shape());
+        assertArrayEquals(new long[]{1,5,5},arr.shape());
      }
 
      private List<Writable> getRecord(int length) {

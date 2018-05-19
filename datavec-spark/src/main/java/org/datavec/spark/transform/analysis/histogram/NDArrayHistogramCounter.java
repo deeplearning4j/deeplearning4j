@@ -44,7 +44,7 @@ public class NDArrayHistogramCounter implements HistogramCounter {
             return this;
         }
 
-        int length = arr.length();
+        long length = arr.length();
         DoubleWritable dw = new DoubleWritable();
         for (int i = 0; i < length; i++) {
             dw.set(arr.getDouble(i));

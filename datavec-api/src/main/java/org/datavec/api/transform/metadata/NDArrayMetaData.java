@@ -37,17 +37,17 @@ import java.util.Arrays;
 @JsonIgnoreProperties("allowVarLength")
 public class NDArrayMetaData extends BaseColumnMetaData {
 
-    private int[] shape;
+    private long[] shape;
     private boolean allowVarLength;
 
     /**
      * @param name  Name of the NDArray column
      * @param shape shape of the NDArray column. Use -1 in entries to specify as "variable length" in that dimension
      */
-    public NDArrayMetaData(@JsonProperty("name") String name, @JsonProperty("shape") int[] shape) {
+    public NDArrayMetaData(@JsonProperty("name") String name, @JsonProperty("shape") long[] shape) {
         super(name);
         this.shape = shape;
-        for (int i : shape) {
+        for (long i : shape) {
             if (i < 0) {
                 allowVarLength = true;
                 break;

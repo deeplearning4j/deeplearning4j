@@ -143,7 +143,7 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         }
 
         int hash = Arrays.hashCode(array.shape());
-        int length = array.length();
+        long length = array.length();
         NdIndexIterator iter = new NdIndexIterator('c', array.shape());
         for (int i = 0; i < length; i++) {
             hash ^= MathUtils.hashCode(array.getDouble(iter.next()));

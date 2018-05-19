@@ -68,13 +68,13 @@ public class NDArrayRecordBatch extends AbstractWritableRecordBatch {
 
     @Override
     public int size() {
-        return size;
+        return (int) size;
     }
 
     @Override
     public List<Writable> get(int index) {
         Preconditions.checkArgument(index >= 0 && index < size, "Invalid index: " + index + ", size = " + size);
-        List<Writable> out = new ArrayList<>(size);
+        List<Writable> out = new ArrayList<>((int) size);
         for (INDArray orig : arrays) {
             INDArray view = getExample(index, orig);
             out.add(new NDArrayWritable(view));

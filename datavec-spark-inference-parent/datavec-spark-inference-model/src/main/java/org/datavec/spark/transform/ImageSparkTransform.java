@@ -39,8 +39,8 @@ public class ImageSparkTransform {
             records.add(finalRecord);
         }
 
-        int shape[] = records.get(0).shape();
-        INDArray array = Nd4j.create(records, new int[] {records.size(), shape[1], shape[2], shape[3]});
+        long shape[] = records.get(0).shape();
+        INDArray array = Nd4j.create(records, new long[] {records.size(), shape[1], shape[2], shape[3]});
 
         return new Base64NDArrayBody(Nd4jBase64.base64String(array));
     }
