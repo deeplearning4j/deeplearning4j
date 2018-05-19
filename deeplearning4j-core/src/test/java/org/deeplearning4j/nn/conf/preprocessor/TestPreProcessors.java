@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -41,7 +42,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                                             .nOut(layerSize).build())
                             .build();
 
-            int numParams = nnc.getLayer().initializer().numParams(nnc);
+            long numParams = nnc.getLayer().initializer().numParams(nnc);
             INDArray params = Nd4j.create(1, numParams);
             DenseLayer layer = (DenseLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
             layer.setInputMiniBatchSize(miniBatchSize);
@@ -62,8 +63,8 @@ public class TestPreProcessors extends BaseDL4JTest {
 
             INDArray activations2dc = proc.preProcess(activations3dc, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
             INDArray activations2df = proc.preProcess(activations3df, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
-            assertArrayEquals(activations2dc.shape(), new int[] {miniBatchSize * timeSeriesLength, layerSize});
-            assertArrayEquals(activations2df.shape(), new int[] {miniBatchSize * timeSeriesLength, layerSize});
+            assertArrayEquals(activations2dc.shape(), new long[] {miniBatchSize * timeSeriesLength, layerSize});
+            assertArrayEquals(activations2df.shape(), new long[] {miniBatchSize * timeSeriesLength, layerSize});
             assertEquals(activations2dc, activations2df);
 
             //Expect each row in activations2d to have order:
@@ -72,7 +73,7 @@ public class TestPreProcessors extends BaseDL4JTest {
             for (int i = 0; i < nRows; i++) {
                 INDArray rowc = activations2dc.getRow(i);
                 INDArray rowf = activations2df.getRow(i);
-                assertArrayEquals(rowc.shape(), new int[] {1, layerSize});
+                assertArrayEquals(rowc.shape(), new long[] {1, layerSize});
                 assertEquals(rowc, rowf);
 
                 //c order reshaping
@@ -126,7 +127,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                                             .nOut(layerSize).build())
                             .build();
 
-            int numParams = nnc.getLayer().initializer().numParams(nnc);
+            val numParams = nnc.getLayer().initializer().numParams(nnc);
             INDArray params = Nd4j.create(1, numParams);
             DenseLayer layer = (DenseLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
             layer.setInputMiniBatchSize(miniBatchSize);
@@ -140,8 +141,8 @@ public class TestPreProcessors extends BaseDL4JTest {
 
             INDArray activations3dc = proc.preProcess(activations2dc, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
             INDArray activations3df = proc.preProcess(activations2df, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
-            assertArrayEquals(new int[] {miniBatchSize, layerSize, timeSeriesLength}, activations3dc.shape());
-            assertArrayEquals(new int[] {miniBatchSize, layerSize, timeSeriesLength}, activations3df.shape());
+            assertArrayEquals(new long[] {miniBatchSize, layerSize, timeSeriesLength}, activations3dc.shape());
+            assertArrayEquals(new long[] {miniBatchSize, layerSize, timeSeriesLength}, activations3df.shape());
             assertEquals(activations3dc, activations3df);
 
             int nRows2D = miniBatchSize * timeSeriesLength;
@@ -212,7 +213,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                                                                                             .nOut(nChannels).build())
                                                             .build();
 
-                            int numParams = nnc.getLayer().initializer().numParams(nnc);
+                            val numParams = nnc.getLayer().initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
                             ConvolutionLayer layer =
                                             (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
@@ -222,9 +223,9 @@ public class TestPreProcessors extends BaseDL4JTest {
                                             inputHeight, inputWidth});
 
                             //Check shape of outputs:
-                            int prod = nChannels * inputHeight * inputWidth;
+                            val prod = nChannels * inputHeight * inputWidth;
                             INDArray activationsRnn = proc.preProcess(activationsCnn, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
-                            assertArrayEquals(msg, new int[] {miniBatchSize, prod, timeSeriesLength},
+                            assertArrayEquals(msg, new long[] {miniBatchSize, prod, timeSeriesLength},
                                             activationsRnn.shape());
 
                             //Check backward pass. Given that activations and epsilons have same shape, they should
@@ -294,13 +295,13 @@ public class TestPreProcessors extends BaseDL4JTest {
                                                                                             .nOut(nChannels).build())
                                                             .build();
 
-                            int numParams = nnc.getLayer().initializer().numParams(nnc);
+                            val numParams = nnc.getLayer().initializer().numParams(nnc);
                             INDArray params = Nd4j.create(1, numParams);
                             ConvolutionLayer layer =
                                             (ConvolutionLayer) nnc.getLayer().instantiate(nnc, null, 0, params, true);
                             layer.setInputMiniBatchSize(miniBatchSize);
 
-                            int[] shape_rnn = new int[] {miniBatchSize, nChannels * inputHeight * inputWidth,
+                            val shape_rnn = new long[] {miniBatchSize, nChannels * inputHeight * inputWidth,
                                             timeSeriesLength};
                             INDArray rand = Nd4j.rand(shape_rnn);
                             INDArray activationsRnn_c = Nd4j.create(shape_rnn, 'c');
@@ -312,7 +313,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                             //Check shape of outputs:
                             INDArray activationsCnn_c = proc.preProcess(activationsRnn_c, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
                             INDArray activationsCnn_f = proc.preProcess(activationsRnn_f, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
-                            int[] shape_cnn = new int[] {miniBatchSize * timeSeriesLength, nChannels, inputHeight,
+                            val shape_cnn = new long[] {miniBatchSize * timeSeriesLength, nChannels, inputHeight,
                                             inputWidth};
                             assertArrayEquals(shape_cnn, activationsCnn_c.shape());
                             assertArrayEquals(shape_cnn, activationsCnn_f.shape());

@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -212,8 +209,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        int paramSize = initializer().numParams(this);
-        int updaterStateSize = (int) getIUpdater().stateSize(paramSize);
+        val paramSize = initializer().numParams(this);
+        val updaterStateSize = (int) getIUpdater().stateSize(paramSize);
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
@@ -221,7 +218,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         //TODO convolution helper memory use... (CuDNN etc)
 
         //During forward pass: im2col array, mmul (result activations), in-place broadcast add
-        int im2colSizePerEx =
+        val im2colSizePerEx =
                         c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
 
         //During training: have im2col array, in-place gradient calculation, then epsilons...

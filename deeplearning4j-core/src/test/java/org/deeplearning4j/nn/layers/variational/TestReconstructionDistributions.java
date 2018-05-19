@@ -53,7 +53,7 @@ public class TestReconstructionDistributions extends BaseDL4JTest {
                 double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
                 INDArray exampleNegLogProb = dist.exampleNegLogProbability(x, distributionParams);
-                assertArrayEquals(new int[] {minibatch, 1}, exampleNegLogProb.shape());
+                assertArrayEquals(new long[] {minibatch, 1}, exampleNegLogProb.shape());
 
                 //Calculate the same thing, but using Apache Commons math
 
@@ -122,7 +122,7 @@ public class TestReconstructionDistributions extends BaseDL4JTest {
                 double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
                 INDArray exampleNegLogProb = dist.exampleNegLogProbability(x, distributionParams);
-                assertArrayEquals(new int[] {minibatch, 1}, exampleNegLogProb.shape());
+                assertArrayEquals(new long[] {minibatch, 1}, exampleNegLogProb.shape());
 
                 //Calculate the same thing, but using Apache Commons math
 
@@ -199,7 +199,7 @@ public class TestReconstructionDistributions extends BaseDL4JTest {
                 double negLogProb = dist.negLogProbability(x, distributionParams, average);
 
                 INDArray exampleNegLogProb = dist.exampleNegLogProbability(x, distributionParams);
-                assertArrayEquals(new int[] {minibatch, 1}, exampleNegLogProb.shape());
+                assertArrayEquals(new long[] {minibatch, 1}, exampleNegLogProb.shape());
 
                 //Calculate the same thing, but using Apache Commons math
 

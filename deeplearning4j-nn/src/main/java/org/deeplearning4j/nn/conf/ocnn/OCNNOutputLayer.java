@@ -104,9 +104,9 @@ public class OCNNOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public int getNOut() {
+    public long getNOut() {
         //we don't change number of outputs here
-        return 1;
+        return 1L;
     }
 
     @Override

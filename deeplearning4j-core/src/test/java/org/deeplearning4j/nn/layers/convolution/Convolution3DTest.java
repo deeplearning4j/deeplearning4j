@@ -65,7 +65,7 @@ public class Convolution3DTest {
         INDArray input = getData();
         INDArray output = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
-        assertTrue(Arrays.equals(new int[]{nExamples, nChannelsOut, outputDepth, outputWidth, outputHeight},
+        assertTrue(Arrays.equals(new long[]{nExamples, nChannelsOut, outputDepth, outputWidth, outputHeight},
                 output.shape()));
     }
 
@@ -76,7 +76,7 @@ public class Convolution3DTest {
                         .dataFormat(Convolution3D.DataFormat.NCDHW).convolutionMode(mode).hasBias(false)
                         .build())
                 .build();
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.ones(1, numParams);
         return conf.getLayer().instantiate(conf, null, 0, params, true);
     }

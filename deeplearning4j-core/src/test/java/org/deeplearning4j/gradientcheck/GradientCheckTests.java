@@ -115,6 +115,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         String msg = "testMinibatchApplication() - activationFn=" + afn + ", lossFn=" + lf
                 + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst;
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(mln);
     }
 
 
@@ -195,6 +196,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                     String msg = "testGradMLP2LayerIrisSimple() - activationFn=" + afn + ", lossFn=" + lf
                                     + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst;
                     assertTrue(msg, gradOK);
+                    TestUtils.testModelSerialization(mln);
                 }
             }
         }
@@ -290,6 +292,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                                         + ", outputActivation=" + outputActivation + ", doLearningFirst="
                                         + doLearningFirst + ", l2=" + l2 + ", l1=" + l1;
                         assertTrue(msg, gradOK);
+                        TestUtils.testModelSerialization(mln);
                     }
                 }
             }
@@ -334,6 +337,7 @@ public class GradientCheckTests extends BaseDL4JTest {
 
         String msg = "testEmbeddingLayerSimple";
         assertTrue(msg, gradOK);
+        TestUtils.testModelSerialization(mln);
     }
 
     @Test
@@ -420,6 +424,7 @@ public class GradientCheckTests extends BaseDL4JTest {
                         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                         assertTrue(msg, gradOK);
+                        TestUtils.testModelSerialization(mln);
                     }
                 }
             }

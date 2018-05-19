@@ -2,9 +2,17 @@
 package org.deeplearning4j.ui.views.html.training
 
 import play.twirl.api._
+import play.twirl.api.TemplateMagic._
 
 
      object TrainingHelp_Scope0 {
+import models._
+import controllers._
+import play.api.i18n._
+import views.html._
+import play.api.templates.PlayMagic._
+import play.api.mvc._
+import play.api.data._
 
 class TrainingHelp extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendable,Format[play.twirl.api.HtmlFormat.Appendable]](play.twirl.api.HtmlFormat) with play.twirl.api.Template1[org.deeplearning4j.ui.api.I18N,play.twirl.api.HtmlFormat.Appendable] {
 
@@ -397,8 +405,8 @@ format.raw("""          <!-- End Content -->
 object TrainingHelp extends TrainingHelp_Scope0.TrainingHelp
               /*
                   -- GENERATED --
-                  DATE: Thu Feb 16 18:09:33 AEDT 2017
-                  SOURCE: C:/DL4J/Git/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
+                  DATE: Fri May 18 19:33:53 PDT 2018
+                  SOURCE: C:/develop/deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-play/src/main/views/org/deeplearning4j/ui/views/training/TrainingHelp.scala.html
                   HASH: c0692c7227e770b9e979ec918819f4f72ff5ccac
                   MATRIX: 596->1|729->39|757->41|880->138|892->142|942->172|2594->1797|2607->1801|2658->1831|3222->2367|3236->2371|3291->2404|3441->2526|3455->2530|3507->2560|3662->2687|3676->2691|3729->2722|3907->2872|3921->2876|3977->2910|4202->3107|4216->3111|4271->3144
                   LINES: 20->1|25->1|26->2|31->7|31->7|31->7|65->41|65->41|65->41|78->54|78->54|78->54|79->55|79->55|79->55|80->56|80->56|80->56|81->57|81->57|81->57|83->59|83->59|83->59

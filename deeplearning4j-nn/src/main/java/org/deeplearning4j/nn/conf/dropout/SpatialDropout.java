@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
 import lombok.NonNull;
+import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
@@ -68,8 +69,8 @@ public class SpatialDropout implements IDropout {
             currP = p;
         }
 
-        int minibatch = inputActivations.size(0);
-        int dim1 = inputActivations.size(1);
+        val minibatch = inputActivations.size(0);
+        val dim1 = inputActivations.size(1);
         INDArray mask = Nd4j.ones(minibatch, dim1);
 
         Nd4j.getExecutioner().exec(new DropOutInverted(mask, currP));

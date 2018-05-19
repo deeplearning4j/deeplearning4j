@@ -105,14 +105,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         assertInputSet(true);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
-        int miniBatch = input.size(0);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inH = (int) input.size(2);
+        int inW = (int) input.size(3);
 
-        int outDepth = weights.size(0);
-        int inDepth = weights.size(1);
-        int kH = weights.size(2);
-        int kW = weights.size(3);
+        int outDepth = (int) weights.size(0);
+        int inDepth = (int) weights.size(1);
+        int kH = (int) weights.size(2);
+        int kW = (int) weights.size(3);
 
         int[] dilation = layerConf().getDilation();
         int[] kernel = layerConf().getKernelSize();
@@ -267,10 +268,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                             + " " + layerId());
         }
 
-        int miniBatch = input.size(0);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
 
-        int outDepth = weights.size(0);
-        int inDepth = weights.size(1);
+        int outDepth = (int) weights.size(0);
+        int inDepth = (int) weights.size(1);
         if (input.size(1) != inDepth) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
@@ -281,8 +283,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                             + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
                             + layerId());
         }
-        int kH = weights.size(2);
-        int kW = weights.size(3);
+        int kH = (int) weights.size(2);
+        int kW = (int) weights.size(3);
 
         int[] dilation = layerConf().getDilation();
         int[] kernel = layerConf().getKernelSize();
@@ -292,7 +294,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {input.size(2), input.size(3)}, kernel,
+
+            // FIXME: int cast
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int) input.size(2), (int) input.size(3)}, kernel,
                             strides, dilation );
         } else {
             pad = layerConf().getPadding();
@@ -357,7 +361,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray reshapedW = permutedW.reshape('f', kW * kH * inDepth, outDepth);
 
         //Do the MMUL; c and f orders in, f order out. output shape: [miniBatch*outH*outW,depthOut]
-        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[]{im2col2d.size(0), reshapedW.size(1)}, 'f');
+        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new long[]{im2col2d.size(0), reshapedW.size(1)}, 'f');
         im2col2d.mmuli(reshapedW, z);
 
         //Add biases, before reshaping. Note that biases are [1,depthOut] and currently z is [miniBatch*outH*outW,depthOut] -> addiRowVector

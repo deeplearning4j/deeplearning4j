@@ -249,13 +249,13 @@ public class BackPropMLPTest extends BaseDL4JTest {
             //Do backward pass:
             INDArray[] deltas = new INDArray[nLayers];
             deltas[nLayers - 1] = layerActivations[nLayers - 1].sub(y); //Out - labels; shape=[miniBatchSize,nOut];
-            assertArrayEquals(deltas[nLayers - 1].shape(), new int[] {miniBatchSize, 3});
+            assertArrayEquals(deltas[nLayers - 1].shape(), new long[] {miniBatchSize, 3});
             for (int i = nLayers - 2; i >= 0; i--) {
                 INDArray sigmaPrimeOfZ;
                 sigmaPrimeOfZ = doSigmoidDerivative(layerZs[i]);
                 INDArray epsilon = layerWeights[i + 1].mmul(deltas[i + 1].transpose()).transpose();
                 deltas[i] = epsilon.mul(sigmaPrimeOfZ);
-                assertArrayEquals(deltas[i].shape(), new int[] {miniBatchSize, hiddenLayerSizes[i]});
+                assertArrayEquals(deltas[i].shape(), new long[] {miniBatchSize, hiddenLayerSizes[i]});
             }
 
             INDArray[] dLdw = new INDArray[nLayers];
@@ -268,8 +268,8 @@ public class BackPropMLPTest extends BaseDL4JTest {
 
                 int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
                 int nOut = (i < nLayers - 1 ? hiddenLayerSizes[i] : 3);
-                assertArrayEquals(dLdw[i].shape(), new int[] {nIn, nOut});
-                assertArrayEquals(dLdb[i].shape(), new int[] {1, nOut});
+                assertArrayEquals(dLdw[i].shape(), new long[] {nIn, nOut});
+                assertArrayEquals(dLdb[i].shape(), new long[] {1, nOut});
             }
 
 
@@ -323,8 +323,9 @@ public class BackPropMLPTest extends BaseDL4JTest {
     }
 
     public static float[] asFloat(INDArray arr) {
-        int len = arr.length();
-        float[] f = new float[len];
+        long len = arr.length();
+        // FIXME: int cast
+        float[] f = new float[(int) len];
         NdIndexIterator iterator = new NdIndexIterator('c', arr.shape());
         for (int i = 0; i < len; i++) {
             f[i] = arr.getFloat(iterator.next());

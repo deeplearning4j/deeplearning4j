@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -38,8 +35,8 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
         //Basically a dense layer...
         InputType outputType = getOutputType(-1, inputType);
 
-        int numParams = initializer().numParams(this);
-        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
+        val numParams = initializer().numParams(this);
+        val updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         int trainSizeFixed = 0;
         int trainSizeVariable = 0;

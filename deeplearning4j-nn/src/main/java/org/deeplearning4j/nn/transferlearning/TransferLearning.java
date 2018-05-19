@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
@@ -10,6 +11,8 @@ import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.deeplearning4j.nn.graph.vertex.impl.FrozenVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -237,7 +240,7 @@ public class TransferLearning {
             NeuralNetConfiguration layerConf =
                             finetuneConfiguration.appliedNeuralNetConfigurationBuilder().layer(layer).build();
 
-            int numParams = layer.initializer().numParams(layerConf);
+            val numParams = layer.initializer().numParams(layerConf);
             INDArray params;
             if (numParams > 0) {
                 params = Nd4j.create(1, numParams);
@@ -380,7 +383,7 @@ public class TransferLearning {
             layerImplF.setWeightInit(schemedist.getLeft());
             layerImplF.setDist(schemedist.getRight());
             layerImplF.setNOut(nOut);
-            int numParams = layerImpl.initializer().numParams(layerConf);
+            long numParams = layerImpl.initializer().numParams(layerConf);
             INDArray params = Nd4j.create(1, numParams);
             org.deeplearning4j.nn.api.Layer someLayer = layerImpl.instantiate(layerConf, null, 0, params, true);
             editedParams.set(layerNum, someLayer.params());
@@ -825,6 +828,13 @@ public class TransferLearning {
                                     layers[j] = gv.getLayer(); //Place the new frozen layer to replace the original layer
                                     break;
                                 }
+                            }
+                        } else {
+                            if(!(gv instanceof InputVertex)) {
+                                GraphVertex currVertexConf = newConfig.getVertices().get(gv.getVertexName());
+                                GraphVertex newVertexConf = new org.deeplearning4j.nn.conf.graph.FrozenVertex(currVertexConf);
+                                newConfig.getVertices().put(gv.getVertexName(), newVertexConf);
+                                vertices[topologicalOrder[i]] = new FrozenVertex(gv);
                             }
                         }
 

@@ -122,8 +122,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
             INDArray f = ds.getFeatureMatrix();
             INDArray l = ds.getLabels();
-            assertArrayEquals(new int[]{3, 3}, f.shape());
-            assertArrayEquals(new int[]{3, 2}, l.shape());
+            assertArrayEquals(new long[]{3, 3}, f.shape());
+            assertArrayEquals(new long[]{3, 2}, l.shape());
 
             //Check values:
             double[][] fExpD = new double[][]{{5.1, 3.5, 1.4}, {4.9, 3.0, 1.4}, {4.7, 3.2, 1.3}};
@@ -289,8 +289,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
             DataSet ds = dsList.get(i);
             INDArray features = ds.getFeatureMatrix();
             INDArray labels = ds.getLabels();
-            assertArrayEquals(new int[] {1, 3, 4}, features.shape()); //1 examples, 3 values, 4 time steps
-            assertArrayEquals(new int[] {1, 3, 4}, labels.shape());
+            assertArrayEquals(new long[] {1, 3, 4}, features.shape()); //1 examples, 3 values, 4 time steps
+            assertArrayEquals(new long[] {1, 3, 4}, labels.shape());
 
             assertEquals(features, labels);
         }
@@ -345,8 +345,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
             DataSet ds = dsList.get(i);
             INDArray features = ds.getFeatureMatrix();
             INDArray labels = ds.getLabels();
-            assertArrayEquals(new int[] {1, 1, 4}, features.shape()); //1 examples, 1 values, 4 time steps
-            assertArrayEquals(new int[] {1, 2, 4}, labels.shape());
+            assertArrayEquals(new long[] {1, 1, 4}, features.shape()); //1 examples, 1 values, 4 time steps
+            assertArrayEquals(new long[] {1, 2, 4}, labels.shape());
 
             INDArray f2d = features.get(point(0), all(), all()).transpose();
             INDArray l2d = labels.get(point(0), all(), all()).transpose();
@@ -411,8 +411,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
                 DataSet ds = iter.next();
                 INDArray features = ds.getFeatureMatrix();
                 INDArray labels = ds.getLabels();
-                assertArrayEquals(new int[] {1, 3, 4}, features.shape());
-                assertArrayEquals(new int[] {1, 4, 4}, labels.shape());
+                assertArrayEquals(new long[] {1, 3, 4}, features.shape());
+                assertArrayEquals(new long[] {1, 4, 4}, labels.shape());
                 count++;
             }
             assertEquals(3, count);
@@ -440,8 +440,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
             DataSet test = iter.next();
             INDArray features = test.getFeatureMatrix();
             INDArray labels = test.getLabels();
-            assertArrayEquals(new int[] {miniBatchSize, nFeatures}, features.shape());
-            assertArrayEquals(new int[] {miniBatchSize, 1}, labels.shape());
+            assertArrayEquals(new long[] {miniBatchSize, nFeatures}, features.shape());
+            assertArrayEquals(new long[] {miniBatchSize, 1}, labels.shape());
 
             int startRow = miniBatch * miniBatchSize;
             for (int i = 0; i < miniBatchSize; i++) {
@@ -732,8 +732,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
             assertNull(ds.getFeaturesMaskArray());
             assertNull(ds.getLabelsMaskArray());
 
-            assertArrayEquals(new int[] {1, 2, 4}, f.shape());
-            assertArrayEquals(new int[] {1, 3, 4}, l.shape()); //One-hot representation
+            assertArrayEquals(new long[] {1, 2, 4}, f.shape());
+            assertArrayEquals(new long[] {1, 3, 4}, l.shape()); //One-hot representation
 
             assertEquals(expF[countC], f);
             assertEquals(expOutClassification[countC++], l);
@@ -749,8 +749,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
             assertNull(ds.getFeaturesMaskArray());
             assertNull(ds.getLabelsMaskArray());
 
-            assertArrayEquals(new int[] {1, 2, 4}, f.shape());
-            assertArrayEquals(new int[] {1, 1, 4}, l.shape()); //Regression (single output)
+            assertArrayEquals(new long[] {1, 2, 4}, f.shape());
+            assertArrayEquals(new long[] {1, 1, 4}, l.shape()); //Regression (single output)
 
             assertEquals(expF[countF], f);
             assertEquals(expOutRegression[countF++], l);
@@ -1334,8 +1334,8 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
         RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr1,2);
         DataSet ds = rrdsi.next();
-        assertArrayEquals(new int[]{2, 3, 28, 28}, ds.getFeatures().shape());
-        assertArrayEquals(new int[]{2, 2}, ds.getLabels().shape());
+        assertArrayEquals(new long[]{2, 3, 28, 28}, ds.getFeatures().shape());
+        assertArrayEquals(new long[]{2, 2}, ds.getLabels().shape());
 
 
         //Check the same thing via the builder:
@@ -1346,7 +1346,7 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
 
         ds = rrdsi.next();
-        assertArrayEquals(new int[]{2, 3, 28, 28}, ds.getFeatures().shape());
-        assertArrayEquals(new int[]{2, 2}, ds.getLabels().shape());
+        assertArrayEquals(new long[]{2, 3, 28, 28}, ds.getFeatures().shape());
+        assertArrayEquals(new long[]{2, 2}, ds.getLabels().shape());
     }
 }

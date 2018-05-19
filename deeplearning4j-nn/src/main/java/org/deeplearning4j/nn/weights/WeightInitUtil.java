@@ -22,7 +22,9 @@ package org.deeplearning4j.nn.weights;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.api.rng.distribution.impl.OrthogonalDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 
@@ -56,16 +58,42 @@ public class WeightInitUtil {
      * @return a matrix of the specified dimensions with the specified
      * distribution based on the initialization scheme
      */
+    @Deprecated
     public static INDArray initWeights(double fanIn, double fanOut, int[] shape, WeightInit initScheme,
                     Distribution dist, INDArray paramView) {
+        return initWeights(fanIn, fanOut, ArrayUtil.toLongArray(shape), initScheme, dist, DEFAULT_WEIGHT_INIT_ORDER, paramView);
+    }
+
+    /**
+     * Initializes a matrix with the given weight initialization scheme.
+     * Note: Defaults to fortran ('f') order arrays for the weights. Use {@link #initWeights(int[], WeightInit, Distribution, char, INDArray)}
+     * to control this
+     *
+     * @param shape      the shape of the matrix
+     * @param initScheme the scheme to use
+     * @return a matrix of the specified dimensions with the specified
+     * distribution based on the initialization scheme
+     */
+    public static INDArray initWeights(double fanIn, double fanOut, long[] shape, WeightInit initScheme,
+                                       Distribution dist, INDArray paramView) {
         return initWeights(fanIn, fanOut, shape, initScheme, dist, DEFAULT_WEIGHT_INIT_ORDER, paramView);
     }
 
+    @Deprecated
     public static INDArray initWeights(double fanIn, double fanOut, int[] shape, WeightInit initScheme,
+                                       Distribution dist, char order, INDArray paramView) {
+        return initWeights(fanIn, fanOut, ArrayUtil.toLongArray(shape), initScheme, dist, order, paramView);
+    }
+
+    public static INDArray initWeights(double fanIn, double fanOut, long[] shape, WeightInit initScheme,
                     Distribution dist, char order, INDArray paramView) {
         switch (initScheme) {
             case DISTRIBUTION:
-                dist.sample(paramView);
+                if (dist instanceof OrthogonalDistribution) {
+                    dist.sample(paramView.reshape(order, shape));
+                } else {
+                    dist.sample(paramView);
+                }
                 break;
             case RELU:
                 Nd4j.randn(paramView).muli(FastMath.sqrt(2.0 / fanIn)); //N(0, 2/nIn)
@@ -166,11 +194,32 @@ public class WeightInitUtil {
     /**
      * Reshape the parameters view, without modifying the paramsView array values.
      *
+     * @param shape      Shape to reshape
+     * @param paramsView Parameters array view
+     */
+    public static INDArray reshapeWeights(long[] shape, INDArray paramsView) {
+        return reshapeWeights(shape, paramsView, DEFAULT_WEIGHT_INIT_ORDER);
+    }
+
+    /**
+     * Reshape the parameters view, without modifying the paramsView array values.
+     *
      * @param shape           Shape to reshape
      * @param paramsView      Parameters array view
      * @param flatteningOrder Order in which parameters are flattened/reshaped
      */
     public static INDArray reshapeWeights(int[] shape, INDArray paramsView, char flatteningOrder) {
+        return paramsView.reshape(flatteningOrder, shape);
+    }
+
+    /**
+     * Reshape the parameters view, without modifying the paramsView array values.
+     *
+     * @param shape           Shape to reshape
+     * @param paramsView      Parameters array view
+     * @param flatteningOrder Order in which parameters are flattened/reshaped
+     */
+    public static INDArray reshapeWeights(long[] shape, INDArray paramsView, char flatteningOrder) {
         return paramsView.reshape(flatteningOrder, shape);
     }
 

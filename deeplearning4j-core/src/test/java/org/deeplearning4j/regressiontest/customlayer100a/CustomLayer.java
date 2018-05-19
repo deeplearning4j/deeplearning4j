@@ -1,5 +1,6 @@
 package org.deeplearning4j.regressiontest.customlayer100a;
 
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -92,7 +93,7 @@ public class CustomLayer extends FeedForwardLayer {
         //This implementation: based on DenseLayer implementation
         InputType outputType = getOutputType(-1, inputType);
 
-        int numParams = initializer().numParams(this);
+        val numParams = initializer().numParams(this);
         int updaterStateSize = (int)getIUpdater().stateSize(numParams);
 
         int trainSizeFixed = 0;

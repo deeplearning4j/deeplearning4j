@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -90,9 +91,11 @@ public class LSTMHelpers {
         INDArray prevOutputActivations = originalPrevOutputActivations;
 
         boolean is2dInput = input.rank() < 3; //Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
-        int timeSeriesLength = (is2dInput ? 1 : input.size(2));
-        int hiddenLayerSize = recurrentWeights.size(0);
-        int miniBatchSize = input.size(0);
+
+        // FIXME
+        int timeSeriesLength = (int) (is2dInput ? 1 : input.size(2));
+        int hiddenLayerSize = (int) recurrentWeights.size(0);
+        int miniBatchSize = (int) input.size(0);
 
         INDArray prevMemCellState;
         if (originalPrevMemCellState == null) {
@@ -422,11 +425,11 @@ public class LSTMHelpers {
 
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
-        int hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
-        int prevLayerSize = inputWeights.size(0); //n^(L-1)
-        int miniBatchSize = epsilon.size(0);
+        val hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
+        val prevLayerSize = inputWeights.size(0); //n^(L-1)
+        val miniBatchSize = epsilon.size(0);
         boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
-        int timeSeriesLength = (is2dInput ? 1 : epsilon.size(2));
+        val timeSeriesLength = (is2dInput ? 1 : epsilon.size(2));
 
         INDArray wFFTranspose = null;
         INDArray wOOTranspose = null;
@@ -440,11 +443,11 @@ public class LSTMHelpers {
 
         INDArray wIFOG = recurrentWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4 * hiddenLayerSize));
         //F order here so that content for time steps are together
-        INDArray epsilonNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {miniBatchSize, prevLayerSize, timeSeriesLength}, 'f'); //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
+        INDArray epsilonNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new long[] {miniBatchSize, prevLayerSize, timeSeriesLength}, 'f'); //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
 
         INDArray nablaCellStateNext = null;
 
-        INDArray deltaifogNext = Nd4j.create(new int[] {miniBatchSize, 4 * hiddenLayerSize}, 'f');
+        INDArray deltaifogNext = Nd4j.create(new long[] {miniBatchSize, 4 * hiddenLayerSize}, 'f');
         INDArray deltaiNext = deltaifogNext.get(NDArrayIndex.all(), NDArrayIndex.interval(0, hiddenLayerSize));
         INDArray deltafNext = deltaifogNext.get(NDArrayIndex.all(),
                         NDArrayIndex.interval(hiddenLayerSize, 2 * hiddenLayerSize));
@@ -454,7 +457,7 @@ public class LSTMHelpers {
                         NDArrayIndex.interval(3 * hiddenLayerSize, 4 * hiddenLayerSize));
 
         Level1 l1BLAS = Nd4j.getBlasWrapper().level1();
-        int endIdx = 0;
+        long endIdx = 0;
 
         if (truncatedBPTT) {
             endIdx = Math.max(0, timeSeriesLength - tbpttBackwardLength);
@@ -494,15 +497,15 @@ public class LSTMHelpers {
         IActivation afn = ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getLayer()).getActivationFn();
 
         INDArray timeStepMaskColumn = null;
-        for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
+        for (long iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
             try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.RNN_BP_LOOP_WORKING_MEM)) {
 
-
-                int time = iTimeIndex;
+                // FIXME: int cast
+                int time = (int) iTimeIndex;
                 int inext = 1;
 
                 if (!forwards) {
-                    time = timeSeriesLength - iTimeIndex - 1;
+                    time = (int) (timeSeriesLength - iTimeIndex - 1);
                     inext = -1;
                 }
 
@@ -514,17 +517,18 @@ public class LSTMHelpers {
                     l1BLAS.axpy(nablaCellState.length(), 1.0, deltagNext.dup('f').muliRowVector(wGGTranspose),
                             nablaCellState);
                 } else {
-                    nablaCellState = Nd4j.create(new int[]{miniBatchSize, hiddenLayerSize}, 'f');
+                    nablaCellState = Nd4j.create(new long[]{miniBatchSize, hiddenLayerSize}, 'f');
                 }
 
-                INDArray prevMemCellState = (iTimeIndex == 0 ? fwdPass.prevMemCell : fwdPass.memCellState[time - inext]);
+                INDArray prevMemCellState = (iTimeIndex == 0 ? fwdPass.prevMemCell : fwdPass.memCellState[(int) (time - inext)]);
                 INDArray prevHiddenUnitActivation =
-                        (iTimeIndex == 0 ? fwdPass.prevAct : fwdPass.fwdPassOutputAsArrays[time - inext]);
-                INDArray currMemCellState = fwdPass.memCellState[time];
+                        (iTimeIndex == 0 ? fwdPass.prevAct : fwdPass.fwdPassOutputAsArrays[(int) (time - inext)]);
+                INDArray currMemCellState = fwdPass.memCellState[(int) time];
 
 
+                // FIXME: int cast
                 //LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
-                INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(time, 1, 0)); //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
+                INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension((int) time, 1, 0)); //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
 
                 INDArray nablaOut = Shape.toOffsetZeroCopy(epsilonSlice, 'f'); //Shape: [m,n^L]
                 if (iTimeIndex != timeSeriesLength - 1) {
@@ -556,7 +560,7 @@ public class LSTMHelpers {
                 }
                 if (iTimeIndex != timeSeriesLength - 1) {
                     INDArray nextForgetGateAs = fwdPass.fa[time + inext];
-                    int length = nablaCellState.length();
+                    val length = nablaCellState.length();
                     l1BLAS.axpy(length, 1.0, nextForgetGateAs.muli(nablaCellStateNext), nablaCellState); //nablaCellState.addi(nextForgetGateAs.mul(nablaCellStateNext))
                 }
 
@@ -735,22 +739,22 @@ public class LSTMHelpers {
 
 
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
-        int tsLength = itr.getTimeSeriesLength();
+        val tsLength = itr.getTimeSeriesLength();
 
         InputType outputType = lstmLayer.getOutputType(-1, inputType);
 
-        int numParams = lstmLayer.initializer().numParams(lstmLayer);
+        val numParams = lstmLayer.initializer().numParams(lstmLayer);
         int updaterSize = (int) lstmLayer.getIUpdater().stateSize(numParams);
 
         //Memory use during forward pass:
         //ifogActivations: nTimeSteps * [minibatch,4*layerSize] (not cached during inference fwd pass)
-        int workingMemInferencePerEx = tsLength * 4 * lstmLayer.getNOut(); //Reduced by factor of tsLength if using workspace
+        val workingMemInferencePerEx = tsLength * 4 * lstmLayer.getNOut(); //Reduced by factor of tsLength if using workspace
 
         //For training, we also have
         //nTimeSteps * 5 * [minibatch, nOut] - 4 x gate pre-outs, memory cell state - may be cached
         //nTimeSteps * [minibatch, nOut] - peephole conneciton activations, graves LSTM only - may be cached
         //Total: 4 + 5 + 1 = 10xnOut per time step (training) or 4x (inference)
-        int fwdPassPerTimeStepTrainCache = tsLength * 6 * lstmLayer.getNOut();
+        val fwdPassPerTimeStepTrainCache = tsLength * 6 * lstmLayer.getNOut();
 
         //During backprop:
         //2 dups of size [minibatch, nOut] for nablaCellState (1 alloc only for no peephole)
@@ -762,7 +766,7 @@ public class LSTMHelpers {
         // 5xnOut (independent of minibatch size) - deltaiFog, peephole etc. Only 2 if no peephole TODO
         //6 for non-graves, 9 for graves
 
-        int backpropWorkingSpace = (isGraves ? 9 : 6) * tsLength * lstmLayer.getNOut();
+        val backpropWorkingSpace = (isGraves ? 9 : 6) * tsLength * lstmLayer.getNOut();
 
         //TODO NO WAY TO TAKE LSTM WORKSPACE INTO ACCOUNT HERE :(
 

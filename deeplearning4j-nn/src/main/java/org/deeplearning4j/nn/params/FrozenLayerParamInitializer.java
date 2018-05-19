@@ -24,12 +24,12 @@ public class FrozenLayerParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
     @Override
-    public int numParams(Layer layer) {
+    public long numParams(Layer layer) {
         FrozenLayer fl = (FrozenLayer) layer;
         ParamInitializer initializer = fl.getLayer().initializer();
         return initializer.numParams(fl.getLayer());

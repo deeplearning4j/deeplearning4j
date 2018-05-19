@@ -22,12 +22,12 @@ public class WrapperLayerParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
     @Override
-    public int numParams(Layer layer) {
+    public long numParams(Layer layer) {
         Layer l = underlying(layer);
         return l.initializer().numParams(l);
     }

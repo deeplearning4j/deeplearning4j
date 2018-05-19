@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.convolution;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -226,7 +227,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(cnn).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
 
@@ -287,7 +288,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(layer).build();
 
-        int numParams = conf.getLayer().initializer().numParams(conf);
+        val numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         return conf.getLayer().instantiate(conf, null, 0, params, true);
     }

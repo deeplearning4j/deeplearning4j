@@ -1,11 +1,12 @@
 package org.deeplearning4j.perf.listener;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import oshi.json.SystemInfo;
 import oshi.json.hardware.CentralProcessor;
 import oshi.json.hardware.GlobalMemory;
@@ -13,12 +14,16 @@ import oshi.json.hardware.HWDiskStore;
 import oshi.json.software.os.NetworkParams;
 import oshi.util.Util;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
 @Builder
 @Data
+@AllArgsConstructor
 public class HardwareMetric implements Serializable {
+
+    private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 
     private Map<Integer,DeviceMetric> perCoreMetrics;
     private long physicalProcessorCount,logicalProcessorCount;
@@ -29,6 +34,10 @@ public class HardwareMetric implements Serializable {
     private long averagedCpuLoad;
     private Map<Integer,DiskInfo> diskInfo;
     private String name;
+
+    private HardwareMetric(){
+        //No-arg for JSON/YAML
+    }
 
 
     /**
@@ -133,8 +142,22 @@ public class HardwareMetric implements Serializable {
                 .currentMemoryUse(globalMemory.getTotal() - globalMemory.getAvailable())
                 .perCoreMetrics(cpuMetrics)
                 .build();
+    }
 
+    public String toYaml(){
+        try {
+            return yamlMapper.writeValueAsString(this);
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
+    }
 
+    public static HardwareMetric fromYaml(@NonNull String yaml){
+        try {
+            return yamlMapper.readValue(yaml, HardwareMetric.class);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
 }

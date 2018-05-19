@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -367,7 +368,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
             if (layerWiseConfigurations.getInputPreProcess(layerIdx) != null) {
-                outputOfPrevLayer = layerWiseConfigurations.getInputPreProcess(layerIdx).preProcess(outputOfPrevLayer, input.size(0), LayerWorkspaceMgr.noWorkspaces());
+
+                // FIXME: int cast
+                outputOfPrevLayer = layerWiseConfigurations.getInputPreProcess(layerIdx).preProcess(outputOfPrevLayer, (int) input.size(0), LayerWorkspaceMgr.noWorkspaces());
             }
 
             layer.fit(outputOfPrevLayer, workspaceMgr);
@@ -380,7 +383,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     @Override
     public int batchSize() {
-        return input.size(0);
+        // FIXME: int cast
+        return (int) input.size(0);
     }
 
     @Override
@@ -544,7 +548,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             //First: Work out total length of (backprop) params
             int paramLength = 0;
-            int[] nParamsPerLayer = new int[nLayers];
+            val nParamsPerLayer = new long[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
                 nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf);
@@ -657,7 +661,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             //First: Work out total length of params
             int paramLength = 0;
-            int[] nParamsPerLayer = new int[nLayers];
+            val nParamsPerLayer = new long[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
                 nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf);
@@ -1760,20 +1764,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         int fwdLen = layerWiseConfigurations.getTbpttFwdLength();
         update(TaskUtils.buildTask(input, labels));
-        int timeSeriesLength = input.size(2);
-        int nSubsets = timeSeriesLength / fwdLen;
+        val timeSeriesLength = input.size(2);
+        long nSubsets = timeSeriesLength / fwdLen;
         if (timeSeriesLength % fwdLen != 0)
             nSubsets++; //Example: 100 fwdLen with timeSeriesLength=120 -> want 2 subsets (1 of size 100, 1 of size 20)
 
         rnnClearPreviousState();
 
         for (int i = 0; i < nSubsets; i++) {
-            int startTimeIdx = i * fwdLen;
-            int endTimeIdx = startTimeIdx + fwdLen;
+            long startTimeIdx = i * fwdLen;
+            long endTimeIdx = startTimeIdx + fwdLen;
             if (endTimeIdx > timeSeriesLength)
                 endTimeIdx = timeSeriesLength;
 
-            INDArray[] subsets = getSubsetsForTbptt(startTimeIdx, endTimeIdx, input, labels,
+            // FIXME: int cast
+            INDArray[] subsets = getSubsetsForTbptt((int) startTimeIdx, (int) endTimeIdx, input, labels,
                     featuresMaskArray, labelsMaskArray);
 
             setInput(subsets[0]);
@@ -1931,7 +1936,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Override
     public int[] predict(INDArray d) {
         INDArray output = output(d, Layer.TrainingMode.TEST);
-        int[] ret = new int[d.size(0)];
+
+        // FIXME: int cast
+        int[] ret = new int[(int) d.size(0)];
         if (d.isRowVectorOrScalar())
             ret[0] = Nd4j.getBlasWrapper().iamax(output);
         else {
@@ -2061,7 +2068,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public void fit(INDArray examples, int[] labels) {
         org.deeplearning4j.nn.conf.layers.OutputLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.OutputLayer) getOutputLayer().conf().getLayer();
-        fit(examples, FeatureUtil.toOutcomeMatrix(labels, layerConf.getNOut()));
+
+        // FIXME: int cast
+        fit(examples, FeatureUtil.toOutcomeMatrix(labels, (int) layerConf.getNOut()));
     }
 
 
@@ -2296,10 +2305,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         INDArray inputToOutputLayer = outputOfLayerDetached(training, FwdPassType.STANDARD,layers.length-2, data.getFeatures(),
                 data.getFeaturesMaskArray(), data.getLabelsMaskArray());
 
+        // FIXME: int cast
         IOutputLayer ol = (IOutputLayer) getOutputLayer();
         if (getLayerWiseConfigurations().getInputPreProcess(layers.length - 1) != null) {
             inputToOutputLayer = getLayerWiseConfigurations().getInputPreProcess(layers.length - 1)
-                    .preProcess(inputToOutputLayer, data.getFeatures().size(0), mgr);
+                    .preProcess(inputToOutputLayer, (int) data.getFeatures().size(0), mgr);
         }
         ol.setInput(inputToOutputLayer, mgr); //Feedforward doesn't include output layer for efficiency
         ol.setLabels(data.getLabels());
@@ -2345,8 +2355,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (getOutputLayer() instanceof IOutputLayer) {
             IOutputLayer ol = (IOutputLayer) getOutputLayer();
             if(layerWiseConfigurations.getInputPreProcess(layers.length-1) != null){
+
+                // FIXME: int cast
                 inputLast = layerWiseConfigurations.getInputPreProcess(layers.length-1).preProcess(inputLast,
-                        data.getFeatures().size(0), mgr);
+                        (int) data.getFeatures().size(0), mgr);
             }
             ol.setLabels(data.getLabels());
             ol.setInput(inputLast, mgr);
@@ -2508,7 +2520,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if (input.length() == 0)
                 throw new IllegalArgumentException(
                         "Invalid input: length 0 (shape: " + Arrays.toString(input.shape()) + ")");
-            setInputMiniBatchSize(input.size(0));
+
+            // FIXME: int cast
+            setInputMiniBatchSize((int) input.size(0));
         }
     }
 
@@ -2782,7 +2796,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public int getInputMiniBatchSize() {
         if(!conf().isMiniBatch())
             return 1;
-        return input.size(0);
+
+        // FIXME: int cast
+        return (int) input.size(0);
     }
 
     @Override
@@ -2908,8 +2924,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public void setLayerMaskArrays(INDArray featuresMaskArray, INDArray labelsMaskArray) {
         if (featuresMaskArray != null) {
 
+            // FIXME: int cast
             //New approach: use feedForwardMaskArray method
-            feedForwardMaskArray(featuresMaskArray, MaskState.Active, featuresMaskArray.size(0));
+            feedForwardMaskArray(featuresMaskArray, MaskState.Active, (int) featuresMaskArray.size(0));
 
 
             /*
@@ -3060,15 +3077,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
                 //Get subset of features and labels:
-                int fwdLen = layerWiseConfigurations.getTbpttFwdLength();
-                int tsLength = features.size(2);
-                int nSubsets = tsLength / fwdLen;
+                val fwdLen = layerWiseConfigurations.getTbpttFwdLength();
+                val tsLength = features.size(2);
+                long nSubsets = tsLength / fwdLen;
                 if (tsLength % fwdLen != 0)
                     nSubsets++; //Example: 100 fwdLen with timeSeriesLength=120 -> want 2 subsets (1 of size 100, 1 of size 20)
                 for (int i = 0; i < nSubsets; i++) {
-                    int startTimeIdx = i * fwdLen;
-                    int endTimeIdx = Math.min(startTimeIdx + fwdLen, tsLength);
-                    INDArray[] subsets = getSubsetsForTbptt(startTimeIdx, endTimeIdx, features, labels, fMask, lMask);
+                    val startTimeIdx = i * fwdLen;
+                    val endTimeIdx = Math.min(startTimeIdx + fwdLen, tsLength);
+
+                    // FIXME: int cast
+                    INDArray[] subsets = getSubsetsForTbptt(startTimeIdx, (int) endTimeIdx, features, labels, fMask, lMask);
 
                     setLayerMaskArrays(subsets[2], subsets[3]);
 
@@ -3455,7 +3474,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             return 0;
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
-        return ffl.getNOut();
+
+        // FIXME: int cast
+        return (int) ffl.getNOut();
     }
 
     /**
@@ -3479,7 +3500,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             return 0;
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
-        return ffl.getNIn();
+
+        // FIXME: int cast
+        return (int) ffl.getNIn();
     }
 
     /**

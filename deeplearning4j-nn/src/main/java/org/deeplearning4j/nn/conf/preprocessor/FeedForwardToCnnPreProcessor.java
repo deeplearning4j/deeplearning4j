@@ -51,13 +51,13 @@ import java.util.Arrays;
 @Data
 @EqualsAndHashCode(exclude = {"shape"})
 public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
-    private int inputHeight;
-    private int inputWidth;
-    private int numChannels;
+    private long inputHeight;
+    private long inputWidth;
+    private long numChannels;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private int[] shape;
+    private long[] shape;
 
     /**
      * Reshape to a channels x rows x columns tensor
@@ -67,14 +67,14 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
      * @param numChannels the channels
      */
     @JsonCreator
-    public FeedForwardToCnnPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                    @JsonProperty("inputWidth") int inputWidth, @JsonProperty("numChannels") int numChannels) {
+    public FeedForwardToCnnPreProcessor(@JsonProperty("inputHeight") long inputHeight,
+                    @JsonProperty("inputWidth") long inputWidth, @JsonProperty("numChannels") long numChannels) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
     }
 
-    public FeedForwardToCnnPreProcessor(int inputWidth, int inputHeight) {
+    public FeedForwardToCnnPreProcessor(long inputWidth, long inputHeight) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = 1;
@@ -133,7 +133,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
         switch (inputType.getType()) {
             case FF:
                 InputType.InputTypeFeedForward c = (InputType.InputTypeFeedForward) inputType;
-                int expSize = inputHeight * inputWidth * numChannels;
+                val expSize = inputHeight * inputWidth * numChannels;
                 if (c.getSize() != expSize) {
                     throw new IllegalStateException("Invalid input: expected FeedForward input of size " + expSize
                                     + " = (d=" + numChannels + " * w=" + inputWidth + " * h=" + inputHeight + "), got "

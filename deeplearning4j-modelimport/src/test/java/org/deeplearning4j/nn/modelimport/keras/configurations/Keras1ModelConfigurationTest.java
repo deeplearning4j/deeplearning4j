@@ -40,102 +40,102 @@ public class Keras1ModelConfigurationTest {
 
     @Test
     public void imdbLstmTfSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/imdb_lstm_tf_keras_1_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/imdb_lstm_tf_keras_1_config.json", true);
     }
 
     @Test
     public void imdbLstmThSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/imdb_lstm_th_keras_1_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/imdb_lstm_th_keras_1_config.json", true);
     }
 
     @Test
     public void mnistMlpTfSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_mlp_tf_keras_1_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/mnist_mlp_tf_keras_1_config.json", true);
     }
 
     @Test
     public void mnistMlpThSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_mlp_th_keras_1_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/mnist_mlp_th_keras_1_config.json", true);
     }
 
     @Test
     public void mnistCnnTfSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_cnn_tf_keras_1_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/mnist_cnn_tf_keras_1_config.json", true);
     }
 
     @Test
     public void mnistCnnNoBiasTfSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_cnn_no_bias_tf_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/mnist_cnn_no_bias_tf_config.json", true);
     }
 
     @Test
     public void mnistCnnThSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_cnn_th_keras_1_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/mnist_cnn_th_keras_1_config.json", true);
     }
 
     @Test
     public void mlpSequentialConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mlp_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/mlp_config.json", true);
     }
 
     @Test
     public void mlpConstraintsConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_mlp_constraint_tf_keras_1_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/mnist_mlp_constraint_tf_keras_1_config.json", true);
     }
 
     @Test
     public void reshapeMlpConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_mlp_reshape_tf_keras_1_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/mnist_mlp_reshape_tf_keras_1_config.json", true);
     }
 
     @Test
     public void reshapeCnnConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_cnn_reshape_tf_keras_1_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/mnist_cnn_reshape_tf_keras_1_config.json", true);
     }
 
     @Test
     public void mlpFapiConfigTest() throws Exception {
-        runModelConfigTest("configs/keras1/mlp_fapi_config.json");
+        runModelConfigTest("modelimport/keras/configs/keras1/mlp_fapi_config.json");
     }
 
     @Test
     public void mlpFapiMultiLossConfigTest() throws Exception {
-        runModelConfigTest("configs/keras1/mlp_fapi_multiloss_config.json");
+        runModelConfigTest("modelimport/keras/configs/keras1/mlp_fapi_multiloss_config.json");
     }
 
     @Test
     public void yoloConfigTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/yolo_model.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/yolo_model.json", true);
     }
 
     @Test
     public void cnnTfTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/cnn_tf_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/cnn_tf_config.json", true);
     }
 
     @Test
     public void cnnThTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/cnn_th_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/cnn_th_config.json", true);
     }
 
     @Test
     public void lstmFixedLenTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/lstm_tddense_config.json", false);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/lstm_tddense_config.json", false);
     }
 
     @Test
     public void mnistCnnTfTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_cnn_tf_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/mnist_cnn_tf_config.json", true);
     }
 
     @Test
     public void mnistMlpTfTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/mnist_mlp_tf_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/mnist_mlp_tf_config.json", true);
     }
 
     @Test
     public void embeddingConv1DTfTest() throws Exception {
-        runSequentialConfigTest("configs/keras1/keras1_tf_embedding_conv1d_config.json", true);
+        runSequentialConfigTest("modelimport/keras/configs/keras1/keras1_tf_embedding_conv1d_config.json", true);
     }
 
     private void runSequentialConfigTest(String path, boolean training) throws Exception {

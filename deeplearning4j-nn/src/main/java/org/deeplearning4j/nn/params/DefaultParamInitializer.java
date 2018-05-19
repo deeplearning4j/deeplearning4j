@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.params;
 
+import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
@@ -47,16 +48,16 @@ public class DefaultParamInitializer implements ParamInitializer {
     public final static String BIAS_KEY = "b";
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
     @Override
-    public int numParams(Layer l) {
+    public long numParams(Layer l) {
         FeedForwardLayer layerConf = (FeedForwardLayer) l;
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
-        return nIn * nOut + (hasBias(l) ? nOut : 0); //weights + bias
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut();
+        return (nIn * nOut + (hasBias(l) ? nOut : 0)); //weights + bias
     }
 
     @Override
@@ -100,17 +101,17 @@ public class DefaultParamInitializer implements ParamInitializer {
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
-        int length = numParams(conf);
+        val length = numParams(conf);
         if (paramsView.length() != length)
             throw new IllegalStateException(
                             "Expected params view of length " + length + ", got length " + paramsView.length());
 
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut();
 
-        int nWeightParams = nIn * nOut;
+        val nWeightParams = nIn * nOut;
         INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nWeightParams));
 
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
@@ -131,9 +132,9 @@ public class DefaultParamInitializer implements ParamInitializer {
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
-        int nWeightParams = nIn * nOut;
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut();
+        val nWeightParams = nIn * nOut;
 
         INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nWeightParams))
                         .reshape('f', nIn, nOut);
@@ -157,9 +158,9 @@ public class DefaultParamInitializer implements ParamInitializer {
         return createBias(layerConf.getNOut(), layerConf.getBiasInit(), biasParamView, initializeParameters);
     }
 
-    protected INDArray createBias(int nOut, double biasInit, INDArray biasParamView, boolean initializeParameters) {
+    protected INDArray createBias(long nOut, double biasInit, INDArray biasParamView, boolean initializeParameters) {
         if (initializeParameters) {
-            INDArray ret = Nd4j.valueArrayOf(nOut, biasInit);
+            INDArray ret = Nd4j.valueArrayOf(new long[] {1, nOut}, biasInit);
             biasParamView.assign(ret);
         }
         return biasParamView;
@@ -180,9 +181,9 @@ public class DefaultParamInitializer implements ParamInitializer {
         }
     }
 
-    protected INDArray createWeightMatrix(int nIn, int nOut, WeightInit weightInit, Distribution dist,
+    protected INDArray createWeightMatrix(long nIn, long nOut, WeightInit weightInit, Distribution dist,
                     INDArray weightParamView, boolean initializeParameters) {
-        int[] shape = new int[] {nIn, nOut};
+        val shape = new long[] {nIn, nOut};
 
         if (initializeParameters) {
             INDArray ret = WeightInitUtil.initWeights(nIn, //Fan in

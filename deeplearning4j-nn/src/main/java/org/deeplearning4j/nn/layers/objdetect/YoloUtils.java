@@ -28,11 +28,12 @@ public class YoloUtils {
     }
 
     public static INDArray activate(INDArray boundingBoxPriors, INDArray input, LayerWorkspaceMgr layerWorkspaceMgr){
-        int mb = input.size(0);
-        int h = input.size(2);
-        int w = input.size(3);
-        int b = boundingBoxPriors.size(0);
-        int c = (input.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
+        // FIXME: int cast
+        int mb = (int) input.size(0);
+        int h = (int) input.size(2);
+        int w = (int) input.size(3);
+        int b = (int) boundingBoxPriors.size(0);
+        int c = (int) (input.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
 
         INDArray output = layerWorkspaceMgr.create(ArrayType.ACTIVATIONS, input.shape(), 'c');
         INDArray output5 = output.reshape('c', mb, b, 5+c, h, w);
@@ -155,12 +156,13 @@ public class YoloUtils {
             throw new IllegalStateException("Invalid confidence threshold: must be in range [0,1]. Got: " + confThreshold);
         }
 
+        // FIXME: int cast
         //Activations format: [mb, 5b+c, h, w]
-        int mb = networkOutput.size(0);
-        int h = networkOutput.size(2);
-        int w = networkOutput.size(3);
-        int b = boundingBoxPriors.size(0);
-        int c = (networkOutput.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
+        int mb = (int) networkOutput.size(0);
+        int h = (int) networkOutput.size(2);
+        int w = (int) networkOutput.size(3);
+        int b = (int) boundingBoxPriors.size(0);
+        int c = (int) (networkOutput.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
 
         //Reshape from [minibatch, B*(5+C), H, W] to [minibatch, B, 5+C, H, W] to [minibatch, B, 5, H, W]
         INDArray output5 = networkOutput.dup('c').reshape(mb, b, 5+c, h, w);

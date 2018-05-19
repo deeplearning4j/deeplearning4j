@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -79,8 +80,8 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
 
         //First: work out the time series length
-        int tsLength = graph.getInput(inputVertexIndex).size(2);
-        int[] outShape = new int[] {inputs[0].size(0), inputs[0].size(1), tsLength};
+        val tsLength = graph.getInput(inputVertexIndex).size(2);
+        val outShape = new long[] {inputs[0].size(0), inputs[0].size(1), tsLength};
 
         INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape, 'f');
         for (int i = 0; i < tsLength; i++) {

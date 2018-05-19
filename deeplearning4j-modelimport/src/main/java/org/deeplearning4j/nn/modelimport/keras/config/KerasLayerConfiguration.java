@@ -37,6 +37,9 @@ public class KerasLayerConfiguration {
 
     /* Basic layer names */
     // Missing Layers: RepeatVector, Lambda, ActivityRegularization, Masking
+    // Conv3DTranspose, SeparableConv1D, ConvRNN2D, ConvLSTM2D
+    // CuDNNGRU, CuDNNLSTM (TF only)
+    // GlobalAveragePooling3D, GlobalMaxPooling3D
     // LocallyConnected1D-2D
     // Missing layers from keras 1: Highway, MaxoutDense
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
@@ -95,8 +98,10 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_EMBEDDING = "Embedding";
     private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D = "GlobalMaxPooling1D";
     private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D = "GlobalMaxPooling2D";
+    private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_3D = "GlobalMaxPooling3D";
     private final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D = "GlobalAveragePooling1D";
     private final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D = "GlobalAveragePooling2D";
+    private final String LAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_3D = "GlobalAveragePooling3D";
     private final String LAYER_CLASS_NAME_TIME_DISTRIBUTED_DENSE = "TimeDistributedDense"; // Keras 1 only
     private final String LAYER_CLASS_NAME_ATROUS_CONVOLUTION_1D = "AtrousConvolution1D"; // Keras 1 only
     private final String LAYER_CLASS_NAME_ATROUS_CONVOLUTION_2D = "AtrousConvolution2D"; // Keras 1 only
@@ -108,8 +113,10 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_UPSAMPLING_2D = "UpSampling2D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_3D = "UpSampling3D";
     private final String LAYER_CLASS_NAME_DEPTHWISE_CONVOLUTION_2D = "DepthwiseConv2D"; // Keras 2 only
+    private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_1D = "SeparableConv1D"; // Keras 2 only
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = ""; // 1: SeparableConvolution2D, 2: SeparableConv2D
     private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = ""; // 1: Deconvolution2D, 2: Conv2DTranspose
+    private final String LAYER_CLASS_NAME_DECONVOLUTION_3D = "Conv2DTranspose"; // Keras 2 only
 
     /* Partially shared layer configurations. */
     private final String LAYER_FIELD_INPUT_SHAPE = "input_shape";
@@ -143,7 +150,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_RECURRENT_DROPOUT = ""; // 1: dropout_U, 2: recurrent_dropout
     private final String LAYER_FIELD_INNER_ACTIVATION = ""; // 1: inner_activation, 2: recurrent_activation
     private final String LAYER_FIELD_FORGET_BIAS_INIT = "forget_bias_init"; // keras 1 only: string
-    private final String LAYER_FIELD_UNIT_FORGET_BIAS = "unit_forget_bias"; // keras 1 only: bool
+    private final String LAYER_FIELD_UNIT_FORGET_BIAS = "unit_forget_bias";
     private final String LAYER_FIELD_RETURN_SEQUENCES = "return_sequences";
     private final String LAYER_FIELD_UNROLL = "unroll";
 

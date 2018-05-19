@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -115,7 +116,7 @@ public class GravesLSTMOutputTest extends BaseDL4JTest {
     }
 
     private INDArray reshapeInput(INDArray inp) {
-        int[] shape = inp.shape();
+        val shape = inp.shape();
         int miniBatchSize = 1;
         INDArray reshaped = inp.reshape(miniBatchSize, shape[0] / miniBatchSize, shape[1]);
         return reshaped.permute(0, 2, 1);

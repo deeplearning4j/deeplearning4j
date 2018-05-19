@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.layers.variational;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -114,8 +115,8 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         InputType outputType = getOutputType(-1, inputType);
 
-        int actElementsPerEx = outputType.arrayElementsPerExample();
-        int numParams = initializer().numParams(this);
+        val actElementsPerEx = outputType.arrayElementsPerExample();
+        val numParams = initializer().numParams(this);
         int updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         int inferenceWorkingMemSizePerEx = 0;
@@ -126,7 +127,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
         //Forward pass size through the decoder, during training
         //p(Z|X) mean and stdev; pzxSigmaSquared, pzxSigma -> all size equal to nOut
-        int decoderFwdSizeWorking = 4 * nOut;
+        long decoderFwdSizeWorking = 4 * nOut;
         //plus, nSamples * decoder size
         //For each decoding: random sample (nOut), z (nOut), activations for each decoder layer
         decoderFwdSizeWorking += numSamples * (2 * nOut + ArrayUtil.sum(getDecoderLayerSizes()));
@@ -136,7 +137,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
 
 
         //Backprop size through the decoder and decoder: approx. 2x forward pass size
-        int trainWorkingMemSize = 2 * (inferenceWorkingMemSizePerEx + decoderFwdSizeWorking);
+        long trainWorkingMemSize = 2 * (inferenceWorkingMemSizePerEx + decoderFwdSizeWorking);
 
 
         if (getIDropout() != null) {

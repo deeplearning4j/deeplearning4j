@@ -257,7 +257,8 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      */
     @Override
     public int numLabels() {
-        return labels.size(1);
+        // FIXME: int cast
+        return (int) labels.size(1);
     }
 
     @Override

@@ -2,6 +2,7 @@ package org.deeplearning4j.eval;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,7 +39,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     private boolean initialized;
     private List<String> columnNames;
-    private int precision;
+    private long precision;
     @JsonSerialize(using = RowVectorSerializer.class)
     @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray exampleCountPerColumn; //Necessary to account for per-output masking
@@ -78,7 +79,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * for the stats() method.
      * @param nColumns Number of columns
      */
-    public RegressionEvaluation(int nColumns) {
+    public RegressionEvaluation(long nColumns) {
         this(createDefaultColumnNames(nColumns), DEFAULT_PRECISION);
     }
 
@@ -86,7 +87,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * for the stats() method.
      * @param nColumns Number of columns
      */
-    public RegressionEvaluation(int nColumns, int precision) {
+    public RegressionEvaluation(long nColumns, long precision) {
         this(createDefaultColumnNames(nColumns), precision);
     }
 
@@ -107,7 +108,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     /** Create a regression evaluation object with specified precision for the stats() method
      * @param columnNames Names of the columns
      */
-    public RegressionEvaluation(List<String> columnNames, int precision) {
+    public RegressionEvaluation(List<String> columnNames, long precision) {
         this.precision = precision;
 
         if (columnNames == null || columnNames.isEmpty()) {
@@ -142,8 +143,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         initialized = true;
     }
 
-    private static List<String> createDefaultColumnNames(int nColumns) {
-        List<String> list = new ArrayList<>(nColumns);
+    private static List<String> createDefaultColumnNames(long nColumns) {
+        // FIXME: int cast
+        List<String> list = new ArrayList<>((int) nColumns);
         for (int i = 0; i < nColumns; i++)
             list.add("col_" + i);
         return list;
@@ -171,7 +173,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         }
 
         if (!initialized) {
-            initialize(labels.size(1));
+            // FIXME: int cast
+            initialize((int) labels.size(1));
         }
         //References for the calculations is this section:
         //https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
@@ -206,7 +209,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         sumSquaredPredicted.addi(predictions.mul(predictions).sum(0));
 
 
-        int nRows = labels.size(0);
+        val nRows = labels.size(0);
 
         INDArray newExampleCountPerColumn;
         if (maskArray == null) {
@@ -274,7 +277,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
                 maxLabelLength = Math.max(maxLabelLength, s.length());
 
             int labelWidth = maxLabelLength + 5;
-            int columnWidth = precision + 10;
+            long columnWidth = precision + 10;
 
             String resultFormat = "%-" + labelWidth + "s" +
                 "%-" + columnWidth + "." + precision + "e" + //MSE
@@ -320,7 +323,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
             if (exampleCountPerColumn == null) {
                 return 0;
             }
-            return exampleCountPerColumn.size(1);
+            // FIXME: int cast
+            return (int) exampleCountPerColumn.size(1);
         }
         return columnNames.size();
     }

@@ -160,7 +160,7 @@ public class BatchNormalization extends FeedForwardLayer {
 
         //TODO CuDNN helper etc
 
-        int numParams = initializer().numParams(this);
+        val numParams = initializer().numParams(this);
         int updaterStateSize = 0;
 
         for (String s : BatchNormalizationParamInitializer.keys()) {
@@ -168,12 +168,12 @@ public class BatchNormalization extends FeedForwardLayer {
         }
 
         //During forward pass: working memory size approx. equal to 2x input size (copy ops, etc)
-        int inferenceWorkingSize = 2 * inputType.arrayElementsPerExample();
+        val inferenceWorkingSize = 2 * inputType.arrayElementsPerExample();
 
         //During training: we calculate mean and variance... result is equal to nOut, and INDEPENDENT of minibatch size
-        int trainWorkFixed = 2 * nOut;
+        val trainWorkFixed = 2 * nOut;
         //During backprop: multiple working arrays... output size, 2 * output size (indep. of example size),
-        int trainWorkingSizePerExample = inferenceWorkingSize //Inference during backprop
+        val trainWorkingSizePerExample = inferenceWorkingSize //Inference during backprop
                         + (outputType.arrayElementsPerExample() + 2 * nOut); //Backprop gradient calculation
 
         return new LayerMemoryReport.Builder(layerName, BatchNormalization.class, inputType, outputType)

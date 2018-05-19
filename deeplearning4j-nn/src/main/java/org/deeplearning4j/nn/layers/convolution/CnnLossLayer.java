@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.val;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -34,6 +35,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -83,7 +85,8 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         INDArray delta2d = lossFunction.computeGradient(labels2d, input2d.dup(input2d.ordering()), layerConf().getActivationFn(), maskReshaped);
         delta2d = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta2d);
 
-        INDArray delta4d = ConvolutionUtils.reshape2dTo4d(delta2d, input.shape(), workspaceMgr, ArrayType.ACTIVATION_GRAD);
+        // FIXME: int cast
+        INDArray delta4d = ConvolutionUtils.reshape2dTo4d(delta2d, ArrayUtil.toInts(input.shape()), workspaceMgr, ArrayType.ACTIVATION_GRAD);
 
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
@@ -118,7 +121,8 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
 
     @Override
     public int numLabels() {
-        return labels.size(1);
+        // FIXME: int cast
+        return (int) labels.size(1);
     }
 
     @Override
@@ -172,7 +176,8 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         INDArray input2d = ConvolutionUtils.reshape4dTo2d(in, workspaceMgr, ArrayType.ACTIVATIONS);
         INDArray out2d = layerConf().getActivationFn().getActivation(input2d, training);
 
-        return ConvolutionUtils.reshape2dTo4d(out2d, input.shape(), workspaceMgr, ArrayType.ACTIVATIONS);
+        // FIXME: int cast
+        return ConvolutionUtils.reshape2dTo4d(out2d, ArrayUtil.toInts(input.shape()), workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
     @Override
@@ -238,9 +243,11 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         //scoreArray: shape [minibatch*h*w, 1]
         //Reshape it to [minibatch, 1, h, w] then sum over x/y to give [minibatch, 1]
 
-        int[] newShape = input.shape().clone();
+        val newShape = input.shape().clone();
         newShape[1] = 1;
-        INDArray scoreArrayTs = ConvolutionUtils.reshape2dTo4d(scoreArray, newShape, workspaceMgr, ArrayType.FF_WORKING_MEM);
+
+        // FIXME
+        INDArray scoreArrayTs = ConvolutionUtils.reshape2dTo4d(scoreArray, ArrayUtil.toInts(newShape), workspaceMgr, ArrayType.FF_WORKING_MEM);
         INDArray summedScores = scoreArrayTs.sum(1,2,3);
 
         double l1l2 = fullNetworkL1 + fullNetworkL2;

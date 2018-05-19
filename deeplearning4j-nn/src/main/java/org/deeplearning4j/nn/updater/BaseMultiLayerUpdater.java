@@ -76,7 +76,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 List<String> variables = new ArrayList<>(layerParamTable.keySet()); //Is from a set, but iteration order should be fixed per layer as it's a from a LinkedHashSet
                 for (int j = 0; j < variables.size(); j++) {
                     String var = variables.get(j);
-                    int paramSizeThisVariable = layerParamTable.get(var).length();
+                    long paramSizeThisVariable = layerParamTable.get(var).length();
                     int updaterStateSizeThisVariable = (int) layers[i].conf().getLayer().getUpdaterByParam(var)
                                     .stateSize(paramSizeThisVariable);
 
@@ -92,23 +92,26 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                     //First: decide whether to add to the existing updater block, or create a new one
                     if (currentBlock == null || !UpdaterUtils.updaterConfigurationsEquals(lastLayer, lastVariable,
                                     layers[i], var)) {
+
+                        // FIXME: int cast
                         //Create a new block
                         List<UpdaterBlock.ParamState> list = new ArrayList<>();
                         list.add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
-                                        paramsViewSoFar + paramSizeThisVariable, paramsViewSubset, gradientViewSubset));
-                        currentBlock = new UpdaterBlock(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable,
+                                (int) (paramsViewSoFar + paramSizeThisVariable), paramsViewSubset, gradientViewSubset));
+                        currentBlock = new UpdaterBlock(paramsViewSoFar, (int) (paramsViewSoFar + paramSizeThisVariable),
                                         currentUpdaterOffset, currentUpdaterOffset + updaterStateSizeThisVariable,
                                         list);
 
                         updaterBlocks.add(currentBlock);
                     } else {
+                        // FIXME: int cast
                         //Add to existing updater block
-                        currentBlock.setParamOffsetEnd(currentBlock.getParamOffsetEnd() + paramSizeThisVariable);
+                        currentBlock.setParamOffsetEnd((int) (currentBlock.getParamOffsetEnd() + paramSizeThisVariable));
                         currentBlock.setUpdaterViewOffsetEnd(
                                         currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
                         currentBlock.getLayersAndVariablesInBlock()
                                         .add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
-                                                        paramsViewSoFar + paramSizeThisVariable, paramsViewSubset,
+                                                (int) (paramsViewSoFar + paramSizeThisVariable), paramsViewSubset,
                                                         gradientViewSubset));
                     }
 

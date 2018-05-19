@@ -35,21 +35,21 @@ public class RandomProjectionLSHTest {
 
     @Test
     public void testEntropyDims(){
-        assertArrayEquals(new int[]{numTables, intDimensions}, rpLSH.entropy(e1).shape());
+        assertArrayEquals(new long[]{numTables, intDimensions}, rpLSH.entropy(e1).shape());
     }
 
     @Test
     public void testHashDims(){
-        assertArrayEquals(new int[]{1, hashLength}, rpLSH.hash(e1).shape());
+        assertArrayEquals(new long[]{1, hashLength}, rpLSH.hash(e1).shape());
     }
 
     @Test
     public void testHashDimsMultiple(){
         INDArray data = Nd4j.ones(1, intDimensions);
-        assertArrayEquals(new int[]{1, hashLength}, rpLSH.hash(data).shape());
+        assertArrayEquals(new long[]{1, hashLength}, rpLSH.hash(data).shape());
 
         data = Nd4j.ones(100, intDimensions);
-        assertArrayEquals(new int[]{100, hashLength}, rpLSH.hash(data).shape());
+        assertArrayEquals(new long[]{100, hashLength}, rpLSH.hash(data).shape());
     }
 
     @Test
@@ -61,14 +61,14 @@ public class RandomProjectionLSHTest {
     @Test
     public void testIndexDims(){
         rpLSH.makeIndex(Nd4j.rand(100, intDimensions));
-        assertArrayEquals(new int[]{100, hashLength}, rpLSH.index.shape());
+        assertArrayEquals(new long[]{100, hashLength}, rpLSH.index.shape());
     }
 
 
     @Test
     public void testGetRawBucketOfDims(){
         rpLSH.makeIndex(inputs);
-        assertArrayEquals(new int[]{100, 1}, rpLSH.rawBucketOf(e1).shape());
+        assertArrayEquals(new long[]{100, 1}, rpLSH.rawBucketOf(e1).shape());
     }
 
     @Test
@@ -82,7 +82,7 @@ public class RandomProjectionLSHTest {
     @Test
     public void testBucketDims(){
         rpLSH.makeIndex(inputs);
-        assertArrayEquals(new int[]{100, 1}, rpLSH.bucket(e1).shape());
+        assertArrayEquals(new long[]{100, 1}, rpLSH.bucket(e1).shape());
     }
 
     @Test

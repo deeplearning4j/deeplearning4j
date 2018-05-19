@@ -39,6 +39,7 @@ import org.nd4j.linalg.learning.legacy.AdaGrad;
 import org.nd4j.linalg.primitives.CounterMap;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -94,11 +95,11 @@ public class Glove implements Serializable {
                     VocabWord w1, INDArray wordVector, INDArray contextVector, double gradient) {
         //gradient for word vectors
         INDArray grad1 = contextVector.mul(gradient);
-        INDArray update = weightAdaGrad.getGradient(grad1, w1.getIndex(), syn0.shape());
+        INDArray update = weightAdaGrad.getGradient(grad1, w1.getIndex(), ArrayUtil.toInts(syn0.shape()));
         wordVector.subi(update);
 
         double w1Bias = bias.getDouble(w1.getIndex());
-        double biasGradient = biasAdaGrad.getGradient(gradient, w1.getIndex(), bias.shape());
+        double biasGradient = biasAdaGrad.getGradient(gradient, w1.getIndex(), ArrayUtil.toInts(bias.shape()));
         double update2 = w1Bias - biasGradient;
         bias.putScalar(w1.getIndex(), bias.getDouble(w1.getIndex()) - update2);
         return new Pair<>(update, (float) update2);

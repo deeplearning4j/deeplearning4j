@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 
+import lombok.val;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -93,7 +94,7 @@ public class PoolHelperVertex extends GraphVertex {
                                                     + " = " + vertexInputs[i].getType());
                 }
 
-                int thisSize;
+                long thisSize;
                 switch (vertexInputs[i].getType()) {
                     case FF:
                         thisSize = ((InputType.InputTypeFeedForward) vertexInputs[i]).getSize();
@@ -129,9 +130,11 @@ public class PoolHelperVertex extends GraphVertex {
         } else {
             //CNN inputs... also check that the channels, width and heights match:
             InputType.InputTypeConvolutional firstConv = (InputType.InputTypeConvolutional) first;
-            int fd = firstConv.getChannels();
-            int fw = firstConv.getWidth();
-            int fh = firstConv.getHeight();
+
+            // FIXME: int cast
+            val fd = (int) firstConv.getChannels();
+            val fw = (int) firstConv.getWidth();
+            val fh = (int) firstConv.getHeight();
 
             int depthSum = fd;
 
@@ -145,9 +148,10 @@ public class PoolHelperVertex extends GraphVertex {
 
                 InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
 
-                int od = otherConv.getChannels();
-                int ow = otherConv.getWidth();
-                int oh = otherConv.getHeight();
+                // FIXME: int cast
+                int od = (int) otherConv.getChannels();
+                int ow = (int) otherConv.getWidth();
+                int oh = (int) otherConv.getHeight();
 
                 if (fw != ow || fh != oh) {
                     throw new InvalidInputTypeException(

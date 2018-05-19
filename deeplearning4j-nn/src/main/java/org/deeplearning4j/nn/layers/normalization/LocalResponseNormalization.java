@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.normalization;
 
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -134,7 +135,7 @@ public class LocalResponseNormalization
         INDArray unitScale = triple.getSecond();
         INDArray scale = triple.getThird();
 
-        int channel = input.size(1);
+        val channel = input.size(1);
         INDArray tmp, addVal;
         Gradient retGradient = new DefaultGradient();
         INDArray reverse = activations.mul(epsilon);
@@ -180,7 +181,7 @@ public class LocalResponseNormalization
             }
         }
 
-        int channel = input.size(1);
+        val channel = input.size(1);
         INDArray tmp, addVal;
         // x^2 = (a^j_{x,y})^2
         INDArray activitySqr = input.mul(input);

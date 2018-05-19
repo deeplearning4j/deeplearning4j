@@ -1,6 +1,7 @@
 package org.deeplearning4j.ui.weights;
 
 import lombok.NonNull;
+import lombok.val;
 import org.datavec.image.loader.ImageLoader;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
@@ -118,7 +119,8 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
                 for (Layer layer : l.getLayers()) {
                     if (layer.type() == Layer.Type.CONVOLUTIONAL) {
                         INDArray output = layer.activate(layer.input(), true, LayerWorkspaceMgr.noWorkspaces());
-                        int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
+                        // FIXME: int cast
+                        int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt((int) output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
                             INDArray inputs = layer.input();
 
@@ -143,7 +145,9 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
                 for (Layer layer : l.getLayers()) {
                     if (layer.type() == Layer.Type.CONVOLUTIONAL) {
                         INDArray output = layer.activate(layer.input(), true, LayerWorkspaceMgr.noWorkspaces());
-                        int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
+
+                        // FIXME: int cast
+                        int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt((int) output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
                             INDArray inputs = layer.input();
 
@@ -178,8 +182,8 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
      * @param tensors3D list of tensors retrieved from convolution
      */
     private BufferedImage rasterizeConvoLayers(@NonNull List<INDArray> tensors3D, BufferedImage sourceImage) {
-        int width = 0;
-        int height = 0;
+        long width = 0;
+        long height = 0;
 
         int border = 1;
         int padding_row = 2;
@@ -188,8 +192,8 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
         /*
             We determine height of joint output image. We assume that first position holds maximum dimensionality
          */
-        int[] shape = tensors3D.get(0).shape();
-        int numImages = shape[0];
+        val shape = tensors3D.get(0).shape();
+        val numImages = shape[0];
         height = (shape[2]);
         width = (shape[1]);
         //        log.info("Output image dimensions: {height: " + height + ", width: " + width + "}");
@@ -214,12 +218,12 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
 
             BufferedImage image = null;
             if (orientation == Orientation.LANDSCAPE) {
-                maxHeight = (height + (border * 2) + padding_row) * numImages;
-                image = renderMultipleImagesLandscape(tad, maxHeight, width, height);
+                maxHeight = (int) ((height + (border * 2) + padding_row) * numImages);
+                image = renderMultipleImagesLandscape(tad, maxHeight, (int) width, (int) height);
                 totalWidth += image.getWidth() + padding_col;
             } else if (orientation == Orientation.PORTRAIT) {
-                totalWidth = (width + (border * 2) + padding_row) * numImages;
-                image = renderMultipleImagesPortrait(tad, totalWidth, width, height);
+                totalWidth = (int) ((width + (border * 2) + padding_row) * numImages);
+                image = renderMultipleImagesPortrait(tad, totalWidth, (int) width, (int) height);
                 maxHeight += image.getHeight() + padding_col;
             }
 
@@ -355,13 +359,14 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
         int padding_col = 2;
         int zoomPadding = 20;
 
-        int[] tShape = tensor3D.shape();
+        val tShape = tensor3D.shape();
 
-        int numRows = tShape[0] / tShape[2];
+        val numRows = tShape[0] / tShape[2];
 
-        int height = (numRows * (tShape[1] + border + padding_col)) + padding_col + zoomPadding + zoomWidth;
+        val height = (numRows * (tShape[1] + border + padding_col)) + padding_col + zoomPadding + zoomWidth;
 
-        BufferedImage outputImage = new BufferedImage(maxWidth, height, BufferedImage.TYPE_BYTE_GRAY);
+        // FIXME: int cast
+        BufferedImage outputImage = new BufferedImage(maxWidth, (int) height, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D graphics2D = outputImage.createGraphics();
 
         graphics2D.setPaint(bgColor);
@@ -377,11 +382,11 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
 
             INDArray tad2D = tensor3D.tensorAlongDimension(z, 2, 1);
 
-            int rWidth = tad2D.shape()[0];
-            int rHeight = tad2D.shape()[1];
+            val rWidth = tad2D.shape()[0];
+            val rHeight = tad2D.shape()[1];
 
-            int loc_height = (rHeight) + (border * 2) + padding_row;
-            int loc_width = (rWidth) + (border * 2) + padding_col;
+            val loc_height = (rHeight) + (border * 2) + padding_row;
+            val loc_width = (rWidth) + (border * 2) + padding_col;
 
 
 
@@ -407,7 +412,7 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
             */
 
             graphics2D.setPaint(borderColor);
-            graphics2D.drawRect(columnOffset, rowOffset, tad2D.shape()[0], tad2D.shape()[1]);
+            graphics2D.drawRect(columnOffset, rowOffset, (int) tad2D.shape()[0], (int) tad2D.shape()[1]);
 
 
 
@@ -424,11 +429,11 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
                 int cY = (zoomSpan * numZoomed) + (zoomHeight);
                 int cX = (zoomSpan * numZoomed) + (zoomWidth);
 
-                graphics2D.drawImage(currentImage, cX - 1, height - zoomWidth - 1, zoomWidth, zoomHeight, null);
-                graphics2D.drawRect(cX - 2, height - zoomWidth - 2, zoomWidth, zoomHeight);
+                graphics2D.drawImage(currentImage, cX - 1, (int) height - zoomWidth - 1, zoomWidth, zoomHeight, null);
+                graphics2D.drawRect(cX - 2, (int) height - zoomWidth - 2, zoomWidth, zoomHeight);
 
                 // draw line to connect this zoomed pic with its original
-                graphics2D.drawLine(columnOffset + rWidth, rowOffset + rHeight, cX - 2, height - zoomWidth - 2);
+                graphics2D.drawLine(columnOffset + (int) rWidth, rowOffset + (int) rHeight, cX - 2, (int) height - zoomWidth - 2);
                 numZoomed++;
 
             }
@@ -454,13 +459,13 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
         int padding_col = 2;
         int zoomPadding = 20;
 
-        int[] tShape = tensor3D.shape();
+        val tShape = tensor3D.shape();
 
-        int numColumns = tShape[0] / tShape[1];
+        val numColumns = tShape[0] / tShape[1];
 
-        int width = (numColumns * (tShape[1] + border + padding_col)) + padding_col + zoomPadding + zoomWidth;
+        val width = (numColumns * (tShape[1] + border + padding_col)) + padding_col + zoomPadding + zoomWidth;
 
-        BufferedImage outputImage = new BufferedImage(width, maxHeight, BufferedImage.TYPE_BYTE_GRAY);
+        BufferedImage outputImage = new BufferedImage((int) width, maxHeight, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D graphics2D = outputImage.createGraphics();
 
         graphics2D.setPaint(bgColor);
@@ -475,11 +480,11 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
 
             INDArray tad2D = tensor3D.tensorAlongDimension(z, 2, 1);
 
-            int rWidth = tad2D.shape()[0];
-            int rHeight = tad2D.shape()[1];
+            val rWidth = tad2D.shape()[0];
+            val rHeight = tad2D.shape()[1];
 
-            int loc_height = (rHeight) + (border * 2) + padding_row;
-            int loc_width = (rWidth) + (border * 2) + padding_col;
+            val loc_height = (rHeight) + (border * 2) + padding_row;
+            val loc_width = (rWidth) + (border * 2) + padding_col;
 
 
 
@@ -505,7 +510,8 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
             */
 
             graphics2D.setPaint(borderColor);
-            graphics2D.drawRect(columnOffset, rowOffset, tad2D.shape()[0], tad2D.shape()[1]);
+            // FIXME: int cast
+            graphics2D.drawRect(columnOffset, rowOffset, (int) tad2D.shape()[0], (int) tad2D.shape()[1]);
 
 
 
@@ -521,11 +527,11 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
 
                 int cY = (zoomSpan * numZoomed) + (zoomHeight);
 
-                graphics2D.drawImage(currentImage, width - zoomWidth - 1, cY - 1, zoomWidth, zoomHeight, null);
-                graphics2D.drawRect(width - zoomWidth - 2, cY - 2, zoomWidth, zoomHeight);
+                graphics2D.drawImage(currentImage, (int) width - zoomWidth - 1, cY - 1, zoomWidth, zoomHeight, null);
+                graphics2D.drawRect((int) width - zoomWidth - 2, cY - 2, zoomWidth, zoomHeight);
 
                 // draw line to connect this zoomed pic with its original
-                graphics2D.drawLine(columnOffset + rWidth, rowOffset + rHeight, width - zoomWidth - 2,
+                graphics2D.drawLine(columnOffset + (int) rWidth, rowOffset + (int) rHeight, (int) width - zoomWidth - 2,
                                 cY - 2 + zoomHeight);
                 numZoomed++;
             }

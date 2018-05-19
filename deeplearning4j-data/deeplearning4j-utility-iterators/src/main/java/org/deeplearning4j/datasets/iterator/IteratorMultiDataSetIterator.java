@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
@@ -53,7 +54,9 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
             } else {
                 next = iterator.next();
             }
-            int nExamples = next.getFeatures(0).size(0);
+
+            // FIXME: int cast
+            int nExamples = (int) next.getFeatures(0).size(0);
             if (countSoFar + nExamples <= batchSize) {
                 //Add the entire MultiDataSet as-is
                 list.add(next);

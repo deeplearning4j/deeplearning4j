@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -42,7 +43,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
         if (input.ordering() != 'f' || !Shape.hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
-        int[] shape = input.shape();
+        val shape = input.shape();
         INDArray ret;
         if (shape[0] == 1) {
             ret = input.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
@@ -66,7 +67,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
         if (output.ordering() != 'f' || !Shape.hasDefaultStridesForShape(output))
             output = workspaceMgr.dup(ArrayType.ACTIVATIONS, output, 'f');
 
-        int[] shape = output.shape();
+        val shape = output.shape();
         INDArray reshaped = output.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
         return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, reshaped.permute(0, 2, 1));
     }

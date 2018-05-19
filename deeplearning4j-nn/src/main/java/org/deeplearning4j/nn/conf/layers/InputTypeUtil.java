@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -20,14 +21,16 @@ import java.util.Arrays;
 public class InputTypeUtil {
 
     public static InputType getOutputTypeDeconvLayer(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
-                                                     int[] dilation, ConvolutionMode convolutionMode, int outputDepth,
-                                                     int layerIdx, String layerName, Class<?> layerClass) {
+                                                     int[] dilation, ConvolutionMode convolutionMode, long outputDepth,
+                                                     long layerIdx, String layerName, Class<?> layerClass) {
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
-        int hIn = i.getHeight();
-        int wIn = i.getWidth();
 
-        int inHeight = i.getHeight();
-        int inWidth = i.getWidth();
+        // FIXME: int cast
+        val hIn = (int) i.getHeight();
+        val wIn = (int) i.getWidth();
+
+        val inHeight = (int) i.getHeight();
+        val inWidth = (int)  i.getWidth();
         int padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
         int padW = (padding == null ? 0 : padding[1]);
         int kH = kernelSize[0];
@@ -76,7 +79,7 @@ public class InputTypeUtil {
     }
 
     public static InputType getOutputTypeCnn3DLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
-                                                   int[] dilation, ConvolutionMode convolutionMode, int outputChannels, int layerIdx, String layerName,
+                                                   int[] dilation, ConvolutionMode convolutionMode, long outputChannels, long layerIdx, String layerName,
                                                    Class<?> layerClass) {
         if (convolutionMode == null) {
             String name = layerName == null ? "(not named)" : layerName;
@@ -85,9 +88,11 @@ public class InputTypeUtil {
         }
 
         InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
-        int inDepth = i.getDepth();
-        int inHeight = i.getHeight();
-        int inWidth = i.getWidth();
+
+        // FIXME: int cast
+        val inDepth = (int) i.getDepth();
+        val inHeight = (int) i.getHeight();
+        val inWidth = (int) i.getWidth();
 
         int padD = (padding == null ? 0 : padding[0]);
         int padH = (padding == null ? 0 : padding[1]);
@@ -210,7 +215,7 @@ public class InputTypeUtil {
 
 
     public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
-                    int[] dilation, ConvolutionMode convolutionMode, int outputDepth, int layerIdx, String layerName,
+                    int[] dilation, ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
                     Class<?> layerClass) {
 
         if (convolutionMode == null) {
@@ -220,8 +225,10 @@ public class InputTypeUtil {
         }
 
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
-        int inHeight = i.getHeight();
-        int inWidth = i.getWidth();
+
+        // FIXME: int cast
+        val inHeight = (int) i.getHeight();
+        val inWidth = (int) i.getWidth();
         int padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
         int padW = (padding == null ? 0 : padding[1]);
         int kH = kernelSize[0];
@@ -319,7 +326,7 @@ public class InputTypeUtil {
         return InputType.convolutional(hOut, wOut, outputDepth);
     }
 
-    private static String getConfigErrorCommonLine1(int layerIdx, String layerName, Class<?> layerClass,
+    private static String getConfigErrorCommonLine1(long layerIdx, String layerName, Class<?> layerClass,
                     boolean isHeight) {
         String name = layerName == null ? "(not named)" : layerName;
         String layerType = layerClass.getSimpleName();
@@ -329,7 +336,7 @@ public class InputTypeUtil {
     }
 
     private static String getConfigErrorCommonLastLine(InputType inputType, int[] kernelSize, int[] stride,
-                    int[] padding, int outputDepth, ConvolutionMode convolutionMode) {
+                    int[] padding, long outputDepth, ConvolutionMode convolutionMode) {
         return "Input type = " + inputType + ", kernel = " + Arrays.toString(kernelSize) + ", strides = "
                         + Arrays.toString(stride) + ", padding = " + Arrays.toString(padding)
                         + ", layer size (output channels) = " + outputDepth + ", convolution mode = " + convolutionMode;

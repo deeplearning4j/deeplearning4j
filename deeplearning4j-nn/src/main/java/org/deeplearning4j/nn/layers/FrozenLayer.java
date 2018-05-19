@@ -26,7 +26,6 @@ import java.util.Map;
  * Backprop is skipped since parameters are not be updated.
  * @author susaneraly
  */
-
 @Slf4j
 public class FrozenLayer extends BaseWrapperLayer {
 

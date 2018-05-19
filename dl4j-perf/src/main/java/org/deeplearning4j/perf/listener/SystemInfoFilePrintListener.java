@@ -108,7 +108,7 @@ public class SystemInfoFilePrintListener implements TrainingListener {
         SystemInfo systemInfo = new SystemInfo();
         log.info("Writing system info to file on " + status + ": "  + printFileTarget.getAbsolutePath());
         try {
-            FileUtils.write(printFileTarget,systemInfo.toPrettyJSON());
+            FileUtils.write(printFileTarget,systemInfo.toPrettyJSON(), true);
         } catch (IOException e) {
             log.error("Error writing file for system info",e);
         }

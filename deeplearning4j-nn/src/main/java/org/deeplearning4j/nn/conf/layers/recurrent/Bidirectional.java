@@ -35,7 +35,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  */
 @NoArgsConstructor
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"initializer"})
 @JsonIgnoreProperties({"initializer"})
 public class Bidirectional extends Layer {
 
@@ -55,7 +55,7 @@ public class Bidirectional extends Layer {
     private Layer fwd;
     private Layer bwd;
     private Mode mode;
-    private BidirectionalParamInitializer initializer;
+    private transient BidirectionalParamInitializer initializer;
 
     private Bidirectional(Bidirectional.Builder builder) {
         super(builder);
@@ -93,7 +93,7 @@ public class Bidirectional extends Layer {
         c1.setLayer(fwd);
         c2.setLayer(bwd);
 
-        int n = layerParamsView.length() / 2;
+        long n = layerParamsView.length() / 2;
         INDArray fp = layerParamsView.get(point(0), interval(0,n));
         INDArray bp = layerParamsView.get(point(0), interval(n, 2*n));
         org.deeplearning4j.nn.api.layers.RecurrentLayer f

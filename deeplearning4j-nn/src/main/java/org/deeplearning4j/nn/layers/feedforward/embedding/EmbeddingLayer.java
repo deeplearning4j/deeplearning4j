@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
@@ -64,7 +65,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
-        int[] indexes = new int[input.length()];
+        // FIXME: int cast
+        int[] indexes = new int[(int) input.length()];
         for (int i = 0; i < indexes.length; i++) {
             indexes[i] = input.getInt(i, 0);
         }
@@ -95,8 +97,10 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
                                             + layerId());
         }
 
-        int nIn = layerConf().getNIn();
-        int[] indexes = new int[input.length()];
+        val nIn = layerConf().getNIn();
+
+        // FIXME: int cast
+        int[] indexes = new int[(int) input.length()];
         for (int i = 0; i < indexes.length; i++) {
             indexes[i] = input.getInt(i, 0);
 

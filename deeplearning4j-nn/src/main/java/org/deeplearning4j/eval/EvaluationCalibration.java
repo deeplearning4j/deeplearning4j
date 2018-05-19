@@ -2,6 +2,7 @@ package org.deeplearning4j.eval;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.val;
 import org.deeplearning4j.eval.curves.Histogram;
 import org.deeplearning4j.eval.curves.ReliabilityDiagram;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -121,7 +122,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         //Stats for the reliability diagram: one reliability diagram for each class
         // For each bin, we need: (a) the number of positive cases AND total cases, (b) the average probability
 
-        int nClasses = labels.size(1);
+        val nClasses = labels.size(1);
 
         if (rDiagBinPosCount == null) {
             //Initialize
@@ -298,7 +299,8 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             return -1;
         }
 
-        return rDiagBinTotalCount.size(1);
+        // FIXME: int cast
+        return (int) rDiagBinTotalCount.size(1);
     }
 
     /**
@@ -322,7 +324,8 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
                 double[] mpb = meanPredictionBins;
                 double[] fp = fracPositives;
 
-                meanPredictionBins = new double[totalCountBins.length() - numZeroBins];
+                // FIXME: int cast
+                meanPredictionBins = new double[(int) (totalCountBins.length() - numZeroBins)];
                 fracPositives = new double[meanPredictionBins.length];
                 int j = 0;
                 for (int i = 0; i < mpb.length; i++) {

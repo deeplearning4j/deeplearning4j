@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.params;
 
 
+import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
@@ -49,18 +50,18 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
     @Override
-    public int numParams(Layer l) {
+    public long numParams(Layer l) {
         Convolution3D layerConf =
                 (Convolution3D) l;
 
         int[] kernel = layerConf.getKernelSize();
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut();
         return nIn * nOut * kernel[0] * kernel[1] * kernel[2] + (layerConf.hasBias() ? nOut : 0);
     }
 
@@ -73,7 +74,7 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
         Convolution3D layerConf = (Convolution3D) conf.getLayer();
-        int nOut = layerConf.getNOut();
+        val nOut = layerConf.getNOut();
 
         if (layer.hasBias()) {
             INDArray biasView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nOut));
@@ -97,8 +98,8 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
         Convolution3D layerConf = (Convolution3D) conf.getLayer();
 
         int[] kernel = layerConf.getKernelSize();
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut();
 
         Map<String, INDArray> out = new LinkedHashMap<>();
         if (layerConf.hasBias()) {
@@ -131,21 +132,21 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
 
-            int inputDepth = layerConf.getNIn();
-            int outputDepth = layerConf.getNOut();
+            val inputDepth = layerConf.getNIn();
+            val outputDepth = layerConf.getNOut();
 
             double fanIn = inputDepth * kernel[0] * kernel[1] * kernel[2];
             double fanOut = outputDepth * kernel[0] * kernel[1] * kernel[2] /
                     ((double) stride[0] * stride[1] * stride[2]);
 
-            int[] weightsShape = new int[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
+            val weightsShape = new long[]{outputDepth, inputDepth, kernel[0], kernel[1], kernel[2]};
 
             return WeightInitUtil.initWeights(fanIn, fanOut, weightsShape, layerConf.getWeightInit(), dist, 'c',
                     weightView);
         } else {
             int[] kernel = layerConf.getKernelSize();
             return WeightInitUtil.reshapeWeights(
-                    new int[]{layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1], kernel[2]},
+                    new long[]{layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1], kernel[2]},
                     weightView, 'c');
         }
     }

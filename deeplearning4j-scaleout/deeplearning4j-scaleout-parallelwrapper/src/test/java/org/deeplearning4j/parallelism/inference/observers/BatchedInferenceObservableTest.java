@@ -84,8 +84,8 @@ public class BatchedInferenceObservableTest {
         INDArray features0 = inputs[0];
         INDArray features1 = inputs[1];
 
-        assertArrayEquals(new int[] {32*3, 72, 72}, features0.shape());
-        assertArrayEquals(new int[] {32*3, 100}, features1.shape());
+        assertArrayEquals(new long[] {32*3, 72, 72}, features0.shape());
+        assertArrayEquals(new long[] {32*3, 100}, features1.shape());
 
         for (int i = 0; i < 32; i++) {
             for( int j=0; j<3; j++ ) {

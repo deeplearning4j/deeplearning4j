@@ -93,10 +93,12 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
-        int miniBatch = input.size(0);
-        int inDepth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inDepth = (int) input.size(1);
+        int inH = (int) input.size(2);
+        int inW = (int) input.size(3);
 
         INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
@@ -127,10 +129,11 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             return preOutput;
         }
 
-        int inMiniBatch = input.size(0);
-        int depth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        // FIXME: int cast
+        int inMiniBatch = (int) input.size(0);
+        int depth = (int) input.size(1);
+        int inH = (int) input.size(2);
+        int inW = (int) input.size(3);
 
         int[] blocks = getBlocks();
         int[][] padding = getPadding();

@@ -91,11 +91,12 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        int miniBatch = input.size(0);
-        int inChannels = input.size(1);
-        int inD = input.size(2);
-        int inH = input.size(3);
-        int inW = input.size(4);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inChannels = (int) input.size(1);
+        int inD = (int) input.size(2);
+        int inH = (int) input.size(3);
+        int inW = (int) input.size(4);
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
@@ -156,11 +157,12 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                     + layerId());
         }
 
-        int miniBatch = input.size(0);
-        int inChannels = input.size(1);
-        int inD = input.size(2);
-        int inH = input.size(3);
-        int inW = input.size(4);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inChannels = (int) input.size(1);
+        int inD = (int) input.size(2);
+        int inH = (int) input.size(3);
+        int inW = (int) input.size(4);
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();

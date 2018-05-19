@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.params;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -26,16 +27,16 @@ public class SameDiffParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public int numParams(NeuralNetConfiguration conf) {
+    public long numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
     }
 
     @Override
-    public int numParams(Layer layer) {
+    public long numParams(Layer layer) {
         AbstractSameDiffLayer sd = (AbstractSameDiffLayer)layer;
-        Map<String,int[]> m = sd.getLayerParams().getParamShapes();
+        Map<String,long[]> m = sd.getLayerParams().getParamShapes();
         int n = 0;
-        for(int[] arr : m.values()){
+        for(val arr : m.values()){
             n += ArrayUtil.prod(arr);
         }
         return n;
@@ -92,14 +93,15 @@ public class SameDiffParamInitializer implements ParamInitializer {
                 gradientView, sd);
     }
 
-    private Map<String,INDArray> subsetAndReshape(List<String> params, Map<String,int[]> paramShapes, INDArray view,
+    private Map<String,INDArray> subsetAndReshape(List<String> params, Map<String,long[]> paramShapes, INDArray view,
                                                   AbstractSameDiffLayer sdl){
         Map<String,INDArray> out = new LinkedHashMap<>();
         int soFar = 0;
         for(String s : params){
-            int[] sh = paramShapes.get(s);
-            int length = ArrayUtil.prod(sh);
+            val sh = paramShapes.get(s);
+            val length = ArrayUtil.prodLong(sh);
             INDArray sub = view.get(point(0), interval(soFar, soFar + length));
+
             if(!Arrays.equals(sub.shape(), sh)){
                 sub = sub.reshape(sdl.paramReshapeOrder(s), sh); //TODO do we want to allow users to override initialization order?
             }

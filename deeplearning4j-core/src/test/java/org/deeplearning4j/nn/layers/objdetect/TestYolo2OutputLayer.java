@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.objdetect;
 
+import lombok.val;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
@@ -229,7 +230,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
         VocLabelProvider lp = new VocLabelProvider(dir.getPath());
         int c = 20;
-        int depthOut = bbPriors.size(0) * (bbPriors.size(0) + c);
+        val depthOut = bbPriors.size(0) * (bbPriors.size(0) + c);
 
         int origW = 500;
         int origH = 375;
@@ -455,7 +456,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         rr.initialize(fileSplit);
 
         int nClasses = rr.getLabels().size();
-        int depthOut = bbPriors.size(0) * (5 + nClasses);
+        val depthOut = bbPriors.size(0) * (5 + nClasses);
         // make sure idxCat is not 0 to test DetectedObject.getPredictedClass()
         List<String> labels = rr.getLabels();
         labels.add(labels.remove(labels.indexOf("cat")));

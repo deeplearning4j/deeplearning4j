@@ -2,6 +2,7 @@ package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -24,6 +25,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -181,6 +183,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 }
 
                 System.out.println("\n\n");
+                TestUtils.testModelSerialization(net);
             }
         }
 
@@ -343,6 +346,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 }
 
                 System.out.println("\n\n");
+                TestUtils.testModelSerialization(net);
             }
         }
 
@@ -360,11 +364,15 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
         assertEquals("Tests failed", 0, failed.size());
     }
 
-    public static INDArray[] getFeaturesAndLabels(ILossFunction l, int minibatch, int nIn, int nOut, long seed) {
-        return getFeaturesAndLabels(l, new int[] {minibatch, nIn}, new int[] {minibatch, nOut}, seed);
+    public static INDArray[] getFeaturesAndLabels(ILossFunction l, long minibatch, long nIn, long nOut, long seed) {
+        return getFeaturesAndLabels(l, new long[] {minibatch, nIn}, new long[] {minibatch, nOut}, seed);
     }
 
     public static INDArray[] getFeaturesAndLabels(ILossFunction l, int[] featuresShape, int[] labelsShape, long seed) {
+        return getFeaturesAndLabels(l, ArrayUtil.toLongArray(featuresShape), ArrayUtil.toLongArray(labelsShape), seed);
+    }
+
+    public static INDArray[] getFeaturesAndLabels(ILossFunction l, long[] featuresShape, long[] labelsShape, long seed) {
         Nd4j.getRandom().setSeed(seed);
         Random r = new Random(seed);
         INDArray[] ret = new INDArray[2];
@@ -392,12 +400,14 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 ret[1] = Nd4j.zeros(labelsShape);
                 if (labelsShape.length == 2) {
                     for (int i = 0; i < labelsShape[0]; i++) {
-                        ret[1].putScalar(i, r.nextInt(labelsShape[1]), 1.0);
+                        // FIXME: int cast
+                        ret[1].putScalar(i, r.nextInt((int) labelsShape[1]), 1.0);
                     }
                 } else if (labelsShape.length == 3) {
                     for (int i = 0; i < labelsShape[0]; i++) {
                         for (int j = 0; j < labelsShape[2]; j++) {
-                            ret[1].putScalar(i, r.nextInt(labelsShape[1]), j, 1.0);
+                            // FIXME: int cast
+                            ret[1].putScalar(i, r.nextInt((int) labelsShape[1]), j, 1.0);
                         }
                     }
                 } else {
@@ -410,12 +420,14 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 ret[1] = Nd4j.ones(labelsShape);
                 if (labelsShape.length == 2) {
                     for (int i = 0; i < labelsShape[0]; i++) {
-                        ret[1].putScalar(i, r.nextInt(labelsShape[1]), -1.0);
+                        // FIXME: int cast
+                        ret[1].putScalar(i, r.nextInt((int) labelsShape[1]), -1.0);
                     }
                 } else if (labelsShape.length == 3) {
                     for (int i = 0; i < labelsShape[0]; i++) {
                         for (int j = 0; j < labelsShape[2]; j++) {
-                            ret[1].putScalar(i, r.nextInt(labelsShape[1]), j, -1.0);
+                            // FIXME: int cast
+                            ret[1].putScalar(i, r.nextInt((int) labelsShape[1]), j, -1.0);
                         }
                     }
                 } else {
@@ -467,7 +479,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
             case "LossMixtureDensity":
                 LossMixtureDensity lmd = (LossMixtureDensity) l;
                 int labelWidth = lmd.getLabelWidth();
-                ret[1] = Nd4j.rand(new int[] {labelsShape[0], labelWidth});
+                ret[1] = Nd4j.rand(new long[] {labelsShape[0], labelWidth});
                 break;
             case "LossMultiLabel":
                 ret[1] = Nd4j.rand(labelsShape).lti(0.3);

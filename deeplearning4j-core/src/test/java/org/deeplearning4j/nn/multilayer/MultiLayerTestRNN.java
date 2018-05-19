@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -60,18 +61,18 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         assertTrue(paramTable.size() == 3); //2 sets of weights, 1 set of biases
 
         INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
-        assertArrayEquals(recurrentWeights.shape(), new int[] {nHiddenUnits, 4 * nHiddenUnits + 3}); //Should be shape: [layerSize,4*layerSize+3]
+        assertArrayEquals(recurrentWeights.shape(), new long[] {nHiddenUnits, 4 * nHiddenUnits + 3}); //Should be shape: [layerSize,4*layerSize+3]
         INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
-        assertArrayEquals(inputWeights.shape(), new int[] {nIn, 4 * nHiddenUnits}); //Should be shape: [nIn,4*layerSize]
+        assertArrayEquals(inputWeights.shape(), new long[] {nIn, 4 * nHiddenUnits}); //Should be shape: [nIn,4*layerSize]
         INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS_KEY);
-        assertArrayEquals(biases.shape(), new int[] {1, 4 * nHiddenUnits}); //Should be shape: [1,4*layerSize]
+        assertArrayEquals(biases.shape(), new long[] {1, 4 * nHiddenUnits}); //Should be shape: [1,4*layerSize]
 
         //Want forget gate biases to be initialized to > 0. See parameter initializer for details
         INDArray forgetGateBiases =
                         biases.get(NDArrayIndex.point(0), NDArrayIndex.interval(nHiddenUnits, 2 * nHiddenUnits));
         assertEquals(nHiddenUnits, (int) forgetGateBiases.gt(0).sum(Integer.MAX_VALUE).getDouble(0));
 
-        int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
+        val nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
         assertTrue(nParams == layer.numParams());
     }
 
@@ -104,18 +105,18 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
             int layerNIn = (i == 0 ? nIn : nHiddenUnits[i - 1]);
 
             INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
-            assertArrayEquals(recurrentWeights.shape(), new int[] {nHiddenUnits[i], 4 * nHiddenUnits[i] + 3}); //Should be shape: [layerSize,4*layerSize+3]
+            assertArrayEquals(recurrentWeights.shape(), new long[] {nHiddenUnits[i], 4 * nHiddenUnits[i] + 3}); //Should be shape: [layerSize,4*layerSize+3]
             INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
-            assertArrayEquals(inputWeights.shape(), new int[] {layerNIn, 4 * nHiddenUnits[i]}); //Should be shape: [nIn,4*layerSize]
+            assertArrayEquals(inputWeights.shape(), new long[] {layerNIn, 4 * nHiddenUnits[i]}); //Should be shape: [nIn,4*layerSize]
             INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS_KEY);
-            assertArrayEquals(biases.shape(), new int[] {1, 4 * nHiddenUnits[i]}); //Should be shape: [1,4*layerSize]
+            assertArrayEquals(biases.shape(), new long[] {1, 4 * nHiddenUnits[i]}); //Should be shape: [1,4*layerSize]
 
             //Want forget gate biases to be initialized to > 0. See parameter initializer for details
             INDArray forgetGateBiases = biases.get(NDArrayIndex.point(0),
                             NDArrayIndex.interval(nHiddenUnits[i], 2 * nHiddenUnits[i]));
             assertEquals(nHiddenUnits[i], (int) forgetGateBiases.gt(0).sum(Integer.MAX_VALUE).getDouble(0));
 
-            int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
+            val nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
             assertTrue(nParams == layer.numParams());
         }
     }
@@ -236,7 +237,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
 
                 INDArray inputSubset;
                 if (inLength == 1) { //Workaround to nd4j bug
-                    int[] sizes = new int[] {input.size(0), input.size(1), 1};
+                    val sizes = new long[] {input.size(0), input.size(1), 1};
                     inputSubset = Nd4j.create(sizes);
                     inputSubset.tensorAlongDimension(0, 1, 0).assign(input.get(NDArrayIndex.all(), NDArrayIndex.all(),
                                     NDArrayIndex.point(startTimeRange)));
@@ -251,7 +252,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
 
                 INDArray expOutSubset;
                 if (inLength == 1) {
-                    int[] sizes = new int[] {fullOutL3.size(0), fullOutL3.size(1), 1};
+                    val sizes = new long[] {fullOutL3.size(0), fullOutL3.size(1), 1};
                     expOutSubset = Nd4j.create(sizes);
                     expOutSubset.tensorAlongDimension(0, 1, 0).assign(fullOutL3.get(NDArrayIndex.all(),
                                     NDArrayIndex.all(), NDArrayIndex.point(startTimeRange)));
@@ -304,16 +305,16 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
         mln.init();
 
-        INDArray input3d = Nd4j.rand(new int[] {3, 5, timeSeriesLength});
+        INDArray input3d = Nd4j.rand(new long[] {3, 5, timeSeriesLength});
         INDArray out3d = mln.rnnTimeStep(input3d);
-        assertArrayEquals(out3d.shape(), new int[] {3, 4, timeSeriesLength});
+        assertArrayEquals(out3d.shape(), new long[] {3, 4, timeSeriesLength});
 
         mln.rnnClearPreviousState();
         for (int i = 0; i < timeSeriesLength; i++) {
             INDArray input2d = input3d.tensorAlongDimension(i, 1, 0);
             INDArray out2d = mln.rnnTimeStep(input2d);
 
-            assertArrayEquals(out2d.shape(), new int[] {3, 4});
+            assertArrayEquals(out2d.shape(), new long[] {3, 4});
 
             INDArray expOut2d = out3d.tensorAlongDimension(i, 1, 0);
             assertEquals(out2d, expOut2d);
@@ -325,7 +326,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
             INDArray temp = Nd4j.create(new int[] {3, 5, 1});
             temp.tensorAlongDimension(0, 1, 0).assign(input3d.tensorAlongDimension(i, 1, 0));
             INDArray out3dSlice = mln.rnnTimeStep(temp);
-            assertArrayEquals(out3dSlice.shape(), new int[] {3, 4, 1});
+            assertArrayEquals(out3dSlice.shape(), new long[] {3, 4, 1});
 
             assertTrue(out3dSlice.tensorAlongDimension(0, 1, 0).equals(out3d.tensorAlongDimension(i, 1, 0)));
         }

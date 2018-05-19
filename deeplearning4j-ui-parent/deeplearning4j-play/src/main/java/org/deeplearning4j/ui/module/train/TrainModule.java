@@ -3,6 +3,7 @@ package org.deeplearning4j.ui.module.train;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
@@ -918,7 +919,7 @@ public class TrainModule implements UIModule {
                     if (layer instanceof BaseLayer) {
                         BaseLayer bl = (BaseLayer) layer;
                         activationFn = bl.getActivationFn().toString();
-                        int nParams = layer.initializer().numParams(nnc);
+                        val nParams = layer.initializer().numParams(nnc);
                         layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNParams"),
                                         String.valueOf(nParams)});
                         if (nParams > 0) {

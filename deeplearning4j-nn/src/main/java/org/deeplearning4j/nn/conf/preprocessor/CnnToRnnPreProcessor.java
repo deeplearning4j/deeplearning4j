@@ -32,17 +32,17 @@ import java.util.Arrays;
 @Data
 @EqualsAndHashCode(exclude = {"product"})
 public class CnnToRnnPreProcessor implements InputPreProcessor {
-    private int inputHeight;
-    private int inputWidth;
-    private int numChannels;
+    private long inputHeight;
+    private long inputWidth;
+    private long numChannels;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private int product;
+    private long product;
 
     @JsonCreator
-    public CnnToRnnPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                    @JsonProperty("inputWidth") int inputWidth, @JsonProperty("numChannels") int numChannels) {
+    public CnnToRnnPreProcessor(@JsonProperty("inputHeight") long inputHeight,
+                    @JsonProperty("inputWidth") long inputWidth, @JsonProperty("numChannels") long numChannels) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
@@ -61,7 +61,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
             input = input.dup('c');
 
-        int[] shape = input.shape(); //[timeSeriesLength*miniBatchSize, numChannels, inputHeight, inputWidth]
+        val shape = input.shape(); //[timeSeriesLength*miniBatchSize, numChannels, inputHeight, inputWidth]
 
         //First: reshape 4d to 2d, as per CnnToFeedForwardPreProcessor
         INDArray twod = input.reshape('c', input.size(0), ArrayUtil.prod(input.shape()) / input.size(0));
@@ -76,7 +76,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         if (output.ordering() == 'c' || !Shape.hasDefaultStridesForShape(output))
             output = output.dup('f');
 
-        int[] shape = output.shape();
+        val shape = output.shape();
         INDArray output2d;
         if (shape[0] == 1) {
             //Edge case: miniBatchSize = 1
@@ -110,7 +110,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         }
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        int outSize = c.getChannels() * c.getHeight() * c.getWidth();
+        val outSize = c.getChannels() * c.getHeight() * c.getWidth();
         return InputType.recurrent(outSize);
     }
 

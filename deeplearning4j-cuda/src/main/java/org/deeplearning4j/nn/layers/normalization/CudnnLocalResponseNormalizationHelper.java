@@ -17,7 +17,9 @@
  */
 package org.deeplearning4j.nn.layers.normalization;
 
+import lombok.experimental.var;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -33,6 +35,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -121,10 +124,10 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
                                                      double beta, LayerWorkspaceMgr workspaceMgr) {
-        int miniBatch = input.size(0);
-        int depth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        val miniBatch = (int) input.size(0);
+        val depth = (int) input.size(1);
+        val inH = (int) input.size(2);
+        val inW = (int) input.size(3);
 
         Gradient retGradient = new DefaultGradient();
 
@@ -133,8 +136,8 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
             epsilon = epsilon.dup('c');
         }
 
-        int[] srcStride = input.stride();
-        int[] deltaStride = epsilon.stride();
+        val srcStride = ArrayUtil.toInts(input.stride());
+        val deltaStride = ArrayUtil.toInts(epsilon.stride());
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -146,7 +149,8 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
         checkCudnn(cudnnSetLRNDescriptor(cudnnContext.lrnDesc, (int) n, alpha, beta, k));
 
         INDArray nextEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {miniBatch, depth, inH, inW}, 'c');
-        int[] dstStride = nextEpsilon.stride();
+
+        val dstStride = ArrayUtil.toInts(nextEpsilon.stride());
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
 
@@ -174,21 +178,22 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
 
     @Override
     public INDArray activate(INDArray input, boolean training, double k, double n, double alpha, double beta, LayerWorkspaceMgr workspaceMgr) {
-        int miniBatch = input.size(0);
-        int inDepth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        val miniBatch = (int) input.size(0);
+        val inDepth = (int) input.size(1);
+        val inH = (int) input.size(2);
+        val inW = (int) input.size(3);
 
         if(!Shape.hasDefaultStridesForShape(input)){
             input = input.dup('c');
         }
 
-        int[] srcStride = input.stride();
+        val srcStride = ArrayUtil.toInts(input.stride());
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
         activations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[] {miniBatch, inDepth, inH, inW}, 'c');
-        int[] dstStride = activations.stride();
+
+        val dstStride = ArrayUtil.toInts(activations.stride());
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
         checkCudnn(cudnnSetLRNDescriptor(cudnnContext.lrnDesc, (int) n, alpha, beta, k));

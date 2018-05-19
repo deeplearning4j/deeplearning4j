@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.params;
 
+import lombok.val;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
@@ -31,9 +32,9 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
     }
 
     @Override
-    public int numParams(Layer layer) {
+    public long numParams(Layer layer) {
         FeedForwardLayer layerConf = (FeedForwardLayer) layer;
-        int nIn = layerConf.getNIn();
+        val nIn = layerConf.getNIn();
         return nIn*2; //weights + bias
     }
 
@@ -53,16 +54,16 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
 
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
 
-        int length = numParams(conf);
+        val length = numParams(conf);
         if (paramsView.length() != length)
             throw new IllegalStateException(
                     "Expected params view of length " + length + ", got length " + paramsView.length());
 
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-        int nIn = layerConf.getNIn();
+        val nIn = layerConf.getNIn();
 
-        int nWeightParams = nIn ;
+        val nWeightParams = nIn ;
         INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nWeightParams));
         INDArray biasView = paramsView.get(NDArrayIndex.point(0),
                 NDArrayIndex.interval(nWeightParams, nWeightParams + nIn));
@@ -89,9 +90,9 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-        int nIn = layerConf.getNIn();
-        int nOut = layerConf.getNOut();
-        int nWeightParams = nIn ;
+        val nIn = layerConf.getNIn();
+        val nOut = layerConf.getNOut();
+        val nWeightParams = nIn ;
 
         INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nWeightParams));
         INDArray biasView = gradientView.get(NDArrayIndex.point(0),

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.graph;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
@@ -73,9 +74,9 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
         INDArray fullOutL1 = allOutputActivations.get("1");
         INDArray fullOutL3 = allOutputActivations.get("3");
 
-        assertArrayEquals(new int[] {3, 7, timeSeriesLength}, fullOutL0.shape());
-        assertArrayEquals(new int[] {3, 8, timeSeriesLength}, fullOutL1.shape());
-        assertArrayEquals(new int[] {3, 4, timeSeriesLength}, fullOutL3.shape());
+        assertArrayEquals(new long[] {3, 7, timeSeriesLength}, fullOutL0.shape());
+        assertArrayEquals(new long[] {3, 8, timeSeriesLength}, fullOutL1.shape());
+        assertArrayEquals(new long[] {3, 4, timeSeriesLength}, fullOutL3.shape());
 
         int[] inputLengths = {1, 2, 3, 4, 6, 12};
 
@@ -102,7 +103,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
 
                 INDArray expOutSubset;
                 if (inLength == 1) {
-                    int[] sizes = new int[] {fullOutL3.size(0), fullOutL3.size(1), 1};
+                    val sizes = new long[] {fullOutL3.size(0), fullOutL3.size(1), 1};
                     expOutSubset = Nd4j.create(sizes);
                     expOutSubset.tensorAlongDimension(0, 1, 0).assign(fullOutL3.get(NDArrayIndex.all(),
                                     NDArrayIndex.all(), NDArrayIndex.point(startTimeRange)));
@@ -152,14 +153,14 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
 
         INDArray input3d = Nd4j.rand(new int[] {3, 5, timeSeriesLength});
         INDArray out3d = graph.rnnTimeStep(input3d)[0];
-        assertArrayEquals(out3d.shape(), new int[] {3, 4, timeSeriesLength});
+        assertArrayEquals(out3d.shape(), new long[] {3, 4, timeSeriesLength});
 
         graph.rnnClearPreviousState();
         for (int i = 0; i < timeSeriesLength; i++) {
             INDArray input2d = input3d.tensorAlongDimension(i, 1, 0);
             INDArray out2d = graph.rnnTimeStep(input2d)[0];
 
-            assertArrayEquals(out2d.shape(), new int[] {3, 4});
+            assertArrayEquals(out2d.shape(), new long[] {3, 4});
 
             INDArray expOut2d = out3d.tensorAlongDimension(i, 1, 0);
             assertEquals(out2d, expOut2d);
@@ -171,7 +172,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
             INDArray temp = Nd4j.create(new int[] {3, 5, 1});
             temp.tensorAlongDimension(0, 1, 0).assign(input3d.tensorAlongDimension(i, 1, 0));
             INDArray out3dSlice = graph.rnnTimeStep(temp)[0];
-            assertArrayEquals(out3dSlice.shape(), new int[] {3, 4, 1});
+            assertArrayEquals(out3dSlice.shape(), new long[] {3, 4, 1});
 
             assertTrue(out3dSlice.tensorAlongDimension(0, 1, 0).equals(out3d.tensorAlongDimension(i, 1, 0)));
         }
@@ -231,10 +232,10 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
         INDArray fullActOut0 = allOutputActivations.get("out0");
         INDArray fullActOut1 = allOutputActivations.get("out1");
 
-        assertArrayEquals(new int[] {3, 6, timeSeriesLength}, fullActLSTM0.shape());
-        assertArrayEquals(new int[] {3, 5, timeSeriesLength}, fullActLSTM1.shape());
-        assertArrayEquals(new int[] {3, 3, timeSeriesLength}, fullActOut0.shape());
-        assertArrayEquals(new int[] {3, 4, timeSeriesLength}, fullActOut1.shape());
+        assertArrayEquals(new long[] {3, 6, timeSeriesLength}, fullActLSTM0.shape());
+        assertArrayEquals(new long[] {3, 5, timeSeriesLength}, fullActLSTM1.shape());
+        assertArrayEquals(new long[] {3, 3, timeSeriesLength}, fullActOut0.shape());
+        assertArrayEquals(new long[] {3, 4, timeSeriesLength}, fullActOut1.shape());
 
         int[] inputLengths = {1, 2, 3, 4, 6, 12};
 
@@ -267,7 +268,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
 
                 INDArray expOutSubset0;
                 if (inLength == 1) {
-                    int[] sizes = new int[] {fullActOut0.size(0), fullActOut0.size(1), 1};
+                    val sizes = new long[] {fullActOut0.size(0), fullActOut0.size(1), 1};
                     expOutSubset0 = Nd4j.create(sizes);
                     expOutSubset0.tensorAlongDimension(0, 1, 0).assign(fullActOut0.get(NDArrayIndex.all(),
                                     NDArrayIndex.all(), NDArrayIndex.point(startTimeRange)));
@@ -278,7 +279,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
 
                 INDArray expOutSubset1;
                 if (inLength == 1) {
-                    int[] sizes = new int[] {fullActOut1.size(0), fullActOut1.size(1), 1};
+                    val sizes = new long[] {fullActOut1.size(0), fullActOut1.size(1), 1};
                     expOutSubset1 = Nd4j.create(sizes);
                     expOutSubset1.tensorAlongDimension(0, 1, 0).assign(fullActOut1.get(NDArrayIndex.all(),
                                     NDArrayIndex.all(), NDArrayIndex.point(startTimeRange)));

@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.graph.util.GraphIndices;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.deeplearning4j.nn.graph.vertex.impl.FrozenVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
@@ -2327,7 +2328,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 String vertexName = current.getVertexName();
 
                 //FIXME: make the frozen vertex feature extraction more flexible
-                if (current.hasLayer() && current.getLayer() instanceof FrozenLayer){
+                if (current.hasLayer() && current.getLayer() instanceof FrozenLayer || current instanceof FrozenVertex){
                     hitFrozen = true;
                 }
 
@@ -3023,7 +3024,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public int batchSize() {
-        return inputs[0].size(0);
+        // FIXME: int cast
+        return (int) inputs[0].size(0);
     }
 
     @Override
@@ -3098,8 +3100,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for(String s : current.keySet()){
             INDArray arrCurrent = current.get(s);
             INDArray arrNew = paramTable.get(s);
-            int[] shapeCurrent = arrCurrent.shape();
-            int[] shapeNew = arrNew.shape();
+            val shapeCurrent = arrCurrent.shape();
+            val shapeNew = arrNew.shape();
             Preconditions.checkState(Arrays.equals(shapeCurrent, shapeNew), "Cannot set parameters: shape array for " +
                     "parameter \"%s\" does not match existing shape: parameter shape = %s, new param shape = %s", s, shapeCurrent, arrNew);
         }
@@ -3289,7 +3291,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         //Approach used here to implement truncated BPTT: if input is 3d, split it. Otherwise: input is unmodified
-        int timeSeriesLength = -1;
+        long timeSeriesLength = -1;
         for (INDArray in : inputs) {
             if (in.rank() != 3)
                 continue;
@@ -3311,20 +3313,21 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-        int fwdLen = configuration.getTbpttFwdLength();
-        int nSubsets = timeSeriesLength / fwdLen;
+        long fwdLen = configuration.getTbpttFwdLength();
+        long nSubsets = timeSeriesLength / fwdLen;
         if (timeSeriesLength % fwdLen != 0)
             nSubsets++;
 
         rnnClearPreviousState();
 
         for (int i = 0; i < nSubsets; i++) {
-            int startTimeIdx = i * fwdLen;
-            int endTimeIdx = startTimeIdx + fwdLen;
+            long startTimeIdx = i * fwdLen;
+            long endTimeIdx = startTimeIdx + fwdLen;
             if (endTimeIdx > timeSeriesLength)
                 endTimeIdx = timeSeriesLength;
 
-            List<INDArray[]> list = getSubsetsForTbptt(startTimeIdx, endTimeIdx, inputs, labels, featureMasks, labelMasks);
+            // FIXME: int cast
+            List<INDArray[]> list = getSubsetsForTbptt((int) startTimeIdx, endTimeIdx, inputs, labels, featureMasks, labelMasks);
 
             setInputs(list.get(0));
             setLabels(list.get(1));
@@ -3348,7 +3351,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         clearLayerMaskArrays();
     }
 
-    private List<INDArray[]> getSubsetsForTbptt(int startTimeIdx, int endTimeIdx, INDArray[] inputs, INDArray[] labels,
+    private List<INDArray[]> getSubsetsForTbptt(int startTimeIdx, long endTimeIdx, INDArray[] inputs, INDArray[] labels,
                                                 INDArray[] featureMasks, INDArray[] labelMasks){
         INDArray[] newInputs = new INDArray[inputs.length];
         INDArray[] newLabels = new INDArray[inputs.length];
@@ -3434,7 +3437,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 throw new IllegalArgumentException("Invalid number of feature mask arrays");
             }
 
-            int minibatchSize = -1;
+            long minibatchSize = -1;
             for (INDArray i : featureMaskArrays) {
                 if (i != null) {
                     minibatchSize = i.size(0);
@@ -3469,8 +3472,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         }
                     }
 
+                    // FIXME: int cast
                     Pair<INDArray, MaskState> outPair =
-                            current.feedForwardMaskArrays(inputMasks, maskState, minibatchSize);
+                            current.feedForwardMaskArrays(inputMasks, maskState, (int) minibatchSize);
                     map.put(topologicalOrder[i], outPair);
                 }
             }
@@ -3775,8 +3779,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 rnnClearPreviousState();
 
                 int fwdLen = configuration.getTbpttFwdLength();
-                int tsLength = -1;
-                int nF = next.getFeatures().length;
+                long tsLength = -1;
+                long nF = next.getFeatures().length;
                 for (int i = 0; i < nF; i++) {
                     if (next.getFeatures(i).rank() == 3) {
                         tsLength = next.getFeatures(i).size(2);
@@ -3787,12 +3791,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             " time series features");
                 }
 
-                int nSubsets = tsLength / fwdLen;
+                long nSubsets = tsLength / fwdLen;
                 if (tsLength % fwdLen != 0)
                     nSubsets++; //Example: 100 fwdLen with timeSeriesLength=120 -> want 2 subsets (1 of size 100, 1 of size 20)
                 for (int i = 0; i < nSubsets; i++) {
                     int startTimeIdx = i * fwdLen;
-                    int endTimeIdx = Math.min(startTimeIdx + fwdLen, tsLength);
+                    long endTimeIdx = Math.min(startTimeIdx + fwdLen, tsLength);
 
                     List<INDArray[]> subset = getSubsetsForTbptt(startTimeIdx, endTimeIdx, next.getFeatures(),
                             next.getLabels(), next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
@@ -4163,7 +4167,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return 0;
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
-        return ffl.getNOut();
+
+        // FIXME: int cast
+        return (int) ffl.getNOut();
     }
 
     /**
@@ -4187,7 +4193,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return 0;
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
-        return ffl.getNIn();
+
+        // FIXME: int cast
+        return (int) ffl.getNIn();
     }
 
     /**

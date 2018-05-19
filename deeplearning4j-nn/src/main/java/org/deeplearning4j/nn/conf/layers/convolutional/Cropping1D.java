@@ -1,10 +1,7 @@
 package org.deeplearning4j.nn.conf.layers.convolutional;
 
 import com.google.common.base.Preconditions;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -77,8 +74,8 @@ public class Cropping1D extends NoParamLayer {
                     + inputType);
         }
         InputType.InputTypeRecurrent cnn1d = (InputType.InputTypeRecurrent) inputType;
-        int length = cnn1d.getTimeSeriesLength();
-        int outLength = length - cropping[0] - cropping[1];
+        val length = cnn1d.getTimeSeriesLength();
+        val outLength = length - cropping[0] - cropping[1];
         return InputType.recurrent(cnn1d.getSize(), outLength);
     }
 

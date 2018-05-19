@@ -69,10 +69,11 @@ public class Upsampling1D extends Upsampling2D {
         INDArray originalInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
-        int miniBatch = input.size(0);
-        int inDepth = input.size(1);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inDepth = (int) input.size(1);
+        int inH = (int) input.size(2);
+        int inW = (int) input.size(3);
 
 
         INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);

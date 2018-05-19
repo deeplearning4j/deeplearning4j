@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -20,13 +21,13 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreProcessor {
 
     @JsonCreator
-    public TensorFlowCnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                                                  @JsonProperty("inputWidth") int inputWidth,
-                                                  @JsonProperty("numChannels") int numChannels) {
+    public TensorFlowCnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") long inputHeight,
+                                                  @JsonProperty("inputWidth") long inputWidth,
+                                                  @JsonProperty("numChannels") long numChannels) {
         super(inputHeight, inputWidth, numChannels);
     }
 
-    public TensorFlowCnnToFeedForwardPreProcessor(int inputHeight, int inputWidth) {
+    public TensorFlowCnnToFeedForwardPreProcessor(long inputHeight, long inputWidth) {
         super(inputHeight, inputWidth);
     }
 
@@ -44,8 +45,8 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
          */
         INDArray permuted = workspaceMgr.dup(ArrayType.ACTIVATIONS, input.permute(0, 2, 3, 1), 'c'); //To: [n, h, w, c]
 
-        int[] inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
-        int[] outShape = new int[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
+        val inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
+        val outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
         return permuted.reshape('c', outShape);
     }

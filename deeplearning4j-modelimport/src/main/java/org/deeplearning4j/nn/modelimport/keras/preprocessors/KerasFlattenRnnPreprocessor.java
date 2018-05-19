@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.shape.Shape;
 
 /**
  * Preprocessor to flatten input of RNN type
@@ -16,10 +17,10 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 @Slf4j
 public class KerasFlattenRnnPreprocessor extends BaseInputPreProcessor {
 
-    private int tsLength;
-    private int depth;
+    private long tsLength;
+    private long depth;
 
-    public KerasFlattenRnnPreprocessor(int depth, int tsLength) {
+    public KerasFlattenRnnPreprocessor(long depth, long tsLength) {
         super();
         this.tsLength = Math.abs(tsLength);
         this.depth = depth;
@@ -28,8 +29,7 @@ public class KerasFlattenRnnPreprocessor extends BaseInputPreProcessor {
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         INDArray output = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
-        output.reshape(input.size(0), depth * tsLength);
-        return output;
+        return output.reshape(input.size(0), depth * tsLength);
     }
 
     @Override

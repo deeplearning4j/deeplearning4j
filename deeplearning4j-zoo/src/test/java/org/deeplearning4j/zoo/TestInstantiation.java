@@ -81,7 +81,7 @@ public class TestInstantiation extends BaseDL4JTest {
 
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
         INDArray[] result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
-        assertArrayEquals(result[0].shape(), new int[] {1, 1000});
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
 
         // clean up for current model
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -92,7 +92,19 @@ public class TestInstantiation extends BaseDL4JTest {
 
         initializedModel = (ComputationGraph) model.initPretrained();
         result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
-        assertArrayEquals(result[0].shape(), new int[] {1, 1000});
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+
+        model = VGG19.builder().numClasses(0).build(); //num labels doesn't matter since we're getting pretrained imagenet
+        assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
+
+        initializedModel = (ComputationGraph) model.initPretrained();
+        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
 
         // clean up for current model
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -102,8 +114,8 @@ public class TestInstantiation extends BaseDL4JTest {
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
-        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
-        assertArrayEquals(result[0].shape(), new int[] {1, 1000});
+        result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 224, 224}));
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
 
         // clean up for current model
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -114,8 +126,8 @@ public class TestInstantiation extends BaseDL4JTest {
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
-        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 448, 448}));
-        assertArrayEquals(result[0].shape(), new int[] {1, 1000});
+        result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 448, 448}));
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
 
         // clean up for current model
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -125,8 +137,8 @@ public class TestInstantiation extends BaseDL4JTest {
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
-        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 416, 416}));
-        assertArrayEquals(result[0].shape(), new int[] {1, 125, 13, 13});
+        result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 416, 416}));
+        assertArrayEquals(result[0].shape(), new long[] {1, 125, 13, 13});
 
         // clean up for current model
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -137,7 +149,7 @@ public class TestInstantiation extends BaseDL4JTest {
 
         initializedModel = (ComputationGraph) model.initPretrained();
         result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 608, 608}));
-        assertArrayEquals(result[0].shape(), new int[] {1, 425, 19, 19});
+        assertArrayEquals(result[0].shape(), new long[] {1, 425, 19, 19});
 
         // clean up for current model
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -148,7 +160,7 @@ public class TestInstantiation extends BaseDL4JTest {
 
         initializedModel = (ComputationGraph) model.initPretrained();
         result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 299, 299}));
-        assertArrayEquals(result[0].shape(), new int[] {1, 1000});
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000});
 
         // clean up for current model
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -159,8 +171,8 @@ public class TestInstantiation extends BaseDL4JTest {
 
         initializedModel = (ComputationGraph) model.initPretrained();
         log.info(initializedModel.summary());
-        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 227, 227}));
-        assertArrayEquals(result[0].shape(), new int[] {1, 1000, 1, 1});
+        result = initializedModel.output(Nd4j.rand(new long[] {1, 3, 227, 227}));
+        assertArrayEquals(result[0].shape(), new long[] {1, 1000, 1, 1});
     }
 
 
@@ -174,4 +186,18 @@ public class TestInstantiation extends BaseDL4JTest {
         TransferLearningHelper transferLearningHelper = new TransferLearningHelper(computationGraph, "conv2d_9");
     }
 
+    @Test
+    public void testInitNotPretrained(){
+        //Sanity check on the non-pretrained versions:
+        ZooModel[] models = new ZooModel[]{
+                VGG16.builder().numClasses(10).build(),
+                VGG19.builder().numClasses(10).build()
+        };
+
+        for(ZooModel zm : models){
+            zm.init();
+
+            System.gc();
+        }
+    }
 }

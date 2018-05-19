@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -66,9 +63,9 @@ public class EmbeddingLayer extends FeedForwardLayer {
         //Basically a dense layer, but no dropout is possible here, and no epsilons
         InputType outputType = getOutputType(-1, inputType);
 
-        int actElementsPerEx = outputType.arrayElementsPerExample();
-        int numParams = initializer().numParams(this);
-        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
+        val actElementsPerEx = outputType.arrayElementsPerExample();
+        val numParams = initializer().numParams(this);
+        val updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         //Embedding layer does not use caching.
         //Inference: no working memory - just activations (pullRows)

@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -61,7 +62,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         int inputLength = layerConf().getInputLength();
         int numSamples = input.rows();
-        int nOut = layerConf().getNOut();
+        val nOut = layerConf().getNOut();
         delta = delta.permute(2, 0, 1);
         delta = delta.reshape(inputLength * numSamples, nOut);
 
@@ -96,17 +97,24 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
     protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
 
+        // if inference is true, override input length config with input data columns
+        boolean inferInputLength = layerConf().isInferInputLength();
+        if (inferInputLength) {
+            layerConf().setInputLength(input.columns());
+        }
+
         if (input.columns() != layerConf().getInputLength()) {
             //Assume shape is [numExamples, inputLength], and each entry is an integer index
             throw new DL4JInvalidInputException("Sequence length of embedding input has to be equal to the specified "
                     + "input length: " + layerConf().getInputLength()
-                    + "i.e. we expect input shape [numExamples, inputDim] with each entry being an integer index, "
+                    + " i.e. we expect input shape [numExamples, inputDim] with each entry being an integer index, "
+                    + " got [" + input.rows() + ", " + input.columns() + "] instead, "
                     + "for layer with id: " + layerId());
         }
 
-        int nIn = layerConf().getNIn();
-        int numRows = input.rows();
-        int inputLength = layerConf().getInputLength();
+        val nIn = layerConf().getNIn();
+        val numRows = input.rows();
+        val inputLength = layerConf().getInputLength();
         if (!hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
@@ -123,7 +131,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
-        int nOut = layerConf().getNOut();
+        val nOut = layerConf().getNOut();
         INDArray destination = workspaceMgr.createUninitialized(
                 ArrayType.ACTIVATIONS, numRows * inputLength, nOut);
         INDArray rows = Nd4j.pullRows(weights, destination, 1, indexes);
@@ -134,7 +142,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         }
 
 
-        int[] shape = new int[]{inputLength, numRows, nOut};
+        val shape = new long[]{inputLength, numRows, nOut};
         INDArray ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, rows.reshape('c', shape));
         ret = ret.permute(1, 2 , 0);
 

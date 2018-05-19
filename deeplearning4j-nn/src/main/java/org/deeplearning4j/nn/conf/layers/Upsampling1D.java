@@ -98,8 +98,8 @@ public class Upsampling1D extends BaseUpsamplingLayer {
         InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
         InputType.InputTypeRecurrent outputType = (InputType.InputTypeRecurrent) getOutputType(-1, inputType);
 
-        int im2colSizePerEx = recurrent.getSize() * outputType.getTimeSeriesLength() * size[0];
-        int trainingWorkingSizePerEx = im2colSizePerEx;
+        long im2colSizePerEx = recurrent.getSize() * outputType.getTimeSeriesLength() * size[0];
+        long trainingWorkingSizePerEx = im2colSizePerEx;
         if (getIDropout() != null) {
             trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
         }

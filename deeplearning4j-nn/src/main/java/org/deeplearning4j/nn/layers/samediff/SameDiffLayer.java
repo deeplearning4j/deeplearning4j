@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.samediff;
 
+import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
@@ -166,13 +167,13 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         sameDiff = SameDiff.create();
         Map<String,INDArray > p = paramTable();
 
-        int[] inputShape = input.shape().clone();
+        val inputShape = input.shape().clone();
 //        inputShape[0] = -1;                                       //TODO THIS DOESN'T ENABLE VARIABLE SIZE MINIBATCHES
         SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
-        Map<String,int[]> paramShapes = layerConf().getLayerParams().getParamShapes();
+        Map<String,long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
         Map<String,SDVariable> params = new LinkedHashMap<>();
         for(String s : paramShapes.keySet()){
-            int[] ps = paramShapes.get(s);
+            val ps = paramShapes.get(s);
             SDVariable v = sameDiff.var(s, ps);
             params.put(s, v);
         }
