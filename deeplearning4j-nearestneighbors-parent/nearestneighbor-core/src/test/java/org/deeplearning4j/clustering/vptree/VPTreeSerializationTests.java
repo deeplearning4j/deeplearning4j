@@ -86,7 +86,7 @@ public class VPTreeSerializationTests {
     }
 
     @Test
-    //@Ignore
+    @Ignore
     public void testBigTrees_1() throws Exception {
         val list = new ArrayList<DataPoint>();
 
