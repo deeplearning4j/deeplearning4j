@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -203,16 +204,16 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                                                      final LayerWorkspaceMgr workspaceMgr) {
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
-        int hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
-        int prevLayerSize = inputWeights.size(0); //n^(L-1)
-        int inputLayerSize = input.size(1);
-        int miniBatchSize = epsilon.size(0);
+        val hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
+        val prevLayerSize = inputWeights.size(0); //n^(L-1)
+        val inputLayerSize = input.size(1);
+        val miniBatchSize = epsilon.size(0);
         boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
-        int timeSeriesLength = (is2dInput ? 1 : epsilon.size(2));
+        long timeSeriesLength = (is2dInput ? 1 : epsilon.size(2));
 
         INDArray x = toCOrder(input.permute(2, 0, 1));
         INDArray dy = toCOrder(epsilon.permute(2, 0, 1));
-        INDArray dx = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
+        INDArray dx = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
 
         INDArray iwGradientsOut = gradientViews.get(inputWeightKey);
         INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey); //Order: {I,F,O,G}
@@ -241,16 +242,16 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         checkCudnn(cudnnSetStream(cudnnContext, stream));
 
         if (truncatedBPTT) {
-            int endIdx = Math.max(0, timeSeriesLength - tbpttBackwardLength) * miniBatchSize * hiddenLayerSize;
+            val endIdx = Math.max(0, timeSeriesLength - tbpttBackwardLength) * miniBatchSize * hiddenLayerSize;
             xData.position(endIdx * dataTypeSize);
             dyData.position(endIdx * (BIDIRECTIONAL ? 2 : 1) * dataTypeSize);
             outputActivationsData.position(endIdx * (BIDIRECTIONAL ? 2 : 1) * dataTypeSize);
-            timeSeriesLength = Math.min(timeSeriesLength, tbpttBackwardLength);
+            timeSeriesLength = (int) Math.min(timeSeriesLength, tbpttBackwardLength);
         }
 
         cudnnTensorStruct xDesc0 = xDesc.get(cudnnTensorStruct.class, 0);
 
-        checkCudnn(cudnnRNNBackwardData(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, yDesc,
+        checkCudnn(cudnnRNNBackwardData(cudnnContext, cudnnContext.rnnDesc, (int) timeSeriesLength, yDesc,
                         outputActivationsData, dyDesc, dyData, cudnnContext.dhyDesc, null, cudnnContext.dcyDesc, null,
                         cudnnContext.wDesc, weightsSpace, cudnnContext.hxDesc, prevStepActivationsData, //hx: initial hidden state of RNN
                         cudnnContext.cxDesc, prevMemCellStateData, //cx: initial cell state of RNN
@@ -262,7 +263,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         // cudnnRNNBackwardWeights adds to the data in dw.
         checkCuda(cudaMemsetAsync(weightsSpace, 0, weightsSpace.limit(), stream));
 
-        checkCudnn(cudnnRNNBackwardWeights(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, xData, //Input data
+        checkCudnn(cudnnRNNBackwardWeights(cudnnContext, cudnnContext.rnnDesc, (int) timeSeriesLength, xDesc, xData, //Input data
                         cudnnContext.hxDesc, prevStepActivationsData, //Initial hidden state
                         yDesc, outputActivationsData, //Output data
                         workSpace, workSpace.limit(), cudnnContext.dwDesc, weightsSpace, reserveSpace,
@@ -292,7 +293,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                                 filterDimA));
 
                 // our data is in "new, forget, output, and input gates" order (aka IFOG), each kind of weight packed together
-                int position = 0, size = 0;
+                int position = 0;
+                long size = 0;
                 Pointer data = null;
                 switch (linLayerID) {
                     case 0:
@@ -372,10 +374,10 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                     final LayerWorkspaceMgr workspaceMgr) {
 
         boolean is2dInput = input.rank() < 3; //Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
-        int timeSeriesLength = (is2dInput ? 1 : input.size(2));
-        int hiddenLayerSize = recurrentWeights.size(0);
-        int miniBatchSize = input.size(0);
-        int inputLayerSize = input.size(1);
+        val timeSeriesLength = (is2dInput ? 1 : input.size(2));
+        val hiddenLayerSize = recurrentWeights.size(0);
+        val miniBatchSize = input.size(0);
+        val inputLayerSize = input.size(1);
 
         INDArray x = toCOrder(input.permute(2, 0, 1));
         INDArray linInputWeights = inputWeights;
@@ -386,11 +388,11 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         INDArray prevMemCell = toCOrder(prevMemCellState);
 
         INDArray outputActivations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
-                        new int[] {timeSeriesLength, miniBatchSize, hiddenLayerSize * (BIDIRECTIONAL ? 2 : 1)}, 'c');
+                        new long[] {timeSeriesLength, miniBatchSize, hiddenLayerSize * (BIDIRECTIONAL ? 2 : 1)}, 'c');
         INDArray finalMemCellState = Nd4j.createUninitialized(
-                        new int[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
+                        new long[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
         INDArray finalStepActivations = Nd4j.createUninitialized(
-                        new int[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
+                        new long[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
 
         FwdPassReturn toReturn = new FwdPassReturn();
         toReturn.prevAct = prevAct;
@@ -418,20 +420,20 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         }
 
         for (int i = 0; i < timeSeriesLength; i++) {
-            int[] dimA = {miniBatchSize, inputLayerSize, 1};
-            int[] strideA = {dimA[2] * dimA[1], dimA[2], 1};
+            int[] dimA = {(int) miniBatchSize, (int) inputLayerSize, 1};
+            int[] strideA = {(int) dimA[2] * dimA[1], dimA[2], 1};
 
             checkCudnn(cudnnSetTensorNdDescriptor(xDesc.get(cudnnTensorStruct.class, i), dataType, 3, dimA, strideA));
             checkCudnn(cudnnSetTensorNdDescriptor(dxDesc.get(cudnnTensorStruct.class, i), dataType, 3, dimA, strideA));
 
-            int[] dimB = {miniBatchSize, hiddenLayerSize * (BIDIRECTIONAL ? 2 : 1), 1};
+            int[] dimB = {(int) miniBatchSize, (int) hiddenLayerSize * (BIDIRECTIONAL ? 2 : 1), 1};
             int[] strideB = {dimB[2] * dimB[1], dimB[2], 1};
 
             checkCudnn(cudnnSetTensorNdDescriptor(yDesc.get(cudnnTensorStruct.class, i), dataType, 3, dimB, strideB));
             checkCudnn(cudnnSetTensorNdDescriptor(dyDesc.get(cudnnTensorStruct.class, i), dataType, 3, dimB, strideB));
         }
 
-        int[] dimC = {NUM_LAYERS * (BIDIRECTIONAL ? 2 : 1), miniBatchSize, hiddenLayerSize};
+        int[] dimC = {NUM_LAYERS * (BIDIRECTIONAL ? 2 : 1), (int) miniBatchSize, (int) hiddenLayerSize};
         int[] strideC = {dimC[2] * dimC[1], dimC[2], 1};
 
         checkCudnn(cudnnSetTensorNdDescriptor(cudnnContext.hxDesc, dataType, 3, dimC, strideC));
@@ -454,7 +456,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, DROPOUT, stateSpace, stateSize,
                         Nd4j.getRandom().getSeed()));
 
-        checkCudnn(cudnnSetRNNDescriptor_v6(cudnnContext, cudnnContext.rnnDesc, hiddenLayerSize, NUM_LAYERS, cudnnContext.dropoutDesc,
+        checkCudnn(cudnnSetRNNDescriptor_v6(cudnnContext, cudnnContext.rnnDesc, (int) hiddenLayerSize, NUM_LAYERS, cudnnContext.dropoutDesc,
                          CUDNN_LINEAR_INPUT, BIDIRECTIONAL ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL, RNN_MODE,
                         CUDNN_RNN_ALGO_STANDARD, dataType));
 
@@ -472,7 +474,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         checkCudnn(cudnnSetFilterNdDescriptor(cudnnContext.wDesc, dataType, CUDNN_TENSOR_NCHW, 3, dimW));
         checkCudnn(cudnnSetFilterNdDescriptor(cudnnContext.dwDesc, dataType, CUDNN_TENSOR_NCHW, 3, dimW));
 
-        checkCudnn(cudnnGetRNNWorkspaceSize(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, sizeInBytes));
+        checkCudnn(cudnnGetRNNWorkspaceSize(cudnnContext, cudnnContext.rnnDesc, (int) timeSeriesLength, xDesc, sizeInBytes));
         long workSize = sizeInBytes.get(0);
         if (workSize > workSpace.capacity()) {
             workSpace.deallocate();
@@ -480,7 +482,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         }
         workSpace.limit(workSize);
 
-        checkCudnn(cudnnGetRNNTrainingReserveSize(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc,
+        checkCudnn(cudnnGetRNNTrainingReserveSize(cudnnContext, cudnnContext.rnnDesc, (int) timeSeriesLength, xDesc,
                         sizeInBytes));
         long reserveSize = sizeInBytes.get(0);
         if (reserveSize > reserveSpace.capacity()) {
@@ -532,7 +534,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                                 filterDimA));
 
                 // our data is in "new, forget, output, and input gates" order (aka IFOG), each kind of weight packed together
-                int position = 0, size = 0;
+                int position = 0;
+                long size = 0;
                 Pointer data = null;
                 switch (linLayerID) {
                     case 0:
@@ -589,13 +592,13 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         }
 
         if (training) {
-            checkCudnn(cudnnRNNForwardTraining(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, xData,
+            checkCudnn(cudnnRNNForwardTraining(cudnnContext, cudnnContext.rnnDesc, (int) timeSeriesLength, xDesc, xData,
                             cudnnContext.hxDesc, prevActData, cudnnContext.cxDesc, prevMemCellData, cudnnContext.wDesc,
                             weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc,
                             finalTimeStepActivationsData, cudnnContext.cyDesc, finalMemCellStateData, workSpace,
                             workSpace.limit(), reserveSpace, reserveSpace.limit()));
         } else {
-            checkCudnn(cudnnRNNForwardInference(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, xData,
+            checkCudnn(cudnnRNNForwardInference(cudnnContext, cudnnContext.rnnDesc, (int) timeSeriesLength, xDesc, xData,
                             cudnnContext.hxDesc, prevActData, cudnnContext.cxDesc, prevMemCellData, cudnnContext.wDesc,
                             weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc,
                             finalTimeStepActivationsData, cudnnContext.cyDesc, finalMemCellStateData, workSpace,

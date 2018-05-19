@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
@@ -114,14 +115,14 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         //TODO we could add cache mode support here somehow...
         INDArray reduced = activate(input, true, kernel, strides, pad, poolingType, convolutionMode, dilation, workspaceMgr);
 
-        int miniBatch = input.size(0);
-        int depth = input.size(1);
+        val miniBatch = input.size(0);
+        val depth = input.size(1);
 
         CudnnConvolutionHelper.CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
         input = args.getInput();
-        int inH = input.size(2);
-        int inW = input.size(3);
-        int[] srcStride = input.stride();
+        val inH = input.size(2);
+        val inW = input.size(3);
+        val srcStride = input.stride();
         int[] outSize = args.getOutSize();
         int outH = outSize[0];
         int outW = outSize[1];
@@ -150,24 +151,24 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
             epsilon = epsilon.dup('c');
         }
 
-        int[] deltaStride = epsilon.stride();
+        val deltaStride = epsilon.stride();
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, depth, inH, inW,
-                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, depth, outH, outW,
-                        deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
+        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, (int) miniBatch, (int) depth, (int) inH, (int) inW,
+                (int) srcStride[0], (int) srcStride[1], (int) srcStride[2], (int) srcStride[3]));
+        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, (int) miniBatch, (int) depth, (int) outH, (int) outW,
+                (int) deltaStride[0], (int) deltaStride[1], (int) deltaStride[2], (int) deltaStride[3]));
         checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN, kernel[0],
                         kernel[1], pad[0], pad[1], strides[0], strides[1]));
 
-        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {miniBatch, depth, inH, inW}, 'c');
+        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch, (int) depth, (int) inH, (int) inW}, 'c');
 
 
-        int[] dstStride = outEpsilon.stride();
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
-                        dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
+        val dstStride = outEpsilon.stride();
+        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, (int) miniBatch, (int) depth, (int) inH, (int) inW,
+                (int) dstStride[0], (int) dstStride[1], (int) dstStride[2], (int) dstStride[3]));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(input, epsilon, reduced, outEpsilon);
@@ -206,15 +207,15 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
             return null;
         }
 
-        int miniBatch = input.size(0);
-        int inDepth = input.size(1);
+        val miniBatch = input.size(0);
+        val inDepth = input.size(1);
 
         CudnnConvolutionHelper.CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
         input = args.getInput();
-        int inH = input.size(2);
-        int inW = input.size(3);
-        int[] srcStride = input.stride();
-        int[] outSize = args.getOutSize();
+        val inH = input.size(2);
+        val inW = input.size(3);
+        val srcStride = input.stride();
+        val outSize = args.getOutSize();
         int outH = outSize[0];
         int outW = outSize[1];
 
@@ -236,14 +237,14 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
 
         checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN, kernel[0],
                         kernel[1], pad[0], pad[1], strides[0], strides[1]));
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
-                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
+        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, (int) miniBatch, (int) inDepth, (int) inH, (int) inW,
+                (int) srcStride[0], (int) srcStride[1], (int) srcStride[2], (int) srcStride[3]));
 
-        INDArray reduced = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[] {miniBatch, inDepth, outH, outW}, 'c');
+        INDArray reduced = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[] {(int) miniBatch, (int) inDepth, outH, outW}, 'c');
 
-        int[] dstStride = reduced.stride();
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, outH, outW,
-                        dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
+        val dstStride = reduced.stride();
+        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, (int) miniBatch, (int) inDepth, (int) outH, (int) outW,
+                (int) dstStride[0], (int) dstStride[1], (int) dstStride[2], (int) dstStride[3]));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(input, reduced);
