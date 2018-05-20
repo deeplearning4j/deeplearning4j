@@ -669,8 +669,8 @@ TEST_F(NDArrayTest2, TestStdDev3) {
     const double variance     = array.varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(false);
     const double varianceCorr = array.varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true);
 
-    // printf("%s  expected %.10f    calculated %.10f\n","variance          :", trueVariance, variance );
-    // printf("%s  expected %.10f    calculated %.10f\n","variance corrected:", trueVarianceCorr, varianceCorr);
+    printf("%s  expected %.10f    calculated %.10f\n","variance          :", trueVariance, variance );
+    printf("%s  expected %.10f    calculated %.10f\n","variance corrected:", trueVarianceCorr, varianceCorr);
 
     ASSERT_NEAR(trueVariance, variance, 1e-8);
     ASSERT_NEAR(trueVarianceCorr, varianceCorr, 1e-8);

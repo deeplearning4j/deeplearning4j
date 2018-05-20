@@ -35,8 +35,8 @@ namespace functions {
                     startingIndex = update(startingIndex, curr,
                                            extraParams);
                 }
+                T finalVal = (T) OpType::getValue(biasCorrected, startingIndex);
 
-                T finalVal = OpType::getValue(biasCorrected, startingIndex);
                 return finalVal;
             }
             else {
@@ -56,7 +56,7 @@ namespace functions {
                     startingIndex = update(startingIndex, curr, extraParams);
                 }
 
-                T finalVal = OpType::getValue(biasCorrected, startingIndex);
+                T finalVal = (T)OpType::getValue(biasCorrected, startingIndex);
                 return finalVal;
             }
         }
