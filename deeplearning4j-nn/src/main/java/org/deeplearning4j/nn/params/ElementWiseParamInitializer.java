@@ -105,9 +105,9 @@ public class ElementWiseParamInitializer extends DefaultParamInitializer{
         return out;
     }
 
-    protected INDArray createWeightMatrix(int nIn, int nOut, WeightInit weightInit, Distribution dist,
+    protected INDArray createWeightMatrix(long nIn, long nOut, WeightInit weightInit, Distribution dist,
                                           INDArray weightParamView, boolean initializeParameters) {
-        int[] shape = new int[] {1,nIn};
+        val shape = new long[] {1,nIn};
 
         if (initializeParameters) {
             INDArray ret = initWeights(nIn, //Fan in
