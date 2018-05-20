@@ -902,6 +902,27 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(extract_image_patches, 1, 1, false, 0, 7);
 
+        /**
+         * roll - op porting from numpy (https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.roll.html)
+         * 
+         * input params:
+         *    0 - NDArray
+         * 
+         * int params:
+         *    0 - shift
+         *    1 - axe 1
+         *    2 - axe 2
+         *    ...
+         *    N - axe N 
+         *
+         *    All axes are optional and should be between 0 and input->rankOf(). Of course, all axes can be repeated.
+         *
+         * output:
+         *    0 - NDArray with the same shape as input.
+         */
+        #if NOT_EXCLUDED(OP_roll)
+        DECLARE_CONFIGURABLE_OP(roll, 1, 1, true, 0, 1);
+        #endif
     }
 }
 
