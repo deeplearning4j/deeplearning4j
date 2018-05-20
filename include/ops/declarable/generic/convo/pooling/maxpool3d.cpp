@@ -28,7 +28,7 @@ CUSTOM_OP_IMPL(maxpool3dnew, 1, 1, false, 0, 10) {
     int pH = INT_ARG(7);                                                        // paddings height
     int pW = INT_ARG(8);                                                        // paddings width
     int isSameMode = INT_ARG(9);                                                // 1-SAME,  0-VALID
-    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;        // 1-NDHWC, 0-NCDHW    
+    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;        // 1-NDHWC, 0-NCDHW
 
     REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM MAXPOOL3D OP: rank of input array must be equal to 5, but got %i instead !", input->rankOf());    
 

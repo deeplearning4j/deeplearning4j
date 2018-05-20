@@ -114,9 +114,19 @@ template<typename T>
 Nd4jLong* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong *shapeInfo, const bool keepDims, const bool supportOldShapes, nd4j::memory::Workspace* workspace) {
     Nd4jLong* newShapeInfo = nullptr;
 
-    if (dimensions.size() == 0) {                                               // return scalar in this case 
+    int rank = shape::rank(const_cast<Nd4jLong*>(shapeInfo));
+    
+    if (dimensions.size() == 0) {                                               // return scalar or array with len=1 in this case 
         
-        if(supportOldShapes) {
+        if(keepDims && rank > 1) {
+            ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
+            newShapeInfo[0] = rank;
+            for(int i = 0; i < rank; ++i)
+                newShapeInfo[i+1] = 1;
+            shape::updateStrides(newShapeInfo, order);
+            return newShapeInfo;
+        }
+        else if(supportOldShapes) {
             ALLOCATE(newShapeInfo, workspace, 8, Nd4jLong);
             shape::shapeOldScalar(newShapeInfo, 'c');
         }
@@ -127,7 +137,6 @@ Nd4jLong* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>&
         return newShapeInfo;
     }
 
-    int rank = shape::rank(const_cast<Nd4jLong*>(shapeInfo));
     shape::checkDimensions(rank, dimensions);
        
     int dimSize = dimensions.size();

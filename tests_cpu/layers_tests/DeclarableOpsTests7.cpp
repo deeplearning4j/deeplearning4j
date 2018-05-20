@@ -1254,7 +1254,282 @@ NDArray<double> exp('c', {2, 1, 4, 4}, {
     delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest1) {
+    
+    const int dim0=5, dim1=5, dim2=4;
+
+    NDArray<float> input('c', {dim0, dim1, dim2}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,  
+                                                    23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43., 
+                                                    41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,  
+                                                    63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96., 
+                                                    82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
+    NDArray<float> expected(50.);
+
+    nd4j::ops::percentile<float> op;
+
+    auto result = op.execute({&input}, {50.}, {});
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
 
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest2) {
+    
+    const int dim0=5, dim1=5, dim2=4;
+
+    NDArray<float> input('c', {dim0, dim1, dim2}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,  
+                                                   23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43., 
+                                                   41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,  
+                                                   63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96., 
+                                                   82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
+    NDArray<float> expected('c', {1,1,1}, {11.});
+
+    nd4j::ops::percentile<float> op;
+                                       //q,  interpolation, keepDims
+    auto result = op.execute({&input}, {10,  2,             1}, {});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
 
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest3) {
+    
+    const int dim0=5, dim1=5, dim2=4;
+
+    NDArray<float> input('c', {dim0, dim1, dim2}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,  
+                                                   23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43., 
+                                                   41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,  
+                                                   63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96., 
+                                                   82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
+    NDArray<float> expected('c', {1,1,1}, {10.});
+
+    nd4j::ops::percentile<float> op;
+                                       //q,  interpolation, keepDims
+    auto result = op.execute({&input}, {10,  0,             1}, {});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest4) {
+    
+    const int dim0=5, dim1=5, dim2=4;
+
+    NDArray<float> input('c', {dim0, dim1, dim2}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,  
+                                                   23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43., 
+                                                   41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,  
+                                                   63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96., 
+                                                   82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
+    NDArray<float> expected('c', {1,1,1}, {11.});
+
+    nd4j::ops::percentile<float> op;
+                                       //q,  interpolation, keepDims
+    auto result = op.execute({&input}, {10,  1,             1}, {});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest5) {
+    
+    const int dim0=5, dim1=5, dim2=4;
+
+    NDArray<float> input('c', {dim0, dim1, dim2}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,  
+                                                   23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43., 
+                                                   41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,  
+                                                   63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96., 
+                                                   82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
+    
+    NDArray<float> expected('c', {1,1,4}, {12., 7., 11., 10.});
+
+    nd4j::ops::percentile<float> op;
+                                       //q,  interpolation, keepDims
+    auto result = op.execute({&input}, {10,  0,             1}, {0,1});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest6) {
+    
+    const int dim0=5, dim1=5, dim2=4;
+
+    NDArray<float> input('c', {dim0, dim1, dim2}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,  
+                                                   23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43., 
+                                                   41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,  
+                                                   63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96., 
+                                                   82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
+    
+    NDArray<float> expected('c', {1,1,4}, {16., 14., 15., 13.});
+
+    nd4j::ops::percentile<float> op;
+                                       //q,  interpolation, keepDims
+    auto result = op.execute({&input}, {10,  1,             1}, {0,1});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest7) {
+    
+    const int dim0=5, dim1=5, dim2=4;
+
+    NDArray<float> input('c', {dim0, dim1, dim2}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,  
+                                                   23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43., 
+                                                   41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,  
+                                                   63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96., 
+                                                   82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
+    
+    NDArray<float> expected('c', {1,1,4}, {12., 7., 11., 10.});
+
+    nd4j::ops::percentile<float> op;
+                                       //q,  interpolation, keepDims
+    auto result = op.execute({&input}, {10,  2,             1}, {0,1});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest8) {
+    
+    const int dim0=5, dim1=5, dim2=4;
+
+    NDArray<float> input('c', {dim0, dim1, dim2}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,  
+                                                   23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43., 
+                                                   41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,  
+                                                   63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96., 
+                                                   82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
+    
+    NDArray<float> expected('c', {4}, {12., 7., 11., 10.});
+
+    nd4j::ops::percentile<float> op;
+                                       //q,  interpolation, keepDims
+    auto result = op.execute({&input}, {10,  2,             0}, {0,1});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest9) {
+    
+    const int dim0=100;
+
+    NDArray<float> input('c', {dim0}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,  
+                                                   23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43., 
+                                                   41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,  
+                                                   63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96., 
+                                                   82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
+    
+    NDArray<float> expected(11.);
+
+    nd4j::ops::percentile<float> op;
+                                       //q,  interpolation, keepDims
+    auto result = op.execute({&input}, {10,  2,             0}, {0});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest10) {
+    
+    const int dim0=100;
+
+    NDArray<float> input('c', {dim0}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,  
+                                                   23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43., 
+                                                   41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,  
+                                                   63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96., 
+                                                   82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
+    
+    NDArray<float> expected('c', {1}, {11.});
+
+    nd4j::ops::percentile<float> op;
+                                       //q,  interpolation, keepDims
+    auto result = op.execute({&input}, {10,  2,             1}, {0});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest11) {
+    
+    const int dim0=1;
+
+    NDArray<float> input('c', {dim0}, {100.});
+    
+    NDArray<float> expected('c', {1}, {100.});
+
+    nd4j::ops::percentile<float> op;
+                                       //q,  interpolation, keepDims
+    auto result = op.execute({&input}, {10,  2,             1}, {0});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, percentile_trest12) {
+    
+    const int dim0=1;
+
+    NDArray<float> input('c', {dim0}, {100.});
+    
+    NDArray<float> expected(100.);
+
+    nd4j::ops::percentile<float> op;
+                                       //q,  interpolation, keepDims
+    auto result = op.execute({&input}, {10,  2,             0}, {});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}

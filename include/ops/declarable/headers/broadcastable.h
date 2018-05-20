@@ -275,6 +275,23 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(greater, 2, 1, true, 0, 0);
         #endif
 
+        /**
+         * This operation performs calculation of percentile of input array along given axises
+         *
+         * Input - tensor with rank N > 0
+         * Output - tensor with rank (N - length(axis)) or scalar if number of Integer arguments is zero
+         * Float arguments:
+         *   0: percentile (scalar) in range [0,100] (inclusively)
+         *   1: interpolation (optional), possible values are 0-"lower", 1-"higher", 2-"nearest"(default)
+         *   2: keepDims (optional), if it is non zero, then unities are kept in reduced resulting shape of output array, default is 0
+         * Integer arguments - axis - the sequence of axises to calculate percentile along, if sequence is empty then calculate percentile for whole input tensor and return result as scalar
+         * 
+         */
+        #if NOT_EXCLUDED(OP_percentile)
+        DECLARE_CUSTOM_OP(percentile, 1, 1, false, 1, -2);
+        #endif
+
+
     }
 }
 
