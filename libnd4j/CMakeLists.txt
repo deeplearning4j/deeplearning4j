@@ -6,10 +6,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
-set(CMAKE_CXX_FLAGS_RELEASE  " -O3 -std=c++11 -fassociative-math -funsafe-math-optimizations")
-set(CMAKE_CXX_FLAGS_DEBUG " -g -O0 -std=c++11")
-
-
 if(NATIVE)
     IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
