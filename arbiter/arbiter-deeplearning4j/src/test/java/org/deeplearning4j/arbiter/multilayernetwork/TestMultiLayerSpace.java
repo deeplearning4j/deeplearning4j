@@ -514,8 +514,8 @@ public class TestMultiLayerSpace {
             }
 
             MultiLayerConfiguration conf = mls.getValue(d).getMultiLayerConfiguration();
-            int l0Size = ((FeedForwardLayer)conf.getConf(0).getLayer()).getNOut();
-            int l1Size = ((FeedForwardLayer)conf.getConf(1).getLayer()).getNOut();
+            long l0Size = ((FeedForwardLayer)conf.getConf(0).getLayer()).getNOut();
+            long l1Size = ((FeedForwardLayer)conf.getConf(1).getLayer()).getNOut();
             assertEquals(3*l0Size, l1Size);
 
             double l0Lr = ((FeedForwardLayer)conf.getConf(0).getLayer()).getIUpdater().getLearningRate(0,0);

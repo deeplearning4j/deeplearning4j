@@ -182,7 +182,7 @@ public class TestLayerSpace {
 
             EmbeddingLayer el = els.getValue(d);
             IActivation activation = el.getActivationFn();
-            int nOut = el.getNOut();
+            long nOut = el.getNOut();
 
             System.out.println(activation + "\t" + nOut);
 
@@ -223,7 +223,7 @@ public class TestLayerSpace {
 
             GravesBidirectionalLSTM el = ls.getValue(d);
             IActivation activation = el.getActivationFn();
-            int nOut = el.getNOut();
+            long nOut = el.getNOut();
             double forgetGate = el.getForgetGateBiasInit();
 
             System.out.println(activation + "\t" + nOut + "\t" + forgetGate);
