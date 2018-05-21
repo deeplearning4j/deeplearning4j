@@ -19,6 +19,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 
@@ -131,7 +132,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
             //if input is not 2d, you have to append that the batch is 1 length high
             if (hstack.shape().length > 2)
-                hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+                hstack = hstack.reshape(Learning.makeShape(1, ArrayUtil.toInts(hstack.shape())));
 
             INDArray qs = getCurrentDQN().output(hstack);
             int maxAction = Learning.getMaxAction(qs);

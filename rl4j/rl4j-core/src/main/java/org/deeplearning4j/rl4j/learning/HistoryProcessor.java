@@ -75,8 +75,8 @@ public class HistoryProcessor implements IHistoryProcessor {
 
     public void record(INDArray raw) {
         if (fmpegFrameRecorder != null) {
-            int[] shape = raw.shape();
-            Mat ocvmat = new Mat(shape[0], shape[1], CV_32FC(3), raw.data().pointer());
+            long[] shape = raw.shape();
+            Mat ocvmat = new Mat((int)shape[0], (int)shape[1], CV_32FC(3), raw.data().pointer());
             Mat cvmat = new Mat(shape[0], shape[1], CV_8UC(3));
             ocvmat.convertTo(cvmat, CV_8UC(3), 255.0, 0.0);
             Frame frame = openCVFrameConverter.convert(cvmat);
@@ -98,8 +98,8 @@ public class HistoryProcessor implements IHistoryProcessor {
 
 
     private INDArray transform(INDArray raw) {
-        int[] shape = raw.shape();
-        Mat ocvmat = new Mat(shape[0], shape[1], CV_32FC(3), raw.data().pointer());
+        long[] shape = raw.shape();
+        Mat ocvmat = new Mat((int)shape[0], (int)shape[1], CV_32FC(3), raw.data().pointer());
         Mat cvmat = new Mat(shape[0], shape[1], CV_8UC(3));
         ocvmat.convertTo(cvmat, CV_8UC(3), 255.0, 0.0);
         cvtColor(cvmat, cvmat, COLOR_RGB2GRAY);
