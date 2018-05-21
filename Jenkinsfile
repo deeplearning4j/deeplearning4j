@@ -1,5 +1,4 @@
 #!groovy
-@Library('skymind@feature/monorepo') _
 
 /*
     To redefine some job/run parameters,
