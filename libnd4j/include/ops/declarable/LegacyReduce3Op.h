@@ -13,7 +13,7 @@ namespace nd4j {
         *   This class provides wrapper for Reduce3 operations (i.e. dot, cosineDistance etc)
         */
         template <typename T>
-        class LegacyReduce3Op : public LegacyOp<T> {
+        class ND4J_EXPORT LegacyReduce3Op : public LegacyOp<T> {
         protected:
             Nd4jStatus validateAndExecute(Context<T>& block);
         public:

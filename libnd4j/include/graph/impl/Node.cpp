@@ -565,7 +565,7 @@ namespace nd4j {
 
                         if (node->extraParams() != nullptr)
                             for (uint32_t e = 0; e < node->extraParams()->size(); e++)
-                                block->getTArguments()->emplace_back(node->extraParams()->Get(e));
+                                block->getTArguments()->emplace_back(static_cast<T>(node->extraParams()->Get(e)));
 
                         this->setContextPrototype(block);
 

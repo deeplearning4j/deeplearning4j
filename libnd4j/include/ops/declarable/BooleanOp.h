@@ -12,7 +12,7 @@
 namespace nd4j {
     namespace ops {
         template <typename T>
-        class BooleanOp : public DeclarableOp<T> {
+        class ND4J_EXPORT BooleanOp : public DeclarableOp<T> {
         protected:
             OpDescriptor * _descriptor;
         public:

@@ -251,9 +251,9 @@ namespace nd4j {
                 //         gradColumns->getBuffer());
                 ConvolutionUtils<T>::vol2col(*tadNext, *gradColumns, dT, dH, dW, pT, pH, pW, dilationT, dilationH, dilationW);
 
-                const long m = weights->shapeOf()[0];
-                const long n = gradColumns->shapeOf()[1];
-                const long k = weights->shapeOf()[1] * weights->shapeOf()[2] * weights->shapeOf()[3] * weights->shapeOf()[4];
+                const auto m = weights->shapeOf()[0];
+                const auto n = gradColumns->shapeOf()[1];
+                const auto k = weights->shapeOf()[1] * weights->shapeOf()[2] * weights->shapeOf()[3] * weights->shapeOf()[4];
 
                 nd4j::blas::GEMM<T>::op('f', 'n', 'n',
                                         n, m, k,

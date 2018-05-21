@@ -10,7 +10,7 @@
 namespace nd4j {
     namespace ops {
         template <typename T>
-        class DeclarableReductionOp : public nd4j::ops::DeclarableOp<T> {
+        class ND4J_EXPORT DeclarableReductionOp : public nd4j::ops::DeclarableOp<T> {
         protected:
             /**
              * This method executes this Op

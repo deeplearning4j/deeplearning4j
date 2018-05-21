@@ -17,7 +17,7 @@ namespace nd4j {
         *
         */
         template <typename T>
-        class LegacyOp : public DeclarableOp<T> {
+        class ND4J_EXPORT LegacyOp : public DeclarableOp<T> {
         protected:
             // this field is mainly for debugging
             // it defines, which legacy op should be invoked on a given data

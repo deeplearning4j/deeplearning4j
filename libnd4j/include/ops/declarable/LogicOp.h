@@ -17,7 +17,7 @@ namespace nd4j {
          * @tparam T
          */
         template <typename T>
-        class LogicOp : public DeclarableOp<T> {
+        class ND4J_EXPORT LogicOp : public DeclarableOp<T> {
         protected:
             Nd4jStatus validateAndExecute(nd4j::graph::Context<T>& block) override;
         public:

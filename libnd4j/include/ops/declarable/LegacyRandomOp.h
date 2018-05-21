@@ -15,7 +15,7 @@ namespace nd4j {
         *   This class provides wrapper for Random operations (i.e. linspace or Uniform)
         */
         template <typename T>
-        class LegacyRandomOp : public LegacyOp<T> {
+        class ND4J_EXPORT LegacyRandomOp : public LegacyOp<T> {
         protected:
             Nd4jStatus validateAndExecute(Context<T>& block);
         public:
