@@ -20,7 +20,7 @@ if(WIN32)
 endif()
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_RELEASE=true -Wl,-rpath,$ORIGIN/")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_RELEASE=true -Wl,-rpath,$ORIGIN/")
 
 if ("${LIBND4J_ALL_OPS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")

@@ -25,7 +25,7 @@ namespace nd4j {
             int _opNum = -1;
 
         public:
-            ContextPrototype(int nodeId = 1, bool inPlace = false);
+            explicit ContextPrototype(int nodeId = 1, bool inPlace = false);
             ~ContextPrototype() = default;
 
             int getNodeId();

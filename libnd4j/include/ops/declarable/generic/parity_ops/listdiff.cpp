@@ -26,7 +26,7 @@ namespace nd4j {
                 auto idx = keep->template indexReduceNumber<simdOps::FirstIndex<T>>(extras);
                 if (idx < 0) {
                     saved.emplace_back(v);
-                    indices.emplace_back(static_cast<Nd4jLong>(e));
+                    indices.emplace_back(static_cast<T>(e));
                 }
             }
 
