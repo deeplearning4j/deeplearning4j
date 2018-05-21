@@ -1,0 +1,30 @@
+include "array.fbs";
+include "utils.fbs";
+include "properties.fbs";
+
+namespace nd4j.graph;
+
+
+// this structure describes single operation within graph
+table FlatNode {
+    id:int; // unique id for this node
+    name:string; // literal id of this node (optional)
+    opType:OpType; // type of this op
+    opNum:long; // for custom ops that's field for hash, for all other (legacy XYZ ops) that's actually opNum (as defined in legacy_ops.h)
+    properties:[FlatProperties]; // optional properties
+    input:[int]; // ID's of input nodes for this node !!! only used if inputPaired in unset !!!
+    inputPaired:[IntPair]; //list of input variables or nodes, in format of IntPair.first is node Id, IntPair.second is output index of the node
+    dataType:DataType; // to be removed
+    output:[int]; // ID's of connected nodes for this node
+    extraParams:[double]; // extra params for this op (if any)
+    extraInteger:[long]; // optional integer extra params
+    dimensions:[int]; // dimension for this operation
+    device:int; // default is -1, which means _auto_
+    scalar:float; // optional scalar. used in scalar ops & SummaryStats
+
+    // fields related to Scopes
+    scope_id:int; // unique scope id, where this op belongs to
+    scope_name:string; // literal scope id, where this op belongs to
+}
+
+root_type FlatNode;

@@ -1,0 +1,21 @@
+include "node.fbs";
+include "utils.fbs";
+include "variable.fbs";
+
+namespace nd4j.graph;
+
+table FlatTiming {
+    id:int; // ID of the node for this time report
+    name:string; // name of the node for this time report (if was specified)
+    timing:LongPair; // outer time, inner time
+}
+
+table FlatResult {
+    id:long; // ID of the graph generated this result
+    variables:[FlatVariable]; // variables with results
+    timing:[FlatTiming]; // timing results
+    footprintForward:long; // amount of memory used for FF pass
+    footprintBackward:long; // amount of memory used for BP pass
+}
+
+root_type FlatResult;
