@@ -123,12 +123,30 @@ main(int argc, char *argv[]) {
 
     // just stacking everything together
     std::string cmdline = "./buildnativeoperations.sh " + name_arg + build_arg + arch_arg + opts_arg;
-
-    std::string cppLine(" -I../include -I../blas -I../include/ops -I../include/helpers -I../include/types -I../include/array -I../include/cnpy -I../include/ops/declarable ../include/ops/declarable/CustomOperations.h -o ");
-    cppLine += opt.outputName();
-    nd4j_printf("Run preprocessor as \ncpp %s\n", cppLine.c_str());
+    std::string input("../include/ops/declarable/CustomOperations.h");
+    std::string output(opt.outputName());
+    nd4j_printf("Run preprocessor as \ncpp %s\n", input.c_str());
 //    int err;
-    if (0 > (err = execl("/usr/bin/cpp", cppLine.c_str()))) {
+    char const* env[] = { "HOME=/tmp", 
+                          "LOGNAME=minifier", 
+                          "PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/6", 
+                          "CPLUS_INCLUDE_PATH=/usr/include/c++/6:/usr/include/x86_64-linux-gnu/c++/6",
+                          (char *)0 };
+
+// to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}' 
+    err = execle("/usr/bin/cpp", "cpp", "-x", "c++", "-std=c++11", "-P", "-o", output.c_str(), 
+        "-I../include",
+        "-I../blas",
+        "-I../include/ops",
+        "-I../include/helpers",
+        "-I../include/types",
+        "-I../include/array",
+        "-I../include/cnpy",
+        "-I../include/ops/declarable", 
+        input.c_str(),
+        (char*)nullptr, 
+        env);
+    if (err < 0) {
         perror("\nCannot run CPP properly due \n");
     }
     //nd4j_printf("Command line: %s\n", cmdline.c_str());
