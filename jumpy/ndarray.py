@@ -18,6 +18,7 @@ def set_context_dtype(dtype):
     dtype = DataTypeUtil.getDtypeFromContext(dtype)
     DataTypeUtil.setDTypeForContext(dtype)
 
+
 def get_context_dtype():
     '''
     Returns the nd4j dtype
@@ -39,14 +40,15 @@ def get_nd4j_dtype(np_dtype):
     elif type(np_dtype) == np.dtype:
         np_dtype = np_dtype.name
     mapping = {
-        'float64' : 'double',
-        'float32' : 'float',
-        'float16' : 'half'
-        }
+        'float64': 'double',
+        'float32': 'float',
+        'float16': 'half'
+    }
     nd4j_dtype = mapping.get(np_dtype)
     if not nd4j_dtype:
         raise Exception('Invalid numpy data type : ' + np_dtype)
     return nd4j_dtype
+
 
 def get_np_dtype(nd4j_dtype):
     '''
@@ -57,9 +59,9 @@ def get_np_dtype(nd4j_dtype):
         ['double', 'float', 'half']
     '''
     mapping = {
-        'double' : np.float64,
-        'float' : np.float32,
-        'half' : np.float16
+        'double': np.float64,
+        'float': np.float32,
+        'half': np.float16
     }
     np_dtype = mapping.get(nd4j_dtype)
     if not np_dtype:
@@ -71,6 +73,7 @@ set_context_dtype('double')
 
 
 _refs = []
+
 
 def _from_numpy(np_array):
     '''
@@ -102,22 +105,22 @@ def _from_numpy(np_array):
     pointer = native_ops.pointerForAddress(pointer_address)
     size = np_array.size
     mapping = {
-        np.float64 : DoublePointer,
-        np.float32 : FloatPointer,
+        np.float64: DoublePointer,
+        np.float32: FloatPointer,
     }
     pointer = mapping[required_dtype](pointer)
     buff = Nd4j.createBuffer(pointer, size)
     assert buff.address() == pointer_address
     _refs.append(buff)
     # Get the strides
-    # strides = tuple of bytes to step in each 
+    # strides = tuple of bytes to step in each
     # dimension when traversing an array.
     elem_size = buff.getElementSize()
     # Make sure word size is same in both python
     # and java worlds
     assert elem_size == np_array.dtype.itemsize
     strides = np_array.strides
-    # numpy uses byte wise strides. We have to 
+    # numpy uses byte wise strides. We have to
     # convert it to word wise strides.
     strides = [dim / elem_size for dim in strides]
 
@@ -137,13 +140,14 @@ def _to_numpy(nd4j_array):
     address = buff.pointer().address()
     dtype = get_context_dtype()
     mapping = {
-    'double': ctypes.c_double,
-    'float': ctypes.c_float
+        'double': ctypes.c_double,
+        'float': ctypes.c_float
     }
     Pointer = ctypes.POINTER(mapping[dtype])
     pointer = ctypes.cast(address, Pointer)
     np_array = np.ctypeslib.as_array(pointer, tuple(nd4j_array.shape()))
     return np_array
+
 
 def _indarray(x):
     if type(x) is INDArray:
@@ -158,6 +162,7 @@ def _indarray(x):
         return Nd4j.scalar(x)
     else:
         raise Exception('Data type not understood :' + str(type(x)))
+
 
 def broadcast_like(y, x):
     xs = x.shape()
@@ -183,16 +188,17 @@ def broadcast_like(y, x):
             yt.append(1)
         elif xd == 1:
             raise Exception('Unable to broadcast shapes ' + str(_xs) + ''
-                            ' and ' + str(_ys))   
+                            ' and ' + str(_ys))
         elif yd == 1:
             yt.append(xd)
             rep_y = True
         else:
             raise Exception('Unable to broadcast shapes ' + str(_xs) + ''
-                            ' and ' + str(_ys))    
+                            ' and ' + str(_ys))
     if rep_y:
         y = y.repmat(*yt)
     return y
+
 
 def broadcast(x, y):
     xs = x.shape()
@@ -302,7 +308,8 @@ class ndarray(object):
             else:
                 return ndarray(self.array.get(NDArrayIndex.interval(start, step, stop)))
         if type(key) is list:
-            raise NotImplemented('Sorry, this type of indexing is not supported yet.')
+            raise NotImplemented(
+                'Sorry, this type of indexing is not supported yet.')
         if type(key) is tuple:
             key = list(key)
             shape = self.array.shape()
@@ -329,9 +336,11 @@ class ndarray(object):
                         if step is None or step == 1:
                             args.append(NDArrayIndex.interval(start, stop))
                         else:
-                            args.append(NDArrayIndex.interval(start, step, stop))
+                            args.append(NDArrayIndex.interval(
+                                start, step, stop))
                 elif type(dim) in (list, tuple):
-                    raise NotImplemented('Sorry, this type of indexing is not supported yet.')
+                    raise NotImplemented(
+                        'Sorry, this type of indexing is not supported yet.')
             return ndarray(self.array.get(*args))
 
     def __setitem__(self, key, other):
