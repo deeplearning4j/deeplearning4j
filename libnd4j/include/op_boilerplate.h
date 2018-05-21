@@ -1556,7 +1556,7 @@ struct __registratorSynonymDouble_##NAME {\
 #ifdef __clang__
 #define FORCEINLINE inline 
 #elif _MSC_VER
-#define FORCEINLINE __forceinline inline 
+#define FORCEINLINE __forceinline
 #elif __GNUC__
 #define FORCEINLINE __attribute__((always_inline)) inline 
 #elif __CUDACC__
