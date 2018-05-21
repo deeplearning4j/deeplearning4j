@@ -1,0 +1,343 @@
+<!--
+  ~ /*
+  ~  * Copyright 2015 Skymind,Inc.
+  ~  *
+  ~  *    Licensed under the Apache License, Version 2.0 (the "License");
+  ~  *    you may not use this file except in compliance with the License.
+  ~  *    You may obtain a copy of the License at
+  ~  *
+  ~  *        http://www.apache.org/licenses/LICENSE-2.0
+  ~  *
+  ~  *    Unless required by applicable law or agreed to in writing, software
+  ~  *    distributed under the Licese is distributed on an "AS IS" BASIS,
+  ~  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  *    See the License for the specific language governing permissions and
+  ~  *    limitations under the License.
+  ~  */
+  ~
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <parent>
+        <artifactId>nd4j</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>nd4j-uberjar</artifactId>
+
+<build>
+    <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-shade-plugin</artifactId>
+              <version>${maven-shade-plugin.version}</version>
+              <configuration>
+                <shadedClassifierName>${shadedClassifier}</shadedClassifierName>
+                <createDependencyReducedPom>true</createDependencyReducedPom>
+                <filters>
+                  <filter>
+                    <artifact>*:*</artifact>
+                    <excludes>
+                      <exclude>org/datanucleus/**</exclude>
+                      <exclude>META-INF/*.SF</exclude>
+                      <exclude>META-INF/*.DSA</exclude>
+                      <exclude>META-INF/*.RSA</exclude>
+                    </excludes>
+                  </filter>
+                </filters>
+                <relocations>
+                  <relocation>
+                    <pattern>void</pattern>
+                    <shadedPattern>void</shadedPattern>
+                  </relocation>
+                </relocations>
+                <transformers>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  </transformer>
+                </transformers>
+                <minimizeJar>false</minimizeJar>
+              </configuration>
+              <executions>
+                <execution>
+                  <phase>none</phase>
+                  <goals>
+                    <goal>shade</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-enforcer-plugin</artifactId>
+              <version>1.4.1</version>
+              <executions>
+                <execution>
+                  <phase>package</phase>
+                  <id>enforce-choice-of-nd4j-backend</id>
+                  <goals>
+                    <goal>enforce</goal>
+                  </goals>
+                  <configuration>
+                    <skip>${skipBackendChoice}</skip>
+                    <rules>
+                      <requireActiveProfile>
+                        <profiles>native,cuda,cuda-snapshots,native-snapshots</profiles>
+                        <all>false</all>
+                      </requireActiveProfile>
+                    </rules>
+                    <fail>true</fail>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <forceCreation>true</forceCreation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>empty-javadoc-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <skip>false</skip>
+                            <classifier>javadoc</classifier>
+                            <classesDirectory>${basedir}/javadoc</classesDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>empty-sources-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>sources</classifier>
+                            <classesDirectory>${basedir}/src</classesDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+    </plugins>
+</build>
+
+<profiles>
+  <!-- This controls skipping the backend choice, as we don't generate by
+       default -->
+  <profile>
+    <id>default</id>
+    <activation>
+      <activeByDefault>true</activeByDefault>
+    </activation>
+    <properties>
+      <skipBackendChoice>true</skipBackendChoice>
+    </properties>
+  </profile>
+  <profile>
+    <id>uberjar</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <executions>
+            <execution>
+              <phase>package</phase>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+    <dependencies>
+   
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>jackson</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-jdbc-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-jdbc-mysql</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-instrumentation</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-aeron</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-jackson</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-kryo_2.11</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-base64</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-kafka_2.11</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-gson</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-buffer</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-context</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-parameter-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-parameter-server-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-parameter-server-model</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-parameter-server-status_2.11</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-parameter-server-rocksdb-storage</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-parameter-server-node_2.11</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+    <properties>
+      <skipBackendChoice>false</skipBackendChoice>
+    </properties>
+  </profile>
+
+
+
+
+
+
+
+
+
+  <profile>
+    <id>native-snapshots</id>
+    <dependencies>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </profile>
+  <profile>
+    <id>cuda-snapshots</id>
+    <dependencies>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-cuda-9.1</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </profile>
+
+
+  <profile>
+    <id>native</id>
+    <dependencies>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native-platform</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </profile>
+  <profile>
+    <id>cuda</id>
+    <dependencies>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-cuda-9.1</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-cuda-9.1-platform</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </profile>
+
+    <profile>
+      <id>testresources</id>
+    </profile>
+</profiles>
+
+
+</project>
