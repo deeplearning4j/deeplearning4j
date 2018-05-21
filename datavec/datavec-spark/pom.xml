@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~  * Copyright 2016 Skymind, Inc.
+  ~  *
+  ~  *    Licensed under the Apache License, Version 2.0 (the "License");
+  ~  *    you may not use this file except in compliance with the License.
+  ~  *    You may obtain a copy of the License at
+  ~  *
+  ~  *        http://www.apache.org/licenses/LICENSE-2.0
+  ~  *
+  ~  *    Unless required by applicable law or agreed to in writing, software
+  ~  *    distributed under the License is distributed on an "AS IS" BASIS,
+  ~  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  *    See the License for the specific language governing permissions and
+  ~  *    limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>datavec-parent</artifactId>
+        <groupId>org.datavec</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <version>1.0.0_spark_1-SNAPSHOT</version>
+    <artifactId>datavec-spark_2.10</artifactId>
+
+    <properties>
+        <!-- These Spark versions have to be here, and NOT in the datavec parent pom. Otherwise, the properties
+         will be resolved to their defaults. Whereas when defined here (the version outputStream spark 1 vs. 2 specific) we can
+         have different version properties simultaneously (in different pom files) instead of a single global property -->
+        <spark.version>1.6.3</spark.version>
+        <spark.major.version>1</spark.major.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- added source folder containing the code specific to the spark version -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/spark-${spark.major.version}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.module</groupId>
+                <artifactId>jackson-module-scala_2.10</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_2.10</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.10</artifactId>
+            <version>${spark.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+              </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-api</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.clearspring.analytics</groupId>
+            <artifactId>stream</artifactId>
+            <version>${stream.analytics.version}</version>
+        </dependency>
+
+        <!-- For map/sequence file integrations -->
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-hadoop</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+
+        <!-- Test scope dependencies -->
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-data-image</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-data-codec</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-geo</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>${nd4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>

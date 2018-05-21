@@ -1,0 +1,31 @@
+    <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>rl4j</artifactId>
+        <groupId>org.deeplearning4j</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>rl4j-gym</artifactId>
+    <packaging>jar</packaging>
+
+    <name>rl4j-gym</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>rl4j-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>gym-java-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</project>

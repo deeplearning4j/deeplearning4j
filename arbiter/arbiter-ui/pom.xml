@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>arbiter</artifactId>
+        <groupId>org.deeplearning4j</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>arbiter-ui_2.11</artifactId>
+    <name>arbiter-ui</name>
+
+    <properties>
+        <java.compile.version>1.8</java.compile.version>
+    </properties>
+
+
+    <profiles>
+        <!-- To build UI templates: run "mvn compile -P buildUiTemplates" -->
+        <profile>
+            <id>buildUiTemplates</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.google.code.play2-maven-plugin</groupId>
+                        <artifactId>play2-maven-plugin</artifactId>
+                        <version>${maven-play2-plugin.version}</version>
+
+                        <!-- Generate Scala Page Templates
+                        The Play framework template engine ("twirl") uses templates for HTML pages (or in principle any text-based
+                        data: CSV, XML etc). These templates (*.scala.html files) need to be converted to Scala classes using
+                        code generation. This is done here during the Maven compile phase.
+                        However, the Maven Play framework plugin does not allow proper customization of the output directory. Thus,
+                        we generate these Scala classes in the default location (in the target/twirl/main/ directory) and use the
+                        maven resources plugin to copy them to the actual location we want.
+                        To generate the latest versions of these templates (after modifying or adding a new template), just run
+                        "mvn compile" in either the main project directory, or within the deeplearning4j ui module separately.
+                        -->
+                        <executions>
+                            <execution>
+                                <id>GenerateTemplates</id>
+                                <phase>compile</phase>
+                                <configuration>
+                                </configuration>
+                                <goals>
+                                    <goal>template-compile</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Copy the generated Scala templates to the appropriate directory. See templates comment above. -->
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>${maven-resources-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>CopyTemplates</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${basedir}/src/main/scala/org/deeplearning4j/arbiter/ui/views/html</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${basedir}/target/twirl/main/org/deeplearning4j/arbiter/ui/views/html</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>arbiter-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-ui_2.11</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>arbiter-deeplearning4j</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>${nd4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+
+
+
+    <build>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-http</artifactId>
+                <version>2.9</version>
+            </extension>
+        </extensions>
+
+        <plugins>
+            <!-- Build helper plugin: used to add the multiple independent source directories (Java, Scala, HTML templates) -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${maven-build-helper-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/scala</source>
+                                <source>src/main/java</source>
+                                <source>src/main/views</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>${maven-scala-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <scalaVersion>2.11.7</scalaVersion>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.google.code.sbt-compiler-maven-plugin</groupId>
+                <artifactId>sbt-compiler-maven-plugin</artifactId>
+                <version>${sbt-compiler-maven-plugin.version}</version>
+            </plugin>
+
+            <!-- Maven compiler plugin last: should ensure Scala code is compiled before Java code -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>  <!-- Version set by deeplearning4j-parent dependency management -->
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.5.1</version>
+                    <configuration>
+                        <source>${java.compile.version}</source>
+                        <target>${java.compile.version}</target>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+</project>

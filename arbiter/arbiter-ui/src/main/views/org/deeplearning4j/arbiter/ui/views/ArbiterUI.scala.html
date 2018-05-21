@@ -1,0 +1,571 @@
+<html>
+    <head>
+        <style type="text/css">
+        /* Color and style reference.
+            To change: do find + replace on comment + color
+
+            heading background:         headingbgcol        #063E53            //Old candidates: #3B5998
+            heading text color:         headingtextcolor    white
+        */
+
+        .hd {
+            background-color: #000000;
+            height: 41px;
+            font-size: 20px;
+            color: #FFFFFF;
+            font-family: "Open Sans", sans-serif;
+            font-weight: 200;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+        }
+
+        .bgcolor {
+            background-color: #EFEFEF;
+        }
+
+        h1 {
+            font-family: "Open Sans", sans-serif;
+            font-size: 28px;
+            font-style: bold;
+            font-variant: normal;
+            font-weight: 500;
+            line-height: 26.4px;
+        }
+
+        h3 {
+            font-family: "Open Sans", sans-serif;
+            font-size: 16px;
+            font-style: normal;
+            font-variant: normal;
+            font-weight: 500;
+            line-height: 26.4px;
+        }
+
+        table {
+            font-family: "Open Sans", sans-serif;
+            font-size: 14px;
+        }
+
+        table.resultsTable {
+            border-collapse:collapse;
+            background-color: white;
+            /*border-collapse: collapse;*/
+            padding: 15px;
+        }
+
+        table.resultsTable td, table.resultsTable tr, table.resultsTable th {
+            border:solid black 1px;
+            white-space: pre;   /* assume text is preprocessed for formatting */
+        }
+
+        table.resultsTable th {
+            background-color: /*headingbgcol*/#063E53;
+            color: white;
+            padding-left: 4px;
+            padding-right: 4px;
+        }
+
+        table.resultsTable td {
+            /*background-color: white;*/
+            padding-left: 4px;
+            padding-right: 4px;
+        }
+
+        /* Properties for table cells in the tables generated using the RenderableComponent mechanism */
+        .renderableComponentTable {
+            /*table-layout:fixed; */    /*Avoids scrollbar, but makes fixed width for all columns :( */
+            width: 100%
+        }
+        .renderableComponentTable td {
+            padding-left: 4px;
+            padding-right: 4px;
+            white-space: pre;   /* assume text is pre-processed (important for line breaks etc)*/
+            word-wrap:break-word;
+            vertical-align: top;
+        }
+
+        /** CSS for result table rows */
+        .resultTableRow {
+            background-color: #FFFFFF;
+            cursor: pointer;
+        }
+
+        /** CSS for result table CONTENT rows (i.e., only visible when expanded) */
+        .resultTableRowSelected {
+            background-color: rgba(0, 157, 255, 0.16);
+        }
+
+        .resultsHeadingDiv {
+            background-color: /*headingbgcol*/#063E53;
+            color: white;
+            font-family: "Open Sans", sans-serif;
+            font-size: 16px;
+            font-style: bold;
+            font-variant: normal;
+            font-weight: 500;
+            line-height: 26.4px;
+            cursor: default;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            padding-left: 45px;
+            padding-right: 45px;
+            border-style: solid;
+            border-width: 1px;
+            border-color: #AAAAAA;
+        }
+
+        div.outerelements {
+            padding-bottom: 30px;
+        }
+
+        #accordion, #accordion2 {
+            padding-bottom: 20px;
+        }
+
+        #accordion .ui-accordion-header, #accordion2 .ui-accordion-header, #accordion3 .ui-accordion-header {
+            background-color: /*headingbgcolor*/#063E53;      /*Color when collapsed*/
+            color: /*headingtextcolor*/white;
+            font-family: "Open Sans", sans-serif;
+            font-size: 16px;
+            font-style: bold;
+            font-variant: normal;
+            margin: 0px;
+            background-image: none;     /* Necessary, otherwise color changes don't make a difference */
+        }
+
+        #accordion .ui-accordion-content {
+            width: 100%;
+            background-color: white;    /*background color of accordian content (elements in front may have different color */
+            color: black;  /* text etc color */
+            font-size: 10pt;
+            line-height: 16pt;
+            overflow:visible !important;
+        }
+
+        /** Line charts */
+        path {
+            stroke: steelblue;
+            stroke-width: 2;
+            fill: none;
+        }
+        .axis path, .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+        .tick line {
+            opacity: 0.2;
+            shape-rendering: crispEdges;
+        }
+
+        </style>
+        <title>DL4J - Arbiter UI</title>
+    </head>
+    <body class="bgcolor">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="/assets/css/arbiter/bootstrap.min.css">
+        <script src="/assets/js/jquery-1.9.1.min.js"></script>
+        <link rel="stylesheet" href="/assets/css/arbiter/jquery-ui.css">
+        <script src="/assets/js/arbiter/jquery-1.10.2.js"></script>
+        <script src="/assets/js/arbiter/jquery-ui.js"></script>
+        <script src="/assets/js/arbiter/d3.min.js"></script>
+        <script src="/assets/js/arbiter/bootstrap.min.js"></script>
+        <script src="/assets/dl4j-ui.js"></script>
+
+    <script>
+    //Store last update times:
+    var lastStatusUpdateTime = -1;
+    var lastSettingsUpdateTime = -1;
+    var lastResultsUpdateTime = -1;
+
+    var resultTableSortIndex = 0;
+    var resultTableSortOrder = "ascending";
+    var resultsTableContent;
+
+    var selectedCandidateIdx = null;
+
+    //Set basic interval function to do updates
+    setInterval(doUpdate,5000);    //Loop every 5 seconds
+
+
+    function doUpdate(){
+        //Get the update status, and do something with it:
+        $.get("/arbiter/lastUpdate",function(data){
+            //Encoding: matches names in UpdateStatus class
+            var jsonObj = JSON.parse(JSON.stringify(data));
+            var statusTime = jsonObj['statusUpdateTime'];
+            var settingsTime = jsonObj['settingsUpdateTime'];
+            var resultsTime = jsonObj['resultsUpdateTime'];
+            //console.log("Last update times: " + statusTime + ", " + settingsTime + ", " + resultsTime);
+
+            //Update available sessions:
+            var currSession;
+            $.get("/arbiter/sessions/current", function(data){
+                currSession = data; //JSON.stringify(data);
+                console.log("Current: " + currSession);
+            });
+
+            $.get("/arbiter/sessions/all", function(data){
+                var keys = data;    // JSON.stringify(data);
+
+                if(keys.length > 1){
+                    $("#sessionSelectDiv").show();
+
+                    var elem = $("#sessionSelect");
+                    elem.empty();
+
+                    var currSelectedIdx = 0;
+                    for (var i = 0; i < keys.length; i++) {
+                        if(keys[i] == currSession){
+                            currSelectedIdx = i;
+                        }
+                        elem.append("<option value='" + keys[i] + "'>" + keys[i] + "</option>");
+                    }
+
+                    $("#sessionSelect option[value='" + keys[currSelectedIdx] +"']").attr("selected", "selected");
+                    $("#sessionSelectDiv").show();
+                }
+//                console.log("Got sessions: " + keys + ", current: " + currSession);
+            });
+
+
+            //Check last update times for each part of document, and update as necessary
+            //First section: summary status
+            if(lastStatusUpdateTime != statusTime){
+                //Get JSON: address set by SummaryStatusResource
+                $.get("/arbiter/summary",function(data){
+                    var summaryStatusDiv = $('#statusdiv');
+                    summaryStatusDiv.html('');
+
+                    var str = JSON.stringify(data);
+                    var component = Component.getComponent(str);
+                    component.render(summaryStatusDiv);
+                });
+
+                lastStatusUpdateTime = statusTime;
+            }
+
+            //Second section: Optimization settings
+            if(lastSettingsUpdateTime != settingsTime){
+                //Get JSON for components
+                $.get("/arbiter/config",function(data){
+                    var str = JSON.stringify(data);
+
+                    var configDiv = $('#settingsdiv');
+                    configDiv.html('');
+
+                    var component = Component.getComponent(str);
+                    component.render(configDiv);
+                });
+
+                lastSettingsUpdateTime = settingsTime;
+            }
+
+            //Third section: Summary results table (summary info for each candidate)
+            if(lastResultsUpdateTime != resultsTime){
+
+                //Get JSON; address set by SummaryResultsResource
+                $.get("/arbiter/results",function(data){
+                    //Expect an array of CandidateInfo type objects here
+                    resultsTableContent = data;
+                    drawResultTable();
+                });
+
+                lastResultsUpdateTime = resultsTime;
+            }
+
+            //Finally: Currently selected result
+            if(selectedCandidateIdx != null){
+                //Get JSON for components
+                $.get("/arbiter/candidateInfo/"+selectedCandidateIdx,function(data){
+                    var str = JSON.stringify(data);
+
+                    var resultsViewDiv = $('#resultsviewdiv');
+                    resultsViewDiv.html('');
+
+                    var component = Component.getComponent(str);
+                    component.render(resultsViewDiv);
+                });
+            }
+        })
+    }
+
+    function createTable(tableObj,tableId,appendTo){
+        //Expect RenderableComponentTable
+        var header = tableObj['header'];
+        var values = tableObj['table'];
+        var title = tableObj['title'];
+        var nRows = (values ? values.length : 0);
+
+        if(title){
+            appendTo.append("<h5>"+title+"</h5>");
+        }
+
+        var table;
+        if(tableId) table = $("<table id=\"" + tableId + "\" class=\"renderableComponentTable\">");
+        else table = $("<table class=\"renderableComponentTable\">");
+        if(header){
+            var headerRow = $("<tr>");
+            var len = header.length;
+            for( var i=0; i<len; i++ ){
+                headerRow.append($("<th>" + header[i] + "</th>"));
+            }
+            headerRow.append($("</tr>"));
+            table.append(headerRow);
+        }
+
+        if(values){
+            for( var i=0; i<nRows; i++ ){
+                var row = $("<tr>");
+                var rowValues = values[i];
+                var len = rowValues.length;
+                for( var j=0; j<len; j++ ){
+                    row.append($('<td>'+rowValues[j]+'</td>'));
+                }
+                row.append($("</tr>"));
+                table.append(row);
+            }
+        }
+
+        table.append($("</table>"));
+        appendTo.append(table);
+    }
+
+    function drawResultTable(){
+        //Remove all elements from the table body
+        var tableBody = $('#resultsTableBody');
+        tableBody.empty();
+
+        //Recreate the table header, with appropriate sort order:
+        var tableHeader = $('#resultsTableHeader');
+        tableHeader.empty();
+        var headerRow = $("<tr />");
+        var char = (resultTableSortOrder== "ascending" ? "&blacktriangledown;" : "&blacktriangle;");
+        if(resultTableSortIndex == 0) headerRow.append("$(<th>ID &nbsp; " + char + "</th>");
+        else headerRow.append("$(<th>ID</th>");
+        if(resultTableSortIndex == 1) headerRow.append("$(<th>Score &nbsp; " + char + "</th>");
+        else headerRow.append("$(<th>Score</th>");
+        if(resultTableSortIndex == 2) headerRow.append("$(<th>Status &nbsp; " + char + "</th>");
+        else headerRow.append("$(<th>Status</th>");
+        tableHeader.append(headerRow);
+
+
+        //Sort rows, and insert into table:
+        var sorted;
+        if(resultTableSortIndex == 0) sorted = resultsTableContent.sort(compareResultsIndex);
+        else if(resultTableSortIndex == 1) sorted = resultsTableContent.sort(compareScores);
+        else sorted = resultsTableContent.sort(compareStatus);
+
+        var len = (!resultsTableContent ? 0 : resultsTableContent.length);
+        for(var i=0; i<len; i++){
+            var row;
+            if(selectedCandidateIdx == sorted[i][0]){
+                //Selected row
+                row = $('<tr class="resultTableRowSelected" id="rTbl-' + sorted[i][0] + '"/>');
+            } else {
+                //Normal row
+                row = $('<tr class="resultTableRow" id="rTbl-' + sorted[i][0] + '"/>');
+            }
+            row.append($("<td>" + sorted[i][0] + "</td>"));
+            var score = sorted[i][1];
+            row.append($("<td>" + ((!score || score == "null") ? "-" : score) + "</td>"));
+            row.append($("<td>" + sorted[i][2] + "</td>"));
+            tableBody.append(row);
+        }
+    }
+
+    //Compare function for results, based on sort order
+    function compareResultsIndex(a, b){
+        return (resultTableSortOrder == "ascending" ? a[0] - b[0] : b[0] - a[0]);
+    }
+    function compareScores(a,b){
+        //TODO Not always numbers...
+        if(resultTableSortOrder == "ascending"){
+            if(a[1] == "NaN"){
+                return 1;
+            } else if(b[1] == "NaN"){
+                return -1;
+            }
+            return a[1] - b[1];
+        } else {
+            if(a[1] == "NaN"){
+                return -1;
+            } else if(b[1] == "NaN"){
+                return 1;
+            }
+            return b[1] - a[1];
+        }
+    }
+    function compareStatus(a,b){
+        //TODO: secondary sort on... score? index?
+        if(resultTableSortOrder == "ascending"){
+            return (a[2] < b[2] ? -1 : (a[2] > b[2] ? 1 : 0));
+        } else {
+            return (a[2] < b[2] ? 1 : (a[2] > b[2] ? -1 : 0));
+        }
+    }
+
+    //Do a HTTP request on the specified path, parse and insert into the provided element
+    function loadCandidateDetails(path, elementToAppendTo){
+        $.get(path, function (data) {
+            var str = JSON.stringify(data);
+            var component = Component.getComponent(str);
+            component.render(elementToAppendTo);
+        });
+    }
+
+
+
+    //Sorting by column: Intercept click events on table header
+    $(function(){
+        $("#resultsTableHeader").delegate("th", "click", function(e) {
+            //console.log("Header clicked on at: " + $(e.currentTarget).index() + " - " + $(e.currentTarget).html());
+            //Update the sort order for the table:
+            var clickIndex = $(e.currentTarget).index();
+            if(clickIndex == resultTableSortIndex){
+                //Switch sort order: ascending -> descending or descending -> ascending
+                if(resultTableSortOrder == "ascending"){
+                    resultTableSortOrder = "descending";
+                } else {
+                    resultTableSortOrder = "ascending";
+                }
+            } else {
+                //Sort on column, ascending:
+                resultTableSortIndex = clickIndex;
+                resultTableSortOrder = "ascending";
+            }
+
+            //Clear record of expanded rows
+            expandedRowsCandidateIDs = [];
+
+            //Redraw table
+            drawResultTable();
+        });
+    });
+
+    //Displaying model/candidate details: Intercept click events on table rows -> toggle selected, fire off update
+    $(function(){
+        $("#resultsTableBody").delegate("tr", "click", function(e){
+            var id = this.id;   //Expect: rTbl-X  where X is some index
+            var dashIdx = id.indexOf("-");
+            var candidateID = Number(id.substring(dashIdx+1));
+//            console.log("Clicked row: " + this.id + " with class: " + this.className + ", candidateId = " + candidateID);
+
+            if(this.className == "resultTableRow"){
+                //Set selected model
+                selectedCandidateIdx = candidateID;
+
+                //Fire off update
+                doUpdate();
+            }
+        });
+    });
+
+    function selectNewSession(){
+        var selector = $("#sessionSelect");
+        var currSelected = selector.val();
+
+        if(currSelected){
+            $.ajax({
+                url: "/arbiter/sessions/set/" + currSelected,
+                async: true,
+                error: function (query, status, error) {
+                    console.log("Error setting session: " + error);
+                },
+                success: function (data) {
+                    //Update UI immediately
+                    doUpdate();
+                }
+            });
+        }
+    }
+
+</script>
+<script>
+    $(function () {
+        $("#accordion").accordion({
+            collapsible: true,
+            heightStyle: "content"
+        });
+    });
+    $(function () {
+        $("#accordion2").accordion({
+            collapsible: true,
+            heightStyle: "content"
+        });
+    });
+    $(function () {
+        $("#accordion3").accordion({
+            collapsible: true,
+            heightStyle: "content"
+        });
+    });
+</script>
+        <table style="width: 100%;
+            padding: 5px;" class="hd">
+            <tbody>
+                <tr style="height: 40px">
+                    <td> <div style="width: 40px;
+                        height: 40px;
+                        float: left"></div>
+                        <div style="height: 40px;
+                            float: left;
+                            padding-top: 10px">Deeplearning4J - Arbiter UI</div></td>
+                    <td>
+                        <div id="sessionSelectDiv" style="display:none; float:left; font-size: 10pt; color:black">
+                            <span style="color: white">Session:</span>
+                        <select id="sessionSelect" onchange='selectNewSession()'>
+                            <option>(Session ID)</option>
+                        </select>
+                    </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+
+        <div style="width: 1200px;
+            margin-left: auto;
+            margin-right: auto;">
+            <div class="outerelements" id="status">
+                <div id="accordion" class="hcol2">
+                    <h3 class="hcol2 headingcolor ui-accordion-header">Summary</h3>
+                    <div class="statusdiv" id="statusdiv">
+            </div>
+                </div>
+            </div>
+
+            <div class="outerelements" id="settings">
+                <div id="accordion2">
+                    <h3 class="ui-accordion-header headingcolor">Optimization Settings</h3>
+                    <div class="settingsdiv" id="settingsdiv"></div>
+                </div>
+            </div>
+
+
+            <div class="outerelements" id="results">
+                <div class="resultsHeadingDiv">Results</div>
+                <div class="resultsdiv" id="resultsdiv">
+                    <table style="width: 100%" id="resultsTable" class="resultsTable">
+                        <col width="33%">
+                        <col width="33%">
+                        <col width="34%">
+                        <thead id="resultsTableHeader"></thead>
+                        <tbody id="resultsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="outerelements" id="resultview">
+                <div id="accordion3">
+                    <h3 class="ui-accordion-header headingcolor">Selected Result</h3>
+                    <div class="resultsviewdiv" id="resultsviewdiv"></div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

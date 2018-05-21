@@ -1,0 +1,39 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j-camel-routes</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nd4j-kafka_2.11</artifactId>
+    <packaging>jar</packaging>
+
+    <name>nd4j-kafka</name>
+    <url>http://nd4j.org</url>
+
+    <properties>
+        <kafka.scala.exclusion.version>2.11</kafka.scala.exclusion.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-kafka</artifactId>
+            <version>${camel.version}</version>
+        </dependency>
+
+        <!-- testing -->
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-base64</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
+</project>

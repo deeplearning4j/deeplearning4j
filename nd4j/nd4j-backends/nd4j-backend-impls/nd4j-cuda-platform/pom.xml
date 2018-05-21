@@ -1,0 +1,63 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j-backend-impls</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nd4j-cuda-9.1-platform</artifactId>
+    <name>nd4j-cuda-platform</name>
+
+    <properties>
+        <cuda.version>9.1</cuda.version>
+        <cudnn.version>7.1</cudnn.version>
+        <javacpp-presets.cuda.version>1.4.1</javacpp-presets.cuda.version>
+        <nd4j.backend>nd4j-cuda-${cuda.version}</nd4j.backend>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>cuda-platform</artifactId>
+            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.linux-x86_64}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.macosx-x86_64}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.windows-x86_64}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.linux-ppc64le}</classifier>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
+
+</project>

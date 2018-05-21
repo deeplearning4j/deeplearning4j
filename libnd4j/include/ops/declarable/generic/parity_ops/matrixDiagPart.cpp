@@ -1,0 +1,49 @@
+//
+// Created to use with batched tensor by GS <sgazeos@gmail.com> 3/21/2018
+//
+
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/matrix_diag_part.h>
+
+
+namespace nd4j {
+    namespace ops {
+        CUSTOM_OP_IMPL(matrix_diag_part, 1, 1, false, 0, 0) {
+            NDArray<T>* input  = INPUT_VARIABLE(0);
+            NDArray<T>* output = OUTPUT_VARIABLE(0);
+            const int inRank = input->rankOf();
+
+            REQUIRE_TRUE(inRank >= 2, 0, "CUSTOM_OP matrix_diag_part: input array must have rank >= 2, but %i given!", inRank);
+
+            return helpers::matrixDiagPart(input, output);
+        }
+
+        DECLARE_SHAPE_FN(matrix_diag_part) {
+
+            Nd4jLong* outShapeInfo = nullptr;
+            auto in = inputShape->at(0);
+            int inRank = shape::rank(in);
+
+            REQUIRE_TRUE(inRank >= 2, 0, "CUSTOM_OP matrix_diag_part: input array must have rank >= 2, but %i given!", inRank);
+
+            int outRank = inRank - 1;
+            int lastDimension = nd4j::math::nd4j_min(shape::sizeAt(in, -1), shape::sizeAt(in, -2));
+            if(outRank == 1) {
+                //output shape is a vector with size min(sizeAt(0), sizeAt(1))
+                ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
+                shape::shapeVector(lastDimension, outShapeInfo);
+            }
+            else {
+                ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+                outShapeInfo[0] = outRank;
+                for(int i = 0; i < outRank - 1; ++i)
+                    outShapeInfo[i + 1] = shape::sizeAt(in, i);
+                outShapeInfo[outRank] = lastDimension;
+
+                shape::updateStrides(outShapeInfo, shape::order(in));
+            }
+            return SHAPELIST(outShapeInfo);
+    }
+}
+}
+
