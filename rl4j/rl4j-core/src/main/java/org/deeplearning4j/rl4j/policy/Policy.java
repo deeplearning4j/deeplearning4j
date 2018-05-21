@@ -10,6 +10,7 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
@@ -72,10 +73,10 @@ public abstract class Policy<O extends Encodable, A> {
                 }
                 if (getNeuralNet().isRecurrent()) {
                     //flatten everything for the RNN
-                    hstack = hstack.reshape(Learning.makeShape(1, hstack.shape(), 1));
+                    hstack = hstack.reshape(Learning.makeShape(1, ArrayUtil.toInts(hstack.shape()), 1));
                 } else {
                     if (hstack.shape().length > 2)
-                        hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+                        hstack = hstack.reshape(Learning.makeShape(1, ArrayUtil.toInts(hstack.shape())));
                 }
                 action = nextAction(hstack);
             }

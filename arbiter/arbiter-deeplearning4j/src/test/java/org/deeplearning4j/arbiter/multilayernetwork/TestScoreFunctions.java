@@ -176,7 +176,7 @@ public class TestScoreFunctions {
             switch (rocType){
                 case ROC:
                     //Convert to binary
-                    int mb = toPreProcess.getLabels().size(0);
+                    long mb = toPreProcess.getLabels().size(0);
                     INDArray argMax = Nd4j.argMax(toPreProcess.getLabels(), 1);
                     INDArray newLabel = Nd4j.create(mb, 2);
                     for( int i=0; i<mb; i++ ){

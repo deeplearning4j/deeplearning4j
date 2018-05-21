@@ -12,6 +12,7 @@ import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Stack;
 
@@ -141,11 +142,11 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
 
         if (getCurrent().isRecurrent()) {
             //flatten everything for the RNN
-            hstack = hstack.reshape(Learning.makeShape(1, hstack.shape(), 1));
+            hstack = hstack.reshape(Learning.makeShape(1, ArrayUtil.toInts(hstack.shape()), 1));
         } else {
             //if input is not 2d, you have to append that the batch is 1 length high
             if (hstack.shape().length > 2)
-                hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+                hstack = hstack.reshape(Learning.makeShape(1, ArrayUtil.toInts(hstack.shape())));
         }
 
         return hstack;
