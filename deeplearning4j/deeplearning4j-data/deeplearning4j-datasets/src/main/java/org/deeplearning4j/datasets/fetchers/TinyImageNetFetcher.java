@@ -26,6 +26,7 @@ import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.image.transform.ImageTransform;
 import org.datavec.image.transform.MultiImageTransform;
 import org.datavec.image.transform.ResizeImageTransform;
+import org.nd4j.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +65,7 @@ public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
     public long expectedChecksum(DataSetType set) { return 33822361L; }
     @Override
     public RecordReader getRecordReader(long rngSeed, int[] imgDim, DataSetType set, ImageTransform imageTransform) {
+        Preconditions.checkState(imgDim == null || imgDim.length == 2, "Invalid image dimensions: must be null or lenth 2. Got: %s", imgDim);
         // check empty cache
         if(LOCAL_CACHE.exists()) {
             if(LOCAL_CACHE.listFiles().length<1) LOCAL_CACHE.delete();
@@ -98,7 +100,7 @@ public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
 
         // add transforms
         List<ImageTransform> transforms = new LinkedList<>();
-        if(imgDim.length > 0) new ResizeImageTransform(imgDim[0], imgDim[1]);
+        if(imgDim != null && imgDim.length > 0) new ResizeImageTransform(imgDim[0], imgDim[1]);
         if(imageTransform != null) transforms.add(imageTransform);
 
         ImageRecordReader rr = new ImageRecordReader(TinyImageNetFetcher.INPUT_HEIGHT, TinyImageNetFetcher.INPUT_WIDTH,

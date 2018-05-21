@@ -42,11 +42,11 @@ public class TinyImageNetDataSetIterator extends RecordReaderDataSetIterator {
     protected DataSetPreProcessor preProcessor;
 
     public TinyImageNetDataSetIterator(int batchSize) {
-        this(batchSize, new int[]{}, DataSetType.TRAIN, null, 123);
+        this(batchSize, null, DataSetType.TRAIN, null, 123);
     }
 
     public TinyImageNetDataSetIterator(int batchSize, DataSetType set) {
-        this(batchSize, new int[]{}, set, null, 123);
+        this(batchSize, null, set, null, 123);
     }
 
     /**
