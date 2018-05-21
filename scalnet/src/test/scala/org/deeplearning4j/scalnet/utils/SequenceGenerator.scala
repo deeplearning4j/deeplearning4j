@@ -33,7 +33,7 @@ object SequenceGenerator {
     for (i <- 0 until timesteps) {
       val cumulativeSum = Nd4j.cumsum(x.getRow(0), 1)
       val limit = timesteps * threshold
-      y.putScalar(0, i, if (cumulativeSum.getDouble(0, i) > limit) 1 else 0)
+      y.putScalar(0, i, if (cumulativeSum.getDouble(0l, i) > limit) 1 else 0)
     }
     new DataSet(x.reshape(1, timesteps, 1), y.reshape(1, timesteps, 1))
   }
