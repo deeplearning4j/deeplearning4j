@@ -119,7 +119,20 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         assertTrue(iter.hasNext());
         DataSet data = iter.next();
         assertEquals(numClasses, data.getLabels().size(1));
-        assertEquals(row, data.getFeatureMatrix().size(2));
+        assertArrayEquals(new long[]{1, channels, row, col}, data.getFeatures().shape());
+    }
+
+    @Test
+    public void testTinyImageNetIterator2() throws Exception {
+        int numClasses = 200;
+        int row = 224;
+        int col = 224;
+        int channels = 3;
+        TinyImageNetDataSetIterator iter = new TinyImageNetDataSetIterator(1, new int[]{row, col}, DataSetType.TEST);
+        assertTrue(iter.hasNext());
+        DataSet data = iter.next();
+        assertEquals(numClasses, data.getLabels().size(1));
+        assertArrayEquals(new long[]{1, channels, row, col}, data.getFeatures().shape());
     }
 
     @Test

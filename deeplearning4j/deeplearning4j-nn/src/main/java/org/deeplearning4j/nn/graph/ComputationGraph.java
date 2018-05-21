@@ -2606,6 +2606,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (this.trainingListeners == null) {
             setListeners(listeners);
             return;
+        } else {
+            this.trainingListeners = new ArrayList<>(this.trainingListeners);   //To avoid immutable list issues
+            Collections.addAll(this.trainingListeners, listeners);
+            setListeners(listeners);
         }
 
         if (solver != null) {

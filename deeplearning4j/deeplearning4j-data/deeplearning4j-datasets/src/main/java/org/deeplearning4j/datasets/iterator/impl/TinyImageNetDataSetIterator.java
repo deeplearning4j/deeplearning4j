@@ -42,18 +42,22 @@ public class TinyImageNetDataSetIterator extends RecordReaderDataSetIterator {
     protected DataSetPreProcessor preProcessor;
 
     public TinyImageNetDataSetIterator(int batchSize) {
-        this(batchSize, new int[]{}, DataSetType.TRAIN, null, 123);
+        this(batchSize, null, DataSetType.TRAIN, null, 123);
     }
 
     public TinyImageNetDataSetIterator(int batchSize, DataSetType set) {
-        this(batchSize, new int[]{}, set, null, 123);
+        this(batchSize, null, set, null, 123);
+    }
+
+    public TinyImageNetDataSetIterator(int batchSize, int[] imgDim, DataSetType set) {
+        this(batchSize, imgDim, set, null, 123);
     }
 
     /**
      * Get the Tiny ImageNet iterator with specified train/test set and custom transform.
      *
      * @param batchSize Size of each patch
-     * @param imgDim Dimensions of desired output
+     * @param imgDim Dimensions of desired output - for example, {64, 64}
      * @param set Train, test, or validation
      * @param imageTransform Additional image transform for output
      * @param rngSeed random number generator seed to use when shuffling examples
