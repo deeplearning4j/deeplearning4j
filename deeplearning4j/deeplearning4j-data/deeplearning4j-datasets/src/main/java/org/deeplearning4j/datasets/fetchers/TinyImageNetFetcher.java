@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -98,13 +98,9 @@ public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
         FileSplit filesInDir = new FileSplit(datasetPath, BaseImageLoader.ALLOWED_FORMATS, rng);
         InputSplit[] filesInDirSplit = filesInDir.sample(pathFilter, 1);
 
-        // add transforms
-        List<ImageTransform> transforms = new LinkedList<>();
-        if(imgDim != null && imgDim.length > 0) new ResizeImageTransform(imgDim[0], imgDim[1]);
-        if(imageTransform != null) transforms.add(imageTransform);
-
-        ImageRecordReader rr = new ImageRecordReader(TinyImageNetFetcher.INPUT_HEIGHT, TinyImageNetFetcher.INPUT_WIDTH,
-                    TinyImageNetFetcher.INPUT_CHANNELS, new ParentPathLabelGenerator(), new MultiImageTransform(transforms.toArray(new ImageTransform[transforms.size()])));
+        int h = (imgDim == null ? TinyImageNetFetcher.INPUT_HEIGHT : imgDim[0]);
+        int w = (imgDim == null ? TinyImageNetFetcher.INPUT_WIDTH : imgDim[1]);
+        ImageRecordReader rr = new ImageRecordReader(h, w,TinyImageNetFetcher.INPUT_CHANNELS, new ParentPathLabelGenerator(), imageTransform);
 
         try {
             rr.initialize(filesInDirSplit[0]);
