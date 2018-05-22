@@ -15,7 +15,7 @@ using namespace nd4j::graph;
 namespace nd4j {
     namespace ops {
         template <typename T>
-        class DeclarableListOp : public nd4j::ops::DeclarableOp<T> {
+        class ND4J_EXPORT DeclarableListOp : public nd4j::ops::DeclarableOp<T> {
         protected:
             virtual Nd4jStatus validateAndExecute(Context<T>& block) = 0;
 

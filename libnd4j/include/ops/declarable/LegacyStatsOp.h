@@ -13,7 +13,7 @@ namespace nd4j {
         *   This class provides wrapper for SummaryStats operations: Variance and Standard Deviation
         */
         template <typename T>
-        class LegacyStatsOp : public LegacyOp<T> {
+        class ND4J_EXPORT LegacyStatsOp : public LegacyOp<T> {
         protected:
             Nd4jStatus validateAndExecute(Context<T>& block);
         public:

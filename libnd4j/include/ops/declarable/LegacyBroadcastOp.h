@@ -13,7 +13,7 @@ namespace nd4j {
         *   This class provides wrapper for broadcast operations. 
         */
         template <typename T>
-        class LegacyBroadcastOp : public LegacyOp<T> {
+        class ND4J_EXPORT LegacyBroadcastOp : public LegacyOp<T> {
         protected:
             Nd4jStatus validateAndExecute(Context<T>& block);
         public:

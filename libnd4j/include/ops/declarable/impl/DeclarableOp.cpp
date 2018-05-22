@@ -564,9 +564,9 @@ namespace nd4j {
             for (int e = 0; e < tArgs.size(); e++)
                 block.getTArguments()->emplace_back(tArgs.at(e));
 
-
+            // FIXME: iargs should be Nd4jLong
             for (int e = 0; e < iArgs.size(); e++)
-                block.getIArguments()->emplace_back(iArgs.at(e));
+                block.getIArguments()->emplace_back(static_cast<int>(iArgs.at(e)));
 
             Nd4jStatus result = this->execute(&block);
 

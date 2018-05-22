@@ -10,7 +10,7 @@
 namespace nd4j {
     namespace ops {
         template <typename T>
-        class LegacyReduceOp : public LegacyOp<T> {
+        class ND4J_EXPORT LegacyReduceOp : public LegacyOp<T> {
         protected:
             Nd4jStatus validateAndExecute(Context<T>& block);
         public:

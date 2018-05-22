@@ -15,7 +15,7 @@ namespace nd4j {
         *   TODO: eventually we want this op class to return long long instead of T
         */
         template <typename T>
-        class LegacyIndexReduceOp : public LegacyOp<T> {
+        class ND4J_EXPORT LegacyIndexReduceOp : public LegacyOp<T> {
         protected:
             Nd4jStatus validateAndExecute(Context<T>& block);
         public:

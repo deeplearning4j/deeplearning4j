@@ -68,9 +68,11 @@
 #define op_def
 #define op_def_special
 #elif _MSC_VER
-#define op_def __pragma("omp declare simd") inline
-#define meta_def __pragma("omp declare simd") inline
-#define op_def_special __pragma("omp declare simd") inline
+// it's "CUDA backend CPU code" only actually, so we don't care about inlining here
+// __pragma("omp declare simd")
+#define op_def  __forceinline
+#define meta_def  __forceinline
+#define op_def_special  __forceinline
 #elif __clang__
 #define op_def inline
 #define op_def_special inline
@@ -1556,7 +1558,7 @@ struct __registratorSynonymDouble_##NAME {\
 #ifdef __clang__
 #define FORCEINLINE inline 
 #elif _MSC_VER
-#define FORCEINLINE __forceinline inline 
+#define FORCEINLINE __forceinline
 #elif __GNUC__
 #define FORCEINLINE __attribute__((always_inline)) inline 
 #elif __CUDACC__
