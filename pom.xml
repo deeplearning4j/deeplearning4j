@@ -50,19 +50,6 @@
     <description>Deeplearning4j Monorepo</description>
     <url>http://deeplearning4j.org/</url>
 
-    <modules>
-        <module>libnd4j</module>
-        <module>nd4j</module>
-        <module>datavec</module>
-        <module>deeplearning4j</module>
-        <module>arbiter</module>
-<!--        <module>nd4s</module>-->
-        <module>gym-java-client</module>
-        <module>rl4j</module>
-        <module>scalnet</module>
-        <module>jumpy</module>
-    </modules>
-
     <profiles>
         <profile>
             <id>testresources</id>
@@ -85,7 +72,11 @@
         <profile>
             <id>all</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <!--Workaround to always build all modules despite the fact that
+                    user provided additional profiles-->
+                <file>
+                    <exists>pom.xml</exists>
+                </file>
             </activation>
             <modules>
                 <module>libnd4j</module>
@@ -101,17 +92,22 @@
             </modules>
         </profile>
         <profile>
-            <id>ci-build-multiplatform-projects</id>
+            <id>ci-build-backend-modules</id>
             <modules>
                 <module>libnd4j</module>
                 <module>nd4j</module>
             </modules>
         </profile>
         <profile>
-            <id>ci-build</id>
+            <id>ci-build-gpu-dependent-modules</id>
             <modules>
                 <module>datavec</module>
                 <module>deeplearning4j</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>ci-build-generic-modules</id>
+            <modules>
                 <module>arbiter</module>
                 <!--        <module>nd4s</module>-->
                 <module>gym-java-client</module>
