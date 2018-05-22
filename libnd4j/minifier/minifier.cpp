@@ -129,11 +129,12 @@ main(int argc, char *argv[]) {
     nd4j_printf("Run preprocessor as \ncpp %s\n", input.c_str());
 //    int err;
     std::string pathStr("PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/");
-    pathStr += std::to_string(__GNUC__);
+    std::string gccVersion = std::to_string(__GNUC__);
+    pathStr += gccVersion;
     std::string includeStr("CPLUS_INCLUDE_PATH=/usr/include/c++/");
-    includeStr += std::to_string(__GNUC__);
+    includeStr += gccVersion; // GCC version is here
     includeStr += ":/usr/include/x86_64-linux-gnu/c++/";
-    includeStr += std::to_string(__GNUC__);
+    includeStr += gccVersion;
 
     nd4j_printf("%s\n", pathStr.c_str());
     char const* env[] = { "HOME=/tmp", 
