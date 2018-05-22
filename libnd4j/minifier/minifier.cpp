@@ -127,10 +127,19 @@ main(int argc, char *argv[]) {
     std::string output(opt.outputName());
     nd4j_printf("Run preprocessor as \ncpp %s\n", input.c_str());
 //    int err;
+    std::string pathStr("PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/");
+    pathStr += std::to_string(__GNUC__);
+    std::string includeStr("CPLUS_INCLUDE_PATH=/usr/include/c++/");
+    includeStr += std::to_string(__GNUC__);
+    includeStr += ":/usr/include/x86_64-linux-gnu/c++/";
+    includeStr += std::to_string(__GNUC__);
+
+    nd4j_printf("PATH=%s\n", pathStr.c_str());
     char const* env[] = { "HOME=/tmp", 
                           "LOGNAME=minifier", 
-                          "PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/6", 
-                          "CPLUS_INCLUDE_PATH=/usr/include/c++/6:/usr/include/x86_64-linux-gnu/c++/6",
+                          //"PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/6", 
+                          pathStr.c_str(),
+                          includeStr.c_str(), //"CPLUS_INCLUDE_PATH=/usr/include/c++/6:/usr/include/x86_64-linux-gnu/c++/6",
                           (char *)0 };
 
 // to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}' 
