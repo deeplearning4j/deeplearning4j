@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
-  * A {@link DataSetIterator} which uses a <a href="https://lucene.apache.org/solr/guide/7_2/streaming-expressions.html">streaming expression</a> to fetch data from Apache Solr and/or one of the sources (e.g. <code>jdbc</code>) supported as a <a href="https://lucene.apache.org/solr/guide/7_2/stream-source-reference.html">stream source</a>.
+  * A {@link DataSetIterator} which uses a <a href="https://lucene.apache.org/solr/guide/7_4/streaming-expressions.html">streaming expression</a> to fetch data from Apache Solr and/or one of the sources (e.g. <code>jdbc</code>) supported as a <a href="https://lucene.apache.org/solr/guide/7_4/stream-source-reference.html">stream source</a>.
  * <p>
  * Example code snippet:
 <pre>{
