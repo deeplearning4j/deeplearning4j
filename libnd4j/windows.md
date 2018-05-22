@@ -5,7 +5,7 @@ libnd4j depends on some Unix utilities for compilation. So in order to compile i
 
 After you have setup Msys2 by following [their instructions](https://msys2.github.io/), you will have to install some additional development packages. Start the msys2 shell and setup the dev environment with:
 
-    pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-extra-cmake-modules make pkg-config grep sed gzip tar mingw64/mingw-w64-x86_64-openblas mingw-w64-x86_64-lz4
+    pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-extra-cmake-modules make pkg-config grep sed gzip tar mingw64/mingw-w64-x86_64-openblas mingw-w64-x86_64-lz4 mingw-w64-x86_64-gdb mingw-w64-x86_64-make mingw-w64-x86_64-ninja
 
 This will install the needed dependencies for use in the msys2 shell. You will have to use the msys2 shell (especially `c:\msys64\mingw64.exe`) for the whole compilation process.
 
