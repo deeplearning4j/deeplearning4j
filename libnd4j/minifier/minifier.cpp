@@ -123,7 +123,7 @@ main(int argc, char *argv[]) {
 
 #ifdef __GNUC__
     #if __CNUC__ < 4 
-    #pragma error "Compiler version should be greater then 4.9
+    #pragma error "Compiler version should be greater then 4.9"
     #endif
     // just stacking everything together
     std::string cmdline = "./buildnativeoperations.sh " + name_arg + build_arg + arch_arg + opts_arg;
@@ -145,17 +145,17 @@ main(int argc, char *argv[]) {
 
     std::string pathStr("PATH=/usr/bin:/usr/local/bin:");
     pathStr += cxx_path;
-    std::string gccVersion = std::to_string(__GNUC__);
+//    std::string gccVersion = std::to_string(__GNUC__);
 //    pathStr += gccVersion;
-    std::string includeStr("CPLUS_INCLUDE_PATH=/usr/include/c++/");
-    includeStr += gccVersion; // GCC version is here
+//    std::string includeStr("CPLUS_INCLUDE_PATH=/usr/include/c++/");
+//    includeStr += gccVersion; // GCC version is here
 //    includeStr += ":/usr/include/x86_64-linux-gnu/c++/";
-    includeStr += gccVersion;
+//    includeStr += gccVersion;
 
     nd4j_printf("%s\n", pathStr.c_str());
     char const* env[] = { "HOME=/tmp", 
-                          "LOGNAME=minifier", 
-                          //"PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/6", 
+//                          "LOGNAME=minifier", 
+//                          //"PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/6", 
                           pathStr.c_str(),
                           //includeStr.c_str(), //"CPLUS_INCLUDE_PATH=/usr/include/c++/6:/usr/include/x86_64-linux-gnu/c++/6",
                           (char *)0 };
@@ -173,9 +173,14 @@ main(int argc, char *argv[]) {
         input.c_str(),
         (char*)nullptr, 
         env);
+
     if (err < 0) {
         perror("\nCannot run Preprocessor properly due \n");
     }
+    
+//    else {
+    nd4j_printf("Header file %s was generated.\n", output.c_str());
+//    }
 #endif
 
     //nd4j_printf("Command line: %s\n", cmdline.c_str());
