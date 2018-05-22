@@ -1642,7 +1642,7 @@ TEST_F(DeclarableOpsTests4, LrnTest_5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, avgpool3d_test1) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
@@ -1654,7 +1654,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test1) {
     NDArrayFactory<double>::linspace(1., input);
     
     nd4j::ops::avgpool3dnew<double> op;
-    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1667,7 +1667,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, avgpool3d_test2) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
     int oD=3,oH=4,oW=3;
     int paddingMode = 1;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
@@ -1682,7 +1682,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test2) {
     NDArrayFactory<double>::linspace(1., input);    
 
     nd4j::ops::avgpool3dnew<double> op;
-    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1695,7 +1695,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, avgpool3d_test3) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
@@ -1707,7 +1707,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test3) {
     NDArrayFactory<double>::linspace(1., input);    
 
     nd4j::ops::avgpool3dnew<double> op;
-    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1720,7 +1720,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, avgpool3d_test4) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1,  dD=1,dH=1,dW=1;
     int oD=4,oH=4,oW=4;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
@@ -1747,7 +1747,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test4) {
     NDArrayFactory<double>::linspace(1., input);
     
     nd4j::ops::avgpool3dnew<double> op;
-    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1760,7 +1760,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test4) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, avgpool3d_bp_test1) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
@@ -1780,7 +1780,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test1) {
     gradO = 2.;
     
     nd4j::ops::avgpool3dnew_bp<double> op;
-    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1794,7 +1794,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, avgpool3d_bp_test2) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1,  dD=1,dH=1,dW=1;
     int oD=4,oH=4,oW=4;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
@@ -1814,7 +1814,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test2) {
     gradO = 2.;
     
     nd4j::ops::avgpool3dnew_bp<double> op;
-    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1828,7 +1828,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, avgpool3d_bp_test3) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
     int oD=3,oH=4,oW=3;
     int paddingMode = 1;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
@@ -1847,7 +1847,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test3) {
     gradO = 2.;
     
     nd4j::ops::avgpool3dnew_bp<double> op;
-    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 0, dataFormat});
     NDArray<double>* output = results->at(0);    
     
     ASSERT_EQ(Status::OK(), results->status());
@@ -1860,7 +1860,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, avgpool3d_bp_test4) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
     int oD=3,oH=4,oW=3;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
@@ -1879,7 +1879,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test4) {
     gradO = 2.;
     
     nd4j::ops::avgpool3dnew_bp<double> op;
-    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 0, dataFormat});
     NDArray<double>* output = results->at(0);    
     
     ASSERT_EQ(Status::OK(), results->status());
@@ -1893,7 +1893,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test4) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, maxpool3d_test1) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
@@ -1904,7 +1904,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test1) {
     NDArrayFactory<double>::linspace(1., input);
     
     nd4j::ops::maxpool3dnew<double> op;
-    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1917,7 +1917,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, maxpool3d_test2) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=3,oH=4,oW=3;
     int paddingMode = 1;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
@@ -1932,7 +1932,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test2) {
     NDArrayFactory<double>::linspace(1., input);    
 
     nd4j::ops::maxpool3dnew<double> op;
-    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);        
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1945,7 +1945,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, maxpool3d_test3) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0, dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
@@ -1956,7 +1956,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test3) {
     NDArrayFactory<double>::linspace(1., input);    
 
     nd4j::ops::maxpool3dnew<double> op;
-    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1969,7 +1969,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, maxpool3d_test4) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1, dD=1,dH=1,dW=1;
     int oD=4,oH=4,oW=4;
     int paddingMode = 0;             // -SAME,  0-VALID
     int dataFormat  = 0;             // -NDHWC, 0-NCDHW
@@ -1986,7 +1986,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test4) {
     NDArrayFactory<double>::linspace(1., input);
     
     nd4j::ops::maxpool3dnew<double> op;
-    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2000,7 +2000,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test4) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, maxpool3d_bp_test1) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
     int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
@@ -2017,7 +2017,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test1) {
     NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
     
     nd4j::ops::maxpool3dnew_bp<double> op;
-    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2030,7 +2030,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, maxpool3d_bp_test2) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1,  dD=1,dH=1,dW=1;
     int oD=4,oH=4,oW=4;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
@@ -2050,7 +2050,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test2) {
     NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
     
     nd4j::ops::maxpool3dnew_bp<double> op;
-    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2063,7 +2063,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, maxpool3d_bp_test3) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
     int oD=3,oH=4,oW=3;
     int paddingMode = 1;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
@@ -2082,7 +2082,7 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test3) {
     NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
     
     nd4j::ops::maxpool3dnew_bp<double> op;
-    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
     
     ASSERT_EQ(Status::OK(), results->status());
@@ -2096,25 +2096,24 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, maxpool3d_bp_test4) {
 
-    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
-    int oD=3,oH=4,oW=3;
+    int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int oD=2,oH=2,oW=2;
     int paddingMode = 0;             // 1-SAME,  0-VALID
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<double> gradO   ('c', {bS, oD, oH, oW, iC});
-    NDArray<double> expected('c', {bS, iD, iH, iW, iC}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0.2, 0.3, 1.1, 1.3, 1.5, 0, 0, 0, 5.7, 6, 6.3, 
-                                                         14.1, 14.7, 15.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 11.2, 11.4, 23.8, 24.2, 
-                                                         24.6, 0, 0, 0, 43.8, 44.4, 45, 93, 94.2, 95.4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                                                         10.9, 11, 11.1, 22.7, 22.9, 23.1, 0, 0, 0, 38.1, 38.4, 38.7, 78.9, 79.5, 80.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32.6, 32.8, 33, 67, 67.4, 67.8, 0, 0, 0, 108.6, 109.2, 109.8, 222.6, 223.8, 225,});
+    NDArray<double> expected('c', {bS, iD, iH, iW, iC}, {0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,
+                                                         0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0.1, 0.2, 0.3,0.4, 0.5, 0.6,0. , 0. , 0. ,0.7, 0.8, 0.9,1. , 1.1, 1.2,
+                                                         0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,1.3, 1.4, 1.5,1.6, 1.7, 1.8,0. , 0. , 0. ,1.9, 2. , 2.1,2.2, 2.3, 2.4,
+                                                         0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,
+                                                         0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,2.5, 2.6, 2.7,2.8, 2.9, 3. ,0. , 0. , 0. ,3.1, 3.2, 3.3,3.4, 3.5, 3.6,
+                                                         0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,3.7, 3.8, 3.9,4. , 4.1, 4.2,0. , 0. , 0. ,4.3, 4.4, 4.5,4.6, 4.7, 4.8});
     NDArrayFactory<double>::linspace(1., input);
     NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
     
     nd4j::ops::maxpool3dnew_bp<double> op;
-    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
     NDArray<double>* output = results->at(0);    
     
     ASSERT_EQ(Status::OK(), results->status());
@@ -2142,7 +2141,7 @@ TEST_F(DeclarableOpsTests4, maxpool2d_test1) {
     NDArray<double> input   ('c', {bS, iC, iH, iW});    
     
     nd4j::ops::maxpool2d<double> op;
-    ResultSet<double>* results = op.execute({&input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, isSameMode});
+    ResultSet<double>* results = op.execute({&input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, isSameMode, 1, 0});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());    

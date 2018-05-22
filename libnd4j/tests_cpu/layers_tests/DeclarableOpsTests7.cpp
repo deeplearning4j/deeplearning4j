@@ -1485,12 +1485,6 @@ NDArray<float> exp('c', {2, 3, 3}, {
 //    delete result;
 }
 
-
-
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, percentile_trest1) {
 
@@ -1586,6 +1580,308 @@ TEST_F(DeclarableOpsTests7, percentile_trest4) {
     delete result;
 }
 
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, maxpool2d_bp_test1) {
+
+    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int oH=2,oW=2;
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<double> input   ('c', {bS, iC, iH, iW});
+    NDArray<double> gradO   ('c', {bS, iC, oH, oW});
+    NDArray<double> expected('c', {bS, iC, iH, iW}, {0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.1, 0.2,0. , 0.3, 0.4,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.5, 0.6,0. , 0.7, 0.8,
+                                                     0. , 0. , 0. ,0. , 0. , 0. ,0. , 0.9, 1. ,0. , 1.1, 1.2,0. , 0. , 0. ,0. , 0. , 0. ,0. , 1.3, 1.4,0. , 1.5, 1.6,
+                                                     0. , 0. , 0. ,0. , 0. , 0. ,0. , 1.7, 1.8,0. , 1.9, 2. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 2.1, 2.2,0. , 2.3, 2.4});
+    NDArrayFactory<double>::linspace(1., input);
+    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    
+    nd4j::ops::maxpool2d_bp<double> op;
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, maxpool2d_bp_test2) {
+
+    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=1,pW=1,  dH=1,dW=1;
+    int oH=4,oW=4;
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<double> input   ('c', {bS, iC, iH, iW});
+    NDArray<double> gradO   ('c', {bS, iC, oH, oW});
+    NDArray<double> expected('c', {bS, iC, iH, iW}, {0. ,  0. ,  0. , 0.1,  0.2,  0.7, 0.5,  0.6,  1.5, 2.2,  2.4,  5.4, 0. ,  0. ,  0. , 1.7,  1.8,  3.9, 2.1,  2.2,  4.7, 5.4,  5.6, 11.8,
+                                                     0. ,  0. ,  0. , 3.3,  3.4,  7.1, 3.7,  3.8,  7.9, 8.6,  8.8, 18.2, 0. ,  0. ,  0. , 4.9,  5. , 10.3, 5.3,  5.4, 11.1,11.8, 12. , 24.6,
+                                                     0. ,  0. ,  0. , 6.5,  6.6, 13.5, 6.9,  7. , 14.3,15. , 15.2, 31. , 0. ,  0. ,  0. , 8.1,  8.2, 16.7, 8.5,  8.6, 17.5,18.2, 18.4, 37.4});
+    NDArrayFactory<double>::linspace(1., input);
+    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    
+    nd4j::ops::maxpool2d_bp<double> op;
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, maxpool2d_bp_test3) {
+
+    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
+    int oH=4,oW=3;
+    int paddingMode = 1;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<double> input   ('c', {bS, iH, iW, iC});
+    NDArray<double> gradO   ('c', {bS, oH, oW, iC});
+    NDArray<double> expected('c', {bS, iH, iW, iC}, {0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0.1, 0.2, 0.3, 1.1, 1.3, 1.5, 0. , 0. , 0. , 1. , 1.1, 1.2, 2.9, 3.1, 3.3,
+                                                     0. , 0. , 0. , 4.7, 4.9, 5.1,11.2,11.6,12. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 3.7, 3.8, 3.9, 8.3, 8.5, 8.7,
+                                                     0. , 0. , 0. , 4.6, 4.7, 4.8,10.1,10.3,10.5, 0. , 0. , 0. ,11.9,12.1,12.3,25.6,26. ,26.4});
+    NDArrayFactory<double>::linspace(1., input);
+    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    
+    nd4j::ops::maxpool2d_bp<double> op;
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
+    NDArray<double>* output = results->at(0);    
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, maxpool2d_bp_test4) {
+
+    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
+    int oH=2,oW=2;
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<double> input   ('c', {bS, iH, iW, iC});
+    NDArray<double> gradO   ('c', {bS, oH, oW, iC});
+    NDArray<double> expected('c', {bS, iH, iW, iC}, {0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0.1, 0.2, 0.3,0.4, 0.5, 0.6,
+                                                     0. , 0. , 0. ,0.7, 0.8, 0.9,1. , 1.1, 1.2,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,0. , 0. , 0. ,
+                                                     0. , 0. , 0. ,1.3, 1.4, 1.5,1.6, 1.7, 1.8,0. , 0. , 0. ,1.9, 2. , 2.1,2.2, 2.3, 2.4});
+    NDArrayFactory<double>::linspace(1., input);
+    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    
+    nd4j::ops::maxpool2d_bp<double> op;
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
+    NDArray<double>* output = results->at(0);    
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+ 
+ 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, pnormpool2d_bp_test1) {
+
+    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int oH=2,oW=2;
+    int pnorm = 3;
+    double eps = 0.;
+
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<double> input   ('c', {bS, iC, iH, iW});
+    NDArray<double> gradO   ('c', {bS, iC, oH, oW});
+    NDArray<double> expected('c', {bS, iC, iH, iW}, {9.661570e-04,9.671602e-03,1.306569e-02,3.679184e-02,1.297220e-01,1.040181e-01,1.126750e-01,3.320884e-01,2.340406e-01,1.333333e-01,3.352886e-01,2.070211e-01,
+                                                     8.991618e-02,2.160601e-01,1.283173e-01,2.744226e-01,6.364498e-01,3.662123e-01,3.869788e-01,8.808994e-01,4.984556e-01,2.613189e-01,5.818475e-01,3.225517e-01,
+                                                     2.065654e-01,4.553546e-01,2.501175e-01,5.190718e-01,1.131343e+00,6.148388e-01,6.362602e-01,1.377521e+00,7.439550e-01,3.833026e-01,8.227519e-01,4.407146e-01,
+                                                     3.261206e-01,6.969233e-01,3.717564e-01,7.627507e-01,1.620991e+00,8.600952e-01,8.814538e-01,1.866888e+00,9.873542e-01,5.046682e-01,1.064004e+00,5.602558e-01,
+                                                     4.464697e-01,9.389536e-01,4.932274e-01,1.005908e+00,2.108550e+00,1.104095e+00,1.125322e+00,2.354009e+00,1.230180e+00,6.258913e-01,1.305581e+00,6.804127e-01,
+                                                     5.671396e-01,1.181128e+00,6.145977e-01,1.248783e+00,2.595083e+00,1.347494e+00,1.368600e+00,2.840157e+00,1.472778e+00,7.470673e-01,1.547362e+00,8.008900e-01});
+    NDArrayFactory<double>::linspace(1., input);
+    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    
+    nd4j::ops::pnormpool2d_bp<double> op;
+    ResultSet<double>* results = op.execute({&input, &gradO}, {eps}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, pnorm, dataFormat});
+    NDArray<double>* output = results->at(0);        
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, pnormpool2d_bp_test2) {
+
+    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int oH=2,oW=2;
+    int pnorm = 2;
+    double eps = 0.;
+
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<double> input   ('c', {bS, iC, iH, iW});
+    NDArray<double> gradO   ('c', {bS, iC, oH, oW});
+    NDArray<double> expected('c', {bS, iC, iH, iW}, {0.007931,0.042891,0.040544,0.09369 ,0.276841,0.191675,0.163957,0.442946,0.287512,0.154919,0.373153,0.221172,
+                                                     0.15901 ,0.365232,0.207846,0.428282,0.959455,0.534076,0.508585,1.128771,0.623089,0.319794,0.698063,0.379547,
+                                                     0.321068,0.692438,0.372316,0.757521,1.620323,0.864566,0.838684,1.787943,0.951023,0.483194,1.023434,0.541058,
+                                                     0.483937,1.019414,0.536145,1.085348,2.276996,1.192917,1.166749,2.443606,1.278126,0.646499,1.349361,0.703463,
+                                                     0.647021,1.346249,0.699745,1.412654,2.932174,1.520512,1.494153,3.098146,1.604985,0.809791,1.675544,0.866229,
+                                                     0.810192,1.673009,0.863237,1.739711,3.58665 ,1.847753,1.82126 ,3.752188,1.931741,0.973081,2.001861,1.029173});
+    NDArrayFactory<double>::linspace(1., input);
+    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    
+    nd4j::ops::pnormpool2d_bp<double> op;
+    ResultSet<double>* results = op.execute({&input, &gradO}, {eps}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, pnorm, dataFormat});
+    NDArray<double>* output = results->at(0);        
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, avgpool2d_bp_test1) {
+
+    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int oH=2,oW=2;
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<double> input   ('c', {bS, iC, iH, iW});
+    NDArray<double> gradO   ('c', {bS, iC, oH, oW});
+    NDArray<double> expected('c', {bS, iC, iH, iW}, {0.016667,0.05    ,0.033333,0.066667,0.166667,0.1     ,0.066667,0.166667,0.1     ,0.05    ,0.116667,0.066667,
+                                                     0.083333,0.183333,0.1     ,0.2     ,0.433333,0.233333,0.2     ,0.433333,0.233333,0.116667,0.25    ,0.133333,
+                                                     0.15    ,0.316667,0.166667,0.333333,0.7     ,0.366667,0.333333,0.7     ,0.366667,0.183333,0.383333,0.2     ,
+                                                     0.216667,0.45    ,0.233333,0.466667,0.966667,0.5     ,0.466667,0.966667,0.5     ,0.25    ,0.516667,0.266667,
+                                                     0.283333,0.583333,0.3     ,0.6     ,1.233333,0.633333,0.6     ,1.233333,0.633333,0.316667,0.65    ,0.333333,
+                                                     0.35    ,0.716667,0.366667,0.733333,1.5     ,0.766667,0.733333,1.5     ,0.766667,0.383333,0.783333,0.4     });
+    NDArrayFactory<double>::linspace(1., input);
+    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    
+    nd4j::ops::avgpool2d_bp<double> op;
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, avgpool2d_bp_test2) {
+
+    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=1,pW=1,  dH=1,dW=1;
+    int oH=4,oW=4;
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<double> input   ('c', {bS, iC, iH, iW});
+    NDArray<double> gradO   ('c', {bS, iC, oH, oW});
+    NDArray<double> expected('c', {bS, iC, iH, iW}, {0.233333,0.3     ,0.366667,0.55    ,0.65    ,0.75    ,0.95    ,1.05    ,1.15    ,0.766667,0.833333,0.9     ,
+                                                     1.3     ,1.366667,1.433333,2.15    ,2.25    ,2.35    ,2.55    ,2.65    ,2.75    ,1.833333,1.9     ,1.966667,
+                                                     2.366667,2.433333,2.5     ,3.75    ,3.85    ,3.95    ,4.15    ,4.25    ,4.35    ,2.9     ,2.966667,3.033333,
+                                                     3.433333,3.5     ,3.566667,5.35    ,5.45    ,5.55    ,5.75    ,5.85    ,5.95    ,3.966667,4.033333,4.1     ,
+                                                     4.5     ,4.566667,4.633333,6.95    ,7.05    ,7.15    ,7.35    ,7.45    ,7.55    ,5.033333,5.1     ,5.166667,
+                                                     5.566667,5.633333,5.7     ,8.549999,8.65    ,8.75    ,8.95    ,9.05    ,9.150001,6.1     ,6.166667,6.233334});
+    NDArrayFactory<double>::linspace(1., input);
+    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    
+    nd4j::ops::avgpool2d_bp<double> op;
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, avgpool2d_bp_test3) {
+
+    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
+    int oH=4,oW=3;
+    int paddingMode = 1;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<double> input   ('c', {bS, iH, iW, iC});
+    NDArray<double> gradO   ('c', {bS, oH, oW, iC});
+    NDArray<double> expected('c', {bS, iH, iW, iC}, {0.19167, 0.23333, 0.275, 0.50833, 0.59167, 0.675, 1.2  , 1.325, 1.45 ,0.50833,0.56667, 0.625, 1.19167,1.30833, 1.425, 2.4  ,2.575, 2.75 ,
+                                                     1.18333, 1.24167, 1.3  , 2.54167, 2.65833, 2.775, 4.425, 4.6  , 4.775,1.01667,1.05833, 1.1  , 2.15833,2.24167, 2.325, 3.675,3.8  , 3.925,
+                                                     1.69167, 1.73333, 1.775, 3.50833, 3.59167, 3.675, 5.7  , 5.825, 5.95 ,2.60833,2.66667, 2.725, 5.39167,5.50833, 5.625, 8.7  ,8.875, 9.05 ,
+                                                     3.28333, 3.34167, 3.4  , 6.74167, 6.85833, 6.975,10.725,10.9  ,11.075,2.51667,2.55833, 2.6  , 5.15833,5.24167, 5.325, 8.175,8.3  , 8.425});
+    NDArrayFactory<double>::linspace(1., input);
+    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    
+    nd4j::ops::avgpool2d_bp<double> op;
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 0, dataFormat});
+    NDArray<double>* output = results->at(0);    
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, avgpool2d_bp_test4) {
+
+    int bS=2, iH=4,iW=3,  iC=3,  kH=3,kW=2,  sH=1,sW=1,   pH=0,pW=0,   dH=1,dW=1;
+    int oH=2,oW=2;
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<double> input   ('c', {bS, iH, iW, iC});
+    NDArray<double> gradO   ('c', {bS, oH, oW, iC});
+    NDArray<double> expected('c', {bS, iH, iW, iC}, {0.01667,0.03333,0.05,0.08333,0.11667,0.15,0.06667,0.08333,0.1,0.13333,0.16667,0.2 ,0.36667,0.43333,0.5 ,0.23333,0.26667,0.3,
+                                                     0.13333,0.16667,0.2 ,0.36667,0.43333,0.5 ,0.23333,0.26667,0.3,0.11667,0.13333,0.15,0.28333,0.31667,0.35,0.16667,0.18333,0.2,
+                                                     0.21667,0.23333,0.25,0.48333,0.51667,0.55,0.26667,0.28333,0.3,0.53333,0.56667,0.6 ,1.16667,1.23333,1.3 ,0.63333,0.66667,0.7,
+                                                     0.53333,0.56667,0.6 ,1.16667,1.23333,1.3 ,0.63333,0.66667,0.7,0.31667,0.33333,0.35,0.68333,0.71667,0.75,0.36667,0.38333,0.4});
+    NDArrayFactory<double>::linspace(1., input);
+    NDArrayFactory<double>::linspace(0.1, gradO, 0.1);
+    
+    nd4j::ops::avgpool2d_bp<double> op;
+    ResultSet<double>* results = op.execute({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
+    NDArray<double>* output = results->at(0);        
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+ 
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, percentile_trest5) {

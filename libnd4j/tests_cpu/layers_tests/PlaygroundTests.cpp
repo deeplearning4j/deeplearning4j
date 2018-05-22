@@ -8,6 +8,7 @@
 #include <Node.h>
 #include <ops/declarable/CustomOperations.h>
 #include <graph/profiling/GraphProfilingHelper.h>
+#include <ops/declarable/generic/helpers/convolutions.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -516,7 +517,6 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
     nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);    
 }
 
-
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, ndarray_tile_test1) {
 
@@ -546,4 +546,132 @@ TEST_F(PlaygroundTests, ndarray_tile_test2) {
     nd4j_printf("f-order time: %d;\n", time);
     
     ASSERT_TRUE(tiled.isSameShape(&exp)); 
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, Test_vol2col_1) {
+    
+    int bS=16, iD=30,iH=30,iW=30,  iC=3,oC=3,  kD=5,kH=5,kW=5,  sD=3,sH=3,sW=3,  pD=3,pH=2,pW=2,  dD=1,dH=1,dW=1;    
+    int        oD=10,oH=10, oW=10;
+    int iterations = 1;
+
+    NDArray<float> output('c', {bS, iC, kD, kH, kW, oD, oH, oW});
+    NDArray<float> input('c', {bS, iC, iD, iH, iW});
+    
+    NDArray<float> outputPermuted('c', {bS, oD, oW, iC, kD, oH, kH, kW});
+    outputPermuted.permutei({0, 3, 4, 6, 7, 1, 5, 2});
+    NDArray<float> inputPermuted('c', {bS, iD, iH, iC, iW});
+    inputPermuted.permutei({0, 3, 1, 2, 4});
+
+    input = 10.;
+    output = 2.;
+
+    inputPermuted = 10.;
+    outputPermuted = 2.;
+
+
+    auto timeStart = std::chrono::system_clock::now();
+
+    for (int e = 0; e < iterations; e++) 
+        ConvolutionUtils<float>::vol2col(input, output, sD, sH, sW, pD, pH, pW, dD, dH, dW);
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+
+    auto permStart = std::chrono::system_clock::now();
+
+    for (int e = 0; e < iterations; e++) 
+        ConvolutionUtils<float>::vol2col(inputPermuted, outputPermuted, sD, sH, sW, pD, pH, pW, dD, dH, dW);
+
+    auto permEnd = std::chrono::system_clock::now();
+    auto permTime = std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count();
+
+    nd4j_printf("C-order  time: %lld us;\n", outerTime / iterations);
+    nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);    
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, Test_col2vol_1) {
+    
+    int bS=16, iD=30,iH=30,iW=30,  iC=3,oC=3,  kD=5,kH=5,kW=5,  sD=3,sH=3,sW=3,  pD=3,pH=2,pW=2,  dD=1,dH=1,dW=1;    
+    int        oD=10,oH=10, oW=10;
+    int iterations = 1;
+
+    NDArray<float> output('c', {bS, iC, kD, kH, kW, oD, oH, oW});
+    NDArray<float> input('c', {bS, iC, iD, iH, iW});
+    
+    NDArray<float> outputPermuted('c', {bS, oD, oH, oW, iC, kD, kH, kW});
+    outputPermuted.permutei({0, 4, 5, 6, 7, 1, 2, 3});
+    NDArray<float> inputPermuted('c', {bS, iD, iH, iC, iW});
+    inputPermuted.permutei({0, 3, 1, 2, 4});
+
+    input = 10.;
+    output = 2.;
+
+    inputPermuted = 10.;
+    outputPermuted = 2.;
+
+
+    auto timeStart = std::chrono::system_clock::now();
+
+    for (int e = 0; e < iterations; e++) 
+        ConvolutionUtils<float>::col2vol(output, input, sD, sH, sW, pD, pH, pW, dD, dH, dW);
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+
+    auto permStart = std::chrono::system_clock::now();
+
+    for (int e = 0; e < iterations; e++) 
+        ConvolutionUtils<float>::col2vol(outputPermuted, inputPermuted, sD, sH, sW, pD, pH, pW, dD, dH, dW);
+
+    auto permEnd = std::chrono::system_clock::now();
+    auto permTime = std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count();
+
+    nd4j_printf("C-order  time: %lld us;\n", outerTime / iterations);
+    nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);    
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, Test_pooling3d_1) {
+    
+    int bS=16, iD=30,iH=30,iW=30,  iC=3,  kD=5,kH=5,kW=5,  sD=3,sH=3,sW=3,  pD=3,pH=2,pW=2,  dD=1,dH=1,dW=1;    
+    int        oD=10,oH=10, oW=10;
+    int iterations = 10;
+
+    NDArray<float> input('c', {bS, iC, iD, iH, iW});
+    NDArray<float> output('c', {bS, iC, oD, oH, oW});
+        
+    NDArray<float> outputPermuted('c', {oW, bS, oD, iC, oH});
+    outputPermuted.permutei({1, 3, 2, 4, 0});
+    NDArray<float> inputPermuted('c', {iD, iH, iC, bS, iW});
+    inputPermuted.permutei({3, 2, 0, 1, 4});
+
+    input = 10.;
+    output = 2.;
+
+    inputPermuted = 10.;
+    outputPermuted = 2.;
+
+    T extraParams[] = {(T)kD, (T)kH, (T)kW, (T)sD, (T)sH, (T)sW, (T)pD, (T)pH, (T)pW, (T)dD, (T)dH, (T)dW, 0., 1.};    
+
+    auto timeStart = std::chrono::system_clock::now();
+
+    for (int e = 0; e < iterations; e++) 
+        ConvolutionUtils<T>::pooling3d(input, output, extraParams);
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+
+    auto permStart = std::chrono::system_clock::now();
+
+    for (int e = 0; e < iterations; e++) 
+        ConvolutionUtils<T>::pooling3d(inputPermuted, outputPermuted, extraParams);
+
+    auto permEnd = std::chrono::system_clock::now();
+    auto permTime = std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count();
+
+    nd4j_printf("C-order  time: %lld us;\n", outerTime / iterations);
+    nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);    
 }

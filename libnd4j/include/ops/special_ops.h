@@ -224,139 +224,129 @@ namespace simdOps {
 #endif
 
 
-		static void execSpecial(
-				T *dx,
-				Nd4jLong *xShapeBuffer,
-				T *result,
-				Nd4jLong *resultShapeBuffer,
-				T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+	static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+	// input is  [bS, iC, iH, iW]
+	// output is [bS, iC, oH, oW]
 
+        int kH = (int)extraParams[0];
+        int kW = (int)extraParams[1];
+        int sH = (int)extraParams[2];
+        int sW = (int)extraParams[3];
+        int pH = (int)extraParams[4];
+        int pW = (int)extraParams[5];
+        int dH = (int)extraParams[6];           //Dilation, height dimension
+        int dW = (int)extraParams[7];           //Dilation, width dimension
+        int poolingMode = (int)extraParams[8];
+        T extraParam0 = extraParams[9];
 
-			int kH = (int)extraParams[0];
-			int kW = (int)extraParams[1];
-			int sH = (int)extraParams[2];
-			int sW = (int)extraParams[3];
-			int pH = (int)extraParams[4];
-			int pW = (int)extraParams[5];
-			int dH = (int)extraParams[6];			//Dilation, height dimension
-			int dW = (int)extraParams[7];			//Dilation, width dimension
-			int poolingMode = (int)extraParams[9];
-			T extraParam0 = extraParams[10];
+        const int kHEff = kH + (kH-1)*(dH-1);
+        const int kWEff = kW + (kW-1)*(dW-1);
 
-            const int kHEff = kH + (kH-1)*(dH-1);
-            const int kWEff = kW + (kW-1)*(dW-1);
+        const int bS = shape::sizeAt(inShapeBuffer, 0);
+        const int iC = shape::sizeAt(inShapeBuffer, 1);
+        const int iH = shape::sizeAt(inShapeBuffer, 2);
+        const int iW = shape::sizeAt(inShapeBuffer, 3);
+        const int oH = shape::sizeAt(outShapeBuffer, 2);
+        const int oW = shape::sizeAt(outShapeBuffer, 3);            
+        const Nd4jLong iStride0 = shape::stride(inShapeBuffer)[0];
+        const Nd4jLong iStride1 = shape::stride(inShapeBuffer)[1];
+        const Nd4jLong iStride2 = shape::stride(inShapeBuffer)[2];
+        const Nd4jLong iStride3 = shape::stride(inShapeBuffer)[3];
+        const Nd4jLong oStride0 = shape::stride(outShapeBuffer)[0];
+        const Nd4jLong oStride1 = shape::stride(outShapeBuffer)[1];
+        const Nd4jLong oStride2 = shape::stride(outShapeBuffer)[2];
+        const Nd4jLong oStride3 = shape::stride(outShapeBuffer)[3];         
+        const Nd4jLong iStep2 = dH*iStride2;
+        const Nd4jLong iStep3 = dW*iStride3;        
+        const Nd4jLong size01 = bS*iC;
+        const Nd4jLong size23 = oH*oW;
+        const int kProd  = kH*kW;
+        const T iStep2Inv = 1./iStep2; 
+        const T iStep3Inv = 1./iStep3;
 
-			const int batchSize = (int) shape::sizeAt(xShapeBuffer, 0);
-            const int inChannels = (int) shape::sizeAt(xShapeBuffer, 1);
-            const int outH = (int) shape::sizeAt(resultShapeBuffer, 2);
-            const int outW = (int) shape::sizeAt(resultShapeBuffer, 3);
-            const int inH = (int) shape::sizeAt(xShapeBuffer, 2);
-            const int inW = (int) shape::sizeAt(xShapeBuffer, 3);
+        const bool weirdStride = shape::order(outShapeBuffer) == 'f' || shape::elementWiseStride(outShapeBuffer) != 1;
 
-            auto strideIn = shape::stride(xShapeBuffer);
-            auto strideOut = shape::stride(resultShapeBuffer);
+#pragma omp parallel for if(size01 > nd4j::Environment::getInstance()->elementwiseThreshold()) collapse(2) schedule(guided)
+        for(int b = 0; b < bS; ++b) {
+        	for(int c = 0; c < iC; ++c) {
+                    
+            	const int oStep01 = b * oStride0 + c * oStride1;                
+                T *pOut = out + oStep01;
+                T *pIn  = in + b * iStride0 + c * iStride1;
 
-            const bool fOrder = shape::order(resultShapeBuffer) == 'f';
-            const Nd4jLong zLength = shape::length(resultShapeBuffer);
-            const int zRank = shape::rank(resultShapeBuffer);
+#pragma omp parallel for if(size23 > nd4j::Environment::getInstance()->elementwiseThreshold()) collapse(2) schedule(guided)
+                for(int oh = 0; oh < oH; ++oh) {
+                	for(int ow = 0; ow < oW; ++ow) {
+                            
+                        Nd4jLong hstart = oh * sH - pH;
+                        Nd4jLong wstart = ow * sW - pW;
+                        Nd4jLong hend = hstart + kHEff;
+                        Nd4jLong wend = wstart + kWEff;
 
-            int indices[6];
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);                            
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);
 
-            int idx = 0;
-#pragma omp parallel for collapse(2) schedule(guided) shared(indices)
-			for(int k = 0; k < inChannels; k++)
-			{
-				for(int p = 0; p < batchSize; p++)
-				{
-					int xx, yy;
-					/* For all output pixels... */
-					const int _b = p * strideOut[0];
-					const int _k = k * strideOut[1];
-					T *ptr_output = result + _b + _k;
-					T *ptr_input = dx + p * strideIn[0] + k * strideIn[1];
+                        T sum = poolingMode == 0 ? (T) -MAX_FLOAT : (T) 0;
 
-					for(yy = 0; yy < outH; yy++)
-					{
-						for(xx = 0; xx < outW; xx++)
-						{
-							/* Compute the mean of the input image... */
-							int hstart = yy * sH - pH;
-							int wstart = xx * sW - pW;
-                            int hend = hstart + kHEff;
-                            int wend = wstart + kWEff;
-                            const int hSO = hstart;
-                            const int hEO = hend;
-							if(hstart < 0){
-								int n = (int)nd4j::math::nd4j_ceil<T>((T) -hstart / ((T)dH));
-								hstart += n * dH;
-							}
-							if(wstart < 0){
-								int n = (int)nd4j::math::nd4j_ceil<T>((T) -wstart / ((T)dW));
-								wstart += n * dW;
-							}
-                            if(hend > inH){
-                                int n = (int)nd4j::math::nd4j_ceil<T>((T)(hend-inH)/((T)dH));
-                                hend -= n * dH;
-                            }
-                            if(wend > inW){
-                                int n = (int)nd4j::math::nd4j_ceil<T>((T)(wend-inW)/((T)dW));
-                                wend -= n * dW;
-                            }
-                            int pool_size = (int)(nd4j::math::nd4j_ceil<T>((T) (hend-hstart)/((T)dH))
-                                                  * (int)nd4j::math::nd4j_ceil<T>((T)(wend-wstart)/((T)dW)));	//Accounts for dilation
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
+                        
+                        switch(poolingMode) {
 
-							T sum = poolingMode == 0 ? (T) -MAX_FLOAT : (T) 0;
-
-							// we need this only for avg pooling
-							int divide_factor = 0;
-							if (poolingMode == 1) {
-								if ((int) extraParam0 == 0)         //Exclude padding
-									divide_factor = pool_size;
-								else if ((int) extraParam0 == 1)    //Include padding
-                                    divide_factor = kH * kW;
-							}
-
-							long kx, ky;
-
-							if (poolingMode == 0) {
+                        	case 0:	{// max
 #pragma omp simd reduction(maxT:sum) collapse(2)
-								for (ky = hstart; ky < hend; ky += dH) {
-									for (kx = wstart; kx < wend; kx += dW)
-										if (ptr_input[ky * strideIn[2] + kx * strideIn[3]] > sum)
-											sum = ptr_input[ky * strideIn[2] + kx * strideIn[3]];
-								}
-							} else if (poolingMode == 1) {
-#pragma omp simd reduction(sumT:sum) collapse(2)
-								for (ky = hstart; ky < hend; ky += dH) {
-									for (kx = wstart; kx < wend; kx += dW)
-										sum += ptr_input[ky * strideIn[2] + kx * strideIn[3]];
-								}
-							} else if (poolingMode == 2) {
-#pragma omp simd reduction(sumT:sum) collapse (2)
-								for (ky = hstart; ky < hend; ky += dH) {
-									for (kx = wstart; kx < wend; kx += dW)
-										sum += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(ptr_input[ky * strideIn[2] + kx * strideIn[3]]), extraParam0);
-								}
-							}
-							/* Update output */
-							T res = sum;
-
-							if (poolingMode == 1) {
-                                res /= divide_factor;
-                            } else if (poolingMode == 2)
-								res = nd4j::math::nd4j_pow<T>(res, (T) 1.0f / extraParam0);
-
-
-                            if (!fOrder) {
-                                *ptr_output++ = res;
-                            } else {
-								result[_b + _k + yy * strideOut[2] + xx * strideOut[3]] = res;
+                            	for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            		for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
+                                		T val = pIn[kh + kw];
+                                        if (val > sum)
+                                    		sum = val;
+                                    }
+								break;
                             }
-						}
-					}
-				}
-			}
-		}
+                            case 1:	{// avg
+#pragma omp simd reduction(sumT:sum) collapse(2)
+    	                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+            	                    	sum += pIn[kh + kw];
+                                
+                	            if ((int) extraParam0 == 0)         //Exclude padding
+                    	        	sum /= (Nd4jLong)(nd4j::math::nd4j_ceil<T>((hend-hstart) * iStep2Inv)) * (Nd4jLong)nd4j::math::nd4j_ceil<T>((wend-wstart) * iStep3Inv);   //Accounts for dilation
+                        	    else if ((int) extraParam0 == 1)    //Include padding
+                            		sum /= kProd;
+                            	break;
+                            }
+                            case 2: {// pnorm
+#pragma omp simd reduction(sumT:sum) collapse (2)
+                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                        sum += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                
+                                sum = nd4j::math::nd4j_pow<T>(sum, (T) 1. / extraParam0);
+                                break;
+                            }
+                            default: {
+								nd4j_printf("special_ops::pooling2d: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
+                            	throw "";
+                            }
+                        }
+
+                        if (weirdStride)
+                        	out[oStep01 + oh * oStride2 + ow * oStride3] = sum;
+                        else                         	
+                        	*pOut++ = sum;
+                    }
+                }
+            }
+        }
+    }
 
 		op_def static T op(T d1, T *params) {
 			return d1;
@@ -367,7 +357,13 @@ namespace simdOps {
 		*  normally negative indices are bad, OK here because of other checks on input indices
 		*  Uses unrolled loop specifically for length 4
 		*/
-		static _CUDA_HD int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
+#ifdef __CUDACC__
+		inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+		static int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -382,7 +378,13 @@ namespace simdOps {
 		* normally negative indices are bad, OK here because of other checks on input indices
 		* Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
 		*/
-		static _CUDA_HD int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
+#ifdef __CUDACC__
+		inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+		static int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -403,8 +405,12 @@ namespace simdOps {
 	Im2col {
 	public:
 		static const bool requiresSpecial = true;
+#ifdef __CUDACC__
+		inline __host__ __device__
+#elif defined(__GNUC__)
 
-		static _CUDA_HD int outSize(int size, int k, int s, int p, bool coverAll) {
+#endif
+		static int outSize(int size, int k, int s, int p, bool coverAll) {
 			if (coverAll)
 				return (size + p * 2 - k + s - 1) / s + 1;
 			else
@@ -541,23 +547,19 @@ namespace simdOps {
                 const int iW = inShape[3];
                 const int oH = outShape[4];
                 const int oW = outShape[5];
-                const int outStride0  = outStride[0];
-                const int outStride1  = outStride[1];
-                const int outStride2  = outStride[2];
-                const int outStride3  = outStride[3];
-                const int outStride4  = outStride[4];
-                const int outStride5  = outStride[5];
-                const int inStride0   = inStride[0];
-                const int inStride1   = inStride[1];
-                const int inStride2   = inStride[2];
-                const int inStride3   = inStride[3];
+                const Nd4jLong outStride0  = outStride[0];
+                const Nd4jLong outStride1  = outStride[1];
+                const Nd4jLong outStride2  = outStride[2];
+                const Nd4jLong outStride3  = outStride[3];
+                const Nd4jLong outStride4  = outStride[4];
+                const Nd4jLong outStride5  = outStride[5];
+                const Nd4jLong inStride0   = inStride[0];
+                const Nd4jLong inStride1   = inStride[1];
+                const Nd4jLong inStride2   = inStride[2];
+                const Nd4jLong inStride3   = inStride[3];
 
                 const T* in0End = dx + inStride1 * iC;
-                const int kRowEnd = -pH + kH * dH;
-                const int kColEnd = -pW + kW * dW;
-                const int oHW = oH * oW;
-                const int inRowEnd = oH * sH;
-                const int inColEnd = oW * sW;
+                const Nd4jLong oHW = oH * oW;
 
 				int inRowStart, inColStart, inRow, inCol;
                 T *in0, *in1;
@@ -655,7 +657,13 @@ namespace simdOps {
 		*  normally negative indices are bad, OK here because of other checks on input indices
 		*  Uses unrolled loop specifically for length 4
 		*/
-		static _CUDA_HD int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
+#ifdef __CUDACC__
+		inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+		static int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -670,7 +678,13 @@ namespace simdOps {
 		* normally negative indices are bad, OK here because of other checks on input indices
 		* Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
 		*/
-		static _CUDA_HD int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
+#ifdef __CUDACC__
+		inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+		static int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -994,23 +1008,19 @@ namespace simdOps {
 			const int dH = (int)extraParams[6];		
             const int dW = (int)extraParams[7];		
 
-			const int inStride0  = inStride[0];
-            const int inStride1  = inStride[1];
-            const int inStride2  = inStride[2];
-            const int inStride3  = inStride[3];
-            const int inStride4  = inStride[4];
-            const int inStride5  = inStride[5];
-            const int outStride0 = outStride[0];
-            const int outStride1 = outStride[1];
-            const int outStride2 = outStride[2];
-            const int outStride3 = outStride[3];
+			const Nd4jLong inStride0  = inStride[0];
+            const Nd4jLong inStride1  = inStride[1];
+            const Nd4jLong inStride2  = inStride[2];
+            const Nd4jLong inStride3  = inStride[3];
+            const Nd4jLong inStride4  = inStride[4];
+            const Nd4jLong inStride5  = inStride[5];
+            const Nd4jLong outStride0 = outStride[0];
+            const Nd4jLong outStride1 = outStride[1];
+            const Nd4jLong outStride2 = outStride[2];
+            const Nd4jLong outStride3 = outStride[3];
 
             const T* out0End = result + outStride1 * iC;
-            const int kRowEnd = -pH + kH * dH;
-            const int inStepOW = oW * inStride5;
-            const int kColEnd = -pW + kW * dW;
-            const int inRowEnd = oH * sH;
-            const int inColEnd = oW * sW;
+            const Nd4jLong inStepOW = oW * inStride5;
 
             int inRowStart, inColStart, inRow, inCol;
             T *out0, *out1, *out2;
@@ -1109,7 +1119,13 @@ namespace simdOps {
 		*  normally negative indices are bad, OK here because of other checks on input indices
 		*  Uses unrolled loop specifically for length 4
 		*/
-		static _CUDA_HD int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
+#ifdef __CUDACC__
+		inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+		static int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -1122,7 +1138,13 @@ namespace simdOps {
 		* normally negative indices are bad, OK here because of other checks on input indices
 		* Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
 		*/
-		static _CUDA_HD int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
+#ifdef __CUDACC__
+		inline __host__ __device__
+#elif defined(__GNUC__)
+
+
+#endif
+		static int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -1275,10 +1297,10 @@ namespace simdOps {
 
 
 		static void execSpecial(T *dx, Nd4jLong *xShapeBuffer, T *result, Nd4jLong *zShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-			auto xLength = shape::length(xShapeBuffer);
-			auto xEWS = shape::elementWiseStride(xShapeBuffer);
-            auto xOrder = shape::order(xShapeBuffer);
-            auto sLength = xLength - 1;
+			Nd4jLong xLength = shape::length(xShapeBuffer);
+			int xEWS = shape::elementWiseStride(xShapeBuffer);
+            char xOrder = shape::order(xShapeBuffer);
+            Nd4jLong sLength = xLength - 1;
 
 			// two step phase here
 			if (dx == result) {
@@ -1340,11 +1362,11 @@ namespace simdOps {
 					}
 				} else {
 
-					auto xRank = shape::rank(xShapeBuffer);
+					int xRank = shape::rank(xShapeBuffer);
                     auto xShape = shape::shapeOf(xShapeBuffer);
                     auto xStride = shape::stride(xShapeBuffer);
 
-					auto zRank = shape::rank(zShapeBuffer);
+					int zRank = shape::rank(zShapeBuffer);
 					auto zShape = shape::shapeOf(zShapeBuffer);
                     auto zStride = shape::stride(zShapeBuffer);
 
@@ -1640,8 +1662,8 @@ namespace simdOps {
 				T max = -FLOAT_MAX_VALUE;
 				T sum = 0;
 
-				auto elementWiseStride = shape::elementWiseStride(xShapeBuffer);
-                auto length = shape::length(xShapeBuffer);
+				int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
+				int length = shape::length(xShapeBuffer);
 				if (elementWiseStride == 1) {
 #pragma omp simd reduction(maxT:max)
 					for (int i = 0; i < length; i++) {
@@ -1777,7 +1799,7 @@ namespace simdOps {
 				//iterate along rows
 				int dimension[1] = { 0 };
 				int maxDimension[1] = { 1 };
-				auto len = shape::length(xShapeBuffer);
+				int len = shape::length(xShapeBuffer);
 				//compute the row wise maxes
 				std::vector <T> maxResult(shape[0]);
 #pragma omp simd
@@ -1822,7 +1844,7 @@ namespace simdOps {
 				else {
                     auto zShape = shape::shapeOf(resultShapeBuffer);
                     auto zStride = shape::stride(resultShapeBuffer);
-                    auto zRank = shape::rank(resultShapeBuffer);
+                    int zRank = shape::rank(resultShapeBuffer);
 
                     Nd4jLong zCoord[MAX_RANK];
 
@@ -2080,7 +2102,7 @@ namespace simdOps {
 				auto xShape = shape::shapeOf(xShapeBuffer);
 				auto xStride = shape::stride(xShapeBuffer);
 				auto resultStride = shape::stride(resultShapeBuffer);
-				auto rank = shape::rank(xShapeBuffer);
+				int rank = shape::rank(xShapeBuffer);
 				T *originalResult = result;
 				if (PrepareTwoRawArrayIter<T>(rank,
 					xShape,
@@ -2162,9 +2184,9 @@ namespace simdOps {
 				doAll(dx, xShapeBuffer, result, resultShapeBuffer, extraParams);
 			}
 			else if (shape::isVector(xShapeBuffer)) {
-				auto dimensionLength = (int)extraParams[0];
-				auto dimension = new int[dimensionLength];
-				auto length = shape::length(xShapeBuffer);
+				int dimensionLength = (int)extraParams[0];
+				int *dimension = new int[dimensionLength];
+				int length = shape::length(xShapeBuffer);
 				for (int i = 0; i < dimensionLength; i++) {
 					dimension[i] = (int)extraParams[i + 1];
 				}
@@ -2174,7 +2196,7 @@ namespace simdOps {
 					}
 				}
 				else {
-					auto eleStride = shape::elementWiseStride(xShapeBuffer);
+					int eleStride = shape::elementWiseStride(xShapeBuffer);
 					if (eleStride == 1) {
 						int maxIdx = 0;
 						T currMax = dx[0];
@@ -2267,8 +2289,8 @@ namespace simdOps {
 
 			}
 			else {
-                auto dimensionLength = (int) extraParams[0];
-                auto dimension = new int[dimensionLength];
+                int dimensionLength = (int) extraParams[0];
+                int *dimension = new int[dimensionLength];
 
 #pragma omp simd
                 for (int i = 0; i < dimensionLength; i++) {
