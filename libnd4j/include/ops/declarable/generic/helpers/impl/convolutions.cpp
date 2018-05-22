@@ -252,7 +252,7 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
             T *op = out + s*outStride0 + k*outStride1;
 #pragma omp parallel for simd
             for (int i = 0; i < outStride1; ++i)
-                *(op + i) = (T)0.;
+                *(op + i) = static_cast<T>(0.);
 
             /* loop over output */
 #pragma omp parallel for if(outStride1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(3)
@@ -282,7 +282,7 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
                             divide_factor = (cend - cstart) * (hend - hstart) * (wend - wstart);
 
                         /* compute local sum: */
-                        T sum = (T)0.;
+                        T sum = static_cast<T>(0.);
 
                         for (int z = cstart; z < cend; z++) 
                             for (int y = hstart; y < hend; y++) 
@@ -1498,7 +1498,7 @@ if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDesce
                                     vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
                                                     
                                     if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) || static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
-                                        *col = (T)0.;                                                     
+                                        *col = static_cast<T>(0.);
                                     else 
                                         *col = *vol;
                                 }
@@ -1530,7 +1530,7 @@ else
                                     vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
                                                     
                                     if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) || static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
-                                        *col = (T)0.;
+                                        *col = static_cast<T>(0.);
                                     else 
                                         *col = *vol;
                                 }
@@ -1955,7 +1955,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = (T)0.;
+                        sum = static_cast<T>(0.);
                                             
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
@@ -2001,7 +2001,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = (T)0.;
+                        sum = static_cast<T>(0.);
                                                                     
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
@@ -2169,7 +2169,7 @@ void ConvolutionUtils<T>::pooling3d(NDArray<T>& input, NDArray<T>& output, const
                             wstart *= iStride4;
                             wend   *= iStride4;
 
-                            sum = (T)0.;
+                            sum = static_cast<T>(0.);
                                             
                             for (Nd4jLong kd = dstart; kd < dend; kd += iStep2) 
                                 for (Nd4jLong kh = hstart; kh < hend; kh += iStep3) 
@@ -2226,7 +2226,7 @@ void ConvolutionUtils<T>::pooling3d(NDArray<T>& input, NDArray<T>& output, const
                             wstart *= iStride4;
                             wend   *= iStride4;
 
-                            sum = (T)0.;
+                            sum = static_cast<T>(0.);
                                             
                             for (Nd4jLong kd = dstart; kd < dend; kd += iStep2) 
                                 for (Nd4jLong kh = hstart; kh < hend; kh += iStep3) 
@@ -2256,7 +2256,7 @@ void ConvolutionUtils<T>::pooling2dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
     // gradO [bS, iC, oH, oW]    
     
     // TO DO: try to optimize initial zeroing using nested loops below
-    gradI.assign((T)0.);
+    gradI.assign(0.f);
 
     T* in = input.getBuffer();
     T* gI = gradI.getBuffer();
@@ -2419,7 +2419,7 @@ void ConvolutionUtils<T>::pooling2dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = (T)0.;
+                        sum = static_cast<T>(0.);
                         valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
                                             
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
@@ -2450,7 +2450,7 @@ void ConvolutionUtils<T>::pooling3dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
     // gradO [bS, iC, oD, oH, oW]    
 
     // TO DO: try to optimize initial zeroing using nested loops below
-    gradI.assign((T)0.);
+    gradI.assign(0.f);
     
     T* in = input.getBuffer();
     T* gI = gradI.getBuffer();
@@ -2657,7 +2657,7 @@ void ConvolutionUtils<T>::pooling3dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
                             wstart *= iStride4;
                             wend   *= iStride4;
 
-                            sum = (T)0.;
+                            sum = static_cast<T>(0.);
                             valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
                                             
                             for (Nd4jLong kd = dstart; kd < dend; kd += iStep2) 
