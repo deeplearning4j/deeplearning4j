@@ -121,6 +121,7 @@ main(int argc, char *argv[]) {
     }
     nd4j_printf("\n","");
 
+#ifdef __GNUC__
     // just stacking everything together
     std::string cmdline = "./buildnativeoperations.sh " + name_arg + build_arg + arch_arg + opts_arg;
     std::string input("../include/ops/declarable/CustomOperations.h");
@@ -158,6 +159,8 @@ main(int argc, char *argv[]) {
     if (err < 0) {
         perror("\nCannot run CPP properly due \n");
     }
+#endif
+
     //nd4j_printf("Command line: %s\n", cmdline.c_str());
     // FIXME: do this in cross-platform way
     nd4j_printf("Building minified library...\n", "");
