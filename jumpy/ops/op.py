@@ -14,7 +14,7 @@
 # ==============================================================================
 
 from jumpy.java_classes import *
-from jumpy.ndarray import array,
+from jumpy.ndarray import array
 from jumpy.ndarray import ndarray
 
 
