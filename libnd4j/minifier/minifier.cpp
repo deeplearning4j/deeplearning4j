@@ -135,7 +135,7 @@ main(int argc, char *argv[]) {
     includeStr += ":/usr/include/x86_64-linux-gnu/c++/";
     includeStr += std::to_string(__GNUC__);
 
-    nd4j_printf("PATH=%s\n", pathStr.c_str());
+    nd4j_printf("%s\n", pathStr.c_str());
     char const* env[] = { "HOME=/tmp", 
                           "LOGNAME=minifier", 
                           //"PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/6", 
