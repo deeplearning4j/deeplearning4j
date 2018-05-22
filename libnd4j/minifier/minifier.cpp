@@ -5,7 +5,7 @@
 #else
     #include <unistd.h>
 #endif
-
+#include <cstdlib>
 #include "graphopt.h"
 #include <GraphExecutioner.h>
 #include <ops/declarable/CustomOperations.h>
@@ -122,18 +122,27 @@ main(int argc, char *argv[]) {
     nd4j_printf("\n","");
 
 #ifdef __GNUC__
+    #if __CNUC__ < 4 && __GNUC__ > 6
+    #pragma error "Compiler version should be between 4.9 and 6.4"
+    #endif
     // just stacking everything together
     std::string cmdline = "./buildnativeoperations.sh " + name_arg + build_arg + arch_arg + opts_arg;
     std::string input("../include/ops/declarable/CustomOperations.h");
     std::string output(opt.outputName());
     nd4j_printf("Run preprocessor as \ncpp %s\n", input.c_str());
 //    int err;
-    std::string pathStr("PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/");
+    char* cxx = getenv("CXX");
+    if (cxx == NULL) {
+        nd4j_printf("Cannot retrieve mandatory environment variable %s. Please set up the variable and try again.", "CXX");
+        return 1;
+    }
+    std::string pathStr("PATH=/usr/bin:/usr/local/bin:");
+    pathStr += cxx;
     std::string gccVersion = std::to_string(__GNUC__);
-    pathStr += gccVersion;
+//    pathStr += gccVersion;
     std::string includeStr("CPLUS_INCLUDE_PATH=/usr/include/c++/");
     includeStr += gccVersion; // GCC version is here
-    includeStr += ":/usr/include/x86_64-linux-gnu/c++/";
+//    includeStr += ":/usr/include/x86_64-linux-gnu/c++/";
     includeStr += gccVersion;
 
     nd4j_printf("%s\n", pathStr.c_str());
@@ -145,7 +154,7 @@ main(int argc, char *argv[]) {
                           (char *)0 };
 
 // to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}' 
-    err = execle("/usr/bin/cpp", "cpp", "-x", "c++", "-std=c++11", "-P", "-o", output.c_str(), 
+    err = execle(std::string("/usr/bin/cpp-" + gccVersion).c_str(), std::string("cpp-" + gccVersion).c_str(), "-x", "c++", "-std=c++11", "-P", "-o", output.c_str(), 
         "-I../include",
         "-I../blas",
         "-I../include/ops",
