@@ -367,13 +367,7 @@ namespace simdOps {
 		*  normally negative indices are bad, OK here because of other checks on input indices
 		*  Uses unrolled loop specifically for length 4
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -388,13 +382,7 @@ namespace simdOps {
 		* normally negative indices are bad, OK here because of other checks on input indices
 		* Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -415,12 +403,8 @@ namespace simdOps {
 	Im2col {
 	public:
 		static const bool requiresSpecial = true;
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
 
-#endif
-		static int outSize(int size, int k, int s, int p, bool coverAll) {
+		static _CUDA_HD int outSize(int size, int k, int s, int p, bool coverAll) {
 			if (coverAll)
 				return (size + p * 2 - k + s - 1) / s + 1;
 			else
@@ -671,13 +655,7 @@ namespace simdOps {
 		*  normally negative indices are bad, OK here because of other checks on input indices
 		*  Uses unrolled loop specifically for length 4
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -692,13 +670,7 @@ namespace simdOps {
 		* normally negative indices are bad, OK here because of other checks on input indices
 		* Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -1137,13 +1109,7 @@ namespace simdOps {
 		*  normally negative indices are bad, OK here because of other checks on input indices
 		*  Uses unrolled loop specifically for length 4
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -1156,13 +1122,7 @@ namespace simdOps {
 		* normally negative indices are bad, OK here because of other checks on input indices
 		* Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -1315,10 +1275,10 @@ namespace simdOps {
 
 
 		static void execSpecial(T *dx, Nd4jLong *xShapeBuffer, T *result, Nd4jLong *zShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-			Nd4jLong xLength = shape::length(xShapeBuffer);
-			int xEWS = shape::elementWiseStride(xShapeBuffer);
-            char xOrder = shape::order(xShapeBuffer);
-            Nd4jLong sLength = xLength - 1;
+			auto xLength = shape::length(xShapeBuffer);
+			auto xEWS = shape::elementWiseStride(xShapeBuffer);
+            auto xOrder = shape::order(xShapeBuffer);
+            auto sLength = xLength - 1;
 
 			// two step phase here
 			if (dx == result) {
@@ -1380,11 +1340,11 @@ namespace simdOps {
 					}
 				} else {
 
-					int xRank = shape::rank(xShapeBuffer);
+					auto xRank = shape::rank(xShapeBuffer);
                     auto xShape = shape::shapeOf(xShapeBuffer);
                     auto xStride = shape::stride(xShapeBuffer);
 
-					int zRank = shape::rank(zShapeBuffer);
+					auto zRank = shape::rank(zShapeBuffer);
 					auto zShape = shape::shapeOf(zShapeBuffer);
                     auto zStride = shape::stride(zShapeBuffer);
 
@@ -1680,8 +1640,8 @@ namespace simdOps {
 				T max = -FLOAT_MAX_VALUE;
 				T sum = 0;
 
-				int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
-				int length = shape::length(xShapeBuffer);
+				auto elementWiseStride = shape::elementWiseStride(xShapeBuffer);
+                auto length = shape::length(xShapeBuffer);
 				if (elementWiseStride == 1) {
 #pragma omp simd reduction(maxT:max)
 					for (int i = 0; i < length; i++) {
@@ -1817,7 +1777,7 @@ namespace simdOps {
 				//iterate along rows
 				int dimension[1] = { 0 };
 				int maxDimension[1] = { 1 };
-				int len = shape::length(xShapeBuffer);
+				auto len = shape::length(xShapeBuffer);
 				//compute the row wise maxes
 				std::vector <T> maxResult(shape[0]);
 #pragma omp simd
@@ -1862,7 +1822,7 @@ namespace simdOps {
 				else {
                     auto zShape = shape::shapeOf(resultShapeBuffer);
                     auto zStride = shape::stride(resultShapeBuffer);
-                    int zRank = shape::rank(resultShapeBuffer);
+                    auto zRank = shape::rank(resultShapeBuffer);
 
                     Nd4jLong zCoord[MAX_RANK];
 
@@ -2120,7 +2080,7 @@ namespace simdOps {
 				auto xShape = shape::shapeOf(xShapeBuffer);
 				auto xStride = shape::stride(xShapeBuffer);
 				auto resultStride = shape::stride(resultShapeBuffer);
-				int rank = shape::rank(xShapeBuffer);
+				auto rank = shape::rank(xShapeBuffer);
 				T *originalResult = result;
 				if (PrepareTwoRawArrayIter<T>(rank,
 					xShape,
@@ -2202,9 +2162,9 @@ namespace simdOps {
 				doAll(dx, xShapeBuffer, result, resultShapeBuffer, extraParams);
 			}
 			else if (shape::isVector(xShapeBuffer)) {
-				int dimensionLength = (int)extraParams[0];
-				int *dimension = new int[dimensionLength];
-				int length = shape::length(xShapeBuffer);
+				auto dimensionLength = (int)extraParams[0];
+				auto dimension = new int[dimensionLength];
+				auto length = shape::length(xShapeBuffer);
 				for (int i = 0; i < dimensionLength; i++) {
 					dimension[i] = (int)extraParams[i + 1];
 				}
@@ -2214,7 +2174,7 @@ namespace simdOps {
 					}
 				}
 				else {
-					int eleStride = shape::elementWiseStride(xShapeBuffer);
+					auto eleStride = shape::elementWiseStride(xShapeBuffer);
 					if (eleStride == 1) {
 						int maxIdx = 0;
 						T currMax = dx[0];
@@ -2307,8 +2267,8 @@ namespace simdOps {
 
 			}
 			else {
-                int dimensionLength = (int) extraParams[0];
-                int *dimension = new int[dimensionLength];
+                auto dimensionLength = (int) extraParams[0];
+                auto dimension = new int[dimensionLength];
 
 #pragma omp simd
                 for (int i = 0; i < dimensionLength; i++) {

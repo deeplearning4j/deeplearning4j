@@ -265,12 +265,18 @@ case "$OS" in
     windows*)
     # Do something under Windows NT platform
     if [ "$CHIP" == "cuda" ]; then
-        export CMAKE_COMMAND="cmake -G \"NMake Makefiles\""
-        export MAKE_COMMAND="nmake"
-        PARALLEL="false"
+        export CMAKE_COMMAND="cmake -G \"Ninja\""
+        export MAKE_COMMAND="ninja"
+        export CC="cl.exe"
+        export CXX="cl.exe"
+        PARALLEL="true"
     else
         export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
         export MAKE_COMMAND="make"
+
+        # Sam, do we really need this?
+        export CC=/mingw64/bin/gcc
+        export CXX=/mingw64/bin/g++
         PARALLEL="true"
 
     fi
@@ -288,8 +294,6 @@ case "$OS" in
     fi
     # Make sure we are using 64-bit MinGW-w64
     export PATH=/mingw64/bin/:$PATH
-    CC=/mingw64/bin/gcc
-    CXX=/mingw64/bin/g++
     # export GENERATOR="MSYS Makefiles"
     ;;
 esac
@@ -460,7 +464,7 @@ mkbuilddir
 pwd
 eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
 if [ "$PARALLEL" == "true" ]; then
-        eval $MAKE_COMMAND -j$MAKEJ && cd ../../..
+        eval $MAKE_COMMAND -j $MAKEJ && cd ../../..
     else
         eval $MAKE_COMMAND && cd ../../..
 fi

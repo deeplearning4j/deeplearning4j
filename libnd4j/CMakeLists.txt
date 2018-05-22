@@ -6,10 +6,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
-set(CMAKE_CXX_FLAGS_RELEASE  " -O3 -std=c++11 -fassociative-math -funsafe-math-optimizations")
-set(CMAKE_CXX_FLAGS_DEBUG " -g -O0 -std=c++11")
-
-
 if(NATIVE)
     IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
@@ -34,7 +30,7 @@ set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/mai
 # Set package information
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Native operations for nd4j.")
 set(CPACK_PACKAGE_RELEASE 1)
-set(CPACK_PACKAGE_CONTACT "François Garillot <francois@skymind.io>")
+set(CPACK_PACKAGE_CONTACT "raver119 <raver119@skymind.io>")
 set(CPACK_PACKAGE_VENDOR "Skymind")
 set(CPACK_SETDESTDIR "false")
 set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/lib")
@@ -61,7 +57,7 @@ if(DISTRIBUTION STREQUAL "Ubuntu")
   else()
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
   endif()
-  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "François Garillot")
+  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "raver119")
   set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
   set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "cuda")
   # For Ubuntu <= 12, libatlas3gf-base, liblapack3gf
@@ -81,7 +77,7 @@ elseif(DISTRIBUTION STREQUAL "CentOS")
   else()
     set(CPACK_RPM_PACKAGE_ARCHITECTURE "i686")
   endif()
-  set(CPACK_PACKAGE_CONTACT "François Garillot")
+  set(CPACK_PACKAGE_CONTACT "raver119")
   set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
   set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
   set(CPACK_RPM_PACKAGE_SUGGESTS "cuda")

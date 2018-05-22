@@ -2166,6 +2166,13 @@ NDArray<T>* NDArray<T>::permute(const std::initializer_list<int>& dimensions) co
     return permute(vec);
 }
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray<T>* NDArray<T>::permute(const std::initializer_list<Nd4jLong>& dimensions) const {
+    std::vector<Nd4jLong> vec(dimensions);
+    return permute(vec);
+}
+
 
 
 

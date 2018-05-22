@@ -32,6 +32,8 @@ namespace nd4j {
                     
                     output->putScalar(idx, OpClass::op(t0, t1, nullptr));
                 }
+
+                return Status::OK();
             } else if (indices->isVector() || indices->isScalar()) {
                 std::vector<int> idc;
                 std::vector<int> idcU;
@@ -59,6 +61,8 @@ namespace nd4j {
 
                 delete tadsOperand;
                 delete tadsUpdate;
+
+                return Status::OK();
             }  else if (indices->isMatrix() || indices->rankOf() >= 2) {
                 auto _input = input->reshape(input->ordering(), {input->sizeAt(0), -1});
                 auto _updates = updates->reshape(updates->ordering(), {indicesLength, (int) updates->lengthOf() / indicesLength});
@@ -80,7 +84,10 @@ namespace nd4j {
 
                 delete tadsOperand;
                 delete tadsUpdates;
+                return Status::OK();
             }
+
+                return Status::THROW("ScatterHelper failed");
             }
         };
     }

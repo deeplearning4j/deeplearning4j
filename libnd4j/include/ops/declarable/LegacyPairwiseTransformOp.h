@@ -13,7 +13,7 @@ namespace nd4j {
         *   This class provides wrapper for Pairwise transform operations
         */
         template <typename T>
-        class LegacyPairwiseTransformOp: public LegacyOp<T> {
+        class ND4J_EXPORT LegacyPairwiseTransformOp: public LegacyOp<T> {
         protected:
             Nd4jStatus validateAndExecute(Context<T>& block);
         public:

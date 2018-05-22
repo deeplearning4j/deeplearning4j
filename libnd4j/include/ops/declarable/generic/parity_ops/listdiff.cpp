@@ -20,13 +20,13 @@ namespace nd4j {
             REQUIRE_TRUE(values->rankOf() == 1, 0, "ListDiff: rank of values should be 1D, but got %iD instead", values->rankOf());
             REQUIRE_TRUE(keep->rankOf() == 1, 0, "ListDiff: rank of keep should be 1D, but got %iD instead", keep->rankOf());
 
-            for (int e = 0; e < values->lengthOf(); e++) {
+            for (Nd4jLong e = 0; e < values->lengthOf(); e++) {
                 T v = values->getScalar(e);
                 T extras[] = {v, (T) 0.0f, (T) 10.0f};
                 auto idx = keep->template indexReduceNumber<simdOps::FirstIndex<T>>(extras);
                 if (idx < 0) {
                     saved.emplace_back(v);
-                    indices.emplace_back(e);
+                    indices.emplace_back(static_cast<T>(e));
                 }
             }
 

@@ -13,7 +13,7 @@ namespace nd4j {
         *   This class provides wrapper for scalar transform operations, i.e. a + b = c, where either a or b is scalar primitive and other operand is NDArray
         */
         template <typename T>
-        class LegacyScalarOp : public LegacyOp<T>{
+        class ND4J_EXPORT LegacyScalarOp : public LegacyOp<T>{
         protected:
             Nd4jStatus validateAndExecute(Context<T>& block);
 
