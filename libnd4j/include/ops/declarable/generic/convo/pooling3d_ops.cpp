@@ -118,8 +118,6 @@ namespace nd4j {
             int dimh = 3;
             int dimw = 4;
 
-            output->assign(0.0);
-
             ConvolutionUtils<T>::avgPool3DBP(*gradNext, *output,  kT, kW, kH, dT, dW, dH, padT, padW, padH, count_include_pad);
 
             STORE_RESULT(*output);

@@ -56,11 +56,11 @@ namespace ops  {
             const T* colBuff = col.getBuffer();            
             T* volBuff       = vol.getBuffer();            
 
-            Nd4jLong *colShapeOnly = shape::shapeOf(col.getShapeInfo());
-            Nd4jLong *colStrides   = shape::stride(col.getShapeInfo());
-            Nd4jLong *volShapeOnly = shape::shapeOf(vol.getShapeInfo());
+            auto colShapeOnly = shape::shapeOf(col.getShapeInfo());
+            auto colStrides   = shape::stride(col.getShapeInfo());
+            auto volShapeOnly = shape::shapeOf(vol.getShapeInfo());
             Nd4jLong volOrder     = shape::order(vol.getShapeInfo());
-            Nd4jLong *volStrides   = shape::stride(vol.getShapeInfo());
+            auto volStrides   = shape::stride(vol.getShapeInfo());
 
             Nd4jLong strideBS   = colStrides[0];
             Nd4jLong strideColC = colStrides[1];
@@ -152,21 +152,21 @@ void ConvolutionUtils<T>::avgPool3DBP(NDArray<T>& gradO, NDArray<T>& gradI, cons
     T* pO = gradO.getBuffer();
     T* pI = gradI.getBuffer();
 
-    const int bS = gradI.sizeAt(0);
-    const int iC = gradI.sizeAt(1);
-    const int iD = gradI.sizeAt(2);
-    const int iH = gradI.sizeAt(3);
-    const int iW = gradI.sizeAt(4);
+    const Nd4jLong bS = gradI.sizeAt(0);
+    const Nd4jLong iC = gradI.sizeAt(1);
+    const Nd4jLong iD = gradI.sizeAt(2);
+    const Nd4jLong iH = gradI.sizeAt(3);
+    const Nd4jLong iW = gradI.sizeAt(4);
 
-    const int oD = gradO.sizeAt(2);
-    const int oH = gradO.sizeAt(3);
-    const int oW = gradO.sizeAt(4);        
+    const Nd4jLong oD = gradO.sizeAt(2);
+    const Nd4jLong oH = gradO.sizeAt(3);
+    const Nd4jLong oW = gradO.sizeAt(4);        
 
-    const int iStride1 = iD * iH * iW;
-    const int oStride1 = oD * oH * oW;
-    const int iStride0 = iC * iStride1;
-    const int oStride0 = iC * oStride1;
-    const int size0 = bS * iC;
+    const Nd4jLong iStride1 = iD * iH * iW;
+    const Nd4jLong oStride1 = oD * oH * oW;
+    const Nd4jLong iStride0 = iC * iStride1;
+    const Nd4jLong oStride0 = iC * oStride1;
+    const Nd4jLong size0 = bS * iC;
         
 #pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2)        
     for (int s = 0; s < bS; ++s) {
@@ -227,21 +227,21 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
     T* in  = input.getBuffer();
     T* out = output.getBuffer();
     
-    const int bS = input.sizeAt(0);
-    const int iC = input.sizeAt(1);
-    const int iD = input.sizeAt(2);
-    const int iH = input.sizeAt(3);
-    const int iW = input.sizeAt(4);
+    const Nd4jLong bS = input.sizeAt(0);
+    const Nd4jLong iC = input.sizeAt(1);
+    const Nd4jLong iD = input.sizeAt(2);
+    const Nd4jLong iH = input.sizeAt(3);
+    const Nd4jLong iW = input.sizeAt(4);
 
-    const int oD = output.sizeAt(2);
-    const int oH = output.sizeAt(3);
-    const int oW = output.sizeAt(4);    
+    const Nd4jLong oD = output.sizeAt(2);
+    const Nd4jLong oH = output.sizeAt(3);
+    const Nd4jLong oW = output.sizeAt(4);    
 
-    const int inStride1  = iD * iH * iW;
-    const int outStride1 = oD * oH * oW;
-    const int inStride0  = iC * inStride1;
-    const int outStride0 = iC * outStride1;
-    const int size0 = bS * iC;
+    const Nd4jLong inStride1  = iD * iH * iW;
+    const Nd4jLong outStride1 = oD * oH * oW;
+    const Nd4jLong inStride0  = iC * inStride1;
+    const Nd4jLong outStride0 = iC * outStride1;
+    const Nd4jLong size0 = bS * iC;
         
 #pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2)
     for(int s = 0; s < bS; ++s)  {            
@@ -252,7 +252,7 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
             T *op = out + s*outStride0 + k*outStride1;
 #pragma omp parallel for simd
             for (int i = 0; i < outStride1; ++i)
-                *(op + i) = 0.;
+                *(op + i) = (T)0.;
 
             /* loop over output */
 #pragma omp parallel for if(outStride1 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(3)
@@ -282,7 +282,7 @@ void ConvolutionUtils<T>::avgPool3D(NDArray<T>& input, NDArray<T>& output, const
                             divide_factor = (cend - cstart) * (hend - hstart) * (wend - wstart);
 
                         /* compute local sum: */
-                        T sum = 0.;
+                        T sum = (T)0.;
 
                         for (int z = cstart; z < cend; z++) 
                             for (int y = hstart; y < hend; y++) 
@@ -759,23 +759,23 @@ void ConvolutionUtils<T>::maxPool3d(NDArray<T>& input, NDArray<T>& output,  cons
     T* inBuff = input.getBuffer();
     T* outBuff = output.getBuffer();
 
-    const int bS = input.sizeAt(0);
-    const int iC = input.sizeAt(1);
-    const int iD = input.sizeAt(2);
-    const int iH = input.sizeAt(3);
-    const int iW = input.sizeAt(4);
+    const Nd4jLong bS = input.sizeAt(0);
+    const Nd4jLong iC = input.sizeAt(1);
+    const Nd4jLong iD = input.sizeAt(2);
+    const Nd4jLong iH = input.sizeAt(3);
+    const Nd4jLong iW = input.sizeAt(4);
 
-    const int oD = output.sizeAt(2);
-    const int oH = output.sizeAt(3);
-    const int oW = output.sizeAt(4);    
+    const Nd4jLong oD = output.sizeAt(2);
+    const Nd4jLong oH = output.sizeAt(3);
+    const Nd4jLong oW = output.sizeAt(4);    
     
-    const int iStride2 = iH * iW;
-    const int oStride2 = oH * oW;
-    const int iStride1 = iD * iStride2;
-    const int oStride1 = oD * oStride2;
-    const int iStride0 = iC * iStride1;
-    const int oStride0 = iC * oStride1;
-    const int size0 = bS * iC;
+    const Nd4jLong iStride2 = iH * iW;
+    const Nd4jLong oStride2 = oH * oW;
+    const Nd4jLong iStride1 = iD * iStride2;
+    const Nd4jLong oStride1 = oD * oStride2;
+    const Nd4jLong iStride0 = iC * iStride1;
+    const Nd4jLong oStride0 = iC * oStride1;
+    const Nd4jLong size0 = bS * iC;
         
 #pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2)
     for (int s = 0; s < bS; ++s) {
@@ -836,19 +836,19 @@ void ConvolutionUtils<T>::maxPool3dIndices(NDArray<T>& input, int* indices, cons
 
     T* inBuff  = input.getBuffer();  
 
-    const int bS = input.sizeAt(0);
-    const int iC = input.sizeAt(1);
-    const int iD = input.sizeAt(2);
-    const int iH = input.sizeAt(3);
-    const int iW = input.sizeAt(4);
+    const Nd4jLong bS = input.sizeAt(0);
+    const Nd4jLong iC = input.sizeAt(1);
+    const Nd4jLong iD = input.sizeAt(2);
+    const Nd4jLong iH = input.sizeAt(3);
+    const Nd4jLong iW = input.sizeAt(4);
 
-    const int iStride2 = iH * iW;
-    const int oStride2 = oH * oW;
-    const int iStride1 = iD * iStride2;
-    const int oStride1 = oD * oStride2;
-    const int iStride0 = iC * iStride1;
-    const int oStride0 = iC * oStride1;
-    const int size0 = bS * iC;
+    const Nd4jLong iStride2 = iH * iW;
+    const Nd4jLong oStride2 = oH * oW;
+    const Nd4jLong iStride1 = iD * iStride2;
+    const Nd4jLong oStride1 = oD * oStride2;
+    const Nd4jLong iStride0 = iC * iStride1;
+    const Nd4jLong oStride0 = iC * oStride1;
+    const Nd4jLong size0 = bS * iC;
 
 #pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2)
     for (int s = 0; s < bS; ++s) {
@@ -917,22 +917,22 @@ void ConvolutionUtils<T>::maxPool3dBP(NDArray<T>& input, const int* indices, NDA
     T* inBuff  = input.getBuffer();
     T* outBuff = output.getBuffer();    
 
-    const int bS = input.sizeAt(0);
-    const int iC = input.sizeAt(1);
-    const int iD = input.sizeAt(2);
-    const int iH = input.sizeAt(3);
-    const int iW = input.sizeAt(4);
-    const int oD = output.sizeAt(2);
-    const int oH = output.sizeAt(3);
-    const int oW = output.sizeAt(4);  
+    const Nd4jLong bS = input.sizeAt(0);
+    const Nd4jLong iC = input.sizeAt(1);
+    const Nd4jLong iD = input.sizeAt(2);
+    const Nd4jLong iH = input.sizeAt(3);
+    const Nd4jLong iW = input.sizeAt(4);
+    const Nd4jLong oD = output.sizeAt(2);
+    const Nd4jLong oH = output.sizeAt(3);
+    const Nd4jLong oW = output.sizeAt(4);  
 
-    const int iStride2 = iH * iW;
-    const int oStride2 = oH * oW;
-    const int iStride1 = iD * iStride2;
-    const int oStride1 = oD * oStride2;
-    const int iStride0 = iC * iStride1;
-    const int oStride0 = iC * oStride1;
-    const int size0 = bS * iC;  
+    const Nd4jLong iStride2 = iH * iW;
+    const Nd4jLong oStride2 = oH * oW;
+    const Nd4jLong iStride1 = iD * iStride2;
+    const Nd4jLong oStride1 = oD * oStride2;
+    const Nd4jLong iStride0 = iC * iStride1;
+    const Nd4jLong oStride0 = iC * oStride1;
+    const Nd4jLong size0 = bS * iC;  
     
 #pragma omp parallel for if(size0 > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2)
     for (int s = 0; s < bS; ++s) {
@@ -970,12 +970,12 @@ void ConvolutionUtils<T>::vol2col2(NDArray<T>& vol, NDArray<T>& col, const int s
 
     T* colBuff = col.getBuffer();    
 
-    Nd4jLong *colShape  = shape::shapeOf(col.getShapeInfo());
+    auto colShape  = shape::shapeOf(col.getShapeInfo());
     char colOrder  = shape::order(col.getShapeInfo());
-    Nd4jLong *colStride = shape::stride(col.getShapeInfo());
+    auto colStride = shape::stride(col.getShapeInfo());
 
-    Nd4jLong *volShape  = shape::shapeOf(vol.getShapeInfo());
-    Nd4jLong *volStride = shape::stride(vol.getShapeInfo());
+    auto volShape  = shape::shapeOf(vol.getShapeInfo());
+    auto volStride = shape::stride(vol.getShapeInfo());
 
     int bS   = volShape[0];
     int volC = volShape[1];
@@ -1447,17 +1447,17 @@ void ConvolutionUtils<T>::sconv2d(const std::vector<NDArray<T>*>& inArrs, NDArra
 template <typename T>
 void ConvolutionUtils<T>::vol2col(NDArray<T>& volume, NDArray<T>& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
-    const int bS = volume.sizeAt(0);
-    const int iC = volume.sizeAt(1);
-    const int iD = volume.sizeAt(2);
-    const int iH = volume.sizeAt(3);
-    const int iW = volume.sizeAt(4);
-    const int kD = columns.sizeAt(2);
-    const int kH = columns.sizeAt(3);
-    const int kW = columns.sizeAt(4);
-    const int oD = columns.sizeAt(5);
-    const int oH = columns.sizeAt(6);
-    const int oW = columns.sizeAt(7);
+    const Nd4jLong bS = volume.sizeAt(0);
+    const Nd4jLong iC = volume.sizeAt(1);
+    const Nd4jLong iD = volume.sizeAt(2);
+    const Nd4jLong iH = volume.sizeAt(3);
+    const Nd4jLong iW = volume.sizeAt(4);
+    const Nd4jLong kD = columns.sizeAt(2);
+    const Nd4jLong kH = columns.sizeAt(3);
+    const Nd4jLong kW = columns.sizeAt(4);
+    const Nd4jLong oD = columns.sizeAt(5);
+    const Nd4jLong oH = columns.sizeAt(6);
+    const Nd4jLong oW = columns.sizeAt(7);
     const Nd4jLong colStride0 = columns.stridesOf()[0];
     const Nd4jLong colStride1 = columns.stridesOf()[1];
     const Nd4jLong colStride2 = columns.stridesOf()[2];
@@ -1498,7 +1498,7 @@ if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDesce
                                     vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
                                                     
                                     if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) || static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
-                                        *col = 0.;                                                     
+                                        *col = (T)0.;                                                     
                                     else 
                                         *col = *vol;
                                 }
@@ -1530,7 +1530,7 @@ else
                                     vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
                                                     
                                     if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) || static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
-                                        *col = 0.;                                                     
+                                        *col = (T)0.;
                                     else 
                                         *col = *vol;
                                 }
@@ -1548,17 +1548,17 @@ else
 template <typename T>
 void ConvolutionUtils<T>::col2vol(NDArray<T>& columns, NDArray<T>& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
-    const int bS = volume.sizeAt(0);
-    const int iC = volume.sizeAt(1);
-    const int iD = volume.sizeAt(2);
-    const int iH = volume.sizeAt(3);
-    const int iW = volume.sizeAt(4);
-    const int kD = columns.sizeAt(2);
-    const int kH = columns.sizeAt(3);
-    const int kW = columns.sizeAt(4);
-    const int oD = columns.sizeAt(5);
-    const int oH = columns.sizeAt(6);
-    const int oW = columns.sizeAt(7);
+    const Nd4jLong bS = volume.sizeAt(0);
+    const Nd4jLong iC = volume.sizeAt(1);
+    const Nd4jLong iD = volume.sizeAt(2);
+    const Nd4jLong iH = volume.sizeAt(3);
+    const Nd4jLong iW = volume.sizeAt(4);
+    const Nd4jLong kD = columns.sizeAt(2);
+    const Nd4jLong kH = columns.sizeAt(3);
+    const Nd4jLong kW = columns.sizeAt(4);
+    const Nd4jLong oD = columns.sizeAt(5);
+    const Nd4jLong oH = columns.sizeAt(6);
+    const Nd4jLong oW = columns.sizeAt(7);
     const Nd4jLong colStride0 = columns.stridesOf()[0];
     const Nd4jLong colStride1 = columns.stridesOf()[1];
     const Nd4jLong colStride2 = columns.stridesOf()[2];
@@ -1810,12 +1810,12 @@ void ConvolutionUtils<T>::maxPool2d(NDArray<T>* input, NDArray<T>* output, const
     int dH = params[6];
     int dW = params[7];
 
-    const int bS  = input->sizeAt(0);
-    const int inD = input->sizeAt(1);
-    const int iH = input->sizeAt(2);
-    const int iW = input->sizeAt(3);
-    const int oH  = output->sizeAt(2);
-    const int oW  = output->sizeAt(3);
+    const Nd4jLong bS  = input->sizeAt(0);
+    const Nd4jLong inD = input->sizeAt(1);
+    const Nd4jLong iH = input->sizeAt(2);
+    const Nd4jLong iW = input->sizeAt(3);
+    const Nd4jLong oH  = output->sizeAt(2);
+    const Nd4jLong oW  = output->sizeAt(3);
 
     const bool isSameMode = params[8];
 
@@ -1846,26 +1846,26 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
     T* out = output.getBuffer();
     T* in  = input.getBuffer();
 
-    const int kH = (int)extraParams[0];
-    const int kW = (int)extraParams[1];
-    const int sH = (int)extraParams[2];
-    const int sW = (int)extraParams[3];
-    const int pH = (int)extraParams[4];
-    const int pW = (int)extraParams[5];    
-    const int dH = (int)extraParams[6];
-    const int dW = (int)extraParams[7];
-    int poolingMode = (int)extraParams[8];
+    const Nd4jLong kH = (int)extraParams[0];
+    const Nd4jLong kW = (int)extraParams[1];
+    const Nd4jLong sH = (int)extraParams[2];
+    const Nd4jLong sW = (int)extraParams[3];
+    const Nd4jLong pH = (int)extraParams[4];
+    const Nd4jLong pW = (int)extraParams[5];    
+    const Nd4jLong dH = (int)extraParams[6];
+    const Nd4jLong dW = (int)extraParams[7];
+    Nd4jLong poolingMode = (int)extraParams[8];
     T extraParam0 = extraParams[9];
 
-    const int kHEff = kH + (kH-1)*(dH-1);
-    const int kWEff = kW + (kW-1)*(dW-1);
+    const Nd4jLong kHEff = kH + (kH-1)*(dH-1);
+    const Nd4jLong kWEff = kW + (kW-1)*(dW-1);
 
-    const int bS = input.sizeAt(0);
-    const int iC = input.sizeAt(1);    
-    const int iH = input.sizeAt(2);
-    const int iW = input.sizeAt(3);    
-    const int oH = output.sizeAt(2);
-    const int oW = output.sizeAt(3);
+    const Nd4jLong bS = input.sizeAt(0);
+    const Nd4jLong iC = input.sizeAt(1);    
+    const Nd4jLong iH = input.sizeAt(2);
+    const Nd4jLong iW = input.sizeAt(3);    
+    const Nd4jLong oH = output.sizeAt(2);
+    const Nd4jLong oW = output.sizeAt(3);
     const Nd4jLong iStride0 = input.stridesOf()[0];
     const Nd4jLong iStride1 = input.stridesOf()[1];
     const Nd4jLong iStride2 = input.stridesOf()[2];
@@ -1877,7 +1877,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
     
     const Nd4jLong iStep2   = dH*iStride2;
     const Nd4jLong iStep3   = dW*iStride3;    
-    const int kProd   = kH*kW;
+    const Nd4jLong kProd   = kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
 
@@ -1955,7 +1955,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = 0.;
+                        sum = (T)0.;
                                             
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
@@ -2001,7 +2001,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = 0.;
+                        sum = (T)0.;
                                                                     
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
@@ -2029,34 +2029,34 @@ void ConvolutionUtils<T>::pooling3d(NDArray<T>& input, NDArray<T>& output, const
     T* out = output.getBuffer();
     T* in  = input.getBuffer();
 
-    const int kD = (int)extraParams[0];
-    const int kH = (int)extraParams[1];
-    const int kW = (int)extraParams[2];
-    const int sD = (int)extraParams[3];
-    const int sH = (int)extraParams[4];
-    const int sW = (int)extraParams[5];
-    const int pD = (int)extraParams[6];
-    const int pH = (int)extraParams[7];
-    const int pW = (int)extraParams[8];
-    const int dD = (int)extraParams[9]; 
-    const int dH = (int)extraParams[10];
-    const int dW = (int)extraParams[11];
+    const Nd4jLong kD = (int)extraParams[0];
+    const Nd4jLong kH = (int)extraParams[1];
+    const Nd4jLong kW = (int)extraParams[2];
+    const Nd4jLong sD = (int)extraParams[3];
+    const Nd4jLong sH = (int)extraParams[4];
+    const Nd4jLong sW = (int)extraParams[5];
+    const Nd4jLong pD = (int)extraParams[6];
+    const Nd4jLong pH = (int)extraParams[7];
+    const Nd4jLong pW = (int)extraParams[8];
+    const Nd4jLong dD = (int)extraParams[9]; 
+    const Nd4jLong dH = (int)extraParams[10];
+    const Nd4jLong dW = (int)extraParams[11];
 
     int poolingMode = (int)extraParams[12];
     T extraParam0 = extraParams[13];
 
-    const int kDEff = kD + (kD-1)*(dD-1);
-    const int kHEff = kH + (kH-1)*(dH-1);
-    const int kWEff = kW + (kW-1)*(dW-1);
+    const Nd4jLong kDEff = kD + (kD-1)*(dD-1);
+    const Nd4jLong kHEff = kH + (kH-1)*(dH-1);
+    const Nd4jLong kWEff = kW + (kW-1)*(dW-1);
 
-    const int bS = input.sizeAt(0);
-    const int iC = input.sizeAt(1);
-    const int iD = input.sizeAt(2);
-    const int iH = input.sizeAt(3);
-    const int iW = input.sizeAt(4);
-    const int oD = output.sizeAt(2);
-    const int oH = output.sizeAt(3);
-    const int oW = output.sizeAt(4);
+    const Nd4jLong bS = input.sizeAt(0);
+    const Nd4jLong iC = input.sizeAt(1);
+    const Nd4jLong iD = input.sizeAt(2);
+    const Nd4jLong iH = input.sizeAt(3);
+    const Nd4jLong iW = input.sizeAt(4);
+    const Nd4jLong oD = output.sizeAt(2);
+    const Nd4jLong oH = output.sizeAt(3);
+    const Nd4jLong oW = output.sizeAt(4);
     const Nd4jLong iStride0 = input.stridesOf()[0];
     const Nd4jLong iStride1 = input.stridesOf()[1];
     const Nd4jLong iStride2 = input.stridesOf()[2];
@@ -2070,7 +2070,7 @@ void ConvolutionUtils<T>::pooling3d(NDArray<T>& input, NDArray<T>& output, const
     const Nd4jLong iStep2   = dD*iStride2;
     const Nd4jLong iStep3   = dH*iStride3;
     const Nd4jLong iStep4   = dW*iStride4;
-    const int kProd    = kD*kH*kW;
+    const Nd4jLong kProd    = kD*kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
     const T iStep4Inv = 1./iStep4;
@@ -2169,7 +2169,7 @@ void ConvolutionUtils<T>::pooling3d(NDArray<T>& input, NDArray<T>& output, const
                             wstart *= iStride4;
                             wend   *= iStride4;
 
-                            sum = 0.;
+                            sum = (T)0.;
                                             
                             for (Nd4jLong kd = dstart; kd < dend; kd += iStep2) 
                                 for (Nd4jLong kh = hstart; kh < hend; kh += iStep3) 
@@ -2226,7 +2226,7 @@ void ConvolutionUtils<T>::pooling3d(NDArray<T>& input, NDArray<T>& output, const
                             wstart *= iStride4;
                             wend   *= iStride4;
 
-                            sum = 0.;
+                            sum = (T)0.;
                                             
                             for (Nd4jLong kd = dstart; kd < dend; kd += iStep2) 
                                 for (Nd4jLong kh = hstart; kh < hend; kh += iStep3) 
@@ -2256,32 +2256,32 @@ void ConvolutionUtils<T>::pooling2dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
     // gradO [bS, iC, oH, oW]    
     
     // TO DO: try to optimize initial zeroing using nested loops below
-    gradI.assign(0.);
+    gradI.assign((T)0.);
 
     T* in = input.getBuffer();
     T* gI = gradI.getBuffer();
     T* gO = gradO.getBuffer();
 
-    const int kH = (int)extraParams[0];
-    const int kW = (int)extraParams[1];
-    const int sH = (int)extraParams[2];
-    const int sW = (int)extraParams[3];
-    const int pH = (int)extraParams[4];
-    const int pW = (int)extraParams[5];
-    const int dH = (int)extraParams[6];
-    const int dW = (int)extraParams[7];
+    const Nd4jLong kH = (int)extraParams[0];
+    const Nd4jLong kW = (int)extraParams[1];
+    const Nd4jLong sH = (int)extraParams[2];
+    const Nd4jLong sW = (int)extraParams[3];
+    const Nd4jLong pH = (int)extraParams[4];
+    const Nd4jLong pW = (int)extraParams[5];
+    const Nd4jLong dH = (int)extraParams[6];
+    const Nd4jLong dW = (int)extraParams[7];
     int poolingMode = (int)extraParams[8];
     T extraParam0 = extraParams[9];
 
-    const int kHEff = kH + (kH-1)*(dH-1);
-    const int kWEff = kW + (kW-1)*(dW-1);
+    const Nd4jLong kHEff = kH + (kH-1)*(dH-1);
+    const Nd4jLong kWEff = kW + (kW-1)*(dW-1);
 
-    const int bS = gradI.sizeAt(0);
-    const int iC = gradI.sizeAt(1);
-    const int iH = gradI.sizeAt(2);
-    const int iW = gradI.sizeAt(3);
-    const int oH = gradO.sizeAt(2);
-    const int oW = gradO.sizeAt(3);
+    const Nd4jLong bS = gradI.sizeAt(0);
+    const Nd4jLong iC = gradI.sizeAt(1);
+    const Nd4jLong iH = gradI.sizeAt(2);
+    const Nd4jLong iW = gradI.sizeAt(3);
+    const Nd4jLong oH = gradO.sizeAt(2);
+    const Nd4jLong oW = gradO.sizeAt(3);
     const Nd4jLong iStride0 = gradI.stridesOf()[0];
     const Nd4jLong iStride1 = gradI.stridesOf()[1];
     const Nd4jLong iStride2 = gradI.stridesOf()[2];
@@ -2292,7 +2292,7 @@ void ConvolutionUtils<T>::pooling2dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
     const Nd4jLong oStride3 = gradO.stridesOf()[3];
     const Nd4jLong iStep2   = dH*iStride2;
     const Nd4jLong iStep3   = dW*iStride3;
-    const int kProd    = kH*kW;
+    const Nd4jLong kProd    = kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
 
@@ -2419,7 +2419,7 @@ void ConvolutionUtils<T>::pooling2dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = 0.;
+                        sum = (T)0.;
                         valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
                                             
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
@@ -2450,40 +2450,40 @@ void ConvolutionUtils<T>::pooling3dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
     // gradO [bS, iC, oD, oH, oW]    
 
     // TO DO: try to optimize initial zeroing using nested loops below
-    gradI.assign(0.);
+    gradI.assign((T)0.);
     
     T* in = input.getBuffer();
     T* gI = gradI.getBuffer();
     T* gO = gradO.getBuffer();
 
-    const int kD = (int)extraParams[0];
-    const int kH = (int)extraParams[1];
-    const int kW = (int)extraParams[2];
-    const int sD = (int)extraParams[3];
-    const int sH = (int)extraParams[4];
-    const int sW = (int)extraParams[5];
-    const int pD = (int)extraParams[6];
-    const int pH = (int)extraParams[7];
-    const int pW = (int)extraParams[8];
-    const int dD = (int)extraParams[9]; 
-    const int dH = (int)extraParams[10];
-    const int dW = (int)extraParams[11];
+    const Nd4jLong kD = (int)extraParams[0];
+    const Nd4jLong kH = (int)extraParams[1];
+    const Nd4jLong kW = (int)extraParams[2];
+    const Nd4jLong sD = (int)extraParams[3];
+    const Nd4jLong sH = (int)extraParams[4];
+    const Nd4jLong sW = (int)extraParams[5];
+    const Nd4jLong pD = (int)extraParams[6];
+    const Nd4jLong pH = (int)extraParams[7];
+    const Nd4jLong pW = (int)extraParams[8];
+    const Nd4jLong dD = (int)extraParams[9]; 
+    const Nd4jLong dH = (int)extraParams[10];
+    const Nd4jLong dW = (int)extraParams[11];
 
-    int poolingMode = (int)extraParams[12];
+    Nd4jLong poolingMode = (int)extraParams[12];
     T extraParam0 = extraParams[13];
 
-    const int kDEff = kD + (kD-1)*(dD-1);
-    const int kHEff = kH + (kH-1)*(dH-1);
-    const int kWEff = kW + (kW-1)*(dW-1);
+    const Nd4jLong kDEff = kD + (kD-1)*(dD-1);
+    const Nd4jLong kHEff = kH + (kH-1)*(dH-1);
+    const Nd4jLong kWEff = kW + (kW-1)*(dW-1);
 
-    const int bS = gradI.sizeAt(0);
-    const int iC = gradI.sizeAt(1);
-    const int iD = gradI.sizeAt(2);
-    const int iH = gradI.sizeAt(3);
-    const int iW = gradI.sizeAt(4);
-    const int oD = gradO.sizeAt(2);
-    const int oH = gradO.sizeAt(3);
-    const int oW = gradO.sizeAt(4);
+    const Nd4jLong bS = gradI.sizeAt(0);
+    const Nd4jLong iC = gradI.sizeAt(1);
+    const Nd4jLong iD = gradI.sizeAt(2);
+    const Nd4jLong iH = gradI.sizeAt(3);
+    const Nd4jLong iW = gradI.sizeAt(4);
+    const Nd4jLong oD = gradO.sizeAt(2);
+    const Nd4jLong oH = gradO.sizeAt(3);
+    const Nd4jLong oW = gradO.sizeAt(4);
     const Nd4jLong iStride0 = gradI.stridesOf()[0];
     const Nd4jLong iStride1 = gradI.stridesOf()[1];
     const Nd4jLong iStride2 = gradI.stridesOf()[2];
@@ -2497,7 +2497,7 @@ void ConvolutionUtils<T>::pooling3dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
     const Nd4jLong iStep2   = dD*iStride2;
     const Nd4jLong iStep3   = dH*iStride3;
     const Nd4jLong iStep4   = dW*iStride4;
-    const int kProd    = kD*kH*kW;
+    const Nd4jLong kProd    = kD*kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
     const T iStep4Inv = 1./iStep4;
@@ -2657,7 +2657,7 @@ void ConvolutionUtils<T>::pooling3dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
                             wstart *= iStride4;
                             wend   *= iStride4;
 
-                            sum = 0.;
+                            sum = (T)0.;
                             valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
                                             
                             for (Nd4jLong kd = dstart; kd < dend; kd += iStep2) 
