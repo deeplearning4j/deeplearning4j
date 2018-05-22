@@ -97,11 +97,14 @@ public class OCNNOutputLayerTest {
 
     @Test
     public void testLabelProbabilities() {
+        Nd4j.getRandom().setSeed(42);
         DataSetIterator dataSetIterator = getNormalizedIterator();
         MultiLayerNetwork network = getSingleLayer();
         DataSet next = dataSetIterator.next();
         DataSet filtered = next.filterBy(new int[]{0, 1});
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 4; i++) {
+            network.setEpochCount(i);
+            network.getLayerWiseConfigurations().setEpochCount(i);
             network.fit(filtered);
         }
 
@@ -136,20 +139,18 @@ public class OCNNOutputLayerTest {
         MultiLayerConfiguration configuration = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.XAVIER)
                 .miniBatch(true)
-                .l2(5e-3)
-                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                 .updater(Nesterovs.builder()
-                        .momentum(0.9)
+                        .momentum(0.1)
                         .learningRateSchedule(new StepSchedule(
                                 ScheduleType.EPOCH,
                                 1e-2,
                                 0.1,
                                 20)).build())
-                .list(new DenseLayer.Builder().activation(new ActivationIdentity())
-                                .nIn(4).nOut(3).build(),
+                .list(new DenseLayer.Builder().activation(new ActivationReLU())
+                                .nIn(4).nOut(2).build(),
                         new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder()
-                                .nIn(3).activation(new ActivationSigmoid())
-                                .nu(0.004)
+                                .nIn(2).activation(new ActivationSigmoid())
+                                .nu(0.1)
                                 .hiddenLayerSize(numHidden).build())
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(configuration);

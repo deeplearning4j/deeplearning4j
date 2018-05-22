@@ -104,10 +104,10 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         assertInputSet(true);
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr), workspaceMgr); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         //150
-        int inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
+        long inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
         INDArray delta = pair.getSecond();
         //4 x 150
-        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{inputShape, delta.length()}, 'f');
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{inputShape, delta.length()}, 'f');
         epsilonNext = epsilonNext.assign(delta.broadcast(epsilonNext.shape())).transpose();
 
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
@@ -128,14 +128,14 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         if(conf.getLastEpochSinceRUpdated() == 0 && epochCount == 0) {
             INDArray currentR = doOutput(false,workspaceMgr);
             if(window == null) {
-                window = Nd4j.createUninitializedDetached(conf.getWindowSize());
+                window = Nd4j.createUninitializedDetached(conf.getWindowSize()).assign(0.0);
             }
 
             if(batchWindowSizeIndex < window.length() - currentR.length()) {
                 window.put(new INDArrayIndex[]{NDArrayIndex.interval(batchWindowSizeIndex,batchWindowSizeIndex + currentR.length())},currentR);
             }
             else if(batchWindowSizeIndex < window.length()) {
-                int windowIdx = window.length() - batchWindowSizeIndex;
+                int windowIdx = (int) window.length() - batchWindowSizeIndex;
                 window.put(new INDArrayIndex[]{NDArrayIndex.interval(window.length() - windowIdx,window.length())},currentR.get(NDArrayIndex.interval(0,windowIdx)));
 
             }
@@ -188,7 +188,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray secondTermDerivV = input.reshape('f',
                 input.size(0),getParam(V_KEY).size(0),1);
 
-        int[]  shape = new int[firstVertDerivV.shape().length];
+        long[]  shape = new long[firstVertDerivV.shape().length];
         for(int i = 0; i < firstVertDerivV.rank(); i++) {
             shape[i] = Math.max(firstVertDerivV.size(i),secondTermDerivV.size(i));
         }
