@@ -1,0 +1,101 @@
+//
+// Created by raver119 on 17.10.2017.
+//
+
+#include <ops/declarable/LegacyStatsOp.h>
+#include <helpers/ShapeUtils.h>
+
+
+namespace nd4j {
+    namespace ops {
+        template <typename T>
+        Nd4jStatus LegacyStatsOp<T>::validateAndExecute(Context<T> &block) {
+            auto x = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
+
+            // we assume that opNuk is either stored in block, or was provided via op constructor
+            int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
+
+            // bias goes as first argument, unlike all other reductions
+            bool biasCorrected = false;
+            if (block.getIArguments()->size() > 0)
+                biasCorrected = INT_ARG(0) > 0;
+
+            if (block.getIArguments()->size() == 1 || (block.getIArguments()->size() == 2 && INT_ARG(1) == MAX_INT)) {
+                // scalar
+                T res = NativeOpExcutioner<T>::execSummaryStatsScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(),  biasCorrected);
+                z->putScalar(0, res);
+            } else {
+                // dimensions for TAD
+                // we should skip first argument here, because it's addressing bias correction
+                std::vector<int> dims(*block.getIArguments());
+                for (int e = 0; e < dims.size(); e++)
+                    if (dims[e] < 0)
+                        dims[e] += x->rankOf();
+
+                if (dims.size() > 1)
+                    std::sort(dims.begin(), dims.end());
+
+                REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
+
+                NativeOpExcutioner<T>::execSummaryStats(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), biasCorrected);
+            }
+
+            STORE_RESULT(*z);
+
+            return ND4J_STATUS_OK;
+        }
+
+        template <typename T>
+        LegacyStatsOp<T>::LegacyStatsOp() : LegacyOp<T>::LegacyOp(1) {
+            //
+        }
+
+        template <typename T>
+        LegacyStatsOp<T>::LegacyStatsOp(int opNum) : LegacyOp<T>::LegacyOp(1, opNum) {
+            //
+        }
+
+        template <typename T>
+        LegacyOp<T>* LegacyStatsOp<T>::clone() {
+            return new LegacyStatsOp(this->_opNum);
+        }
+
+        /**
+        *   For all reductions rules are simple: either you return scalar, or you return reduced NDArray.
+        *   It solely depends on input shape, and requested dimensions
+        */
+        template <typename T>
+        ShapeList *LegacyStatsOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
+            auto inShape = inputShape->at(0);
+
+            Nd4jLong *newShape;
+            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)) {
+                // in this case we just return scalar
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
+                newShape[0] = 2;
+                newShape[1] = 1;
+                newShape[2] = 1;
+                newShape[3] = 1;
+                newShape[4] = 1;
+                newShape[5] = 0;
+                newShape[6] = 1;
+                newShape[7] = 99;
+            } else {
+                // in this case we're building proper shape for reduction
+                auto array = new NDArray<T>(nullptr, inShape, block.getWorkspace());
+                array->triggerAllocationFlag(false, false);
+
+                newShape = ShapeUtils<T>::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true);
+
+                delete array;
+            }
+
+            return SHAPELIST(newShape);
+        }
+
+        template class ND4J_EXPORT LegacyStatsOp<float>;
+        template class ND4J_EXPORT LegacyStatsOp<double>;
+        template class ND4J_EXPORT LegacyStatsOp<float16>;
+    }
+}

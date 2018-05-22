@@ -1,0 +1,166 @@
+//
+//  @author raver119@gmail.com
+//
+
+#include <op_boilerplate.h>
+#include <loops/broadcasting.h>
+#include <loops/legacy_ops.h>
+
+namespace functions {
+    namespace broadcast {
+
+        template <typename T>
+        void Broadcast<T>::exec(const int opNum,
+                             T *x,
+                             Nd4jLong *xShapeInfo,
+                             T *y,
+                             Nd4jLong *yShapeInfo,
+                             T *result,
+                             Nd4jLong *resultShapeInfo,
+                             int *dimension,
+                             int dimensionLength,
+                             Nd4jLong *tadShapeInfo,
+                             Nd4jLong *tadOffset,
+                             Nd4jLong *tadShapeInfoZ,
+                             Nd4jLong *tadOffsetZ) {
+            DISPATCH_BY_OPNUM(exec, PARAMS(x,
+                                               xShapeInfo,
+                                               y,
+                                               yShapeInfo,
+                                               result,
+                                               resultShapeInfo,
+                                               dimension,
+                                               dimensionLength,
+                                               tadShapeInfo,
+                                               tadOffset,
+                                               tadShapeInfoZ,
+                                               tadOffsetZ), BROADCAST_OPS);
+        }
+
+        template <typename T>
+        template<typename OpType>
+        void Broadcast<T>::exec(T *x,
+                             Nd4jLong *xShapeInfo,
+                             T *y,
+                             Nd4jLong *yShapeInfo,
+                             T *result,
+                             Nd4jLong *resultShapeInfo,
+                             int *dimension,
+                             int dimensionLength,
+                             Nd4jLong *tadShapeInfo,
+                             Nd4jLong *tadOffset,
+                             Nd4jLong *tadShapeInfoZ,
+                             Nd4jLong *tadOffsetZ) {
+
+
+                //decompose in to several sub tads after
+                //moving all dimensions (in sorted order)
+                //to the back.
+                //permuted version of the x shape info for setting up the tad problem
+                auto tadShapeShapeInfo = tadShapeInfo;
+                auto tadOffsets = tadOffset;
+                shape::TAD *tad = nullptr;
+
+                if (tadShapeInfo == nullptr || tadOffsets == nullptr) {
+                    tad = new shape::TAD(xShapeInfo, dimension, dimensionLength);
+                    tad->createTadOnlyShapeInfo();
+                    tad->createOffsets();
+
+                    tadShapeShapeInfo = tad->tadOnlyShapeInfo;
+                    tadOffsets = tad->tadOffsets;
+                }
+
+                //int *resultStride = shape::stride(tadShapeShapeInfo);
+                auto tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
+                auto tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                auto yStride = shape::elementWiseStride(yShapeInfo);
+                auto tads = shape::length(xShapeInfo) / tadLength;
+
+                if (tadShapeInfoZ == nullptr) {
+                    tadShapeInfoZ = tadShapeShapeInfo;
+                    tadOffsetZ = tadOffsets;
+                }
+
+                auto zEWS = shape::elementWiseStride(tadShapeInfoZ);
+
+                int tadsPerThread = tads / TAD_THRESHOLD;
+                int _threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+                _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+
+#pragma omp parallel for schedule(guided) num_threads(_threads) if (_threads > 1) proc_bind(AFFINITY) default(shared)
+                for (int i = 0; i < tads; i++) {
+                    auto offset = tadOffsets[i];
+                    auto offsetZ = tadOffsetZ[i];
+
+                    if (tadEWS > 0 && yStride > 0 && zEWS > 0 && dimensionLength == 1) {
+                        T *oRes = result + offsetZ;
+                        T *oX = x + offset;
+
+                        if (tadEWS == 1 && yStride == 1 && zEWS == 1) {
+#pragma omp simd
+                            for (int f = 0; f < tadLength; f++) {
+                                oRes[f] = OpType::op(oX[f], y[f]);
+                            }
+                        } else {
+#pragma omp simd
+                            for (int f = 0; f < tadLength; f++) {
+                                oRes[f * zEWS] = OpType::op(oX[f * tadEWS], y[f * yStride]);
+                            }
+                        }
+                    }
+                    else {
+                        auto zShape = shape::shapeOf(tadShapeInfoZ);
+                        auto zStride = shape::stride(tadShapeInfoZ);
+                        int zRank = shape::rank(tadShapeInfoZ);
+
+                        auto xShape = shape::shapeOf(tadShapeShapeInfo);
+                        auto xStride = shape::stride(tadShapeShapeInfo);
+                        int xRank = shape::rank(tadShapeShapeInfo);
+
+                        auto yShape = shape::shapeOf(yShapeInfo);
+                        auto yStride = shape::stride(yShapeInfo);
+                        int yRank = shape::rank(yShapeInfo);
+
+                        Nd4jLong xCoord[MAX_RANK];
+                        Nd4jLong yCoord[MAX_RANK];
+                        Nd4jLong zCoord[MAX_RANK];
+
+
+                        // TODO: cover this codebranch with tests
+                        // all this stuff already happens within thread
+                        for (int f = 0; f < tadLength; f++) {
+                            if (shape::order(tadShapeShapeInfo) == 'c') {
+                                shape::ind2subC(xRank, xShape, f, xCoord);
+                                shape::ind2subC(yRank, yShape, f, yCoord);
+                            } else {
+                                shape::ind2sub(xRank, xShape, f, xCoord);
+                                shape::ind2sub(yRank, yShape, f, yCoord);
+                            }
+
+                            if (shape::order(tadShapeInfoZ) == 'c')
+                                shape::ind2subC(zRank, zShape, f, zCoord);
+                            else
+                                shape::ind2sub(zRank, zShape, f, zCoord);
+
+                            auto xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
+                            auto zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);
+                            auto yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+
+                            result[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+                        }
+                    }
+                }
+
+                if (tad != nullptr)
+                    delete tad;
+        }
+
+        template class ND4J_EXPORT Broadcast<float>;
+        template class ND4J_EXPORT Broadcast<float16>;
+        template class ND4J_EXPORT Broadcast<double>;
+
+        BUILD_CALL_1(template void Broadcast<float>::exec, float, (float*, Nd4jLong*, float*, Nd4jLong*, float*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
+        BUILD_CALL_1(template void Broadcast<float16>::exec, float16, (float16*, Nd4jLong*, float16*, Nd4jLong*, float16*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
+        BUILD_CALL_1(template void Broadcast<double>::exec, double, (double*, Nd4jLong*, double*, Nd4jLong*, double*, Nd4jLong*, int*, int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), BROADCAST_OPS)
+    }
+}

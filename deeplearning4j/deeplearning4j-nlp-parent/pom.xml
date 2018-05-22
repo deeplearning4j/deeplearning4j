@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>deeplearning4j-parent</artifactId>
+        <groupId>org.deeplearning4j</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>deeplearning4j-nlp-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>deeplearning4j-nlp</module>
+        <module>deeplearning4j-nlp-uima</module>
+        <module>deeplearning4j-nlp-korean</module>
+        <module>deeplearning4j-nlp-japanese</module>
+        <module>deeplearning4j-nlp-chinese</module>
+    </modules>
+
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-9.0</id>
+        </profile>
+    </profiles>
+
+</project>

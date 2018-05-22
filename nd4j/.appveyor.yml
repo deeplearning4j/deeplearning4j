@@ -1,0 +1,45 @@
+branches:
+  only:
+    - master
+version: '{build}'
+image: Visual Studio 2015
+cache:
+  - '%USERPROFILE%\.m2'
+clone_depth: 50
+environment:
+  matrix:
+    - EXT:
+      SCALA: 2.10
+    - EXT: avx2
+      SCALA: 2.11
+#    - EXT: avx512
+#      SCALA: 2.11
+    - CUDA: 8.0
+      SCALA: 2.10
+    - CUDA: 9.0
+      SCALA: 2.11
+    - CUDA: 9.1
+      SCALA: 2.11
+
+init:
+  - wmic computersystem set AutomaticManagedPagefile=False
+  - wmic pagefile list /format:list
+#  - wmic pagefileset create name="C:\pagefile.sys"
+  - wmic pagefileset where name="C:\\pagefile.sys" set InitialSize=8192,MaximumSize=8192
+  - wmic pagefileset list /format:list
+  - ps: write-host "Restarting..."
+  - ps: sleep 5
+  - ps: restart-computer -f
+  - ps: sleep 5
+  - ps: write-host "Restarted."
+  - wmic pagefile list /format:list
+
+install:
+
+build_script:
+  - '%APPVEYOR_BUILD_FOLDER%\ci\build-windows-x86_64.cmd'
+
+test_script:
+
+on_finish:
+

@@ -1,0 +1,17 @@
+include "array.fbs";
+include "utils.fbs";
+
+namespace nd4j.graph;
+
+
+table FlatVariable {
+    id:IntPair; // ID of the Variable, in format of IntPair.first is node Id, IntPair.second is output index of the node
+    name:string; // symbolic ID of the Variable (if defined)
+
+    shape:[long]; // shape is absolutely optional. either shape or ndarray might be set
+    ndarray:FlatArray;
+
+    device:int; // default is -1, which means _auto_
+}
+
+root_type FlatVariable;

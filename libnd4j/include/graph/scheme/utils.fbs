@@ -1,0 +1,59 @@
+namespace nd4j.graph;
+
+table LongPair {
+    first:long; // first
+    second:long; // second
+}
+
+table LongTriple {
+    first:long;
+    second:long;
+    third:long;
+}
+
+table IntPair {
+    first:int;
+    second:int;
+}
+
+table IntTriple {
+    first:int;
+    second:int;
+    third:int;
+}
+
+enum OpType:byte {
+    TRANSFORM = 0,
+    ACCUMULATION = 1, // for both reduce & reduce3
+    INDEX_ACCUMULATION = 2,
+    SCALAR = 3,
+    BROADCAST = 4,
+    PAIRWISE = 5,
+    ACCUMULATION3 = 6,
+    SUMMARYSTATS = 7,
+    SHAPE = 8,
+    AGGREGATION = 9, // ???
+    RANDOM = 10, //
+    CUSTOM = 11, // custom ops
+    GRAPH = 12, // another graph used as op
+    VARIABLE = 30,
+    BOOLEAN = 40, // booleanOps, for conditionals
+    LOGIC = 119, //
+}
+
+enum InputType:byte {
+    UNDEFINED,
+    NUMERIC,
+    STRINGULAR,
+    NUMERIC_SET,
+    STRINGULAR_SET,
+}
+
+enum OpClass:byte {
+    TRANSFORM = 0, // ops of this class return the same shape as primary input
+    REDUCTION = 1, // ops of this class return accumulation shape
+    MULTIPLICATOR = 2, // ops of this class may return whatever they want
+    GRAPH = 3, // embedded graph
+    CONDITIONAL = 4, // IF
+    LOOP = 5, // Various LOOPS
+}

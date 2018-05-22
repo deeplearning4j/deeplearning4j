@@ -1,0 +1,41 @@
+namespace nd4j.graph;
+
+enum ProfilingMode:byte {
+    NONE,   // no checks for Z values
+    NAN_PANIC, // reporting nodes with NaN values in Z
+    INF_PANIC, // reporting nodes with Inf values in Z
+    ANY_PANIC, // reporting nodes with NaN/Inf values in Z
+}
+
+enum ExecutionMode:byte {
+    SEQUENTIAL, // all operations will be executed sequentially
+    STRICT, // all operations will be following device id for execution mode selection
+    AUTO, // all operations that can be executed in parallel - will be executed in parallel
+}
+
+enum OutputMode:byte {
+   IMPLICIT, // only final nodes of graph will be returned
+   EXPLICIT, // only declared output fields
+   EXPLICIT_AND_IMPLICIT, // both options enabled
+   VARIABLE_SPACE, // whole content of VariableSpace will be returned back
+   OPTIMIZED, // same as IMPLICIT + using in-place ops execution where possible
+}
+
+enum Direction:byte {
+    FORWARD_ONLY, // inference pass
+    FORWARD_AND_BACKWARD, // not implemented yet
+    BACKWARD_ONLY, // not implemented yet
+}
+
+table FlatConfiguration {
+    id:long; // id of the graph this configuration applies to
+    executionMode:ExecutionMode; // current execution dmode
+    profilingMode:ProfilingMode; // current profiling mode
+    outputMode:OutputMode; // current output mode
+    timestats:bool; // are we gathering time info. false by default
+    footprintForward:long; // optional: amount of memory needed for FF pass
+    footprintBackward:long; // optional: amount of memory needed for BP pass
+    direction:Direction; // execution direction
+}
+
+root_type FlatConfiguration;
