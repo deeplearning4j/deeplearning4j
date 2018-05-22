@@ -131,13 +131,20 @@ main(int argc, char *argv[]) {
     std::string output(opt.outputName());
     nd4j_printf("Run preprocessor as \ncpp %s\n", input.c_str());
 //    int err;
+    char* cxx_path = getenv("CXX_PATH");
+    if (cxx_path == NULL) {
+        nd4j_printf("Cannot retrieve mandatory environment variable %s. Please set up the variable and try again.", "CXX");
+        return 1;
+    }
+
     char* cxx = getenv("CXX");
     if (cxx == NULL) {
         nd4j_printf("Cannot retrieve mandatory environment variable %s. Please set up the variable and try again.", "CXX");
         return 1;
     }
+
     std::string pathStr("PATH=/usr/bin:/usr/local/bin:");
-    pathStr += cxx;
+    pathStr += cxx_path;
     std::string gccVersion = std::to_string(__GNUC__);
 //    pathStr += gccVersion;
     std::string includeStr("CPLUS_INCLUDE_PATH=/usr/include/c++/");
@@ -150,11 +157,11 @@ main(int argc, char *argv[]) {
                           "LOGNAME=minifier", 
                           //"PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/6", 
                           pathStr.c_str(),
-                          includeStr.c_str(), //"CPLUS_INCLUDE_PATH=/usr/include/c++/6:/usr/include/x86_64-linux-gnu/c++/6",
+                          //includeStr.c_str(), //"CPLUS_INCLUDE_PATH=/usr/include/c++/6:/usr/include/x86_64-linux-gnu/c++/6",
                           (char *)0 };
 
 // to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}' 
-    err = execle(std::string("/usr/bin/cpp-" + gccVersion).c_str(), std::string("cpp-" + gccVersion).c_str(), "-x", "c++", "-std=c++11", "-P", "-o", output.c_str(), 
+    err = execle(cxx, "g++", "-E", "-P", "-std=c++11", "-P", "-o", output.c_str(), 
         "-I../include",
         "-I../blas",
         "-I../include/ops",
@@ -167,7 +174,7 @@ main(int argc, char *argv[]) {
         (char*)nullptr, 
         env);
     if (err < 0) {
-        perror("\nCannot run CPP properly due \n");
+        perror("\nCannot run Preprocessor properly due \n");
     }
 #endif
 
