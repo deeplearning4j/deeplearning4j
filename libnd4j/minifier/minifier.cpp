@@ -122,8 +122,8 @@ main(int argc, char *argv[]) {
     nd4j_printf("\n","");
 
 #ifdef __GNUC__
-    #if __CNUC__ < 4 && __GNUC__ > 6
-    #pragma error "Compiler version should be between 4.9 and 6.4"
+    #if __CNUC__ < 4 
+    #pragma error "Compiler version should be greater then 4.9
     #endif
     // just stacking everything together
     std::string cmdline = "./buildnativeoperations.sh " + name_arg + build_arg + arch_arg + opts_arg;
