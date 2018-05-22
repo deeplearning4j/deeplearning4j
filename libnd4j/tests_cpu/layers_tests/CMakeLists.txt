@@ -1,0 +1,128 @@
+include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+include_directories(../../include ../../layers ../../include/helpers ../../include/array ../../include/memory ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas)
+if(LINUX)
+    link_directories(/usr/local/lib)
+    link_directories(/usr/lib)
+    link_directories(/lib)
+endif()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if(APPLE)
+    message("Using apple")
+    link_directories(/usr/local/lib)
+    link_directories(/usr/lib)
+    link_directories(/lib)
+endif()
+if(WIN32)
+    get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+    foreach(dir ${dirs})
+        message(STATUS "dir='${dir}'")
+    endforeach()
+endif()
+
+# -fsanitize=address
+# -fsanitize=leak
+if (APPLE)
+    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
+elseif(WIN32)    
+    set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+else()
+    if ("${_RELEASE}")
+        set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -march=native -mtune=native")
+    else()
+        set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
+    endif()
+endif()
+
+# TODO: get rid of this once problem confirmed solved
+#if (APPLE)
+#    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+#        if ("${CMAKE_C_COMPILER_VERSION}" VERSION_GREATER 6.0 OR "${CMAKE_C_COMPILER_VERSION}" VERSION_EQUAL 6.0)
+#            SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wa,-mavx512f -fmax-errors=1")
+#        endif()
+#    endif()
+#endif()
+
+# tests are always compiled with all ops included
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    # using Clang
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+    # using Intel C++
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -fp-model fast")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    # using Visual Studio C++
+
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    # using GCC
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
+endif()
+
+
+IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    include_directories("/usr/include")
+    include_directories("/usr/local/include")
+ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+
+file(GLOB_RECURSE TYPES_SOURCES false ../../include/types/*.cpp ../../include/types/*.h)
+file(GLOB_RECURSE ARRAY_SOURCES false ../../include/array/*.cpp ../../include/array/*.h)
+file(GLOB_RECURSE MEMORY_SOURCES false ../../include/memory/*.cpp ../../include/memory/*.h)
+file(GLOB_RECURSE GRAPH_SOURCES false ../../include/graph/*.cpp ../../include/graph/*.h)
+file(GLOB_RECURSE CUSTOMOPS_SOURCES false ../../include/ops/declarable/generic/*.cpp)
+file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES false ../../include/ops/declarable/helpers/cpu/*.cpp)
+file(GLOB_RECURSE OPS_SOURCES false ../../include/ops/impl/*.cpp ../../include/ops/declarable/impl/*.cpp  ../../include/ops/*.h)
+file(GLOB_RECURSE INDEXING_SOURCES false ../../include/indexing/*.cpp ../../include/indexing/*.h)
+file(GLOB_RECURSE HELPERS_SOURCES false ../../include/helpers/*.cpp ../../include/helpers/*.h)
+file(GLOB_RECURSE LOOPS_SOURCES false ../../include/loops/*.cpp ../../include/loops/*.h)
+
+
+message("CPU BLAS")
+add_definitions(-D__CPUBLAS__=true)
+add_library(nd4jcpu STATIC ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
+        ../../blas/cpu/NativeOpExcutioner.cpp ../../blas/cpu/NDArray.cpp ../../blas/cpu/NDArrayFactory.cpp
+        ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
+        ../../blas/Environment.cpp ../../blas/Environment.h
+        ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES}
+        ${OPS_SOURCES} ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES})
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
+    message(FATAL_ERROR "You need at least GCC 4.9")
+endif()
+
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+else()
+    message("OPENMP NOT FOUND")
+endif()
+
+
+if(APPLE)
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
+    #SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
+elseif(MSYS)
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
+endif()
+
+
+if (NOT DEFINED ENV{CLION_IDE})
+    message("NOT CLION")
+    add_executable(runtests ArrayOptionsTests.cpp GraphStateTests.cpp SingleDimTests.cpp ScalarTests.cpp BackpropTests.cpp RNGTests.cpp ShapeTests.cpp StashTests.cpp VariableProxyTests.cpp SessionLocalTests.cpp FlatBuffersTests.cpp ConvolutionTests.cpp DeclarableOpsTests1.cpp DeclarableOpsTests2.cpp DeclarableOpsTests3.cpp DeclarableOpsTests4.cpp GraphTests.cpp HashUtilsTests.cpp NDArrayTests.cpp NDArrayTests2.cpp TadTests.cpp VariableSpaceTests.cpp VariableTests.cpp WorkspaceTests.cpp JavaInteropTests.cpp MemoryUtilsTests.cpp OpsArena.cpp OpTupleTests.cpp ParityOpsTests.cpp BooleanOpsTests.cpp SwitchTests.cpp ScopeTests.cpp ConditionalTests.cpp LegacyOpsTests.cpp ContextTests.cpp IndexingTests.cpp ShapeUtilsTests.cpp NDArrayListTests.cpp ListOperationsTests.cpp NDArrayFactoryTests.cpp BitwiseUtilsTests.cpp SanityTests.cpp PlaygroundTests.cpp BroadcastableOpsTests.cpp GraphExecutionerTests.cpp GraphHolderTests.cpp OpTrackerTests.cpp HelpersTests1.cpp DeclarableOpsTests5.cpp DeclarableOpsTests6.cpp CnpyTests.cpp BrodcastTests.cpp Reduce3Tests.cpp ReduceTests.cpp ShapeTests2.cpp PairwiseTests.cpp DeclarableOpsTests7.cpp MmapTests.cpp)
+endif ()
+
+if ($ENV{CLION_IDE})
+    file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.h)
+    add_executable(runtests ${TEST_SOURCES})
+
+endif ()
+
+
+
+target_link_libraries(runtests nd4jcpu gtest gtest_main)
+
+add_executable(minifier ../../minifier/minifier.cpp ../../minifier/graphopt.cpp)
+target_link_libraries(minifier nd4jcpu)

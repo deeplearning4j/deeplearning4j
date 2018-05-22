@@ -1,0 +1,7 @@
+org.nd4j.compression.impl.Float8
+org.nd4j.compression.impl.Float16
+org.nd4j.compression.impl.Gzip
+org.nd4j.compression.impl.Int8
+org.nd4j.compression.impl.Int16
+org.nd4j.compression.impl.NoOp
+org.nd4j.compression.impl.Uint8

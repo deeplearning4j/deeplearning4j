@@ -1,0 +1,75 @@
+/*-
+ *  * Copyright 2016 Skymind, Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ */
+
+package org.datavec.audio.fingerprint;
+
+public class QuickSortInteger extends QuickSort {
+
+    private int[] indexes;
+    private int[] array;
+
+    public QuickSortInteger(int[] array) {
+        this.array = array;
+        indexes = new int[array.length];
+        for (int i = 0; i < indexes.length; i++) {
+            indexes[i] = i;
+        }
+    }
+
+    public int[] getSortIndexes() {
+        sort();
+        return indexes;
+    }
+
+    private void sort() {
+        quicksort(array, indexes, 0, indexes.length - 1);
+    }
+
+    // quicksort a[left] to a[right]
+    private void quicksort(int[] a, int[] indexes, int left, int right) {
+        if (right <= left)
+            return;
+        int i = partition(a, indexes, left, right);
+        quicksort(a, indexes, left, i - 1);
+        quicksort(a, indexes, i + 1, right);
+    }
+
+    // partition a[left] to a[right], assumes left < right
+    private int partition(int[] a, int[] indexes, int left, int right) {
+        int i = left - 1;
+        int j = right;
+        while (true) {
+            while (a[indexes[++i]] < a[indexes[right]]); // find item on left to swap, a[right] acts as sentinel
+            while (a[indexes[right]] < a[indexes[--j]]) { // find item on right to swap
+                if (j == left)
+                    break; // don't go out-of-bounds
+            }
+            if (i >= j)
+                break; // check if pointers cross
+            swap(a, indexes, i, j); // swap two elements into place
+        }
+        swap(a, indexes, i, right); // swap with partition element
+        return i;
+    }
+
+    // exchange a[i] and a[j]
+    private void swap(int[] a, int[] indexes, int i, int j) {
+        int swap = indexes[i];
+        indexes[i] = indexes[j];
+        indexes[j] = swap;
+    }
+
+}

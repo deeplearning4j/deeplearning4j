@@ -1,0 +1,1 @@
+cuda-memcheck  java -Djava.compiler=NONE $@

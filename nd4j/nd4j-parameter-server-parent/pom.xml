@@ -1,0 +1,111 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nd4j-parameter-server-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <name>nd4j-parameter-server-parent</name>
+
+
+    <build>
+        <plugins>
+            <!-- Build helper plugin: used to add the multiple independent source directories (Java, Scala, HTML templates) -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/java</source>
+                                <source>src/main/scala</source>
+                                <source>src/main/views</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.google.code.play2-maven-plugin</groupId>
+                <artifactId>play2-maven-plugin</artifactId>
+                <version>${maven-play2-plugin.version}</version>
+
+                <!-- Generate Scala Page Templates
+                The Play framework template engine ("twirl") uses templates for HTML pages (or in principle any text-based
+                data: CSV, XML etc). These templates (*.scala.html files) need to be converted to Scala classes using
+                code generation. This is done during the Maven compile phase.
+                However, the Maven Play framework plugin does not allow proper customization of the output directory. Thus,
+                we generate these Scala classes in the default location (in the target/twirl/main/ directory) and use the
+                maven resources plugin to copy them to the actual location we want.
+                To generate the latest versions of these templates (after modifying or adding a new template), just run
+                 "mvn compile" in either the main project directory, or within the deeplearning4j ui module separately.
+                -->
+                <executions>
+                    <execution>
+                        <id>GenerateTemplates</id>
+                        <phase>compile</phase>
+                        <configuration>
+                        </configuration>
+                        <goals>
+                            <goal>template-compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+
+            <plugin>
+                <groupId>com.google.code.sbt-compiler-maven-plugin</groupId>
+                <artifactId>sbt-compiler-maven-plugin</artifactId>
+                <version>${sbt-compiler-maven-plugin.version}</version>
+            </plugin>
+        </plugins>
+    </build>
+
+
+    <modules>
+        <module>nd4j-parameter-server</module>
+        <module>nd4j-parameter-server-client</module>
+        <module>nd4j-parameterserver-model</module>
+        <module>nd4j-parameter-server-status</module>
+        <module>nd4j-parameter-server-rocksdb-storage</module>
+        <module>nd4j-parameter-server-node</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+
+    <profiles>
+        <profile>
+            <id>jdk9</id>
+            <activation>
+                <jdk>1.9</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.release>8</maven.compiler.release>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
+    <dependencies>
+
+    </dependencies>
+</project>

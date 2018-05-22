@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j-shade</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>jackson</artifactId>
+
+
+    <properties>
+        <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
+    </properties>
+
+    <profiles>
+      <profile>
+        <id>custom-lifecycle</id>
+
+        <activation>
+          <property><name>!skip.custom.lifecycle</name></property>
+        </activation>
+        <build>
+          <plugins>
+
+            <plugin>
+              <groupId>org.apache.portals.jetspeed-2</groupId>
+              <artifactId>jetspeed-mvn-maven-plugin</artifactId>
+              <version>2.3.1</version>
+              <executions>
+                <execution>
+                  <id>compile-and-pack</id>
+                  <phase>compile</phase>
+                  <goals>
+                    <goal>mvn</goal>
+                  </goals>
+                </execution>
+              </executions>
+              <dependencies>
+                <dependency>
+                  <groupId>org.apache.maven.shared</groupId>
+                  <artifactId>maven-invoker</artifactId>
+                  <version>2.2</version>
+                </dependency>
+              </dependencies>
+              <configuration>
+                <targets combine.children="merge">
+
+                  <target>
+                    <id>create-shaded-jars</id>
+                    <dir>@rootdir@/nd4j-shade/jackson/</dir>
+                    <goals>clean,compile,package</goals>
+                    <properties>
+                      <skip.custom.lifecycle>true</skip.custom.lifecycle>
+                    </properties>
+                  </target>
+
+                </targets>
+                <defaultTarget>create-shaded-jars</defaultTarget>
+              </configuration>
+            </plugin>
+
+          </plugins>
+        </build>
+      </profile>
+    </profiles>
+
+    <build>
+        <plugins>
+
+            <!--
+            Use Maven Shade plugin to add a shaded version of the Jackson dependencies, that can be imported by
+            including this module (org.nd4j.jackson) as a dependency.
+            The standard com.fasterxml.jackson dependencies will be provided, though are prefixed by org.nd4j.shade.jackson
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven-shade-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>reference.conf</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+
+                <configuration>
+                    <!--
+                    Important configuration options here:
+                    createDependencyReducedPom: remove the shaded artifacts from the module dependencies. Without this, the
+                                                original dependencies will be shaded, AND still included as transitive deps
+                                                in the final POM. This is not what we want.
+                    shadedArtifactAttached:     If true, the shaded artifact will be a separate JAR file for install, with
+                                                the original un-shaded JAR being separate. With this being set to false,
+                                                the original JAR will be modified, and no extra jar will be produced.
+                    promoteTransitiveDependencies:  This will promote the transitive dependencies of the shaded dependencies
+                                                to direct dependencies. Without this, we need to manually manage the transitive
+                                                dependencies of the shaded artifacts.
+
+                    Note that using <optional>true</optional> in the dependencies also allows the deps to be shaded (and
+                    original dependencies to not be included), but does NOT work with promoteTransitiveDependencies
+                    -->
+                    <shadedArtifactAttached>false</shadedArtifactAttached>
+                    <createDependencyReducedPom>true</createDependencyReducedPom>
+                    <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+
+                    <artifactSet>
+                        <includes>
+                            <include>com.fasterxml.jackson:*</include>
+                            <include>com.fasterxml.jackson.*:*</include>
+                        </includes>
+                    </artifactSet>
+
+                    <relocations>
+                        <!-- Jackson dependencies -->
+                        <relocation>
+                            <pattern>com.fasterxml.jackson</pattern>
+                            <shadedPattern>org.nd4j.shade.jackson</shadedPattern>
+                        </relocation>
+                    </relocations>
+
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <forceCreation>true</forceCreation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>empty-javadoc-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <skip>false</skip>
+                            <classifier>javadoc</classifier>
+                            <classesDirectory>${basedir}/javadoc</classesDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>empty-sources-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>sources</classifier>
+                            <classesDirectory>${basedir}/src</classesDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-dependency-plugin</artifactId>
+              <version>3.0.0</version>
+              <executions>
+                <execution>
+                  <id>unpack</id>
+                  <phase>package</phase>
+                  <goals>
+                    <goal>unpack</goal>
+                  </goals>
+                  <configuration>
+                    <artifactItems>
+                      <artifactItem>
+                        <groupId>org.nd4j</groupId>
+                        <artifactId>jackson</artifactId>
+                        <version>${project.version}</version>
+                        <type>jar</type>
+                        <overWrite>false</overWrite>
+                        <outputDirectory>${project.build.directory}/classes/</outputDirectory>
+                        <includes>**/*.class,**/*.xml</includes>
+                      </artifactItem>
+                    </artifactItems>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+            <version>${jackson.version}</version>
+
+            <!-- Exclude Jaxb annotation module to avoid issues with Spring framework tools.
+                See DL4J Issue: https://github.com/deeplearning4j/deeplearning4j/issues/2459 -->
+            <exclusions>
+                <exclusion>
+                    <artifactId>jackson-module-jaxb-annotations</artifactId>
+                    <groupId>com.fasterxml.jackson.module</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-joda</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+
+
+    </dependencies>
+
+</project>

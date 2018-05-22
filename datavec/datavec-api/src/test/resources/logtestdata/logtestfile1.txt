@@ -1,0 +1,4 @@
+Here's a header line, that should be skipped
+2016-01-01 23:59:59.011 11 DEBUG First entry message!
+2016-01-01 23:59:59.012 12 INFO Second entry message!
+2016-01-01 23:59:59.013 13 WARN Third entry message!

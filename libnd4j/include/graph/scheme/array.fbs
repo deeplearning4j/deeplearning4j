@@ -1,0 +1,38 @@
+namespace nd4j.graph;
+
+// byte order for arrays/buffers
+enum ByteOrder:byte {
+    LE,
+    BE,
+}
+
+// DataType for arrays/buffers
+enum DataType:byte {
+    INHERIT,
+    BOOL,
+    FLOAT8,
+    HALF,
+    HALF2,
+    FLOAT,
+    DOUBLE,
+    INT8,
+    INT16,
+    INT32,
+    INT64,
+    UINT8,
+    UINT16,
+    UINT32,
+    UINT64,
+    QINT8,
+    QINT16,
+}
+
+// this structure describe NDArray
+table FlatArray {
+    shape:[long]; // shape in Nd4j format
+    buffer:[byte]; // byte buffer with data
+    dtype:DataType; // data type of actual data within buffer
+    byteOrder:ByteOrder; // byte order of buffer
+}
+
+root_type FlatArray;
