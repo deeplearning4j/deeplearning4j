@@ -43,8 +43,8 @@ class Reshape(newOutputShape: List[Int], oldInputShape: List[Int] = List()) exte
       with Cloneable {
 
     override def preProcess(input: INDArray, miniBatchSize: Int, workspace: LayerWorkspaceMgr): INDArray = {
-      if (dynamic && fromShape != None) fromShape.get(0) = input.shape()(0)
-      if (input.shape().length == toShape.length) input else input.reshape(toShape: _*)
+      if (dynamic && fromShape != None) fromShape.get(0) = input.shape()(0).intValue()
+      if (input.shape().length == toShape.length) input else input.reshape(toShape)
     }
 
     override def backprop(output: INDArray, miniBatchSize: Int, workspace: LayerWorkspaceMgr): INDArray =
@@ -53,7 +53,7 @@ class Reshape(newOutputShape: List[Int], oldInputShape: List[Int] = List()) exte
       } else if (output.length() != fromShape.get.product) {
         throw new IllegalStateException("Illegal shape")
       } else {
-        output.reshape(fromShape.get: _*)
+        output.reshape(fromShape.get)
       }
 
     override def getOutputType(inputType: InputType): InputType =
