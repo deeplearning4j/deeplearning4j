@@ -92,14 +92,13 @@ done
 
 # default for chip
 if [[ -z "$CHIP" ]]; then
-    # test for cuda libraries
-    if (type ldconfig &> /dev/null); then
-       if (ldconfig -p | grep -q libcuda\.so); then
-           CHIP="cuda"
-       else
-           CHIP="cpu"
-        fi
-    fi
+  CHIP="cpu"
+  # test for cuda libraries
+  if (type ldconfig &> /dev/null); then
+    if (ldconfig -p | grep -q libcuda\.so); then
+      CHIP="cuda"
+    fi  
+  fi
 fi
 
 # adjust scala versions
@@ -161,7 +160,7 @@ for dirName in $JAVA_PROJECTS; do
 done
 
 # What to do with existing repos
-case $REPO_STRATEGY in
+case "$REPO_STRATEGY" in
     "delete")
         DELETE_REPOS="true"
         UPDATE_REPOS=""
@@ -269,7 +268,7 @@ if [[ -z "$SKIP_DL4J" ]]; then
     fi
     pushd deeplearning4j
     maybeUpdateRepo
-    if [ $DELETE_REPOS == "true" ]; then
+    if [ "$DELETE_REPOS" == "true" ]; then
         # reset the working diectory to the latest version of the tracking branch
         git remote update
         TRACKING_BRANCH=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}')
