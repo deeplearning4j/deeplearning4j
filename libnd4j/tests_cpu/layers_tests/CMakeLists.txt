@@ -124,5 +124,5 @@ endif ()
 
 target_link_libraries(runtests nd4jcpu gtest gtest_main)
 
-add_executable(minifier ../../minifier/minifier.cpp ../../minifier/graphopt.cpp)
-target_link_libraries(minifier nd4jcpu)
+# add_executable(minifier ../../minifier/minifier.cpp ../../minifier/graphopt.cpp)
+# target_link_libraries(minifier nd4jcpu)

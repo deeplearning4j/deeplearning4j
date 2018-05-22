@@ -51,9 +51,9 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
     if (isSameMode)
         ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);            
             
-    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
-    std::vector<T> argT = {(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T)dW, 1., (T)extraParam0};
-    input->template applyTransform<simdOps::Pooling2D<T>>(output, argT.data());
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;    
+    T extraParams[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW, 1, (T)extraParam0};
+    ConvolutionUtils<T>::pooling2d(*input, *output, extraParams);
 
     if (!isNCHW) {
         delete input;

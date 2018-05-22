@@ -51,7 +51,7 @@ namespace nd4j {
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
             std::vector<T> argT = {(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T)dX, 2., (T)extraParam0};
-            input->template applyTransform<simdOps::Pooling2D<T>>(output, argT.data());
+            ConvolutionUtils<T>::pooling2d(*input, *output, argT.data());
 
             if (!isNCHW) {
                 delete input;

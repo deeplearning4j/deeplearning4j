@@ -634,11 +634,11 @@ TEST_F(PlaygroundTests, Test_col2vol_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(PlaygroundTests, Test_pooling3d_1) {
+TEST_F(PlaygroundTests, test_pooling3d_1) {
     
     int bS=16, iD=30,iH=30,iW=30,  iC=3,  kD=5,kH=5,kW=5,  sD=3,sH=3,sW=3,  pD=3,pH=2,pW=2,  dD=1,dH=1,dW=1;    
     int        oD=10,oH=10, oW=10;
-    int iterations = 10;
+    int iterations = 1;
 
     NDArray<float> input('c', {bS, iC, iD, iH, iW});
     NDArray<float> output('c', {bS, iC, oD, oH, oW});
@@ -654,12 +654,12 @@ TEST_F(PlaygroundTests, Test_pooling3d_1) {
     inputPermuted = 10.;
     outputPermuted = 2.;
 
-    T extraParams[] = {(T)kD, (T)kH, (T)kW, (T)sD, (T)sH, (T)sW, (T)pD, (T)pH, (T)pW, (T)dD, (T)dH, (T)dW, 0., 1.};    
+    float extraParams[] = {(float)kD, (float)kH, (float)kW, (float)sD, (float)sH, (float)sW, (float)pD, (float)pH, (float)pW, (float)dD, (float)dH, (float)dW, 0., 1.};    
 
     auto timeStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) 
-        ConvolutionUtils<T>::pooling3d(input, output, extraParams);
+        ConvolutionUtils<float>::pooling3d(input, output, extraParams);
 
     auto timeEnd = std::chrono::system_clock::now();
     auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
@@ -667,7 +667,7 @@ TEST_F(PlaygroundTests, Test_pooling3d_1) {
     auto permStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) 
-        ConvolutionUtils<T>::pooling3d(inputPermuted, outputPermuted, extraParams);
+        ConvolutionUtils<float>::pooling3d(inputPermuted, outputPermuted, extraParams);
 
     auto permEnd = std::chrono::system_clock::now();
     auto permTime = std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count();

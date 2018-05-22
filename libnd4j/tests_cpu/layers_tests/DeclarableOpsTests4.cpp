@@ -1682,7 +1682,7 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test2) {
     NDArrayFactory<double>::linspace(1., input);    
 
     nd4j::ops::avgpool3dnew<double> op;
-    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
+    ResultSet<double>* results = op.execute({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 0, dataFormat});
     NDArray<double>* output = results->at(0);    
 
     ASSERT_EQ(Status::OK(), results->status());
