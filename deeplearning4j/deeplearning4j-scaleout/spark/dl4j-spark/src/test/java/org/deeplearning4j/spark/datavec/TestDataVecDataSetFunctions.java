@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.datavec;
 
 import lombok.val;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -29,6 +30,7 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.ClassPathResource;
 import scala.Tuple2;
 
 import java.io.File;
@@ -48,13 +50,15 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
     @Test
     public void testDataVecDataSetFunction() throws Exception {
         JavaSparkContext sc = getContext();
+
+        File f = testDir.newFolder();
+        ClassPathResource cpr = new ClassPathResource("dl4j-spark/imagetest/");
+        cpr.copyDirectory(f);
+
         //Test Spark record reader functionality vs. local
-        File f = new File("src/test/resources/imagetest/0/a.bmp");
         List<String> labelsList = Arrays.asList("0", "1"); //Need this for Spark: can't infer without init call
 
-        String path = f.getPath();
-        String folder = path.substring(0, path.length() - 7);
-        path = folder + "*";
+        String path = f.getPath() + "/*";
 
         JavaPairRDD<String, PortableDataStream> origData = sc.binaryFiles(path);
         assertEquals(4, origData.count()); //4 images
@@ -67,7 +71,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         List<DataSet> collected = data.collect();
 
         //Load normally (i.e., not via Spark), and check that we get the same results (order not withstanding)
-        InputSplit is = new FileSplit(new File(folder), new String[] {"bmp"}, true);
+        InputSplit is = new FileSplit(f, new String[] {"bmp"}, true);
         ImageRecordReader irr = new ImageRecordReader(28, 28, 1, new ParentPathLabelGenerator());
         irr.initialize(is);
 
@@ -157,14 +161,13 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
     public void testDataVecSequenceDataSetFunction() throws Exception {
         JavaSparkContext sc = getContext();
         //Test Spark record reader functionality vs. local
+        File dir = testDir.newFolder();
+        ClassPathResource cpr = new ClassPathResource("dl4j-spark/csvsequence/");
+        cpr.copyDirectory(dir);
 
-        File f = new File("src/test/resources/csvsequence/csvsequence_0.txt");
-        String path = f.getPath();
-        String folder = path.substring(0, path.length() - 17);
-        path = folder + "*";
-
-        JavaPairRDD<String, PortableDataStream> origData = sc.binaryFiles(path);
+        JavaPairRDD<String, PortableDataStream> origData = sc.binaryFiles(dir.getAbsolutePath());
         assertEquals(3, origData.count()); //3 CSV sequences
+
 
 
         SequenceRecordReader seqRR = new CSVSequenceRecordReader(1, ",");
@@ -174,7 +177,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         List<DataSet> collected = data.collect();
 
         //Load normally (i.e., not via Spark), and check that we get the same results (order not withstanding)
-        InputSplit is = new FileSplit(new File(folder), new String[] {"txt"}, true);
+        InputSplit is = new FileSplit(dir, new String[] {"txt"}, true);
         SequenceRecordReader seqRR2 = new CSVSequenceRecordReader(1, ",");
         seqRR2.initialize(is);
 
@@ -216,11 +219,10 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
     public void testDataVecSequencePairDataSetFunction() throws Exception {
         JavaSparkContext sc = getContext();
 
-        //Convert data to a SequenceFile:
-        File f = new File("src/test/resources/csvsequence/csvsequence_0.txt");
-        String path = f.getPath();
-        String folder = path.substring(0, path.length() - 17);
-        path = folder + "*";
+        File f = testDir.newFolder();
+        ClassPathResource cpr = new ClassPathResource("dl4j-spark/csvsequence");
+        cpr.copyDirectory(f);
+        String path = f.getAbsolutePath() + "/*";
 
         PathToKeyConverter pathConverter = new PathToKeyConverterFilename();
         JavaPairRDD<Text, BytesPairWritable> toWrite =
@@ -247,7 +249,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
 
 
         //Now: do the same thing locally (SequenceRecordReaderDataSetIterator) and compare
-        String featuresPath = f.getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = FilenameUtils.concat(f.getAbsolutePath(), "csvsequence_%d.txt");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -312,21 +314,18 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
     public void testDataVecSequencePairDataSetFunctionVariableLength() throws Exception {
         //Same sort of test as testDataVecSequencePairDataSetFunction() but with variable length time series (labels shorter, align end)
 
-        //Convert data to a SequenceFile:
-        File f = new File("src/test/resources/csvsequence/csvsequence_0.txt");
-        String pathFeatures = f.getAbsolutePath();
-        String folderFeatures = pathFeatures.substring(0, pathFeatures.length() - 17);
-        pathFeatures = folderFeatures + "*";
+        File dirFeatures = testDir.newFolder();
+        ClassPathResource cpr = new ClassPathResource("dl4j-spark/csvsequence/");
+        cpr.copyDirectory(dirFeatures);
 
-        File f2 = new File("src/test/resources/csvsequencelabels/csvsequencelabelsShort_0.txt");
-        String pathLabels = f2.getAbsolutePath();
-        String folderLabels = pathLabels.substring(0, pathLabels.length() - 28);
-        pathLabels = folderLabels + "*";
+        File dirLabels = testDir.newFolder();
+        ClassPathResource cpr2 = new ClassPathResource("dl4j-spark/csvsequencelabels/");
+        cpr2.copyDirectory(dirLabels);
 
 
         PathToKeyConverter pathConverter = new PathToKeyConverterNumber(); //Extract a number from the file name
         JavaPairRDD<Text, BytesPairWritable> toWrite =
-                        DataVecSparkUtil.combineFilesForSequenceFile(sc, pathFeatures, pathLabels, pathConverter);
+                        DataVecSparkUtil.combineFilesForSequenceFile(sc, dirFeatures.getAbsolutePath(), dirLabels.getAbsolutePath(), pathConverter);
 
         Path p = testDir.newFolder("dl4j_testSeqPairFnVarLength").toPath();
         p.toFile().deleteOnExit();
@@ -350,8 +349,8 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
 
 
         //Now: do the same thing locally (SequenceRecordReaderDataSetIterator) and compare
-        String featuresPath = f.getAbsolutePath().replaceAll("0", "%d");
-        String labelsPath = f2.getAbsolutePath().replaceAll("0", "%d");
+        String featuresPath = FilenameUtils.concat(dirFeatures.getAbsolutePath(), "csvsequence_%d.txt");
+        String labelsPath = FilenameUtils.concat(dirLabels.getAbsolutePath(), "csvsequencelabelsShort_%d.txt");
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
         SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
