@@ -1,5 +1,6 @@
 package org.nd4j.linalg.io;
 
+import org.apache.commons.compress.compressors.FileNameUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -157,15 +158,16 @@ public class ClassPathResource extends AbstractFileResolvingResource {
 
                 Preconditions.checkState(entry.isDirectory(), "Source must be a directory");
 
+                String pathNoSlash = this.path;
+                if(pathNoSlash.endsWith("/") || pathNoSlash.endsWith("\\")){
+                    pathNoSlash = pathNoSlash.substring(0, pathNoSlash.length()-1);
+                }
+
                 Enumeration<? extends ZipEntry> entries = zipFile.entries();
                 while(entries.hasMoreElements()){
                     ZipEntry e = entries.nextElement();
                     String name = e.getName();
-                    if(name.startsWith(this.path)){
-                        if(name.equalsIgnoreCase(this.path)){
-                            //Skip the root dir
-                            continue;
-                        }
+                    if(name.startsWith(pathNoSlash) && name.length() > pathNoSlash.length() && (name.charAt(pathNoSlash.length()) == '/' || name.charAt(pathNoSlash.length()) == '\\')){  //second condition: to avoid "/dir/a/" and "/dir/abc/" both matching startsWith
 
                         String relativePath = name.substring(this.path.length());
 
