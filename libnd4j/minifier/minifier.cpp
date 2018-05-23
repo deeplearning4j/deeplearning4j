@@ -11,6 +11,96 @@
 #include <ops/declarable/CustomOperations.h>
 #include <graph/GraphUtils.h>
 
+int runPreprocessor(std::string const& name_arg, std::string const& build_arg, std::string const& arch_arg, std::string const& opts_arg, std::string const& output) {
+    int pipefd[2];
+    pipe(pipefd);
+
+    if (fork() == 0)
+    {
+        close(pipefd[0]);    // close reading end in the child
+    
+        dup2(pipefd[1], 1);  // send stdout to the pipe
+        dup2(pipefd[1], 2);  // send stderr to the pipe
+
+        close(pipefd[1]);    // this descriptor is no longer needed
+
+#ifdef __GNUC__
+    #if __CNUC__ < 4 
+    #pragma error "Compiler version should be greater then 4.9"
+    #endif
+    // just stacking everything together
+    std::string cmdline = "./buildnativeoperations.sh " + name_arg + build_arg + arch_arg + opts_arg;
+    std::string input("../include/ops/declarable/CustomOperations.h");
+    nd4j_printf("Run preprocessor as \ncpp %s\n", input.c_str());
+//    int err;
+    char* cxx_path = getenv("CXX_PATH");
+    if (cxx_path == NULL) {
+        nd4j_printf("Cannot retrieve mandatory environment variable %s. Please set up the variable and try again.", "CXX");
+        return 1;
+    }
+
+    char* cxx = getenv("CXX");
+    if (cxx == NULL) {
+        nd4j_printf("Cannot retrieve mandatory environment variable %s. Please set up the variable and try again.", "CXX");
+        return 1;
+    }
+
+    std::string pathStr("PATH=/usr/bin:/usr/local/bin:");
+    pathStr += cxx_path;
+//    std::string gccVersion = std::to_string(__GNUC__);
+//    pathStr += gccVersion;
+//    std::string includeStr("CPLUS_INCLUDE_PATH=/usr/include/c++/");
+//    includeStr += gccVersion; // GCC version is here
+//    includeStr += ":/usr/include/x86_64-linux-gnu/c++/";
+//    includeStr += gccVersion;
+
+    nd4j_printf("%s\n", pathStr.c_str());
+    char const* env[] = { "HOME=/tmp", 
+//                          "LOGNAME=minifier", 
+//                          //"PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/6", 
+                          pathStr.c_str(),
+                          //includeStr.c_str(), //"CPLUS_INCLUDE_PATH=/usr/include/c++/6:/usr/include/x86_64-linux-gnu/c++/6",
+                          (char *)0 };
+
+// to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}' 
+    int err = execle(cxx, "g++", "-E", "-P", "-std=c++11", "-P", "-o", output.c_str(), 
+        "-I../include",
+        "-I../blas",
+        "-I../include/ops",
+        "-I../include/helpers",
+        "-I../include/types",
+        "-I../include/array",
+        "-I../include/cnpy",
+        "-I../include/ops/declarable", 
+        input.c_str(),
+        (char*)nullptr, 
+        env);
+
+    if (err < 0) {
+        perror("\nCannot run Preprocessor properly due \n");
+    }
+    printf("All done.\n");
+//    else {
+    nd4j_printf("Header file %s was generated.\n", output.c_str());
+//    }
+#endif
+}
+else
+{
+    // parent
+
+    char buffer[1024];
+
+    close(pipefd[1]);  // close the write end of the pipe in the parent
+
+    while (read(pipefd[0], buffer, sizeof(buffer)) != 0)  {
+        printf("%s\n", buffer);
+    }
+
+}
+    return 0;
+}
+
 int
 main(int argc, char *argv[]) {
     // this string will contain list of operations
@@ -121,67 +211,11 @@ main(int argc, char *argv[]) {
     }
     nd4j_printf("\n","");
 
-#ifdef __GNUC__
-    #if __CNUC__ < 4 
-    #pragma error "Compiler version should be greater then 4.9"
-    #endif
-    // just stacking everything together
-    std::string cmdline = "./buildnativeoperations.sh " + name_arg + build_arg + arch_arg + opts_arg;
-    std::string input("../include/ops/declarable/CustomOperations.h");
     std::string output(opt.outputName());
-    nd4j_printf("Run preprocessor as \ncpp %s\n", input.c_str());
-//    int err;
-    char* cxx_path = getenv("CXX_PATH");
-    if (cxx_path == NULL) {
-        nd4j_printf("Cannot retrieve mandatory environment variable %s. Please set up the variable and try again.", "CXX");
-        return 1;
+
+    if (0 == runPreprocessor(name_arg, build_arg, arch_arg, opts_arg, output)) {
+        nd4j_printf("All done successfully.\n", "");
     }
-
-    char* cxx = getenv("CXX");
-    if (cxx == NULL) {
-        nd4j_printf("Cannot retrieve mandatory environment variable %s. Please set up the variable and try again.", "CXX");
-        return 1;
-    }
-
-    std::string pathStr("PATH=/usr/bin:/usr/local/bin:");
-    pathStr += cxx_path;
-//    std::string gccVersion = std::to_string(__GNUC__);
-//    pathStr += gccVersion;
-//    std::string includeStr("CPLUS_INCLUDE_PATH=/usr/include/c++/");
-//    includeStr += gccVersion; // GCC version is here
-//    includeStr += ":/usr/include/x86_64-linux-gnu/c++/";
-//    includeStr += gccVersion;
-
-    nd4j_printf("%s\n", pathStr.c_str());
-    char const* env[] = { "HOME=/tmp", 
-//                          "LOGNAME=minifier", 
-//                          //"PATH=/usr/bin:/usr/local/bin:/usr/lib/gcc/x86_64-linux-gnu/6", 
-                          pathStr.c_str(),
-                          //includeStr.c_str(), //"CPLUS_INCLUDE_PATH=/usr/include/c++/6:/usr/include/x86_64-linux-gnu/c++/6",
-                          (char *)0 };
-
-// to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}' 
-    err = execle(cxx, "g++", "-E", "-P", "-std=c++11", "-P", "-o", output.c_str(), 
-        "-I../include",
-        "-I../blas",
-        "-I../include/ops",
-        "-I../include/helpers",
-        "-I../include/types",
-        "-I../include/array",
-        "-I../include/cnpy",
-        "-I../include/ops/declarable", 
-        input.c_str(),
-        (char*)nullptr, 
-        env);
-
-    if (err < 0) {
-        perror("\nCannot run Preprocessor properly due \n");
-    }
-    
-//    else {
-    nd4j_printf("Header file %s was generated.\n", output.c_str());
-//    }
-#endif
 
     //nd4j_printf("Command line: %s\n", cmdline.c_str());
     // FIXME: do this in cross-platform way
