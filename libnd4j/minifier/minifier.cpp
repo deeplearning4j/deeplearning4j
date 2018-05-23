@@ -63,7 +63,8 @@ int runPreprocessor(std::string const& name_arg, std::string const& build_arg, s
                           (char *)0 };
 
 // to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}' 
-    int err = execle(cxx, "g++", "-E", "-P", "-std=c++11", "-P", "-o", output.c_str(), 
+    nd4j_printf("Run: \n\t g++ -E -P -std=c++11 -o %s -I{../include/*, ../blas} %s\n", output.c_str(), input.c_str());
+    int err = execle(cxx, "g++", "-E", "-P", "-std=c++11", "-o", output.c_str(), 
         "-I../include",
         "-I../blas",
         "-I../include/ops",
