@@ -1577,3 +1577,8 @@ TEST_F(GraphTests, Test_Minifier_1) {
 
     ASSERT_EQ(0, GraphUtils::runPreprocessor(" --name \'minilib\'", "", "", "-l", "libnd4j_mini.hpp"));
 }
+
+TEST_F(GraphTests, Test_Minifier_2) {
+
+    ASSERT_EQ(0, GraphUtils::runPreprocessor(" --name \'minilib2\'", "", "", "-l", "libnd4j_mini2.hpp"));
+}
