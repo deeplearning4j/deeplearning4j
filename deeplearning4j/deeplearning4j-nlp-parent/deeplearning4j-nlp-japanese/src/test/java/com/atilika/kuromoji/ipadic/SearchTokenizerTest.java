@@ -19,6 +19,7 @@ package com.atilika.kuromoji.ipadic;
 import com.atilika.kuromoji.TokenizerBase.Mode;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,12 +42,12 @@ public class SearchTokenizerTest {
 
     @Test
     public void testCompoundSplitting() throws IOException {
-        assertSegmentation("/search-segmentation-tests.txt");
+        assertSegmentation("deeplearning4j-nlp-japanese/search-segmentation-tests.txt");
     }
 
     public void assertSegmentation(String testFilename) throws IOException {
         LineNumberReader reader = new LineNumberReader(
-                        new InputStreamReader(getResourceAsStream(testFilename), StandardCharsets.UTF_8));
+                        new InputStreamReader(new ClassPathResource(testFilename).getInputStream(), StandardCharsets.UTF_8));
 
         String line;
         while ((line = reader.readLine()) != null) {
