@@ -1,11 +1,11 @@
 package integration;
 
 import com.google.common.io.Files;
+import integration.testcases.RNNTestCases;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.IEvaluation;
-import org.deeplearning4j.integration.testcases.RNNTestCases;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;

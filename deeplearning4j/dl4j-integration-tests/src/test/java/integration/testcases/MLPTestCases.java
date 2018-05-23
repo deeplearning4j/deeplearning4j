@@ -45,7 +45,6 @@ public class MLPTestCases {
                 testGradients = true;
                 testParamsPostTraining = true;
                 testEvaluation = true;
-                testModelSerialization = true;
                 testOverfitting = true;
             }
 

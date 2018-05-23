@@ -62,7 +62,6 @@ public class RNNTestCases {
                 testGradients = true;
                 testParamsPostTraining = true;
                 testEvaluation = true;
-                testModelSerialization = true;
                 testOverfitting = false;            //Not much point on this one - it already fits very well...
             }
 
@@ -139,7 +138,6 @@ public class RNNTestCases {
             testGradients = true;
             testParamsPostTraining = true;
             testEvaluation = true;
-            testModelSerialization = true;
             testOverfitting = false;            //Not much point on this one - it already fits very well...
         }
 
