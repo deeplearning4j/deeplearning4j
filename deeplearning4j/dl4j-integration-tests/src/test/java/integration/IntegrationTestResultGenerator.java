@@ -1,7 +1,7 @@
 package integration;
 
 import com.google.common.io.Files;
-import integration.testcases.RNNTestCases;
+import integration.testcases.CNN2DTestCases;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
@@ -35,7 +35,8 @@ public class IntegrationTestResultGenerator {
 
     public static void main(String[] args) throws Exception {
 
-        TestCase tc = RNNTestCases.getRnnCharacterTestCase();
+//        TestCase tc = RNNTestCases.getRnnCharacterTestCase();
+        TestCase tc = CNN2DTestCases.testLenetTransferDropoutRepeatability();
 
         //Basic validation:
         Preconditions.checkState(tc.getTestName() != null, "Test case name is null");

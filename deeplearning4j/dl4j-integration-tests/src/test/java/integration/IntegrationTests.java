@@ -13,7 +13,7 @@ public class IntegrationTests {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     @AfterClass
-    public void afterClass(){
+    public static void afterClass(){
         IntegrationTestRunner.printCoverageInformation();
     }
 
@@ -71,6 +71,11 @@ public class IntegrationTests {
     @Test(timeout = 120000L)
     public void testCnn2DSynthetic() throws Exception {
         IntegrationTestRunner.runTest(CNN2DTestCases.getCnn2DSynthetic(), testDir);
+    }
+
+    @Test(timeout = 120000L)
+    public void testCnn2DLenetTransferDropoutRepeatability() throws Exception {
+        IntegrationTestRunner.runTest(CNN2DTestCases.testLenetTransferDropoutRepeatability(), testDir);
     }
 
 

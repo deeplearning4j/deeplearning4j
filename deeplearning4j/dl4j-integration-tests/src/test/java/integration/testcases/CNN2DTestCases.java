@@ -18,6 +18,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.PretrainedType;
@@ -172,7 +173,7 @@ public class CNN2DTestCases {
 
 
 
-    public static TestCase testLenetDropoutRepeatability(){
+    public static TestCase testLenetTransferDropoutRepeatability(){
         return new TestCase() {
 
             {
@@ -216,16 +217,17 @@ public class CNN2DTestCases {
                                 .stride(1, 1)
                                 .nOut(50)
                                 .activation(Activation.IDENTITY)
+                                .dropOut(0.5)   //**** Dropout on conv layer
                                 .build())
                         .layer(3, new SubsamplingLayer.Builder(PoolingType.MAX)
                                 .kernelSize(2,2)
                                 .stride(2,2)
                                 .build())
                         .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
-                                .dropOut(0.5)
+                                .dropOut(0.5)   //**** Dropout on dense layer
                                 .nOut(500).build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                .nOut(19)
+                                .nOut(10)
                                 .activation(Activation.SOFTMAX)
                                 .build())
                         .setInputType(InputType.convolutionalFlat(28,28,1)) //See note below
@@ -239,6 +241,11 @@ public class CNN2DTestCases {
                 net.fit(iter);
 
                 MultiLayerNetwork pretrained = new TransferLearning.Builder(net)
+                        .fineTuneConfiguration(
+                                FineTuneConfiguration.builder()
+                                .updater(new Nesterovs(0.01, 0.9))
+                                .seed(98765)
+                                .build())
                         .nOutReplace(5, 10, WeightInit.XAVIER)
                         .build();
 

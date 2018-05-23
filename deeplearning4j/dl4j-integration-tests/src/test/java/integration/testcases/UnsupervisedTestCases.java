@@ -1,6 +1,7 @@
 package integration.testcases;
 
-import org.deeplearning4j.integration.TestCase;
+
+import integration.TestCase;
 
 public class UnsupervisedTestCases {
 

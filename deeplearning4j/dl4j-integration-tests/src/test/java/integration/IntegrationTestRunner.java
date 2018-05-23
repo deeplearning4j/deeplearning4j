@@ -56,7 +56,7 @@ import static org.junit.Assert.*;
 @Slf4j
 public class IntegrationTestRunner {
 
-    public static final File RESOURCES_ROOT_DIR = new File("D:/DL4J_Integration_Test_Temp/"); //TODO
+    public static final File RESOURCES_ROOT_DIR = new File("C:/Temp/DL4J_Integration_Test_Temp/"); //TODO
     public static final String RANDOM_INIT_UNTRAINED_MODEL_FILENAME = "Model_RANDOM_INIT_UNTRAINED.zip";
     public static final String FLAT_GRADIENTS_FILENAME = "flattenedGradients.bin";
     public static final String TRAINING_CURVE_FILENAME = "trainingCurve.csv";
@@ -274,7 +274,7 @@ public class IntegrationTestRunner {
 
         //Test layerwise pretraining
         if(tc.isTestPretrain()){
-
+            //TODO
 
         }
 
@@ -313,8 +313,7 @@ public class IntegrationTestRunner {
             int newIters = countingIter.getCurrIter();
             assertEquals(iterBefore + newIters, iterAfter);
             assertEquals(epochBefore + 1, epochAfter);
-            validateLayerIterCounts(m, epochBefore + 1, iterBefore+newIters);
-
+            validateLayerIterCounts(m, epochBefore + 1, iterBefore+newIters);   //TODO CURRENTLY FAILING
             double[] scores = l.getListScore().toDoubleArray();
 
             File f = new File(testBaseDir, IntegrationTestRunner.TRAINING_CURVE_FILENAME);
@@ -393,7 +392,7 @@ public class IntegrationTestRunner {
         }
 
         //Check model serialization
-        if (tc.isTestModelSerialization()) {
+        {
             log.info("Testing model serialization");
 
             File f = testDir.newFile();
