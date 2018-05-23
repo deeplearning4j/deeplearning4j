@@ -1572,3 +1572,8 @@ TEST_F(GraphTests, Test_Inplace_Outputs_2) {
     ASSERT_TRUE(failed);
 #endif
 }
+
+TEST_F(GraphTests, Test_Minifier_1) {
+
+    ASSERT_EQ(0, GraphUtils::runPreprocessor(" --name \'minilib\'", "", "", "-l", "libnd4j_mini.hpp"));
+}
