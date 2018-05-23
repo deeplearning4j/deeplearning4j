@@ -42,7 +42,7 @@ import static org.junit.Assert.assertTrue;
 public class CodecReaderTest {
     @Test
     public void testCodecReader() throws Exception {
-        File file = new ClassPathResource("fire_lowres.mp4").getFile();
+        File file = new ClassPathResource("datavec-data-codec/fire_lowres.mp4").getFile();
         SequenceRecordReader reader = new CodecRecordReader();
         Configuration conf = new Configuration();
         conf.set(CodecRecordReader.RAVEL, "true");
@@ -67,7 +67,7 @@ public class CodecReaderTest {
 
     @Test
     public void testCodecReaderMeta() throws Exception {
-        File file = new ClassPathResource("fire_lowres.mp4").getFile();
+        File file = new ClassPathResource("datavec-data-codec/fire_lowres.mp4").getFile();
         SequenceRecordReader reader = new CodecRecordReader();
         Configuration conf = new Configuration();
         conf.set(CodecRecordReader.RAVEL, "true");
@@ -95,7 +95,7 @@ public class CodecReaderTest {
     @Test
     public void testViaDataInputStream() throws Exception {
 
-        File file = new ClassPathResource("fire_lowres.mp4").getFile();
+        File file = new ClassPathResource("datavec-data-codec/fire_lowres.mp4").getFile();
         SequenceRecordReader reader = new CodecRecordReader();
         Configuration conf = new Configuration();
         conf.set(CodecRecordReader.RAVEL, "true");
@@ -125,7 +125,7 @@ public class CodecReaderTest {
     @Ignore
     @Test
     public void testNativeCodecReader() throws Exception {
-        File file = new ClassPathResource("fire_lowres.mp4").getFile();
+        File file = new ClassPathResource("datavec-data-codec/fire_lowres.mp4").getFile();
         SequenceRecordReader reader = new NativeCodecRecordReader();
         Configuration conf = new Configuration();
         conf.set(CodecRecordReader.RAVEL, "true");
@@ -151,7 +151,7 @@ public class CodecReaderTest {
     @Ignore
     @Test
     public void testNativeCodecReaderMeta() throws Exception {
-        File file = new ClassPathResource("fire_lowres.mp4").getFile();
+        File file = new ClassPathResource("datavec-data-codec/fire_lowres.mp4").getFile();
         SequenceRecordReader reader = new NativeCodecRecordReader();
         Configuration conf = new Configuration();
         conf.set(CodecRecordReader.RAVEL, "true");
@@ -180,7 +180,7 @@ public class CodecReaderTest {
     @Test
     public void testNativeViaDataInputStream() throws Exception {
 
-        File file = new ClassPathResource("fire_lowres.mp4").getFile();
+        File file = new ClassPathResource("datavec-data-codec/fire_lowres.mp4").getFile();
         SequenceRecordReader reader = new NativeCodecRecordReader();
         Configuration conf = new Configuration();
         conf.set(CodecRecordReader.RAVEL, "true");
