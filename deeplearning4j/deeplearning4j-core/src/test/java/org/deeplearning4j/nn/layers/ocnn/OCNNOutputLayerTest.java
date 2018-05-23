@@ -28,6 +28,7 @@ import org.nd4j.linalg.schedule.StepSchedule;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.File;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -96,7 +97,7 @@ public class OCNNOutputLayerTest {
 
 
     @Test
-    public void testLabelProbabilities() {
+    public void testLabelProbabilities() throws Exception {
         Nd4j.getRandom().setSeed(42);
         DataSetIterator dataSetIterator = getNormalizedIterator();
         MultiLayerNetwork network = getSingleLayer();
@@ -121,6 +122,14 @@ public class OCNNOutputLayerTest {
         INDArray outputForNormalSamples = network.output(filtered.getFeatureMatrix(),false);
         System.out.println("Normal probabilities " + normalProbs);
         System.out.println("Normal raw output " + outputForNormalSamples);
+
+        File tmpFile = new File("tmp-file-" + UUID.randomUUID().toString());
+        ModelSerializer.writeModel(network,tmpFile,true);
+        tmpFile.deleteOnExit();
+        MultiLayerNetwork multiLayerNetwork = ModelSerializer.restoreMultiLayerNetwork(tmpFile);
+        assertEquals(network.params(),multiLayerNetwork.params());
+        assertEquals(network.numParams(),multiLayerNetwork.numParams());
+
     }
 
 
