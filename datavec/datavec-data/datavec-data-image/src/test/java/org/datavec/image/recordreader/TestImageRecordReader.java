@@ -33,7 +33,9 @@ import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.batch.NDArrayRecordBatch;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -52,6 +54,9 @@ import static org.junit.Assert.*;
  * Created by Alex on 27/09/2016.
  */
 public class TestImageRecordReader {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test(expected = IllegalArgumentException.class)
     public void testEmptySplit() throws IOException {
@@ -132,7 +137,7 @@ public class TestImageRecordReader {
         //Order of FileSplit+ImageRecordReader should be different after reset
 
         //Idea: labels order should be consistent regardless of input file order
-        File f0 = new ClassPathResource("/testimages/").getFile();
+        File f0 = new ClassPathResource("datavec-data-image/testimages/").getFile();
 
         FileSplit fs = new FileSplit(f0, new Random(12345));
 
@@ -187,7 +192,7 @@ public class TestImageRecordReader {
 
         ImageRecordReader rr = new ImageRecordReader(28, 28, 3, regressionLabelGen);
 
-        File rootDir = new ClassPathResource("/testimages/").getFile();
+        File rootDir = new ClassPathResource("datavec-data-image/testimages/").getFile();
         FileSplit fs = new FileSplit(rootDir);
         rr.initialize(fs);
         URI[] arr = fs.locations();
@@ -238,7 +243,10 @@ public class TestImageRecordReader {
     public void testListenerInvocationBatch() throws IOException {
         ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
         ImageRecordReader rr = new ImageRecordReader(32, 32, 3, labelMaker);
-        File parent = new ClassPathResource("/testimages/class0").getFile();
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-data-image/testimages/").copyDirectory(f);
+
+        File parent = f;
         int numFiles = parent.list().length;
         rr.initialize(new FileSplit(parent));
         CountingListener counting = new CountingListener(new LogRecordListener());
@@ -251,7 +259,7 @@ public class TestImageRecordReader {
     public void testListenerInvocationSingle() throws IOException {
         ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
         ImageRecordReader rr = new ImageRecordReader(32, 32, 3, labelMaker);
-        File parent = new ClassPathResource("/testimages/class0").getFile();
+        File parent = new ClassPathResource("datavec-data-image/testimages/class0").getFile();
         int numFiles = parent.list().length;
         rr.initialize(new FileSplit(parent));
         CountingListener counting = new CountingListener(new LogRecordListener());

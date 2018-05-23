@@ -86,7 +86,7 @@ public class CodecReaderTest {
         assertEquals(record, seqR.getSequenceRecord());
         RecordMetaData meta = seqR.getMetaData();
         //        System.out.println(meta);
-        assertTrue(meta.getURI().toString().endsWith("fire_lowres.mp4"));
+        assertTrue(meta.getURI().toString().endsWith(file.getName()));
 
         SequenceRecord fromMeta = reader.loadSequenceFromMetaData(meta);
         assertEquals(seqR, fromMeta);
