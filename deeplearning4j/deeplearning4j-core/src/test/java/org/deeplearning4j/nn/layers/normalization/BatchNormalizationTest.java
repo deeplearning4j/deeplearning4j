@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.normalization;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
+import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -15,6 +16,8 @@ import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
+import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
+import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -34,6 +37,8 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.NoOpUpdater;
 import org.nd4j.linalg.learning.RmsPropUpdater;
+import org.nd4j.linalg.learning.config.AdaDelta;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -596,5 +601,40 @@ public class BatchNormalizationTest extends BaseDL4JTest {
 
         assertArrayEquals(fMeanExp, fMeanAct, 0.01f);
         assertArrayEquals(fVarExp, fVarAct, 0.01f);
+    }
+
+
+    @Test
+    public void testBatchNorm() throws Exception {
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .updater(new Adam(1e-3))
+                .activation(Activation.TANH)
+                .list()
+                .layer(new ConvolutionLayer.Builder().nOut(5).kernelSize(2,2).build())
+                .layer(new BatchNormalization())
+                .layer(new ConvolutionLayer.Builder().nOut(5).kernelSize(2,2).build())
+                .layer(new OutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nOut(10).build())
+                .setInputType(InputType.convolutionalFlat(28, 28, 1))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        DataSetIterator iter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, true, 12345), 10);
+
+        net.fit(iter);
+
+        MultiLayerNetwork net2 = new TransferLearning.Builder(net)
+                .fineTuneConfiguration(FineTuneConfiguration.builder()
+                        .updater(new AdaDelta())
+                        .build())
+                .removeOutputLayer()
+                .addLayer(new BatchNormalization.Builder().nOut(3380).build())
+                .addLayer(new OutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nIn(3380).nOut(10).build())
+                .build();
+
+        net2.fit(iter);
     }
 }
