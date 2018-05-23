@@ -76,7 +76,7 @@ public class LibSvmRecordReaderTest {
         config.setBoolean(LibSvmRecordReader.ZERO_BASED_INDEXING, false);
         config.setBoolean(LibSvmRecordReader.APPEND_LABEL, true);
         config.setInt(LibSvmRecordReader.NUM_FEATURES, 10);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -113,7 +113,7 @@ public class LibSvmRecordReaderTest {
         config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         config.setBoolean(SVMLightRecordReader.APPEND_LABEL, false);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -156,7 +156,7 @@ public class LibSvmRecordReaderTest {
         config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         config.setBoolean(SVMLightRecordReader.APPEND_LABEL, true);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/noLabels.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/noLabels.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -199,7 +199,7 @@ public class LibSvmRecordReaderTest {
         config.setBoolean(LibSvmRecordReader.ZERO_BASED_INDEXING, false);
         config.setBoolean(LibSvmRecordReader.APPEND_LABEL, true);
         config.setInt(LibSvmRecordReader.NUM_FEATURES, 10);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/multioutput.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/multioutput.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -261,7 +261,7 @@ public class LibSvmRecordReaderTest {
         config.setInt(LibSvmRecordReader.NUM_FEATURES, 10);
         config.setBoolean(LibSvmRecordReader.MULTILABEL, true);
         config.setInt(LibSvmRecordReader.NUM_LABELS, 4);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/multilabel.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/multilabel.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -333,7 +333,7 @@ public class LibSvmRecordReaderTest {
         config.setInt(LibSvmRecordReader.NUM_FEATURES, 11);
         config.setBoolean(LibSvmRecordReader.MULTILABEL, true);
         config.setInt(LibSvmRecordReader.NUM_LABELS, 5);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/multilabel.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/multilabel.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -348,7 +348,7 @@ public class LibSvmRecordReaderTest {
         LibSvmRecordReader rr = new LibSvmRecordReader();
         Configuration config = new Configuration();
         config.setInt(LibSvmRecordReader.NUM_FEATURES, 11);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         while (rr.hasNext())
             rr.next();
         rr.next();
@@ -358,7 +358,7 @@ public class LibSvmRecordReaderTest {
     public void failedToSetNumFeaturesException() throws Exception {
         LibSvmRecordReader rr = new LibSvmRecordReader();
         Configuration config = new Configuration();
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         while (rr.hasNext())
             rr.next();
     }
@@ -368,7 +368,7 @@ public class LibSvmRecordReaderTest {
         LibSvmRecordReader rr = new LibSvmRecordReader();
         Configuration config = new Configuration();
         config.setBoolean(LibSvmRecordReader.ZERO_BASED_INDEXING, false);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/inconsistentNumLabels.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/inconsistentNumLabels.txt").getFile()));
         while (rr.hasNext())
             rr.next();
     }
@@ -379,7 +379,7 @@ public class LibSvmRecordReaderTest {
         Configuration config = new Configuration();
         config.setBoolean(LibSvmRecordReader.MULTILABEL, false);
         config.setBoolean(LibSvmRecordReader.ZERO_BASED_INDEXING, false);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/multilabel.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/multilabel.txt").getFile()));
         while (rr.hasNext())
             rr.next();
     }
@@ -389,7 +389,7 @@ public class LibSvmRecordReaderTest {
         LibSvmRecordReader rr = new LibSvmRecordReader();
         Configuration config = new Configuration();
         config.setInt(LibSvmRecordReader.NUM_FEATURES, 9);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         rr.next();
     }
 
@@ -400,7 +400,7 @@ public class LibSvmRecordReaderTest {
         config.setBoolean(LibSvmRecordReader.APPEND_LABEL, true);
         config.setInt(LibSvmRecordReader.NUM_FEATURES, 10);
         config.setInt(LibSvmRecordReader.NUM_LABELS, 6);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         rr.next();
     }
 
@@ -411,7 +411,7 @@ public class LibSvmRecordReaderTest {
         config.setBoolean(LibSvmRecordReader.ZERO_BASED_INDEXING, false);
         config.setBoolean(LibSvmRecordReader.APPEND_LABEL, true);
         config.setInt(LibSvmRecordReader.NUM_FEATURES, 10);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/zeroIndexFeature.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/zeroIndexFeature.txt").getFile()));
         rr.next();
     }
 
@@ -423,7 +423,7 @@ public class LibSvmRecordReaderTest {
         config.setInt(LibSvmRecordReader.NUM_FEATURES, 10);
         config.setBoolean(LibSvmRecordReader.MULTILABEL, true);
         config.setInt(LibSvmRecordReader.NUM_LABELS, 2);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/zeroIndexLabel.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/zeroIndexLabel.txt").getFile()));
         rr.next();
     }
 }

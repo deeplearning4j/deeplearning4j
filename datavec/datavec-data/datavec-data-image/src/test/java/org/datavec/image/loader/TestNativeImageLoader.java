@@ -37,6 +37,7 @@ import static org.bytedeco.javacpp.lept.*;
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -47,7 +48,7 @@ public class TestNativeImageLoader {
     static final Random rng = new Random(seed);
 
     @Test
-    public void testConvertPix() {
+    public void testConvertPix() throws Exception {
         PIX pix;
         Mat mat;
 
@@ -103,7 +104,7 @@ public class TestNativeImageLoader {
         assertEquals(CV_8UC4, mat.type());
 
         int w4 = 100, h4 = 238, ch4 = 1, pages = 1;
-        String path2MitosisFile = "/testimages2/mitosis.tif";
+        String path2MitosisFile = "datavec-data-image/testimages2/mitosis.tif";
         NativeImageLoader loader5 = new NativeImageLoader(h4, w4, ch4, NativeImageLoader.MultiPageMode.FIRST);
         INDArray array6 = null;
         try {
@@ -111,6 +112,7 @@ public class TestNativeImageLoader {
 						new ClassPathResource(path2MitosisFile).getFile());
         } catch (IOException e) {
             e.printStackTrace();
+            fail();
         }
         assertEquals(4, array6.rank());
         assertEquals(pages, array6.size(0));
@@ -222,7 +224,7 @@ public class TestNativeImageLoader {
 
         int w3 = 123, h3 = 77, ch3 = 3;
         NativeImageLoader loader3 = new NativeImageLoader(h3, w3, ch3);
-        File f3 = new ClassPathResource("/testimages/class0/2.jpg").getFile();
+        File f3 = new ClassPathResource("datavec-data-image/testimages/class0/2.jpg").getFile();
         ImageWritable iw3 = loader3.asWritable(f3);
 
         INDArray array5 = loader3.asMatrix(iw3);
@@ -334,7 +336,7 @@ public class TestNativeImageLoader {
 
     @Test
     public void testAsWritable() throws Exception {
-        File f0 = new ClassPathResource("/testimages/class0/0.jpg").getFile();
+        File f0 = new ClassPathResource("datavec-data-image/testimages/class0/0.jpg").getFile();
 
         NativeImageLoader imageLoader = new NativeImageLoader();
         ImageWritable img = imageLoader.asWritable(f0);
@@ -364,8 +366,8 @@ public class TestNativeImageLoader {
         f.setAccessible(true);
         m.setAccessible(true);
 
-        File f1 = new ClassPathResource("voc/2007/JPEGImages/000005.jpg").getFile();
-        File f2 = new ClassPathResource("voc/2007/JPEGImages/000007.jpg").getFile();
+        File f1 = new ClassPathResource("datavec-data-image/voc/2007/JPEGImages/000005.jpg").getFile();
+        File f2 = new ClassPathResource("datavec-data-image/voc/2007/JPEGImages/000007.jpg").getFile();
 
         //Start with a large buffer
         byte[] buffer = new byte[20*1024*1024];

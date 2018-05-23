@@ -72,7 +72,7 @@ public class CSVRecordReaderTest {
     @Test
     public void testReset() throws Exception {
         CSVRecordReader rr = new CSVRecordReader(0, ',');
-        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         int nResets = 5;
         for (int i = 0; i < nResets; i++) {
@@ -92,7 +92,7 @@ public class CSVRecordReaderTest {
     @Test
     public void testResetWithSkipLines() throws Exception {
         CSVRecordReader rr = new CSVRecordReader(10, ',');
-        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
         int lineCount = 0;
         while (rr.hasNext()) {
             rr.next();
@@ -153,7 +153,7 @@ public class CSVRecordReaderTest {
     public void testTabsAsSplit1() throws Exception {
 
         CSVRecordReader reader = new CSVRecordReader(0, '\t');
-        reader.initialize(new FileSplit(new ClassPathResource("/tabbed.txt").getFile()));
+        reader.initialize(new FileSplit(new ClassPathResource("datavec-api/tabbed.txt").getFile()));
         while (reader.hasNext()) {
             List<Writable> list = new ArrayList<>(reader.next());
 
@@ -165,7 +165,7 @@ public class CSVRecordReaderTest {
     public void testPipesAsSplit() throws Exception {
 
         CSVRecordReader reader = new CSVRecordReader(0, '|');
-        reader.initialize(new FileSplit(new ClassPathResource("issue414.csv").getFile()));
+        reader.initialize(new FileSplit(new ClassPathResource("datavec-api/issue414.csv").getFile()));
         int lineidx = 0;
         List<Integer> sixthColumn = Arrays.asList(13, 95, 15, 25);
         while (reader.hasNext()) {
@@ -198,7 +198,7 @@ public class CSVRecordReaderTest {
     @Test
     public void testMeta() throws Exception {
         CSVRecordReader rr = new CSVRecordReader(0, ',');
-        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         int lineCount = 0;
         List<RecordMetaData> metaList = new ArrayList<>();
@@ -296,7 +296,7 @@ public class CSVRecordReaderTest {
     @Test
     public void testStreamReset() throws Exception {
         CSVRecordReader rr = new CSVRecordReader(0, ',');
-        rr.initialize(new InputStreamInputSplit(new ClassPathResource("iris.dat").getInputStream()));
+        rr.initialize(new InputStreamInputSplit(new ClassPathResource("datavec-api/iris.dat").getInputStream()));
 
         int count = 0;
         while(rr.hasNext()){

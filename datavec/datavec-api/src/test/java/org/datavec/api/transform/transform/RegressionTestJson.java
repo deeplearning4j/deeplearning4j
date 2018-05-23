@@ -64,7 +64,7 @@ public class RegressionTestJson {
     public void regressionTestJson100a() throws Exception {
         //JSON saved in 1.0.0-alpha, before JSON format change
 
-        File f = new ClassPathResource("regression_test/100a/transformprocess_regression_100a.json").getFile();
+        File f = new ClassPathResource("datavec-api/regression_test/100a/transformprocess_regression_100a.json").getFile();
         String s = FileUtils.readFileToString(f);
 
         TransformProcess fromJson = TransformProcess.fromJson(s);

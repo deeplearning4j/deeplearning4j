@@ -121,7 +121,7 @@ public class TestGraph {
     public void testWeightedRandomWalkIterator() throws Exception {
 
         //Load a directed, weighted graph from file
-        String path = new ClassPathResource("WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
+        String path = new ClassPathResource("deeplearning4j-graph/WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
         int numVertices = 9;
         String delim = ",";
         String[] ignoreLinesStartingWith = new String[] {"//"}; //Comment lines start with "//"

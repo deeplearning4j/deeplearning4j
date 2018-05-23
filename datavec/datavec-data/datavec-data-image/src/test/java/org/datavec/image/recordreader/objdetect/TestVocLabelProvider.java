@@ -17,9 +17,12 @@
 package org.datavec.image.recordreader.objdetect;
 
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -28,14 +31,20 @@ import static org.junit.Assert.assertEquals;
 
 public class TestVocLabelProvider {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testVocLabelProvider() throws Exception {
 
-        String path = new ClassPathResource("voc/2007/JPEGImages/000005.jpg").getFile().getParentFile().getParent();
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-data-image/voc/2007").copyDirectory(f);
+
+        String path = f.getAbsolutePath();  //new ClassPathResource("voc/2007/JPEGImages/000005.jpg").getFile().getParentFile().getParent();
 
         ImageObjectLabelProvider lp = new VocLabelProvider(path);
 
-        String img5 = new ClassPathResource("voc/2007/JPEGImages/000005.jpg").getFile().getPath();
+        String img5 = new File(f, "JPEGImages/000005.jpg").getPath();
 
         List<ImageObject> l5 = lp.getImageObjectsForPath(img5);
         assertEquals(5, l5.size());
@@ -50,7 +59,7 @@ public class TestVocLabelProvider {
         assertEquals(exp5, l5);
 
 
-        String img7 = new ClassPathResource("voc/2007/JPEGImages/000007.jpg").getFile().getPath();
+        String img7 = new File(f, "JPEGImages/000007.jpg").getPath();
         List<ImageObject> exp7 = Collections.singletonList(new ImageObject(141, 50, 500, 330, "car"));
 
         assertEquals(exp7, lp.getImageObjectsForPath(img7));

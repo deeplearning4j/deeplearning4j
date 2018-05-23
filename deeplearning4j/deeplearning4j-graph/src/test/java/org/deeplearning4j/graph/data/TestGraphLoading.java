@@ -20,7 +20,7 @@ public class TestGraphLoading {
 
     @Test(timeout = 10000L)
     public void testEdgeListGraphLoading() throws IOException {
-        ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
+        ClassPathResource cpr = new ClassPathResource("deeplearning4j-graph/testgraph_7vertices.txt");
 
         IGraph<String, String> graph = GraphLoader
                         .loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(), 7, ",");
@@ -41,7 +41,7 @@ public class TestGraphLoading {
     @Test(timeout = 10000L)
     public void testGraphLoading() throws IOException {
 
-        ClassPathResource cpr = new ClassPathResource("simplegraph.txt");
+        ClassPathResource cpr = new ClassPathResource("deeplearning4j-graph/simplegraph.txt");
 
         EdgeLineProcessor<String> edgeLineProcessor = new DelimitedEdgeLineProcessor(",", false, "//");
         VertexFactory<String> vertexFactory = new StringVertexFactory("v_%d");
@@ -84,8 +84,8 @@ public class TestGraphLoading {
     @Test(timeout = 10000L)
     public void testGraphLoadingWithVertices() throws IOException {
 
-        ClassPathResource verticesCPR = new ClassPathResource("test_graph_vertices.txt");
-        ClassPathResource edgesCPR = new ClassPathResource("test_graph_edges.txt");
+        ClassPathResource verticesCPR = new ClassPathResource("deeplearning4j-graph/test_graph_vertices.txt");
+        ClassPathResource edgesCPR = new ClassPathResource("deeplearning4j-graph/test_graph_edges.txt");
 
 
         EdgeLineProcessor<String> edgeLineProcessor = new DelimitedEdgeLineProcessor(",", false, "//");

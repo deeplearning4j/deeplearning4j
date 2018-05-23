@@ -191,9 +191,9 @@ public class CSVSequenceRecordReaderTest {
         public URI[] locations() {
             URI[] arr = new URI[3];
             try {
-                arr[0] = new ClassPathResource("csvsequence_0.txt").getFile().toURI();
-                arr[1] = new ClassPathResource("csvsequence_1.txt").getFile().toURI();
-                arr[2] = new ClassPathResource("csvsequence_2.txt").getFile().toURI();
+                arr[0] = new ClassPathResource("datavec-api/csvsequence_0.txt").getFile().toURI();
+                arr[1] = new ClassPathResource("datavec-api/csvsequence_1.txt").getFile().toURI();
+                arr[2] = new ClassPathResource("datavec-api/csvsequence_2.txt").getFile().toURI();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

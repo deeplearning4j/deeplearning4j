@@ -402,7 +402,7 @@ public class TestImageTransform {
         if (GraphicsEnvironment.isHeadless()) { return; }
 
 
-        java.io.File f1 = new ClassPathResource("testimages2/largestblobtest.jpg").getFile();
+        java.io.File f1 = new ClassPathResource("datavec-data-image/testimages2/largestblobtest.jpg").getFile();
         NativeImageLoader loader = new NativeImageLoader();
         ImageWritable writable = loader.asWritable(f1);
 

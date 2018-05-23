@@ -17,6 +17,7 @@
 package com.atilika.kuromoji.dict;
 
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,7 +31,7 @@ public class UserDictionaryTest {
 
     @Test
     public void testLookup() throws IOException {
-        UserDictionary dictionary = new UserDictionary(getResource("userdict.txt"), 9, 7, 0);
+        UserDictionary dictionary = new UserDictionary(getResource("deeplearning4j-nlp-japanese/userdict.txt"), 9, 7, 0);
 
         List<UserDictionary.UserDictionaryMatch> matches = dictionary.findUserDictionaryMatches("関西国際空港に行った");
 
@@ -53,21 +54,21 @@ public class UserDictionaryTest {
 
     @Test
     public void testIpadicFeatures() throws IOException {
-        UserDictionary dictionary = new UserDictionary(getResource("userdict.txt"), 9, 7, 0);
+        UserDictionary dictionary = new UserDictionary(getResource("deeplearning4j-nlp-japanese/userdict.txt"), 9, 7, 0);
 
         assertEquals("カスタム名詞,*,*,*,*,*,*,ニホン,*", dictionary.getAllFeatures(100000000));
     }
 
     @Test
     public void testJumanDicFeatures() throws IOException {
-        UserDictionary dictionary = new UserDictionary(getResource("userdict.txt"), 7, 5, 0);
+        UserDictionary dictionary = new UserDictionary(getResource("deeplearning4j-nlp-japanese/userdict.txt"), 7, 5, 0);
 
         assertEquals("カスタム名詞,*,*,*,*,ニホン,*", dictionary.getAllFeatures(100000000));
     }
 
     @Test
     public void testNaistJDicFeatures() throws IOException {
-        UserDictionary dictionary = new UserDictionary(getResource("userdict.txt"), 11, 7, 0);
+        UserDictionary dictionary = new UserDictionary(getResource("deeplearning4j-nlp-japanese/userdict.txt"), 11, 7, 0);
         // This is a sample naist-jdic entry:
         //
         //   葦登,1358,1358,4975,名詞,一般,*,*,*,*,葦登,ヨシノボリ,ヨシノボリ,,
@@ -78,14 +79,14 @@ public class UserDictionaryTest {
 
     @Test
     public void testUniDicFeatures() throws IOException {
-        UserDictionary dictionary = new UserDictionary(getResource("userdict.txt"), 13, 7, 0);
+        UserDictionary dictionary = new UserDictionary(getResource("deeplearning4j-nlp-japanese/userdict.txt"), 13, 7, 0);
 
         assertEquals("カスタム名詞,*,*,*,*,*,*,ニホン,*,*,*,*,*", dictionary.getAllFeatures(100000000));
     }
 
     @Test
     public void testUniDicExtendedFeatures() throws IOException {
-        UserDictionary dictionary = new UserDictionary(getResource("userdict.txt"), 22, 13, 0);
+        UserDictionary dictionary = new UserDictionary(getResource("deeplearning4j-nlp-japanese/userdict.txt"), 22, 13, 0);
 
         assertEquals("カスタム名詞,*,*,*,*,*,*,*,*,*,*,*,*,ニホン,*,*,*,*,*,*,*,*", dictionary.getAllFeatures(100000000));
     }
@@ -110,7 +111,7 @@ public class UserDictionaryTest {
         assertEquals(2, positions.size());
     }
 
-    private InputStream getResource(String resource) {
-        return this.getClass().getClassLoader().getResourceAsStream(resource);
+    private InputStream getResource(String resource) throws IOException {
+        return new ClassPathResource(resource).getInputStream();
     }
 }

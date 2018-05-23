@@ -29,7 +29,9 @@ import org.datavec.image.recordreader.objdetect.ImageObjectLabelProvider;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
 import org.datavec.image.transform.ImageTransform;
 import org.datavec.image.transform.ResizeImageTransform;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -50,10 +52,17 @@ import static org.junit.Assert.*;
 
 public class TestObjectDetectionRecordReader {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void test() throws Exception {
         ImageObjectLabelProvider lp = new TestImageObjectDetectionLabelProvider();
-        String path = new ClassPathResource("objdetect/000012.jpg").getFile().getParent();
+
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-data-image/objdetect").copyDirectory(f);
+
+        String path = new File(f, "000012.jpg").getParent();
 
         int h = 32;
         int w = 32;
