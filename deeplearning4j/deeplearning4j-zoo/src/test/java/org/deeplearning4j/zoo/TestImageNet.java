@@ -47,7 +47,7 @@ public class TestImageNet extends BaseDL4JTest {
         // set up input and feedforward
         NativeImageLoader loader = new NativeImageLoader(224, 224, 3);
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        INDArray image = loader.asMatrix(classloader.getResourceAsStream("goldenretriever.jpg"));
+        INDArray image = loader.asMatrix(classloader.getResourceAsStream("deeplearning4j-zoo/goldenretriever.jpg"));
         DataNormalization scaler = new VGG16ImagePreProcessor();
         scaler.transform(image);
         INDArray[] output = initializedModel.output(false, image);
@@ -71,7 +71,7 @@ public class TestImageNet extends BaseDL4JTest {
         // set up input and feedforward
         NativeImageLoader loader = new NativeImageLoader(224, 224, 3, new ColorConversionTransform(COLOR_BGR2RGB));
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        INDArray image = loader.asMatrix(classloader.getResourceAsStream("goldenretriever.jpg"));
+        INDArray image = loader.asMatrix(classloader.getResourceAsStream("deeplearning4j-zoo/goldenretriever.jpg"));
         DataNormalization scaler = new ImagePreProcessingScaler(0, 1);
         scaler.transform(image);
         INDArray result = initializedModel.outputSingle(image);
@@ -92,7 +92,7 @@ public class TestImageNet extends BaseDL4JTest {
 
         // set up input and feedforward
         loader = new NativeImageLoader(416, 416, 3, new ColorConversionTransform(COLOR_BGR2RGB));
-        image = loader.asMatrix(classloader.getResourceAsStream("goldenretriever.jpg"));
+        image = loader.asMatrix(classloader.getResourceAsStream("deeplearning4j-zoo/goldenretriever.jpg"));
         scaler = new ImagePreProcessingScaler(0, 1);
         scaler.transform(image);
         INDArray outputs = initializedModel.outputSingle(image);
@@ -117,7 +117,7 @@ public class TestImageNet extends BaseDL4JTest {
 
             // set up input and feedforward
             loader = new NativeImageLoader(608, 608, 3, new ColorConversionTransform(COLOR_BGR2RGB));
-            image = loader.asMatrix(classloader.getResourceAsStream("goldenretriever.jpg"));
+            image = loader.asMatrix(classloader.getResourceAsStream("deeplearning4j-zoo/goldenretriever.jpg"));
             scaler = new ImagePreProcessingScaler(0, 1);
             scaler.transform(image);
             outputs = initializedModel.outputSingle(image);

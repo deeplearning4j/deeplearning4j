@@ -26,7 +26,9 @@ import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.spark.BaseSparkTest;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
@@ -39,15 +41,17 @@ import static org.junit.Assert.fail;
 
 public class TestRecordReaderFunction extends BaseSparkTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testRecordReaderFunction() throws Exception {
 
-        ClassPathResource cpr = new ClassPathResource("/imagetest/0/a.bmp");
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-spark/imagetest/").copyDirectory(f);
         List<String> labelsList = Arrays.asList("0", "1"); //Need this for Spark: can't infer without init call
 
-        String path = cpr.getFile().getAbsolutePath();
-        String folder = path.substring(0, path.length() - 7);
-        path = folder + "*";
+        String path = f.getAbsolutePath() + "/*";
 
         JavaPairRDD<String, PortableDataStream> origData = sc.binaryFiles(path);
         assertEquals(4, origData.count()); //4 images
@@ -65,7 +69,7 @@ public class TestRecordReaderFunction extends BaseSparkTest {
         }
 
         //Load normally (i.e., not via Spark), and check that we get the same results (order not withstanding)
-        InputSplit is = new FileSplit(new File(folder), new String[] {"bmp"}, true);
+        InputSplit is = new FileSplit(f, new String[] {"bmp"}, true);
         //        System.out.println("Locations: " + Arrays.toString(is.locations()));
         irr = new ImageRecordReader(28, 28, 1, new ParentPathLabelGenerator());
         irr.initialize(is);

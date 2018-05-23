@@ -40,7 +40,7 @@ public class LabelGeneratorTest {
     @Test
     public void testParentPathLabelGenerator() throws Exception {
         //https://github.com/deeplearning4j/DataVec/issues/273
-        File orig = new ClassPathResource("testimages/class0/0.jpg").getFile();
+        File orig = new ClassPathResource("datavec-data-image/testimages/class0/0.jpg").getFile();
 
         for(String dirPrefix : new String[]{"m.", "m"}) {
             File f = testDir.newFolder();

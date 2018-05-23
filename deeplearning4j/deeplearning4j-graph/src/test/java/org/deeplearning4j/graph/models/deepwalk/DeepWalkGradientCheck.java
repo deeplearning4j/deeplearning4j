@@ -31,7 +31,7 @@ public class DeepWalkGradientCheck {
     @Test(timeout = 10000L)
     public void checkGradients() throws IOException {
 
-        ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
+        ClassPathResource cpr = new ClassPathResource("deeplearning4j-graph/testgraph_7vertices.txt");
 
         Graph<String, String> graph = GraphLoader
                         .loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(), 7, ",");
@@ -174,7 +174,7 @@ public class DeepWalkGradientCheck {
     @Test(timeout = 10000L)
     public void checkGradients2() throws IOException {
 
-        ClassPathResource cpr = new ClassPathResource("graph13.txt");
+        ClassPathResource cpr = new ClassPathResource("deeplearning4j-graph/graph13.txt");
 
         int nVertices = 13;
         Graph<String, String> graph = GraphLoader

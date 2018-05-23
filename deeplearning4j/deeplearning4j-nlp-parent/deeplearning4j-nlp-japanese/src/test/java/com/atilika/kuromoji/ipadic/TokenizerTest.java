@@ -19,6 +19,7 @@ package com.atilika.kuromoji.ipadic;
 import com.atilika.kuromoji.CommonCornerCasesTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -218,8 +219,8 @@ public class TokenizerTest {
 
     @Test
     public void testNewBocchan() throws IOException {
-        assertTokenizedStreamEquals(getClass().getResourceAsStream("/bocchan-ipadic-features.txt"),
-                        getClass().getResourceAsStream("/bocchan.txt"), tokenizer);
+        assertTokenizedStreamEquals(new ClassPathResource("deeplearning4j-nlp-japanese/bocchan-ipadic-features.txt").getInputStream(),
+                        new ClassPathResource("deeplearning4j-nlp-japanese/bocchan.txt").getInputStream(), tokenizer);
     }
 
     @Test

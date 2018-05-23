@@ -101,6 +101,7 @@
         <maven-formatter-plugin.version>2.0.0</maven-formatter-plugin.version>
         <maven-git-commit-id-plugin.version>2.2.2</maven-git-commit-id-plugin.version>
         <maven-build-helper-plugin.version>1.12</maven-build-helper-plugin.version>
+        <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
         <jetbrains-annotations.version>13.0</jetbrains-annotations.version>
         <opencsv.version>2.3</opencsv.version>
         <tdigest.version>3.2</tdigest.version>
@@ -127,6 +128,51 @@
     </prerequisites>
 
     <profiles>
+
+        <!--
+        testresources profile must be running when executing tests. However, maven enforcer plugin seems to be unable
+         to enforce only when actually running tests - so we'll skip the enforcement (using profiles skipTestRun and skipTestCompileAndRun)
+         when -DskipTests or -Dmaven.test.skip=true is used
+         -->
+        <profile>
+            <id>testresources</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>skipTestRun</id>
+            <activation>
+                <property>
+                    <name>skipTests</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
+            </properties>
+        </profile>
+        <profile>
+            <id>skipTestCompileAndRun</id>
+            <activation>
+                <property>
+                    <name>maven.test.skip</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
+            </properties>
+        </profile>
+
+
         <profile>
             <id>test-nd4j-native</id>
             <activation>
@@ -480,6 +526,31 @@
         </extensions>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <phase>test</phase>
+                            <id>enforce-test-resources</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${skipTestResourceEnforcement}</skip>
+                                <rules>
+                                    <requireActiveProfile>
+                                        <profiles>testresources</profiles>
+                                    </requireActiveProfile>
+                                </rules>
+                                <fail>true</fail>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven-javadoc-plugin.version}</version>

@@ -31,7 +31,9 @@ import org.datavec.codec.reader.CodecRecordReader;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.functions.data.FilesAsBytesFunction;
 import org.datavec.spark.functions.data.SequenceRecordReaderBytesFunction;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
@@ -45,14 +47,16 @@ import static org.junit.Assert.fail;
 
 public class TestSequenceRecordReaderBytesFunction extends BaseSparkTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testRecordReaderBytesFunction() throws Exception {
 
         //Local file path
-        ClassPathResource cpr = new ClassPathResource("/video/shapes_0.mp4");
-        String path = cpr.getFile().getAbsolutePath();
-        String folder = path.substring(0, path.length() - 12);
-        path = folder + "*";
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-spark/video/").copyDirectory(f);
+        String path = f.getAbsolutePath() + "/*";
 
         //Load binary data from local file system, convert to a sequence file:
         //Load and convert
@@ -80,7 +84,7 @@ public class TestSequenceRecordReaderBytesFunction extends BaseSparkTest {
 
 
         //Next: do the same thing locally, and compare the results
-        InputSplit is = new FileSplit(new File(folder), new String[] {"mp4"}, true);
+        InputSplit is = new FileSplit(f, new String[] {"mp4"}, true);
         SequenceRecordReader srr = new CodecRecordReader();
         srr.initialize(is);
         srr.setConf(confCopy);
