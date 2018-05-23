@@ -527,6 +527,31 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <phase>test</phase>
+                            <id>enforce-test-resources</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${skipTestResourceEnforcement}</skip>
+                                <rules>
+                                    <requireActiveProfile>
+                                        <profiles>testresources</profiles>
+                                    </requireActiveProfile>
+                                </rules>
+                                <fail>true</fail>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+
+                <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven-javadoc-plugin.version}</version>
                     <configuration>
@@ -731,31 +756,6 @@
                                     <directory>${project.basedir}/target/generated-sources/src/main/resources</directory>
                                 </resource>
                             </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>${maven-enforcer-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <phase>test</phase>
-                        <id>enforce-test-resources</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skipTestResourceEnforcement}</skip>
-                            <rules>
-                                <requireActiveProfile>
-                                    <profiles>testresources</profiles>
-                                </requireActiveProfile>
-                            </rules>
-                            <fail>true</fail>
                         </configuration>
                     </execution>
                 </executions>
