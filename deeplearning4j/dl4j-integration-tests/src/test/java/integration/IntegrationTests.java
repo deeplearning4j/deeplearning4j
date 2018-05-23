@@ -3,6 +3,7 @@ package integration;
 
 import integration.testcases.*;
 import org.junit.AfterClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -23,6 +24,7 @@ public class IntegrationTests {
         IntegrationTestRunner.runTest(MLPTestCases.getMLPMnist(), testDir);
     }
 
+    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 30000L)
     public void testMlpMoon() throws Exception {
         IntegrationTestRunner.runTest(MLPTestCases.getMLPMoon(), testDir);
@@ -46,6 +48,7 @@ public class IntegrationTests {
 
 
     // ***** CNN1DTestCases *****
+    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 180000L)
     public void testCnn1dSynthetic() throws Exception {
         IntegrationTestRunner.runTest(CNN1DTestCases.getCnn1dTestCaseSynthetic(), testDir);
@@ -53,6 +56,7 @@ public class IntegrationTests {
 
 
     // ***** CNN2DTestCases *****
+    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 120000L)
     public void testLenetMnist() throws Exception {
         IntegrationTestRunner.runTest(CNN2DTestCases.getLenetMnist(), testDir);
@@ -63,11 +67,13 @@ public class IntegrationTests {
         IntegrationTestRunner.runTest(CNN2DTestCases.getVGG16TransferTinyImagenet(), testDir);
     }
 
+    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 180000L)
     public void testYoloHouseNumbers() throws Exception {
         IntegrationTestRunner.runTest(CNN2DTestCases.getYoloHouseNumbers(), testDir);
     }
 
+    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 120000L)
     public void testCnn2DSynthetic() throws Exception {
         IntegrationTestRunner.runTest(CNN2DTestCases.getCnn2DSynthetic(), testDir);
@@ -80,6 +86,8 @@ public class IntegrationTests {
 
 
     // ***** CNN3DTestCases *****
+
+    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 180000L)
     public void testCnn3dSynthetic() throws Exception {
         IntegrationTestRunner.runTest(CNN3DTestCases.getCnn3dTestCaseSynthetic(), testDir);
@@ -87,22 +95,27 @@ public class IntegrationTests {
 
 
     // ***** UnsupervisedTestCases *****
+    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 120000L)
     public void testVAEMnistAnomaly() throws Exception {
         IntegrationTestRunner.runTest(UnsupervisedTestCases.getVAEMnistAnomaly(), testDir);
     }
 
     // ***** TransferLearningTestCases *****
+    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 180000L)
     public void testTransferResnet() throws Exception {
         IntegrationTestRunner.runTest(TransferLearningTestCases.testPartFrozenResNet50(), testDir);
     }
 
-    // ***** KerasImportTestCases *****
+    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 180000L)
     public void testTransferNASNET() throws Exception {
         IntegrationTestRunner.runTest(TransferLearningTestCases.testPartFrozenNASNET(), testDir);
     }
+
+
+    // ***** KerasImportTestCases *****
 
 
 }
