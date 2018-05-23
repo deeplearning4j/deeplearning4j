@@ -11,10 +11,15 @@
     <packaging>pom</packaging>
 
     <name>datavec-spark-inference-parent</name>
-<modules>
-    <module>datavec-spark-inference-server</module>
-    <module>datavec-spark-inference-client</module>
-    <module>datavec-spark-inference-model</module>
-</modules>
+    <modules>
+        <module>datavec-spark-inference-server</module>
+        <module>datavec-spark-inference-client</module>
+        <module>datavec-spark-inference-model</module>
+    </modules>
 
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
 </project>

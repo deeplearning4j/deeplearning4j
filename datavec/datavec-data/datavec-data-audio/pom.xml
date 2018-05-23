@@ -65,6 +65,11 @@
             <version>${ffmpeg.version}-${javacpp-presets.version}</version>
         </dependency>
 -->
-
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
 </project>
