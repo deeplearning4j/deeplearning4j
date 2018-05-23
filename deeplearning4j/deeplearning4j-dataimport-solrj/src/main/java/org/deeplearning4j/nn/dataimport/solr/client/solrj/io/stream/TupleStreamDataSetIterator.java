@@ -153,6 +153,13 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
 
     private DataSet implNext(int numWanted) throws IOException {
 
+        final List<DataSet> rawDataSets = getRawDataSets(numWanted);
+
+        return convertDataSetsToDataSet(rawDataSets);
+    }
+
+    private List<DataSet> getRawDataSets(int numWanted) throws IOException {
+
         final List<DataSet> rawDataSets = new ArrayList<DataSet>();
 
         while (hasNext() && 0 < numWanted) {
@@ -170,6 +177,11 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
             --numWanted;
             this.tuple = this.tupleStream.read();
         }
+
+        return rawDataSets;
+    }
+
+    private DataSet convertDataSetsToDataSet(List<DataSet> rawDataSets) throws IOException {
 
         final int numFound = rawDataSets.size();
 
@@ -191,20 +203,23 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
       final double[] values = new double[keys.length];
       for (int ii=0; ii<keys.length; ++ii)
       {
-        final String key = keys[ii];
+        values[ii] = getValue(tuple, keys[ii], idKey);
+      }
+      return Nd4j.create(values);
+    }
+
+    private static double getValue(Tuple tuple, String key, String idKey) {
         final Double value = tuple.getDouble(key);
         if (value == null) {
           // log potentially useful debugging info here ...
           if (idKey == null) {
-            log.info("tuple[ key[{}]={} ]={}", ii, key, value);
+            log.info("tuple[{}]={}", key, value);
           } else {
-            log.info("tuple[ key[{}]={} ]={} tuple[ idKey={} ]={}", ii, key, value, idKey, tuple.get(idKey));
+            log.info("tuple[{}]={} tuple[{}]={}", key, value, idKey, tuple.get(idKey));
           }
           // ... before proceeding to hit the NullPointerException below
         }
-        values[ii] = value.doubleValue();
-      }
-      return Nd4j.create(values);
+        return value.doubleValue();
     }
 
     @Override
