@@ -138,13 +138,6 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
         }
     }
 
-    private DataSet implNext(int numWanted) throws IOException {
-
-        final List<DataSet> rawDataSets = getRawDataSets(numWanted);
-
-        return convertDataSetsToDataSet(rawDataSets);
-    }
-
     private List<DataSet> getRawDataSets(int numWanted) throws IOException {
 
         final List<DataSet> rawDataSets = new ArrayList<DataSet>();
@@ -217,7 +210,8 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
     @Override
     public DataSet next(int num) {
         try {
-            return implNext(num);
+            final List<DataSet> rawDataSets = getRawDataSets(num);
+            return convertDataSetsToDataSet(rawDataSets);
         } catch (IOException ioe) {
             return null;
         }
