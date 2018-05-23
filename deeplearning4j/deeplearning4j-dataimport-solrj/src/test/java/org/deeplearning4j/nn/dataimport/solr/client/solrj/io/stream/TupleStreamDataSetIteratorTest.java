@@ -127,15 +127,6 @@ public class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
       assertTrue(tsdsi.hasNext());
       final DataSet ds = tsdsi.next();
 
-      if (withIdKey) {
-        assertTrue(ds instanceof TupleStreamDataSetIterator.IdDataSet);
-        final TupleStreamDataSetIterator.IdDataSet ids = (TupleStreamDataSetIterator.IdDataSet) ds;
-        assertEquals("greeting", ids.getIdKey());
-        assertEquals("hello world", ids.getIdValue());
-      } else {
-        assertFalse(ds instanceof TupleStreamDataSetIterator.IdDataSet);
-      }
-
       assertEquals(1, ds.getFeatures().length());
       assertEquals(3.14f, ds.getFeatures().getFloat(0), 0.0f);
 

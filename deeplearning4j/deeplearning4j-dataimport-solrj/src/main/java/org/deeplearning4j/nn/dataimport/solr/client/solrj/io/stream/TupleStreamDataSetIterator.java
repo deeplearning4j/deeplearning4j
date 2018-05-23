@@ -73,19 +73,6 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
         }
     }
 
-    public static class IdDataSet extends DataSet {
-        final private String idKey;
-        final private Object idValue;
-        public IdDataSet(String idKey, Object idValue,
-            INDArray features, INDArray labels) {
-            super(features, labels);
-            this.idKey = idKey;
-            this.idValue = idValue;
-        }
-        public String getIdKey() { return idKey; }
-        public Object getIdValue() { return idValue; }
-    }
-
     public TupleStreamDataSetIterator(
         int batch,
         String idKey,
@@ -166,12 +153,7 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
 
             final INDArray features = getValues(this.tuple, this.featureKeys, this.idKey);
             final INDArray labels = getValues(this.tuple, this.labelKeys, this.idKey);
-            final DataSet rawDataSet;
-            if (this.idKey != null) {
-                rawDataSet = new IdDataSet(this.idKey, this.tuple.get(this.idKey), features, labels);
-            } else {
-                rawDataSet = new DataSet(features, labels);
-            }
+            final DataSet rawDataSet = new DataSet(features, labels);
             rawDataSets.add(rawDataSet);
 
             --numWanted;
