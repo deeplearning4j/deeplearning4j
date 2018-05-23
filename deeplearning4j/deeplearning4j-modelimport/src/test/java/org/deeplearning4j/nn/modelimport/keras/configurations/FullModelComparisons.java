@@ -125,7 +125,7 @@ public class FullModelComparisons {
 
         SequenceRecordReader reader = new CSVSequenceRecordReader(0, ";");
         ClassPathResource dataResource = new ClassPathResource(
-                "data/", classLoader);
+                "deeplearning4j-modelimport/data/", classLoader);
         System.out.print(dataResource.getFile().getAbsolutePath());
         reader.initialize(new NumberedFileInputSplit(dataResource.getFile().getAbsolutePath()
                 + "/sequences/%d.csv", 0, 282));

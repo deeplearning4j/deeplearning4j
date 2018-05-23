@@ -17,6 +17,7 @@
 package com.atilika.kuromoji.ipadic;
 
 import org.junit.Test;
+import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.IOException;
 
@@ -26,14 +27,14 @@ public class MultiThreadedTokenizerTest {
 
     @Test
     public void testMultiThreadedBocchan() throws IOException, InterruptedException {
-        assertMultiThreadedTokenizedStreamEquals(5, 25, "/bocchan-ipadic-features.txt", "/bocchan.txt",
+        assertMultiThreadedTokenizedStreamEquals(5, 25, "deeplearning4j-nlp-japanese/bocchan-ipadic-features.txt", "deeplearning4j-nlp-japanese/bocchan.txt",
                         new Tokenizer());
     }
 
     @Test
     public void testMultiThreadedUserDictionary() throws IOException, InterruptedException {
-        assertMultiThreadedTokenizedStreamEquals(5, 250, "/jawikisentences-ipadic-features.txt", "/jawikisentences.txt",
-                        new Tokenizer.Builder().userDictionary(getClass().getResourceAsStream("/userdict.txt"))
-                                        .build());
+        assertMultiThreadedTokenizedStreamEquals(5, 250, "deeplearning4j-nlp-japanese/jawikisentences-ipadic-features.txt", "/jawikisentences.txt",
+                        new Tokenizer.Builder().userDictionary(
+                                new ClassPathResource("deeplearning4j-nlp-japanese/userdict.txt").getInputStream()).build());
     }
 }

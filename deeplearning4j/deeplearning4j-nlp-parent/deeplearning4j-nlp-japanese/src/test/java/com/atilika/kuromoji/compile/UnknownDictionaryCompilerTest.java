@@ -49,7 +49,7 @@ public class UnknownDictionaryCompilerTest {
         CharacterDefinitionsCompiler charDefCompiler =
                         new CharacterDefinitionsCompiler(new BufferedOutputStream(new FileOutputStream(charDef)));
         charDefCompiler.readCharacterDefinition(new BufferedInputStream(
-                        CharacterDefinitionsCompilerTest.class.getClassLoader().getResourceAsStream("char.def")),
+                        CharacterDefinitionsCompilerTest.class.getClassLoader().getResourceAsStream("deeplearning4j-nlp-japanese/char.def")),
                         "euc-jp");
         charDefCompiler.compile();
 
@@ -62,7 +62,7 @@ public class UnknownDictionaryCompilerTest {
                         new UnknownDictionaryCompiler(categoryMap, new FileOutputStream(unkDef));
 
         unkDefCompiler.readUnknownDefinition(new BufferedInputStream(
-                        UnknownDictionaryCompilerTest.class.getClassLoader().getResourceAsStream("unk.def")), "euc-jp");
+                        UnknownDictionaryCompilerTest.class.getClassLoader().getResourceAsStream("deeplearning4j-nlp-japanese/unk.def")), "euc-jp");
 
         unkDefCompiler.compile();
 

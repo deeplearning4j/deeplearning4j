@@ -19,17 +19,38 @@ package org.datavec.camel.component;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.junit4.CamelTestSupport;
+import org.apache.commons.io.FileUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.Writable;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 
 public class DataVecComponentTest extends CamelTestSupport {
+
+    @ClassRule
+    public static TemporaryFolder testDir = new TemporaryFolder();
+    private static File dir;
+    private static File irisFile;
+
+
+    @BeforeClass
+    public static void before() throws Exception {
+        dir = testDir.newFolder();
+        File iris = new ClassPathResource("iris.dat").getFile();
+        irisFile = new File(dir, "iris.dat");
+        FileUtils.copyFile(iris, irisFile );
+    }
+
+
 
     @Test
     public void testDataVec() throws Exception {
@@ -48,9 +69,11 @@ public class DataVecComponentTest extends CamelTestSupport {
 
     @Override
     protected RouteBuilder createRouteBuilder() throws Exception {
+
+
         return new RouteBuilder() {
             public void configure() {
-                from("file:src/test/resources/?fileName=iris.dat&noop=true").unmarshal().csv()
+                from("file:" + dir.getAbsolutePath() + "?fileName=iris.dat&noop=true").unmarshal().csv()
                                 .to("datavec://org.datavec.api.formats.input.impl.ListStringInputFormat?inputMarshaller=org.datavec.camel.component.ListStringInputMarshaller&writableConverter=org.datavec.api.io.converters.SelfWritableConverter")
                                 .to("mock:result");
             }

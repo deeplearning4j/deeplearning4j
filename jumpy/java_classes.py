@@ -1,12 +1,27 @@
+# Copyright 2016 Skymind,Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
 import jnius_config
 import os
 
 jnius_config.add_options('-Dorg.bytedeco.javacpp.nopointergc=true')
 jnius_class_path = os.environ.get('JUMPY_CLASS_PATH')
 if not jnius_class_path:
-	raise Exception('Environment variable JUMPY_CLASS_PATH not set.')
+    raise Exception('Environment variable JUMPY_CLASS_PATH not set.')
 elif not os.path.exists(jnius_class_path):
-	raise Exception('File not found : ' + jnius_class_path)
+    raise Exception('File not found : {0}'.format(jnius_class_path))
 jnius_config.set_classpath(jnius_class_path)
 
 from jnius import autoclass

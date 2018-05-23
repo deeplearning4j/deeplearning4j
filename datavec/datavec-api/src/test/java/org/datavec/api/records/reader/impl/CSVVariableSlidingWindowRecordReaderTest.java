@@ -41,10 +41,10 @@ public class CSVVariableSlidingWindowRecordReaderTest {
         int maxLinesPerSequence = 3;
 
         SequenceRecordReader seqRR = new CSVVariableSlidingWindowRecordReader(maxLinesPerSequence);
-        seqRR.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        seqRR.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         CSVRecordReader rr = new CSVRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         int count = 0;
         while (seqRR.hasNext()) {
@@ -80,10 +80,10 @@ public class CSVVariableSlidingWindowRecordReaderTest {
         int stride = 2;
 
         SequenceRecordReader seqRR = new CSVVariableSlidingWindowRecordReader(maxLinesPerSequence, stride);
-        seqRR.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        seqRR.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         CSVRecordReader rr = new CSVRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         int count = 0;
         while (seqRR.hasNext()) {

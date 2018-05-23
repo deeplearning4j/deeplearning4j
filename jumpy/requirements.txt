@@ -1,4 +1,5 @@
 Cython==0.28.2
 numpy==1.14.2
 pyjnius==1.1.1
+pytest==3.5.1
 six==1.11.0

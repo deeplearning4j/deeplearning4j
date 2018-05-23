@@ -31,7 +31,9 @@ import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.functions.data.FilesAsBytesFunction;
 import org.datavec.spark.functions.data.RecordReaderBytesFunction;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
@@ -46,16 +48,18 @@ import static org.junit.Assert.fail;
 
 public class TestRecordReaderBytesFunction extends BaseSparkTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testRecordReaderBytesFunction() throws Exception {
         JavaSparkContext sc = getContext();
 
         //Local file path
-        ClassPathResource cpr = new ClassPathResource("/imagetest/0/a.bmp");
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-spark/imagetest/").copyDirectory(f);
         List<String> labelsList = Arrays.asList("0", "1"); //Need this for Spark: can't infer without init call
-        String path = cpr.getFile().getAbsolutePath();
-        String folder = path.substring(0, path.length() - 7);
-        path = folder + "*";
+        String path = f.getAbsolutePath() + "/*";
 
         //Load binary data from local file system, convert to a sequence file:
         //Load and convert
@@ -75,7 +79,7 @@ public class TestRecordReaderBytesFunction extends BaseSparkTest {
 
 
         //Next: do the same thing locally, and compare the results
-        InputSplit is = new FileSplit(new File(folder), new String[] {"bmp"}, true);
+        InputSplit is = new FileSplit(f, new String[] {"bmp"}, true);
         irr = new ImageRecordReader(28, 28, 1, new ParentPathLabelGenerator());
         irr.initialize(is);
 

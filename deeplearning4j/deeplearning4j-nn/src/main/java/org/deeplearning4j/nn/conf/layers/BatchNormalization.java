@@ -58,6 +58,8 @@ public class BatchNormalization extends FeedForwardLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        LayerValidation.assertNOutSet("BatchNormalization", getLayerName(), layerIndex, getNOut());
+
         org.deeplearning4j.nn.layers.normalization.BatchNormalization ret =
                         new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
         ret.setListeners(trainingListeners);

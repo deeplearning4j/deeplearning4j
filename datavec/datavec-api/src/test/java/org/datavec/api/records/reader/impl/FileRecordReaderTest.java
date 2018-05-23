@@ -41,7 +41,7 @@ public class FileRecordReaderTest {
     @Test
     public void testReset() throws Exception {
         FileRecordReader rr = new FileRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         int nResets = 5;
         for (int i = 0; i < nResets; i++) {
@@ -64,9 +64,9 @@ public class FileRecordReaderTest {
 
 
         URI[] arr = new URI[3];
-        arr[0] = new ClassPathResource("csvsequence_0.txt").getFile().toURI();
-        arr[1] = new ClassPathResource("csvsequence_1.txt").getFile().toURI();
-        arr[2] = new ClassPathResource("csvsequence_2.txt").getFile().toURI();
+        arr[0] = new ClassPathResource("datavec-api/csvsequence_0.txt").getFile().toURI();
+        arr[1] = new ClassPathResource("datavec-api/csvsequence_1.txt").getFile().toURI();
+        arr[2] = new ClassPathResource("datavec-api/csvsequence_2.txt").getFile().toURI();
 
         InputSplit is = new CollectionInputSplit(Arrays.asList(arr));
         rr.initialize(is);
