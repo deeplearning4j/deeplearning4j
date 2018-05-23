@@ -21,7 +21,7 @@ public class TestGraphLoadingWeighted {
     @Test(timeout = 10000L)
     public void testWeightedDirected() throws IOException {
 
-        String path = new ClassPathResource("WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
+        String path = new ClassPathResource("deeplearning4j-graph/WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
         int numVertices = 9;
         String delim = ",";
         String[] ignoreLinesStartingWith = new String[] {"//"}; //Comment lines start with "//"
@@ -61,7 +61,7 @@ public class TestGraphLoadingWeighted {
     @Test(timeout = 10000L)
     public void testWeightedDirectedV2() throws Exception {
 
-        String path = new ClassPathResource("WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
+        String path = new ClassPathResource("deeplearning4j-graph/WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
         int numVertices = 9;
         String delim = ",";
         boolean directed = true;
