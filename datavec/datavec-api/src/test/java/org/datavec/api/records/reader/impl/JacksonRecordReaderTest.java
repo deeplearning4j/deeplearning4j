@@ -27,13 +27,16 @@ import org.datavec.api.split.NumberedFileInputSplit;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.dataformat.xml.XmlFactory;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
+import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,6 +50,9 @@ import static org.junit.Assert.assertFalse;
  */
 public class JacksonRecordReaderTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testReadingJson() throws Exception {
         //Load 3 values from 3 JSON files
@@ -56,8 +62,10 @@ public class JacksonRecordReaderTest {
         //For second JSON file: b:value is missing
         //For third JSON file: c:x:value is missing
 
-        ClassPathResource cpr = new ClassPathResource("json/json_test_0.txt");
-        String path = cpr.getFile().getAbsolutePath().replace("0", "%d");
+        ClassPathResource cpr = new ClassPathResource("datavec-api/json/");
+        File f = testDir.newFolder();
+        cpr.copyDirectory(f);
+        String path = new File(f, "json_test_%d.txt").getAbsolutePath();
 
         InputSplit is = new NumberedFileInputSplit(path, 0, 2);
 
@@ -71,8 +79,11 @@ public class JacksonRecordReaderTest {
     public void testReadingYaml() throws Exception {
         //Exact same information as JSON format, but in YAML format
 
-        ClassPathResource cpr = new ClassPathResource("yaml/yaml_test_0.txt");
-        String path = cpr.getFile().getAbsolutePath().replace("0", "%d");
+        ClassPathResource cpr = new ClassPathResource("datavec-api/yaml/");
+        File f = testDir.newFolder();
+        cpr.copyDirectory(f);
+        String path = new File(f, "yaml_test_%d.txt").getAbsolutePath();
+
 
         InputSplit is = new NumberedFileInputSplit(path, 0, 2);
 
@@ -86,8 +97,10 @@ public class JacksonRecordReaderTest {
     public void testReadingXml() throws Exception {
         //Exact same information as JSON format, but in XML format
 
-        ClassPathResource cpr = new ClassPathResource("xml/xml_test_0.txt");
-        String path = cpr.getFile().getAbsolutePath().replace("0", "%d");
+        ClassPathResource cpr = new ClassPathResource("datavec-api/xml/");
+        File f = testDir.newFolder();
+        cpr.copyDirectory(f);
+        String path = new File(f, "xml_test_%d.txt").getAbsolutePath();
 
         InputSplit is = new NumberedFileInputSplit(path, 0, 2);
 
@@ -133,8 +146,11 @@ public class JacksonRecordReaderTest {
 
     @Test
     public void testAppendingLabels() throws Exception {
-        ClassPathResource cpr = new ClassPathResource("json/json_test_0.txt");
-        String path = cpr.getFile().getAbsolutePath().replace("0", "%d");
+
+        ClassPathResource cpr = new ClassPathResource("datavec-api/json/");
+        File f = testDir.newFolder();
+        cpr.copyDirectory(f);
+        String path = new File(f, "json_test_%d.txt").getAbsolutePath();
 
         InputSplit is = new NumberedFileInputSplit(path, 0, 2);
 
@@ -175,8 +191,10 @@ public class JacksonRecordReaderTest {
 
     @Test
     public void testAppendingLabelsMetaData() throws Exception {
-        ClassPathResource cpr = new ClassPathResource("json/json_test_0.txt");
-        String path = cpr.getFile().getAbsolutePath().replace("0", "%d");
+        ClassPathResource cpr = new ClassPathResource("datavec-api/json/");
+        File f = testDir.newFolder();
+        cpr.copyDirectory(f);
+        String path = new File(f, "json_test_%d.txt").getAbsolutePath();
 
         InputSplit is = new NumberedFileInputSplit(path, 0, 2);
 

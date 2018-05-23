@@ -30,10 +30,10 @@ public class TestConcatenatingRecordReader {
     public void test() throws Exception {
 
         CSVRecordReader rr = new CSVRecordReader(0, ',');
-        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         CSVRecordReader rr2 = new CSVRecordReader(0, ',');
-        rr2.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        rr2.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         RecordReader rrC = new ConcatenatingRecordReader(rr, rr2);
 

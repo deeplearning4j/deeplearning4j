@@ -41,10 +41,10 @@ public class CSVNLinesSequenceRecordReaderTest {
         int nLinesPerSequence = 10;
 
         SequenceRecordReader seqRR = new CSVNLinesSequenceRecordReader(nLinesPerSequence);
-        seqRR.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        seqRR.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         CSVRecordReader rr = new CSVRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         int count = 0;
         while (seqRR.hasNext()) {
@@ -69,10 +69,10 @@ public class CSVNLinesSequenceRecordReaderTest {
         int nLinesPerSequence = 10;
 
         SequenceRecordReader seqRR = new CSVNLinesSequenceRecordReader(nLinesPerSequence);
-        seqRR.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        seqRR.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         CSVRecordReader rr = new CSVRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
 
         List<List<List<Writable>>> out = new ArrayList<>();
         while (seqRR.hasNext()) {
