@@ -23,9 +23,12 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.nlp.vectorizer.TfidfVectorizer;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -36,6 +39,9 @@ import static org.junit.Assert.*;
  */
 public class TfidfRecordReaderTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testReader() throws Exception {
         TfidfVectorizer vectorizer = new TfidfVectorizer();
@@ -44,7 +50,9 @@ public class TfidfRecordReaderTest {
         conf.setBoolean(RecordReader.APPEND_LABEL, true);
         vectorizer.initialize(conf);
         TfidfRecordReader reader = new TfidfRecordReader();
-        reader.initialize(conf, new FileSplit(new ClassPathResource("labeled").getFile()));
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-data-nlp/labeled").copyDirectory(f);
+        reader.initialize(conf, new FileSplit(f));
         int count = 0;
         int[] labelAssertions = new int[3];
         while (reader.hasNext()) {
@@ -68,7 +76,9 @@ public class TfidfRecordReaderTest {
         conf.setBoolean(RecordReader.APPEND_LABEL, true);
         vectorizer.initialize(conf);
         TfidfRecordReader reader = new TfidfRecordReader();
-        reader.initialize(conf, new FileSplit(new ClassPathResource("labeled").getFile()));
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-data-nlp/labeled").copyDirectory(f);
+        reader.initialize(conf, new FileSplit(f));
 
         while (reader.hasNext()) {
             Record record = reader.nextRecord();
@@ -86,7 +96,9 @@ public class TfidfRecordReaderTest {
         conf.setBoolean(RecordReader.APPEND_LABEL, true);
         vectorizer.initialize(conf);
         TfidfRecordReader reader = new TfidfRecordReader();
-        reader.initialize(conf, new FileSplit(new ClassPathResource("labeled").getFile()));
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-data-nlp/labeled").copyDirectory(f);
+        reader.initialize(conf, new FileSplit(f));
 
         Record record = reader.nextRecord();
 
