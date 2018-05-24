@@ -60,7 +60,8 @@ public class IntegrationTests extends BaseDL4JTest {
         IntegrationTestRunner.runTest(CNN2DTestCases.getLenetMnist(), testDir);
     }
 
-    @Test(timeout = 180000L)
+    @Ignore //https://github.com/deeplearning4j/deeplearning4j/issues/5309
+    @Test(timeout = 360000L)
     public void testVgg16Transfer() throws Exception {
         IntegrationTestRunner.runTest(CNN2DTestCases.getVGG16TransferTinyImagenet(), testDir);
     }
@@ -77,6 +78,7 @@ public class IntegrationTests extends BaseDL4JTest {
         IntegrationTestRunner.runTest(CNN2DTestCases.getCnn2DSynthetic(), testDir);
     }
 
+    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 120000L)
     public void testCnn2DLenetTransferDropoutRepeatability() throws Exception {
         IntegrationTestRunner.runTest(CNN2DTestCases.testLenetTransferDropoutRepeatability(), testDir);
@@ -93,7 +95,6 @@ public class IntegrationTests extends BaseDL4JTest {
 
 
     // ***** UnsupervisedTestCases *****
-    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 120000L)
     public void testVAEMnistAnomaly() throws Exception {
         IntegrationTestRunner.runTest(UnsupervisedTestCases.getVAEMnistAnomaly(), testDir);

@@ -51,13 +51,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.*;
 
 /**
+ * Integration test runner.
+ * Used to run the integration tests defined in the IntegrationTests class
  *
- * TODO: Other things we can + should check:
- * 1. Frozen layers: params don't change
- * 2. Iteration and epoch counts
- * 3. Parallel Inference
- *
- *
+ * @author Alex Black
  */
 @Slf4j
 public class IntegrationTestRunner {
@@ -70,14 +67,6 @@ public class IntegrationTestRunner {
 
     public static final double MAX_REL_ERROR_SCORES = 1e-6;
 
-    {
-        try {
-            setup();
-        } catch (Exception e){
-            throw new RuntimeException(e);
-        }
-    }
-
     private static List<Class<?>> layerClasses = new ArrayList<>();
     private static List<Class<?>> preprocClasses = new ArrayList<>();
     private static List<Class<?>> graphVertexClasses = new ArrayList<>();
@@ -87,6 +76,14 @@ public class IntegrationTestRunner {
     private static Map<Class<?>, Integer> preprocessorConfClassesSeen = new HashMap<>();
     private static Map<Class<?>, Integer> vertexConfClassesSeen = new HashMap<>();
     private static Map<Class<?>, Integer> evaluationClassesSeen = new HashMap<>();
+
+    static {
+        try {
+            setup();
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
+    }
 
 
     public static void setup() throws Exception {

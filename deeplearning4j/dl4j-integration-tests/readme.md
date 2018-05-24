@@ -45,4 +45,6 @@ Specifically, test cases can be run with any subset of the following components 
 The process to add a new test is simple:
 1. Add a method that creates and returns a TestCase object
 2. Add it as a unit test to IntegrationTests class
-3. Run IntegrationTestResultGenerator (if required) to generate and save the "known good" results
+3. Run IntegrationTestBaselineGenerator (if required) to generate and save the "known good" results.
+
+Note that IntegrationTestBaselineGenerator assumes you have the dl4j-test-resources cloned parallel to the DL4J mono-repo.

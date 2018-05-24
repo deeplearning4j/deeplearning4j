@@ -11,6 +11,9 @@ import org.nd4j.linalg.primitives.Pair;
 import java.io.File;
 import java.util.List;
 
+/**
+ * A single test case for integration tests
+ */
 @Data
 public abstract class TestCase {
 
@@ -46,11 +49,10 @@ public abstract class TestCase {
 
     /**
      * Initialize the test case... many tests don't need this; others may use it to download or create data
-     * @param testWorkingDir
-     * @throws Exception
+     * @param testWorkingDir Working directory to use for test
      */
     public void initialize(File testWorkingDir) throws Exception {
-        //No op
+        //No op by default
     }
 
     /**
@@ -67,11 +69,16 @@ public abstract class TestCase {
         throw new RuntimeException("Implementations must override this method if used");
     }
 
-
+    /**
+     * Required if testPredictions == true
+     */
     public List<Pair<INDArray[],INDArray[]>> getPredictionsTestData() throws Exception {
         throw new RuntimeException("Implementations must override this method if used");
     }
 
+    /**
+     * Required if testGradients == true
+     */
     public MultiDataSet getGradientsTestData() throws Exception {
         throw new RuntimeException("Implementations must override this method if used");
     }

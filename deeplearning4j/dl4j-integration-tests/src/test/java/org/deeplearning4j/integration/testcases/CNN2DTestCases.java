@@ -30,6 +30,8 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.VGG16ImagePreProcessor;
+import org.nd4j.linalg.learning.config.AdaDelta;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
@@ -61,10 +63,10 @@ public class CNN2DTestCases {
                 testType = TestType.PRETRAINED;
                 testPredictions = true;
                 testTrainingCurves = true;
-                testGradients = true;
-                testParamsPostTraining = true;
+                testGradients = false;              //Skip - requires saving approx 1GB of data (gradients x2)
+                testParamsPostTraining = false;     //Skip - requires saving all params (approx 500mb)
                 testEvaluation = true;
-                testOverfitting = true;
+                testOverfitting = false;
             }
 
             @Override
@@ -77,7 +79,10 @@ public class CNN2DTestCases {
 
                 //Transfer learning
                 ComputationGraph newGraph = new TransferLearning.GraphBuilder(pretrained)
-
+                        .fineTuneConfiguration(new FineTuneConfiguration.Builder()
+                                .updater(new Adam(1e-3))
+                                .seed(12345)
+                            .build())
                         .removeVertexKeepConnections("predictions")
                         .addLayer("predictions", new OutputLayer.Builder()
                                 .nIn(4096)
@@ -113,10 +118,10 @@ public class CNN2DTestCases {
 
             @Override
             public MultiDataSetIterator getTrainingData() throws Exception {
-                DataSetIterator iter = new TinyImageNetDataSetIterator(8, new int[]{224,224}, DataSetType.TRAIN, null, 12345);
+                DataSetIterator iter = new TinyImageNetDataSetIterator(4, new int[]{224,224}, DataSetType.TRAIN, null, 12345);
                 iter.setPreProcessor(new VGG16ImagePreProcessor());
 
-                iter = new EarlyTerminationDataSetIterator(iter, 10);
+                iter = new EarlyTerminationDataSetIterator(iter, 6);
                 return new MultiDataSetIteratorAdapter(iter);
             }
 
@@ -131,22 +136,10 @@ public class CNN2DTestCases {
 
             @Override
             public MultiDataSetIterator getEvaluationTestData() throws Exception {
-                DataSetIterator iter = new TinyImageNetDataSetIterator(8, new int[]{224,224}, DataSetType.TEST, null, 12345);
+                DataSetIterator iter = new TinyImageNetDataSetIterator(4, new int[]{224,224}, DataSetType.TEST, null, 12345);
                 iter.setPreProcessor(new VGG16ImagePreProcessor());
-                iter = new EarlyTerminationDataSetIterator(iter, 10);
+                iter = new EarlyTerminationDataSetIterator(iter, 6);
                 return new MultiDataSetIteratorAdapter(iter);
-            }
-
-            @Override
-            public MultiDataSet getOverfittingData() throws Exception {
-                DataSetIterator iter = new TinyImageNetDataSetIterator(1, new int[]{224,224}, DataSetType.TRAIN, null, 12345);
-                iter.setPreProcessor(new VGG16ImagePreProcessor());
-                return ComputationGraphUtil.toMultiDataSet(iter.next());
-            }
-
-            @Override
-            public int getOverfitNumIterations(){
-                return 200;
             }
         };
     }

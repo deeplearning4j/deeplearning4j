@@ -8,6 +8,7 @@ import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.integration.testcases.CNN2DTestCases;
 import org.deeplearning4j.integration.testcases.MLPTestCases;
 import org.deeplearning4j.integration.testcases.RNNTestCases;
+import org.deeplearning4j.integration.testcases.UnsupervisedTestCases;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -29,7 +30,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Run this manually to generate - or update - the saved files for a
+ * Run this manually to generate - or update - the saved files for a specific test.
+ * Places results in dl4j-test-resources: assumes you have the dl4j-test-resources cloned parallel to the DL4J mono-repo.
  */
 @Slf4j
 public class IntegrationTestBaselineGenerator {
@@ -45,23 +47,24 @@ public class IntegrationTestBaselineGenerator {
         //All integration tests are run with float precision!
         Nd4j.setDataType(DataBuffer.Type.FLOAT);
 
-        runGeneration(
-                MLPTestCases.getMLPMnist(),
-                MLPTestCases.getMLPMoon(),
-                RNNTestCases.getRnnCsvSequenceClassificationTestCase1(),
-                RNNTestCases.getRnnCsvSequenceClassificationTestCase2(),
-                RNNTestCases.getRnnCharacterTestCase(),
-//                CNN1DTestCases.getCnn1dTestCaseSynthetic(),
-//                CNN2DTestCases.getLenetMnist(),
-                CNN2DTestCases.getVGG16TransferTinyImagenet(),
-//                CNN2DTestCases.getYoloHouseNumbers(),
-//                CNN2DTestCases.getCnn2DSynthetic(),
-                CNN2DTestCases.testLenetTransferDropoutRepeatability()//,
-//                CNN3DTestCases.getCnn3dTestCaseSynthetic(),
-//                UnsupervisedTestCases.getVAEMnistAnomaly(),
-//                TransferLearningTestCases.testPartFrozenResNet50(),
-//                TransferLearningTestCases.testPartFrozenNASNET()
-        );
+//        runGeneration(
+//                MLPTestCases.getMLPMnist(),
+//                MLPTestCases.getMLPMoon(),
+//                RNNTestCases.getRnnCsvSequenceClassificationTestCase1(),
+//                RNNTestCases.getRnnCsvSequenceClassificationTestCase2(),
+//                RNNTestCases.getRnnCharacterTestCase(),
+////                CNN1DTestCases.getCnn1dTestCaseSynthetic(),
+////                CNN2DTestCases.getLenetMnist(),
+//                CNN2DTestCases.getVGG16TransferTinyImagenet(),
+////                CNN2DTestCases.getYoloHouseNumbers(),
+////                CNN2DTestCases.getCnn2DSynthetic(),
+//                CNN2DTestCases.testLenetTransferDropoutRepeatability()//,
+////                CNN3DTestCases.getCnn3dTestCaseSynthetic(),
+////                UnsupervisedTestCases.getVAEMnistAnomaly(),
+////                TransferLearningTestCases.testPartFrozenResNet50(),
+////                TransferLearningTestCases.testPartFrozenNASNET()
+//        );
+
     }
 
     private static void runGeneration(TestCase... testCases) throws Exception {
