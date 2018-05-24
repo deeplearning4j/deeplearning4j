@@ -86,11 +86,11 @@ GraphUtils::runPreprocessor(char const* name_arg, char const* build_arg, char co
     std::string input("../include/ops/declarable/CustomOperations.h");
     nd4j_printf("Run preprocessor as \ncpp %s\n", input.c_str());
 //    int err;
-    char* cxx_path = getenv("CXX_PATH");
-    if (cxx_path == NULL) {
-        nd4j_printf("Cannot retrieve mandatory environment variable 'CXX_PATH'. Please set up the variable and try again.", "");
-        exit(2);
-    }
+//    char* cxx_path = getenv("CXX_PATH");
+//    if (cxx_path == NULL) {
+//        nd4j_printf("Cannot retrieve mandatory environment variable 'CXX_PATH'. Please set up the variable and try again.", "");
+//        exit(2);
+//    }
 
     char* cxx = getenv("CXX");
     if (cxx == NULL) {
@@ -98,8 +98,8 @@ GraphUtils::runPreprocessor(char const* name_arg, char const* build_arg, char co
         exit(3);
     }
 
-    std::string pathStr("PATH=/usr/bin:/usr/local/bin:");
-    pathStr += cxx_path;
+    std::string pathStr("PATH=/usr/bin:/usr/local/bin:$PATH");
+//    pathStr += cxx_path;
 
     nd4j_printf("%s\n", pathStr.c_str());
     char const* env[] = {// "HOME=/tmp", 
