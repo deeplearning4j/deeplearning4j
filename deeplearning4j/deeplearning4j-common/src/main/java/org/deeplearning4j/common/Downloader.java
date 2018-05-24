@@ -11,9 +11,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
+/**
+ * Downloader utility methods
+ *
+ * @author Alex Black
+ */
 @Slf4j
 public class Downloader {
 
+    private Downloader(){ }
+
+    /**
+     * Download the specified URL to the specified file, and verify that the target MD5 matches
+     * @param name      Name (mainly for providing useful exceptions)
+     * @param url       URL to download
+     * @param f         Destination file
+     * @param targetMD5 Expected MD5 for file
+     * @param maxTries  Maximum number of download attempts before failing and throwing an exception
+     * @throws IOException If an error occurs during downloading
+     */
     public static void download(String name, URL url, File f, String targetMD5, int maxTries) throws IOException {
         download(name, url, f, targetMD5, maxTries, 0);
     }
@@ -35,6 +51,18 @@ public class Downloader {
         }
     }
 
+    /**
+     * Download the specified URL to the specified file, verify that the MD5 matches, and then extract it to the specified directory.<br>
+     * Note that the file must be an archive, with the correct file extension: .zip, .jar, .tar.gz, .tgz or .gz
+     *
+     * @param name         Name (mainly for providing useful exceptions)
+     * @param url          URL to download
+     * @param f            Destination file
+     * @param extractToDir Destination directory to extract all files
+     * @param targetMD5    Expected MD5 for file
+     * @param maxTries     Maximum number of download attempts before failing and throwing an exception
+     * @throws IOException If an error occurs during downloading
+     */
     public static void downloadAndExtract(String name, URL url, File f, File extractToDir, String targetMD5, int maxTries) throws IOException {
         downloadAndExtract(0, maxTries, name, url, f, extractToDir, targetMD5);
     }
@@ -65,6 +93,12 @@ public class Downloader {
         }
     }
 
+    /**
+     * Check the MD5 of the specified file
+     * @param targetMD5 Expected MD5
+     * @param file      File to check
+     * @return          True if MD5 matches, false otherwise
+     */
     public static boolean checkMD5OfFile(String targetMD5, File file) throws IOException {
         InputStream in = FileUtils.openInputStream(file);
         String trueMd5 = DigestUtils.md5Hex(in);

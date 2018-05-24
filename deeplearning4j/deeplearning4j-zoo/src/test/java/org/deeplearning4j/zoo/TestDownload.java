@@ -1,14 +1,20 @@
 package org.deeplearning4j.zoo;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.zoo.model.LeNet;
 import org.deeplearning4j.zoo.model.NASNet;
 import org.deeplearning4j.zoo.model.SimpleCNN;
 import org.deeplearning4j.zoo.model.UNet;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,17 +23,29 @@ import java.util.Map;
 /**
  * Tests downloads and checksum verification.
  *
- * @note This test first deletes the ~/.deeplearning4j/ cache directory.
+ * @note This test uses a temporary directory, so local model copies won't be impacted
  * @author Justin Long (crockpotveggies)
  */
 @Slf4j
 public class TestDownload extends BaseDL4JTest {
 
+    @ClassRule
+    public static TemporaryFolder testDir = new TemporaryFolder();
+    private static File f;
+
+    @BeforeClass
+    public static void before() throws Exception {
+        f = testDir.newFolder();
+        DL4JResources.setBaseDirectory(f);
+    }
+
+    @AfterClass
+    public static void after(){
+        DL4JResources.resetBaseDirectoryLocation();
+    }
+
     @Test
     public void testDownloadAllModels() throws Exception {
-        // clean up
-        if (ZooModel.ROOT_CACHE_DIR.exists())
-            ZooModel.ROOT_CACHE_DIR.delete();
 
         // iterate through each available model
         ZooModel[] models = new ZooModel[]{

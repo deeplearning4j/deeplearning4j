@@ -19,6 +19,7 @@
 package org.deeplearning4j.base;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
 
 import java.io.File;
@@ -30,9 +31,6 @@ import java.io.File;
  */
 @Slf4j
 public class EmnistFetcher extends MnistFetcher {
-    protected static final String LOCAL_DIR_NAME = "EMNIST";
-
-    private static final String BASE_URL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/emnist/";
 
     private final EmnistDataSetIterator.Set ds;
 
@@ -87,7 +85,7 @@ public class EmnistFetcher extends MnistFetcher {
     // --- Train files ---
     @Override
     public String getTrainingFilesURL() {
-        return BASE_URL + getImagesFileName(ds, true);
+        return DL4JResources.getURLString("datasets/emnist/" + getImagesFileName(ds, true));
     }
 
     @Override
@@ -128,7 +126,7 @@ public class EmnistFetcher extends MnistFetcher {
 
     @Override
     public String getTrainingFileLabelsURL() {
-        return BASE_URL + getLabelsFileName(ds, true);
+        return DL4JResources.getURLString("datasets/emnist/" + getLabelsFileName(ds, true));
     }
 
     @Override
@@ -172,7 +170,7 @@ public class EmnistFetcher extends MnistFetcher {
 
     @Override
     public String getTestFilesURL() {
-        return BASE_URL + getImagesFileName(ds, false);
+        return DL4JResources.getURLString("datasets/emnist/" + getImagesFileName(ds, false));
     }
 
     @Override
@@ -213,7 +211,7 @@ public class EmnistFetcher extends MnistFetcher {
 
     @Override
     public String getTestFileLabelsURL() {
-        return BASE_URL + getLabelsFileName(ds, false);
+        return DL4JResources.getURLString("datasets/emnist/" + getLabelsFileName(ds, false));
     }
 
     @Override
