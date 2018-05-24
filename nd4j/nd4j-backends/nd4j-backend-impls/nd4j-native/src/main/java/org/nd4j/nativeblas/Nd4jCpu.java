@@ -106,6 +106,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_greater_equal.class,
         float_less.class,
         float_greater.class,
+        float_percentile.class,
         float_conv1d.class,
         float_conv1d_bp.class,
         float_conv2d.class,
@@ -263,6 +264,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_segment_prod.class,
         float_segment_mean.class,
         float_extract_image_patches.class,
+        float_roll.class,
         float_set_seed.class,
         float_get_seed.class,
         float_randomuniform.class,
@@ -430,6 +432,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_greater_equal.class,
         half_less.class,
         half_greater.class,
+        half_percentile.class,
         half_conv1d.class,
         half_conv1d_bp.class,
         half_conv2d.class,
@@ -587,6 +590,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_segment_prod.class,
         half_segment_mean.class,
         half_extract_image_patches.class,
+        half_roll.class,
         half_set_seed.class,
         half_get_seed.class,
         half_randomuniform.class,
@@ -754,6 +758,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_greater_equal.class,
         double_less.class,
         double_greater.class,
+        double_percentile.class,
         double_conv1d.class,
         double_conv1d_bp.class,
         double_conv2d.class,
@@ -911,6 +916,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_segment_prod.class,
         double_segment_mean.class,
         double_extract_image_patches.class,
+        double_roll.class,
         double_set_seed.class,
         double_get_seed.class,
         double_randomuniform.class,
@@ -16259,7 +16265,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #ifdef __clang__
 // #define FORCEINLINE inline 
 // #elif _MSC_VER
-// #define FORCEINLINE __forceinline inline 
+// #define FORCEINLINE __forceinline
 // #elif __GNUC__
 // #define FORCEINLINE __attribute__((always_inline)) inline 
 // #elif __CUDACC__ 
@@ -16454,6 +16460,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <helpers/helper_hash.h>
 // #include <array/ShapeList.h>
 // #include <array/ResultSet.h>
+// #include <dll.h>
 //#include <ops/declarable/declarable_ops.h>
 
 // #include <chrono>
@@ -21661,6 +21668,67 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
 //         #endif
+
+        /**
+         * This operation performs calculation of percentile of input array along given axises
+         *
+         * Input - tensor with rank N > 0
+         * Output - tensor with rank (N - length(axis)) or scalar if number of Integer arguments is zero
+         * Float arguments:
+         *   0: percentile (scalar) in range [0,100] (inclusively)
+         *   1: interpolation (optional), possible values are 0-"lower", 1-"higher", 2-"nearest"(default)
+         *   2: keepDims (optional), if it is non zero, then unities are kept in reduced resulting shape of output array, default is 0
+         * Integer arguments - axis - the sequence of axises to calculate percentile along, if sequence is empty then calculate percentile for whole input tensor and return result as scalar
+         * 
+         */
+//         #if NOT_EXCLUDED(OP_percentile)
+        @Name("nd4j::ops::percentile<float>") public static class float_percentile extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_percentile(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_percentile(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_percentile position(long position) {
+                return (float_percentile)super.position(position);
+            }
+        
+                                                                                    public float_percentile() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::percentile<float16>") public static class half_percentile extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_percentile(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_percentile(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_percentile position(long position) {
+                return (half_percentile)super.position(position);
+            }
+        
+                                                                                    public half_percentile() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::percentile<double>") public static class double_percentile extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_percentile(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_percentile(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_percentile position(long position) {
+                return (double_percentile)super.position(position);
+            }
+        
+                                                                                    public double_percentile() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
 
     
 
@@ -31197,6 +31265,71 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
 
+        /**
+         * roll - op porting from numpy (https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.roll.html)
+         * 
+         * input params:
+         *    0 - NDArray
+         * 
+         * int params:
+         *    0 - shift
+         *    1 - axe 1
+         *    2 - axe 2
+         *    ...
+         *    N - axe N 
+         *
+         *    All axes are optional and should be between 0 and input->rankOf(). Of course, all axes can be repeated.
+         *
+         * output:
+         *    0 - NDArray with the same shape as input.
+         */
+//         #if NOT_EXCLUDED(OP_roll)
+        @Name("nd4j::ops::roll<float>") public static class float_roll extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_roll(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_roll(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_roll position(long position) {
+                return (float_roll)super.position(position);
+            }
+        
+                                                                                    public float_roll() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::roll<float16>") public static class half_roll extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_roll(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_roll(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_roll position(long position) {
+                return (half_roll)super.position(position);
+            }
+        
+                                                                                    public half_roll() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::roll<double>") public static class double_roll extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_roll(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_roll(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_roll position(long position) {
+                return (double_roll)super.position(position);
+            }
+        
+                                                                                    public double_roll() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
     
 
 

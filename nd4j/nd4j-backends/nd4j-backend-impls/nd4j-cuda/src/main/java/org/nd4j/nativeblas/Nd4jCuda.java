@@ -15286,7 +15286,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #ifdef __clang__
 // #define FORCEINLINE inline 
 // #elif _MSC_VER
-// #define FORCEINLINE __forceinline inline 
+// #define FORCEINLINE __forceinline
 // #elif __GNUC__
 // #define FORCEINLINE __attribute__((always_inline)) inline 
 // #elif __CUDACC__ 
@@ -15481,6 +15481,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <helpers/helper_hash.h>
 // #include <array/ShapeList.h>
 // #include <array/ResultSet.h>
+// #include <dll.h>
 //#include <ops/declarable/declarable_ops.h>
 
 // #include <chrono>
