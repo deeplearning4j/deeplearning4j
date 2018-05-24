@@ -20,7 +20,7 @@ if(WIN32)
 endif()
 
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_RELEASE=true -Wl,-rpath,$ORIGIN/")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_RELEASE=true -Wl,-rpath,$ORIGIN/")
 
 if ("${LIBND4J_ALL_OPS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
@@ -45,9 +45,6 @@ ENDIF()
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
-
-    set(CMAKE_CXX_FLAGS_RELEASE  " -O3 -std=c++11 -fassociative-math -funsafe-math-optimizations")
-    set(CMAKE_CXX_FLAGS_DEBUG " -g -O0 -std=c++11")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     # using Intel C++
