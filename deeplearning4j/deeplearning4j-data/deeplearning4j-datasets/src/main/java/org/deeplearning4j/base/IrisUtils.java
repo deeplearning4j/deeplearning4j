@@ -19,11 +19,14 @@
 package org.deeplearning4j.base;
 
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.common.resources.DL4JResources;
+import org.deeplearning4j.common.resources.ResourceType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +36,12 @@ public class IrisUtils {
     private IrisUtils() {}
 
     public static List<DataSet> loadIris(int from, int to) throws IOException {
+        File rootDir = DL4JResources.getDirectory(ResourceType.DATASET, "iris");
+        File irisData = new File(rootDir, "iris.dat");
+        if(!irisData.exists()){
+
+        }
+
         ClassPathResource resource = new ClassPathResource("/iris.dat");
         @SuppressWarnings("unchecked")
         List<String> lines = IOUtils.readLines(resource.getInputStream());

@@ -20,9 +20,12 @@ package org.deeplearning4j.base;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.common.resources.DL4JResources;
+import org.deeplearning4j.common.resources.ResourceType;
 import org.nd4j.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,12 +35,10 @@ import java.net.URL;
 
 @Data
 @NoArgsConstructor
+@Slf4j
 public class MnistFetcher {
-    protected static final Logger log = LoggerFactory.getLogger(MnistFetcher.class);
 
-    protected File BASE_DIR = new File(System.getProperty("user.home"));
     protected static final String LOCAL_DIR_NAME = "MNIST";
-    protected File FILE_DIR = new File(BASE_DIR, LOCAL_DIR_NAME);
 
     private File fileDir;
     private static final String TRAINING_FILES_URL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/train-images-idx3-ubyte.gz";
@@ -66,7 +67,7 @@ public class MnistFetcher {
     }
 
     public File getBaseDir() {
-        return FILE_DIR;
+        return DL4JResources.getDirectory(ResourceType.DATASET, getName());
     }
 
     // --- Train files ---

@@ -1,6 +1,7 @@
-package org.deeplearning4j.base;
+package org.deeplearning4j.datasets;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -14,6 +15,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import java.io.File;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Justin Long (crockpotveggies)
@@ -50,6 +52,6 @@ public class MnistFetcherTest extends BaseDL4JTest {
         MnistFetcher mnistFetcher = new MnistFetcher();
         File mnistDir = mnistFetcher.downloadAndUntar();
 
-        assert (mnistDir.isDirectory());
+        assertTrue(mnistDir.isDirectory());
     }
 }

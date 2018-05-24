@@ -38,7 +38,6 @@ public class EmnistFetcher extends MnistFetcher {
 
     public EmnistFetcher(EmnistDataSetIterator.Set ds) {
         this.ds = ds;
-        FILE_DIR = new File(BASE_DIR, LOCAL_DIR_NAME);
     }
 
     private static String getImagesFileName(EmnistDataSetIterator.Set ds, boolean train) {
