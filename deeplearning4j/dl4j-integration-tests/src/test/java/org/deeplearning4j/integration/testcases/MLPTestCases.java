@@ -1,6 +1,6 @@
-package integration.testcases;
+package org.deeplearning4j.integration.testcases;
 
-import integration.TestCase;
+import org.deeplearning4j.integration.TestCase;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -36,7 +36,6 @@ import org.nd4j.linalg.schedule.ScheduleType;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class MLPTestCases {
@@ -57,6 +56,8 @@ public class MLPTestCases {
                 testParamsPostTraining = true;
                 testEvaluation = true;
                 testOverfitting = true;
+                maxRelativeErrorOverfit = 2e-2;
+                minAbsErrorOverfit = 1e-2;
             }
 
             @Override
@@ -129,7 +130,7 @@ public class MLPTestCases {
 
             @Override
             public int getOverfitNumIterations(){
-                return 200;
+                return 300;
             }
         };
     }

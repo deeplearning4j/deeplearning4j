@@ -1,14 +1,13 @@
-package integration;
+package org.deeplearning4j.integration;
 
-
-import integration.testcases.*;
+import org.deeplearning4j.integration.testcases.*;
 import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class IntegrationTests {
+public class IntegrationTests extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

@@ -1,4 +1,4 @@
-package integration;
+package org.deeplearning4j.integration;
 
 import lombok.Data;
 import org.deeplearning4j.eval.IEvaluation;

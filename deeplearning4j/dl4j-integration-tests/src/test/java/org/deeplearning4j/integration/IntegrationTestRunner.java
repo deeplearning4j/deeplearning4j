@@ -1,16 +1,16 @@
-package integration;
+package org.deeplearning4j.integration;
 
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
-import integration.util.CountingMultiDataSetIterator;
+import org.deeplearning4j.integration.util.CountingMultiDataSetIterator;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -28,6 +28,7 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
@@ -134,6 +135,7 @@ public class IntegrationTestRunner {
     }
 
     public static void runTest(TestCase tc, TemporaryFolder testDir) throws Exception {
+        Preconditions.checkState(Nd4j.dataType() == DataBuffer.Type.FLOAT, "Integration tests must be run with float precision!");
         log.info("Starting test case: {}", tc.getTestName());
         long start = System.currentTimeMillis();
 
@@ -318,7 +320,17 @@ public class IntegrationTestRunner {
         //Test training curves:
         if (tc.isTestTrainingCurves() || tc.isTestParamsPostTraining()) {
             MultiDataSetIterator trainData = tc.getTrainingData();
-            CountingMultiDataSetIterator countingIter = new CountingMultiDataSetIterator(trainData);
+            boolean isTbptt;
+            int tbpttLength;
+            if(isMLN){
+                isTbptt = mln.getLayerWiseConfigurations().getBackpropType() == BackpropType.TruncatedBPTT;
+                tbpttLength = mln.getLayerWiseConfigurations().getTbpttFwdLength();
+            } else {
+                isTbptt = cg.getConfiguration().getBackpropType() == BackpropType.TruncatedBPTT;
+                tbpttLength = cg.getConfiguration().getTbpttFwdLength();
+            }
+
+            CountingMultiDataSetIterator countingIter = new CountingMultiDataSetIterator(trainData, isTbptt, tbpttLength);
             CollectScoresListener l = new CollectScoresListener(1);
             m.setListeners(l);
 
@@ -477,7 +489,7 @@ public class IntegrationTestRunner {
                             .build();
 
 
-            testParallelInference(null, inputs, exp);
+            testParallelInference(inf, inputs, exp);
 
             inf.shutdown();
             inf = null;
@@ -620,8 +632,8 @@ public class IntegrationTestRunner {
         }
 
         for(org.deeplearning4j.nn.api.Layer l : layers){
-            assertEquals(expEpoch, l.getEpochCount());
-            assertEquals(expIter, l.getIterationCount());
+            assertEquals("Epoch count", expEpoch, l.getEpochCount());
+            assertEquals("Iteration count", expIter, l.getIterationCount());
         }
     }
 
@@ -823,7 +835,7 @@ public class IntegrationTestRunner {
         return result;
     }
 
-    public static void testParallelInference(ParallelInference inf, List<Pair<INDArray[],INDArray[]>> in, List<INDArray[]> exp) throws Exception {
+    public static void testParallelInference(@NonNull ParallelInference inf, List<Pair<INDArray[],INDArray[]>> in, List<INDArray[]> exp) throws Exception {
         final INDArray[][] act = new INDArray[in.size()][0];
         final AtomicInteger counter = new AtomicInteger(0);
         final AtomicInteger failedCount = new AtomicInteger(0);

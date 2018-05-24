@@ -1,4 +1,4 @@
-package integration.testcases.misc;
+package org.deeplearning4j.integration.testcases.misc;
 
 import org.apache.commons.io.FileUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;

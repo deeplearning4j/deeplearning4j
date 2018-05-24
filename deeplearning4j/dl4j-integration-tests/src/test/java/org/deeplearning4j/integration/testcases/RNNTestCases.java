@@ -1,8 +1,9 @@
-package integration.testcases;
+package org.deeplearning4j.integration.testcases;
 
-import integration.TestCase;
-import integration.testcases.misc.CharacterIterator;
-import integration.testcases.misc.CompositeMultiDataSetPreProcessor;
+import com.google.common.io.Files;
+import org.deeplearning4j.integration.TestCase;
+import org.deeplearning4j.integration.testcases.misc.CharacterIterator;
+import org.deeplearning4j.integration.testcases.misc.CompositeMultiDataSetPreProcessor;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.NumberedFileInputSplit;
@@ -55,7 +56,7 @@ public class RNNTestCases {
     public static TestCase getRnnCharacterTestCase(){
         return new TestCase() {
             {
-                testName = "getRnnCharacterTestCase";
+                testName = "RnnCharacterTestCase";
                 testType = TestType.RANDOM_INIT;
                 testPredictions = true;
                 testTrainingCurves = true;
@@ -204,8 +205,10 @@ public class RNNTestCases {
             int miniBatchSize = 10;
             int numLabelClasses = 6;
 
-            File featuresDirTrain = new ClassPathResource("/RnnCsvSequenceClassification/uci/train/features/").getFile();
-            File labelsDirTrain = new ClassPathResource("/RnnCsvSequenceClassification/uci/train/labels/").getFile();
+            File featuresDirTrain = Files.createTempDir();
+            File labelsDirTrain = Files.createTempDir();
+            new ClassPathResource("dl4j-integration-tests/data/uci_seq/train/features/").copyDirectory(featuresDirTrain);
+            new ClassPathResource("dl4j-integration-tests/data/uci_seq/train/labels/").copyDirectory(labelsDirTrain);
 
             SequenceRecordReader trainFeatures = new CSVSequenceRecordReader();
             trainFeatures.initialize(new NumberedFileInputSplit(featuresDirTrain.getAbsolutePath() + "/%d.csv", 0, 449));
@@ -233,8 +236,12 @@ public class RNNTestCases {
             int miniBatchSize = 10;
             int numLabelClasses = 6;
 
-            File featuresDirTest = new ClassPathResource("/RnnCsvSequenceClassification/uci/test/features/").getFile();
-            File labelsDirTest = new ClassPathResource("/RnnCsvSequenceClassification/uci/test/labels/").getFile();
+//            File featuresDirTest = new ClassPathResource("/RnnCsvSequenceClassification/uci_seq/test/features/").getFile();
+//            File labelsDirTest = new ClassPathResource("/RnnCsvSequenceClassification/uci_seq/test/labels/").getFile();
+            File featuresDirTest = Files.createTempDir();
+            File labelsDirTest = Files.createTempDir();
+            new ClassPathResource("dl4j-integration-tests/data/uci_seq/test/features/").copyDirectory(featuresDirTest);
+            new ClassPathResource("dl4j-integration-tests/data/uci_seq/test/labels/").copyDirectory(labelsDirTest);
 
             SequenceRecordReader trainFeatures = new CSVSequenceRecordReader();
             trainFeatures.initialize(new NumberedFileInputSplit(featuresDirTest.getAbsolutePath() + "/%d.csv", 0, 149));

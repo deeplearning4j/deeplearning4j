@@ -1,4 +1,4 @@
-package integration.testcases.misc;
+package org.deeplearning4j.integration.testcases.misc;
 
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;

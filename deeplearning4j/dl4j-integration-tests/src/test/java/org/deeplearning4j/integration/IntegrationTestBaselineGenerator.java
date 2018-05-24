@@ -1,11 +1,13 @@
-package integration;
+package org.deeplearning4j.integration;
 
 import com.google.common.io.Files;
-import integration.testcases.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.IEvaluation;
+import org.deeplearning4j.integration.testcases.CNN2DTestCases;
+import org.deeplearning4j.integration.testcases.MLPTestCases;
+import org.deeplearning4j.integration.testcases.RNNTestCases;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -14,6 +16,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.CollectScoresListener;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -39,18 +42,21 @@ public class IntegrationTestBaselineGenerator {
             throw new RuntimeException("output directory (test resources) does not exist!");
         }
 
+        //All integration tests are run with float precision!
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+
         runGeneration(
-//                MLPTestCases.getMLPMnist(),
-                MLPTestCases.getMLPMoon()
-//                RNNTestCases.getRnnCsvSequenceClassificationTestCase1(),
-//                RNNTestCases.getRnnCsvSequenceClassificationTestCase2(),
-//                RNNTestCases.getRnnCharacterTestCase(),
+                MLPTestCases.getMLPMnist(),
+                MLPTestCases.getMLPMoon(),
+                RNNTestCases.getRnnCsvSequenceClassificationTestCase1(),
+                RNNTestCases.getRnnCsvSequenceClassificationTestCase2(),
+                RNNTestCases.getRnnCharacterTestCase(),
 //                CNN1DTestCases.getCnn1dTestCaseSynthetic(),
 //                CNN2DTestCases.getLenetMnist(),
-//                CNN2DTestCases.getVGG16TransferTinyImagenet(),
+                CNN2DTestCases.getVGG16TransferTinyImagenet(),
 //                CNN2DTestCases.getYoloHouseNumbers(),
 //                CNN2DTestCases.getCnn2DSynthetic(),
-//                CNN2DTestCases.testLenetTransferDropoutRepeatability(),
+                CNN2DTestCases.testLenetTransferDropoutRepeatability()//,
 //                CNN3DTestCases.getCnn3dTestCaseSynthetic(),
 //                UnsupervisedTestCases.getVAEMnistAnomaly(),
 //                TransferLearningTestCases.testPartFrozenResNet50(),

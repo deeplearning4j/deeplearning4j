@@ -1,6 +1,6 @@
-package integration.testcases;
+package org.deeplearning4j.integration.testcases;
 
-import integration.TestCase;
+import org.deeplearning4j.integration.TestCase;
 import org.deeplearning4j.datasets.fetchers.DataSetType;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
