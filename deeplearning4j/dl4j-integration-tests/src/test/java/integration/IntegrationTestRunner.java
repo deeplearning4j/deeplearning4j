@@ -6,6 +6,7 @@ import com.google.common.reflect.ClassPath;
 import integration.util.CountingMultiDataSetIterator;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.*;
@@ -21,6 +22,8 @@ import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.CollectScoresListener;
+import org.deeplearning4j.parallelism.ParallelInference;
+import org.deeplearning4j.parallelism.inference.InferenceMode;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.base.Preconditions;
@@ -35,12 +38,14 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -56,11 +61,11 @@ import static org.junit.Assert.*;
 @Slf4j
 public class IntegrationTestRunner {
 
-    public static final File RESOURCES_ROOT_DIR = new File("C:/Temp/DL4J_Integration_Test_Temp/"); //TODO
     public static final String RANDOM_INIT_UNTRAINED_MODEL_FILENAME = "Model_RANDOM_INIT_UNTRAINED.zip";
     public static final String FLAT_GRADIENTS_FILENAME = "flattenedGradients.bin";
     public static final String TRAINING_CURVE_FILENAME = "trainingCurve.csv";
     public static final String PARAMS_POST_TRAIN_FILENAME = "paramsPostTrain.bin";
+    public static final String PARAMS_POST_UNSUPERVISED_FILENAME = "paramsPostUnsupervised.bin";
 
     public static final double MAX_REL_ERROR_SCORES = 1e-6;
 
@@ -135,8 +140,8 @@ public class IntegrationTestRunner {
         File workingDir = testDir.newFolder();
         tc.initialize(workingDir);
 
-        File testBaseDir = new File(IntegrationTestRunner.RESOURCES_ROOT_DIR, tc.getTestName());
-        Preconditions.checkState(testBaseDir.exists(), "Test resources directory must exist: %s", testBaseDir.getAbsolutePath());
+        File testBaseDir = testDir.newFolder();
+        new ClassPathResource("dl4j-integration-tests/" + tc.getTestName()).copyDirectory(testBaseDir);
 
 
         MultiLayerNetwork mln = null;
@@ -273,9 +278,40 @@ public class IntegrationTestRunner {
         }
 
         //Test layerwise pretraining
-        if(tc.isTestPretrain()){
-            //TODO
+        if(tc.isTestUnsupervisedTraining()){
+            log.info("Performing layerwise pretraining");
+            MultiDataSetIterator iter = tc.getUnsupervisedTrainData();
 
+            INDArray paramsPostTraining;
+            if(isMLN){
+                int[] layersToTrain = tc.getUnsupervisedTrainLayersMLN();
+                Preconditions.checkState(layersToTrain != null, "Layer indices must not be null");
+                DataSetIterator dsi = new MultiDataSetWrapperIterator(iter);
+
+                for( int i : layersToTrain){
+                    mln.pretrainLayer(i, dsi);
+                }
+                paramsPostTraining = mln.params();
+            } else {
+                String[] layersToTrain = tc.getUnsupervisedTrainLayersCG();
+                Preconditions.checkState(layersToTrain != null, "Layer names must not be null");
+
+                for( String i : layersToTrain){
+                    cg.pretrainLayer(i, iter);
+                }
+                paramsPostTraining = cg.params();
+            }
+
+            File f = new File(testBaseDir, IntegrationTestRunner.PARAMS_POST_UNSUPERVISED_FILENAME);
+            INDArray expParams = read(f);
+
+            INDArray exceedsRelError = exceedsRelError(expParams, paramsPostTraining, tc.getMaxRelativeErrorPretrainParams(),
+                    tc.getMinAbsErrorPretrainParams());
+            int count = exceedsRelError.sumNumber().intValue();
+            assertEquals("Number of parameters exceeding relative error", 0, count);
+
+            //Set params to saved ones - to avoid accumulation of roundoff errors causing later failures...
+            m.setParams(expParams);
         }
 
 
@@ -420,9 +456,32 @@ public class IntegrationTestRunner {
 
             int numThreads = 2; //TODO allow customization of this?
 
+            List<INDArray[]> exp = new ArrayList<>();
+            for(Pair<INDArray[], INDArray[]> p : inputs){
+                INDArray[] out;
+                if(isMLN){
+                    INDArray fm = p.getSecond() == null ? null : p.getSecond()[0];
+                    out = new INDArray[]{mln.output(p.getFirst()[0], true, fm, null)};
+                } else {
+                    out = cg.output(false, p.getFirst(), p.getSecond(), null);
+                }
+                exp.add(out);
+            }
+
+            ParallelInference inf =
+                    new ParallelInference.Builder(m)
+                            .inferenceMode(InferenceMode.BATCHED)
+                            .batchLimit(3)
+                            .queueLimit(8)
+                            .workers(numThreads)
+                            .build();
 
 
+            testParallelInference(null, inputs, exp);
 
+            inf.shutdown();
+            inf = null;
+            System.gc();
         }
 
 
@@ -762,6 +821,44 @@ public class IntegrationTestRunner {
 //            System.out.println();
 //        }
         return result;
+    }
+
+    public static void testParallelInference(ParallelInference inf, List<Pair<INDArray[],INDArray[]>> in, List<INDArray[]> exp) throws Exception {
+        final INDArray[][] act = new INDArray[in.size()][0];
+        final AtomicInteger counter = new AtomicInteger(0);
+        final AtomicInteger failedCount = new AtomicInteger(0);
+
+        for( int i=0; i<in.size(); i++ ){
+            final int j=i;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                        INDArray[] inMask = in.get(j).getSecond();
+                        act[j] = inf.output(in.get(j).getFirst(), inMask);
+                        counter.incrementAndGet();
+                    } catch (Exception e){
+                        e.printStackTrace();
+                        failedCount.incrementAndGet();
+                    }
+                }
+            }).start();
+        }
+
+        long start = System.currentTimeMillis();
+        long current = System.currentTimeMillis();
+        while(current < start + 20000 && failedCount.get() == 0 && counter.get() < in.size()){
+            Thread.sleep(1000L);
+        }
+
+        assertEquals(0, failedCount.get());
+        assertEquals(in.size(), counter.get());
+        for( int i=0; i<in.size(); i++ ){
+            INDArray[] e = exp.get(i);
+            INDArray[] a = act[i];
+
+            assertArrayEquals(e, a);
+        }
     }
 
 }

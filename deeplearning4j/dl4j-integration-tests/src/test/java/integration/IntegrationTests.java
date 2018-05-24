@@ -24,7 +24,6 @@ public class IntegrationTests {
         IntegrationTestRunner.runTest(MLPTestCases.getMLPMnist(), testDir);
     }
 
-    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 30000L)
     public void testMlpMoon() throws Exception {
         IntegrationTestRunner.runTest(MLPTestCases.getMLPMoon(), testDir);

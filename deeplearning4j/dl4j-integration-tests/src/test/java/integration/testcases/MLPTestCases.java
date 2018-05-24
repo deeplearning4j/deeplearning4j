@@ -141,7 +141,7 @@ public class MLPTestCases {
     public static TestCase getMLPMoon(){
         return new TestCase() {
             {
-                testName = "MLPSaturn";
+                testName = "MLPMoon";
                 testType = TestType.RANDOM_INIT;
                 testPredictions = true;
                 testTrainingCurves = true;

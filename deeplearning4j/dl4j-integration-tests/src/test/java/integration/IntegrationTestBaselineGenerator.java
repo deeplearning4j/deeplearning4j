@@ -40,21 +40,21 @@ public class IntegrationTestBaselineGenerator {
         }
 
         runGeneration(
-                MLPTestCases.getMLPMnist(),
-                MLPTestCases.getMLPMoon(),
-                RNNTestCases.getRnnCsvSequenceClassificationTestCase1(),
-                RNNTestCases.getRnnCsvSequenceClassificationTestCase2(),
-                RNNTestCases.getRnnCharacterTestCase(),
-                CNN1DTestCases.getCnn1dTestCaseSynthetic(),
-                CNN2DTestCases.getLenetMnist(),
-                CNN2DTestCases.getVGG16TransferTinyImagenet(),
-                CNN2DTestCases.getYoloHouseNumbers(),
-                CNN2DTestCases.getCnn2DSynthetic(),
-                CNN2DTestCases.testLenetTransferDropoutRepeatability(),
-                CNN3DTestCases.getCnn3dTestCaseSynthetic(),
-                UnsupervisedTestCases.getVAEMnistAnomaly(),
-                TransferLearningTestCases.testPartFrozenResNet50(),
-                TransferLearningTestCases.testPartFrozenNASNET()
+//                MLPTestCases.getMLPMnist(),
+                MLPTestCases.getMLPMoon()
+//                RNNTestCases.getRnnCsvSequenceClassificationTestCase1(),
+//                RNNTestCases.getRnnCsvSequenceClassificationTestCase2(),
+//                RNNTestCases.getRnnCharacterTestCase(),
+//                CNN1DTestCases.getCnn1dTestCaseSynthetic(),
+//                CNN2DTestCases.getLenetMnist(),
+//                CNN2DTestCases.getVGG16TransferTinyImagenet(),
+//                CNN2DTestCases.getYoloHouseNumbers(),
+//                CNN2DTestCases.getCnn2DSynthetic(),
+//                CNN2DTestCases.testLenetTransferDropoutRepeatability(),
+//                CNN3DTestCases.getCnn3dTestCaseSynthetic(),
+//                UnsupervisedTestCases.getVAEMnistAnomaly(),
+//                TransferLearningTestCases.testPartFrozenResNet50(),
+//                TransferLearningTestCases.testPartFrozenNASNET()
         );
     }
 
@@ -203,6 +203,36 @@ public class IntegrationTestBaselineGenerator {
                     File f = new File(gradientDir, s + ".bin");
                     IntegrationTestRunner.write(g.get(s), f);
                 }
+            }
+
+            //Test pretraining
+            if(tc.isTestUnsupervisedTraining()){
+                log.info("Performing layerwise pretraining");
+                MultiDataSetIterator iter = tc.getUnsupervisedTrainData();
+
+                INDArray paramsPostTraining;
+                if(isMLN){
+                    int[] layersToTrain = tc.getUnsupervisedTrainLayersMLN();
+                    Preconditions.checkState(layersToTrain != null, "Layer indices must not be null");
+                    DataSetIterator dsi = new MultiDataSetWrapperIterator(iter);
+
+                    for( int i : layersToTrain){
+                        mln.pretrainLayer(i, dsi);
+                    }
+                    paramsPostTraining = mln.params();
+                } else {
+                    String[] layersToTrain = tc.getUnsupervisedTrainLayersCG();
+                    Preconditions.checkState(layersToTrain != null, "Layer names must not be null");
+
+                    for( String i : layersToTrain){
+                        cg.pretrainLayer(i, iter);
+                    }
+                    paramsPostTraining = cg.params();
+                }
+
+                //Save params
+                File f = new File(testBaseDir, IntegrationTestRunner.PARAMS_POST_UNSUPERVISED_FILENAME);
+                IntegrationTestRunner.write(paramsPostTraining, f);
             }
 
             //Test training curves:

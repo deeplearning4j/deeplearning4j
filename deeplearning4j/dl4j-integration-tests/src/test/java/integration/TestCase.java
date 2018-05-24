@@ -22,16 +22,21 @@ public abstract class TestCase {
     protected TestType testType;
     protected boolean testPredictions = true;
     protected boolean testGradients = true;
-    protected boolean testPretrain = false;
+    protected boolean testUnsupervisedTraining = false;
     protected boolean testTrainingCurves = true;
     protected boolean testParamsPostTraining = true;
     protected boolean testEvaluation = true;
     protected boolean testParallelInference = true;
     protected boolean testOverfitting = true;
 
+    protected int[] unsupervisedTrainLayersMLN = null;
+    protected String[] unsupervisedTrainLayersCG = null;
+
     //Relative errors for this test case:
     protected double maxRelativeErrorGradients = 1e-6;
     protected double minAbsErrorGradients = 1e-5;
+    protected double maxRelativeErrorPretrainParams = 1e-5;
+    protected double minAbsErrorPretrainParams = 1e-5;
     protected double maxRelativeErrorScores = 1e-6;
     protected double minAbsErrorScores = 1e-5;
     protected double maxRelativeErrorParamsPostTraining = 1e-4;
@@ -68,6 +73,13 @@ public abstract class TestCase {
     }
 
     public MultiDataSet getGradientsTestData() throws Exception {
+        throw new RuntimeException("Implementations must override this method if used");
+    }
+
+    /**
+     * Required when testUnsupervisedTraining == true
+     */
+    public MultiDataSetIterator getUnsupervisedTrainData() throws Exception {
         throw new RuntimeException("Implementations must override this method if used");
     }
 
