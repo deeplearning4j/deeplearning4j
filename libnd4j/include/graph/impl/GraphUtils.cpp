@@ -71,7 +71,7 @@ GraphUtils::runPreprocessor(char const* name_arg, char const* build_arg, char co
         close(pipefd[1]);    // this descriptor is no longer needed
 
 #ifdef __GNUC__
-    #if __CNUC__ < 4 
+    #if __CNUC__ < 4 && __GNUC_MINOR__ < 9
     #pragma error "Compiler version should be greater then 4.9"
     #endif
     // just stacking everything together
