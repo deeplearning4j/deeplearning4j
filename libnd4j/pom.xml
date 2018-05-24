@@ -110,7 +110,7 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
-                            <skip>${compile.skip}</skip>
+                            <skip>${libnd4j.cpu.compile.skip}</skip>
                             <buildCommand>
                                 <program>bash</program>
                                 <argument>${project.basedir}/buildnativeoperations.sh</argument>
@@ -256,7 +256,7 @@
                                     <goal>build</goal>
                                 </goals>
                                 <configuration>
-                                    <skip>${compile.skip}</skip>
+                                    <skip>${libnd4j.cuda.compile.skip}</skip>
                                     <buildCommand>
                                         <program>bash</program>
                                         <argument>${project.basedir}/buildnativeoperations.sh</argument>
