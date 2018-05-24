@@ -1,4 +1,4 @@
-package org.deeplearning4j.common;
+package org.nd4j.resources;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;

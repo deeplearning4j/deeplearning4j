@@ -126,8 +126,4 @@ public class DL4JResources {
         f.mkdirs();
         return f;
     }
-
-
-
-
 }

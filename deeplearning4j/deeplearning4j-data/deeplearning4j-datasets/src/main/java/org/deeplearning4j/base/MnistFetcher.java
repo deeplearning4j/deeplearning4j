@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.common.resources.ResourceType;
+import org.nd4j.resources.Downloader;
 import org.nd4j.util.ArchiveUtils;
 
 import java.io.*;
@@ -151,69 +152,17 @@ public class MnistFetcher {
         File trainFeatures = new File(baseDir, getTrainingFilesFilename());
         File testFeatures = new File(baseDir, getTestFilesFilename());
 
-        downloadAndExtract(new URL(getTrainingFilesURL()), trainFeatures, baseDir, getTrainingFilesMD5());
-        downloadAndExtract(new URL(getTestFilesURL()), testFeatures, baseDir, getTestFilesMD5());
+        Downloader.downloadAndExtract("MNIST", new URL(getTrainingFilesURL()), trainFeatures, baseDir, getTrainingFilesMD5(),3);
+        Downloader.downloadAndExtract("MNIST", new URL(getTestFilesURL()), testFeatures, baseDir, getTestFilesMD5(), 3);
 
         // get labels
         File trainLabels = new File(baseDir, getTrainingFileLabelsFilename());
         File testLabels = new File(baseDir, getTestFileLabelsFilename());
 
-        downloadAndExtract(new URL(getTrainingFileLabelsURL()), trainLabels, baseDir, getTrainingFileLabelsMD5());
-        downloadAndExtract(new URL(getTestFileLabelsURL()), testLabels, baseDir, getTestFileLabelsMD5());
+        Downloader.downloadAndExtract("MNIST", new URL(getTrainingFileLabelsURL()), trainLabels, baseDir, getTrainingFileLabelsMD5(), 3);
+        Downloader.downloadAndExtract("MNIST", new URL(getTestFileLabelsURL()), testLabels, baseDir, getTestFileLabelsMD5(), 3);
 
         fileDir = baseDir;
         return fileDir;
     }
-
-    private void downloadAndExtract(URL url, File f, File extractToDir, String targetMD5) throws IOException {
-        downloadAndExtract(0, url, f, extractToDir, targetMD5);
-    }
-
-    private void downloadAndExtract(int attempt, URL url, File f, File extractToDir, String targetMD5) throws IOException {
-        int maxTries = 3;
-        boolean isCorrectFile = f.exists() && f.isFile() && checkMD5OfFile(targetMD5, f);
-        if (attempt < maxTries) {
-            if(!isCorrectFile) {
-                FileUtils.copyURLToFile(url, f);
-                if (!checkMD5OfFile(targetMD5, f)) {
-                    f.delete();
-                    downloadAndExtract(attempt + 1, url, f, extractToDir, targetMD5);
-                }
-            }
-            // try extracting
-            try{
-                ArchiveUtils.unzipFileTo(f.getAbsolutePath(), extractToDir.getAbsolutePath());
-            } catch (Throwable t){
-                log.warn("Error extracting MNIST files from file {} - retrying...", f.getAbsolutePath(), t);
-                f.delete();
-                downloadAndExtract(attempt + 1, url, f, extractToDir, targetMD5);
-            }
-        } else if (!isCorrectFile) {
-            //Too many attempts
-            throw new IOException("Could not download and extract " + url.getPath() + "\n properly despite trying " + maxTries
-                            + " times, check your connection. File info:" + "\nTarget MD5: " + targetMD5
-                            + "\nHash matches: " + checkMD5OfFile(targetMD5, f) + "\nIs valid file: " + f.isFile());
-        }
-    }
-
-    private boolean checkMD5OfFile(String targetMD5, File file) throws IOException {
-        InputStream in = FileUtils.openInputStream(file);
-        String trueMd5 = DigestUtils.md5Hex(in);
-        IOUtils.closeQuietly(in);
-        return (targetMD5.equals(trueMd5));
-    }
-
-    public static void gunzipFile(File baseDir, File gzFile) throws IOException {
-        log.info("gunzip'ing File: " + gzFile.toString());
-        Process p = Runtime.getRuntime().exec(String.format("gunzip %s", gzFile.getAbsolutePath()));
-        BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-        log.info("Here is the standard error of the command (if any):\n");
-        String s;
-        while ((s = stdError.readLine()) != null) {
-            log.info(s);
-        }
-        stdError.close();
-    }
-
-
 }
