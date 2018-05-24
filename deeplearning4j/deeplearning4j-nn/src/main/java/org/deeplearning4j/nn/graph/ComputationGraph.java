@@ -1111,6 +1111,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         clearLayersStates();
+        synchronizeIterEpochCounts();
     }
 
 
@@ -4001,6 +4002,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public void incrementEpochCount(){
         configuration.setEpochCount(configuration.getEpochCount() + 1);
+        synchronizeIterEpochCounts();
     }
 
     protected void synchronizeIterEpochCounts(){

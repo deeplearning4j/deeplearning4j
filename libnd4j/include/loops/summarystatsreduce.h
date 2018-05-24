@@ -113,9 +113,9 @@ namespace functions {
                 return M2 / n;
             }
 
-            _CUDA_HD double skewness() { return M2 > 0 ? nd4j::math::nd4j_sqrt(n) * M3 / nd4j::math::nd4j_pow(M2, (T) 1.5) : (T) 0.0; }
+            _CUDA_HD double skewness() { return M2 > 0.0 ? nd4j::math::nd4j_sqrt<double>(n) * M3 / nd4j::math::nd4j_pow<double>(M2, 1.5) : 0.0; }
 
-            _CUDA_HD double kurtosis() { return M2 > 0 ? n * M4 / (M2 * M2) : 0; }
+            _CUDA_HD double kurtosis() { return M2 > 0.0 ? n * M4 / (M2 * M2) : 0; }
 
             _CUDA_HD double getM2() {
                 return M2;
