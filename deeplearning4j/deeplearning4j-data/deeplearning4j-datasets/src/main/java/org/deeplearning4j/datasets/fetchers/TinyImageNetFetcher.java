@@ -26,6 +26,7 @@ import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.image.transform.ImageTransform;
 import org.datavec.image.transform.MultiImageTransform;
 import org.datavec.image.transform.ResizeImageTransform;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.nd4j.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +59,9 @@ public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
     public static int NUM_EXAMPLES = NUM_LABELS*500;
 
     @Override
-    public String remoteDataUrl(DataSetType set) { return "http://blob.deeplearning4j.org/datasets/tinyimagenet_200_dl4j.v1.zip"; }
+    public String remoteDataUrl(DataSetType set) {
+        return DL4JResources.getURLString("datasets/tinyimagenet_200_dl4j.v1.zip");
+    }
     @Override
     public String localCacheName(){ return "TINYIMAGENET_200"; }
     @Override

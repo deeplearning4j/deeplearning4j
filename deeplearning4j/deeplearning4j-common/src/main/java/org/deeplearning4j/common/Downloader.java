@@ -14,6 +14,27 @@ import java.net.URL;
 @Slf4j
 public class Downloader {
 
+    public static void download(String name, URL url, File f, String targetMD5, int maxTries) throws IOException {
+        download(name, url, f, targetMD5, maxTries, 0);
+    }
+
+    private static void download(String name, URL url, File f, String targetMD5, int maxTries, int attempt) throws IOException {
+        boolean isCorrectFile = f.exists() && f.isFile() && checkMD5OfFile(targetMD5, f);
+        if (attempt < maxTries) {
+            if(!isCorrectFile) {
+                FileUtils.copyURLToFile(url, f);
+                if (!checkMD5OfFile(targetMD5, f)) {
+                    f.delete();
+                    download(name, url, f, targetMD5, maxTries, attempt + 1);
+                }
+            }
+        } else if (!isCorrectFile) {
+            //Too many attempts
+            throw new IOException("Could not download " + name + " from " + url + "\n properly despite trying " + maxTries
+                    + " times, check your connection.");
+        }
+    }
+
     public static void downloadAndExtract(String name, URL url, File f, File extractToDir, String targetMD5, int maxTries) throws IOException {
         downloadAndExtract(0, maxTries, name, url, f, extractToDir, targetMD5);
     }
