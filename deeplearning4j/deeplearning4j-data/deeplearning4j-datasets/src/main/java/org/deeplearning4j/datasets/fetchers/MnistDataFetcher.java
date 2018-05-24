@@ -46,8 +46,6 @@ import java.util.zip.Checksum;
 public class MnistDataFetcher extends BaseDataFetcher {
     public static final int NUM_EXAMPLES = 60000;
     public static final int NUM_EXAMPLES_TEST = 10000;
-//    protected static final String TEMP_ROOT = System.getProperty("user.home");
-//    protected static final String MNIST_ROOT = DL4JResources.getDirectory(ResourceType.DATASET, "MNIST").getAbsolutePath();
 
     protected static final long CHECKSUM_TRAIN_FEATURES = 2094436111L;
     protected static final long CHECKSUM_TRAIN_LABELS = 4008842612L;

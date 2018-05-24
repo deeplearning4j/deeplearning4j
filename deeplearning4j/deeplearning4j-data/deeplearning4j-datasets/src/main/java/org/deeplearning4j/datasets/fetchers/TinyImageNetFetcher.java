@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.datasets.fetchers;
 
+import org.apache.commons.io.FileUtils;
 import org.datavec.api.io.filters.RandomPathFilter;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.records.reader.RecordReader;
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -70,12 +72,13 @@ public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
     public RecordReader getRecordReader(long rngSeed, int[] imgDim, DataSetType set, ImageTransform imageTransform) {
         Preconditions.checkState(imgDim == null || imgDim.length == 2, "Invalid image dimensions: must be null or lenth 2. Got: %s", imgDim);
         // check empty cache
-        if(LOCAL_CACHE.exists()) {
-            if(LOCAL_CACHE.listFiles().length<1) LOCAL_CACHE.delete();
-        }
+        File localCache = getLocalCacheDir();
+        deleteIfEmpty(localCache);
 
         try {
-            if (!LOCAL_CACHE.exists()) downloadAndExtract();
+            if (!localCache.exists()){
+                downloadAndExtract();
+            }
         } catch(Exception e) {
             throw new RuntimeException("Could not download TinyImageNet", e);
         }
@@ -84,16 +87,16 @@ public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
         File datasetPath;
         switch (set) {
             case TRAIN:
-                datasetPath = new File(LOCAL_CACHE, "/train/");
+                datasetPath = new File(localCache, "/train/");
                 break;
             case TEST:
-                datasetPath = new File(LOCAL_CACHE, "/test/");
+                datasetPath = new File(localCache, "/test/");
                 break;
             case VALIDATION:
                 throw new IllegalArgumentException("You will need to manually iterate the /validation/images/ directory, TinyImageNet does not provide labels");
 
             default:
-                datasetPath = new File(LOCAL_CACHE, "/train/");
+                datasetPath = new File(localCache, "/train/");
         }
 
         // set up file paths
