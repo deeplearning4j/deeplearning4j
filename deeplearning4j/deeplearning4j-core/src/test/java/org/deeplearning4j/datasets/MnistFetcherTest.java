@@ -2,14 +2,18 @@ package org.deeplearning4j.datasets;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.base.MnistFetcher;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.io.File;
@@ -21,6 +25,19 @@ import static org.junit.Assert.assertTrue;
  * @author Justin Long (crockpotveggies)
  */
 public class MnistFetcherTest extends BaseDL4JTest {
+
+    @ClassRule
+    public static TemporaryFolder testDir = new TemporaryFolder();
+
+    @BeforeClass
+    public static void setup() throws Exception {
+        DL4JResources.setBaseDirectory(testDir.newFolder());
+    }
+
+    @AfterClass
+    public static void after() {
+        DL4JResources.resetBaseDirectoryLocation();
+    }
 
     @Test
     public void testMnist() throws Exception {
