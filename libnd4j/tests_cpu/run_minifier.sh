@@ -1,7 +1,13 @@
 #!/bin/bash
-CXX_PATH=`/usr/bin/g++ --print-search-dirs | awk '/install/{print $2;}'`
-export CXX_PATH
+# script for running and manual testing of the minifier
+# by GS <sgazeos@gmail.com
+#
+# only for special use
+#
+#
 CXX=/usr/bin/g++
+CXX_PATH=`$CXX --print-search-dirs | awk '/install/{print $2;}'`
+export CXX_PATH
 export CXX
 
 make -j4 && layers_tests/minifier -l -o nd4j_minilib.h 
