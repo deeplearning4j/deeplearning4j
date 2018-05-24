@@ -52,24 +52,6 @@
 
     <profiles>
         <profile>
-            <id>testresources</id>
-            <modules>
-                <module>dl4j-test-resources</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>test-nd4j-native</id>
-            <modules>
-                <module>dl4j-test-resources</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>test-nd4j-cuda-9.1</id>
-            <modules>
-                <module>dl4j-test-resources</module>
-            </modules>
-        </profile>
-        <profile>
             <id>all</id>
             <activation>
                 <!--Workaround to always build all modules despite the fact that
