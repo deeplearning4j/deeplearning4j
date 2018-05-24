@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cstdio>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 namespace nd4j {
 namespace graph {
@@ -60,8 +62,9 @@ int
 GraphUtils::runPreprocessor(char const* name_arg, char const* build_arg, char const* arch_arg, char const* opts_arg, char const* output) {
     int pipefd[2];
     pipe(pipefd);
-
-    if (fork() == 0)
+    pid_t pid = fork();
+    int status = 0;
+    if (pid == 0)
     {
         close(pipefd[0]);    // close reading end in the child
     
@@ -85,14 +88,14 @@ GraphUtils::runPreprocessor(char const* name_arg, char const* build_arg, char co
 //    int err;
     char* cxx_path = getenv("CXX_PATH");
     if (cxx_path == NULL) {
-        nd4j_printf("Cannot retrieve mandatory environment variable %s. Please set up the variable and try again.", "CXX");
-        exit(1);
+        nd4j_printf("Cannot retrieve mandatory environment variable 'CXX_PATH'. Please set up the variable and try again.", "");
+        exit(2);
     }
 
     char* cxx = getenv("CXX");
     if (cxx == NULL) {
-        nd4j_printf("Cannot retrieve mandatory environment variable %s. Please set up the variable and try again.", "CXX");
-        exit(2);
+        nd4j_printf("Cannot retrieve mandatory environment variable 'CXX'. Please set up the variable and try again.", "");
+        exit(3);
     }
 
     std::string pathStr("PATH=/usr/bin:/usr/local/bin:");
@@ -121,6 +124,7 @@ GraphUtils::runPreprocessor(char const* name_arg, char const* build_arg, char co
     if (err < 0) {
         perror("\nCannot run Preprocessor properly due \n");
     }
+    status = err;
     nd4j_printf("Header file %s was generated.\n", output);
 //    nd4j_printf("Running build script\n%s\n", cmdline.c_str());
 #endif
@@ -134,9 +138,9 @@ GraphUtils::runPreprocessor(char const* name_arg, char const* build_arg, char co
         while (read(pipefd[0], buffer, sizeof(buffer)) != 0)  {
             printf("%s\n", buffer);
         }
-
+        waitpid(pid, &status, 0);
     }
-    return 0;
+    return status;
 }
 
 }
