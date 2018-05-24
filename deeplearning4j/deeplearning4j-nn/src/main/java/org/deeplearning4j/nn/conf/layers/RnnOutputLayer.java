@@ -26,6 +26,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
 
     private RnnOutputLayer(Builder builder) {
         super(builder);
+        initializeConstraints(builder);
     }
 
     @Override

@@ -18,7 +18,6 @@
     <logger name="org.apache.catalina.core" level="DEBUG" />
     <logger name="org.springframework" level="DEBUG" />
     <logger name="org.deeplearning4j" level="INFO" />
-    <logger name="org.canova" level="INFO" />
     <logger name="org.datavec" level="INFO" />
     <logger name="org.nd4j" level="INFO" />
     <logger name="opennlp.uima.util" level="OFF" />

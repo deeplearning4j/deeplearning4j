@@ -46,9 +46,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
 
-    set(CMAKE_CXX_FLAGS_RELEASE  " -O3 -std=c++11 -fassociative-math -funsafe-math-optimizations")
-    set(CMAKE_CXX_FLAGS_DEBUG " -g -O0 -std=c++11")
-
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     # using Intel C++
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -O3 -fp-model fast")
