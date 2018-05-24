@@ -1467,6 +1467,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     clearLayerMaskArrays();
 
                 time1 = System.currentTimeMillis();
+                synchronizeIterEpochCounts();
             }
         }
 
@@ -2040,6 +2041,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         clearLayerMaskArrays();
         clearLayersStates();
+        synchronizeIterEpochCounts();
     }
 
     @Override
@@ -3331,6 +3333,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public void incrementEpochCount(){
         layerWiseConfigurations.setEpochCount(layerWiseConfigurations.getEpochCount() + 1);
+        synchronizeIterEpochCounts();
     }
 
 
