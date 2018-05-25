@@ -2692,7 +2692,7 @@ public class Nd4j {
     public static INDArray read(DataInputStream dis) throws IOException {
         DataBuffer shapeInformation = Nd4j.createBufferDetached(new long[1], DataBuffer.Type.LONG);
         shapeInformation.read(dis);
-        int length = Shape.length(shapeInformation);
+        val length = Shape.length(shapeInformation);
         DataBuffer data = CompressedDataBuffer.readUnknown(dis, length);
         return createArrayFromShapeBuffer(data, shapeInformation);
     }

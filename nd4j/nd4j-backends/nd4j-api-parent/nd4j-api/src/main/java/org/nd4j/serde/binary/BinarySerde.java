@@ -76,7 +76,8 @@ public class BinarySerde {
         if (type != DataBuffer.Type.COMPRESSED) {
             ByteBuffer slice = byteBuffer.slice();
             //wrap the data buffer for the last bit
-            DataBuffer buff = Nd4j.createBuffer(slice, type, Shape.length(shapeBuff));
+            // FIXME: int cast
+            DataBuffer buff = Nd4j.createBuffer(slice, type, (int) Shape.length(shapeBuff));
             //advance past the data
             int position = byteBuffer.position() + (buff.getElementSize() * (int) buff.length());
             byteBuffer.position(position);
