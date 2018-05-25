@@ -56,70 +56,11 @@
         <module>datavec</module>
         <module>deeplearning4j</module>
         <module>arbiter</module>
-<!--        <module>nd4s</module>-->
+        <!--<module>nd4s</module>-->
         <module>gym-java-client</module>
         <module>rl4j</module>
         <module>scalnet</module>
         <module>jumpy</module>
     </modules>
-
-    <profiles>
-        <profile>
-            <id>testresources</id>
-            <modules>
-                <module>dl4j-test-resources</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>test-nd4j-native</id>
-            <modules>
-                <module>dl4j-test-resources</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>test-nd4j-cuda-9.1</id>
-            <modules>
-                <module>dl4j-test-resources</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>all</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <modules>
-                <module>libnd4j</module>
-                <module>nd4j</module>
-                <module>datavec</module>
-                <module>deeplearning4j</module>
-                <module>arbiter</module>
-                <!--        <module>nd4s</module>-->
-                <module>gym-java-client</module>
-                <module>rl4j</module>
-                <module>scalnet</module>
-                <module>jumpy</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>ci-build-multiplatform-projects</id>
-            <modules>
-                <module>libnd4j</module>
-                <module>nd4j</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>ci-build</id>
-            <modules>
-                <module>datavec</module>
-                <module>deeplearning4j</module>
-                <module>arbiter</module>
-                <!--        <module>nd4s</module>-->
-                <module>gym-java-client</module>
-                <module>rl4j</module>
-                <module>scalnet</module>
-                <module>jumpy</module>
-            </modules>
-        </profile>
-    </profiles>
 
 </project>
