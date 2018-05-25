@@ -744,6 +744,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 boolean yRow = op.y().isRowVector();
                 boolean zRow = op.z().isRowVector();
 
+                if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
+                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
+
                 if ((xEWS >= 1 && yEWS >= 1
                         && xEWS == yEWS && !op.isExecSpecial()
                         && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
@@ -786,6 +789,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 boolean xRow = op.x().isRowVector();
                 boolean yRow = op.y().isRowVector();
                 boolean zRow = op.z().isRowVector();
+
+                if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
+                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
 
                 if ((xEWS >= 1 && yEWS >= 1
                         && xEWS == yEWS && !op.isExecSpecial()
