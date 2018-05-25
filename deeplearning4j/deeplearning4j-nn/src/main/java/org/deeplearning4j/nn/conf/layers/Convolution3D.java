@@ -30,11 +30,11 @@ import java.util.Map;
 public class Convolution3D extends ConvolutionLayer {
 
     /**
-	 * An optional dataFormat from: “NDHWC”, “NCDHW”. Defaults to “NCDHW”. 
-	 * The data format of the input and output data. 
-	 * the format could be “NCDHW”, the data storage order is: [batchSize, inputChannels, inputDepth, inputHeight, inputWidth].
-	 * Alternatively, the format “NDHWC”, the data is stored in the order of: [batchSize, inputDepth, inputHeight, inputWidth, inputChannels].
-	 */
+     * An optional dataFormat from: “NDHWC”, “NCDHW”. Defaults to “NCDHW”. 
+     * The data format of the input and output data. 
+     * the format could be “NCDHW”, the data storage order is: [batchSize, inputChannels, inputDepth, inputHeight, inputWidth].
+     * Alternatively, the format “NDHWC”, the data is stored in the order of: [batchSize, inputDepth, inputHeight, inputWidth, inputChannels].
+     */
     public enum DataFormat {
         NCDHW, NDHWC
     }
