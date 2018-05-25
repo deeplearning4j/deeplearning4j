@@ -470,7 +470,7 @@ public class IntegrationTestRunner {
                 INDArray[] out;
                 if(isMLN){
                     INDArray fm = p.getSecond() == null ? null : p.getSecond()[0];
-                    out = new INDArray[]{mln.output(p.getFirst()[0], true, fm, null)};
+                    out = new INDArray[]{mln.output(p.getFirst()[0], false, fm, null)};
                 } else {
                     out = cg.output(false, p.getFirst(), p.getSecond(), null);
                 }

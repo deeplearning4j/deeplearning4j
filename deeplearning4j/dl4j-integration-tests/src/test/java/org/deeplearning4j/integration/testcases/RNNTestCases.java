@@ -131,6 +131,8 @@ public class RNNTestCases {
     }
 
     protected static class RnnCsvSequenceClassificationTestCase1 extends TestCase {
+        protected boolean labels2d = true;      //Some other tests use this with the default 3d labels
+
         protected   RnnCsvSequenceClassificationTestCase1(){
             testName = "RnnCsvSequenceClassification1";
             testType = TestType.RANDOM_INIT;
@@ -188,15 +190,18 @@ public class RNNTestCases {
         public MultiDataSetIterator getTrainingData() throws Exception {
             MultiDataSetIterator iter = getTrainingDataUnnormalized();
 
-            MultiDataSetPreProcessor pp = multiDataSet -> {
-                INDArray l = multiDataSet.getLabels(0);
-                l = l.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(l.size(2)-1));
-                multiDataSet.setLabels(0, l);
-                multiDataSet.setLabelsMaskArray(0, null);
-            };
 
-
-            iter.setPreProcessor(new CompositeMultiDataSetPreProcessor(getNormalizer(),pp));
+            if(labels2d) {
+                MultiDataSetPreProcessor pp = multiDataSet -> {
+                    INDArray l = multiDataSet.getLabels(0);
+                    l = l.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(l.size(2) - 1));
+                    multiDataSet.setLabels(0, l);
+                    multiDataSet.setLabelsMaskArray(0, null);
+                };
+                iter.setPreProcessor(new CompositeMultiDataSetPreProcessor(getNormalizer(), pp));
+            } else {
+                iter.setPreProcessor(getNormalizer());
+            }
 
             return iter;
         }
@@ -253,15 +258,17 @@ public class RNNTestCases {
 
             MultiDataSetIterator iter = new MultiDataSetIteratorAdapter(testData);
 
-            MultiDataSetPreProcessor pp = multiDataSet -> {
-                INDArray l = multiDataSet.getLabels(0);
-                l = l.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(l.size(2)-1));
-                multiDataSet.setLabels(0, l);
-                multiDataSet.setLabelsMaskArray(0, null);
-            };
-
-
-            iter.setPreProcessor(new CompositeMultiDataSetPreProcessor(getNormalizer(),pp));
+            if(labels2d) {
+                MultiDataSetPreProcessor pp = multiDataSet -> {
+                    INDArray l = multiDataSet.getLabels(0);
+                    l = l.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(l.size(2) - 1));
+                    multiDataSet.setLabels(0, l);
+                    multiDataSet.setLabelsMaskArray(0, null);
+                };
+                iter.setPreProcessor(new CompositeMultiDataSetPreProcessor(getNormalizer(), pp));
+            } else {
+                iter.setPreProcessor(getNormalizer());
+            }
 
             return iter;
         }

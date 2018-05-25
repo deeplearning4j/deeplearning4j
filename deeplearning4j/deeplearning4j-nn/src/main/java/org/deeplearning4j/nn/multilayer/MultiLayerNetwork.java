@@ -1684,7 +1684,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                     if(currPair.getSecond() != null) {
                         //Edge case: may be null for Embedding layer, for example
-                        validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), ArrayType.ACTIVATION_GRAD, numLayers - 1,
+                        validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), ArrayType.ACTIVATION_GRAD, i,
                                 false, "Backprop");
                     }
 

@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.IEvaluation;
-import org.deeplearning4j.integration.testcases.CNN2DTestCases;
-import org.deeplearning4j.integration.testcases.MLPTestCases;
-import org.deeplearning4j.integration.testcases.RNNTestCases;
-import org.deeplearning4j.integration.testcases.UnsupervisedTestCases;
+import org.deeplearning4j.integration.testcases.*;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -64,6 +61,8 @@ public class IntegrationTestBaselineGenerator {
 ////                TransferLearningTestCases.testPartFrozenResNet50(),
 ////                TransferLearningTestCases.testPartFrozenNASNET()
 //        );
+
+        runGeneration(CNN1DTestCases.getCnn1dTestCaseSynthetic());
 
     }
 

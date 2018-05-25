@@ -35,6 +35,8 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.schedule.MapSchedule;
+import org.nd4j.linalg.schedule.ScheduleType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,8 +49,117 @@ public class CNN2DTestCases {
      * Essentially: LeNet MNIST example
      */
     public static TestCase getLenetMnist(){
+        return new TestCase() {
+            {
+                testName = "LenetMnist";
+                testType = TestType.RANDOM_INIT;
+                testPredictions = true;
+                testTrainingCurves = true;
+                testGradients = true;
+                testParamsPostTraining = true;
+                testEvaluation = true;
+                testOverfitting = true;
+                maxRelativeErrorOverfit = 2e-2;
+                minAbsErrorOverfit = 1e-2;
+            }
 
-        throw new UnsupportedOperationException("Not yet implemented");
+            @Override
+            public Object getConfiguration() {
+                Map<Integer, Double> lrSchedule = new HashMap<>();
+                lrSchedule.put(0, 0.01);
+                lrSchedule.put(1000, 0.005);
+                lrSchedule.put(3000, 0.001);
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .seed(12345)
+                        .l2(0.0005)
+                        .weightInit(WeightInit.XAVIER)
+                        .updater(new Nesterovs(0.01, 0.9))
+                        .list()
+                        .layer(0, new ConvolutionLayer.Builder(5, 5)
+                                //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
+                                .nIn(1)
+                                .stride(1, 1)
+                                .nOut(20)
+                                .activation(Activation.IDENTITY)
+                                .build())
+                        .layer(1, new SubsamplingLayer.Builder(PoolingType.MAX)
+                                .kernelSize(2,2)
+                                .stride(2,2)
+                                .build())
+                        .layer(2, new ConvolutionLayer.Builder(5, 5)
+                                //Note that nIn need not be specified in later layers
+                                .stride(1, 1)
+                                .nOut(50)
+                                .activation(Activation.IDENTITY)
+                                .build())
+                        .layer(3, new SubsamplingLayer.Builder(PoolingType.MAX)
+                                .kernelSize(2,2)
+                                .stride(2,2)
+                                .build())
+                        .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
+                                .nOut(500).build())
+                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                .nOut(10)
+                                .activation(Activation.SOFTMAX)
+                                .build())
+                        .setInputType(InputType.convolutionalFlat(28,28,1)) //See note below
+                        .backprop(true).pretrain(false).build();
+
+                return conf;
+            }
+
+            @Override
+            public List<Pair<INDArray[], INDArray[]>> getPredictionsTestData() throws Exception {
+                MnistDataSetIterator iter = new MnistDataSetIterator(1, true, 12345);
+                List<Pair<INDArray[],INDArray[]>> out = new ArrayList<>();
+                out.add(new Pair<>(new INDArray[]{iter.next().getFeatures()}, null));
+
+                iter = new MnistDataSetIterator(10, true, 12345);
+                out.add(new Pair<>(new INDArray[]{iter.next().getFeatures()}, null));
+                return out;
+            }
+
+            @Override
+            public MultiDataSet getGradientsTestData() throws Exception {
+                DataSet ds = new MnistDataSetIterator(10, true, 12345).next();
+                return new org.nd4j.linalg.dataset.MultiDataSet(ds.getFeatures(), ds.getLabels());
+            }
+
+            @Override
+            public MultiDataSetIterator getTrainingData() throws Exception {
+                DataSetIterator iter = new MnistDataSetIterator(32, true, 12345);
+                iter = new EarlyTerminationDataSetIterator(iter, 32);
+                return new MultiDataSetIteratorAdapter(iter);
+            }
+
+            @Override
+            public IEvaluation[] getNewEvaluations(){
+                return new IEvaluation[]{
+                        new Evaluation(),
+                        new ROCMultiClass(),
+                        new EvaluationCalibration()
+                };
+            }
+
+            @Override
+            public MultiDataSetIterator getEvaluationTestData() throws Exception {
+                DataSetIterator iter = new MnistDataSetIterator(32, true, 12345);
+                iter = new EarlyTerminationDataSetIterator(iter, 32);
+                return new MultiDataSetIteratorAdapter(iter);
+            }
+
+            @Override
+            public MultiDataSet getOverfittingData() throws Exception {
+                DataSet ds = new MnistDataSetIterator(1, true, 12345).next();
+                return ComputationGraphUtil.toMultiDataSet(ds);
+            }
+
+            @Override
+            public int getOverfitNumIterations(){
+                return 200;
+            }
+        };
     }
 
 
@@ -176,6 +287,7 @@ public class CNN2DTestCases {
                 testTrainingCurves = true;
                 testGradients = true;
                 testParamsPostTraining = true;
+                testParallelInference = true;
                 testEvaluation = true;
                 testOverfitting = true;
             }

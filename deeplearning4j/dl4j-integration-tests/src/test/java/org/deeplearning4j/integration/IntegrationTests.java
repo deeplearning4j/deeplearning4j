@@ -1,16 +1,22 @@
 package org.deeplearning4j.integration;
 
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.integration.testcases.*;
-import org.junit.AfterClass;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
 public class IntegrationTests extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        //Initialize some of the iterators before the class... otherwise if these datasets are not available, the
+        // tests could time out due to the downloading - not the actual test itself
+        new MnistDataSetIterator(1, true, 12345);
+        new MnistDataSetIterator(1, false, 12345);
+    }
 
     @AfterClass
     public static void afterClass(){
@@ -46,7 +52,7 @@ public class IntegrationTests extends BaseDL4JTest {
 
 
     // ***** CNN1DTestCases *****
-    @Ignore //TODO: NOT YET IMPLEMENTED
+//    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 180000L)
     public void testCnn1dSynthetic() throws Exception {
         IntegrationTestRunner.runTest(CNN1DTestCases.getCnn1dTestCaseSynthetic(), testDir);
@@ -54,13 +60,11 @@ public class IntegrationTests extends BaseDL4JTest {
 
 
     // ***** CNN2DTestCases *****
-    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 120000L)
     public void testLenetMnist() throws Exception {
         IntegrationTestRunner.runTest(CNN2DTestCases.getLenetMnist(), testDir);
     }
 
-    @Ignore //https://github.com/deeplearning4j/deeplearning4j/issues/5309
     @Test(timeout = 360000L)
     public void testVgg16Transfer() throws Exception {
         IntegrationTestRunner.runTest(CNN2DTestCases.getVGG16TransferTinyImagenet(), testDir);
@@ -78,7 +82,6 @@ public class IntegrationTests extends BaseDL4JTest {
         IntegrationTestRunner.runTest(CNN2DTestCases.getCnn2DSynthetic(), testDir);
     }
 
-    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 120000L)
     public void testCnn2DLenetTransferDropoutRepeatability() throws Exception {
         IntegrationTestRunner.runTest(CNN2DTestCases.testLenetTransferDropoutRepeatability(), testDir);
