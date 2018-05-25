@@ -1869,7 +1869,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public Map<String, INDArray> executeGraph(long id, Map<String, INDArray> map) {
+    public Map<String, INDArray> executeGraph(long id, @NonNull Map<String, INDArray> map, @NonNull Map<String, Integer> reverseMap) {
 
         val ptrBuffers = new PointerPointer(map.size());
         val ptrShapes = new PointerPointer(map.size());
@@ -1882,7 +1882,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             ptrBuffers.put(cnt, array.data().addressPointer());
             ptrShapes.put(cnt, array.shapeInfoDataBuffer().addressPointer());
-            ptrIndices.put(cnt, cnt);
+            ptrIndices.put(cnt, reverseMap.get(key));
 
             cnt++;
         }
@@ -1900,6 +1900,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 val var = result.at(e);
                 val nodeId = var.id();
                 val index = var.index();
+                val nodeName = var.getName().getString();
                 val shapeInfo = var.getNDArray().shapeInfo();
                 val buffer = var.getNDArray().buffer();
 
@@ -1920,7 +1921,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
-                newMap.put(keySet.get(nodeId), array);
+                //newMap.put(keySet.get(e), array);
+//                if (map.containsKey(nodeName))
+                    newMap.put(nodeName, array);
             }
             loop.deleteVariablesSetFloat(result);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
@@ -1955,7 +1958,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
-                newMap.put(keySet.get(nodeId), array);
+                //newMap.put(keySet.get(nodeId), array);
+                val nodeName = var.getName().getString();
+                newMap.put(nodeName, array);
             }
 
             loop.deleteVariablesSetDouble(result);
@@ -1991,7 +1996,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
-                newMap.put(keySet.get(nodeId), array);
+                //newMap.put(keySet.get(nodeId), array);
+                val nodeName = var.getName().getString();
+                newMap.put(nodeName, array);
             }
 
             loop.deleteVariablesSetHalf(result);

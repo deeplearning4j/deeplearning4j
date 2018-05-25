@@ -2878,9 +2878,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public Map<String, INDArray> executeGraph(long id, Map<String, INDArray> map) {
+    public Map<String, INDArray> executeGraph(long id, @NonNull Map<String, INDArray> map, @NonNull Map<String, Integer> reverseMap) {
 
-        this.commit();
+        Nd4j.getExecutioner().commit();
 
         val ptrBuffers = new PointerPointer(map.size() * 2);
         val ptrShapes = new PointerPointer(map.size() * 2);
@@ -2893,7 +2893,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             ptrBuffers.put(cnt, AtomicAllocator.getInstance().getHostPointer(array));
             ptrShapes.put(cnt, AtomicAllocator.getInstance().getHostPointer(array.shapeInfoDataBuffer()));
-            ptrIndices.put(cnt, cnt);
+            ptrIndices.put(cnt, reverseMap.get(key));
 
             cnt++;
         }
@@ -2929,7 +2929,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
                 AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
 
-                newMap.put(keySet.get(nodeId), array);
+                val nodeName = var.getName().getString();
+                newMap.put(nodeName, array);
             }
             nativeOps.deleteVariablesSetFloat(result);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
@@ -2962,7 +2963,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
                 AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
 
-                newMap.put(keySet.get(nodeId), array);
+                val nodeName = var.getName().getString();
+                newMap.put(nodeName, array);
             }
 
             nativeOps.deleteVariablesSetDouble(result);
@@ -2996,7 +2998,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
                 AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
 
-                newMap.put(keySet.get(nodeId), array);
+                val nodeName = var.getName().getString();
+                newMap.put(nodeName, array);
             }
 
             nativeOps.deleteVariablesSetHalf(result);
