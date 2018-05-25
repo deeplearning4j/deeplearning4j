@@ -10,7 +10,9 @@ import org.datavec.spark.transform.model.BatchImageRecord;
 import org.datavec.spark.transform.model.SingleImageRecord;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.serde.base64.Nd4jBase64;
@@ -25,6 +27,9 @@ import static org.junit.Assert.assertEquals;
  * Created by kepricon on 17. 6. 19.
  */
 public class ImageSparkTransformServerTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     private static ImageSparkTransformServer server;
     private static File fileSave = new File(UUID.randomUUID().toString() + ".json");
@@ -72,7 +77,7 @@ public class ImageSparkTransformServerTest {
     @Test
     public void testImageServer() throws Exception {
         SingleImageRecord record =
-                        new SingleImageRecord(new ClassPathResource("testimages/class0/0.jpg").getFile().toURI());
+                        new SingleImageRecord(new ClassPathResource("datavec-spark-inference/testimages/class0/0.jpg").getFile().toURI());
         JsonNode jsonNode = Unirest.post("http://localhost:9060/transformincrementalarray")
                         .header("accept", "application/json").header("Content-Type", "application/json").body(record)
                         .asJson().getBody();
@@ -81,9 +86,9 @@ public class ImageSparkTransformServerTest {
                         .asObject(Base64NDArrayBody.class).getBody();
 
         BatchImageRecord batch = new BatchImageRecord();
-        batch.add(new ClassPathResource("testimages/class0/0.jpg").getFile().toURI());
-        batch.add(new ClassPathResource("testimages/class0/1.png").getFile().toURI());
-        batch.add(new ClassPathResource("testimages/class0/2.jpg").getFile().toURI());
+        batch.add(new ClassPathResource("datavec-spark-inference/testimages/class0/0.jpg").getFile().toURI());
+        batch.add(new ClassPathResource("datavec-spark-inference/testimages/class0/1.png").getFile().toURI());
+        batch.add(new ClassPathResource("datavec-spark-inference/testimages/class0/2.jpg").getFile().toURI());
 
         JsonNode jsonNodeBatch =
                         Unirest.post("http://localhost:9060/transformarray").header("accept", "application/json")
@@ -105,9 +110,9 @@ public class ImageSparkTransformServerTest {
     public void testImageServerMultipart() throws Exception {
         JsonNode jsonNode = Unirest.post("http://localhost:9060/transformimage")
                 .header("accept", "application/json")
-                .field("file1", new ClassPathResource("testimages/class0/0.jpg").getFile())
-                .field("file2", new ClassPathResource("testimages/class0/1.png").getFile())
-                .field("file3", new ClassPathResource("testimages/class0/2.jpg").getFile())
+                .field("file1", new ClassPathResource("datavec-spark-inference/testimages/class0/0.jpg").getFile())
+                .field("file2", new ClassPathResource("datavec-spark-inference/testimages/class0/1.png").getFile())
+                .field("file3", new ClassPathResource("datavec-spark-inference/testimages/class0/2.jpg").getFile())
                 .asJson().getBody();
 
 
@@ -119,9 +124,12 @@ public class ImageSparkTransformServerTest {
 
     @Test
     public void testImageServerSingleMultipart() throws Exception {
+        File f = testDir.newFolder();
+        File imgFile = new ClassPathResource("datavec-spark-inference/testimages/class0/0.jpg").getTempFileFromArchive(f);
+
         JsonNode jsonNode = Unirest.post("http://localhost:9060/transformimage")
                 .header("accept", "application/json")
-                .field("file1", new ClassPathResource("testimages/class0/0.jpg").getFile())
+                .field("file1", imgFile)
                 .asJson().getBody();
 
 
