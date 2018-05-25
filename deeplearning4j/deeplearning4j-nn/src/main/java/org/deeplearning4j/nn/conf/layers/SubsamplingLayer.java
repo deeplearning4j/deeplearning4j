@@ -379,6 +379,11 @@ public class SubsamplingLayer extends Layer {
             return (T) this;
         }
 
+        public T poolingType(org.deeplearning4j.nn.conf.layers.PoolingType poolingType) {
+            this.poolingType = poolingType;
+            return (T) this;
+        }
+
         public T poolingType(PoolingType poolingType) {
             this.poolingType = poolingType.toPoolingType();
             return (T) this;

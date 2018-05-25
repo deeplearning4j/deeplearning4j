@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -75,27 +76,25 @@ public class Upsampling1D extends Upsampling2D {
         int inH = (int) input.size(2);
         int inW = (int) input.size(3);
 
-
-        INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
-        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{miniBatch, inDepth, inH, inW}, 'c');    ;   //Nd4j.create(miniBatch * inDepth * inH * inW);
 
         int[] intArgs = new int[] {1}; // 1 is for NCHW
 
         CustomOp op = DynamicCustomOp.builder("upsampling_bp")
                 .addIntegerArguments(intArgs)
                 .addInputs(input, epsilon)
-                .addOutputs(reshapedEpsilon)
+                .addOutputs(outEpsilon)
                 .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(op);
 
         Gradient gradient = new DefaultGradient();
 
-        reshapedEpsilon = reshapedEpsilon.slice(0, 3);
+        outEpsilon = outEpsilon.slice(0, 3);
         input = originalInput;
 
         // Since we aggregate the gradient across "size" slices, we need to normalize afterwards.
-        return new Pair<>(gradient, reshapedEpsilon.divi(size[0]));
+        return new Pair<>(gradient, outEpsilon.divi(size[0]));
     }
 
     @Override
