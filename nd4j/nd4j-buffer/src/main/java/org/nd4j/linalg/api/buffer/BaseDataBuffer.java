@@ -1112,14 +1112,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (globalType == Type.INT || type == Type.INT) {
             int anElement = element.intValue();
             put(i, anElement);
+        } else if (globalType == Type.LONG || type == Type.LONG) {
+            long anElement = element.longValue();
+            put(i, anElement);
         } else if (globalType == Type.FLOAT || globalType == Type.HALF) {
             float anElement = element.floatValue();
             put(i, anElement);
         } else if (globalType == Type.DOUBLE) {
             double anElement = element.doubleValue();
-            put(i, anElement);
-        } else if (globalType == Type.LONG) {
-            long anElement = element.longValue();
             put(i, anElement);
         }
     }
@@ -1411,7 +1411,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 else if (DataTypeUtil.getDtypeFromContext() == Type.HALF && currentType != Type.INT)
                     elementSize = 2;
 
-                if (currentType != DataTypeUtil.getDtypeFromContext() && currentType != Type.HALF && currentType != Type.INT
+                if (currentType != DataTypeUtil.getDtypeFromContext() && currentType != Type.HALF && (currentType != Type.INT && currentType != Type.LONG)
                         && !(DataTypeUtil.getDtypeFromContext() == Type.DOUBLE)) {
                     log.warn("Loading a data stream with opType different from what is set globally. Expect precision loss");
                     if (DataTypeUtil.getDtypeFromContext() == Type.INT)

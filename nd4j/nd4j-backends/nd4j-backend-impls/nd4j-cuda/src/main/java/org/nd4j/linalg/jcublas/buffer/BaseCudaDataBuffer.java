@@ -904,7 +904,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 globalType = Nd4j.dataType();
             }
 
-            if (t != globalType && t != Type.INT && Nd4j.sizeOfDataType(globalType) < Nd4j.sizeOfDataType(t)) {
+            if (t != globalType && (!t.equals(Type.INT) && !t.equals(Type.LONG)) && Nd4j.sizeOfDataType(globalType) < Nd4j.sizeOfDataType(t)) {
                 log.warn("Loading a data stream with opType different from what is set globally. Expect precision loss");
                 if (globalType == Type.INT)
                     log.warn("Int to float/double widening UNSUPPORTED!!!");
