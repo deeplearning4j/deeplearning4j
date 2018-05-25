@@ -19,7 +19,7 @@ public:
 public:
     static bool filterOperations(OpList& ops);
     static std::string makeCommandLine(OpList& ops);
-    static int runPreprocessor(char const* name_arg, char const* build_arg, char const* arch_arg, char const* opts_arg, char const* output);
+    static int runPreprocessor(char const* input, char const* output);
 };
 
 }

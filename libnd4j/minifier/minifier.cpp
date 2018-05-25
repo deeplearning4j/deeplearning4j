@@ -139,7 +139,9 @@ main(int argc, char *argv[]) {
 //    cmdline+ opts_arg;
     nd4j_printf("\n============>%s\n", cmdLine.c_str());
 */
-    if (0 == GraphUtils::runPreprocessor(name_arg.c_str(), "", "", "", output.c_str())) {
+    std::string input("../include/ops/declarable/CustomOperations.h");
+
+    if (0 == GraphUtils::runPreprocessor(input.c_str(), output.c_str())) {
         nd4j_printf("All done successfully.\n", "");
     }
 

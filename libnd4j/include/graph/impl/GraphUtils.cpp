@@ -59,7 +59,7 @@ GraphUtils::makeCommandLine(GraphUtils::OpList& ops) {
 }
 
 int 
-GraphUtils::runPreprocessor(char const* name_arg, char const* build_arg, char const* arch_arg, char const* opts_arg, char const* output) {
+GraphUtils::runPreprocessor(char const* input, char const* output) {
     int pipefd[2];
     pipe(pipefd);
     pid_t pid = fork();
@@ -83,8 +83,7 @@ GraphUtils::runPreprocessor(char const* name_arg, char const* build_arg, char co
 //        std::string(build_arg) + 
 ///        std::string(arch_arg) + 
 //        std::string(opts_arg);
-    std::string input("../include/ops/declarable/CustomOperations.h");
-    nd4j_printf("Run preprocessor as \ncpp %s\n", input.c_str());
+    nd4j_printf("Run preprocessor as \ncpp %s\n", input);
 //    int err;
 //    char* cxx_path = getenv("CXX_PATH");
 //    if (cxx_path == NULL) {
@@ -107,7 +106,7 @@ GraphUtils::runPreprocessor(char const* name_arg, char const* build_arg, char co
                           (char *)0 };
 
 // to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}' 
-    nd4j_printf("Run: \n\t g++ -E -P -std=c++11 -o %s -I{../include/*, ../blas} %s\n", output, input.c_str());
+    nd4j_printf("Run: \n\t g++ -E -P -std=c++11 -o %s -I{../include/*, ../blas} %s\n", output, input);
     int err = execle(cxx, "g++", "-E", "-P", "-std=c++11", "-o", output, 
         "-I../include",
         "-I../blas",
@@ -117,7 +116,7 @@ GraphUtils::runPreprocessor(char const* name_arg, char const* build_arg, char co
         "-I../include/array",
         "-I../include/cnpy",
         "-I../include/ops/declarable", 
-        input.c_str(),
+        input,
         (char*)nullptr, 
         env);
 

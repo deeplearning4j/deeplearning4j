@@ -1576,7 +1576,9 @@ TEST_F(GraphTests, Test_Inplace_Outputs_2) {
 TEST_F(GraphTests, Test_Minifier_1) {
     // run preprocessor to produce single header
     // if all ok - return value is 0, if error - non-zero value will be returned
-    ASSERT_EQ(0, GraphUtils::runPreprocessor(" --name \'minilib\'", "", "", "-l", "libnd4j_mini.hpp"));
+    std::string input("../include/ops/declarable/CustomOperations.h");
+
+    ASSERT_EQ(0, GraphUtils::runPreprocessor(input.c_str(), "libnd4j_mini.hpp"));
     // remove file from filesystem
     ASSERT_EQ(0, unlink("libnd4j_mini.hpp"));
 }
@@ -1585,7 +1587,7 @@ TEST_F(GraphTests, Test_Minifier_2) {
 
     // run preprocessor to produce single header
     // if all ok - return value is 0, if error - non-zero value will be returned
-    ASSERT_EQ(0, GraphUtils::runPreprocessor(" --name \'minilib2\'", "", "", "-l", "libnd4j_mini2.hpp"));
+    ASSERT_EQ(0, GraphUtils::runPreprocessor("../include/ops/ops.h", "libnd4j_mini2.hpp"));
     // remove file from filesystem
     ASSERT_EQ(0, unlink("libnd4j_mini2.hpp"));
 
