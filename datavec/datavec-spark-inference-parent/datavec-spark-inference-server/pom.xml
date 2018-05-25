@@ -35,6 +35,24 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-data-image</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-base64</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-cluster_2.10</artifactId>
+            <version>${akka.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-java_2.10</artifactId>
             <version>${play.version}</version>
@@ -44,17 +62,6 @@
                     <artifactId>jsr305</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.mashape.unirest</groupId>
-            <artifactId>unirest-java</artifactId>
-            <version>1.4.9</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-base64</artifactId>
-            <version>${nd4j.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
@@ -72,16 +79,25 @@
             <version>${play.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-            <version>${jcommander.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-netty-server_2.10</artifactId>
             <version>${play.version}</version>
         </dependency>
 
+
+        <dependency>
+            <groupId>com.mashape.unirest</groupId>
+            <artifactId>unirest-java</artifactId>
+            <version>1.4.9</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>${jcommander.version}</version>
+        </dependency>
+
+        <!-- Test Scope Dependencies -->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
@@ -89,11 +105,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-data-image</artifactId>
-            <version>${parent.version}</version>
-        </dependency>
     </dependencies>
 
     <profiles>
