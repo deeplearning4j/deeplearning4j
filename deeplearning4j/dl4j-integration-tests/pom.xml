@@ -27,7 +27,7 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
-            <version>${project.version}</version>
+            <version>${deeplearning4j.version}</version>
         </dependency>
 
         <dependency>
@@ -52,13 +52,6 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId> <!-- Version set by deeplearning4j-parent dependency management -->
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-core</artifactId>
-            <version>${deeplearning4j.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
