@@ -51,7 +51,7 @@ public class ReverseSequence extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "reverse_sequense";
+        return "reverse_sequence";
 
     }
 
