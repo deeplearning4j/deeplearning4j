@@ -858,7 +858,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public INDArray eval() {
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> vars= sameDiff.exec();
 
         SameDiff exec = sameDiff.dup();
         exec.defineFunction("output", new SameDiff.SameDiffFunctionDefinition() {
