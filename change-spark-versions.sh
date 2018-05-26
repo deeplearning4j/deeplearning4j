@@ -81,6 +81,6 @@ find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
 
 #Spark versions, like <version>xxx_spark_2xxx</version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(version>.*_spark_\)'$FROM_BINARY'\(.*\)<\/\(.*\)version>/\1'$TO_BINARY'\2<\/\3version>/g' {}" \;
+  -exec bash -c "sed_i 's/\(version>.*_spark_\)'$FROM_BINARY'\(.*\)<\/version>/\1'$TO_BINARY'\2<\/version>/g' {}" \;
 
 echo "Done updating Spark versions.";
