@@ -1609,6 +1609,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             boolean yRow = op.y().isRowVector();
             boolean zRow = op.z().isRowVector();
 
+            if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
+                throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
+
+
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if ((xEWS >= 1 && yEWS >= 1 && zEWS >= 1 && !op.isExecSpecial()
