@@ -487,15 +487,15 @@ public class SameDiffTests {
     @Test
     public void testUnStack() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 6, 6)).reshape(3, 2);
-        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6)).reshape(3, 2);
+        INDArray arr1 = Nd4j.zeros(3, 2);
+        INDArray arr2 = Nd4j.ones(3, 2);
         SDVariable x1 = sameDiff.var("x1", arr1);
         SDVariable x2 = sameDiff.var("x2", arr2);
-        SDVariable stacked = sameDiff.stack(new SDVariable[]{x1, x2}, 1);
-        SDVariable[] result = sameDiff.unstack(stacked, 1);
+        SDVariable stacked = sameDiff.stack(new SDVariable[]{x1, x2}, 0);
+        SDVariable[] result = sameDiff.unstack(stacked, 0, 2);
+        System.out.println(result.length);
         assertEquals(arr1, result[0].eval());
         assertEquals(arr2, result[1].eval());
-
     }
 
     @Test

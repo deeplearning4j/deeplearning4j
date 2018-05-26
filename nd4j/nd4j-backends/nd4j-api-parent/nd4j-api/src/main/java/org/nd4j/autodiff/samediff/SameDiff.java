@@ -2573,6 +2573,14 @@ public class SameDiff {
         SDVariable[] ret = f().unstack(value, axis);
         return updateVariableNamesAndReferences(ret, names);
     }
+    public SDVariable[] unstack(SDVariable value, int axis, int num) {
+        return unstack(null, value, axis, num);
+    }
+
+    public SDVariable[] unstack(String[] names, SDVariable value, int axis, int num) {
+        SDVariable[] ret = f().unstack(value, axis, num);
+        return updateVariableNamesAndReferences(ret, names);
+    }
 
     public SDVariable erf(SDVariable iX) {
         return erf(null, iX);
@@ -4707,17 +4715,30 @@ public class SameDiff {
                 CustomOp customOp = (CustomOp) function;
                 val descriptor = customOp.getDescriptor();
                 //can't guess number of outputs, variable
+                int num_outputs = 0;
                 if (descriptor == null || descriptor.getNumOutputs() <= 0) {
+                    if (function instanceof DynamicCustomOp){
+                        DynamicCustomOp dynamicCustomOp  = (DynamicCustomOp) function;
+                            num_outputs = dynamicCustomOp.getNumOutputs();
+                    }
+
+
+                }
+                else{
+                    num_outputs = descriptor.getNumOutputs();
+                }
+
+                if (num_outputs <= 0){
                     throw new ND4JIllegalStateException("No output variables found!");
-                } else {
+                }
+
 
                     char ordering = 'c';
                     if (function.args()[0].getArr() != null) {
                         ordering = function.args()[0].getArr().ordering();
                     }
 
-
-                    SDVariable[] ret = new SDVariable[descriptor.getNumOutputs()];
+                    SDVariable[] ret = new SDVariable[num_outputs];
                     //dynamic shapes
                     for (int i = 0; i < ret.length; i++) {
                         SDVariable checkGet = getVariable(baseName);
@@ -4738,10 +4759,9 @@ public class SameDiff {
 
                         ret[i] = checkGet;
                     }
-
                     return ret;
 
-                }
+
             }
 
             //this is for unresolved shapes, we know xyz is always 1 output
