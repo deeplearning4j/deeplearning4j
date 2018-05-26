@@ -1652,8 +1652,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public void exec(@NonNull CustomOp op) {
         long st = profilingHookIn(op);
 
-        if (op.numOutputArguments() == 0 && !op.isInplaceCall())
-            throw new ND4JIllegalStateException("Op name " + op.opName() +  " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
+        if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
+            try {
+                val list = this.calculateOutputShape(op);
+                if (list.isEmpty())
+                    throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
+
+                for (val shape: list)
+                    op.addOutputArgument(Nd4j.create(shape));
+
+            } catch (Exception e) {
+                throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
+            }
+        }
 
         val name = op.opName().toLowerCase();
         val hash = op.opHash();
