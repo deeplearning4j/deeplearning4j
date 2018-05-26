@@ -4708,7 +4708,6 @@ public class SameDiff {
         if (baseName == null)
             baseName = function.opName();
 
-
         val outputShape = function.calculateOutputShape();
         if (outputShape == null || outputShape.isEmpty()) {
             if (function instanceof CustomOp) {
@@ -4721,18 +4720,13 @@ public class SameDiff {
                         DynamicCustomOp dynamicCustomOp  = (DynamicCustomOp) function;
                             num_outputs = dynamicCustomOp.getNumOutputs();
                     }
-
-
                 }
                 else{
                     num_outputs = descriptor.getNumOutputs();
                 }
-
                 if (num_outputs <= 0){
                     throw new ND4JIllegalStateException("No output variables found!");
                 }
-
-
                     char ordering = 'c';
                     if (function.args()[0].getArr() != null) {
                         ordering = function.args()[0].getArr().ordering();
@@ -4748,8 +4742,6 @@ public class SameDiff {
                             String newName = generateNewVarName(baseName, i);
                             checkGet = getVariable(newName);
                         }
-
-
                         if (checkGet == null) {
                             String newName = generateNewVarName(baseName, i);
                             checkGet = var(newName, null, new ZeroInitScheme(ordering));
@@ -4759,8 +4751,6 @@ public class SameDiff {
                         ret[i] = checkGet;
                     }
                     return ret;
-
-
             }
 
             //this is for unresolved shapes, we know xyz is always 1 output
