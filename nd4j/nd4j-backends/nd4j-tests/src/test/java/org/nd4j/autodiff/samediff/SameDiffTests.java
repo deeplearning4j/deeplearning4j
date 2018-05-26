@@ -486,6 +486,8 @@ public class SameDiffTests {
 
     @Test
     public void testUnStack() {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         SameDiff sameDiff = SameDiff.create();
         INDArray arr1 = Nd4j.zeros(3, 2);
         INDArray arr2 = Nd4j.ones(3, 2);
