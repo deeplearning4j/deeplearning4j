@@ -100,6 +100,10 @@ public class Unstack extends DynamicCustomOp {
     public List<long[]> calculateOutputShape() {
         val ret = new ArrayList<long[]>();
         val inputShape = arg().getShape();
+
+        if (inputShape == null || inputShape.length == 0)
+            return ret;
+
         val outputShape = new long[inputShape.length - 1];
         for (int i = 0; i < axis; i++) {
             outputShape[i] = inputShape[i];
