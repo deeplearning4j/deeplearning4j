@@ -79,7 +79,6 @@ public interface CustomOp {
     int numOutputArguments();
 
 
-
     /**
      * Calculate the output shape for this op
      * @return

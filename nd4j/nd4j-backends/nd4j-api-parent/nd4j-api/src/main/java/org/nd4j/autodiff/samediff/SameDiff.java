@@ -2573,6 +2573,14 @@ public class SameDiff {
         SDVariable[] ret = f().unstack(value, axis);
         return updateVariableNamesAndReferences(ret, names);
     }
+    public SDVariable[] unstack(SDVariable value, int axis, int num) {
+        return unstack(null, value, axis, num);
+    }
+
+    public SDVariable[] unstack(String[] names, SDVariable value, int axis, int num) {
+        SDVariable[] ret = f().unstack(value, axis, num);
+        return updateVariableNamesAndReferences(ret, names);
+    }
 
     public SDVariable erf(SDVariable iX) {
         return erf(null, iX);
@@ -4700,24 +4708,30 @@ public class SameDiff {
         if (baseName == null)
             baseName = function.opName();
 
-
         val outputShape = function.calculateOutputShape();
         if (outputShape == null || outputShape.isEmpty()) {
             if (function instanceof CustomOp) {
                 CustomOp customOp = (CustomOp) function;
                 val descriptor = customOp.getDescriptor();
                 //can't guess number of outputs, variable
+                int num_outputs = 0;
                 if (descriptor == null || descriptor.getNumOutputs() <= 0) {
+                    if (function instanceof DynamicCustomOp){
+                        DynamicCustomOp dynamicCustomOp  = (DynamicCustomOp) function;
+                            num_outputs = dynamicCustomOp.getNumOutputs();
+                    }
+                }
+                else{
+                    num_outputs = descriptor.getNumOutputs();
+                }
+                if (num_outputs <= 0){
                     throw new ND4JIllegalStateException("No output variables found!");
-                } else {
-
+                }
                     char ordering = 'c';
                     if (function.args()[0].getArr() != null) {
                         ordering = function.args()[0].getArr().ordering();
                     }
-
-
-                    SDVariable[] ret = new SDVariable[descriptor.getNumOutputs()];
+                    SDVariable[] ret = new SDVariable[num_outputs];
                     //dynamic shapes
                     for (int i = 0; i < ret.length; i++) {
                         SDVariable checkGet = getVariable(baseName);
@@ -4728,20 +4742,15 @@ public class SameDiff {
                             String newName = generateNewVarName(baseName, i);
                             checkGet = getVariable(newName);
                         }
-
-
                         if (checkGet == null) {
                             String newName = generateNewVarName(baseName, i);
                             checkGet = var(newName, null, new ZeroInitScheme(ordering));
                         }
-
+                        checkGet.outputIndex = i;
 
                         ret[i] = checkGet;
                     }
-
                     return ret;
-
-                }
             }
 
             //this is for unresolved shapes, we know xyz is always 1 output
@@ -4870,7 +4879,30 @@ public class SameDiff {
     public INDArray execAndEndResult() {
         resolveVariablesWith(Collections.<String, INDArray>emptyMap());
         List<DifferentialFunction> exec = exec().getRight();
-        val output = exec.get(exec.size() - 1).outputVariables()[0];
+        val finalOp = exec.get(exec.size() - 1);
+        val output = finalOp.outputVariables();
+        if (output.length > 1) {
+            throw  new ND4JIllegalStateException(finalOp.opName() + " has multiple outputs. Use execAndEndResults instead.");
+        }
+        return output[0].getArr();
+    }
+
+    public INDArray[] execAndEndResults() {
+        resolveVariablesWith(Collections.<String, INDArray>emptyMap());
+        List<DifferentialFunction> exec = exec().getRight();
+        val finalOp = exec.get(exec.size() - 1);
+        val output = finalOp.outputVariables();
+        INDArray outArrays[]  = new INDArray[output.length];
+        for (int i=0; i<outArrays.length; i++){
+            outArrays[i] = output[i].getArr();
+        }
+        return outArrays;
+    }
+
+    public INDArray execAndEndResult(int outputIndex) {
+        resolveVariablesWith(Collections.<String, INDArray>emptyMap());
+        List<DifferentialFunction> exec = exec().getRight();
+        val output = exec.get(exec.size() - 1).outputVariables()[outputIndex];
         return output.getArr();
     }
 
