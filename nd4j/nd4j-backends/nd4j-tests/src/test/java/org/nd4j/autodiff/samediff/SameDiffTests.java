@@ -493,7 +493,6 @@ public class SameDiffTests {
         SDVariable x2 = sameDiff.var("x2", arr2);
         SDVariable stacked = sameDiff.stack(new SDVariable[]{x1, x2}, 0);
         SDVariable[] result = sameDiff.unstack(stacked, 0, 2);
-        System.out.println(result.length);
         assertEquals(arr1, result[0].eval());
         assertEquals(arr2, result[1].eval());
     }
