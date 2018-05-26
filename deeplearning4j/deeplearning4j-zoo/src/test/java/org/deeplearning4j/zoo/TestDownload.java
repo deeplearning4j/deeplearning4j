@@ -7,6 +7,9 @@ import org.deeplearning4j.zoo.model.LeNet;
 import org.deeplearning4j.zoo.model.NASNet;
 import org.deeplearning4j.zoo.model.SimpleCNN;
 import org.deeplearning4j.zoo.model.UNet;
+import org.deeplearning4j.zoo.util.darknet.COCOLabels;
+import org.deeplearning4j.zoo.util.darknet.DarknetLabels;
+import org.deeplearning4j.zoo.util.imagenet.ImageNetLabels;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -19,6 +22,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests downloads and checksum verification.
@@ -73,4 +78,12 @@ public class TestDownload extends BaseDL4JTest {
         }
     }
 
+
+    @Test
+    public void testLabelsDownload() throws Exception {
+        assertEquals("person", new COCOLabels().getLabel(0));
+        assertEquals("kit fox", new DarknetLabels(true).getLabel(0));
+        assertEquals("n02119789", new DarknetLabels(false).getLabel(0));
+        assertEquals("tench", new ImageNetLabels().getLabel(0));
+    }
 }
