@@ -238,7 +238,6 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
         ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(),
                         new NegativeDefaultStepFunction(), null, net);
-        opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
         assertEquals(lr, ((Sgd)net.getLayer(0).conf().getLayer().getUpdaterByParam("W")).getLearningRate(), 1e-4);
         assertEquals(biasLr, ((Sgd)net.getLayer(0).conf().getLayer().getUpdaterByParam("b")).getLearningRate(), 1e-4);
         assertEquals(0.7, ((Sgd)net.getLayer(1).conf().getLayer().getUpdaterByParam("gamma")).getLearningRate(), 1e-4);
@@ -300,7 +299,6 @@ public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
         ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(),
                         new NegativeDefaultStepFunction(), null, net);
-        opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
         assertEquals(l1, net.getLayer(0).conf().getL1ByParam("W"), 1e-4);
         assertEquals(0.0, net.getLayer(0).conf().getL1ByParam("b"), 0.0);
         assertEquals(0.0, net.getLayer(1).conf().getL2ByParam("beta"), 0.0);

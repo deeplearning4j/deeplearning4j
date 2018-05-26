@@ -34,13 +34,10 @@ import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
-import org.deeplearning4j.optimize.terminations.EpsTermination;
-import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,7 +45,10 @@ import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -62,7 +62,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Getter
     protected StepFunction stepFunction;
     protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
-    protected Collection<TerminationCondition> terminationConditions = new ArrayList<>();
     protected Model model;
     protected BackTrackLineSearch lineMaximizer;
     protected Updater updater;
@@ -80,6 +79,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     protected GradientsAccumulator accumulator;
 
+
     /**
      *
      * @param conf
@@ -89,25 +89,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      */
     public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
                     Collection<TrainingListener> trainingListeners, Model model) {
-        this(conf, stepFunction, trainingListeners, Arrays.asList(new ZeroDirection(), new EpsTermination()), model);
-    }
-
-
-    /**
-     *
-     * @param conf
-     * @param stepFunction
-     * @param trainingListeners
-     * @param terminationConditions
-     * @param model
-     */
-    public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<TrainingListener> trainingListeners,
-                    Collection<TerminationCondition> terminationConditions, Model model) {
         this.conf = conf;
         this.stepFunction = (stepFunction != null ? stepFunction : getDefaultStepFunctionForOptimizer(this.getClass()));
         this.trainingListeners = trainingListeners != null ? trainingListeners : new ArrayList<TrainingListener>();
-        this.terminationConditions = terminationConditions;
         this.model = model;
         lineMaximizer = new BackTrackLineSearch(model, this.stepFunction, this);
         lineMaximizer.setStepMax(stepMax);
@@ -212,17 +196,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
         }
 
-        //pre existing termination conditions
-        /*
-         * Commented out for now; this has been problematic for testing/debugging
-         * Revisit & re-enable later. */
-        for (TerminationCondition condition : terminationConditions) {
-            if (condition.terminate(0.0, 0.0, new Object[] {pair.getFirst().gradient()})) {
-                log.info("Hit termination condition " + condition.getClass().getName());
-                return true;
-            }
-        }
-
         //calculate initial search direction
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             preProcessLine();
@@ -266,7 +239,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
         //check for termination conditions based on absolute change in score
-        checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, iterationCount);
         incrementIterationCount(model, 1);
         applyConstraints(model);
         return true;
@@ -274,19 +246,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     protected void postFirstStep(INDArray gradient) {
         //no-op
-    }
-
-    @Override
-    public boolean checkTerminalConditions(INDArray gradient, double oldScore, double score, int i) {
-        for (TerminationCondition condition : terminationConditions) {
-            //log.info("terminations: {}", condition);
-            if (condition.terminate(score, oldScore, new Object[] {gradient})) {
-                log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score,
-                                oldScore, condition);
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override
