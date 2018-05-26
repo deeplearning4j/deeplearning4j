@@ -24,7 +24,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -46,12 +45,6 @@ public class StochasticGradientDescent extends BaseOptimizer {
     public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
                     Collection<TrainingListener> trainingListeners, Model model) {
         super(conf, stepFunction, trainingListeners, model);
-    }
-
-    public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<TrainingListener> trainingListeners,
-                    Collection<TerminationCondition> terminationConditions, Model model) {
-        super(conf, stepFunction, trainingListeners, terminationConditions, model);
     }
 
 
@@ -90,8 +83,6 @@ public class StochasticGradientDescent extends BaseOptimizer {
             for (TrainingListener listener : trainingListeners)
                 listener.iterationDone(model, iterationCount, epochCount);
         }
-
-        checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, iterationCount);
 
         BaseOptimizer.incrementIterationCount(model, 1);
         applyConstraints(model);
