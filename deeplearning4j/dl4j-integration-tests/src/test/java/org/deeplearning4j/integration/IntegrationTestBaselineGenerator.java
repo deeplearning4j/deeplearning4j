@@ -62,7 +62,9 @@ public class IntegrationTestBaselineGenerator {
 ////                TransferLearningTestCases.testPartFrozenNASNET()
 //        );
 
-        runGeneration(CNN1DTestCases.getCnn1dTestCaseSynthetic());
+        runGeneration(CNN2DTestCases.getCnn2DSynthetic(),
+                CNN2DTestCases.getYoloHouseNumbers()
+        );
 
     }
 

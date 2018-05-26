@@ -1,9 +1,13 @@
 package org.deeplearning4j.integration;
 
+import org.deeplearning4j.datasets.fetchers.DataSetType;
+import org.deeplearning4j.datasets.fetchers.SvhnDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.integration.testcases.*;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.File;
 
 public class IntegrationTests extends BaseDL4JTest {
 
@@ -16,6 +20,7 @@ public class IntegrationTests extends BaseDL4JTest {
         // tests could time out due to the downloading - not the actual test itself
         new MnistDataSetIterator(1, true, 12345);
         new MnistDataSetIterator(1, false, 12345);
+        SvhnDataFetcher fetcher = new SvhnDataFetcher();
     }
 
     @AfterClass
@@ -52,7 +57,6 @@ public class IntegrationTests extends BaseDL4JTest {
 
 
     // ***** CNN1DTestCases *****
-//    @Ignore //TODO: NOT YET IMPLEMENTED
     @Test(timeout = 180000L)
     public void testCnn1dSynthetic() throws Exception {
         IntegrationTestRunner.runTest(CNN1DTestCases.getCnn1dTestCaseSynthetic(), testDir);

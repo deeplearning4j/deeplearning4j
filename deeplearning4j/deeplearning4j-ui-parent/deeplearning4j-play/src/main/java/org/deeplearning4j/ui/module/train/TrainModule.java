@@ -28,16 +28,13 @@ import org.deeplearning4j.ui.views.html.training.TrainingModel;
 import org.deeplearning4j.ui.views.html.training.TrainingOverview;
 import org.deeplearning4j.ui.views.html.training.TrainingSystem;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import play.libs.Json;
 import play.mvc.Result;
 import play.mvc.Results;
 
-import java.io.File;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
