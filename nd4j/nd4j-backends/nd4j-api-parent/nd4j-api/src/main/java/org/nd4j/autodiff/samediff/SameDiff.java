@@ -6151,7 +6151,7 @@ public class SameDiff {
 
         double[] extras = node.getExtraArgs() != null ? new double[node.getExtraArgs().length] : new double[0];
         for (int e = 0; e < extras.length; e++) {
-            extras[e] = ((Number) node.getExtraArgs()[e]).floatValue();
+            extras[e] = ((Number) node.getExtraArgs()[e]).doubleValue();
         }
 
         long[] extraBits = null;

@@ -14,7 +14,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class RandomStandardNormal extends DynamicCustomOp {
 
     public RandomStandardNormal() {
-        //
         // values are just hardcoded for this op
         addTArgument(0.0, 1.0);
     }
@@ -52,5 +51,11 @@ public class RandomStandardNormal extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "RandomStandardNormal";
+    }
+
+    @Override
+    public Object[] getExtraArgs() {
+        // FIXME: why the hell we need this?
+        return new Object[] {new Double(0.0), new Double(1.0)};
     }
 }
