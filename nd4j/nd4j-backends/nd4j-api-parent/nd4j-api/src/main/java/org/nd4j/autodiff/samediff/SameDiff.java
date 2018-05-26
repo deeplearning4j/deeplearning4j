@@ -4890,7 +4890,7 @@ public class SameDiff {
         resolveVariablesWith(Collections.<String, INDArray>emptyMap());
         List<DifferentialFunction> exec = exec().getRight();
         val finalOp = exec.get(exec.size() - 1);
-        val output = exec.get(exec.size() - 1).outputVariables();
+        val output = finalOp.outputVariables();
         if (output.length > 1) {
             throw  new ND4JIllegalStateException(finalOp.opName() + " has multiple outputs. Use execAndEndResults instead.");
         }
@@ -4901,7 +4901,7 @@ public class SameDiff {
         resolveVariablesWith(Collections.<String, INDArray>emptyMap());
         List<DifferentialFunction> exec = exec().getRight();
         val finalOp = exec.get(exec.size() - 1);
-        val output = exec.get(exec.size() - 1).outputVariables();
+        val output = finalOp.outputVariables();
         INDArray outArrays[]  = new INDArray[output.length];
         for (int i=0; i<outArrays.length; i++){
             outArrays[i] = output[i].getArr();
