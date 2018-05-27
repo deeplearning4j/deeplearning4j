@@ -86,13 +86,17 @@ namespace nd4j {
                 }
 
                 if (output->lengthOf() == data.size()) {
+                    // FIXME: make this one CUDA-compatible
                     memcpy(output->buffer(), data.data(), data.size() * sizeof(T));
                 } else {
+                    REQUIRE_TRUE(false, 0, "RANGE: wrong length of output array: [%lld] vs [%lld]", output->lengthOf(), data.size())
+                    /*
                     auto array = new nd4j::NDArray<T>({(Nd4jLong) data.size()}, block.getWorkspace());
                     memcpy(array->buffer(), data.data(), data.size() * sizeof(T));
 
                     //block.pushNDArrayToVariableSpace(block.nodeId(), 0, array);
                     OVERWRITE_RESULT(array);
+                     */
                 }
             } else {
                 REQUIRE_TRUE(false, 0, "Runtime range should have inputs defined in any possible way: T_args, INT_args, or INPUT variables")
@@ -145,7 +149,34 @@ namespace nd4j {
                 shape.emplace_back(cnt);
             } else {
                 // FIXME:if that's runtime evaluation - we'll just pass some vector. 
-                shape.emplace_back(119);
+                REQUIRE_TRUE(block.width() == 3, 0, "Runtime range should have 3 arrays as input, but got %i instead", block.width());
+
+                auto arr0 = INPUT_VARIABLE(0);
+                auto arr1 = INPUT_VARIABLE(1);
+                auto arr2 = INPUT_VARIABLE(2);
+
+                std::vector<T> data;
+
+                T start = arr0->getScalar(0);
+                T stop = arr1->getScalar(0);
+                T step = arr2->getScalar(0);
+
+                //for (T e = start; e < (T) stop; e += step)
+                //    data.emplace_back((T) e);
+                T e = (T) start;
+                if (start > stop) {
+                    while (e > stop) {
+                        data.emplace_back(e);
+                        e = step > (T) 0.0 ? e - step : e + step;
+                    }
+                } else {
+                    while (e < stop) {
+                        data.emplace_back(e);
+                        e += step;
+                    }
+                }
+
+                shape.emplace_back(data.size());
             }
             
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
