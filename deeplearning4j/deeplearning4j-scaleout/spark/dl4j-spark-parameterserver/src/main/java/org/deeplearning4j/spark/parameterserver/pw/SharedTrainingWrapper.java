@@ -129,7 +129,9 @@ public class SharedTrainingWrapper {
         /*
             first call instantiates pw, messenger etc, and gets in charge here.
          */
+        log.info("Thread {}:{} at barrier", Thread.currentThread().getName(), Thread.currentThread().getId());
         if (isFirst.compareAndSet(false, true)) {
+            log.info("Thread {}:{} inside barrier", Thread.currentThread().getName(), Thread.currentThread().getId());
             SharedTrainingConfiguration trainingConfiguration = worker.getBroadcastConfiguration().getValue();
             VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();
 

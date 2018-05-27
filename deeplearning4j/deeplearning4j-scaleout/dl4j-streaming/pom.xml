@@ -7,7 +7,7 @@
     <groupId>org.deeplearning4j</groupId>
     <artifactId>dl4j-streaming_2.11</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.0_spark_1-SNAPSHOT</version>
+    <version>1.0.0_spark_2-SNAPSHOT</version>
 
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
@@ -21,8 +21,8 @@
         deeplearning4j-scaleout. Otherwise, the properties will be resolved to their defaults (and not the values present
          during the build). Whereas when defined here (the version is spark 1 vs. 2 specific) we can have different version
           properties simultaneously (in different pom files) instead of a single global property. -->
-        <spark.version>1.6.3</spark.version>
-        <spark.major.version>1</spark.major.version>
+        <spark.version>2.1.0</spark.version>
+        <spark.major.version>2</spark.major.version>
         <datavec.spark.version>1.0.0_spark_1-SNAPSHOT</datavec.spark.version>
     </properties>
 
