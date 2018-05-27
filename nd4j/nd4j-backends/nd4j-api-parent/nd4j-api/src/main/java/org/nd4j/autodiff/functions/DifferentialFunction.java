@@ -733,5 +733,6 @@ public abstract class DifferentialFunction {
      */
     public abstract String tensorflowName();
 
+    public int getNumOutputs(){return -1;}
 
 }

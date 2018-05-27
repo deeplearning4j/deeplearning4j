@@ -849,6 +849,9 @@ public class DifferentialFunctionFactory {
     public SDVariable[] unstack(SDVariable value, int axis) {
         return new Unstack(sameDiff(), value, axis).outputVariables();
     }
+    public SDVariable[] unstack(SDVariable value, int axis, int num) {
+        return new Unstack(sameDiff(), value, axis, num).outputVariables();
+    }
 
     public SDVariable assign(SDVariable x, SDVariable y) {
         return new Assign(sameDiff(), x, y).outputVariables()[0];
