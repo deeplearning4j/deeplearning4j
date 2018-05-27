@@ -120,7 +120,6 @@ namespace nd4j {
                 T stop = T_ARG(1);
                 T step = T_ARG(2);
 
-                Nd4jLong cnt = 0;
                 auto e = start;
                 if (start > stop) {
                     while (e > stop) {
@@ -140,8 +139,6 @@ namespace nd4j {
                 auto arr0 = INPUT_VARIABLE(0);
                 auto arr1 = INPUT_VARIABLE(1);
                 auto arr2 = INPUT_VARIABLE(2);
-
-                Nd4jLong cnt = 0;
 
                 T start = arr0->getScalar(0);
                 T stop = arr1->getScalar(0);
