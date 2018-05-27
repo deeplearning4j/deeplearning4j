@@ -988,7 +988,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD void shapeScalar(Nd4jLong* const buffer);
 
-    ND4J_EXPORT _CUDA_HD void shapeVector(const int length, Nd4jLong* const buffer);
+    ND4J_EXPORT _CUDA_HD void shapeVector(const Nd4jLong length, Nd4jLong* const buffer);
 
 
     ND4J_EXPORT _CUDA_HD void shapeOldScalar(Nd4jLong* const buffer, const char order);
@@ -4077,7 +4077,7 @@ INLINEDEF _CUDA_H Nd4jLong subArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4
         buffer[7] = (int)order;
     }
 
-    INLINEDEF _CUDA_HD void shapeVector(const int length, Nd4jLong* const buffer) {
+    INLINEDEF _CUDA_HD void shapeVector(const Nd4jLong length, Nd4jLong* const buffer) {
         buffer[0] = 1;
         buffer[1] = length;
         buffer[2] = 1;
