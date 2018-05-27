@@ -80,7 +80,7 @@ public class SparkTransformServerTest {
                         TransformDataType.IMAGE.toString()});
 
         SingleImageRecord record =
-                        new SingleImageRecord(new ClassPathResource("testimages/class0/0.jpg").getFile().toURI());
+                        new SingleImageRecord(new ClassPathResource("datavec-spark-inference/testimages/class0/0.jpg").getFile().toURI());
         JsonNode jsonNode = Unirest.post("http://localhost:9060/transformincrementalarray")
                         .header("accept", "application/json").header("Content-Type", "application/json").body(record)
                         .asJson().getBody();
@@ -89,9 +89,9 @@ public class SparkTransformServerTest {
                         .asObject(Base64NDArrayBody.class).getBody();
 
         BatchImageRecord batch = new BatchImageRecord();
-        batch.add(new ClassPathResource("testimages/class0/0.jpg").getFile().toURI());
-        batch.add(new ClassPathResource("testimages/class0/1.png").getFile().toURI());
-        batch.add(new ClassPathResource("testimages/class0/2.jpg").getFile().toURI());
+        batch.add(new ClassPathResource("datavec-spark-inference/testimages/class0/0.jpg").getFile().toURI());
+        batch.add(new ClassPathResource("datavec-spark-inference/testimages/class0/1.png").getFile().toURI());
+        batch.add(new ClassPathResource("datavec-spark-inference/testimages/class0/2.jpg").getFile().toURI());
 
         JsonNode jsonNodeBatch =
                         Unirest.post("http://localhost:9060/transformarray").header("accept", "application/json")

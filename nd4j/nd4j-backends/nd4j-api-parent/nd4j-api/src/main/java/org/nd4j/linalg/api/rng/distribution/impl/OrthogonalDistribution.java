@@ -219,12 +219,17 @@ public class OrthogonalDistribution extends BaseDistribution {
 
     @Override
     public INDArray sample(int[] shape) {
+        return sample(ArrayUtil.toLongArray(shape));
+    }
+
+    @Override
+    public INDArray sample(long[] shape){
         int numRows = 1;
         for (int i = 0; i < shape.length - 1; i++)
             numRows *= shape[i];
-        int numCols = shape[shape.length - 1];
+        long numCols = shape[shape.length - 1];
 
-        val flatShape = new int[]{numRows, numCols};
+        val flatShape = new long[]{numRows, numCols};
         val flatRng =  Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(flatShape, Nd4j.order()), 0.0, 1.0), random);
 
         long m = flatRng.rows();
@@ -239,9 +244,9 @@ public class OrthogonalDistribution extends BaseDistribution {
         // FIXME: int cast
         if (gains == null) {
             if (u.rows() == numRows && u.columns() == numCols) {
-                return v.get(NDArrayIndex.interval(0, numRows), NDArrayIndex.interval(0, numCols)).mul(gain).reshape(ArrayUtil.toLongArray(shape));
+                return v.get(NDArrayIndex.interval(0, numRows), NDArrayIndex.interval(0, numCols)).mul(gain).reshape(shape);
             } else {
-                return u.get(NDArrayIndex.interval(0, numRows), NDArrayIndex.interval(0, numCols)).mul(gain).reshape(ArrayUtil.toLongArray(shape));
+                return u.get(NDArrayIndex.interval(0, numRows), NDArrayIndex.interval(0, numCols)).mul(gain).reshape(shape);
             }
         } else {
             throw new UnsupportedOperationException();

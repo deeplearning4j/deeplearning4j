@@ -2654,7 +2654,7 @@ public class Nd4j {
      */
     public static INDArray createArrayFromShapeBuffer(DataBuffer data, DataBuffer shapeInfo) {
         int rank = Shape.rank(shapeInfo);
-        long offset = Shape.offset(shapeInfo);
+        long offset = 0;
         INDArray result = Nd4j.create(data, toIntArray(rank, Shape.shapeOf(shapeInfo)),
                 toIntArray(rank, Shape.stride(shapeInfo)), offset, Shape.order(shapeInfo));
         if (data instanceof CompressedDataBuffer)
@@ -4081,14 +4081,6 @@ public class Nd4j {
 
     public static INDArray create(double[] data, long[] shape, long[] stride, long offset, char order) {
         shape = getEnsuredShape(shape);
-
-        if (shape.length == 1) {
-            if (shape[0] == data.length) {
-                shape = new long[] {1, data.length};
-            } else
-                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                        + " doesn't match data length: " + data.length);
-        }
 
         checkShapeValues(data.length, shape);
 
