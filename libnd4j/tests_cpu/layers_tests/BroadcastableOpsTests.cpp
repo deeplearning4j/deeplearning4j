@@ -322,3 +322,16 @@ TEST_F(BroadcastableOpsTests, Test_Subtract_2) {
 
     delete result;
 }
+
+TEST_F(BroadcastableOpsTests, Test_Subtract_3) {
+    NDArray<float> x(1.0f);
+    NDArray<float> y('c', {2}, {0.0f, 1.0f});
+    NDArray<float> z('c', {2}, {0.0f, 0.0f});
+    NDArray<float> e('c', {2}, {1.0f, 0.0f});
+
+    nd4j::ops::subtract<float> op;
+    auto result = op.execute({&x, &y}, {&z}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_TRUE(e.equalsTo(z));
+}
