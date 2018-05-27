@@ -39,7 +39,6 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
     private  IActivation activation = new ActivationReLU();
     private  static IActivation relu = new ActivationReLU();
 
-    private int numBatchesAccumulated = 0;
 
     private ILossFunction lossFunction;
 
@@ -141,14 +140,12 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
             }
 
             batchWindowSizeIndex += currentR.length();
-            numBatchesAccumulated++;
             conf.setLastEpochSinceRUpdated(epochCount);
         }
         else if(conf.getLastEpochSinceRUpdated()  != epochCount) {
             double percentile = window.percentileNumber(100.0 * conf.getNu()).doubleValue();
             getParam(R_KEY).putScalar(0,percentile);
             conf.setLastEpochSinceRUpdated(epochCount);
-            numBatchesAccumulated = 0;
             batchWindowSizeIndex = 0;
         }
         else {
@@ -158,7 +155,6 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
             INDArray currentR = doOutput(false,workspaceMgr);
             window.put(new INDArrayIndex[]{NDArrayIndex.interval(batchWindowSizeIndex,batchWindowSizeIndex + currentR.length())},currentR);
-            numBatchesAccumulated++;
         }
 
 

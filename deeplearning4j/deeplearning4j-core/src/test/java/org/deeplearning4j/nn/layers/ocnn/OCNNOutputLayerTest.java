@@ -158,7 +158,7 @@ public class OCNNOutputLayerTest {
                 .list(new DenseLayer.Builder().activation(new ActivationReLU())
                                 .nIn(4).nOut(2).build(),
                         new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder()
-                                .nIn(2).activation(new ActivationSigmoid())
+                                .nIn(2).activation(new ActivationSigmoid()).initialRValue(0.1)
                                 .nu(0.1)
                                 .hiddenLayerSize(numHidden).build())
                 .build();

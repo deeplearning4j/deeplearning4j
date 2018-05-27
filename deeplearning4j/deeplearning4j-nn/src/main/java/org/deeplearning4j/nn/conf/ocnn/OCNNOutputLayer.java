@@ -45,8 +45,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
 
     private int windowSize = 10000;
 
-
-    private IActivation activation;
+    private double initialRValue = 0.1;
 
     /**
      * Psuedo code from keras:
@@ -69,17 +68,19 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         super(builder);
         this.hiddenSize = builder.hiddenLayerSize;
         this.nu = builder.nu;
-        this.activation = builder.activation;
+        this.activationFn = builder.activation;
         this.windowSize = builder.windowSize;
+        this.initialRValue = builder.initialRValue;
 
     }
 
     @JsonCreator
-    public OCNNOutputLayer(@JsonProperty("hiddenSize") int hiddenSize,@JsonProperty("nu") double nu,@JsonProperty("activation") IActivation activation,@JsonProperty("windowSize") int windowSize) {
+    public OCNNOutputLayer(@JsonProperty("hiddenSize") int hiddenSize,@JsonProperty("nu") double nu,@JsonProperty("activation") IActivation activation,@JsonProperty("windowSize") int windowSize, @JsonProperty("initialRValue") double initialRValue) {
         this.hiddenSize = hiddenSize;
         this.nu = nu;
-        this.activation = activation;
+        this.activationFn = activation;
         this.windowSize = windowSize;
+        this.initialRValue = initialRValue;
     }
 
     @Override
@@ -98,8 +99,9 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
         ret.setConf(conf);
-        ret.setActivation(getActivation());
-
+        ret.setActivation(activationFn);
+        if(lastEpochSinceRUpdated == 0)
+            paramTable.get(OCNNParamInitializer.R_KEY).putScalar(0,initialRValue);
         return ret;
     }
 
@@ -131,6 +133,13 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         protected  double nu = 0.04;
         protected int windowSize = 10000;
         protected IActivation activation = new ActivationIdentity();
+        protected  double initialRValue = 0.1;
+
+
+        public Builder initialRValue(double initialRValue) {
+            this.initialRValue = initialRValue;
+            return this;
+        }
 
         public Builder windowSize(int windowSize) {
             this.windowSize = windowSize;
