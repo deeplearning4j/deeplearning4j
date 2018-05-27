@@ -113,7 +113,10 @@ public class SameDiff {
     private Map<String, List<DifferentialFunction>> functionOutputFor;
 
     // this entity holds runtime information for Switch/Merge/NextIteration etc stuff
-    private ThreadLocal<FlowPath> localFlowPath = new ThreadLocal<FlowPath>();
+    private transient ThreadLocal<FlowPath> localFlowPath = new ThreadLocal<FlowPath>();
+
+    // here we save String -> Integer conversion to variables
+    private transient Map<String, Integer> reverseMap = null;
 
     /**
      * For import, many times we have variables
@@ -4929,7 +4932,7 @@ public class SameDiff {
             newMap.put(vx.getVarName(), inputs.get(key));
         }
 
-        val result = Nd4j.getExecutioner().executeGraph(this.hashCode(), newMap);
+        val result = Nd4j.getExecutioner().executeGraph(this.hashCode(), newMap, this.reverseMap);
         if (result.size() == 0)
             throw new ND4JIllegalStateException("Execution failed");
 
@@ -6180,7 +6183,7 @@ public class SameDiff {
 
         double[] extras = node.getExtraArgs() != null ? new double[node.getExtraArgs().length] : new double[0];
         for (int e = 0; e < extras.length; e++) {
-            extras[e] = ((Number) node.getExtraArgs()[e]).floatValue();
+            extras[e] = ((Number) node.getExtraArgs()[e]).doubleValue();
         }
 
         long[] extraBits = null;
@@ -6368,6 +6371,11 @@ public class SameDiff {
 
         int fg = FlatGraph.createFlatGraph(bufferBuilder, 119, variablesOffset, nodesOffset, outputsOffset, configuration.getFlatConfiguration(bufferBuilder));
         bufferBuilder.finish(fg);
+
+        synchronized (this) {
+            if (this.reverseMap == null)
+                this.reverseMap = reverseMap;
+        }
 
         return bufferBuilder.dataBuffer();
     }

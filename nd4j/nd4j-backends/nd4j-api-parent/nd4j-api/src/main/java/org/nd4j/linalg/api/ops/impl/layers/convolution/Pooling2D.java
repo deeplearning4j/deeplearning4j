@@ -35,6 +35,14 @@ public class Pooling2D extends DynamicCustomOp {
         MAX, AVG, PNORM,
     }
 
+    @Override
+    public long[] iArgs() {
+        if (iArguments.size() == 0)
+            addArgs();
+
+        return super.iArgs();
+    }
+    
     /**
      * Divisor mode for average pooling only. 3 modes are supported:
      * MODE_0:

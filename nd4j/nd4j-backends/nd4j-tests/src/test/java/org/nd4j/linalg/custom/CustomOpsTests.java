@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
+import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -336,5 +337,31 @@ public class CustomOpsTests {
     @Test
     public void testOpStatus1() throws Exception {
         assertEquals(OpStatus.ND4J_STATUS_OK, OpStatus.byNumber(0));
+    }
+
+    @Test
+    public void testRandomStandardNormal_1() {
+        val shape = Nd4j.create(new float[] {5, 10});
+        val op = new RandomStandardNormal(shape);
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(1, op.outputArguments().length);
+        val output = op.getOutputArgument(0);
+
+        assertArrayEquals(new long[]{5, 10}, output.shape());
+    }
+
+    @Test
+    public void testRandomStandardNormal_2() {
+        val shape = new long[]{5, 10};
+        val op = new RandomStandardNormal(shape);
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(1, op.outputArguments().length);
+        val output = op.getOutputArgument(0);
+
+        assertArrayEquals(new long[]{5, 10}, output.shape());
     }
 }

@@ -27,6 +27,13 @@ public class Pooling3D extends DynamicCustomOp {
         MAX, AVG, PNORM,
     }
 
+    @Override
+    public long[] iArgs() {
+        if (iArguments.size() == 0)
+            addArgs();
+
+        return super.iArgs();
+    }
 
     public Pooling3D() {}
 

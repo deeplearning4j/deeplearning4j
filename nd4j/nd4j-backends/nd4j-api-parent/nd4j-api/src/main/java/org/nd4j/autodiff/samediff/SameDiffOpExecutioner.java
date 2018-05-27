@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.Getter;
+import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
@@ -508,8 +509,8 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     }
 
     @Override
-    public Map<String, INDArray> executeGraph(long id, Map<String, INDArray> map) {
-        return backendExecutioner.executeGraph(id, map);
+    public Map<String, INDArray> executeGraph(long id, @NonNull Map<String, INDArray> map, @NonNull Map<String, Integer> reverseMap) {
+        return backendExecutioner.executeGraph(id, map, reverseMap);
     }
 
     @Override

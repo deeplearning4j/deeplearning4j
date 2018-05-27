@@ -36,15 +36,15 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     private String opName;
     @Builder.Default
-    private List<INDArray> inputArguments = new ArrayList<>();
+    protected List<INDArray> inputArguments = new ArrayList<>();
     @Builder.Default
-    private List<INDArray> outputArguments = new ArrayList<>();
+    protected List<INDArray> outputArguments = new ArrayList<>();
 
 
     @Builder.Default
-    private List<Double> tArguments = new ArrayList<>();
+    protected List<Double> tArguments = new ArrayList<>();
     @Builder.Default
-    private List<Long> iArguments = new ArrayList<>();
+    protected List<Long> iArguments = new ArrayList<>();
     @Getter
     @Setter
     protected boolean inplaceCall;

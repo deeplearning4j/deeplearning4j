@@ -55,6 +55,14 @@ public class DeConv2D extends DynamicCustomOp {
     }
 
     @Override
+    public long[] iArgs() {
+        if (iArguments.size() == 0)
+            addArgs();
+
+        return super.iArgs();
+    }
+
+    @Override
     public Map<String, Object> propertiesForFunction() {
         return config.toProperties();
     }
