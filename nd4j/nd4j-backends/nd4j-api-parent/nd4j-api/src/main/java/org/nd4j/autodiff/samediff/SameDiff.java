@@ -707,6 +707,8 @@ public class SameDiff {
         else {
             updateShapeForVarName(variable.getVarName(), arr.shape());
         }
+        // invalidate exec cache
+        exec_cache = null;
     }
 
 
@@ -1282,12 +1284,19 @@ public class SameDiff {
         return ret;
     }
 
+
+    private SameDiff parent;
+
     /**
      * @return
      */
     public SameDiff dup() {
         Cloner cloner = newCloner();
-        return cloner.deepClone(this);
+        val clone = cloner.deepClone(this);
+        clone.exec_cache = this.exec_cache;
+        clone.parent = this;
+        return clone;
+
     }
 
 
@@ -4893,7 +4902,7 @@ public class SameDiff {
      * @return
      */
     public INDArray execAndEndResult() {
-        resolveVariablesWith(Collections.<String, INDArray>emptyMap());
+        //resolveVariablesWith(Collections.<String, INDArray>emptyMap());
         List<DifferentialFunction> exec = exec().getRight();
         val finalOp = exec.get(exec.size() - 1);
         val output = finalOp.outputVariables();
@@ -4916,7 +4925,7 @@ public class SameDiff {
     }
 
     public INDArray execAndEndResult(int outputIndex) {
-        resolveVariablesWith(Collections.<String, INDArray>emptyMap());
+        //resolveVariablesWith(Collections.<String, INDArray>emptyMap());
         List<DifferentialFunction> exec = exec().getRight();
         val output = exec.get(exec.size() - 1).outputVariables()[outputIndex];
         return output.getArr();
@@ -5617,7 +5626,11 @@ public class SameDiff {
      *
      * @return
      */
+    private Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec_cache;
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec() {
+        if (exec_cache != null){
+            return exec_cache;
+        }
         if (!resolvedVariables)
             resolveVariablesWith(new LinkedHashMap<String, INDArray>());
 
@@ -6026,7 +6039,12 @@ public class SameDiff {
             // printFunction(differentialFunction);
         }
 
-        return new Pair<>(opMap, ops);
+        val ret = new Pair<>(opMap, ops);
+        exec_cache = ret;
+        if(parent != null){
+            parent.exec_cache = exec_cache;
+        }
+        return ret;
     }
 
 
