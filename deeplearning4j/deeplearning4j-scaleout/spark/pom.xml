@@ -45,7 +45,7 @@
           (in different pom files) instead of a single global property -->
         <spark.version>2.1.0</spark.version>
         <spark.major.version>2</spark.major.version>
-        <datavec.spark.version>1.0.0_spark_1-SNAPSHOT</datavec.spark.version>
+        <datavec.spark.version>1.0.0_spark_2-SNAPSHOT</datavec.spark.version>
 
 
 
