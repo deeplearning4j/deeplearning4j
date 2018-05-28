@@ -10,7 +10,9 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -41,7 +43,8 @@ public class OCNNOutputLayerTest {
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
-
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
     static {
         Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
@@ -123,9 +126,10 @@ public class OCNNOutputLayerTest {
         System.out.println("Normal probabilities " + normalProbs);
         System.out.println("Normal raw output " + outputForNormalSamples);
 
-        File tmpFile = new File("tmp-file-" + UUID.randomUUID().toString());
+        File tmpFile = new File(testDir.getRoot(),"tmp-file-" + UUID.randomUUID().toString());
         ModelSerializer.writeModel(network,tmpFile,true);
         tmpFile.deleteOnExit();
+
         MultiLayerNetwork multiLayerNetwork = ModelSerializer.restoreMultiLayerNetwork(tmpFile);
         assertEquals(network.params(),multiLayerNetwork.params());
         assertEquals(network.numParams(),multiLayerNetwork.numParams());
