@@ -1138,7 +1138,7 @@ template <typename T>
 // perform array transformation
     template<typename T>
     template<typename OpName>
-    NDArray<T> NDArray<T>::transform(T *extraParams) {
+    NDArray<T> NDArray<T>::transform(T *extraParams) const {
     
         NDArray<T> result(this->_shapeInfo, true, this->_workspace);
         functions::transform::Transform<T>::template exec<OpName>(this->_buffer, this->_shapeInfo, result._buffer,
@@ -1598,7 +1598,7 @@ template<typename T>
 
     template<typename T>
     template<typename OpName>
-    void NDArray<T>::applyScalar(T scalar, NDArray<T>* target, T *extraParams) {
+    void NDArray<T>::applyScalar(T scalar, NDArray<T>* target, T *extraParams) const {
 
         if (target == nullptr)
             functions::scalar::ScalarTransform<T>::template transform<OpName>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar, extraParams);
@@ -1609,7 +1609,7 @@ template<typename T>
     template<typename T>
     template<typename OpName>
 
-    void NDArray<T>::applyScalar(NDArray<T>& scalar, NDArray<T>* target, T *extraParams) {
+    void NDArray<T>::applyScalar(NDArray<T>& scalar, NDArray<T>* target, T *extraParams) const {
         if (!scalar.isScalar()) {
             throw "Operand is not a scalar!";
         }
@@ -2274,14 +2274,10 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
     if(target == nullptr || other == nullptr)
         throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
 
-    if (this->isScalar() && !other->isScalar()) {
-        if (target->isSameShape(other)) {
-            target->assign(this);
-            target->template applyPairwiseTransform<OpName>(const_cast<NDArray<T>*>(other), extraArgs);
-
-            return;
-        }
-    };
+    if (this->isScalar()) {        
+        other->template applyScalar<OpName>(getScalar(0), target);
+        return;
+    }
 
     const NDArray<T>* min(nullptr), *max(nullptr);
     if(this->rankOf() >= other->rankOf()) {
@@ -3088,8 +3084,13 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     template<typename T>
     NDArray<T> NDArray<T>::operator-(const NDArray<T>& other) const {
         
+        if (other.isScalar() && !isScalar()) {
+            NDArray<T> result(_shapeInfo, _workspace);
+            functions::scalar::ScalarTransform<T>::template transform<simdOps::Subtract<T>>(_buffer, _shapeInfo, result._buffer, result._shapeInfo, other._buffer[0], nullptr);
+            return result;
+        }
         if (other.lengthOf() == lengthOf()) {
-            NDArray<T> result(this->_shapeInfo, this->_workspace);
+            NDArray<T> result(_shapeInfo, _workspace);
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Subtract<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
             return result;
         }

@@ -1804,17 +1804,17 @@ TEST_F(DeclarableOpsTests7, fill_test2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, fill_test3) {
 
-    NDArray<float> x('c', {1,2},  {2, 2});
-    NDArray<float> exp('c', {2, 2},{42, 42, 42, 42});
-    NDArray<float> output('c', {2, 2});
-    
+    NDArray<float> x('c', {2},  {2, 2});
+    NDArray<float> exp('c', {2, 2},{42, 42, 42, 42});    
+        
     nd4j::ops::fill<float> op;
-    auto result = op.execute({&x, &output}, {42.f}, {});
+    auto result = op.execute({&x}, {42.f}, {});
+    auto output = result->at(0);    
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
-    ASSERT_TRUE(exp.isSameShape(&output));
-    ASSERT_TRUE(exp.equalsTo(&output));
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
 
     delete result;
 }

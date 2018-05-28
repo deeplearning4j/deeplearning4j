@@ -120,9 +120,9 @@ namespace simdOps {
 			return d1 - params[0];
 		}
 
-		op_def static T startingValue() {
-			return (T)0;
-		}
+		// op_def static T startingValue() {
+		// 	return (T)0;
+		// }
 	};
 
 	template<typename T>

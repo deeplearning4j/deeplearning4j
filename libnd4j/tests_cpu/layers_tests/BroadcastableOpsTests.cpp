@@ -346,3 +346,15 @@ TEST_F(BroadcastableOpsTests, Test_Subtract_4) {
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(z));
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, Test_Subtract_5) {
+    NDArray<float> x(1.0f);
+    NDArray<float> y('c', {2}, {0.0f, 1.0f});
+    NDArray<float> e('c', {2}, {-1., 0.});
+
+    auto z = y - x;
+    z.printIndexedBuffer();
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
