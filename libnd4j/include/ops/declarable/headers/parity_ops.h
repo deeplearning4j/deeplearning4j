@@ -202,7 +202,7 @@ namespace nd4j {
          * 0: scalar value, used to fill NDArray
          */
         #if NOT_EXCLUDED(OP_fill_as)
-        DECLARE_CONFIGURABLE_OP(fill_as, 1, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(fill_as, 1, 1, true, 1, 0);
         #endif
 
         /**
