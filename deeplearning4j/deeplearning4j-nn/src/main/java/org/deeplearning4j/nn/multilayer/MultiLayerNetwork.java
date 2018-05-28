@@ -3161,9 +3161,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public void fit(@NonNull MultiDataSetIterator iterator, int numEpochs){
         Preconditions.checkArgument(numEpochs > 0, "Number of epochs much be > 0. Got numEpochs = %s", numEpochs);
         Preconditions.checkArgument(numEpochs == 1 || iterator.resetSupported(), "Cannot perform multiple epochs training using" +
-                "iterator thas does not support resetting (iterator.resetSupported() returned false)");
+                "iterator has does not support resetting (iterator.resetSupported() returned false)");
 
-        for(int i=0; i<numEpochs; i++ ){
+        for(int i = 0; i < numEpochs; i++) {
             fit(iterator);
         }
     }
@@ -3337,11 +3337,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
 
-    protected void synchronizeIterEpochCounts(){
-        //TODO: this is necessrry for some schedules - but the redundant values are a little ugly...
+    protected void synchronizeIterEpochCounts() {
+        //TODO: this is necessary for some schedules - but the redundant values are a little ugly...
         int currIter = getIterationCount();
         int currEpoch = getEpochCount();
-        for(Layer l : layers){
+        for(Layer l : layers) {
             l.setIterationCount(currIter);
             l.setEpochCount(currEpoch);
         }

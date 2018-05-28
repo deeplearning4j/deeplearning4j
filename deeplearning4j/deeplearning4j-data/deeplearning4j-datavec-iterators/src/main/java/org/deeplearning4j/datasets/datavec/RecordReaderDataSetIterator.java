@@ -86,7 +86,7 @@ import java.util.List;
 @Slf4j
 public class RecordReaderDataSetIterator implements DataSetIterator {
     private static final String READER_KEY = "reader";
-
+    @Getter
     protected RecordReader recordReader;
     protected WritableConverter converter;
     protected int batchSize = 10;
@@ -119,7 +119,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize) {
         this(recordReader, new SelfWritableConverter(), batchSize, -1, -1,
-                        recordReader.getLabels() == null ? -1 : recordReader.getLabels().size(), -1, false);
+                recordReader.getLabels() == null ? -1 : recordReader.getLabels().size(), -1, false);
     }
 
     /**
@@ -132,7 +132,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @param numPossibleLabels    Number of classes (possible labels) for classification
      */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex,
-                    int numPossibleLabels) {
+                                       int numPossibleLabels) {
         this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, labelIndex, numPossibleLabels, -1, false);
     }
 
@@ -145,7 +145,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @param maxNumBatches     The maximum number of batches to return between resets. Set to -1 to return all available data
      */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels,
-                    int maxNumBatches) {
+                                       int maxNumBatches) {
         this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, labelIndex, numPossibleLabels, maxNumBatches, false);
     }
 
@@ -159,7 +159,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @param regression        Require regression = true. Mainly included to avoid clashing with other constructors previously defined :/
      */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndexFrom, int labelIndexTo,
-                    boolean regression) {
+                                       boolean regression) {
         this(recordReader, new SelfWritableConverter(), batchSize, labelIndexFrom, labelIndexTo, -1, -1, regression);
     }
 
@@ -177,8 +177,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @param regression        if true: regression. If false: classification (assume labelIndexFrom is the class it belongs to)
      */
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
-                    int labelIndexFrom, int labelIndexTo, int numPossibleLabels, int maxNumBatches,
-                    boolean regression) {
+                                       int labelIndexFrom, int labelIndexTo, int numPossibleLabels, int maxNumBatches,
+                                       boolean regression) {
         this.recordReader = recordReader;
         this.converter = converter;
         this.batchSize = batchSize;
@@ -449,7 +449,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public boolean hasNext() {
         return (((sequenceIter != null && sequenceIter.hasNext()) || recordReader.hasNext())
-                        && (maxNumBatches < 0 || batchNum < maxNumBatches));
+                && (maxNumBatches < 0 || batchNum < maxNumBatches));
     }
 
     @Override

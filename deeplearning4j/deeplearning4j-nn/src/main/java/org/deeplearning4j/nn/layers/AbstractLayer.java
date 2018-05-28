@@ -91,6 +91,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return input;
     }
 
+    public int getEpochCount() {
+        return epochCount;
+    }
+
+    public void setEpochCount(int epochCount) {
+        this.epochCount = epochCount;
+    }
+
     /**
      * Init the model
      */
