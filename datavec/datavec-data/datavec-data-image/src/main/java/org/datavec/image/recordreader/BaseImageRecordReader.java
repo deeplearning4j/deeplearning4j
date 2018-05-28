@@ -67,7 +67,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     protected boolean writeLabel = false;
     protected List<Writable> record;
     protected boolean hitImage = false;
-    protected int height = 28, width = 28, channels = 1;
+    protected long height = 28, width = 28, channels = 1;
     protected boolean cropImage = false;
     protected ImageTransform imageTransform;
     protected BaseImageLoader imageLoader;
@@ -86,20 +86,20 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
     public BaseImageRecordReader() {}
 
-    public BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator) {
+    public BaseImageRecordReader(long height, long width, long channels, PathLabelGenerator labelGenerator) {
         this(height, width, channels, labelGenerator, null);
     }
 
-    public BaseImageRecordReader(int height, int width, int channels, PathMultiLabelGenerator labelGenerator) {
+    public BaseImageRecordReader(long height, long width, long channels, PathMultiLabelGenerator labelGenerator) {
         this(height, width, channels, null, labelGenerator,null);
     }
 
-    public BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator,
+    public BaseImageRecordReader(long height, long width, long channels, PathLabelGenerator labelGenerator,
                                  ImageTransform imageTransform) {
         this(height, width, channels, labelGenerator, null, imageTransform);
     }
 
-    protected BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator,
+    protected BaseImageRecordReader(long height, long width, long channels, PathLabelGenerator labelGenerator,
                                     PathMultiLabelGenerator labelMultiGenerator, ImageTransform imageTransform) {
         this.height = height;
         this.width = width;
@@ -173,9 +173,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         this.appendLabel = conf.getBoolean(APPEND_LABEL, appendLabel);
         this.labels = new ArrayList<>(conf.getStringCollection(LABELS));
-        this.height = conf.getInt(HEIGHT, height);
-        this.width = conf.getInt(WIDTH, width);
-        this.channels = conf.getInt(CHANNELS, channels);
+        this.height = conf.getLong(HEIGHT, height);
+        this.width = conf.getLong(WIDTH, width);
+        this.channels = conf.getLong(CHANNELS, channels);
         this.cropImage = conf.getBoolean(CROP_IMAGE, cropImage);
         if ("imageio".equals(conf.get(IMAGE_LOADER))) {
             this.imageLoader = new ImageLoader(height, width, channels, cropImage);
@@ -327,7 +327,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
             cnt++;
         }
 
-        INDArray features = Nd4j.createUninitialized(new int[] {cnt, channels, height, width}, 'c');
+        INDArray features = Nd4j.createUninitialized(new long[] {cnt, channels, height, width}, 'c');
         Nd4j.getAffinityManager().tagLocation(features, AffinityManager.Location.HOST);
         for (int i = 0; i < cnt; i++) {
             try {

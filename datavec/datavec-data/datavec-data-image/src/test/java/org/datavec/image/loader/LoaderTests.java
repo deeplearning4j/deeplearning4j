@@ -56,7 +56,7 @@ public class LoaderTests {
         rr.initialize(inputSplit[0]);
         List<String> exptedLabel = rr.getLabels();
 
-        RecordReader rr2 = new LFWLoader(new int[] {250, 250, 3}, true).getRecordReader(1, 1, 1, new Random(42));
+        RecordReader rr2 = new LFWLoader(new long[] {250, 250, 3}, true).getRecordReader(1, 1, 1, new Random(42));
 
         assertEquals(exptedLabel.get(0), rr2.getLabels().get(0));
     }
