@@ -9,15 +9,15 @@
 
 namespace nd4j {
     namespace ops {
+        
         CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
             auto shapeArray = INPUT_VARIABLE(0);
             
-            T scalar = 0;
-            if (block.getTArguments()->size() > 0) {
-                scalar = T_ARG(0);
-            } else if (block.width() > 1) {
-                auto scArr = INPUT_VARIABLE(1);
-                scalar = scArr->getScalar(0);
+            T scalar = T_ARG(0);
+            
+            if (block.width() > 1) {
+                (*INPUT_VARIABLE(1)) = scalar;
+                return Status::OK();
             }
 
             std::vector<Nd4jLong> shape((int) shapeArray->lengthOf());
@@ -32,19 +32,20 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         };
 
+        
         DECLARE_SHAPE_FN(fill) {
-            // this function won't be used in practice, since this is runtime operation, so shape will be always overwritten
-            auto inp = inputShape->at(0);
 
-            int len = shape::length(inp);
+            auto shapeArray = INPUT_VARIABLE(0);
 
-            std::vector<Nd4jLong> shape(shape::length(inp));
-            for (int e = 0; e < shape::length(inp); e++)
-                shape[e] = 1;
+            const int len = shapeArray->lengthOf();
+            Nd4jLong *newShape = nullptr;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), Nd4jLong);            
 
-            Nd4jLong *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape::length(inp)), Nd4jLong);
-            shape::shapeBuffer(shape.size(), shape.data(), newShape);
+            newShape[0] = len;
+            for (int e = 0; e < shapeArray->lengthOf(); e++)
+                newShape[e+1] = (Nd4jLong) (*shapeArray)(e);
+            
+            shape::updateStrides(newShape, 'c');
 
             return SHAPELIST(newShape);
         };

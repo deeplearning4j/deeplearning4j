@@ -1486,13 +1486,8 @@ NDArray<float> exp('c', {2, 3, 3}, {
 }
 
 
-
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest1) {
+TEST_F(DeclarableOpsTests7, percentile_test1) {
 
     const int dim0=5, dim1=5, dim2=4;
 
@@ -1516,7 +1511,7 @@ TEST_F(DeclarableOpsTests7, percentile_trest1) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest2) {
+TEST_F(DeclarableOpsTests7, percentile_test2) {
 
     const int dim0=5, dim1=5, dim2=4;
 
@@ -1540,7 +1535,7 @@ TEST_F(DeclarableOpsTests7, percentile_trest2) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest3) {
+TEST_F(DeclarableOpsTests7, percentile_test3) {
 
     const int dim0=5, dim1=5, dim2=4;
 
@@ -1564,7 +1559,7 @@ TEST_F(DeclarableOpsTests7, percentile_trest3) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest4) {
+TEST_F(DeclarableOpsTests7, percentile_test4) {
 
     const int dim0=5, dim1=5, dim2=4;
 
@@ -1588,7 +1583,7 @@ TEST_F(DeclarableOpsTests7, percentile_trest4) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest5) {
+TEST_F(DeclarableOpsTests7, percentile_test5) {
 
     const int dim0=5, dim1=5, dim2=4;
 
@@ -1612,7 +1607,7 @@ TEST_F(DeclarableOpsTests7, percentile_trest5) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest6) {
+TEST_F(DeclarableOpsTests7, percentile_test6) {
 
     const int dim0=5, dim1=5, dim2=4;
 
@@ -1636,7 +1631,7 @@ TEST_F(DeclarableOpsTests7, percentile_trest6) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest7) {
+TEST_F(DeclarableOpsTests7, percentile_test7) {
 
     const int dim0=5, dim1=5, dim2=4;
 
@@ -1660,7 +1655,7 @@ TEST_F(DeclarableOpsTests7, percentile_trest7) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest8) {
+TEST_F(DeclarableOpsTests7, percentile_test8) {
 
     const int dim0=5, dim1=5, dim2=4;
 
@@ -1684,7 +1679,7 @@ TEST_F(DeclarableOpsTests7, percentile_trest8) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest9) {
+TEST_F(DeclarableOpsTests7, percentile_test9) {
 
     const int dim0=100;
 
@@ -1708,7 +1703,7 @@ TEST_F(DeclarableOpsTests7, percentile_trest9) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest10) {
+TEST_F(DeclarableOpsTests7, percentile_test10) {
 
     const int dim0=100;
 
@@ -1732,7 +1727,7 @@ TEST_F(DeclarableOpsTests7, percentile_trest10) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest11) {
+TEST_F(DeclarableOpsTests7, percentile_test11) {
 
     const int dim0=1;
 
@@ -1752,7 +1747,7 @@ TEST_F(DeclarableOpsTests7, percentile_trest11) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, percentile_trest12) {
+TEST_F(DeclarableOpsTests7, percentile_test12) {
 
     const int dim0=1;
 
@@ -1770,3 +1765,196 @@ TEST_F(DeclarableOpsTests7, percentile_trest12) {
 
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, transpose_test3) {
+
+    NDArray<float> input('c', {5, 3},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});
+    NDArray<float> exp('c', {3, 5},   {1., 4., 7.,10.,13.,2., 5., 8.,11.,14.,3., 6., 9.,12.,15.});
+
+    nd4j::ops::transpose<float> op;
+    auto result = op.execute({&input}, {}, {});
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, fill_test2) {
+
+    NDArray<float> x('c', {1,2},  {2, 2});
+    NDArray<float> exp('c', {2, 2},{42, 42, 42, 42});
+    
+    nd4j::ops::fill<float> op;
+    auto result = op.execute({&x}, {42.f}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, fill_test3) {
+
+    NDArray<float> x('c', {1,2},  {2, 2});
+    NDArray<float> exp('c', {2, 2},{42, 42, 42, 42});
+    NDArray<float> output('c', {2, 2});
+    
+    nd4j::ops::fill<float> op;
+    auto result = op.execute({&x, &output}, {42.f}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(&output));
+    ASSERT_TRUE(exp.equalsTo(&output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, clipbynorm_test3) {
+    
+    NDArray<double> x('c', {3, 5});    
+    NDArray<double> unities('c', {3, 1}, {1., 1., 1.});
+    NDArray<double> scale('c', {3, 1}, {1.1, 1., 0.9});     
+
+    NDArrayFactory<double>::linspace(100., x);
+
+    NDArray<double> xNorm1 = x.template reduceAlongDims<simdOps::Norm2<double>>({1}, true);
+    x /= xNorm1;
+    xNorm1 = x.template reduceAlongDims<simdOps::Norm2<double>>({1}, true);
+
+    ASSERT_TRUE(unities.isSameShape(xNorm1));
+    ASSERT_TRUE(unities.equalsTo(xNorm1));
+
+    x *= scale;
+    xNorm1 = x.template reduceAlongDims<simdOps::Norm2<double>>({1}, true);
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {1.0}, {1});
+    auto z = result->at(0);
+
+    NDArray<double> zNorm1 = z->template reduceAlongDims<simdOps::Norm2<double>>({1}, true);
+    NDArray<double> exp('c', {3, 1}, {1., 1., xNorm1(2)});
+        
+    ASSERT_TRUE(exp.isSameShape(&zNorm1));
+    ASSERT_TRUE(exp.equalsTo(&zNorm1));
+
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, cumsum_test1) {
+    
+    NDArray<float> inputC('c', {3, 5},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});    
+    NDArray<float> axis(1.);
+
+    NDArray<float> expFF('c', {3, 5}, {1.,  3.,  6., 10., 15., 6., 13., 21., 30., 40., 11., 23., 36., 50., 65.});
+    NDArray<float> expTF('c', {3, 5}, {0., 1., 3.,  6., 10., 0.,  6., 13., 21., 30., 0., 11., 23., 36., 50.});
+
+    NDArray<float> expFT('c', {3, 5}, {15, 14, 12, 9, 5,40, 34, 27, 19, 10,65, 54, 42, 29, 15});    //+++
+    NDArray<float> expTT('c', {3, 5}, {14, 12, 9, 5, 0,34, 27, 19, 10, 0,54, 42, 29, 15, 0});
+
+    int exclusive, reverse;    
+
+    //************************************//
+    exclusive = 0; reverse = 0;
+
+    nd4j::ops::cumsum<float> op;
+    auto result = op.execute({&inputC, &axis}, {}, {exclusive, reverse});
+    ASSERT_EQ(Status::OK(), result->status());    
+    auto z = result->at(0);    
+    ASSERT_TRUE(expFF.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 1; reverse = 0;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse});
+    ASSERT_EQ(Status::OK(), result->status());    
+    z = result->at(0);    
+    ASSERT_TRUE(expTF.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 0; reverse = 1;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse});
+    ASSERT_EQ(Status::OK(), result->status());    
+    z = result->at(0);    
+    ASSERT_TRUE(expFT.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 1; reverse = 1;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse});
+    ASSERT_EQ(Status::OK(), result->status());    
+    z = result->at(0);    
+    ASSERT_TRUE(expTT.equalsTo(z));
+    delete result;   
+   
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, cumprod_test1) {
+    
+    NDArray<float> inputC('c', {3, 5},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});    
+    NDArray<float> axis(1.);
+
+    NDArray<float> expFF('c', {3, 5}, {1.,   2.,   6.,    24.,   120., 6.,  42., 336.,  3024., 30240.,11., 132.,1716., 24024.,360360.});
+    NDArray<float> expTF('c', {3, 5}, {1, 1, 2, 6, 24,1, 6, 42, 336, 3024,1, 11, 132, 1716, 24024});
+
+    NDArray<float> expFT('c', {3, 5}, {120, 120, 60, 20, 5,30240, 5040, 720, 90, 10,360360, 32760, 2730, 210, 15});    //+++
+    NDArray<float> expTT('c', {3, 5}, {120, 60, 20, 5, 1,5040, 720, 90, 10, 1,32760, 2730, 210, 15, 1});
+
+    int exclusive, reverse;    
+
+    //************************************//
+    exclusive = 0; reverse = 0;
+
+    nd4j::ops::cumprod<float> op;
+    auto result = op.execute({&inputC, &axis}, {}, {exclusive, reverse});
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);    
+    ASSERT_TRUE(expFF.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 1; reverse = 0;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse});
+    ASSERT_EQ(Status::OK(), result->status());    
+    z = result->at(0);    
+    ASSERT_TRUE(expTF.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 0; reverse = 1;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse});
+    ASSERT_EQ(Status::OK(), result->status());    
+    z = result->at(0);    
+    ASSERT_TRUE(expFT.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 1; reverse = 1;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse});
+    ASSERT_EQ(Status::OK(), result->status());    
+    z = result->at(0);    
+    ASSERT_TRUE(expTT.equalsTo(z));
+    delete result;   
+   
+}
+ 
