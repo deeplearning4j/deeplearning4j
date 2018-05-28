@@ -15,11 +15,12 @@ namespace nd4j {
             void _prefix(T* x, Nd4jLong* xShapeInfo, T* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse) {
                 auto length = (int) shape::length(xShapeInfo);
 
+                T prevSum = OpName::startingValue();
+                T sum = prevSum;
+                                
                 if (reverse) {
                     if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 &&
                         shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
-                        T prevSum = (T) 0;
-                        T sum = (T) 0;
 
                         for (int e = length - 1; e >= 0; --e) {
                             sum = OpName::op(sum, x[e]);
@@ -33,8 +34,6 @@ namespace nd4j {
                     } else {
                         Nd4jLong xCoord[MAX_RANK];
                         Nd4jLong zCoord[MAX_RANK];
-                        T prevSum = (T) 0;
-                        T sum = (T) 0;
 
                         int xRank = shape::rank(xShapeInfo);
                         int zRank = shape::rank(zShapeInfo);
@@ -63,9 +62,7 @@ namespace nd4j {
                     }
                 } else {
                     if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 &&
-                        shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
-                        T prevSum = (T) 0;
-                        T sum = (T) 0;
+                        shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {                        
 
                         for (int e = 0; e < length; e++) {
                             sum = OpName::op(sum, x[e]);
@@ -80,9 +77,6 @@ namespace nd4j {
                     } else {
                         Nd4jLong xCoord[MAX_RANK];
                         Nd4jLong zCoord[MAX_RANK];
-
-                        T prevSum = (T) 0;
-                        T sum = (T) 0;
 
                         int xRank = shape::rank(xShapeInfo);
                         int zRank = shape::rank(zShapeInfo);
@@ -119,7 +113,7 @@ namespace nd4j {
                 auto zTads = NDArrayFactory<T>::allTensorsAlongDimension(z, dims);
                 int t = xTads->size();
 
-#pragma omp parallel for schedule(guided)
+// #pragma omp parallel for schedule(guided)
                 for (int e = 0; e < t; e++) {
                     auto tx = xTads->at(e);
                     auto tz = zTads->at(e);

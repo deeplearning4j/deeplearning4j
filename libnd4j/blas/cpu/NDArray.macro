@@ -13,14 +13,14 @@ BUILD_CALL_1(template void nd4j::NDArray<float>::applyPairwiseTransform, float, 
 BUILD_CALL_1(template void nd4j::NDArray<float16>::applyPairwiseTransform, float16, (NDArray<float16>* other, NDArray<float16>* target, float16* extraParams), PAIRWISE_TRANSFORM_OPS)
 BUILD_CALL_1(template void nd4j::NDArray<double>::applyPairwiseTransform, double, (NDArray<double>* other, NDArray<double>* target, double* extraParams), PAIRWISE_TRANSFORM_OPS)
 
-BUILD_CALL_1(template void nd4j::NDArray<float16>::applyScalar, float16, (NDArray<float16>& scalar, NDArray<float16>* target, float16 *extraParams), SCALAR_OPS)
-BUILD_CALL_1(template void nd4j::NDArray<float16>::applyScalar, float16, (float16 scalar, NDArray<float16>* target, float16 *extraParams), SCALAR_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float16>::applyScalar, float16, (NDArray<float16>& scalar, NDArray<float16>* target, float16 *extraParams) const, SCALAR_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float16>::applyScalar, float16, (float16 scalar, NDArray<float16>* target, float16 *extraParams) const, SCALAR_OPS)
 
-BUILD_CALL_1(template void nd4j::NDArray<float>::applyScalar, float, (NDArray<float>& scalar, NDArray<float>* target, float *extraParams), SCALAR_OPS)
-BUILD_CALL_1(template void nd4j::NDArray<float>::applyScalar, float, (float scalar, NDArray<float>* target, float *extraParams), SCALAR_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float>::applyScalar, float, (NDArray<float>& scalar, NDArray<float>* target, float *extraParams) const, SCALAR_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float>::applyScalar, float, (float scalar, NDArray<float>* target, float *extraParams) const, SCALAR_OPS)
 
-BUILD_CALL_1(template void nd4j::NDArray<double>::applyScalar, double, (NDArray<double>& scalar, NDArray<double>* target, double *extraParams), SCALAR_OPS)
-BUILD_CALL_1(template void nd4j::NDArray<double>::applyScalar, double, (double scalar, NDArray<double>* target, double *extraParams), SCALAR_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<double>::applyScalar, double, (NDArray<double>& scalar, NDArray<double>* target, double *extraParams) const, SCALAR_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<double>::applyScalar, double, (double scalar, NDArray<double>* target, double *extraParams) const, SCALAR_OPS)
 
 
 
@@ -60,9 +60,9 @@ BUILD_CALL_1(template void nd4j::NDArray<float16>::applyRandom, float16, (nd4j::
 BUILD_CALL_1(template void nd4j::NDArray<float>::applyRandom, float, (nd4j::random::RandomBuffer *buffer, NDArray<float>* y, NDArray<float>* z, float* extraParams), RANDOM_OPS)
 BUILD_CALL_1(template void nd4j::NDArray<double>::applyRandom, double, (nd4j::random::RandomBuffer *buffer, NDArray<double>* y, NDArray<double>* z, double* extraParams), RANDOM_OPS)
 
-BUILD_CALL_1(template NDArray<float16> nd4j::NDArray<float16>::transform, float16, (float16* extraParams), TRANSFORM_OPS)
-BUILD_CALL_1(template NDArray<float>   nd4j::NDArray<float>::transform, float, (float* extraParams), TRANSFORM_OPS)
-BUILD_CALL_1(template NDArray<double>  nd4j::NDArray<double>::transform, double, (double* extraParams), TRANSFORM_OPS)
+BUILD_CALL_1(template NDArray<float16> nd4j::NDArray<float16>::transform, float16, (float16* extraParams) const, TRANSFORM_OPS)
+BUILD_CALL_1(template NDArray<float>   nd4j::NDArray<float>::transform, float, (float* extraParams) const, TRANSFORM_OPS)
+BUILD_CALL_1(template NDArray<double>  nd4j::NDArray<double>::transform, double, (double* extraParams) const, TRANSFORM_OPS)
 
 BUILD_CALL_1(template NDArray<float> *nd4j::NDArray<float>::template reduceAlongDimension, float, (const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const, REDUCE_OPS)
 BUILD_CALL_1(template NDArray<float16> *nd4j::NDArray<float16>::template reduceAlongDimension, float16, (const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const, REDUCE_OPS)
