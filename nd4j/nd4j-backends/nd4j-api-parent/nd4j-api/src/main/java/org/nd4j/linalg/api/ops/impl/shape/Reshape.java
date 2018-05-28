@@ -54,10 +54,6 @@ public class Reshape extends DynamicCustomOp {
         addIArgument(shape);
     }
 
-    public Reshape(SameDiff sameDiff, SDVariable i_v, SDVariable shape) {
-        super(null, sameDiff, new SDVariable[]{i_v, shape});
-        addIArgument('c');
-    }
 
     public Reshape() {
     }
