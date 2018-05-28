@@ -7,21 +7,16 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
-
-import static org.nd4j.autodiff.gradcheck.GradCheckUtil.initializeCoverage;
 
 /**
  * Gradient check utility
@@ -75,7 +70,9 @@ public class GradCheckUtil {
             if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || !DifferentialFunction.class.isAssignableFrom(clazz))
                 continue;
 
-            countPerClass.put(clazz, 0);
+            if(DifferentialFunction.class.isAssignableFrom(clazz)){
+                countPerClass.put(clazz, 0);
+            }
         }
     }
 
@@ -86,7 +83,7 @@ public class GradCheckUtil {
             log.info(" --- Gradient Checks: Classes Seen in Tests ---");
             for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
                 if(e.getValue() > 0){
-                    log.info("GradientCheck: Seen {} instances of {}", e.getValue(), e.getKey().getName());
+                    log.info("GradientCheck: Seen {} instances of op {}", e.getValue(), e.getKey().getName());
                     countSeen++;
                 }
             }
@@ -96,7 +93,7 @@ public class GradCheckUtil {
             log.info(" --- Gradient Checks: Classes NOT Seen in Tests ---");
             for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
                 if(e.getValue() == 0){
-                    log.info("GradientCheck: NO instances of {}", e.getValue(), e.getKey().getName());
+                    log.info("GradientCheck: NO instances of op {}", e.getKey().getName());
                 }
             }
         }
