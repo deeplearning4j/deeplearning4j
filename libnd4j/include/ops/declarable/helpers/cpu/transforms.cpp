@@ -615,7 +615,7 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
     
     if (dimensions.size() == 0) {
         // all-reduce
-        const T n2 = input.template reduceNumber<simdOps::Norm2<T>>();        
+        const T n2 = input.template reduceNumber<simdOps::Norm2<T>>();
         if (n2 <= clipNorm) {
             if (!isInplace)
                 output.assign(input);
