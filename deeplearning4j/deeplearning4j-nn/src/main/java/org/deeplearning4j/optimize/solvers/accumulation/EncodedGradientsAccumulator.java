@@ -59,7 +59,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     protected final AtomicThrowable throwable = new AtomicThrowable();
 
-    protected boolean isDebug = false;
+    protected boolean isDebug = true;
     protected final boolean relocatable;
 
     protected WorkspaceConfiguration appliedConfiguration = WorkspaceConfiguration.builder().minSize(5 * 1024 * 1024L)
