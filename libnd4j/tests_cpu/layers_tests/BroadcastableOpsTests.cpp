@@ -298,3 +298,51 @@ TEST_F(BroadcastableOpsTests, Test_Inplace_Output_1) {
 
     ASSERT_TRUE(buffO1 == buffO2);
 }
+
+TEST_F(BroadcastableOpsTests, Test_Subtract_1) {
+    NDArray<float> x(1.0f);
+    NDArray<float> y('c', {2}, {0.0f, 1.0f});
+    NDArray<float> e('c', {2}, {1.0f, 0.0f});
+
+    auto z = x - y;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+TEST_F(BroadcastableOpsTests, Test_Subtract_2) {
+    NDArray<float> x(1.0f);
+    NDArray<float> y('c', {2}, {0.0f, 1.0f});
+    NDArray<float> e('c', {2}, {1.0f, 0.0f});
+
+    nd4j::ops::subtract<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(BroadcastableOpsTests, Test_Subtract_3) {
+    NDArray<float> x(1.0f);
+    NDArray<float> y('c', {2}, {0.0f, 1.0f});
+    NDArray<float> z('c', {2}, {0.0f, 0.0f});
+    NDArray<float> e('c', {2}, {1.0f, 0.0f});
+
+    nd4j::ops::subtract<float> op;
+    auto result = op.execute({&x, &y}, {&z}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+TEST_F(BroadcastableOpsTests, Test_Subtract_4) {
+    NDArray<float> x(1.0f);
+    NDArray<float> y('c', {2}, {0.0f, 1.0f});
+    NDArray<float> e('c', {2}, {1.0f, 0.0f});
+
+    auto z = x.template applyTrueBroadcast<simdOps::Subtract<float>>(y);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+}

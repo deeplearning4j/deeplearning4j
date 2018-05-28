@@ -744,6 +744,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 boolean yRow = op.y().isRowVector();
                 boolean zRow = op.z().isRowVector();
 
+                if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
+                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
+
                 if ((xEWS >= 1 && yEWS >= 1
                         && xEWS == yEWS && !op.isExecSpecial()
                         && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
@@ -786,6 +789,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 boolean xRow = op.x().isRowVector();
                 boolean yRow = op.y().isRowVector();
                 boolean zRow = op.z().isRowVector();
+
+                if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
+                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
 
                 if ((xEWS >= 1 && yEWS >= 1
                         && xEWS == yEWS && !op.isExecSpecial()
@@ -1646,8 +1652,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public void exec(@NonNull CustomOp op) {
         long st = profilingHookIn(op);
 
-        if (op.numOutputArguments() == 0 && !op.isInplaceCall())
-            throw new ND4JIllegalStateException("Op name " + op.opName() +  " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
+        if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
+            try {
+                val list = this.calculateOutputShape(op);
+                if (list.isEmpty())
+                    throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
+
+                for (val shape: list)
+                    op.addOutputArgument(Nd4j.create(shape));
+
+            } catch (Exception e) {
+                throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
+            }
+        }
 
         val name = op.opName().toLowerCase();
         val hash = op.opHash();
@@ -1869,7 +1886,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public Map<String, INDArray> executeGraph(long id, Map<String, INDArray> map) {
+    public Map<String, INDArray> executeGraph(long id, @NonNull Map<String, INDArray> map, @NonNull Map<String, Integer> reverseMap) {
 
         val ptrBuffers = new PointerPointer(map.size());
         val ptrShapes = new PointerPointer(map.size());
@@ -1882,7 +1899,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             ptrBuffers.put(cnt, array.data().addressPointer());
             ptrShapes.put(cnt, array.shapeInfoDataBuffer().addressPointer());
-            ptrIndices.put(cnt, cnt);
+            ptrIndices.put(cnt, reverseMap.get(key));
 
             cnt++;
         }
@@ -1900,6 +1917,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 val var = result.at(e);
                 val nodeId = var.id();
                 val index = var.index();
+                val nodeName = var.getName().getString();
                 val shapeInfo = var.getNDArray().shapeInfo();
                 val buffer = var.getNDArray().buffer();
 
@@ -1920,7 +1938,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
-                newMap.put(keySet.get(nodeId), array);
+                //newMap.put(keySet.get(e), array);
+//                if (map.containsKey(nodeName))
+                    newMap.put(nodeName, array);
             }
             loop.deleteVariablesSetFloat(result);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
@@ -1955,7 +1975,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
-                newMap.put(keySet.get(nodeId), array);
+                //newMap.put(keySet.get(nodeId), array);
+                val nodeName = var.getName().getString();
+                newMap.put(nodeName, array);
             }
 
             loop.deleteVariablesSetDouble(result);
@@ -1991,7 +2013,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
-                newMap.put(keySet.get(nodeId), array);
+                //newMap.put(keySet.get(nodeId), array);
+                val nodeName = var.getName().getString();
+                newMap.put(nodeName, array);
             }
 
             loop.deleteVariablesSetHalf(result);

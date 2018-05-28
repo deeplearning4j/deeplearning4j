@@ -152,7 +152,8 @@ public class EvaluativeListener extends BaseTrainingListener {
      */
     @Override
     public void iterationDone(Model model, int iteration, int epoch) {
-        // no-op
+        if (invocationType == InvocationType.ITERATION_END)
+            invokeListener(model);
     }
 
     @Override
@@ -164,27 +165,6 @@ public class EvaluativeListener extends BaseTrainingListener {
     @Override
     public void onEpochEnd(Model model) {
         if (invocationType == InvocationType.EPOCH_END)
-            invokeListener(model);
-    }
-
-    @Override
-    public void onForwardPass(Model model, List<INDArray> activations) {
-        // no-op
-    }
-
-    @Override
-    public void onForwardPass(Model model, Map<String, INDArray> activations) {
-        // no-op
-    }
-
-    @Override
-    public void onGradientCalculation(Model model) {
-        // no-op
-    }
-
-    @Override
-    public void onBackwardPass(Model model) {
-        if (invocationType == InvocationType.ITERATION_END)
             invokeListener(model);
     }
 

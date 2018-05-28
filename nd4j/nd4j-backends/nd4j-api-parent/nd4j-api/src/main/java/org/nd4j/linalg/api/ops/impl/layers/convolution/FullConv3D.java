@@ -48,6 +48,13 @@ public class FullConv3D extends DynamicCustomOp {
         return config.toProperties();
     }
 
+    @Override
+    public long[] iArgs() {
+        if (iArguments.size() == 0)
+            addArgs();
+
+        return super.iArgs();
+    }
 
     @Override
     public void setValueFor(Field target, Object value) {

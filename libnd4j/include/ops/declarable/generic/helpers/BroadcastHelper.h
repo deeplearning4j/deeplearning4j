@@ -21,10 +21,16 @@ namespace nd4j {
                 } else if (!x->isScalar() && y->isScalar()) {
                     x->template applyScalar<OpName>(*y, z);
                 } else if (x->isScalar() && !y->isScalar()) {
-                    auto v = y->getShapeAsVector();
-                    auto tZ = NDArrayFactory<T>::valueOf(v, x->getScalar(0), y->ordering());
-                    tZ->template applyPairwiseTransform<OpName>(y, extraArgs);
-                    return tZ;
+                    if (z->isSameShape(y)) {
+                        z->assign(x);
+                        z->template applyPairwiseTransform<OpName>(y, extraArgs);
+                        return z;
+                    } else {
+                        auto v = y->getShapeAsVector();
+                        auto tZ = NDArrayFactory<T>::valueOf(v, x->getScalar(0), y->ordering());
+                        tZ->template applyPairwiseTransform<OpName>(y, extraArgs);
+                        return tZ;
+                    }
                 } else if (x->isScalar() && y->isScalar()) { // x->isScalar() && y->isScalar()
 				    z->putScalar(0, OpName::op(x->getScalar(0), y->getScalar(0)));
 			    } else if (ShapeUtils<T>::areShapesBroadcastable(*x, *y)) {

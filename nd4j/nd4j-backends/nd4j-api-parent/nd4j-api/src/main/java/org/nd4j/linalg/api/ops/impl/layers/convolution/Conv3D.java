@@ -103,6 +103,13 @@ public class Conv3D extends DynamicCustomOp {
             config.setValueFor(target, value);
     }
 
+    @Override
+    public long[] iArgs() {
+        if (iArguments.size() == 0)
+            addArgs();
+
+        return super.iArgs();
+    }
 
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {

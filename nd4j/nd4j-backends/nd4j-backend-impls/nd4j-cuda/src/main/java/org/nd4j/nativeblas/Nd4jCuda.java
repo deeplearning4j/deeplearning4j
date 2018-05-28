@@ -12988,9 +12988,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void shapeScalar(@Cast("Nd4jLong*const") LongBuffer buffer);
     @Namespace("shape") public static native void shapeScalar(@Cast("Nd4jLong*const") long[] buffer);
 
-    @Namespace("shape") public static native void shapeVector(int length, @Cast("Nd4jLong*const") LongPointer buffer);
-    @Namespace("shape") public static native void shapeVector(int length, @Cast("Nd4jLong*const") LongBuffer buffer);
-    @Namespace("shape") public static native void shapeVector(int length, @Cast("Nd4jLong*const") long[] buffer);
+    @Namespace("shape") public static native void shapeVector(@Cast("const Nd4jLong") long length, @Cast("Nd4jLong*const") LongPointer buffer);
+    @Namespace("shape") public static native void shapeVector(@Cast("const Nd4jLong") long length, @Cast("Nd4jLong*const") LongBuffer buffer);
+    @Namespace("shape") public static native void shapeVector(@Cast("const Nd4jLong") long length, @Cast("Nd4jLong*const") long[] buffer);
 
 
     @Namespace("shape") public static native void shapeOldScalar(@Cast("Nd4jLong*const") LongPointer buffer, char order);
