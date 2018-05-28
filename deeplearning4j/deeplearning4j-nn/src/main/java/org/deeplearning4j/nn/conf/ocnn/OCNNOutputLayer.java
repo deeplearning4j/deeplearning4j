@@ -47,6 +47,8 @@ public class OCNNOutputLayer extends BaseOutputLayer {
 
     private double initialRValue = 0.1;
 
+    private boolean configureR = true;
+
     /**
      * Psuedo code from keras:
      *  start_time = time.time()
@@ -71,16 +73,19 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         this.activationFn = builder.activation;
         this.windowSize = builder.windowSize;
         this.initialRValue = builder.initialRValue;
+        this.configureR = builder.configureR;
 
     }
 
     @JsonCreator
-    public OCNNOutputLayer(@JsonProperty("hiddenSize") int hiddenSize,@JsonProperty("nu") double nu,@JsonProperty("activation") IActivation activation,@JsonProperty("windowSize") int windowSize, @JsonProperty("initialRValue") double initialRValue) {
+    @SuppressWarnings("unused")
+    public OCNNOutputLayer(@JsonProperty("hiddenSize") int hiddenSize,@JsonProperty("nu") double nu,@JsonProperty("activation") IActivation activation,@JsonProperty("windowSize") int windowSize, @JsonProperty("initialRValue") double initialRValue,@JsonProperty("configureR") boolean configureR) {
         this.hiddenSize = hiddenSize;
         this.nu = nu;
         this.activationFn = activation;
         this.windowSize = windowSize;
         this.initialRValue = initialRValue;
+        this.configureR = configureR;
     }
 
     @Override
@@ -100,7 +105,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         ret.setParamTable(paramTable);
         ret.setConf(conf);
         ret.setActivation(activationFn);
-        if(lastEpochSinceRUpdated == 0)
+        if(lastEpochSinceRUpdated == 0 && configureR)
             paramTable.get(OCNNParamInitializer.R_KEY).putScalar(0,initialRValue);
         return ret;
     }
@@ -134,29 +139,81 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         protected int windowSize = 10000;
         protected IActivation activation = new ActivationIdentity();
         protected  double initialRValue = 0.1;
+        protected boolean configureR = true;
+
+        /**
+         * Whether to use the specified
+         * {@link #initialRValue} or
+         * use the weight initialization with
+         * the neural network for the r value
+         * @param configureR true if we should use the
+         *                   initial {@link #initialRValue}
+         *
+         * @return
+         */
+        public Builder configureR(boolean configureR) {
+            this.configureR = configureR;
+            return this;
+        }
 
 
+        /**
+         * The initial r value to use for ocnn
+         * for definition, see the paper,
+         * note this is only active when {@link #configureR}
+         * is specified as true
+         * @param initialRValue the int
+         * @return
+         */
         public Builder initialRValue(double initialRValue) {
             this.initialRValue = initialRValue;
             return this;
         }
 
+        /**
+         * The number of examples to use for computing the
+         * quantile for the r value update.
+         * This value should generally be the same
+         * as the number of examples in the dataset
+         * @param windowSize the number of examples to use
+         *                   for computing the quantile
+         *                   of the dataset for the r value update
+         * @return
+         */
         public Builder windowSize(int windowSize) {
             this.windowSize = windowSize;
             return this;
         }
 
 
+        /**
+         * For nu definition see the paper
+         * @param nu the nu for ocnn
+         * @return
+         */
         public Builder nu(double nu) {
             this.nu = nu;
             return this;
         }
 
+        /**
+         * The activation function to use with ocnn
+         * @param activation the activation function to sue
+         * @return
+         */
         public Builder activation(IActivation activation) {
             this.activation = activation;
             return this;
         }
 
+        /**
+         * The hidden layer size for the one class neural network.
+         * Note this would be nOut on a dense layer.
+         * NOut in this neural net is always set to 1 though.
+         * @param hiddenLayerSize the hidden layer size to use
+         *                        with ocnn
+         * @return
+         */
         public Builder hiddenLayerSize(int hiddenLayerSize) {
             this.hiddenLayerSize = hiddenLayerSize;
             return this;
