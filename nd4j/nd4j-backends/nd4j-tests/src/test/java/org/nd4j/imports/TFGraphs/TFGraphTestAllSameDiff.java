@@ -56,6 +56,7 @@ public class TFGraphTestAllSameDiff {
             return;
         }
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH);
+        //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 
 }

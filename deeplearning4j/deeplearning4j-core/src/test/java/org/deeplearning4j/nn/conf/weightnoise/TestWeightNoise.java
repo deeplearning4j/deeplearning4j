@@ -107,8 +107,9 @@ public class TestWeightNoise extends BaseDL4JTest {
             expCallsForLayer.add(new WeightNoiseCall(i, "W", 5, 1, true));
             expCallsForLayer.add(new WeightNoiseCall(i, "b", 5, 1, true));
 
-            expCallsForLayer.add(new WeightNoiseCall(i, "W", 5, 1, false));
-            expCallsForLayer.add(new WeightNoiseCall(i, "b", 5, 1, false));
+            //2 test calls
+            expCallsForLayer.add(new WeightNoiseCall(i, "W", 6, 2, false));
+            expCallsForLayer.add(new WeightNoiseCall(i, "b", 6, 2, false));
 
             expCalls.add(expCallsForLayer);
         }
@@ -174,8 +175,9 @@ public class TestWeightNoise extends BaseDL4JTest {
             expCallsForLayer.add(new WeightNoiseCall(layerIdxs[i], "W", 5, 1, true));
             expCallsForLayer.add(new WeightNoiseCall(layerIdxs[i], "b", 5, 1, true));
 
-            expCallsForLayer.add(new WeightNoiseCall(layerIdxs[i], "W", 5, 1, false));
-            expCallsForLayer.add(new WeightNoiseCall(layerIdxs[i], "b", 5, 1, false));
+            //2 test calls
+            expCallsForLayer.add(new WeightNoiseCall(layerIdxs[i], "W", 6, 2, false));
+            expCallsForLayer.add(new WeightNoiseCall(layerIdxs[i], "b", 6, 2, false));
 
             expCalls.add(expCallsForLayer);
         }

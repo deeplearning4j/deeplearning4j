@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.*;
 import onnx.OnnxProto3;
+import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -10,6 +11,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
@@ -856,6 +858,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public INDArray eval() {
+
         SameDiff exec = sameDiff.dup();
         exec.defineFunction("output", new SameDiff.SameDiffFunctionDefinition() {
             @Override
@@ -865,9 +868,10 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         });
 
         SDVariable output = exec.invokeFunctionOn("output",exec);
-        return output.getSameDiff().execAndEndResult();
+        return output.getSameDiff().execAndEndResult(this.outputIndex);
     }
 
+    public int outputIndex = 0;
 
 
 

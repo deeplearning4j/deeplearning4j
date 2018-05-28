@@ -36,15 +36,15 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     private String opName;
     @Builder.Default
-    private List<INDArray> inputArguments = new ArrayList<>();
+    protected List<INDArray> inputArguments = new ArrayList<>();
     @Builder.Default
-    private List<INDArray> outputArguments = new ArrayList<>();
+    protected List<INDArray> outputArguments = new ArrayList<>();
 
 
     @Builder.Default
-    private List<Double> tArguments = new ArrayList<>();
+    protected List<Double> tArguments = new ArrayList<>();
     @Builder.Default
-    private List<Long> iArguments = new ArrayList<>();
+    protected List<Long> iArguments = new ArrayList<>();
     @Getter
     @Setter
     protected boolean inplaceCall;
@@ -185,7 +185,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                         continue;
                     attemptToGetOrCreateArrForVar(newVars[i], outputShapes.get(i));
                 }
-            } else if (getDescriptor().getNumOutputs() < 1) {
+            } else if (getDescriptor().getNumOutputs() < 1  && getNumOutputs() < 1) {
                 //this should only happen if we have no way of knowing how many
                 //outputs are known from the descriptor
                 return new SDVariable[0];
@@ -937,6 +937,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             result.outputShapes = outputShapes;
 
             return result;
+        }
+
+        public int getNumOutputs(){
+            return -1;
         }
     }
 }

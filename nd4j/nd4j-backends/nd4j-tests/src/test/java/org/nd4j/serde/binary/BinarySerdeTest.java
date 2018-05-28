@@ -76,7 +76,7 @@ public class BinarySerdeTest {
         BinarySerde.writeArrayToDisk(rand, tmpFile);
         DataBuffer buffer = BinarySerde.readShapeFromDisk(tmpFile);
 
-        assertArrayEquals(rand.shapeInfoDataBuffer().asInt(), buffer.asInt());
+        assertArrayEquals(rand.shapeInfoDataBuffer().asLong(), buffer.asLong());
     }
 
     @Test

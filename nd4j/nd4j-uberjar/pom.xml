@@ -291,7 +291,7 @@
     <dependencies>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-cuda-9.1</artifactId>
+        <artifactId>nd4j-cuda-9.2</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>
@@ -323,12 +323,12 @@
     <dependencies>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-cuda-9.1</artifactId>
+        <artifactId>nd4j-cuda-9.2</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-cuda-9.1-platform</artifactId>
+        <artifactId>nd4j-cuda-9.2-platform</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>
