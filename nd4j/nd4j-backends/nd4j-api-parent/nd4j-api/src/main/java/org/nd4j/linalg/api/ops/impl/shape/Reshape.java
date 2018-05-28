@@ -176,12 +176,6 @@ public class Reshape extends DynamicCustomOp {
 
 
     @Override
-    public List<long[]> calculateOutputShape() {
-        return Arrays.asList(shape);
-    }
-
-
-    @Override
     public String opName() {
         return "reshape";
     }

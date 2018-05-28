@@ -2946,6 +2946,11 @@ public class SameDiff {
         return reshape(null, iX, shape);
     }
 
+    public SDVariable reshape(SDVariable iX,
+                              SDVariable shape) {
+        return reshape(null, iX, shape);
+    }
+
 
     /**
      * @param x
@@ -4107,6 +4112,14 @@ public class SameDiff {
      */
     public SDVariable reshape(String name, SDVariable iX,
                               int... shape) {
+        SDVariable result = functionFactory
+                .reshape(iX, shape);
+        return updateVariableNameAndReference(result, name);
+
+    }
+
+    public SDVariable reshape(String name, SDVariable iX,
+                              SDVariable shape) {
         SDVariable result = functionFactory
                 .reshape(iX, shape);
         return updateVariableNameAndReference(result, name);
