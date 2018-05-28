@@ -558,7 +558,7 @@ public class ParallelWrapper implements AutoCloseable {
                         // model averaging happens within
                         double score = getScore(locker);
 
-                        // updaters averging happens within (if any)
+                        // updaters averging happnens within (if any)
                         averageUpdatersState(locker, score);
 
                         long timeA2 = System.currentTimeMillis();
