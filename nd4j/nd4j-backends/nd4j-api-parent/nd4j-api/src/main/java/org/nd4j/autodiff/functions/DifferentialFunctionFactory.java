@@ -909,6 +909,10 @@ public class DifferentialFunctionFactory {
         return new Reshape(sameDiff(), iX, shape).outputVariables()[0];
     }
 
+    public SDVariable reshape(SDVariable iX, SDVariable shape) {
+        return new Reshape(sameDiff(), iX, shape).outputVariables()[0];
+    }
+
     public SDVariable reverse(SDVariable x, int... dimensions) {
         return new Reverse(sameDiff(), x, dimensions).outputVariables()[0];
     }
