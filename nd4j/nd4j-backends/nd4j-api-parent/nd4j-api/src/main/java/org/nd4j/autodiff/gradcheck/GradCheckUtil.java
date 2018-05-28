@@ -1,16 +1,21 @@
 package org.nd4j.autodiff.gradcheck;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
@@ -26,6 +31,81 @@ public class GradCheckUtil {
     private static final double DEFAULT_EPS = 1e-5;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-6;
+
+    private static Map<Class,Integer> countPerClass = new HashMap<>();
+
+    //Collect coverage information
+    static {
+        initializeCoverage();
+    }
+
+    private static void initializeCoverage(){
+        //Scan classpath to find all DifferentialFunction instances, so tensorflow/onnx mappings can be made
+        //We're assuming here that all instances with such mappings are defined in ND4J
+        //As of 04/2018 all DifferentialFunction classes are defined in org.nd4j.linalg.api.ops - with the exception
+        // of ILossFunction instances, which don't have TF/Onnx import working anyway
+        ImmutableSet<ClassPath.ClassInfo> info;
+        try {
+            //Dependency note: this ClassPath class was added in Guava 14
+            info = com.google.common.reflect.ClassPath.from(DifferentialFunctionClassHolder.class.getClassLoader())
+                    .getTopLevelClassesRecursive("org.nd4j.linalg.api.ops");
+        } catch (IOException e){
+            //Should never happen
+            throw new RuntimeException(e);
+        }
+
+
+        int count = 0;
+        for(ClassPath.ClassInfo c : info){
+            //Load method: Loads (but doesn't link or initialize) the class.
+            Class<?> clazz;
+            try{
+                clazz = Class.forName(c.getName());
+            } catch (ClassNotFoundException e){
+                //Should never happen as  this was found on the classpath
+                throw new RuntimeException(e);
+            }
+
+
+            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || !DifferentialFunction.class.isAssignableFrom(clazz))
+                continue;
+
+            if(DifferentialFunction.class.isAssignableFrom(clazz)){
+                countPerClass.put(clazz, 0);
+            }
+        }
+    }
+
+    public static void logCoverageInformation( boolean logSeen, boolean logUnseen ){
+
+        int countSeen = 0;
+        if(logSeen){
+            log.info(" --- Gradient Checks: Classes Seen in Tests ---");
+            for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
+                if(e.getValue() > 0){
+                    log.info("GradientCheck: Seen {} instances of op {}", e.getValue(), e.getKey().getName());
+                    countSeen++;
+                }
+            }
+        }
+
+        if(logUnseen){
+            log.info(" --- Gradient Checks: Classes NOT Seen in Tests ---");
+            for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
+                if(e.getValue() == 0){
+                    log.info("GradientCheck: NO instances of op {}", e.getKey().getName());
+                }
+            }
+        }
+
+
+        int total = countPerClass.size();
+        double frac = countSeen / (double)total;
+        String fracPc = String.format("%.2f",frac*100.0);
+        log.info("*****************************************************");
+        log.info("Gradient Checks: {} of {} classes checked ({}% coverage)", countSeen, total, fracPc);
+        log.info("*****************************************************");
+    }
 
 
     /**
@@ -141,6 +221,10 @@ public class GradCheckUtil {
 
     public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
                                          boolean exitOnFirstFailure){
+
+        //Collect coverage information:
+        collectCoverageInformation(sd);
+
 
         //Check data type:
         if(Nd4j.dataType() != DataBuffer.Type.DOUBLE){
@@ -288,5 +372,12 @@ public class GradCheckUtil {
         }
 
         return totalNFailures == 0;
+    }
+
+    private static void collectCoverageInformation(SameDiff sd){
+        DifferentialFunction[] functions = sd.functions();
+        for(DifferentialFunction df : functions){
+            countPerClass.put(df.getClass(), countPerClass.get(df.getClass()) + 1);
+        }
     }
 }

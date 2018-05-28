@@ -10,7 +10,9 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -28,6 +30,7 @@ import org.nd4j.linalg.schedule.StepSchedule;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.File;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -40,7 +43,8 @@ public class OCNNOutputLayerTest {
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
-
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
     static {
         Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
@@ -96,12 +100,15 @@ public class OCNNOutputLayerTest {
 
 
     @Test
-    public void testLabelProbabilities() {
+    public void testLabelProbabilities() throws Exception {
+        Nd4j.getRandom().setSeed(42);
         DataSetIterator dataSetIterator = getNormalizedIterator();
         MultiLayerNetwork network = getSingleLayer();
         DataSet next = dataSetIterator.next();
         DataSet filtered = next.filterBy(new int[]{0, 1});
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 4; i++) {
+            network.setEpochCount(i);
+            network.getLayerWiseConfigurations().setEpochCount(i);
             network.fit(filtered);
         }
 
@@ -118,6 +125,15 @@ public class OCNNOutputLayerTest {
         INDArray outputForNormalSamples = network.output(filtered.getFeatureMatrix(),false);
         System.out.println("Normal probabilities " + normalProbs);
         System.out.println("Normal raw output " + outputForNormalSamples);
+
+        File tmpFile = new File(testDir.getRoot(),"tmp-file-" + UUID.randomUUID().toString());
+        ModelSerializer.writeModel(network,tmpFile,true);
+        tmpFile.deleteOnExit();
+
+        MultiLayerNetwork multiLayerNetwork = ModelSerializer.restoreMultiLayerNetwork(tmpFile);
+        assertEquals(network.params(),multiLayerNetwork.params());
+        assertEquals(network.numParams(),multiLayerNetwork.numParams());
+
     }
 
 
@@ -136,20 +152,18 @@ public class OCNNOutputLayerTest {
         MultiLayerConfiguration configuration = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.XAVIER)
                 .miniBatch(true)
-                .l2(5e-3)
-                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                 .updater(Nesterovs.builder()
-                        .momentum(0.9)
+                        .momentum(0.1)
                         .learningRateSchedule(new StepSchedule(
                                 ScheduleType.EPOCH,
                                 1e-2,
                                 0.1,
                                 20)).build())
-                .list(new DenseLayer.Builder().activation(new ActivationIdentity())
-                                .nIn(4).nOut(3).build(),
+                .list(new DenseLayer.Builder().activation(new ActivationReLU())
+                                .nIn(4).nOut(2).build(),
                         new  org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer.Builder()
-                                .nIn(3).activation(new ActivationSigmoid())
-                                .nu(0.004)
+                                .nIn(2).activation(new ActivationSigmoid()).initialRValue(0.1)
+                                .nu(0.1)
                                 .hiddenLayerSize(numHidden).build())
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(configuration);

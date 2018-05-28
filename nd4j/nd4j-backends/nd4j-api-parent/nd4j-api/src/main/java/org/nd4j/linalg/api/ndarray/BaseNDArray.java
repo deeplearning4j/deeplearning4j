@@ -2779,6 +2779,27 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
            return this;
        }
+
+       else if(isScalar()) {
+           switch (operation) {
+               case 'a':
+                   return columnVector.addi(getDouble(0));
+               case 'p':
+                   return columnVector.assign(getDouble(0));
+               case 's':
+                   return columnVector.subi(getDouble(0));
+               case 'm':
+                   return columnVector.muli(getDouble(0));
+               case 'd':
+                   return columnVector.divi(getDouble(0));
+               case 'h':
+                   return columnVector.rsubi(getDouble(0));
+               case 't':
+                   return columnVector.rdivi(getDouble(0));
+
+           }
+       }
+
         //Input validation: require (a) columnVector to actually be a column vector, and (b) this.size(0) to match columnVector.size(0)
         if (!columnVector.isColumnVector() || this.size(0) != columnVector.size(0) || columnVector.length() <= 1) {
             throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape())
@@ -2936,6 +2957,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
 
             return this;
+        }
+        else if(isScalar()) {
+            switch (operation) {
+                case 'a':
+                    return rowVector.addi(getDouble(0));
+                case 'p':
+                    return rowVector.assign(getDouble(0));
+                case 's':
+                    return rowVector.subi(getDouble(0));
+                case 'm':
+                    return rowVector.muli(getDouble(0));
+                case 'd':
+                    return rowVector.divi(getDouble(0));
+                case 'h':
+                    return rowVector.rsubi(getDouble(0));
+                case 't':
+                    return rowVector.rdivi(getDouble(0));
+
+            }
         }
 
         //Input validation: require (a) rowVector to actually be a row vector, and (b) this.size(1) to match rowVector.size(1)
@@ -4430,7 +4470,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getCompressor().autoDecompress(this);
 
         if (i >= length()) {
-            throw new IllegalArgumentException("Unable to get linear index >= " + length());
+            throw new IllegalArgumentException("Unable to get linear index " + i + ": values is greater than length (" + length() + ")");
         }
 
         autoProcessScalarCall();

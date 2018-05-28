@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.layers.ocnn;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -17,6 +16,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -41,6 +42,11 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
     private ILossFunction lossFunction;
 
+    private int batchWindowSizeIndex;
+
+
+    private INDArray window;
+
     public OCNNOutputLayer(NeuralNetConfiguration conf) {
         super(conf);
         this.lossFunction = new OCNNLossFunction();
@@ -54,10 +60,6 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         ocnnOutputLayer.setLossFn(this.lossFunction);
     }
 
-    @Override
-    public INDArray getLabels() {
-        return super.getLabels();
-    }
 
     @Override
     public void setLabels(INDArray labels) {
@@ -101,7 +103,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         assertInputSet(true);
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr), workspaceMgr); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         //150
-        val inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
+        long inputShape = (( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) this.getConf().getLayer()).getNIn();
         INDArray delta = pair.getSecond();
         //4 x 150
         INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new long[]{inputShape, delta.length()}, 'f');
@@ -121,11 +123,38 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
         org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer conf = ( org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer) conf().getLayer();
 
-        if(conf.getLastEpochSinceRUpdated()  != epochCount) {
+
+        if(conf.getLastEpochSinceRUpdated() == 0 && epochCount == 0) {
             INDArray currentR = doOutput(false,workspaceMgr);
-            double percentile = currentR.percentileNumber(100 * 0.04).doubleValue();
+            if(window == null) {
+                window = Nd4j.createUninitializedDetached(conf.getWindowSize()).assign(0.0);
+            }
+
+            if(batchWindowSizeIndex < window.length() - currentR.length()) {
+                window.put(new INDArrayIndex[]{NDArrayIndex.interval(batchWindowSizeIndex,batchWindowSizeIndex + currentR.length())},currentR);
+            }
+            else if(batchWindowSizeIndex < window.length()) {
+                int windowIdx = (int) window.length() - batchWindowSizeIndex;
+                window.put(new INDArrayIndex[]{NDArrayIndex.interval(window.length() - windowIdx,window.length())},currentR.get(NDArrayIndex.interval(0,windowIdx)));
+
+            }
+
+            batchWindowSizeIndex += currentR.length();
+            conf.setLastEpochSinceRUpdated(epochCount);
+        }
+        else if(conf.getLastEpochSinceRUpdated()  != epochCount) {
+            double percentile = window.percentileNumber(100.0 * conf.getNu()).doubleValue();
             getParam(R_KEY).putScalar(0,percentile);
             conf.setLastEpochSinceRUpdated(epochCount);
+            batchWindowSizeIndex = 0;
+        }
+        else {
+            //track a running average per minibatch per epoch
+            //calculate the average r value quantl=ile
+            //once the epoch changes
+
+            INDArray currentR = doOutput(false,workspaceMgr);
+            window.put(new INDArrayIndex[]{NDArrayIndex.interval(batchWindowSizeIndex,batchWindowSizeIndex + currentR.length())},currentR);
         }
 
 
@@ -145,7 +174,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         //dG -> sigmoid derivative
 
         INDArray firstVertDerivV =  layerConf().getActivationFn()
-                .backprop(xTimesV.dup(),Nd4j.scalar(1.0))
+                .backprop(xTimesV.dup(),Nd4j.ones(xTimesV.shape()))
                 .getFirst().muliRowVector(getParam(W_KEY).neg());
         firstVertDerivV = delta.isRowVector() ?
                 firstVertDerivV .muliRowVector(delta)
@@ -155,7 +184,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         INDArray secondTermDerivV = input.reshape('f',
                 input.size(0),getParam(V_KEY).size(0),1);
 
-        val shape = new long[firstVertDerivV.shape().length];
+        long[]  shape = new long[firstVertDerivV.shape().length];
         for(int i = 0; i < firstVertDerivV.rank(); i++) {
             shape[i] = Math.max(firstVertDerivV.size(i),secondTermDerivV.size(i));
         }
@@ -173,8 +202,6 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
 
 
         INDArray derivR = Nd4j.scalar(delta.meanNumber()).muli(oneDivNu).addi(-1);
-        gradient.setGradientFor(R_KEY,Nd4j.scalar(0.0));
-
         gradient.setGradientFor(R_KEY,gradientViews.get(R_KEY).assign(derivR));
         clearNoiseWeightParams();
 
