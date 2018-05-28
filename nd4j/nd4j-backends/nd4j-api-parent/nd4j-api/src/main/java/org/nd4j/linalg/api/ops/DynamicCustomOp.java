@@ -524,7 +524,12 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
          */
 
         setDummyInputs();
-        return Nd4j.getExecutioner().calculateOutputShape(this);
+        try {
+            return Nd4j.getExecutioner().calculateOutputShape(this);
+        }
+       catch (Exception e){
+           return Collections.emptyList();
+       }
     }
 
     @Override
