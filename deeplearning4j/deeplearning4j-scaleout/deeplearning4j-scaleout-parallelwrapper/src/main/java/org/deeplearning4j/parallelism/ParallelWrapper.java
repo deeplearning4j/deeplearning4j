@@ -513,7 +513,7 @@ public class ParallelWrapper implements AutoCloseable {
             */
             int pos = locker.getAndIncrement();
 
-            if (debug)
+            if (true)
                 log.info("Feeding dataset {} to worker {}", intcnt, pos);
 
             if (zoo == null)

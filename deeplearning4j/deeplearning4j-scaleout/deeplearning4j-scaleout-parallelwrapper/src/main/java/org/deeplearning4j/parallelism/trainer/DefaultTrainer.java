@@ -46,7 +46,7 @@ public class DefaultTrainer extends Thread implements Trainer {
 
     // TODO: make queue size configurable
     @Builder.Default
-    protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(1);
+    protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(2);
     @Builder.Default
     protected LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>(1);
     @Builder.Default
