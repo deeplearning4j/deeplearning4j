@@ -820,7 +820,7 @@ public class GradCheckTransforms {
                     ok = GradCheckUtil.checkGradients(sd);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    msg += " - EXCEPTION";
+                    msg += " - EXCEPTION: " + e.getMessage();
                     ok = false;
                 }
             }

@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -87,7 +88,8 @@ public class RSqrt extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException();
+        SDVariable xPowNeg32 = f().pow(arg(), -1.5).mul(-0.5);
+        return Collections.singletonList(i_v.get(0).mul(xPowNeg32));
     }
 
 }

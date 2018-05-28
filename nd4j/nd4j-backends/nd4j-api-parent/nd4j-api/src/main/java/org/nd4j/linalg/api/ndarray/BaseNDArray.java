@@ -4430,7 +4430,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getCompressor().autoDecompress(this);
 
         if (i >= length()) {
-            throw new IllegalArgumentException("Unable to get linear index >= " + length());
+            throw new IllegalArgumentException("Unable to get linear index " + i + ": values is greater than length (" + length() + ")");
         }
 
         autoProcessScalarCall();
