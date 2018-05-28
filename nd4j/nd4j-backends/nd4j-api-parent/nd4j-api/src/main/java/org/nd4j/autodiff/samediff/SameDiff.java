@@ -4913,7 +4913,7 @@ public class SameDiff {
     }
 
     public INDArray[] execAndEndResults() {
-        resolveVariablesWith(Collections.<String, INDArray>emptyMap());
+        //resolveVariablesWith(Collections.<String, INDArray>emptyMap());
         List<DifferentialFunction> exec = exec().getRight();
         val finalOp = exec.get(exec.size() - 1);
         val output = finalOp.outputVariables();
