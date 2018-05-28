@@ -300,6 +300,7 @@ TEST_F(BroadcastableOpsTests, Test_Inplace_Output_1) {
 }
 
 TEST_F(BroadcastableOpsTests, Test_Subtract_1) {
+
     NDArray<float> x(1.0f);
     NDArray<float> y('c', {2}, {0.0f, 1.0f});
     NDArray<float> e('c', {2}, {1.0f, 0.0f});
@@ -354,7 +355,125 @@ TEST_F(BroadcastableOpsTests, Test_Subtract_5) {
     NDArray<float> e('c', {2}, {-1., 0.});
 
     auto z = y - x;
-    z.printIndexedBuffer();
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, Test_Subtract_6) {
+    NDArray<float> x(1.0f);
+    NDArray<float> y(4.f);
+    NDArray<float> e(3.f);
+
+    auto z = y - x;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, Test_Subtract_7) {
+    NDArray<float> x(1.0f);
+    NDArray<float> y(4.f);
+    NDArray<float> e(-3.f);
+
+    auto z = x - y;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, Test_Add_2) {
+
+    NDArray<float> x(1.0f);
+    NDArray<float> y('c', {2}, {0.0f, 1.0f});
+    NDArray<float> e('c', {2}, {1.f, 2.f});
+
+    auto z = x + y;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, Test_Add_3) {
+
+    NDArray<float> x(1.0f);
+    NDArray<float> y('c', {2}, {0.0f, 1.0f});
+    NDArray<float> e('c', {2}, {1.f, 2.f});
+
+    auto z = y + x;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, Test_Add_4) {
+    
+    NDArray<float> x(1.0f);
+    NDArray<float> y(4.f);
+    NDArray<float> e(5.f);
+
+    auto z = x + y;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, Test_Add_5) {
+    
+    NDArray<float> x(1.0f);
+    NDArray<float> y(4.f);
+    NDArray<float> e(5.f);
+
+    auto z = y + x;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, Test_Multiply_2) {
+    
+    NDArray<float> x(2.0f);
+    NDArray<float> y('c', {2}, {3.f, 4.f});
+    NDArray<float> e('c', {2}, {6.f, 8.f});
+
+    auto z = y * x;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, Test_Multiply_3) {
+    
+    NDArray<float> x(2.0f);
+    NDArray<float> y('c', {2}, {3.f, 4.f});
+    NDArray<float> e('c', {2}, {6.f, 8.f});
+
+    auto z = x * y;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, Test_Multiply_4) {
+    
+    NDArray<float> x(2.0f);
+    NDArray<float> y(4.f);
+    NDArray<float> e(8.f);
+
+    auto z = y * x;
+
+    ASSERT_TRUE(e.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(BroadcastableOpsTests, Test_Multiply_5) {
+    
+    NDArray<float> x(2.0f);
+    NDArray<float> y(4.f);
+    NDArray<float> e(8.f);
+
+    auto z = x * y;
 
     ASSERT_TRUE(e.equalsTo(z));
 }

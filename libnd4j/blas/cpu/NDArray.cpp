@@ -2272,10 +2272,15 @@ template <typename OpName>
 void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target, const bool checkTargetShape, T *extraArgs) const {
 
     if(target == nullptr || other == nullptr)
-        throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
+        throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");    
 
-    if (this->isScalar()) {        
-        other->template applyScalar<OpName>(getScalar(0), target);
+    if (isScalar()) {        
+        target->assign(this);
+        target->template applyPairwiseTransform<OpName>(const_cast<NDArray<T>*>(other), extraArgs);
+        return;
+    }
+    if (other->isScalar()) {        
+        this->template applyScalar<OpName>(other->getScalar(0), target, extraArgs);
         return;
     }
 
@@ -3084,11 +3089,6 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     template<typename T>
     NDArray<T> NDArray<T>::operator-(const NDArray<T>& other) const {
         
-        if (other.isScalar() && !isScalar()) {
-            NDArray<T> result(_shapeInfo, _workspace);
-            functions::scalar::ScalarTransform<T>::template transform<simdOps::Subtract<T>>(_buffer, _shapeInfo, result._buffer, result._shapeInfo, other._buffer[0], nullptr);
-            return result;
-        }
         if (other.lengthOf() == lengthOf()) {
             NDArray<T> result(_shapeInfo, _workspace);
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Subtract<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
