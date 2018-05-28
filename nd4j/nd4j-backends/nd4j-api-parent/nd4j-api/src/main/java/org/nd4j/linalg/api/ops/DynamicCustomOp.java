@@ -58,8 +58,53 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         tArguments = new ArrayList<>();
     }
 
+
+    // Hack to get output shape without data
+    private Map<long[], INDArray> dummyArrays = new HashMap<>();
+
+    private INDArray getDummyArray(long[] shape){
+        INDArray dummy = dummyArrays.get(shape);
+        if (dummy == null){
+            dummy = Nd4j.zeros(shape);
+            dummyArrays.put(shape, dummy);
+        }
+        return dummy;
+    }
+
+    private boolean dummies_set = false;
+    private void setDummyInputs(){
+        if(dummies_set){
+            return;
+        }
+        dummies_set = true;
+        val descriptor = getDescriptor();
+
+
+        // this condition detects calls where
+        // parameters are passed as inputs rather
+        // iargs/targs
+        if (args.length == 1 ||
+            iArguments.size() > 1 ||
+            tArguments.size() > 1 ||
+            (descriptor.getNumIArgs() == 0 &&
+             descriptor.getNumTArgs() == 0)){
+
+
+            inputArguments.clear();// just in case
+            for(val arg: args){
+                val shape = arg.getShape();
+                if (shape == null){
+                    inputArguments.clear();
+                    break;
+                }
+                inputArguments.add(getDummyArray(shape));
+            }
+        }
+    }
+    private SDVariable[] args;
     public DynamicCustomOp(String opName, SameDiff sameDiff, SDVariable[] args) {
         super(sameDiff, args);
+        this.args = args;
         this.opName = opName;
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
@@ -477,6 +522,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
          * Note that we are currently getting shape errors
          * because the input and output arguments are not specified.
          */
+
+        setDummyInputs();
         return Nd4j.getExecutioner().calculateOutputShape(this);
     }
 
@@ -511,7 +558,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public void updateInputsFromSameDiff() {
         val inputs = sameDiff.getInputsForFunction(this);
 
-        inputArguments.clear();;
+        inputArguments.clear();
 
         for (val input: inputs)
             inputArguments.add(sameDiff.getArrForVarName(input));
