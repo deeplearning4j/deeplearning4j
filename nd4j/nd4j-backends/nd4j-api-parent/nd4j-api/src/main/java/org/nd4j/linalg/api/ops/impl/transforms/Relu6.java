@@ -24,7 +24,9 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -131,7 +133,7 @@ public class Relu6 extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        // TODO: implement
-        throw new UnsupportedOperationException();
+        SDVariable dLdOut = i_v.get(0);
+        return Collections.singletonList(f().relu6Derivative(arg(), dLdOut, cutoff));
     }
 }
