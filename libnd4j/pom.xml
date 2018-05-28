@@ -665,6 +665,17 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>skipTestCompileAndRun</id>
+            <activation>
+                <property>
+                    <name>skipTests</name>
+                </property>
+            </activation>
+            <properties>
+                <maven.test.skip>true</maven.test.skip>
+            </properties>
+        </profile>
     </profiles>
 
 </project>
