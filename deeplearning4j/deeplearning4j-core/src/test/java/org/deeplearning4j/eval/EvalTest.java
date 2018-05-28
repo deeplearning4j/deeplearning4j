@@ -43,6 +43,7 @@ import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.EvaluativeListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -1249,6 +1250,40 @@ public class EvalTest extends BaseDL4JTest {
 
         System.out.println("\n\n\n\n");
         System.out.println(e.stats(false, true));
+    }
+
+
+
+    @Test
+    public void testEvaluativeListenerSimple(){
+        //Sanity check: https://github.com/deeplearning4j/deeplearning4j/issues/5351
+
+        // Network config
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(42)
+                .updater(new Sgd(1e-6)).list()
+                .layer(0, new DenseLayer.Builder().nIn(4).nOut(2).activation(Activation.TANH)
+                        .weightInit(WeightInit.XAVIER).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                        LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).weightInit(WeightInit.XAVIER)
+                        .activation(Activation.SOFTMAX).build())
+                .build();
+
+        // Instantiate model
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        // Train-test split
+        DataSetIterator iter = new IrisDataSetIterator(30, 150);
+        DataSetIterator iterTest = new IrisDataSetIterator(30, 150);
+
+        net.setListeners(new EvaluativeListener(iterTest, 3));
+
+        for( int i=0; i<10; i++ ){
+            net.fit(iter);
+        }
+
 
     }
 }
