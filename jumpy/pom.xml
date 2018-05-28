@@ -2,21 +2,20 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
-    <artifactId>dl4j</artifactId>
+    <artifactId>jumpy</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.0-beta</version>
-    <name>dl4j</name>
-    <url>http://maven.apache.org</url>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>jumpy</name>
 
     <properties>
-        <dl4j.version>1.0.0-beta</dl4j.version>
+        <jumpy.version>1.0.0-SNAPSHOT</jumpy.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
-            <version>${dl4j.version}</version>
+            <version>${jumpy.version}</version>
         </dependency>
     </dependencies>
 
