@@ -10,7 +10,7 @@
 namespace nd4j {
     namespace ops {
         //////////////////////////////////////////////////////////////////////////
-        // here iArgs is vector with shape dimensions at the beginning and last element in iArgs is order
+        // here iArgs is a vector with order as first element ({order, dim1, dim2, dim3, ...})
         CUSTOM_OP_IMPL(reshape, 1, 1, true, 0, -2) {
             auto x = INPUT_VARIABLE(0);
 
