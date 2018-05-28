@@ -174,7 +174,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         //dG -> sigmoid derivative
 
         INDArray firstVertDerivV =  layerConf().getActivationFn()
-                .backprop(xTimesV.dup(),Nd4j.scalar(1.0))
+                .backprop(xTimesV.dup(),Nd4j.ones(xTimesV.shape()))
                 .getFirst().muliRowVector(getParam(W_KEY).neg());
         firstVertDerivV = delta.isRowVector() ?
                 firstVertDerivV .muliRowVector(delta)
