@@ -259,11 +259,12 @@ public class SharedTrainingWrapper {
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
                     log.info("Params at PW: {}", originalModel.params().meanNumber().doubleValue());
+                    log.info("prefetchBuffer size: {}", trainingConfiguration.getPrefetchSize());
 
                     wrapper = new ParallelWrapper.Builder<>(originalModel).workers(numWorkers)
                                     .workspaceMode(trainingConfiguration.getWorkspaceMode())
                                     .trainingMode(ParallelWrapper.TrainingMode.CUSTOM).gradientsAccumulator(accumulator)
-                                    .prefetchBuffer(trainingConfiguration.getPrefetchSize()).build();
+                                    .prefetchBuffer(Math.max(4, trainingConfiguration.getPrefetchSize())).build();
                 } else {
                     log.info("Using standalone model instead...");
 
