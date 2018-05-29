@@ -2,6 +2,8 @@ package org.deeplearning4j.zoo;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.common.resources.DL4JResources;
+import org.deeplearning4j.common.resources.ResourceType;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -22,13 +24,8 @@ import java.util.zip.Checksum;
 @Slf4j
 public abstract class ZooModel<T> implements InstantiableModel {
 
-    public static File ROOT_CACHE_DIR = new File(System.getProperty("user.home"), "/.deeplearning4j/");
-
     public boolean pretrainedAvailable(PretrainedType pretrainedType) {
-        if (pretrainedUrl(pretrainedType) == null)
-            return false;
-        else
-            return true;
+        return pretrainedUrl(pretrainedType) != null;
     }
 
     /**
@@ -56,8 +53,8 @@ public abstract class ZooModel<T> implements InstantiableModel {
 
         String localFilename = new File(remoteUrl).getName();
 
-        ROOT_CACHE_DIR.mkdirs();
-        File cachedFile = new File(ROOT_CACHE_DIR.getAbsolutePath(), localFilename);
+        File rootCacheDir = DL4JResources.getDirectory(ResourceType.ZOO_MODEL, modelName());
+        File cachedFile = new File(rootCacheDir, localFilename);
 
         if (!cachedFile.exists()) {
             log.info("Downloading model to " + cachedFile.toString());
@@ -90,5 +87,10 @@ public abstract class ZooModel<T> implements InstantiableModel {
             throw new UnsupportedOperationException(
                             "Pretrained models are only supported for MultiLayerNetwork and ComputationGraph.");
         }
+    }
+
+    @Override
+    public String modelName() {
+        return getClass().getSimpleName().toLowerCase();
     }
 }
