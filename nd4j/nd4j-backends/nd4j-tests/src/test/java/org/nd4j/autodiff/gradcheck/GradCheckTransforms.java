@@ -673,10 +673,10 @@ public class GradCheckTransforms {
                     //Clip by norm, dimension 0, some below threshold, some above
                     double clip = 2.0;
                     ia = Nd4j.rand(ia.shape());
-                    ia.muliRowVector(ia.norm2(0).rdiv(clip));  //Exactly at threshold...
-                    System.out.println(ia.norm2(0));
-                    ia.muliRowVector(Nd4j.linspace(0.9, 1.1, ia.size(1)));
-                    System.out.println(ia.norm2(0));
+                    ia.diviRowVector(ia.norm2(0)).muli(clip);  //Norm2 is now 'clip' (i.e., exactly at threshold
+                    //System.out.println(ia.norm2(0));
+                    ia.muliColumnVector(Nd4j.linspace(0.9, 1.1, ia.size(0)).transpose());
+                    //System.out.println(ia.norm2(0));
 
                     expOut = Nd4j.create(ia.shape());
                     for (int j = 0; j < ia.columns(); j++) {
@@ -687,6 +687,7 @@ public class GradCheckTransforms {
                             expOut.putColumn(j, origCol.mul(clip / origCol.norm2Number().doubleValue()));
                         }
                     }
+                    //System.out.println(expOut.norm2(0));
 
                     t = sd.clipByNorm(in, clip, 0);
                     break;
@@ -775,7 +776,7 @@ public class GradCheckTransforms {
                 case 60:
                     t = sd.relu6(in, 0);
                     ia = Nd4j.rand(minibatch, nOut);
-                    expOut = Transforms.relu6(ia);
+                    expOut = Transforms.relu6(ia, true);
 //                    skipBackward = true;
                     break;
                 case 61:
@@ -1000,7 +1001,6 @@ public class GradCheckTransforms {
                             .addOutputs(expOut)
                             .build();
                     Nd4j.getExecutioner().exec(squareDiff);
-                    skipBackward = true;
                     break;
                 default:
                     throw new RuntimeException();

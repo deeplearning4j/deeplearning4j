@@ -1,6 +1,6 @@
 /*-
  *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2018 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -22,8 +22,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.List;
 
@@ -32,23 +31,17 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class Relu6Derivative extends BaseTransformOp {
+public class Relu6Derivative extends DynamicCustomOp {
 
     private double cutoff = 0.0;
 
-    public Relu6Derivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double cutoff) {
-        super(sameDiff, i_v1, i_v2, inPlace);
+    public Relu6Derivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double cutoff) {
+        super("relu6_bp", sameDiff, new SDVariable[]{i_v1, i_v2});
         this.cutoff = cutoff;
         this.extraArgs = new Object[]{cutoff};
     }
 
     public Relu6Derivative() {
-        this.extraArgs = new Object[]{cutoff};
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
         this.extraArgs = new Object[]{cutoff};
     }
 
