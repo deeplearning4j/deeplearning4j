@@ -5150,7 +5150,6 @@ public class SameDiff {
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec(String functionName) {
         if (debugMode) {
             return sameDiffFunctionInstances.get(functionName).enableDebugMode().exec();
-
         } else
             return sameDiffFunctionInstances.get(functionName).exec();
     }
@@ -5179,7 +5178,11 @@ public class SameDiff {
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards() {
 
         final SameDiff outer = this;
-        if (getFunction("grad") == null)
+        if (getFunction("grad") == null) {
+            if(log.isTraceEnabled()){
+                log.trace("Defining function \"grad\"");
+            }
+
             defineFunction("grad", new SameDiffFunctionDefinition() {
 
                 @Override
@@ -5215,6 +5218,12 @@ public class SameDiff {
                     val initialOuts = allFunctions.get(allFunctions.size() - 1).outputVariables();
                     val firstBackward = initialOuts[0];
 
+                    if(log.isTraceEnabled()){
+                        String[] initialOutputsStr = allFunctions.get(allFunctions.size()-1).outputVariablesNames();
+                        String s = initialOutputsStr == null ? "null" : Arrays.toString(initialOutputsStr);
+                        log.trace("Defining backward function: initial outputs {}", s);
+                    }
+
                     //start with scalar backprop
                     SDVariable initialGrad = sameDiff.var("one-var", Nd4j.scalar(1.0));
                     sameDiff.forwardVarForGrad.put(firstBackward.getVarName(), initialGrad);
@@ -5227,7 +5236,15 @@ public class SameDiff {
                     Collections.reverse(allFunctions);
 
 
-                    for (DifferentialFunction action : allFunctions) {
+
+                    //for (DifferentialFunction action : allFunctions) {
+                    for( int i=0; i<allFunctions.size(); i++ ){
+                        DifferentialFunction action = allFunctions.get(i);
+                        if(log.isTraceEnabled()){
+                            log.trace("Defining backward function step {} of {}: {} ({}) - {}", (i+1), allFunctions.size(),
+                                    action.opName(), action.getOwnName(), action.getClass().getName());
+                        }
+
                         if (action instanceof GradientBackwardsMarker) {
                             log.warn("Action op state is null for " + action.opName());
                             continue;
@@ -5263,12 +5280,19 @@ public class SameDiff {
                         }
                     }
 
+                    if(log.isTraceEnabled()){
+                        log.trace("Defining backward function complete");
+                    }
 
                     return new SDVariable[]{sameDiff.var("grad", new int[]{1, 1})};
                 }
             });
+        }
 
 
+        if(log.isTraceEnabled()){
+            log.trace("About to execute backward function");
+        }
         Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> forward = exec("grad");
         SameDiff grad = getFunction("grad");
         if (grad.isDebugMode()) {
@@ -5627,6 +5651,10 @@ public class SameDiff {
      * @return
      */
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec() {
+        if(log.isTraceEnabled()){
+            log.trace("Starting execution: {} functions", functionInstancesById.size());
+        }
+
         if (!resolvedVariables)
             resolveVariablesWith(new LinkedHashMap<String, INDArray>());
 
@@ -5655,12 +5683,28 @@ public class SameDiff {
         for (; i < funcs.size(); i++) {
             ++exec_counter;
 
+            if(log.isTraceEnabled()){
+                val f = funcs.get(i);
+                String[] argNames = f.argNames();
+                String[] outNames = f.outputVariablesNames();
+                log.trace("Starting execution of step {} of {}: Function {} (ownName={}) - {}", exec_counter, funcs.size(),
+                        f.opName(), f.getOwnName(), f.getClass().getName());
+                log.trace("Function inputs: {} - Function outputs: {}", (argNames == null ? "(none)" : Arrays.toString(argNames)),
+                        (outNames == null ? "(none)" : Arrays.toString(outNames)));
+                SDVariable[] args = f.args();
+                for( int arg=0; arg<args.length; arg++ ){
+                    INDArray arr = args[i].getArr();
+                    String arrShape = (arr == null ? "<array not present>" : Arrays.toString(arr.shape()));
+                    log.trace("--> arg {} - {}: array shape: {}", i, argNames[i], arrShape);
+                }
+            }
+
             val opName = funcs.get(i).opName();
-            if (!onBackward && opName.equals(new GradientBackwardsMarker().opName())) {
+            if (!onBackward && GradientBackwardsMarker.OP_NAME.equals(opName)) {
                 onBackward = true;
             }
 
-            if (opName.equals(new GradientBackwardsMarker().opName()))
+            if (GradientBackwardsMarker.OP_NAME.equals(opName))
                 continue;
 
             DifferentialFunction differentialFunction = funcs.get(i);
@@ -5670,6 +5714,9 @@ public class SameDiff {
             flowPath.ensureNodeStateExists(differentialFunction.getOwnName());
 
             if (differentialFunction instanceof SDVariable) {
+                if(log.isTraceEnabled()){
+                    log.trace("Skipping differentialFunction that is instanceof SDVariable: {}", opName);
+                }
                 continue;
             }
 
@@ -5710,8 +5757,12 @@ public class SameDiff {
                 }
             }
 
-            if (shouldSkip)
+            if (shouldSkip) {
+                if(log.isTraceEnabled()){
+                    log.trace("Skipping function {}: shouldSkip = true", opName);
+                }
                 continue;
+            }
 
             differentialFunction.resolvePropertiesFromSameDiffBeforeExecution();
             flowPath.markActive(differentialFunction.getOwnName(), true);
@@ -5721,6 +5772,9 @@ public class SameDiff {
              * Since SameDiff itself has own logic for loops and conditionals using Scopes
              */
             if (differentialFunction instanceof LoopCond) {
+                if(log.isTraceEnabled())
+                    log.trace("Starting execution of LoopCond op");
+
                 // this node just passes single input forward, for future evaluation
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
@@ -5735,6 +5789,9 @@ public class SameDiff {
                     flowPath.incrementNumberOfCycles(frameName);
                 }
             } else if (differentialFunction instanceof Enter) {
+                if(log.isTraceEnabled())
+                    log.trace("Starting execution of Enter op");
+
                 //  if (flowPath.wasExecuted(differentialFunction.getOwnName()))
                 //      continue;
 
@@ -5755,6 +5812,9 @@ public class SameDiff {
 
 
             } else if (differentialFunction instanceof Exit) {
+                if(log.isTraceEnabled())
+                    log.trace("Starting execution of Exit op");
+
                 // this is just exit point of graph: it maps own input to own output or rewinds graph to specific position planned at first NextIteration node
 
                 val frame_name = frames.getLast();
@@ -5795,6 +5855,9 @@ public class SameDiff {
                 frameLeft = true;
 
             } else if (differentialFunction instanceof NextIteration) {
+                if(log.isTraceEnabled())
+                    log.trace("Starting execution of NextIteration op");
+
                 // this operations merges own input, and schedules rewind to specific Merge node
                 val inputs = getInputVariablesForFunction(differentialFunction);
                 val frame_name = frames.getLast();
@@ -5812,6 +5875,9 @@ public class SameDiff {
                 }
 
             } else if (differentialFunction instanceof Merge) {
+                if(log.isTraceEnabled())
+                    log.trace("Starting execution of Merge op");
+
                 // merge operation takes two inputs, and saves one of them as own output.
                 // if SDVariable exists for second input - we use it. First input used otherwise
                 val inputs = getInputVariablesForFunction(differentialFunction);
@@ -5850,6 +5916,9 @@ public class SameDiff {
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof Switch) {
+                if(log.isTraceEnabled())
+                    log.trace("Starting execution of Switch op");
+
                 // switch takes 2 inputs: actual input and boolean scalar. If scalar is false, input is saved as output:0, if scalar is true, input is saved as output:1
                 ((CustomOp) differentialFunction).populateInputsAndOutputsFromSameDiff();
 
@@ -5875,6 +5944,9 @@ public class SameDiff {
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof If) {
+                if(log.isTraceEnabled())
+                    log.trace("Starting execution of If op");
+
                 If ifOp = (If) differentialFunction;
                 if (!onBackward) {
                     ifOp.getPredicateExecution().exec();
@@ -5921,6 +5993,9 @@ public class SameDiff {
                 ops.add(differentialFunction);
 
             } else if (differentialFunction instanceof While) {
+                if(log.isTraceEnabled())
+                    log.trace("Starting execution of While op");
+
                 While whileOp = (While) differentialFunction;
 
                 if (!onBackward) {
@@ -5965,6 +6040,9 @@ public class SameDiff {
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
             } else if (differentialFunction instanceof CustomOp) {
+                if(log.isTraceEnabled())
+                    log.trace("Starting execution of CustomOp op");
+
                 DynamicCustomOp customOp = (DynamicCustomOp) differentialFunction;
                 customOp.populateInputsAndOutputsFromSameDiff();
                 customOp.assertValidForExecution();
@@ -5985,6 +6063,9 @@ public class SameDiff {
 
                 ops.add(customOp);
             } else if (differentialFunction instanceof Op) {
+                if(log.isTraceEnabled())
+                    log.trace("Starting execution of Op op");
+
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 Op op = (Op) differentialFunction;
@@ -6029,10 +6110,26 @@ public class SameDiff {
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
                 ops.add(differentialFunction);
+            } else {
+                throw new IllegalStateException("Unknown function type: " + differentialFunction.getClass().getName());
             }
 
             //debug
             // printFunction(differentialFunction);
+
+            if(log.isTraceEnabled()){
+                log.trace("Execution completed for DifferentialFunction {} - {}", opName, differentialFunction.getOwnName());
+                SDVariable[] outputVars = differentialFunction.outputVariables();
+                for( int x=0; x<outputVars.length; x++ ){
+                    INDArray arr = outputVars[x].getArr();
+                    String arrShape = (arr == null ? "<no array>" : Arrays.toString(arr.shape()));
+                    log.trace("--> output {} - {}: array shape {}", x, outputVars[x].getVarName(), arrShape);
+                }
+            }
+        }
+
+        if(log.isTraceEnabled()){
+            log.trace("Execution complete");
         }
 
         return new Pair<>(opMap, ops);
