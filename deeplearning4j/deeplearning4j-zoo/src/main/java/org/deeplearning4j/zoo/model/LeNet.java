@@ -3,6 +3,7 @@ package org.deeplearning4j.zoo.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -50,7 +51,7 @@ public class LeNet extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.MNIST)
-            return "http://blob.deeplearning4j.org/models/lenet_dl4j_mnist_inference.zip";
+            return DL4JResources.getURLString("lenet_dl4j_mnist_inference.zip");
         else
             return null;
     }

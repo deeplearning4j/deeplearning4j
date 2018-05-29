@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -49,7 +50,7 @@ public class UNet extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.SEGMENT)
-            return "http://blob.deeplearning4j.org/models/unet_dl4j_segment_inference.v1.zip";
+            return DL4JResources.getURLString("unet_dl4j_segment_inference.v1.zip");
         else
             return null;
     }
