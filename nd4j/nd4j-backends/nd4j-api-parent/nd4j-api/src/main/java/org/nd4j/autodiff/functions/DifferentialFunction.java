@@ -384,6 +384,14 @@ public abstract class DifferentialFunction {
     }
 
 
+    public String[] outputVariablesNames(){
+        SDVariable[] outputVars = outputVariables();
+        String[] out = new String[outputVars.length];
+        for( int i=0; i<out.length; i++ ){
+            out[i] = outputVars[i].getVarName();
+        }
+        return out;
+    }
 
 
     /**
@@ -430,6 +438,15 @@ public abstract class DifferentialFunction {
      */
     public  SDVariable[] args() {
         return sameDiff.getInputVariablesForFunction(this);
+    }
+
+    public String[] argNames(){
+        SDVariable[] args = args();
+        String[] out = new String[args.length];
+        for( int i=0; i<args.length; i++ ){
+            out[i] = args[i].getVarName();
+        }
+        return out;
     }
 
 

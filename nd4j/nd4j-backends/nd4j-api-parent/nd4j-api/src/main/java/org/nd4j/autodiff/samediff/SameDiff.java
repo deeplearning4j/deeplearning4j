@@ -6704,4 +6704,112 @@ public class SameDiff {
         }
     }
 
+
+
+    public String summary(){
+
+        Map<String,SDVariable> varMap = variableMap();
+        DifferentialFunction[] functions = functions();
+
+
+
+        int countVarsWithArrays = 0;
+        for(String s : varMap.keySet()){
+            if(getArrForVarName(s) != null){
+                countVarsWithArrays++;
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        String format = "%-20s%-20s";
+        sb.append("--- Summary ---\n");
+        sb.append(String.format(format, "Variables:", varMap.size())).append(" (").append(countVarsWithArrays).append(" with arrays)").append("\n")
+                .append(String.format(format, "Functions:", functions.length)).append("\n")
+                .append(String.format(format, "SameDiff Function Defs:", sameDiffFunctionInstances.size()))
+                .append("\n\n");
+
+        sb.append("--- Variables ---\n");
+        format  = "%-20s%-20s%-20s";
+        sb.append(String.format(format, "- Name -", "- Array Shape -", "- Inputs To Functions -")).append("\n");
+        for(String s : varMap.keySet()){
+            INDArray arr = getArrForVarName(s);
+            String arrayShape = "-";
+            if(arr != null){
+                arrayShape = Arrays.toString(arr.shape());
+            }
+
+            List<DifferentialFunction> dfs = functionsArgsFor.get(s);
+            String dfArrStr = "";
+            if(dfs != null){
+                String[] dfArr = new String[dfs.size()];
+                for( int i=0; i<dfs.size(); i++ ){
+                    dfArr[i] = dfs.get(i).getOwnName();
+                }
+                dfArrStr = Arrays.toString(dfArr);
+            }
+
+            sb.append(String.format(format, s, arrayShape, dfArrStr)).append("\n");
+        }
+
+        sb.append("\n\n--- Functions ---\n");
+
+        //First: work out the amount of space we need for inputs and outputs...
+        List<String> dfInputStr = new ArrayList<>();
+        List<String> dfOutputStr = new ArrayList<>();
+        int maxInLength = 10;       //Length of "- Inputs -"
+        int maxOutLength = 11;      //Length of "- Outputs -"
+        int maxOpNameLength = 10;   //Default to min of 10
+        int maxDfClassNameLength = 10;  //Default to min of 10
+        for(DifferentialFunction df : functions){
+            SDVariable[] args = df.args();
+            SDVariable[] outputs = df.outputVariables();
+
+            String[] argNames = df.argNames();
+            String[] outNames = df.outputVariablesNames();
+
+            String argStr = Arrays.toString(argNames);
+            String outStr = Arrays.toString(outNames);
+
+            maxInLength = Math.max(maxInLength, argStr.length());
+            maxOutLength = Math.max(maxOutLength, outStr.length());
+
+            dfInputStr.add(argStr);
+            dfOutputStr.add(outStr);
+
+            String name = df.getOwnName() == null ? df.opName() : df.getOwnName();
+            maxOpNameLength = Math.max(maxOpNameLength, name.length());
+            maxDfClassNameLength = Math.max(maxDfClassNameLength, df.getClass().getSimpleName().length());
+        }
+        //Extra padding space
+        maxInLength += 2;
+        maxOutLength += 2;
+        maxOpNameLength += 2;
+        maxDfClassNameLength += 2;
+
+
+        format  = "%-5s%-" + maxOpNameLength + "s%-" + maxDfClassNameLength + "s%-" + maxInLength + "s%-" + maxOutLength + "s";
+        sb.append(String.format(format, "", "- Function Name -", "- Op -", "- Inputs -", "- Outputs -")).append("\n");
+        for( int i=0; i<functions.length; i++ ){
+            DifferentialFunction df = functions[i];
+            String fnName = df.getOwnName() == null ? df.opName() : df.getOwnName();
+
+            sb.append(String.format(format, String.valueOf(i), fnName, df.getClass().getSimpleName(), dfInputStr.get(i), dfOutputStr.get(i))).append("\n");
+        }
+
+        if(sameDiffFunctionInstances.size() > 0) {
+            sb.append("\n\n--- SameDiff Defined Functions ---\n");
+            format  = "%-20s%-15s%-15s%-15s";
+            sb.append(String.format(format, "- Name -", "- Variables -", "- Functions -", "- Fn Defs -")).append("\n");
+            for(Map.Entry<String,SameDiff> e : sameDiffFunctionInstances.entrySet()){
+                SameDiff sd = e.getValue();
+                int vars = sd.variableMap().size();
+                int fns = (sd.functions() == null ? 0 : sd.functions().length);
+                int defFns = sd.definedFunctionNames().size();
+
+                sb.append(String.format(format, e.getKey(), String.valueOf(vars), String.valueOf(fns), String.valueOf(defFns))).append("\n");
+            }
+        }
+
+        return sb.toString();
+    }
 }

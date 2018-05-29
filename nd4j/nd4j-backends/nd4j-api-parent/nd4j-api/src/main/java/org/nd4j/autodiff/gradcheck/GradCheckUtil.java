@@ -32,7 +32,7 @@ public class GradCheckUtil {
     private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-6;
 
-    private static Map<Class,Integer> countPerClass = new HashMap<>();
+    private static Map<Class,Integer> countPerClass = new LinkedHashMap<>();
 
     //Collect coverage information
     static {
@@ -55,6 +55,7 @@ public class GradCheckUtil {
         }
 
 
+        List<Class> l = new ArrayList<>(countPerClass.keySet());
         int count = 0;
         for(ClassPath.ClassInfo c : info){
             //Load method: Loads (but doesn't link or initialize) the class.
@@ -70,9 +71,20 @@ public class GradCheckUtil {
             if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || !DifferentialFunction.class.isAssignableFrom(clazz))
                 continue;
 
-            if(DifferentialFunction.class.isAssignableFrom(clazz)){
-                countPerClass.put(clazz, 0);
+            if(DifferentialFunction.class.isAssignableFrom(clazz) && !clazz.getSimpleName().contains("Old")){   //Exclude OldSubOp, etc
+                l.add(clazz);
             }
+        }
+
+
+        Collections.sort(l, new Comparator<Class>() {
+            @Override
+            public int compare(Class o1, Class o2) {
+                return o1.getName().compareTo(o2.getName());
+            }
+        });
+        for(Class c : l){
+            countPerClass.put(c, 0);
         }
     }
 
@@ -82,7 +94,7 @@ public class GradCheckUtil {
         if(logSeen){
             log.info(" --- Gradient Checks: Classes Seen in Tests ---");
             for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
-                if(e.getValue() > 0 && (!excludeBackpropOps || isBackpropOp(e.getKey()))){
+                if(e.getValue() > 0 && (!excludeBackpropOps || !isBackpropOp(e.getKey()))){
                     log.info("GradientCheck: Seen {} instances of op {}", e.getValue(), e.getKey().getName());
                     countSeen++;
                 }
@@ -92,7 +104,7 @@ public class GradCheckUtil {
         if(logUnseen){
             log.info(" --- Gradient Checks: Classes NOT Seen in Tests ---");
             for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
-                if(e.getValue() == 0 && (!excludeBackpropOps || isBackpropOp(e.getKey()))){
+                if(e.getValue() == 0 && (!excludeBackpropOps || !isBackpropOp(e.getKey()))){
                     log.info("GradientCheck: NO instances of op {}", e.getKey().getName());
                 }
             }
@@ -103,7 +115,7 @@ public class GradCheckUtil {
         if(excludeBackpropOps){
             total = 0;
             for(Class c : countPerClass.keySet()){
-                if(isBackpropOp(c)){
+                if(!isBackpropOp(c)){
                     total++;
                 }
             }
@@ -121,7 +133,7 @@ public class GradCheckUtil {
 
     private static boolean isBackpropOp(Class<?> c){
         String name = c.getSimpleName();
-        return name.contains("Bp");
+        return name.contains("Bp") || name.contains("Derivative") || name.contains("Grad");
     }
 
 
