@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.concurrency.VariableBarrierImpl;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertTrue;
@@ -34,6 +35,8 @@ public class EncodedGradientsAccumulatorTest {
             log.info("Workers: {}; Buffer size: {} bytes", numWorkers, bufferSize);
             EncodedGradientsAccumulator accumulator =
                             new EncodedGradientsAccumulator(numWorkers, handler, bufferSize, 2, null);
+
+            accumulator.setVariableBarrier(new VariableBarrierImpl());
 
             for (int e = 10; e < numParams / 10; e++) {
                 INDArray encoded = handler.encodeUpdates(getGradients(numParams, e, 2e-3));

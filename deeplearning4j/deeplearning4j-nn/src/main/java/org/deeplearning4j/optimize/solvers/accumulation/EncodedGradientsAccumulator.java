@@ -12,6 +12,8 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
+import org.nd4j.linalg.concurrency.SynchronizableConsumer;
+import org.nd4j.linalg.concurrency.VariableBarrier;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.AtomicThrowable;
@@ -31,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class EncodedGradientsAccumulator implements GradientsAccumulator, Registerable {
+public class EncodedGradientsAccumulator implements GradientsAccumulator, Registerable, SynchronizableConsumer {
     protected ThreadLocal<INDArray> accumulator = new ThreadLocal<>();
 
     protected int parties;
@@ -61,6 +63,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
 
     protected boolean isDebug = true;
     protected final boolean relocatable;
+    protected VariableBarrier realBarrier;
 
     protected WorkspaceConfiguration appliedConfiguration = WorkspaceConfiguration.builder().minSize(5 * 1024 * 1024L)
                     .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
@@ -145,6 +148,15 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         return bufferSize;
     }
 
+    @Override
+    public void setVariableBarrier(@NonNull VariableBarrier barrier) {
+        this.realBarrier = barrier;
+    }
+
+    @Override
+    public VariableBarrier getVariableBarrier() {
+        return realBarrier;
+    }
 
     public static long getOptimalBufferSize(Model model, int numWorkers, int queueSize) {
         return getOptimalBufferSize(model.params().length(), numWorkers, queueSize);
@@ -306,7 +318,10 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     log.info("External updates to be applied: {}", ent);
             }
 
-            synchronize(currentConsumers.get(), true);
+            //synchronize(currentConsumers.get(), true);
+
+            if (realBarrier != null)
+                realBarrier.desynchronizedBlock();
 
             // TODO: average updates probably?
 
@@ -387,7 +402,10 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     log.info("External updates to be applied: {}", ent);
             }
 
-            synchronize(currentConsumers.get(), true);
+            //synchronize(currentConsumers.get(), true);
+
+            if (realBarrier != null)
+                realBarrier.desynchronizedBlock();
 
             // TODO: average updates? might have sense
 
@@ -468,7 +486,11 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
             handler.broadcastUpdates(accumulator.get());
 
             // we're blocking here, untill all done broadcasting updates
-            synchronize(currentConsumers.get());
+            //synchronize(currentConsumers.get());
+
+            if (realBarrier != null)
+                realBarrier.synchronizedBlock();
+
         } catch (Exception e) {
             throwable.setIfFirst(e);
             throw new RuntimeException(e);

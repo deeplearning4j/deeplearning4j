@@ -1,9 +1,6 @@
 package org.deeplearning4j.parallelism;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
@@ -28,6 +25,9 @@ import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.concurrency.SynchronizableConsumer;
+import org.nd4j.linalg.concurrency.VariableBarrier;
+import org.nd4j.linalg.concurrency.VariableBarrierImpl;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -468,6 +468,11 @@ public class ParallelWrapper implements AutoCloseable {
         log.info("Using workspaceMode {} for training", workspaceMode.name());
         stopFit.set(false);
         createZooIfNeccessary(false);
+        val barrier = new VariableBarrierImpl();
+
+
+        if (gradientsAccumulator instanceof SynchronizableConsumer)
+            ((SynchronizableConsumer) gradientsAccumulator).setVariableBarrier(barrier);
 
 
 
@@ -532,9 +537,8 @@ public class ParallelWrapper implements AutoCloseable {
                     if we're using registerable accumulator (i.e. we're on spark or cuda with gradients sharing),
                     update it & notify about number of threads in this training round then
                   */
-                if (gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
-                    log.info("Registering consumers: {}", workers);
-                    ((Registerable) gradientsAccumulator).registerConsumers(workers);
+                if (gradientsAccumulator instanceof SynchronizableConsumer) {
+                    barrier.registerConsumers(workers);
                 }
 
                 if (zoo[0].averagingRequired()) {
@@ -574,9 +578,8 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         // launch last update
-        if (locker.get() != 0 && gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
-            //log.info("Finalizing process: {}", locker.get());
-            ((Registerable) gradientsAccumulator).registerConsumers(locker.get());
+        if (locker.get() != 0 && locker.get() != workers &&  gradientsAccumulator instanceof Registerable) {
+            barrier.registerConsumers(locker.get());
         }
 
         if (debug)
