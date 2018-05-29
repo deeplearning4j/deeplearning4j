@@ -10,6 +10,7 @@ import org.deeplearning4j.datasets.iterator.callbacks.InterleavedDataSetCallback
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -472,6 +473,20 @@ public class ParallelWrapper implements AutoCloseable {
         val barrier = new VariableBarrierImpl(true);
         int[] plan = new int[workers];
 
+        boolean isTBPTT = false;
+        int length = 0;
+
+        if (model instanceof MultiLayerNetwork) {
+            isTBPTT = ((MultiLayerNetwork) model).getLayerWiseConfigurations().getBackpropType() == BackpropType.TruncatedBPTT;
+
+            if (isTBPTT)
+                length = ((MultiLayerNetwork) model).getLayerWiseConfigurations().getTbpttFwdLength();
+        } else if (model instanceof ComputationGraph) {
+            isTBPTT = ((ComputationGraph) model).getConfiguration().getBackpropType() == BackpropType.TruncatedBPTT;
+
+            if (isTBPTT)
+                length = ((ComputationGraph) model).getConfiguration().getTbpttFwdLength();
+        }
 
         if (gradientsAccumulator instanceof SynchronizableConsumer)
             ((SynchronizableConsumer) gradientsAccumulator).setVariableBarrier(barrier);
@@ -527,7 +542,10 @@ public class ParallelWrapper implements AutoCloseable {
                 throw new IllegalStateException(
                                 "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
 
-            plan[pos] = dataSet.getFeatures().rank() == 3 ? (int) dataSet.getFeatures().size(2) : 1;
+            plan[pos] = 1;
+            if (isTBPTT)
+                plan[pos] = (int) Math.ceil(dataSet.getFeatures().size(2) / length);
+
             zoo[pos].feedDataSet(dataSet, lastEtlTime);
 
             /*
