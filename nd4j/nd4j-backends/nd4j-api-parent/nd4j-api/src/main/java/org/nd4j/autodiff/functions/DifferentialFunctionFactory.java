@@ -724,6 +724,9 @@ public class DifferentialFunctionFactory {
         return new ClipByNorm(sameDiff(), x, clipValue).outputVariables()[0];
     }
 
+    public SDVariable clipByNorm(SDVariable x, double clipValue, int... dimensions) {
+        return new ClipByNorm(sameDiff(), x, clipValue, dimensions).outputVariables()[0];
+    }
 
     public SDVariable relu(SDVariable iX, double cutoff) {
         return new RectifedLinear(sameDiff(), iX, false, cutoff).outputVariables()[0];

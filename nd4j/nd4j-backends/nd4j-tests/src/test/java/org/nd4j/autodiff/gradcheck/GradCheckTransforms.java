@@ -28,6 +28,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -299,9 +300,10 @@ public class GradCheckTransforms {
             out[i] = parts[i].getArr();
         }
 
-        if (!expOut.equals(out)) {
-            log.error("forward failed");
-        }
+        assertArrayEquals(expOut, out);
+
+        boolean passed = GradCheckUtil.checkGradients(sd);
+        assertTrue(passed);
     }
 
     @Test
@@ -313,12 +315,15 @@ public class GradCheckTransforms {
         INDArray indexA = Nd4j.create(new float[]{0, 1, 4}, new int[]{1, 3});
         INDArray indexB = Nd4j.create(new float[]{2, 3, 5}, new int[]{1, 3});
 
-        INDArray expOut = Nd4j.create(new int[]{6});
+        INDArray expOut = Nd4j.create(new long[]{6});
 
         DynamicCustomOp dynamicStitch = DynamicCustomOp.builder("dynamic_stitch")
                 .addInputs(indexA, indexB, ia, ib)
                 .addOutputs(expOut).build();
         Nd4j.getExecutioner().exec(dynamicStitch);
+
+        INDArray expOut2 = Nd4j.create(new double[]{5,1,7,2,3,4});
+        assertEquals(expOut2, expOut);
 
         SDVariable in1 = sd.var("in1", new int[]{1, 3});
         SDVariable in2 = sd.var("in2", new int[]{1, 3});
@@ -341,6 +346,9 @@ public class GradCheckTransforms {
         if (!expOut.equals(out)) {
             log.error("forward failed");
         }
+
+        boolean passed = GradCheckUtil.checkGradients(sd);
+        assertTrue(passed);
     }
 
     @Test
@@ -364,11 +372,8 @@ public class GradCheckTransforms {
             log.info("forward failed");
         }
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        boolean passed = GradCheckUtil.checkGradients(sd);
+        assertTrue(passed);
     }
 
     @Test
@@ -683,7 +688,7 @@ public class GradCheckTransforms {
                         }
                     }
 
-                    t = sd.clipByNorm(in, clip);
+                    t = sd.clipByNorm(in, clip, 0);
                     break;
                 //TODO clip by norm along other dimensions
                 case 50:
