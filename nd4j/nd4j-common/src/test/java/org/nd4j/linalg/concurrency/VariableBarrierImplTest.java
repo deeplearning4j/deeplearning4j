@@ -3,6 +3,7 @@ package org.nd4j.linalg.concurrency;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -219,17 +220,92 @@ public class VariableBarrierImplTest {
         }
     }
 
+
+    /**
+     * This test checks for VariableBarrierImpl WITH tail sync and WITH workload/workers within main thread.
+     * On top of that: this test uses workers with variable workload 0...workload
+     *
+     * @throws Exception
+     */
+    @Test (timeout = 45000L)
+    public void testVariableBarrier_4() throws Exception {
+
+        val testSize = 100;
+        val workersOptions = new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        val workloads = new long[] {10, 1000, 10000, 100000, 1000000};
+
+        for (val workers: workersOptions) {
+            for (val workload: workloads) {
+                log.info("Trying {} workers with {} ns workloads", workers, workload);
+                val zoo = new WorkerThread[workers];
+                val barrier = new VariableBarrierImpl();
+                val queue = new ArrayBlockingQueue<Integer>(testSize + 1);
+                int consumers = 0;
+
+                // creating our initial workers
+                for (int z = 0; z < workers; z++) {
+                    zoo[z] = new WorkerThread(z, barrier, workload, queue, true);
+
+                    // as soon as we start - all threads just block on queue.take(), waiting for next dataset
+                    zoo[z].start();
+                }
+
+                // now we imitate our PW flow
+                for (int e = 0; e < testSize; e++) {
+                    // this is simple counter for interleaved fit
+                    val pos = e % workers;
+                    consumers = pos + 1;
+
+                    // blocking feed, won't advance unless there's some space in queue
+                    zoo[pos].feedQueue(e);
+
+                    // check if we're on last step
+                    if (pos == workers - 1) {
+                        barrier.registerConsumers(workers);
+                    }
+
+                    // we mimic ETL pressure this way
+                    LockSupport.parkNanos(workload);
+                }
+
+                // notifying about last consumers left running
+                if (consumers != workers) {
+                    barrier.registerConsumers(consumers);
+                }
+
+                // finalizing process
+                for (int z = 0; z < workers; z++) {
+                    // setting shutdown flag
+                    zoo[z].shutdown();
+
+                    // waiting for thread to actually exit
+                    zoo[z].join();
+                }
+
+                //barrier.checkForException();
+
+                assertEquals(testSize, queue.size());
+            }
+        }
+    }
+
     protected static class WorkerThread extends Thread implements Runnable {
         protected BlockingQueue<Integer> queue = new LinkedBlockingQueue<>(1);
         protected AtomicBoolean shouldWork = new AtomicBoolean(true);
         protected final VariableBarrier barrier;
         protected final long time;
         protected final Queue<Integer> outerQueue;
+        protected final boolean variableWorkload;
 
         protected WorkerThread(int id, @NonNull VariableBarrier barrier, long time, Queue<Integer> queue) {
+            this(id, barrier, time, queue, false);
+        }
+
+        protected WorkerThread(int id, @NonNull VariableBarrier barrier, long time, Queue<Integer> queue, boolean variableWorkload) {
             this.barrier = barrier;
             this.time = time;
             this.outerQueue = queue;
+            this.variableWorkload = variableWorkload;
 
             this.setName("Worker thread " + id);
         }
@@ -256,7 +332,10 @@ public class VariableBarrierImplTest {
                         outerQueue.add(ds);
 
                         // kind of doing something important here
-                        LockSupport.parkNanos(time);
+                        if (variableWorkload)
+                            LockSupport.parkNanos(RandomUtils.nextInt(0, (int) time));
+                        else
+                            LockSupport.parkNanos(time);
 
                         // leaving synchronized block
                         barrier.desynchronizedBlock();
