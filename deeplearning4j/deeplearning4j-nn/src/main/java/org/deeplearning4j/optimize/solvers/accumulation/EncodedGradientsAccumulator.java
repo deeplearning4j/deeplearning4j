@@ -258,7 +258,6 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         try {
             // nullify given updates first
             Nd4j.getMemoryManager().memset(updates);
-            //updates.assign(0.0);
 
             int cnt = 0;
             while (!messages.get(index.get()).isEmpty()) {
@@ -276,9 +275,11 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
             }
 
             if (cnt > 0 && isDebug)
-                log.info("Local updates to be applied: {}", cnt);
+                log.info("Thread {}>Local updates to be applied: {}", Thread.currentThread().getId(), cnt);
 
             if (externalSource != null) {
+                log.info("Thread {} entering applier", Thread.currentThread().getId());
+
                 int ent = 0;
                 while (!externalSource.isEmpty()) {
                     INDArray compressed = externalSource.poll();

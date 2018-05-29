@@ -252,7 +252,7 @@ public class VariableBarrierImplTest {
                         // we're entering synchronous block
                         barrier.synchronizedBlock();
 
-                        // stroing proof of work
+                        // storing proof of work
                         outerQueue.add(ds);
 
                         // kind of doing something important here
