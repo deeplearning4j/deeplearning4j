@@ -444,6 +444,7 @@ public class GradCheckTransforms {
             int dim;
             SDVariable t;
             INDArray expOut;
+            boolean stdevLoss = false;
             switch (i) {
                 case 0:
                     t = in.add(5.0);
@@ -621,12 +622,10 @@ public class GradCheckTransforms {
                     expOut = Transforms.leakyRelu(ia, true);
                     break;
                 case 39:
-                    // TODO DIMENSION ARG???
-                    // TODO fix me
                     t = sd.logSoftmax(in);
-                    ia = Nd4j.rand(minibatch, nOut);
+                    ia = Nd4j.rand(minibatch, nOut).muli(10).subi(5);
                     expOut = Transforms.log(Transforms.softmax(ia, true));
-//                    skipBackward = true;
+                    stdevLoss = true;
                     break;
                 case 40:
                     t = sd.selu(in);
@@ -800,7 +799,13 @@ public class GradCheckTransforms {
             String msg = "test: " + i + " - " + name;
             log.info("*** Starting test: " + msg);
 
-            SDVariable loss = sd.mean("loss", t);
+            SDVariable loss;
+            if(stdevLoss){
+                loss = sd.standardDeviation("loss", t, false, Integer.MAX_VALUE);   //.standardDeviation("loss", t, true, Integer.MAX_VALUE);
+            } else {
+                loss = sd.mean("loss", t);
+            }
+
 
 
             sd.associateArrayWithVariable(ia, in);
