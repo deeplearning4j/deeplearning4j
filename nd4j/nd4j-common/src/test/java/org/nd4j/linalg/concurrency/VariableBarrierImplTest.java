@@ -1,6 +1,7 @@
 package org.nd4j.linalg.concurrency;
 
 import lombok.NonNull;
+import lombok.experimental.var;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
@@ -28,6 +29,56 @@ public class VariableBarrierImplTest {
     @After
     public void tearDown() throws Exception {
     }
+
+    @Test
+    public void testPlanMapping_1() {
+        val barrier = new VariableBarrierImpl(true);
+
+        int[] array = {3, 3, 4};
+        barrier.updatePlan(array);
+
+        assertEquals(3, barrier.getConsumersForIteration(0));
+        assertEquals(3, barrier.getConsumersForIteration(1));
+        assertEquals(3, barrier.getConsumersForIteration(2));
+        assertEquals(1, barrier.getConsumersForIteration(3));
+        assertEquals(0, barrier.getConsumersForIteration(4));
+        assertEquals(0, barrier.getConsumersForIteration(5));
+        assertEquals(0, barrier.getConsumersForIteration(6));
+    }
+
+
+    @Test
+    public void testPlanMapping_2() {
+        val barrier = new VariableBarrierImpl(true);
+
+        int[] array = {1, 2, 3, 4};
+        barrier.updatePlan(array);
+
+        assertEquals(4, barrier.getConsumersForIteration(0));
+        assertEquals(3, barrier.getConsumersForIteration(1));
+        assertEquals(2, barrier.getConsumersForIteration(2));
+        assertEquals(1, barrier.getConsumersForIteration(3));
+        assertEquals(0, barrier.getConsumersForIteration(4));
+    }
+
+    @Test
+    public void testPlanMapping_3() {
+        val barrier = new VariableBarrierImpl(true);
+
+        int[] array = {2, 17};
+        barrier.updatePlan(array);
+
+        assertEquals(2, barrier.getConsumersForIteration(0));
+        assertEquals(2, barrier.getConsumersForIteration(1));
+        assertEquals(1, barrier.getConsumersForIteration(2));
+        assertEquals(1, barrier.getConsumersForIteration(3));
+        assertEquals(1, barrier.getConsumersForIteration(4));
+        assertEquals(1, barrier.getConsumersForIteration(5));
+        assertEquals(0, barrier.getConsumersForIteration(17));
+        assertEquals(0, barrier.getConsumersForIteration(18));
+    }
+
+
 
     /**
      * This test checks for VariableBarrierImpl WITHOUT tail sync
@@ -228,18 +279,18 @@ public class VariableBarrierImplTest {
      *
      * @throws Exception
      */
-    @Test (timeout = 45000L)
+    @Test //(timeout = 45000L)
     public void testVariableBarrier_5() throws Exception {
 
-        val testSize = 100;
-        val workersOptions = new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        val workloads = new long[] {10, 1000, 10000, 100000, 1000000};
+        val testSize = 113;
+        val workersOptions = new int[] {2, 3, 4, 5, 6, 7, 8, 9, 10};
+        val workloads = new long[] {100, 1000, 10000, 100000, 1000000};
 
         for (val workers: workersOptions) {
             for (val workload: workloads) {
                 log.info("Trying {} workers with {} ns workloads", workers, workload);
                 val zoo = new TruncatedWorkerThread[workers];
-                val barrier = new VariableBarrierImpl();
+                val barrier = new VariableBarrierImpl(true);
                 val queue = new ArrayBlockingQueue<Integer>(testSize + 1);
                 int consumers = 0;
 
@@ -251,18 +302,28 @@ public class VariableBarrierImplTest {
                     zoo[z].start();
                 }
 
+                int[] plan = new int[workers];
+
                 // now we imitate our PW flow
                 for (int e = 0; e < testSize; e++) {
                     // this is simple counter for interleaved fit
                     val pos = e % workers;
                     consumers = pos + 1;
 
+                    val seriesLength = RandomUtils.nextInt(1, 5);
+                    plan[pos] = seriesLength;
+
                     // blocking feed, won't advance unless there's some space in queue
-                    zoo[pos].feedQueue(e);
+                    zoo[pos].feedQueue(seriesLength);
+                    //log.info("Feeding with {} time steps", seriesLength);
 
                     // check if we're on last step
                     if (pos == workers - 1) {
-                        barrier.registerConsumers(workers);
+                        barrier.registerConsumers(plan);
+
+                        barrier.blockMainThread();
+
+                        plan = new int[workers];
                     }
 
                     // we mimic ETL pressure this way
@@ -271,7 +332,7 @@ public class VariableBarrierImplTest {
 
                 // notifying about last consumers left running
                 if (consumers != workers) {
-                    barrier.registerConsumers(consumers);
+                    barrier.registerConsumers(plan);
                 }
 
                 // finalizing process
@@ -375,19 +436,22 @@ public class VariableBarrierImplTest {
 
                     if (ds != null) {
                         // simulating variable sequences etc here
-                        val sequenceLength = RandomUtils.nextInt(5, 50);
+                        val sequenceLength = ds;
+                        //log.info("{} TS length: {}", Thread.currentThread().getName(), sequenceLength);
                         for (int e = 0; e < sequenceLength; e++) {
-                            // we're entering synchronous block
-                            barrier.synchronizedBlock();
-
-                            // storing proof of work
-                            outerQueue.add(ds);
-
                             // kind of doing something important here
                             if (variableWorkload)
                                 LockSupport.parkNanos(RandomUtils.nextInt(0, (int) time));
                             else
                                 LockSupport.parkNanos(time);
+
+                            // we're entering synchronous block
+                            barrier.synchronizedBlock();
+
+                            // storing proof of work, but only once
+                            if (e == 0)
+                                outerQueue.add(ds);
+
 
                             // leaving synchronized block
                             barrier.desynchronizedBlock();

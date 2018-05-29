@@ -468,7 +468,9 @@ public class ParallelWrapper implements AutoCloseable {
         log.info("Using workspaceMode {} for training", workspaceMode.name());
         stopFit.set(false);
         createZooIfNeccessary(false);
-        val barrier = new VariableBarrierImpl();
+
+        val barrier = new VariableBarrierImpl(true);
+        int[] plan = new int[workers];
 
 
         if (gradientsAccumulator instanceof SynchronizableConsumer)
@@ -525,6 +527,7 @@ public class ParallelWrapper implements AutoCloseable {
                 throw new IllegalStateException(
                                 "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
 
+            plan[pos] = dataSet.getFeatures().rank() == 3 ? (int) dataSet.getFeatures().size(2) : 1;
             zoo[pos].feedDataSet(dataSet, lastEtlTime);
 
             /*
@@ -539,7 +542,11 @@ public class ParallelWrapper implements AutoCloseable {
                   */
                 if (gradientsAccumulator instanceof SynchronizableConsumer) {
                     log.info("Register at iteration {}; setting up for {} consumers", iterationsCounter.get(), workers);
-                    barrier.registerConsumers(workers);
+                    barrier.registerConsumers(plan);
+
+                    barrier.blockMainThread();
+
+                    plan = new int[workers];
                     log.info("Registered....");
                 }
 
@@ -581,7 +588,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         // launch last update
         if (locker.get() != 0 && locker.get() != workers &&  gradientsAccumulator instanceof Registerable) {
-            barrier.registerConsumers(locker.get());
+            barrier.registerConsumers(plan);
         }
 
         if (debug)
