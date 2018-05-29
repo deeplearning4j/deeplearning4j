@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.optimize.listeners.PerformanceListener;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -258,6 +259,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                     this.replicatedModel = new MultiLayerNetwork(conf);
 
                     replicatedModel.init();
+                    replicatedModel.setListeners(new PerformanceListener(5, true));
 
                     // we replicate original model params & updater state, just in case it's pre-trained model
                     synchronized (originalModel) {
@@ -288,6 +290,8 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                     this.replicatedModel = new ComputationGraph(conf);
                     this.replicatedModel.init();
+
+                    replicatedModel.setListeners(new PerformanceListener(5, true));
 
                     // we replicate original model params & updater state, just in case it's pre-trained model
                     synchronized (originalModel) {
