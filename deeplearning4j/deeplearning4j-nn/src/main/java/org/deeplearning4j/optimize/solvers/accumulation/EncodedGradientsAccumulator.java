@@ -472,12 +472,14 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                 log.info("thread {} locking at Register", Thread.currentThread().getId());
 
             // block until ParallelWrapper sends us message about number of threads in this cycle
+            /*
             if (!bypassMode.get())
                 while (!registered.get()) {
                     ThreadUtils.uncheckedSleep(1);
                     if (throwable.isTriggered())
                         throw new RuntimeException(throwable.get());
                 }
+                */
 
             if (isDebug)
                 log.info("thread {} unlocking at Register", Thread.currentThread().getId());
