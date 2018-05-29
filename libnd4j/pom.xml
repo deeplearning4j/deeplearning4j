@@ -128,20 +128,25 @@
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>
                     </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
                     <execution>
                         <id>javacpp.cppbuild.clean</id>
                         <phase>clean</phase>
                         <goals>
-                            <goal>build</goal>
+                            <goal>clean</goal>
                         </goals>
                         <configuration>
-                            <skip>${clean.skip}</skip>
-                            <buildCommand>
-                                <program>rm</program>
-                                <argument>-Rf</argument>
-                                <argument>blasbuild</argument>
-                            </buildCommand>
-                            <workingDirectory>${project.basedir}</workingDirectory>
+                            <filesets>
+                                <fileset>
+                                    <directory>blasbuild</directory>
+                                </fileset>
+                            </filesets>
                         </configuration>
                     </execution>
                 </executions>
