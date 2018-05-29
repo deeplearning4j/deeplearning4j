@@ -712,12 +712,17 @@ public class GradCheckTransforms {
                     dim = 0;
                     boolean ex = false;
                     boolean revBool = false;
-                    t = sd.cumsum(in, ex, revBool, dim);
+                    t = sd.cumprod(in, ex, revBool, dim);
                     expOut = Nd4j.create(ia.shape());
-                    DynamicCustomOp cumprod = DynamicCustomOp.builder("cumprod")
-                            .addIntegerArguments((ex) ? 1 : 0, (revBool) ? 1 : 0, dim)
-                            .addInputs(ia).addOutputs(expOut).build();
-                    Nd4j.getExecutioner().exec(cumprod);
+                    for( int s0=0; s0<ia.size(0); s0++){
+                        for( int s1=0; s1<ia.size(1); s1++ ){
+                            double prod = 1.0;
+                            for(int x=0; x<=s0; x++ ){
+                                prod *= ia.getDouble(x, s1);
+                            }
+                            expOut.putScalar(s0, s1, prod);
+                        }
+                    }
                     break;
                 case 53:
                     ia = Nd4j.create(new float[]{4, 2});
