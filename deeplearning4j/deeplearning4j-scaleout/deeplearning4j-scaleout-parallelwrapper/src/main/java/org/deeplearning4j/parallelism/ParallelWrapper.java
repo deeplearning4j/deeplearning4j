@@ -540,6 +540,7 @@ public class ParallelWrapper implements AutoCloseable {
                 if (gradientsAccumulator instanceof SynchronizableConsumer) {
                     log.info("Register at iteration {}; setting up for {} consumers", iterationsCounter.get(), workers);
                     barrier.registerConsumers(workers);
+                    log.info("Registered....");
                 }
 
                 if (zoo[0].averagingRequired()) {
