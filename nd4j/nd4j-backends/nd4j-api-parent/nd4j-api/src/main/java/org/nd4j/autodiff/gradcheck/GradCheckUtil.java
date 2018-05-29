@@ -76,13 +76,13 @@ public class GradCheckUtil {
         }
     }
 
-    public static void logCoverageInformation( boolean logSeen, boolean logUnseen ){
+    public static void logCoverageInformation( boolean logSeen, boolean logUnseen, boolean excludeBackpropOps ){
 
         int countSeen = 0;
         if(logSeen){
             log.info(" --- Gradient Checks: Classes Seen in Tests ---");
             for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
-                if(e.getValue() > 0){
+                if(e.getValue() > 0 && (!excludeBackpropOps || isBackpropOp(e.getKey()))){
                     log.info("GradientCheck: Seen {} instances of op {}", e.getValue(), e.getKey().getName());
                     countSeen++;
                 }
@@ -92,19 +92,36 @@ public class GradCheckUtil {
         if(logUnseen){
             log.info(" --- Gradient Checks: Classes NOT Seen in Tests ---");
             for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
-                if(e.getValue() == 0){
+                if(e.getValue() == 0 && (!excludeBackpropOps || isBackpropOp(e.getKey()))){
                     log.info("GradientCheck: NO instances of op {}", e.getKey().getName());
                 }
             }
         }
 
 
-        int total = countPerClass.size();
+        int total;
+        if(excludeBackpropOps){
+            total = 0;
+            for(Class c : countPerClass.keySet()){
+                if(isBackpropOp(c)){
+                    total++;
+                }
+            }
+        } else {
+            total = countPerClass.size();
+        }
+
         double frac = countSeen / (double)total;
         String fracPc = String.format("%.2f",frac*100.0);
         log.info("*****************************************************");
-        log.info("Gradient Checks: {} of {} classes checked ({}% coverage)", countSeen, total, fracPc);
+        log.info("Gradient Checks: {} of {} classes checked ({}% coverage - {} backprop ops)", countSeen, total, fracPc,
+                (excludeBackpropOps ? "excluding" : "including"));
         log.info("*****************************************************");
+    }
+
+    private static boolean isBackpropOp(Class<?> c){
+        String name = c.getSimpleName();
+        return name.contains("Bp");
     }
 
 

@@ -17,40 +17,34 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
+package org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.SquaredDifferenceBpOp;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Squared difference operation, i.e. returns (x - y) * (x - y)
+ * Backprop op for squared difference operation, i.e. backprop for (x - y) * (x - y)
  *
- * @author Max Pumperla
+ * @author Alex Black
  */
-public class SquaredDifferenceOp extends BaseDynamicTransformOp {
+public class SquaredDifferenceBpOp extends DynamicCustomOp {
 
-    public SquaredDifferenceOp() {}
+    public SquaredDifferenceBpOp() {}
 
-    public SquaredDifferenceOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
-        super(sameDiff, args, inPlace);
-    }
-
-    public SquaredDifferenceOp(INDArray[] inputs, INDArray[] outputs) {
-        super(inputs, outputs);
+    public SquaredDifferenceBpOp(SameDiff sameDiff, SDVariable[] args) {
+        super("squaredsubtract_bp", sameDiff, args);
     }
 
 
     @Override
     public String opName() {
-        return "squaredsubtract";
+        return "squaredsubtract_bp";
     }
 
 
@@ -61,13 +55,12 @@ public class SquaredDifferenceOp extends BaseDynamicTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "SquaredDifference";
+        throw new NoOpNameFoundException("No TF opName found for " +  opName());
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable[] outputs = new SquaredDifferenceBpOp(f().sameDiff(), new SDVariable[]{larg(), rarg(), i_v1.get(0)}).outputVariables();
-        return Arrays.asList(outputs);
+        throw new UnsupportedOperationException("Not supported");
     }
 
 }
