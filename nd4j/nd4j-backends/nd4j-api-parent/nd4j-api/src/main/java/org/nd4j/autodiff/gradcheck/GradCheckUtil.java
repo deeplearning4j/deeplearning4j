@@ -7,6 +7,7 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -15,6 +16,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
@@ -249,11 +251,20 @@ public class GradCheckUtil {
 
 
     public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
-                                         boolean exitOnFirstFailure){
+                                         boolean exitOnFirstFailure) {
+        return checkGradients(sd, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false);
+    }
+
+    public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
+                                         boolean exitOnFirstFailure, boolean skipValidation){
 
         //Collect coverage information:
         collectCoverageInformation(sd);
 
+        //Validation sanity checks:
+        if(!skipValidation){
+            validateInternalState(sd, true);
+        }
 
         //Check data type:
         if(Nd4j.dataType() != DataBuffer.Type.DOUBLE){
@@ -407,6 +418,96 @@ public class GradCheckUtil {
         DifferentialFunction[] functions = sd.functions();
         for(DifferentialFunction df : functions){
             countPerClass.put(df.getClass(), countPerClass.get(df.getClass()) + 1);
+        }
+    }
+
+
+    public static void validateInternalState(SameDiff sd, boolean generateAndCheckGradFn){
+
+        /*
+        Some conditions that should always hold:
+        1. incomingArgsReverse and outgoingArgsReverse:
+            (a) all differential functions should be present here exactly once
+            (b) The values should be valid variable names
+        2. variableMap: should contain all variables, and only all variables
+        3. functionArgsFor should contain all variables, all functions... same for functionOutputsFor
+        4. Gradient function: should contain all of the existing functions, and more
+         */
+
+        DifferentialFunction[] dfs = sd.functions();
+        List<SDVariable> vars = sd.variables();
+
+        Set<SDVariable> varsSet = new HashSet<>(vars);
+        Preconditions.checkState(vars.size() == varsSet.size(), "Duplicate variables in variables() list");
+        Set<String> varSetStr = new HashSet<>();
+        for(SDVariable v : vars){
+            if(varSetStr.contains(v.getVarName())){
+                throw new IllegalStateException("Variable with name " + v.getVarName() + " already encountered");
+            }
+            varSetStr.add(v.getVarName());
+        }
+
+        //1. Check incomingArgsReverse and outgoingArgsReverse
+        Map<String,String[]> incomingArgsReverse = getObject("incomingArgsReverse", sd, SameDiff.class);
+        Map<String,String[]> outgoingArgsReverse = getObject("outgoingArgsReverse", sd, SameDiff.class);
+
+        Preconditions.checkState(dfs.length == incomingArgsReverse.size(), "All functions not present in incomingArgsReverse");
+        Preconditions.checkState(dfs.length == outgoingArgsReverse.size(), "All functions not present in outgoingArgsReverse");
+        for(DifferentialFunction df : dfs){
+            Preconditions.checkState(incomingArgsReverse.containsKey(df.getOwnName()), df.getOwnName() + " not present in incomingArgsReverse");
+            Preconditions.checkState(outgoingArgsReverse.containsKey(df.getOwnName()), df.getOwnName() + " not present in outgoingArgsReverse");
+
+            String[] str = incomingArgsReverse.get(df.getOwnName());
+            for(String s : str){
+                Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in incomingArgsReverse value not a known variable name");
+            }
+
+            str = outgoingArgsReverse.get(df.getOwnName());
+            for(String s : str){
+                Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in outgoingArgsReverse value not a known variable name");
+            }
+        }
+
+        //2. Check variableMap
+        Map<String, SDVariable> variableMap = getObject("variableMap", sd, SameDiff.class);
+        Preconditions.checkState(vars.size() == variableMap.size(), "Variable map size check failed");
+        for(Map.Entry<String, SDVariable> e : variableMap.entrySet()){
+            Preconditions.checkState(e.getKey().equals(e.getValue().getVarName()), "Name not equal");
+        }
+
+        //3. Check functionArgsFor, functionOutputsFor
+        Map<String, List<DifferentialFunction>> functionsArgsFor = getObject("functionsArgsFor", sd, SameDiff.class);
+        Map<String, List<DifferentialFunction>> functionOutputFor = getObject("functionOutputFor", sd, SameDiff.class);
+        Preconditions.checkState(functionsArgsFor.size() == vars.size(), "Unexpected size for functionsArgsFor");
+        Preconditions.checkState(functionOutputFor.size() == vars.size(), "Unexpected size for functionOutputFor");
+        Preconditions.checkState(functionsArgsFor.keySet().containsAll(varSetStr), "functionArgsFor doesn't contain all variable names");
+        Preconditions.checkState(functionOutputFor.keySet().containsAll(varSetStr), "functionOutputFor doesn't contain all variable names");
+
+        if(generateAndCheckGradFn) {
+            //4. Check gradient function
+            if(sd.getFunction("grad") == null){
+                sd.createGradFunction();
+            }
+
+            SameDiff gradFn = sd.getFunction("grad");
+            //Run same validation for gradient fn...
+            validateInternalState(gradFn, false);
+
+            //Check that all original functions are present in the gradient function
+            for(DifferentialFunction dfOrig : dfs){
+                Preconditions.checkNotNull(gradFn.getFunction(dfOrig.getOwnName()), "DifferentialFunction " + dfOrig.getOwnName()
+                        + " from original SameDiff instance not present in grad fn");
+            }
+        }
+    }
+
+    private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){
+        try {
+            Field f = fromClass.getDeclaredField(fieldName);
+            f.setAccessible(true);
+            return (T)f.get(from);
+        } catch (Exception e){
+            throw new RuntimeException(e);
         }
     }
 }
