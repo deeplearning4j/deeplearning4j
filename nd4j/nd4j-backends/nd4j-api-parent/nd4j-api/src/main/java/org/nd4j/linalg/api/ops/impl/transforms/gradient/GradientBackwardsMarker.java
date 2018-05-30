@@ -12,6 +12,8 @@ import java.util.List;
  *
  */
 public class GradientBackwardsMarker extends BaseGradientOp  {
+    public static final String OP_NAME = "gradientbackwards";
+
     public GradientBackwardsMarker(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
@@ -56,7 +58,7 @@ public class GradientBackwardsMarker extends BaseGradientOp  {
      */
     @Override
     public String opName() {
-        return "gradientbackwards";
+        return OP_NAME;
     }
 
     @Override

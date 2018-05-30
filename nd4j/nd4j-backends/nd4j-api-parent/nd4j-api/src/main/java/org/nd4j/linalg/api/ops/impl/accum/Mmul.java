@@ -173,21 +173,18 @@ public class Mmul extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         List<SDVariable> ret = new ArrayList<>();
-        SDVariable setup = sameDiff.setupFunction(i_v1.get(0));
-        SDVariable gradWrtX = sameDiff.setupFunction(f().reshape(f().mmul(setup,rarg(),
-                MMulTranspose.builder()
-                        .transposeB(!mMulTranspose.isTransposeB())
-                        .transposeResult(mMulTranspose.isTransposeA())
-                        .build()),larg().getShape()));
+        SDVariable dLdOut = i_v1.get(0);
 
-        SDVariable gradWrtY = sameDiff.setupFunction(f().reshape(f().mmul(larg(),setup,
-                MMulTranspose.builder()
-                        .transposeA(!mMulTranspose.isTransposeA())
-                        .transposeResult(mMulTranspose.isTransposeB())
-                        .build()),rarg().getShape()));
+        SDVariable dLdx = sameDiff.mmul(dLdOut, rarg(), MMulTranspose.builder()
+                .transposeB(true)
+                .build());
 
-        ret.add(gradWrtX);
-        ret.add(gradWrtY);
+        SDVariable dLdy = sameDiff.mmul(larg(), dLdOut, MMulTranspose.builder()
+                .transposeA(true)
+                .build());
+
+        ret.add(dLdx);
+        ret.add(dLdy);
         return ret;
     }
 

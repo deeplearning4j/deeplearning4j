@@ -7,6 +7,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseGradientOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -83,10 +84,14 @@ public class LogSoftMaxDerivative extends BaseGradientOp  {
     @Override
     public void exec() {
         //TODO add dimension arg. For now: hardcoded along dimension 1...
+
+        //Out = log(softmax(x)) = l(s(x))
+        //dL/dIn = dL/dOut * dOut/dIn = dL/dOut * dl(s(x))/ds(x) * ds(x)/dx
+        //       = (softmax deriv) * 1/s(x)
+
         INDArray softmax = Transforms.softmax(x, true);
-        INDArray mul = softmax.mul(y);
-        INDArray summed = mul.sum(1);
-        Nd4j.getExecutioner().exec(new BroadcastSubOp(y,summed,z,0));
+        Nd4j.getExecutioner().exec(new SoftMaxDerivative(x,y,z));
+        z.divi(softmax);
     }
 
     @Override

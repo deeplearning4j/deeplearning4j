@@ -1,6 +1,6 @@
 /*-
  *
- *  * Copyright 2018 Skymind,Inc.
+ *  * Copyright 2015 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -17,56 +17,50 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms.gradient;
+package org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.List;
 
 /**
- * Derivative of Rectified linear unit 6, i.e. min(max(input, cutoff), 6), where cutoff can be chosen.
+ * Backprop op for squared difference operation, i.e. backprop for (x - y) * (x - y)
  *
  * @author Alex Black
  */
-public class Relu6Derivative extends DynamicCustomOp {
+public class SquaredDifferenceBpOp extends DynamicCustomOp {
 
-    private double cutoff = 0.0;
+    public SquaredDifferenceBpOp() {}
 
-    public Relu6Derivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double cutoff) {
-        super("relu6_bp", sameDiff, new SDVariable[]{i_v1, i_v2});
-        this.cutoff = cutoff;
-        this.extraArgs = new Object[]{cutoff};
+    public SquaredDifferenceBpOp(SameDiff sameDiff, SDVariable[] args) {
+        super("squaredsubtract_bp", sameDiff, args);
     }
 
-    public Relu6Derivative() {
-        this.extraArgs = new Object[]{cutoff};
-    }
-
-    @Override
-    public int opNum() {
-        return 0;
-    }
 
     @Override
     public String opName() {
-        return "relu6_bp";
+        return "squaredsubtract_bp";
     }
 
+
     @Override
-    public String onnxName() { throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+        throw new NoOpNameFoundException("No TF opName found for " +  opName());
     }
-
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         throw new UnsupportedOperationException("Not supported");
     }
+
 }
