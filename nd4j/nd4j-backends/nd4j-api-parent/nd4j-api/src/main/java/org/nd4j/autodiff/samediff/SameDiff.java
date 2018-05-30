@@ -89,8 +89,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class SameDiff {
 
-    private Map<List<String>, DifferentialFunction> incomingArgs;       //Key: name of SDVariables as input (args) to a function. Value: Function
-    private Map<List<String>, DifferentialFunction> outgoingArgs;       //Key: name of SDVariables as outputs from a function. Value: Function
+//    private Map<List<String>, DifferentialFunction> incomingArgs;       //Key: name of SDVariables as input (args) to a function. Value: Function
+//    private Map<List<String>, DifferentialFunction> outgoingArgs;       //Key: name of SDVariables as outputs from a function. Value: Function
     private Map<String, String[]> incomingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as inputs to that function
     private Map<String, String[]> outgoingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as outputs from that function
     private Map<String, int[]> permuteOrder;
@@ -829,8 +829,6 @@ public class SameDiff {
         placeHolderMap = new LinkedHashMap<>();
         placeHolderVarNames = new LinkedHashSet<>();
         placeHolderOriginalShapes = new LinkedHashMap<>();
-        incomingArgs = new LinkedHashMap<>();
-        outgoingArgs = new LinkedHashMap<>();
         incomingArgsReverse = new LinkedHashMap<>();
         outgoingArgsReverse = new LinkedHashMap<>();
         functionInstancesById = new LinkedHashMap<>();
@@ -1114,7 +1112,6 @@ public class SameDiff {
         }
 
         outgoingArgsReverse.put(function.getOwnName(), varNames);
-        outgoingArgs.put(Arrays.asList(varNames), function);
 
         for (val resultName : varNames) {
             List<DifferentialFunction> funcs = functionOutputFor.get(resultName);
@@ -1145,8 +1142,6 @@ public class SameDiff {
             }
         }
 
-
-        incomingArgs.put(Arrays.asList(variables), function);
         incomingArgsReverse.put(function.getOwnName(), variables);
         for (val variableName : variables) {
             List<DifferentialFunction> funcs = functionsArgsFor.get(variableName);
@@ -1187,13 +1182,8 @@ public class SameDiff {
      * @return true if the function has args false otherwise
      */
     public boolean hasArgs(DifferentialFunction function) {
-        val vertexIdArgs = incomingArgsReverse.get(function.getOwnName());
-        if (vertexIdArgs != null) {
-            val args = incomingArgs.get(Arrays.asList(vertexIdArgs));
-            if (args != null)
-                return true;
-        }
-        return false;
+        String[] vertexIdArgs = incomingArgsReverse.get(function.getOwnName());
+        return vertexIdArgs != null && vertexIdArgs.length > 0;
     }
 
 
@@ -1515,7 +1505,6 @@ public class SameDiff {
                  * the reverse and forward arguments.
                  */
                 val reverseArgs = incomingArgsReverse.get(function.getOwnName());
-                incomingArgs.remove(Arrays.asList(reverseArgs));
                 incomingArgsReverse.remove(function.getOwnName());
                 val newArgs = new ArrayList<String>(args.length - 1);
                 for (int arg = 0; arg < args.length; arg++) {
@@ -1525,7 +1514,6 @@ public class SameDiff {
                 }
 
                 val newArgsArr = newArgs.toArray(new String[newArgs.size()]);
-                incomingArgs.put(Arrays.asList(newArgsArr), function);
                 incomingArgsReverse.put(function.getOwnName(), newArgsArr);
                 //no further need to scan
                 break;
@@ -5164,117 +5152,8 @@ public class SameDiff {
      * @return
      */
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards() {
-
-        final SameDiff outer = this;
         if (getFunction("grad") == null) {
-            if(log.isTraceEnabled()){
-                log.trace("Defining function \"grad\"");
-            }
-
-            defineFunction("grad", new SameDiffFunctionDefinition() {
-
-                @Override
-                public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                    //propagate graph to this samediff instance
-                    //which will also contain the backward
-                    if (SameDiff.this.debugMode) {
-                        sameDiff.enableDebugMode();
-                    }
-
-                    outer.invokeGraphOn(sameDiff);
-
-                    List<DifferentialFunction> allFunctions = new ArrayList<>(sameDiff.functionInstancesById.values());
-                    if (allFunctions.isEmpty()) {
-                        throw new ND4JIllegalStateException("No ops found!");
-                    }
-
-
-                    for (val func : allFunctions) {
-                        if (func instanceof SDVariable) {
-                            continue;
-                        }
-
-                        val args = func.args();
-                        for (val arg : args)
-                            arg.setSameDiff(sameDiff);
-                        val outputs = func.outputVariables();
-                        for (val output : outputs)
-                            output.setSameDiff(sameDiff);
-                        func.setSameDiff(sameDiff);
-                    }
-
-                    val initialOuts = allFunctions.get(allFunctions.size() - 1).outputVariables();
-                    val firstBackward = initialOuts[0];
-
-                    if(log.isTraceEnabled()){
-                        String[] initialOutputsStr = allFunctions.get(allFunctions.size()-1).outputVariablesNames();
-                        String s = initialOutputsStr == null ? "null" : Arrays.toString(initialOutputsStr);
-                        log.trace("Defining backward function: initial outputs {}", s);
-                    }
-
-                    //start with scalar backprop
-                    SDVariable initialGrad = sameDiff.var("one-var", Nd4j.scalar(1.0));
-                    sameDiff.forwardVarForGrad.put(firstBackward.getVarName(), initialGrad);
-                    sameDiff.gradients.put(firstBackward.getVarName(), initialGrad);
-
-                    SDVariable gradientBackwardsMarker = sameDiff.gradientBackwardsMarker(firstBackward);
-
-                    //reinitialize list with all declared variables
-                    allFunctions = new ArrayList<DifferentialFunction>(sameDiff.functionInstancesById.values());
-                    Collections.reverse(allFunctions);
-
-
-
-                    //for (DifferentialFunction action : allFunctions) {
-                    for( int i=0; i<allFunctions.size(); i++ ){
-                        DifferentialFunction action = allFunctions.get(i);
-                        if(log.isTraceEnabled()){
-                            log.trace("Defining backward function step {} of {}: {} ({}) - {}", (i+1), allFunctions.size(),
-                                    action.opName(), action.getOwnName(), action.getClass().getName());
-                        }
-
-                        if (action instanceof GradientBackwardsMarker) {
-                            log.warn("Action op state is null for " + action.opName());
-                            continue;
-                        }
-
-                        DifferentialFunction currFunction = action;
-                        Preconditions.checkState(currFunction.getSameDiff() == sameDiff, "Wrong samediff instance found!");
-                        //Preconditions.checkNotNull("Gradient for " + currFunction.opName() + " was null ! " + sameDiff.getVariableForVertexId(currFunction.getVertexId()).getGradient());
-                        val args = currFunction.outputVariables();
-                        for (val arg : args) {
-                            if (arg.getSameDiff() != sameDiff) {
-                                arg.setSameDiff(sameDiff);
-                            }
-                        }
-
-
-                        List<SDVariable> grads = new ArrayList<>();
-                        for (val varToGrad : args) {
-                            val grad = varToGrad.gradient();
-                            if (grad == null)
-                                throw new ND4JIllegalStateException("No gradient found for " + varToGrad.getVarName());
-                            grads.add(grad);
-                        }
-
-                        List<SDVariable> currFnGrads = currFunction.diff(grads);
-                    }
-
-
-                    if (sameDiff.isDebugMode()) {
-                        //ensure all gradients are present for all variables
-                        for (SDVariable sdVariable : variables()) {
-                            sdVariable.gradient();
-                        }
-                    }
-
-                    if(log.isTraceEnabled()){
-                        log.trace("Defining backward function complete");
-                    }
-
-                    return new SDVariable[]{sameDiff.var("grad", new int[]{1, 1})};
-                }
-            });
+            createGradFunction();
         }
 
 
@@ -5291,6 +5170,118 @@ public class SameDiff {
         }
 
         return forward;
+    }
+
+    public void createGradFunction(){
+        if(log.isTraceEnabled()){
+            log.trace("Defining function \"grad\"");
+        }
+
+        final SameDiff outer = this;
+        defineFunction("grad", new SameDiffFunctionDefinition() {
+
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                //propagate graph to this samediff instance
+                //which will also contain the backward
+                if (SameDiff.this.debugMode) {
+                    sameDiff.enableDebugMode();
+                }
+
+                outer.invokeGraphOn(sameDiff);
+
+                List<DifferentialFunction> allFunctions = new ArrayList<>(sameDiff.functionInstancesById.values());
+                if (allFunctions.isEmpty()) {
+                    throw new ND4JIllegalStateException("No ops found!");
+                }
+
+
+                for (val func : allFunctions) {
+                    if (func instanceof SDVariable) {
+                        continue;
+                    }
+
+                    val args = func.args();
+                    for (val arg : args)
+                        arg.setSameDiff(sameDiff);
+                    val outputs = func.outputVariables();
+                    for (val output : outputs)
+                        output.setSameDiff(sameDiff);
+                    func.setSameDiff(sameDiff);
+                }
+
+                val initialOuts = allFunctions.get(allFunctions.size() - 1).outputVariables();
+                val firstBackward = initialOuts[0];
+
+                if(log.isTraceEnabled()){
+                    String[] initialOutputsStr = allFunctions.get(allFunctions.size()-1).outputVariablesNames();
+                    String s = initialOutputsStr == null ? "null" : Arrays.toString(initialOutputsStr);
+                    log.trace("Defining backward function: initial outputs {}", s);
+                }
+
+                //start with scalar backprop
+                SDVariable initialGrad = sameDiff.var("one-var", Nd4j.scalar(1.0));
+                sameDiff.forwardVarForGrad.put(firstBackward.getVarName(), initialGrad);
+                sameDiff.gradients.put(firstBackward.getVarName(), initialGrad);
+
+                SDVariable gradientBackwardsMarker = sameDiff.gradientBackwardsMarker(firstBackward);
+
+                //reinitialize list with all declared variables
+                allFunctions = new ArrayList<DifferentialFunction>(sameDiff.functionInstancesById.values());
+                Collections.reverse(allFunctions);
+
+
+
+                //for (DifferentialFunction action : allFunctions) {
+                for( int i=0; i<allFunctions.size(); i++ ){
+                    DifferentialFunction action = allFunctions.get(i);
+                    if(log.isTraceEnabled()){
+                        log.trace("Defining backward function step {} of {}: {} ({}) - {}", (i+1), allFunctions.size(),
+                                action.opName(), action.getOwnName(), action.getClass().getName());
+                    }
+
+                    if (action instanceof GradientBackwardsMarker) {
+                        log.warn("Action op state is null for " + action.opName());
+                        continue;
+                    }
+
+                    DifferentialFunction currFunction = action;
+                    Preconditions.checkState(currFunction.getSameDiff() == sameDiff, "Wrong samediff instance found!");
+                    //Preconditions.checkNotNull("Gradient for " + currFunction.opName() + " was null ! " + sameDiff.getVariableForVertexId(currFunction.getVertexId()).getGradient());
+                    val args = currFunction.outputVariables();
+                    for (val arg : args) {
+                        if (arg.getSameDiff() != sameDiff) {
+                            arg.setSameDiff(sameDiff);
+                        }
+                    }
+
+
+                    List<SDVariable> grads = new ArrayList<>();
+                    for (val varToGrad : args) {
+                        val grad = varToGrad.gradient();
+                        if (grad == null)
+                            throw new ND4JIllegalStateException("No gradient found for " + varToGrad.getVarName());
+                        grads.add(grad);
+                    }
+
+                    List<SDVariable> currFnGrads = currFunction.diff(grads);
+                }
+
+
+                if (sameDiff.isDebugMode()) {
+                    //ensure all gradients are present for all variables
+                    for (SDVariable sdVariable : variables()) {
+                        sdVariable.gradient();
+                    }
+                }
+
+                if(log.isTraceEnabled()){
+                    log.trace("Defining backward function complete");
+                }
+
+                return new SDVariable[]{sameDiff.var("grad", new int[]{1, 1})};
+            }
+        });
     }
 
 
@@ -6823,21 +6814,22 @@ public class SameDiff {
         Map<String,String> outputOfFn = new HashMap<>();
         int maxLengthOutputOf = 18;
         for(String s : varMap.keySet()){
-            DifferentialFunction outputOf = null;
-            for(List<String> str : outgoingArgs.keySet()){
-                if(str != null && str.contains(s)){
-                    outputOf = outgoingArgs.get(str);
+            String outputOf = null;
+            for(Map.Entry<String,String[]> dfToArgs : outgoingArgsReverse.entrySet()){
+                if(dfToArgs.getValue() != null && ArrayUtils.contains(dfToArgs.getValue(), s)){
+                    outputOf = dfToArgs.getKey();
                     break;
                 }
             }
-            String outputOfStr = null;
+
             if(outputOf == null){
-                outputOfStr = "<none>";
+                outputOf = "<none>";
             } else {
-                outputOfStr = outputOf.getOwnName() + "(" + outputOf.opName() + ")";
+                DifferentialFunction d = getFunctionById(outputOf);
+                outputOf = d.getOwnName() + "(" + d.opName() + ")";
             }
-            outputOfFn.put(s, outputOfStr);
-            maxLengthOutputOf = Math.max(maxLengthOutputOf, outputOfStr.length());
+            outputOfFn.put(s, outputOf);
+            maxLengthOutputOf = Math.max(maxLengthOutputOf, outputOf.length());
         }
         maxLengthOutputOf += 2;
 
