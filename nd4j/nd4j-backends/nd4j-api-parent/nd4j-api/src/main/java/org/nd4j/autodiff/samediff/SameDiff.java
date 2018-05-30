@@ -5280,8 +5280,6 @@ public class SameDiff {
                     if(log.isTraceEnabled()){
                         log.trace("Finished Defining backward function step {} of {}: {} ({}) - {}", (i+1), allFunctions.size(),
                                 action.opName(), action.getOwnName(), action.getClass().getName());
-                        log.trace("incomingArgsReverse keyset: {}", sameDiff.incomingArgsReverse.keySet());
-                        log.trace("outgoingArgsReverse keyset: {}", sameDiff.outgoingArgsReverse.keySet());
                     }
 
                     if(debugMode) {
