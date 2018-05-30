@@ -8,4 +8,8 @@ public interface VariableBarrier {
     void desynchronizedBlock();
 
     void bypassEverything();
+
+    void blockUntilSyncable();
+
+    void blockUntilDesyncable();
 }

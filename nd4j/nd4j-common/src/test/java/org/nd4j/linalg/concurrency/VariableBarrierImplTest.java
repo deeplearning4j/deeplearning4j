@@ -30,56 +30,6 @@ public class VariableBarrierImplTest {
     public void tearDown() throws Exception {
     }
 
-    @Test
-    public void testPlanMapping_1() {
-        val barrier = new VariableBarrierImpl(true);
-
-        int[] array = {3, 3, 4};
-        barrier.updatePlan(array);
-
-        assertEquals(3, barrier.getConsumersForIteration(0));
-        assertEquals(3, barrier.getConsumersForIteration(1));
-        assertEquals(3, barrier.getConsumersForIteration(2));
-        assertEquals(1, barrier.getConsumersForIteration(3));
-        assertEquals(0, barrier.getConsumersForIteration(4));
-        assertEquals(0, barrier.getConsumersForIteration(5));
-        assertEquals(0, barrier.getConsumersForIteration(6));
-    }
-
-
-    @Test
-    public void testPlanMapping_2() {
-        val barrier = new VariableBarrierImpl(true);
-
-        int[] array = {1, 2, 3, 4};
-        barrier.updatePlan(array);
-
-        assertEquals(4, barrier.getConsumersForIteration(0));
-        assertEquals(3, barrier.getConsumersForIteration(1));
-        assertEquals(2, barrier.getConsumersForIteration(2));
-        assertEquals(1, barrier.getConsumersForIteration(3));
-        assertEquals(0, barrier.getConsumersForIteration(4));
-    }
-
-    @Test
-    public void testPlanMapping_3() {
-        val barrier = new VariableBarrierImpl(true);
-
-        int[] array = {2, 17};
-        barrier.updatePlan(array);
-
-        assertEquals(2, barrier.getConsumersForIteration(0));
-        assertEquals(2, barrier.getConsumersForIteration(1));
-        assertEquals(1, barrier.getConsumersForIteration(2));
-        assertEquals(1, barrier.getConsumersForIteration(3));
-        assertEquals(1, barrier.getConsumersForIteration(4));
-        assertEquals(1, barrier.getConsumersForIteration(5));
-        assertEquals(0, barrier.getConsumersForIteration(17));
-        assertEquals(0, barrier.getConsumersForIteration(18));
-    }
-
-
-
     /**
      * This test checks for VariableBarrierImpl WITHOUT tail sync
      *
@@ -279,7 +229,7 @@ public class VariableBarrierImplTest {
      *
      * @throws Exception
      */
-    @Test //(timeout = 95000L)
+    @Test (timeout = 95000L)
     public void testVariableBarrier_5() throws Exception {
 
         val testSize = 113;
@@ -310,7 +260,7 @@ public class VariableBarrierImplTest {
                     val pos = e % workers;
                     consumers = pos + 1;
 
-                    val seriesLength = RandomUtils.nextInt(1, 10);
+                    val seriesLength = RandomUtils.nextInt(1, 5);
                     plan[pos] = seriesLength;
 
                     // blocking feed, won't advance unless there's some space in queue
@@ -359,7 +309,7 @@ public class VariableBarrierImplTest {
      *
      * @throws Exception
      */
-    @Test //(timeout = 95000L)
+    @Test (timeout = 95000L)
     public void testVariableBarrier_6() throws Exception {
 
         val testSize = 113;
@@ -384,7 +334,7 @@ public class VariableBarrierImplTest {
 
                 int[] plan = new int[workers];
 
-                val seriesLength = RandomUtils.nextInt(2, 5);
+                val seriesLength = RandomUtils.nextInt(1, 5);
 
                 // now we imitate our PW flow
                 for (int e = 0; e < testSize; e++) {
@@ -516,16 +466,12 @@ public class VariableBarrierImplTest {
                     val ds = queue.poll(25, TimeUnit.MILLISECONDS);
 
                     if (ds != null) {
+                        //barrier.blockUntilSyncable();
+
                         // simulating variable sequences etc here
                         val sequenceLength = ds;
                         //log.info("{} TS length: {}", Thread.currentThread().getName(), sequenceLength);
                         for (int e = 0; e < sequenceLength; e++) {
-                            // kind of doing something important here
-                            if (variableWorkload)
-                                LockSupport.parkNanos(RandomUtils.nextInt(0, (int) time));
-                            else
-                                LockSupport.parkNanos(time);
-
                             // we're entering synchronous block
                             barrier.synchronizedBlock();
 
@@ -533,11 +479,18 @@ public class VariableBarrierImplTest {
                             if (e == 0)
                                 outerQueue.add(ds);
 
+                            // kind of doing something important here
+                            if (variableWorkload)
+                                LockSupport.parkNanos(RandomUtils.nextInt(0, (int) time));
+                            else
+                                LockSupport.parkNanos(time);
+
 
                             // leaving synchronized block
                             barrier.desynchronizedBlock();
                         }
                     }
+
                 } catch (InterruptedException e) {
                     // noop
                 } catch (Exception e) {

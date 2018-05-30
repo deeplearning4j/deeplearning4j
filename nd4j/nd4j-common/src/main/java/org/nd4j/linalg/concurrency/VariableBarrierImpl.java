@@ -70,7 +70,8 @@ public class VariableBarrierImpl implements VariableBarrier {
     }
 
     public void registerConsumers(@NonNull int[] consumerPlans) {
-        blockMainThread();
+        while (phase.get() != 0 && phase.get() >= 0)
+            LockSupport.parkNanos(5000);
 
         // update array
         updatePlan(consumerPlans);
@@ -85,6 +86,12 @@ public class VariableBarrierImpl implements VariableBarrier {
     }
 
     @Override
+    public void blockUntilSyncable() {
+        while (phase.get() != 1 && phase.get() >= 0)
+            LockSupport.parkNanos(5000);
+    }
+
+    @Override
     public void synchronizedBlock() {
         // waiting till we're on right phase
         while (phase.get() != 1 && phase.get() >= 0)
@@ -95,6 +102,12 @@ public class VariableBarrierImpl implements VariableBarrier {
             second.set(0);
             phase.set(2);
         }
+    }
+
+    @Override
+    public void blockUntilDesyncable() {
+        while (phase.get() != 2 && phase.get() >= 0)
+            LockSupport.parkNanos(5000);
     }
 
     @Override
@@ -181,5 +194,13 @@ public class VariableBarrierImpl implements VariableBarrier {
 
     protected int getConsumers() {
         return this.consumers.get();
+    }
+
+    protected int getFirst() {
+        return first.get();
+    }
+
+    protected int getSecond() {
+        return second.get();
     }
 }
