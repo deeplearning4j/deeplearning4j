@@ -279,7 +279,7 @@ public class VariableBarrierImplTest {
      *
      * @throws Exception
      */
-    @Test //(timeout = 45000L)
+    @Test //(timeout = 95000L)
     public void testVariableBarrier_5() throws Exception {
 
         val testSize = 113;
@@ -310,7 +310,88 @@ public class VariableBarrierImplTest {
                     val pos = e % workers;
                     consumers = pos + 1;
 
-                    val seriesLength = RandomUtils.nextInt(1, 5);
+                    val seriesLength = RandomUtils.nextInt(1, 10);
+                    plan[pos] = seriesLength;
+
+                    // blocking feed, won't advance unless there's some space in queue
+                    zoo[pos].feedQueue(seriesLength);
+                    //log.info("Feeding with {} time steps", seriesLength);
+
+                    // check if we're on last step
+                    if (pos == workers - 1) {
+                        barrier.registerConsumers(plan);
+
+                        barrier.blockMainThread();
+
+                        plan = new int[workers];
+                    }
+
+                    // we mimic ETL pressure this way
+                    LockSupport.parkNanos(workload);
+                }
+
+                // notifying about last consumers left running
+                if (consumers != workers) {
+                    barrier.registerConsumers(plan);
+                }
+
+                // finalizing process
+                for (int z = 0; z < workers; z++) {
+                    // setting shutdown flag
+                    zoo[z].shutdown();
+
+                    // waiting for thread to actually exit
+                    zoo[z].join();
+                }
+
+                //barrier.checkForException();
+
+                assertEquals(testSize, queue.size());
+            }
+        }
+    }
+
+
+    /**
+     * This test checks for VariableBarrierImpl WITH tail sync and WITH workload/workers within main thread.
+     * On top of that: this test uses workers with variable workload 0...workload
+     * On top of that: this test mimics TBPTT with static sequence length scenario
+     *
+     * @throws Exception
+     */
+    @Test //(timeout = 95000L)
+    public void testVariableBarrier_6() throws Exception {
+
+        val testSize = 113;
+        val workersOptions = new int[] {2, 3, 4, 5, 6, 7, 8, 9, 10};
+        val workloads = new long[] {100, 1000, 10000, 100000, 1000000};
+
+        for (val workers: workersOptions) {
+            for (val workload: workloads) {
+                log.info("Trying {} workers with {} ns workloads", workers, workload);
+                val zoo = new TruncatedWorkerThread[workers];
+                val barrier = new VariableBarrierImpl(true);
+                val queue = new ArrayBlockingQueue<Integer>(testSize + 1);
+                int consumers = 0;
+
+                // creating our initial workers
+                for (int z = 0; z < workers; z++) {
+                    zoo[z] = new TruncatedWorkerThread(z, barrier, workload, queue, true);
+
+                    // as soon as we start - all threads just block on queue.take(), waiting for next dataset
+                    zoo[z].start();
+                }
+
+                int[] plan = new int[workers];
+
+                val seriesLength = RandomUtils.nextInt(2, 5);
+
+                // now we imitate our PW flow
+                for (int e = 0; e < testSize; e++) {
+                    // this is simple counter for interleaved fit
+                    val pos = e % workers;
+                    consumers = pos + 1;
+
                     plan[pos] = seriesLength;
 
                     // blocking feed, won't advance unless there's some space in queue

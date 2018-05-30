@@ -42,7 +42,7 @@ public class VariableBarrierImpl implements VariableBarrier {
 
     public void blockMainThread() {
         while (phase.get() != 0 && phase.get() >= 0)
-            LockSupport.parkNanos(500);
+            LockSupport.parkNanos(5000);
     }
 
     protected void updatePlan(int[] consumerPlans) {
@@ -88,7 +88,7 @@ public class VariableBarrierImpl implements VariableBarrier {
     public void synchronizedBlock() {
         // waiting till we're on right phase
         while (phase.get() != 1 && phase.get() >= 0)
-            LockSupport.parkNanos(500);
+            LockSupport.parkNanos(5000);
 
         // last thread updates variable IF we're no on bypass mode
         if (first.incrementAndGet() == consumers.get() && phase.get() >= 0) {
@@ -101,7 +101,7 @@ public class VariableBarrierImpl implements VariableBarrier {
     public void desynchronizedBlock() {
         // waiting till we're on right phase
         while (phase.get() != 2 && phase.get() >= 0)
-            LockSupport.parkNanos(500);
+            LockSupport.parkNanos(5000);
 
         //log.info("Iteration: {}; consumers: {}", this.plansPosition.get(), this.consumers.get());
 
