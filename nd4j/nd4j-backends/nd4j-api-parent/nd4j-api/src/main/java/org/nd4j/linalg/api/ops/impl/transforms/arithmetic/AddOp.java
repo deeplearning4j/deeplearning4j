@@ -32,6 +32,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class AddOp extends BaseDynamicTransformOp {
+    public static final String OP_NAME = "add";
 
     public AddOp() {
     }
@@ -46,7 +47,7 @@ public class AddOp extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "add";
+        return OP_NAME;
     }
 
     @Override

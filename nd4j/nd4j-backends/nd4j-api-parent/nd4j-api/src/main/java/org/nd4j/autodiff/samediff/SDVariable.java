@@ -263,7 +263,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable rsub(double sameDiffVariable) {
-        return rsub(sameDiff.generateNewVarName(new RSubOp().opName(),0),sameDiffVariable);
+        return rsub(sameDiff.generateNewVarName(RSubOp.OP_NAME,0),sameDiffVariable);
     }
 
     /**
@@ -272,7 +272,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable rdiv(double sameDiffVariable) {
-        return rdiv(sameDiff.generateNewVarName(new RDivOp().opName(),0),sameDiffVariable);
+        return rdiv(sameDiff.generateNewVarName(RDivOp.OP_NAME,0),sameDiffVariable);
 
     }
 
@@ -282,7 +282,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable add(double sameDiffVariable) {
-        return add(sameDiff.generateNewVarName(new AddOp().opName(),0),sameDiffVariable);
+        return add(sameDiff.generateNewVarName(AddOp.OP_NAME,0),sameDiffVariable);
 
     }
 
@@ -292,7 +292,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable sub(double sameDiffVariable) {
-        return sub(sameDiff.generateNewVarName(new SubOp().opName(),0),sameDiffVariable);
+        return sub(sameDiff.generateNewVarName(SubOp.OP_NAME,0),sameDiffVariable);
 
     }
 
@@ -302,7 +302,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable squaredDifference(SDVariable sameDiffVariable) {
-        return squaredDifference(sameDiff.generateNewVarName(new SquaredDifferenceOp().opName(),0),sameDiffVariable);
+        return squaredDifference(sameDiff.generateNewVarName(SquaredDifferenceOp.OP_NAME,0),sameDiffVariable);
 
     }
 
@@ -312,7 +312,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable div(double sameDiffVariable) {
-        return div(sameDiff.generateNewVarName(new DivOp().opName(),0),sameDiffVariable);
+        return div(sameDiff.generateNewVarName(DivOp.OP_NAME,0),sameDiffVariable);
 
     }
 
@@ -322,7 +322,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public SDVariable mul(double sameDiffVariable) {
-        return mul(sameDiff.generateNewVarName(new MulOp().opName(),0),sameDiffVariable);
+        return mul(sameDiff.generateNewVarName(MulOp.OP_NAME,0),sameDiffVariable);
 
     }
 
