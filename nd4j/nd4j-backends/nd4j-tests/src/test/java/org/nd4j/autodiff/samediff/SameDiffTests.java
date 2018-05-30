@@ -11,12 +11,15 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.accum.Mean;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -3690,6 +3693,97 @@ public class SameDiffTests {
         SDVariable reciprocal = sd.reciprocal(in);
         INDArray res = reciprocal.eval();
         assertEquals(expected,res);
+    }
+
+
+    @Test
+    public void validateInternalState(){
+        SameDiff sd = SameDiff.create();
+
+        int nOut = 4;
+        int minibatch = 10;
+        SDVariable input = sd.var("in", new int[]{minibatch, nOut});
+        SDVariable label = sd.var("label", new int[]{minibatch, nOut});
+
+        SDVariable diff = input.sub("diff", label);
+        SDVariable sqDiff = diff.mul("sqDiff", diff);
+        SDVariable msePerEx = sd.mean("msePerEx", sqDiff, 1);
+
+        SDVariable out = sd.mean("loss", msePerEx, 0);
+
+//        System.out.println(sd.summary());
+
+        //Validate internal state:
+        DifferentialFunction[] dfs = sd.functions();
+        assertEquals(4, dfs.length);    //sub, mul, mean, mean
+        assertEquals(SubOp.class, dfs[0].getClass());
+        assertEquals(MulOp.class, dfs[1].getClass());
+        assertEquals(Mean.class, dfs[2].getClass());
+        assertEquals(Mean.class, dfs[3].getClass());
+
+        Map<List<String>, DifferentialFunction> incomingArgs = getObject("incomingArgs", sd, SameDiff.class);
+        assertEquals(4, incomingArgs.size());
+        List<String> k = Arrays.asList("in", "label");
+        assertTrue(incomingArgs.containsKey(k));
+        assertEquals(dfs[0], incomingArgs.get(k));
+
+        k = Arrays.asList("diff", "diff");
+        assertTrue(incomingArgs.containsKey(k));
+        assertEquals(dfs[1], incomingArgs.get(k));
+
+        k = Collections.singletonList("sqDiff");
+        assertTrue(incomingArgs.containsKey(k));
+        assertEquals(dfs[2], incomingArgs.get(k));
+
+        k = Collections.singletonList("msePerEx");
+        assertTrue(incomingArgs.containsKey(k));
+        assertEquals(dfs[3], incomingArgs.get(k));
+
+
+
+
+
+
+//        try{
+//            sd.execBackwards();
+//        } catch (Exception e){
+//            e.printStackTrace();
+//        }
+//
+//        System.out.println(sd.summary());
+//
+//
+//        SameDiff gradFn = sd.getFunction("grad");
+//
+//        System.out.println("-----------------------------------------");
+//        System.out.println(gradFn.summary());
+
+
+    }
+
+    @Test
+    public void tempTest(){
+
+        String[] arr1 = new String[]{"s1", "s2"};
+        String[] arr2 = new String[]{"s1", "s2"};
+
+        System.out.println("EQUALS: " + arr1.equals(arr2));
+        System.out.println("HASH1: " + arr1.hashCode());
+        System.out.println("HASH1: " + arr2.hashCode());
+
+        Map<String[],Object> map = new HashMap<>();
+        map.put(arr1, "test");
+        System.out.println("Contains: " + map.containsKey(arr2));
+    }
+
+    private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){
+        try {
+            Field f = fromClass.getDeclaredField(fieldName);
+            f.setAccessible(true);
+            return (T)f.get(from);
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
     }
 
 }

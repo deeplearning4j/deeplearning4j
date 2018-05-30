@@ -89,10 +89,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class SameDiff {
 
-    private Map<String[], DifferentialFunction> incomingArgs;
-    private Map<String[], DifferentialFunction> outgoingArgs;
-    private Map<String, String[]> incomingArgsReverse;
-    private Map<String, String[]> outgoingArgsReverse;
+    private Map<List<String>, DifferentialFunction> incomingArgs;       //Key: name of SDVariables as input (args) to a function. Value: Function
+    private Map<List<String>, DifferentialFunction> outgoingArgs;       //Key: name of SDVariables as outputs from a function. Value: Function
+    private Map<String, String[]> incomingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as inputs to that function
+    private Map<String, String[]> outgoingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as outputs from that function
     private Map<String, int[]> permuteOrder;
     private boolean shouldBootStrap = true;
     private Set<String> importedVarName;
@@ -101,17 +101,17 @@ public class SameDiff {
     private Map<String, String> baseNameForFunctionInstanceId;
 
     private DifferentialFunctionFactory functionFactory;
-    private Map<String, SDVariable> variableMap;
-    private Map<String, long[]> variableNameToShape;
+    private Map<String, SDVariable> variableMap;                    //Key: SDVariable name. Value: SDVariable
+    private Map<String, long[]> variableNameToShape;                //Key: SDVariable name. Value: shape for that variable
     //gradient information
-    private Map<String, SDVariable> gradients;
+    private Map<String, SDVariable> gradients;                      //Key:
     private Map<String, SDVariable> forwardVarForGrad;
 
-    private Map<String, INDArray> variableNameToArr;
+    private Map<String, INDArray> variableNameToArr;                //Key: name of SDVariable. Value: Array for that variable
 
     //individual index for variable names
-    private Map<String, List<DifferentialFunction>> functionsArgsFor;
-    private Map<String, List<DifferentialFunction>> functionOutputFor;
+    private Map<String, List<DifferentialFunction>> functionsArgsFor;   //Key: SDVariable name. Value: all DifferentialFunctions it is an input to
+    private Map<String, List<DifferentialFunction>> functionOutputFor;  //Key: SDVariable name. Value: DifferentialFunctions this variable is an output for (TODO: Why is this a list? Isn't it *always* length 1?)
 
     // this entity holds runtime information for Switch/Merge/NextIteration etc stuff
     private transient ThreadLocal<FlowPath> localFlowPath = new ThreadLocal<FlowPath>();
@@ -1114,7 +1114,7 @@ public class SameDiff {
         }
 
         outgoingArgsReverse.put(function.getOwnName(), varNames);
-        outgoingArgs.put(varNames, function);
+        outgoingArgs.put(Arrays.asList(varNames), function);
 
         for (val resultName : varNames) {
             List<DifferentialFunction> funcs = functionOutputFor.get(resultName);
@@ -1146,7 +1146,7 @@ public class SameDiff {
         }
 
 
-        incomingArgs.put(variables, function);
+        incomingArgs.put(Arrays.asList(variables), function);
         incomingArgsReverse.put(function.getOwnName(), variables);
         for (val variableName : variables) {
             List<DifferentialFunction> funcs = functionsArgsFor.get(variableName);
@@ -1178,17 +1178,6 @@ public class SameDiff {
     }
 
 
-    /**
-     * Returns true if this function already
-     * has defined arguments
-     *
-     * @param function the function to check
-     * @return true if the function has args false otherwise
-     */
-    public boolean hasArgs(int[] function) {
-        return incomingArgs.containsKey(function);
-    }
-
 
     /**
      * Returns true if this function already
@@ -1200,7 +1189,7 @@ public class SameDiff {
     public boolean hasArgs(DifferentialFunction function) {
         val vertexIdArgs = incomingArgsReverse.get(function.getOwnName());
         if (vertexIdArgs != null) {
-            val args = incomingArgs.get(vertexIdArgs);
+            val args = incomingArgs.get(Arrays.asList(vertexIdArgs));
             if (args != null)
                 return true;
         }
@@ -1526,7 +1515,7 @@ public class SameDiff {
                  * the reverse and forward arguments.
                  */
                 val reverseArgs = incomingArgsReverse.get(function.getOwnName());
-                incomingArgs.remove(reverseArgs);
+                incomingArgs.remove(Arrays.asList(reverseArgs));
                 incomingArgsReverse.remove(function.getOwnName());
                 val newArgs = new ArrayList<String>(args.length - 1);
                 for (int arg = 0; arg < args.length; arg++) {
@@ -1536,14 +1525,12 @@ public class SameDiff {
                 }
 
                 val newArgsArr = newArgs.toArray(new String[newArgs.size()]);
-                incomingArgs.put(newArgsArr, function);
+                incomingArgs.put(Arrays.asList(newArgsArr), function);
                 incomingArgsReverse.put(function.getOwnName(), newArgsArr);
                 //no further need to scan
                 break;
             }
         }
-
-
     }
 
 
@@ -6837,8 +6824,8 @@ public class SameDiff {
         int maxLengthOutputOf = 18;
         for(String s : varMap.keySet()){
             DifferentialFunction outputOf = null;
-            for(String[] str : outgoingArgs.keySet()){
-                if(str != null && ArrayUtils.contains(str, s)){
+            for(List<String> str : outgoingArgs.keySet()){
+                if(str != null && str.contains(s)){
                     outputOf = outgoingArgs.get(str);
                     break;
                 }
