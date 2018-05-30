@@ -88,9 +88,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Builder
 @Slf4j
 public class SameDiff {
-
-//    private Map<List<String>, DifferentialFunction> incomingArgs;       //Key: name of SDVariables as input (args) to a function. Value: Function
-//    private Map<List<String>, DifferentialFunction> outgoingArgs;       //Key: name of SDVariables as outputs from a function. Value: Function
     private Map<String, String[]> incomingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as inputs to that function
     private Map<String, String[]> outgoingArgsReverse;              //Key: DifferentialFunction.getOwnName(). Value: name of SDVariables as outputs from that function
     private Map<String, int[]> permuteOrder;
@@ -1340,7 +1337,8 @@ public class SameDiff {
      * @return
      */
     public SDVariable onesLike(String name, SDVariable input) {
-        return f().onesLike(name, input);
+        SDVariable ret = f().onesLike(name, input);
+        return updateVariableNameAndReference(ret, name);
     }
 
 
@@ -1377,7 +1375,8 @@ public class SameDiff {
      * @return
      */
     public SDVariable zerosLike(String name, SDVariable input) {
-        return f().zerosLike(name, input);
+        SDVariable ret = f().zerosLike(name, input);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -4693,8 +4692,7 @@ public class SameDiff {
 
 
     /**
-     * Generate the variables based on the given input op
-     * and return the output variable names.
+     * Generate the variables based on the given input op and return the output variable names.
      *
      * @param function the function to generate the output
      *                 variable names for
@@ -4751,6 +4749,11 @@ public class SameDiff {
 
                         ret[i] = checkGet;
                     }
+
+                    //Update the internal state: outgoing variables for function
+                    if (getOutputsForFunction(function) == null)
+                        addOutgoingFor(ret, function);
+
                     return ret;
             }
 
@@ -4776,6 +4779,11 @@ public class SameDiff {
                 }
 
                 ret[0] = checkGet;
+
+                //Update the internal state: outgoing variables for function
+                if (getOutputsForFunction(function) == null)
+                    addOutgoingFor(ret, function);
+
                 return ret;
 
             }
@@ -5189,6 +5197,11 @@ public class SameDiff {
                 }
 
                 outer.invokeGraphOn(sameDiff);
+                if(debugMode) {
+                    //Expect incoming args and outgoing args to be the same
+                    Preconditions.checkState(sameDiff.incomingArgsReverse.keySet().equals(incomingArgsReverse.keySet()), "incomingArgsReverse keysets not equal");
+                    Preconditions.checkState(sameDiff.outgoingArgsReverse.keySet().equals(outgoingArgsReverse.keySet()), "outgoingArgsReverse keysets not equal");
+                }
 
                 List<DifferentialFunction> allFunctions = new ArrayList<>(sameDiff.functionInstancesById.values());
                 if (allFunctions.isEmpty()) {
@@ -5227,12 +5240,10 @@ public class SameDiff {
                 SDVariable gradientBackwardsMarker = sameDiff.gradientBackwardsMarker(firstBackward);
 
                 //reinitialize list with all declared variables
-                allFunctions = new ArrayList<DifferentialFunction>(sameDiff.functionInstancesById.values());
+                allFunctions = new ArrayList<>(sameDiff.functionInstancesById.values());
                 Collections.reverse(allFunctions);
 
 
-
-                //for (DifferentialFunction action : allFunctions) {
                 for( int i=0; i<allFunctions.size(); i++ ){
                     DifferentialFunction action = allFunctions.get(i);
                     if(log.isTraceEnabled()){
@@ -5265,6 +5276,20 @@ public class SameDiff {
                     }
 
                     List<SDVariable> currFnGrads = currFunction.diff(grads);
+
+                    if(log.isTraceEnabled()){
+                        log.trace("Finished Defining backward function step {} of {}: {} ({}) - {}", (i+1), allFunctions.size(),
+                                action.opName(), action.getOwnName(), action.getClass().getName());
+                        log.trace("incomingArgsReverse keyset: {}", sameDiff.incomingArgsReverse.keySet());
+                        log.trace("outgoingArgsReverse keyset: {}", sameDiff.outgoingArgsReverse.keySet());
+                    }
+
+                    if(debugMode) {
+                        //Expect incoming args and outgoing args to be the same
+                        Preconditions.checkState(sameDiff.incomingArgsReverse.keySet().equals(sameDiff.outgoingArgsReverse.keySet()),
+                                "incomingArgsReverse and outgoingArgsReverse keysets not equal after backprop of function %s of %s: %s (%s)",
+                                (i+1), allFunctions.size(), action.getOwnName(), action.getClass().getName());
+                    }
                 }
 
 

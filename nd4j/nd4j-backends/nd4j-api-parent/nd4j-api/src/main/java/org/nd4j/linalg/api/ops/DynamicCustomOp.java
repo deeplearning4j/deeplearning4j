@@ -161,7 +161,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             }
 
 
-            val newVars = sameDiff.generateOutputVariableForOp(this, baseName);
+            val newVars = sameDiff.generateOutputVariableForOp(this, baseName); //Also adds outgoing
             if (isInplaceCall()) {
                 if (args().length >= 1) {
                     val arr = args()[0].getArr();

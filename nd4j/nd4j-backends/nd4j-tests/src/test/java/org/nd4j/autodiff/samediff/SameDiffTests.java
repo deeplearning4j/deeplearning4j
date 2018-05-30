@@ -16,11 +16,18 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
+import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.MulBpOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.SubBpOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -3699,6 +3706,7 @@ public class SameDiffTests {
     @Test
     public void validateInternalState(){
         SameDiff sd = SameDiff.create();
+        sd.enableDebugMode();
 
         int nOut = 4;
         int minibatch = 10;
@@ -3711,11 +3719,13 @@ public class SameDiffTests {
 
         SDVariable out = sd.mean("loss", msePerEx, 0);
 
+        assertEquals("diff", diff.getVarName());
+        assertEquals("sqDiff", sqDiff.getVarName());
+
 //        System.out.println(sd.summary());
 
         //Validate internal state:
 
-        //incomingArgs
         DifferentialFunction[] dfs = sd.functions();
         assertEquals(4, dfs.length);    //sub, mul, mean, mean
         assertEquals(SubOp.class, dfs[0].getClass());
@@ -3723,43 +3733,59 @@ public class SameDiffTests {
         assertEquals(Mean.class, dfs[2].getClass());
         assertEquals(Mean.class, dfs[3].getClass());
 
-//        Map<List<String>, DifferentialFunction> incomingArgs = getObject("incomingArgs", sd, SameDiff.class);
-//        assertEquals(4, incomingArgs.size());
-//
-//        Map<List<String>, DifferentialFunction> incomingArgsExp = new LinkedHashMap<>();
-//        incomingArgsExp.put(Arrays.asList("in", "label"), dfs[0]);
-//        incomingArgsExp.put(Arrays.asList("diff", "diff"), dfs[1]);
-//        incomingArgsExp.put(Collections.singletonList("sqDiff"), dfs[2]);
-//        incomingArgsExp.put(Collections.singletonList("msePerEx"), dfs[3]);
-//
-//        assertEquals(incomingArgsExp, incomingArgs);
-//
-//        //incomingArgsReverse
-//        Map<String, String[]> incomingArgsReverse = getObject("incomingArgsReverse", sd, SameDiff.class);
-//        assertEquals(4, incomingArgsReverse.size());
-//
-//        Map<String, String[]> incomingArgsReverseExp = new LinkedHashMap<>();
-//        incomingArgsReverseExp.put(dfs[0].getOwnName(), new String[]{"in", "label"});
-//        incomingArgsReverseExp.put(dfs[1].getOwnName(), new String[]{"diff", "diff"});
-//        incomingArgsReverseExp.put(dfs[2].getOwnName(), new String[]{"sqDiff"});
-//        incomingArgsReverseExp.put(dfs[3].getOwnName(), new String[]{"msePerEx"});
-//        for(Map.Entry<String,String[]> e : incomingArgsReverseExp.entrySet()){
-//            assertArrayEquals(e.getValue(), incomingArgsReverse.get(e.getKey()));
-//        }
+        //incomingArgsReverse: maps from function own name to input args (input SDVariables)
+        Map<String, String[]> incomingArgsReverse = getObject("incomingArgsReverse", sd, SameDiff.class);
+        assertEquals(4, incomingArgsReverse.size());
 
+        Map<String, String[]> incomingArgsReverseExp = new LinkedHashMap<>();
+        incomingArgsReverseExp.put(dfs[0].getOwnName(), new String[]{"in", "label"});
+        incomingArgsReverseExp.put(dfs[1].getOwnName(), new String[]{"diff", "diff"});
+        incomingArgsReverseExp.put(dfs[2].getOwnName(), new String[]{"sqDiff"});
+        incomingArgsReverseExp.put(dfs[3].getOwnName(), new String[]{"msePerEx"});
+        for (Map.Entry<String, String[]> e : incomingArgsReverseExp.entrySet()) {
+            assertArrayEquals(e.getValue(), incomingArgsReverse.get(e.getKey()));
+        }
 
-        //outgoingArgs
+        //outgoingArgsReverse: maps from function own name to outputs (output SDVariables)
+        Map<String,String[]> outgoingArgsReverse = getObject("outgoingArgsReverse", sd, SameDiff.class);
+        Map<String, String[]> outgoingArgsReverseExp = new LinkedHashMap<>();
+        outgoingArgsReverseExp.put(dfs[0].getOwnName(), new String[]{"diff"});      //Sub
+        outgoingArgsReverseExp.put(dfs[1].getOwnName(), new String[]{"sqDiff"});    //Mul
+        outgoingArgsReverseExp.put(dfs[2].getOwnName(), new String[]{"msePerEx"});  //Mean
+        outgoingArgsReverseExp.put(dfs[3].getOwnName(), new String[]{"loss"});      //Mean
+        for (Map.Entry<String, String[]> e : outgoingArgsReverseExp.entrySet()) {
+            assertArrayEquals(e.getValue(), outgoingArgsReverse.get(e.getKey()));
+        }
 
-
-
-
+        //==============================================================================================================
+        //Check gradient function
 
         sd.createGradFunction();
         SameDiff sdGrad = sd.getFunction("grad");
 
         DifferentialFunction[] dfsBackward = sdGrad.functions();
-        assertEquals(14, dfsBackward.length);    //sub, mul, mean, mean, backward marker, ones_as, meanbp=(onesLike,div,mul), meanbp=(onesLike,Div,mul), mulbp, subbp
+        assertEquals(14, dfsBackward.length);    //sub, mul, mean, mean, backward marker, meanbp=(onesLike,scalardiv,mul), meanbp=(onesLike,scalardiv,mul), mulbp, add (from diff.mul(diff)), subbp
 
+        List<Class> classesExp = Arrays.asList(
+                SubOp.class, MulOp.class, Mean.class, Mean.class, GradientBackwardsMarker.class, OnesLike.class,
+                ScalarDivision.class, MulOp.class, OnesLike.class, ScalarDivision.class, MulOp.class, MulBpOp.class, AddOp.class, SubBpOp.class);
+
+        assertEquals(14, dfsBackward.length);
+        for(int i=0; i<14; i++ ){
+            assertEquals(classesExp.get(i), dfsBackward[i].getClass());
+        }
+
+        List<SDVariable> variables = sdGrad.variables();    //in, label, sub, multiply
+
+        Map<String,String[]> incomingArgsReverseBP = getObject("incomingArgsReverse", sdGrad, SameDiff.class);
+        System.out.println(incomingArgsReverseBP.keySet());
+        //Should have 1 entry for each DifferentialFunction...
+        assertEquals(14, incomingArgsReverseBP.size());
+
+        Map<String,String[]> outgoingArgsReverseBP = getObject("outgoingArgsReverse", sdGrad, SameDiff.class);
+        System.out.println(outgoingArgsReverseBP.keySet());
+        //Should have 1 entry for each DifferentialFunction...
+        assertEquals(14, outgoingArgsReverseBP.size());
 
     }
 
@@ -3784,21 +3810,6 @@ public class SameDiffTests {
 
 
 
-    }
-
-    @Test
-    public void tempTest(){
-
-        String[] arr1 = new String[]{"s1", "s2"};
-        String[] arr2 = new String[]{"s1", "s2"};
-
-        System.out.println("EQUALS: " + arr1.equals(arr2));
-        System.out.println("HASH1: " + arr1.hashCode());
-        System.out.println("HASH1: " + arr2.hashCode());
-
-        Map<String[],Object> map = new HashMap<>();
-        map.put(arr1, "test");
-        System.out.println("Contains: " + map.containsKey(arr2));
     }
 
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){

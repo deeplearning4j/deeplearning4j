@@ -322,8 +322,6 @@ public abstract class DifferentialFunction {
         this.inPlace = inPlace;
         setInstanceId();
         this.extraArgs = extraArgs;
-
-
     }
 
 
@@ -336,7 +334,6 @@ public abstract class DifferentialFunction {
         this.sameDiff = sameDiff;
         setInstanceId();
         this.extraArgs = extraArgs;
-
     }
 
     /**
@@ -369,9 +366,6 @@ public abstract class DifferentialFunction {
             }
         }
     }
-
-
-
 
 
     /**
