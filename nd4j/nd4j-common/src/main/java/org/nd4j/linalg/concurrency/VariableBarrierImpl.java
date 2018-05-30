@@ -156,4 +156,30 @@ public class VariableBarrierImpl implements VariableBarrier {
     public void bypassEverything() {
         phase.set(-1);
     }
+
+    // methods for testing
+
+    protected int getPhase() {
+        return this.phase.get();
+    }
+
+    protected void setPhase(int phase) {
+        this.phase.set(phase);
+    }
+
+    protected void setConsumers(int consumers) {
+        this.consumers.set(consumers);
+    }
+
+    protected void setIteration(int iteration) {
+        this.plansPosition.set(iteration);
+    }
+
+    protected int getIteration() {
+        return this.plansPosition.get();
+    }
+
+    protected int getConsumers() {
+        return this.consumers.get();
+    }
 }
