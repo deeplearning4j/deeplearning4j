@@ -6827,7 +6827,7 @@ public class SameDiff {
         }
 
         StringBuilder sb = new StringBuilder();
-        String format = "%-20s%-20s";
+        String format = "%-25s%-20s";
         sb.append("--- Summary ---\n");
         sb.append(String.format(format, "Variables:", varMap.size())).append(" (").append(countVarsWithArrays).append(" with arrays)").append("\n")
                 .append(String.format(format, "Functions:", functions.length)).append("\n")

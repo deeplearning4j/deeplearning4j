@@ -30,6 +30,7 @@ public class GradCheckUtil {
 
     private static final boolean DEFAULT_PRINT = true;
     private static final boolean DEFAULT_EXIT_FIRST_FAILURE = false;
+    private static final boolean DEFAULT_DEBUG_MODE = true;
     private static final double DEFAULT_EPS = 1e-5;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-6;
@@ -252,11 +253,16 @@ public class GradCheckUtil {
 
     public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
                                          boolean exitOnFirstFailure) {
-        return checkGradients(sd, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false);
+        return checkGradients(sd, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false, DEFAULT_DEBUG_MODE);
     }
 
     public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
-                                         boolean exitOnFirstFailure, boolean skipValidation){
+                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode){
+
+        boolean debugBefore = sd.isDebugMode();
+        if(debugMode){
+            sd.enableDebugMode();
+        }
 
         //Collect coverage information:
         collectCoverageInformation(sd);
@@ -411,6 +417,10 @@ public class GradCheckUtil {
                     + totalNFailures + " failed. Largest relative error = " + maxError);
         }
 
+        if(debugMode && !debugBefore){
+            sd.disableDebugging();
+        }
+
         return totalNFailures == 0;
     }
 
@@ -478,10 +488,12 @@ public class GradCheckUtil {
         //3. Check functionArgsFor, functionOutputsFor
         Map<String, List<DifferentialFunction>> functionsArgsFor = getObject("functionsArgsFor", sd, SameDiff.class);
         Map<String, List<DifferentialFunction>> functionOutputFor = getObject("functionOutputFor", sd, SameDiff.class);
-        Preconditions.checkState(functionsArgsFor.size() == vars.size(), "Unexpected size for functionsArgsFor");
-        Preconditions.checkState(functionOutputFor.size() == vars.size(), "Unexpected size for functionOutputFor");
-        Preconditions.checkState(functionsArgsFor.keySet().containsAll(varSetStr), "functionArgsFor doesn't contain all variable names");
-        Preconditions.checkState(functionOutputFor.keySet().containsAll(varSetStr), "functionOutputFor doesn't contain all variable names");
+        //TODO legit that some aren't present in these maps... equivalent to mapping to empty list. There might be a better
+        // check we can do here, however...
+//        Preconditions.checkState(functionsArgsFor.size() == vars.size(), "Unexpected size for functionsArgsFor: expected %s, got %s", vars.size(), functionsArgsFor.size());
+//        Preconditions.checkState(functionOutputFor.size() == vars.size(), "Unexpected size for functionOutputFor: expected %s, got %s", vars.size(), functionOutputFor.size());
+//        Preconditions.checkState(functionsArgsFor.keySet().containsAll(varSetStr), "functionArgsFor doesn't contain all variable names");
+//        Preconditions.checkState(functionOutputFor.keySet().containsAll(varSetStr), "functionOutputFor doesn't contain all variable names");
 
         if(generateAndCheckGradFn) {
             //4. Check gradient function
@@ -495,7 +507,7 @@ public class GradCheckUtil {
 
             //Check that all original functions are present in the gradient function
             for(DifferentialFunction dfOrig : dfs){
-                Preconditions.checkNotNull(gradFn.getFunction(dfOrig.getOwnName()), "DifferentialFunction " + dfOrig.getOwnName()
+                Preconditions.checkNotNull(gradFn.getFunctionById(dfOrig.getOwnName()), "DifferentialFunction " + dfOrig.getOwnName()
                         + " from original SameDiff instance not present in grad fn");
             }
         }

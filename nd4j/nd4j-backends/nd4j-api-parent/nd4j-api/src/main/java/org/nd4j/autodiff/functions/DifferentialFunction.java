@@ -519,16 +519,19 @@ public abstract class DifferentialFunction {
         }
 
         val outputVars = args();
+        boolean copied = false;
         for(int i = 0; i < vals.size(); i++) {
             SDVariable var = outputVars[i];
             SDVariable grad = var.getGradient();
             if(grad != null) {
-                SDVariable gradVar =  f().add(grad, vals.get(i));
-                try {
-                    vals.set(i, gradVar);
-                } catch (UnsupportedOperationException e){
-                    throw new UnsupportedOperationException("Use a mutable list when returning values from "+this.getClass().getSimpleName()+".doDiff (e.g. Arrays.asList instead of Collections.singletonList)", e);
+                if(!copied){
+                    //Don't mutate the original - this could mess with the original op's state!
+                    vals = new ArrayList<>(vals);
+                    copied = true;
                 }
+
+                SDVariable gradVar =  f().add(grad, vals.get(i));
+                vals.set(i, gradVar);
                 sameDiff.setGradientForVariableName(var.getVarName(), gradVar);
             } else {
                 SDVariable gradVar = vals.get(i);
