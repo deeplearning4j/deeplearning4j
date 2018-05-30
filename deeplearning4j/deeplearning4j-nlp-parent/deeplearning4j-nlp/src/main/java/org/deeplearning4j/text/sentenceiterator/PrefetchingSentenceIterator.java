@@ -128,6 +128,7 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
 
             buffer = new ArrayBlockingQueue<>(fetchSize * 3);
             this.setName("AsyncIteratorReader thread");
+            this.setDaemon(true);
         }
 
         @Override
