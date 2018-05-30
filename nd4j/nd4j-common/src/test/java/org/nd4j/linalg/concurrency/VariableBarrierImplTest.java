@@ -98,7 +98,7 @@ public class VariableBarrierImplTest {
     public void testVariableBarrier_2() throws Exception {
 
         val testSize = 100;
-        val workersOptions = new int[] {1, 23, 4, 5, 6, 7, 8, 9, 10};
+        val workersOptions = new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         val workloads = new long[] {10, 1000, 10000, 100000, 1000000};
 
         for (val workers: workersOptions) {
