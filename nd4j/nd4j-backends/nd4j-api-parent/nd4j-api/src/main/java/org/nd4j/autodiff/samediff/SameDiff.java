@@ -8,6 +8,7 @@ import com.rits.cloning.Cloner;
 import com.rits.cloning.IFastCloner;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
@@ -5693,9 +5694,14 @@ public class SameDiff {
                         (outNames == null ? "(none)" : Arrays.toString(outNames)));
                 SDVariable[] args = f.args();
                 for( int arg=0; arg<args.length; arg++ ){
-                    INDArray arr = args[i].getArr();
-                    String arrShape = (arr == null ? "<array not present>" : Arrays.toString(arr.shape()));
-                    log.trace("--> arg {} - {}: array shape: {}", i, argNames[i], arrShape);
+                    if(args[arg] == null){
+                        log.trace("--> arg {} - {}: argument is null!", arg, argNames[arg]);
+                    } else {
+                        INDArray arr = args[arg].getArr();
+                        String arrShape = (arr == null ? "<array not present>" : Arrays.toString(arr.shape()));
+                        log.trace("--> arg {} - {}: array shape: {}", arg, argNames[arg], arrShape);
+                    }
+
                 }
             }
 
@@ -6826,8 +6832,31 @@ public class SameDiff {
                 .append("\n\n");
 
         sb.append("--- Variables ---\n");
-        format  = "%-20s%-20s%-20s";
-        sb.append(String.format(format, "- Name -", "- Array Shape -", "- Inputs To Functions -")).append("\n");
+        //Work out which function - if any - this arg is an output of...
+        Map<String,String> outputOfFn = new HashMap<>();
+        int maxLengthOutputOf = 18;
+        for(String s : varMap.keySet()){
+            DifferentialFunction outputOf = null;
+            for(String[] str : outgoingArgs.keySet()){
+                if(str != null && ArrayUtils.contains(str, s)){
+                    outputOf = outgoingArgs.get(str);
+                    break;
+                }
+            }
+            String outputOfStr = null;
+            if(outputOf == null){
+                outputOfStr = "<none>";
+            } else {
+                outputOfStr = outputOf.getOwnName() + "(" + outputOf.opName() + ")";
+            }
+            outputOfFn.put(s, outputOfStr);
+            maxLengthOutputOf = Math.max(maxLengthOutputOf, outputOfStr.length());
+        }
+        maxLengthOutputOf += 2;
+
+        //Create the output for values:
+        format  = "%-20s%-20s%-" + maxLengthOutputOf + "s%-20s";
+        sb.append(String.format(format, "- Name -", "- Array Shape -", "- Output Of Function -", "- Inputs To Functions -")).append("\n");
         for(String s : varMap.keySet()){
             INDArray arr = getArrForVarName(s);
             String arrayShape = "-";
@@ -6845,7 +6874,9 @@ public class SameDiff {
                 dfArrStr = Arrays.toString(dfArr);
             }
 
-            sb.append(String.format(format, s, arrayShape, dfArrStr)).append("\n");
+            String outputOfStr = outputOfFn.get(s);
+
+            sb.append(String.format(format, s, arrayShape, outputOfStr, dfArrStr)).append("\n");
         }
 
         sb.append("\n\n--- Functions ---\n");
