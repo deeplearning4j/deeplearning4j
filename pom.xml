@@ -127,16 +127,16 @@
     </pluginRepositories>
 
     <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus snapshot repository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
         <repository>
             <id>sonatype-nexus-releases</id>
             <name>Nexus Release Repository</name>
             <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
+        <snapshotRepository>
+            <id>sonatype-nexus-snapshots</id>
+            <name>Sonatype Nexus snapshot repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
     </distributionManagement>
 
     <properties>
@@ -144,12 +144,11 @@
         <maven.compiler.target>1.7</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <deeplearning4j.version>1.0.0-SNAPSHOT</deeplearning4j.version>
-        <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
-        <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
-        <datavec.version>1.0.0-SNAPSHOT</datavec.version>
-        <jumpy.version>1.0.0-SNAPSHOT</jumpy.version>
-        <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
+        <deeplearning4j.version>${project.version}</deeplearning4j.version>
+        <dl4j.version>${project.version}</dl4j.version>
+        <nd4j.version>${project.version}</nd4j.version>
+        <datavec.version>${project.version}</datavec.version>
+        <dl4j-test-resources.version>${project.version}</dl4j-test-resources.version>
 
         <oshi.version>3.4.2</oshi.version>
         <kafka.version>0.10.1.1</kafka.version>
@@ -268,6 +267,32 @@
         <skipTestResourceEnforcement>false
         </skipTestResourceEnforcement> <!-- Test resource profile must be enabled unless using -DskipTests etc -->
     </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.4.1</version>
+                <executions>
+                    <execution>
+                        <id>enforce-maven</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>3.3</version>
+                                    <message>Please install maven 3.3 or higher</message>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
     <profiles>
         <profile>

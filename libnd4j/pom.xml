@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <!--
   ~ /*
   ~  * Copyright 2017 Skymind,Inc.
@@ -17,11 +19,9 @@
   ~
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>org.nd4j</groupId>
-    <artifactId>libnd4j</artifactId>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>org.deeplearning4j</groupId>
@@ -29,29 +29,25 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <scm>
-        <connection>scm:git://github.com:deeplearning4j/libnd4j.git</connection>
-        <developerConnection>scm:git:git@github.com:deeplearning4j/libnd4j.git</developerConnection>
-        <url>git@github.com:deeplearning4j/libnd4j.git</url>
-        <tag>HEAD</tag>
-    </scm>
+    <modelVersion>4.0.0</modelVersion>
 
+    <groupId>org.nd4j</groupId>
+    <artifactId>libnd4j</artifactId>
     <packaging>pom</packaging>
 
     <name>libnd4j</name>
-    <description>The C++ engine that powers the scientific computing library ND4J - n-dimensional arrays for Java</description>
+    <description>The C++ engine that powers the scientific computing library ND4J - n-dimensional
+        arrays for Java
+    </description>
     <url>http://nd4j.org/</url>
 
-    <properties>
-        <libnd4j.chip>cpu</libnd4j.chip>
-        <libnd4j.platform>${os.name}-${os.arch}</libnd4j.platform>
-        <libnd4j.extension></libnd4j.extension>
-        <libnd4j.cuda></libnd4j.cuda>
-        <libnd4j.compute></libnd4j.compute>
-        <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
-        <libnd4j.tests.phase>test</libnd4j.tests.phase>
-        <libnd4j.test.is.release.build>true</libnd4j.test.is.release.build>
-    </properties>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <developers>
         <developer>
@@ -69,13 +65,16 @@
         </developer>
     </developers>
 
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
+    <properties>
+        <libnd4j.chip>cpu</libnd4j.chip>
+        <libnd4j.platform>${os.name}-${os.arch}</libnd4j.platform>
+        <libnd4j.extension></libnd4j.extension>
+        <libnd4j.cuda></libnd4j.cuda>
+        <libnd4j.compute></libnd4j.compute>
+        <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
+        <libnd4j.tests.phase>test</libnd4j.tests.phase>
+        <libnd4j.test.is.release.build>true</libnd4j.test.is.release.build>
+    </properties>
 
     <build>
         <extensions>
@@ -122,7 +121,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <version>2.6</version>
@@ -143,7 +141,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.0.0</version>
@@ -161,7 +158,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -186,7 +182,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 
@@ -245,7 +240,8 @@
                                     <skip>${libnd4j.cuda.compile.skip}</skip>
                                     <buildCommand>
                                         <program>bash</program>
-                                        <argument>${project.basedir}/buildnativeoperations.sh</argument>
+                                        <argument>${project.basedir}/buildnativeoperations.sh
+                                        </argument>
                                         <argument>--chip</argument>
                                         <argument>cuda</argument>
                                         <argument>--platform</argument>
@@ -265,12 +261,13 @@
                 </plugins>
             </build>
         </profile>
-
         <!-- If someone knows a better way to do this, please do let me know! -->
         <profile>
             <id>linux</id>
             <activation>
-                <os><name>linux</name></os>
+                <os>
+                    <name>linux</name>
+                </os>
             </activation>
             <properties>
                 <os.name>linux</os.name>
@@ -279,7 +276,9 @@
         <profile>
             <id>macosx</id>
             <activation>
-                <os><name>mac os x</name></os>
+                <os>
+                    <name>mac os x</name>
+                </os>
             </activation>
             <properties>
                 <os.name>macosx</os.name>
@@ -288,7 +287,9 @@
         <profile>
             <id>windows</id>
             <activation>
-                <os><family>windows</family></os>
+                <os>
+                    <family>windows</family>
+                </os>
             </activation>
             <properties>
                 <os.name>windows</os.name>
@@ -297,7 +298,9 @@
         <profile>
             <id>i386</id>
             <activation>
-                <os><arch>i386</arch></os>
+                <os>
+                    <arch>i386</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -306,7 +309,9 @@
         <profile>
             <id>i486</id>
             <activation>
-                <os><arch>i486</arch></os>
+                <os>
+                    <arch>i486</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -315,7 +320,9 @@
         <profile>
             <id>i586</id>
             <activation>
-                <os><arch>i586</arch></os>
+                <os>
+                    <arch>i586</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -324,7 +331,9 @@
         <profile>
             <id>i686</id>
             <activation>
-                <os><arch>i686</arch></os>
+                <os>
+                    <arch>i686</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -333,7 +342,9 @@
         <profile>
             <id>x86</id>
             <activation>
-                <os><arch>x86</arch></os>
+                <os>
+                    <arch>x86</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -342,7 +353,9 @@
         <profile>
             <id>amd64</id>
             <activation>
-                <os><arch>amd64</arch></os>
+                <os>
+                    <arch>amd64</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -351,7 +364,9 @@
         <profile>
             <id>x86-64</id>
             <activation>
-                <os><arch>x86-64</arch></os>
+                <os>
+                    <arch>x86-64</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -360,13 +375,14 @@
         <profile>
             <id>arm</id>
             <activation>
-                <os><arch>arm</arch></os>
+                <os>
+                    <arch>arm</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>arm</os.arch>
             </properties>
         </profile>
-
         <profile>
             <id>clean-tests</id>
             <activation>
@@ -402,5 +418,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>
