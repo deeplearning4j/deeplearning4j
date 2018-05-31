@@ -84,6 +84,13 @@ public class Gather extends DynamicCustomOp {
 
         if (numOutputArguments() < getDescriptor().getNumOutputs()) {
             val outputs = outputVariables();
+            //Check that ALL variables have an array before setting
+            for(SDVariable v : outputs){
+                if(v.getArr() == null){
+                    return;
+                }
+            }
+
             for (int i = 0; i < outputs.length; i++) {
                 val output = outputs[i].getArr();
                 addOutputArgument(output);

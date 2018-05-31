@@ -160,19 +160,30 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     /**
-     * A getter for the allocated ndarray
-     * with this {@link SDVariable}.
+     * A getter for the allocated ndarray with this {@link SDVariable}.
      *
-     * This getter will lazy initialize an array if one is not found
-     * based on the associated shape and {@link WeightInitScheme}
-     * if neither are found, an {@link ND4JIllegalStateException}
-     * is thrown.
+     * This getter will lazy initialize an array if one is not found based on the associated shape and
+     * {@link WeightInitScheme} - if this is possible. If this is not possible (due to shapes being unknown, etc)
+     * null is returned
      *
-     * If a {@link DifferentialFunction} is defined, note that
-     * its getArr() method is called instead.
      * @return the {@link INDArray} associated with this variable.
      */
     public INDArray getArr() {
+        return getArr(false);
+    }
+
+    /**
+     * A getter for the allocated ndarray with this {@link SDVariable}.
+     *
+     * This getter will lazy initialize an array if one is not found based on the associated shape and
+     * {@link WeightInitScheme} - if this is possible.<br>
+     * If this is not possible (due to shapes being unknown, etc) either:<br>
+     * (a) null is returned - if enforceExistence == false, or<br>
+     * (b) an IllegalStateException is thrown, if enforceExistence == true
+     *
+     * @return the {@link INDArray} associated with this variable.
+     */
+    public INDArray getArr(boolean enforceExistence){
         if(sameDiff.arrayAlreadyExistsForVarName(getVarName()))
             return sameDiff.getArrForVarName(getVarName());
 
@@ -182,10 +193,13 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                     getScalarValue().doubleValue());
             sameDiff.associateArrayWithVariable(arr,this);
         }
-        else if(sameDiff.getShapeForVarName(getVarName()) == null)
+        else if(sameDiff.getShapeForVarName(getVarName()) == null) {
+            if (enforceExistence) {
+                throw new IllegalStateException("Cannot get array for SDVariable \"" + getVarName() + "\": no array has" +
+                        " been defined, and array shape cannot be calculated");
+            }
             return null;
-
-        else {
+        } else {
             INDArray newAlloc = getWeightInitScheme().create(sameDiff.getShapeForVarName(getVarName()));
             sameDiff.associateArrayWithVariable(newAlloc,this);
 

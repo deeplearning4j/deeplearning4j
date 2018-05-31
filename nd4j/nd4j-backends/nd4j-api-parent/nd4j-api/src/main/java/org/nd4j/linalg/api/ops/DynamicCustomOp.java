@@ -453,22 +453,44 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public List<long[]> calculateOutputShape() {
         val descriptor = getDescriptor();
         for (val arg : args()) {
-            if (sameDiff.isPlaceHolder(arg.getVarName()) && !sameDiff.shapeAlreadyExistsForVarName(arg.getVarName()))
+            if (sameDiff.isPlaceHolder(arg.getVarName()) && !sameDiff.shapeAlreadyExistsForVarName(arg.getVarName())) {
+                if(log.isTraceEnabled()){
+                    log.trace("Could not calculate output shape for op {}: arg \"{}\" is placeholder", getClass().getName(),
+                            arg.getVarName());
+                }
                 return Collections.emptyList();
+            }
         }
 
         if (outputShapes != null)
             return outputShapes;
 
 
-        //not fully initialized
+        //not fully initialized: missing integer args
         if (descriptor.getNumIArgs() >= 0 && numIArguments() < descriptor.getNumIArgs()) {
+            if(log.isTraceEnabled()){
+                log.trace("Could not calculate output shape for op {}: not fully initialized ({} IArgs specified, " +
+                                "{} required)", getClass().getName(),numIArguments(), descriptor.getNumIArgs());
+            }
             return Collections.emptyList();
         }
 
 
-        //not fully initialized
+        //not fully initialized: missing floating point args
         if (descriptor.getNumTArgs() >= 0 && numTArguments() < descriptor.getNumTArgs()) {
+            if(log.isTraceEnabled()){
+                log.trace("Could not calculate output shape for op {}: not fully initialized ({} TArgs specified, " +
+                        "{} required)", getClass().getName(),numTArguments(), descriptor.getNumTArgs());
+            }
+            return Collections.emptyList();
+        }
+
+        //not fully initialized: missing INDArray input args
+        if(descriptor.getNumInputs() >= 0 && numInputArguments() < descriptor.getNumInputs()){
+            if(log.isTraceEnabled()){
+                log.trace("Could not calculate output shape for op {}: not fully initialized ({} input (INDArray) args specified, " +
+                        "{} required)", getClass().getName(),numInputArguments(), descriptor.getNumInputs());
+            }
             return Collections.emptyList();
         }
 

@@ -10,6 +10,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.Mean;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
@@ -3790,26 +3791,53 @@ public class SameDiffTests {
     }
 
     @Test
-    public void validateInternalState2() {
+    public void testGather2(){
+
+        INDArray in = Nd4j.rand(10,10);
+        INDArray indices = Nd4j.create(new double[]{0,1,5});
+
         SameDiff sd = SameDiff.create();
 
-        int nOut = 4;
-        int minibatch = 10;
-        SDVariable a = sd.var("A", new int[]{minibatch, nOut});
-        SDVariable b = sd.var("B", new int[]{minibatch, nOut});
+        SDVariable var = sd.var("in", in);
+        SDVariable varIndices = sd.var("indices", indices);
+        SDVariable gather = sd.gather(var, varIndices, 0);
 
-        SDVariable add1 = a.add("add1",b);
-        SDVariable add2 = a.add("add2",b);
+        System.out.println(in);
 
-        SDVariable mul = add1.mul("mul",add2);
-        SDVariable sum = sd.sum("sum", mul, Integer.MAX_VALUE);
+        INDArray exp = Nd4j.pullRows(in, 1, new int[]{0,1,5});  //Along dimension 1 -> equiv to "indexes for axis 0"
+        INDArray act = sd.execAndEndResult();
 
-        Map<List<String>, DifferentialFunction> incomingArgs = getObject("incomingArgs", sd, SameDiff.class);
+        assertEquals(exp, act);
+    }
 
-        System.out.println();
+    @Test
+    public void testGatherOp(){
 
+        INDArray in = Nd4j.rand(10,10);
+        INDArray indices = Nd4j.create(new double[]{0,1,5});
+        INDArray out = Nd4j.create(3, 10);
 
+        DynamicCustomOp op = DynamicCustomOp.builder("gather")
+                .addIntegerArguments(0) //Indexes are for dimension 0
+                .addInputs(in, indices)
+                .addOutputs(out)
+                .build();
 
+        Nd4j.getExecutioner().exec(op);
+
+        System.out.println(out);
+
+        INDArray exp = Nd4j.pullRows(in, 1, new int[]{0,1,5});  //Along dimension 1 == indexes for dimension 0
+
+        assertEquals(exp, out);
+
+        //Shape function:
+        List<long[]> shapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        long[] expShape = new long[]{3,10};
+
+        assertEquals(1, shapes.size());
+
+        assertArrayEquals(expShape, shapes.get(0));
     }
 
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){

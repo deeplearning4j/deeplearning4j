@@ -610,4 +610,64 @@ public class GradCheckMisc {
             GradCheckUtil.checkGradients(sd);
         }
     }
+
+    @Test
+    public void testScatterOpGradients(){
+
+
+        List<String> allFailed = new ArrayList<>();
+
+        for( int i=0; i<4; i++ ){
+            Nd4j.getRandom().setSeed(12345);
+
+            SameDiff sd = SameDiff.create();
+
+            SDVariable in = sd.var("in", new int[]{1, 20});
+            SDVariable indices = sd.var("indices", new int[]{1, 5});
+            SDVariable updates = sd.var("updates", new int[]{1, 5});
+
+
+            in.setArray(Nd4j.rand(1,20));
+            indices.setArray(Nd4j.create(new double[]{3,4,5, 10, 18}));
+            updates.setArray(Nd4j.rand(1,5).muli(2).subi(1));
+
+            SDVariable scatter;
+            String name;
+            switch(i) {
+                case 0:
+                    scatter = sd.scatterAdd("s", in, indices, updates);
+                    name = "scatterAdd";
+                    break;
+                case 1:
+                    scatter = sd.scatterSub("s", in, indices, updates);
+                    name = "scatterSub";
+                    break;
+                case 2:
+                    scatter = sd.scatterMul("s", in, indices, updates);
+                    name = "scatterMul";
+                    break;
+                case 3:
+                    scatter = sd.scatterDiv("s", in, indices, updates);
+                    name = "scatterDiv";
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+            SDVariable loss = sd.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
+            sd.execAndEndResult();
+
+            try {
+                boolean ok = GradCheckUtil.checkGradients(sd);
+                if(!ok){
+                    allFailed.add(name);
+                }
+            } catch (Exception e){
+                e.printStackTrace();
+                allFailed.add(name + " - EXCEPTION: " + e.getMessage());
+            }
+        }
+
+        assertEquals(allFailed.toString(), 0, allFailed.size());
+    }
 }
