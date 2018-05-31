@@ -22,72 +22,16 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
 
     <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
+        <groupId>org.deeplearning4j</groupId>
+        <artifactId>deeplearning4j</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <repositories>
-        <repository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-
-
     <profiles>
-        <!--
-        testresources profile must be running when executing tests. However, maven enforcer plugin seems to be unable
-         to enforce only when actually running tests - so we'll skip the enforcement (using profiles skipTestRun and skipTestCompileAndRun)
-         when -DskipTests or -Dmaven.test.skip=true is used
-         -->
         <profile>
             <id>testresources</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>dl4j-test-resources</artifactId>
-                    <version>${dl4j-test-resources.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>skipTestRun</id>
-            <activation>
-                <property>
-                    <name>skipTests</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
-            </properties>
-        </profile>
-        <profile>
-            <id>skipTestCompileAndRun</id>
-            <activation>
-                <property>
-                    <name>maven.test.skip</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <properties>
-                <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
-            </properties>
         </profile>
 
         <profile>
@@ -111,25 +55,6 @@
             <properties>
                 <libnd4jhome>${basedir}/../../../../libnd4j/</libnd4jhome>
             </properties>
-        </profile>
-
-        <profile>
-            <id>1.9build</id>
-
-            <activation>
-                <jdk>1.9</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.release>7</maven.compiler.release>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-toolchains-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <!-- If someone knows a better way to do this, please do let me know! -->
@@ -232,305 +157,8 @@
                 <os.arch>arm</os.arch>
             </properties>
         </profile>
-
-        <profile>
-            <id>s3-repo</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>s3-repo</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>s3-repo</id>
-                    <name>s3-repo</name>
-                    <url>s3://${s3.repo.url}</url>
-                </snapshotRepository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>skymindnexus-skil</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>skymindnexus-skil</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <repository>
-                    <id>skymindnexus</id>
-                    <name>skymindnexus</name>
-                    <url>https://nexus.skymind.io/repository/skil/</url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>local-nexus</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>nexus</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>local-nexus</id>
-                    <name>local-nexus</name>
-                    <url>
-                        http://master-jenkins.skymind.io:8088/repository/snapshots
-                    </url>
-                </snapshotRepository>
-                <!-- <repository> -->
-                <!--     <id>local-nexus</id> -->
-                <!--     <name>local-nexus</name> -->
-                <!--     <url> -->
-                <!--         http://master-jenkins.skymind.io:8088/service/local/staging/deploy/maven2 -->
-                <!--     </url> -->
-                <!-- </repository> -->
-            </distributionManagement>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <version>${maven-deploy-plugin.version}</version>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.6</version>
-                        <executions>
-                            <execution>
-                                <id>default-deploy</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>deploy</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>local-nexus</serverId>
-                            <nexusUrl>http://master-jenkins.skymind.io:8088/</nexusUrl>
-                            <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>local-jfrog</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>jfrog</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>local-jfrog</id>
-                    <name>local-jfrog</name>
-                    <url>http://master-jenkins.skymind.io:8081/artifactory/libs-snapshot-local
-                    </url>
-                </snapshotRepository>
-                <repository>
-                    <id>local-jfrog</id>
-                    <name>local-jfrog</name>
-                    <url>http://master-jenkins.skymind.io:8081/artifactory/libs-release-local
-                    </url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>Bintray-artifactory</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>bintray</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>bintray-deeplearning4j-maven</id>
-                    <name>deeplearning4j-maven-snapshots</name>
-                    <url>https://oss.jfrog.org/artifactory/oss-snapshot-local</url>
-                </snapshotRepository>
-                <repository>
-                    <id>bintray-deeplearning4j-maven</id>
-                    <name>deeplearning4j-maven-releases</name>
-                    <url>https://api.bintray.com/maven/deeplearning4j/maven/${project.artifactId}/;publish=1</url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>sonatype-nexus</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>sonatype</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>sonatype-nexus-snapshots</id>
-                    <name>Sonatype Nexus snapshot repository</name>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-                <repository>
-                    <id>nexus-releases</id>
-                    <name>Nexus Release Repository</name>
-                    <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <version>${maven-deploy-plugin.version}</version>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.6</version>
-                        <executions>
-                            <execution>
-                                <id>default-deploy</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>deploy</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>sonatype-nexus-snapshots</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>release-sign-artifacts</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>3.0.1</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <configuration>
-                            <quiet>true</quiet>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
-                        <configuration>
-                            <passphrase>${gpg.passphrase}</passphrase>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <configuration>
-                            <additionalparam>-Xdoclint:none</additionalparam>
-                            <quiet>true</quiet>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-          <id>trimSnapshots</id>
-          <build>
-            <plugins>
-              <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.7</version>
-                <executions>
-                  <execution>
-                    <id>remove-old-artifacts</id>
-                    <phase>package</phase>
-                    <goals>
-                      <goal>remove-project-artifact</goal>
-                    </goals>
-                    <configuration>
-                      <removeAll>true</removeAll><!-- remove all versions of built artifacts including all versions.  Install phase will regenerate -->
-                    </configuration>
-                  </execution>
-                </executions>
-              </plugin>
-            </plugins>
-          </build>
-        </profile>
     </profiles>
+
     <scm>
         <connection>scm:git://github.com:deeplearning4j/nd4j.git</connection>
         <developerConnection>scm:git:git@github.com:deeplearning4j/nd4j.git</developerConnection>
@@ -557,54 +185,12 @@
     </modules>
 
     <properties>
-        <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
-        <commons-io.version>2.4</commons-io.version>
-        <commons-math3.version>3.4.1</commons-math3.version>
-        <commons-lang3.version>3.4</commons-lang3.version>
-        <commons-collections4.version>4.1</commons-collections4.version>
-        <commons-compress.version>1.16.1</commons-compress.version>
-        <commons-codec.version>1.10</commons-codec.version>
-        <camel.version>2.18.2</camel.version>
-        <unirest.version>1.4.9</unirest.version>
-        <mapdb.version>3.0.5</mapdb.version>
-        <jcommander.version>1.27</jcommander.version>
-        <guava.version>20.0</guava.version>
-        <playframework.version>2.4.6</playframework.version>
-        <lombok.version>1.16.20</lombok.version>
-        <jackson.version>2.5.1</jackson.version>
-        <reflections.version>0.9.10</reflections.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <junit.version>4.12</junit.version>
-        <slf4j.version>1.7.12</slf4j.version>
-        <logback.version>1.1.2</logback.version>
-        <javacpp.version>1.4.1</javacpp.version>
-        <javacpp-presets.version>1.4.1</javacpp-presets.version>
         <javacpp.compiler.skip>false</javacpp.compiler.skip>  <!-- To skip native compilation phase: -Djavacpp.compiler.skip=true    -->
         <javacpp.platform>${os.name}-${os.arch}</javacpp.platform> <!-- For Android: -Dplatform=android-arm                                        -->
         <javacpp.platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
         <javacpp.platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
         <javacpp.platform.sysroot />         <!--              -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
         <javacpp.platform.extension />
-        <spark.version>1.6.3</spark.version>
-        <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
-        <sbt-compiler-maven-plugin.version>1.0.0-beta8</sbt-compiler-maven-plugin.version>
-        <maven-build-helper-plugin.version>3.0.0</maven-build-helper-plugin.version>
-        <maven-play2-plugin.version>1.0.0-beta5</maven-play2-plugin.version>
-        <maven-shade-plugin.version>3.0.0</maven-shade-plugin.version>
-        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
-        <maven-surefire.version>2.19.1</maven-surefire.version>
-        <maven-lifecycle-mapping.version>1.0.0</maven-lifecycle-mapping.version>
-        <maven-javadoc-plugin.version>3.0.0-M1</maven-javadoc-plugin.version>
-        <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
-        <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
-        <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
-        <maven-git-commit-id-plugin.version>2.2.2</maven-git-commit-id-plugin.version>
-        <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
-        <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
-        <fbs.version>1.2.0-3f79e055</fbs.version>
-        <skipTestResourceEnforcement>false</skipTestResourceEnforcement> <!-- Test resource profile must be enabled unless using -DskipTests etc -->
     </properties>
 
     <developers>
@@ -622,10 +208,6 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-
-
-
-
 
     <build>
         <extensions>
@@ -683,8 +265,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-
 
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -793,6 +373,7 @@
                             <rules>
                                 <requireActiveProfile>
                                     <profiles>testresources</profiles>
+                                    <all>false</all>
                                 </requireActiveProfile>
                             </rules>
                             <fail>true</fail>

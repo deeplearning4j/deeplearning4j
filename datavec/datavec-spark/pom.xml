@@ -25,7 +25,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <version>1.0.0_spark_1-SNAPSHOT</version>
-    <artifactId>datavec-spark_2.10</artifactId>
+    <artifactId>datavec-spark_2.11</artifactId>
 
     <properties>
         <!-- These Spark versions have to be here, and NOT in the datavec parent pom. Otherwise, the properties
@@ -73,7 +73,7 @@
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-scala_2.10</artifactId>
+                <artifactId>jackson-module-scala_2.11</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
@@ -87,13 +87,13 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql_2.10</artifactId>
+            <artifactId>spark-sql_2.11</artifactId>
             <version>${spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_2.10</artifactId>
+            <artifactId>spark-core_2.11</artifactId>
             <version>${spark.version}</version>
             <exclusions>
               <exclusion>

@@ -274,6 +274,9 @@
 
     <profiles>
         <profile>
+            <id>testresources</id>
+        </profile>
+        <profile>
             <id>msvc</id>
             <activation>
                 <os><family>windows</family></os>
