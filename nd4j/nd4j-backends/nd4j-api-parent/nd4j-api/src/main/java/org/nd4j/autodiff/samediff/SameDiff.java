@@ -4895,7 +4895,6 @@ public class SameDiff {
      * @return
      */
     public INDArray execAndEndResult() {
-        //resolveVariablesWith(Collections.<String, INDArray>emptyMap());
         List<DifferentialFunction> exec = exec().getRight();
         val finalOp = exec.get(exec.size() - 1);
         val output = finalOp.outputVariables();
@@ -4906,7 +4905,6 @@ public class SameDiff {
     }
 
     public INDArray[] execAndEndResults() {
-        //resolveVariablesWith(Collections.<String, INDArray>emptyMap());
         List<DifferentialFunction> exec = exec().getRight();
         val finalOp = exec.get(exec.size() - 1);
         val output = finalOp.outputVariables();
@@ -4918,7 +4916,6 @@ public class SameDiff {
     }
 
     public INDArray execAndEndResult(int outputIndex) {
-        //resolveVariablesWith(Collections.<String, INDArray>emptyMap());
         List<DifferentialFunction> exec = exec().getRight();
         val output = exec.get(exec.size() - 1).outputVariables()[outputIndex];
         return output.getArr();
