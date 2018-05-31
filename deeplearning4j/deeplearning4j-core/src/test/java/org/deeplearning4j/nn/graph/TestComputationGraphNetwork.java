@@ -789,7 +789,12 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         cg.feedForward(input, true, false);
 
         INDArray externalError = Nd4j.rand(3, nIn);
-        Gradient gradient = cg.backpropGradient(externalError);
+        try {
+            cg.backpropGradient(externalError);
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage().contains("output layer"));
+        }
     }
 
     @Test
