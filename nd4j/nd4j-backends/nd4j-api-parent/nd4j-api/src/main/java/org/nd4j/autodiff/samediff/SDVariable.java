@@ -852,6 +852,10 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return result;
     }
 
+    public SDVariable setArray(INDArray array){
+        sameDiff.associateArrayWithVariable(array, this);
+        return this;
+    }
 
 
     /**

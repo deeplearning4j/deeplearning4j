@@ -1781,6 +1781,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val result = new ArrayList<long[]>();
         if(op.numInputArguments() < 1) {
+            if(log.isTraceEnabled()){
+                log.trace("Could not calculate output shape for op {}: number of input args was 0",
+                        op.getClass().getName());
+            }
             return Collections.emptyList();
         }
 
@@ -1859,7 +1863,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             loop.deleteShapeList(ptrptr);
         }
 
-
+        if(log.isTraceEnabled()){
+            String[] arr = new String[result.size()];
+            for( int i=0; i<result.size(); i++ ){
+                arr[i] = Arrays.toString(result.get(i));
+            }
+            log.trace("Calculated output shapes for op {} - {}", op.getClass().getName(), Arrays.toString(arr));
+        }
         return result;
     }
 
