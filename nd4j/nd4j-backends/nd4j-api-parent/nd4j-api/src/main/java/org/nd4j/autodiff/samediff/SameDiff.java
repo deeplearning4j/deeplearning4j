@@ -2515,12 +2515,21 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
-    public SDVariable gather(SDVariable df, int axis, int[] broadcast) {
-        return gather(null, df, axis, broadcast);
+    public SDVariable gather(SDVariable df, int[] indices, int axis) {
+        return gather(null, df, indices, axis);
     }
 
-    public SDVariable gather(String name, SDVariable df, int axis, int[] broadcast) {
-        SDVariable ret = f().gather(df, axis, broadcast);
+    public SDVariable gather(String name, SDVariable df, int[] indices, int axis) {
+        SDVariable ret = f().gather(df, indices, axis);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable gather(SDVariable df, SDVariable indices, int axis) {
+        return gather(null, df, indices, axis);
+    }
+
+    public SDVariable gather(String name, SDVariable df, SDVariable indices, int axis) {
+        SDVariable ret = f().gather(df, indices, axis);
         return updateVariableNameAndReference(ret, name);
     }
 

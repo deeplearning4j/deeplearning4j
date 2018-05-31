@@ -28,7 +28,7 @@ public class Gather extends DynamicCustomOp {
     protected int axis = 0;
 
 
-    public Gather(SameDiff sameDiff, SDVariable input, int axis, int[] broadcast, boolean inPlace) {
+    public Gather(SameDiff sameDiff, SDVariable input, int[] broadcast, int axis, boolean inPlace) {
         super(null, sameDiff, new SDVariable[] {input}, inPlace);
 
         addIArgument(axis);
