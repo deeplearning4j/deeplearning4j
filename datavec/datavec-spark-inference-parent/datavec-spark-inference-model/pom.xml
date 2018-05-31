@@ -22,7 +22,7 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-api</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${datavec.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -33,7 +33,7 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-data-image</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${datavec.version}</version>
         </dependency>
         <dependency>
             <groupId>org.datavec</groupId>

@@ -27,7 +27,7 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-spark-inference-model</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${datavec.version}</version>
         </dependency>
         <dependency>
             <groupId>org.datavec</groupId>
@@ -37,7 +37,7 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-data-image</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${datavec.version}</version>
         </dependency>
 
         <dependency>
