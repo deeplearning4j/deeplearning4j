@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <!--
   ~ /*
   ~  * Copyright 2015 Skymind,Inc.
@@ -16,17 +18,9 @@
   ~  */
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>org.deeplearning4j</groupId>
-    <artifactId>deeplearning4j-parent</artifactId>
-    <packaging>pom</packaging>
-    <name>DeepLearning4j</name>
-
-
-    <description>DeepLearning for java</description>
-    <url>http://deeplearning4j.org/</url>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>org.deeplearning4j</groupId>
@@ -34,88 +28,19 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <prerequisites>
-        <maven>3.0</maven>
-    </prerequisites>
+    <modelVersion>4.0.0</modelVersion>
 
-    <profiles>
-        <!-- For running unit tests with nd4j-native: "mvn clean test -P test-nd4j-native"
-             Note that this excludes DL4J-cuda -->
-        <profile>
-            <id>test-nd4j-native</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>dl4j-test-resources</artifactId>
-                    <version>${dl4j-test-resources.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${nd4j.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
+    <groupId>org.deeplearning4j</groupId>
+    <artifactId>deeplearning4j-parent</artifactId>
+    <packaging>pom</packaging>
 
-        <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
-        <profile>
-            <id>test-nd4j-cuda-9.0</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.deeplearning4j</groupId>
-                    <artifactId>dl4j-test-resources</artifactId>
-                    <version>${dl4j-test-resources.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-9.0</artifactId>
-                    <version>${nd4j.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-            <!-- Default to ALL modules here, unlike nd4j-native -->
-        </profile>
-    </profiles>
-
-    <scm>
-        <connection>scm:git://github.com:deeplearning4j/deeplearning4j.git</connection>
-        <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git</developerConnection>
-        <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
-        <tag>HEAD</tag>
-    </scm>
-
-    <modules>
-        <module>deeplearning4j-core</module>
-        <module>deeplearning4j-scaleout</module>
-        <module>deeplearning4j-ui-parent</module>
-        <module>deeplearning4j-graph</module>
-        <module>deeplearning4j-cuda</module>
-        <module>deeplearning4j-nlp-parent</module>
-        <module>deeplearning4j-nn</module>
-        <module>deeplearning4j-modelimport</module>
-        <module>deeplearning4j-modelexport-solr</module>
-        <module>deeplearning4j-zoo</module>
-        <module>deeplearning4j-nearestneighbors-parent</module>
-        <module>deeplearning4j-data</module>
-        <module>deeplearning4j-manifold</module>
-        <module>deeplearning4j-util</module>
-        <module>dl4j-perf</module>
-        <module>dl4j-integration-tests</module>
-        <module>deeplearning4j-common</module>
-    </modules>
+    <name>DeepLearning4j</name>
+    <url>http://deeplearning4j.org/</url>
+    <description>DeepLearning for java</description>
 
     <licenses>
         <license>
-            <name>The Apache Software License, Version 2.0</name>
+            <name>Apache License, Version 2.0</name>
             <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
         </license>
@@ -195,6 +120,88 @@
         </developer>
     </developers>
 
+    <scm>
+        <connection>scm:git://github.com:deeplearning4j/deeplearning4j.git</connection>
+        <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git
+        </developerConnection>
+        <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <modules>
+        <module>deeplearning4j-core</module>
+        <module>deeplearning4j-scaleout</module>
+        <module>deeplearning4j-ui-parent</module>
+        <module>deeplearning4j-graph</module>
+        <module>deeplearning4j-cuda</module>
+        <module>deeplearning4j-nlp-parent</module>
+        <module>deeplearning4j-nn</module>
+        <module>deeplearning4j-modelimport</module>
+        <module>deeplearning4j-modelexport-solr</module>
+        <module>deeplearning4j-zoo</module>
+        <module>deeplearning4j-nearestneighbors-parent</module>
+        <module>deeplearning4j-data</module>
+        <module>deeplearning4j-manifold</module>
+        <module>deeplearning4j-util</module>
+        <module>dl4j-perf</module>
+        <module>dl4j-integration-tests</module>
+        <module>deeplearning4j-common</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-math3</artifactId>
+                <version>${commonsmath.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <extensions>
             <extension>
@@ -264,7 +271,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
@@ -286,7 +292,6 @@
                     </directories>
                 </configuration>
             </plugin>
-
             <!-- Configuration for git-commit-id plugin - used with ND4J version check functionality -->
             <plugin>
                 <groupId>pl.project13.maven</groupId>
@@ -302,14 +307,14 @@
                 </executions>
                 <configuration>
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                    <generateGitPropertiesFilename>${project.basedir}/target/generated-sources/src/main/resources/ai/skymind/${project.groupId}-${project.artifactId}-git.properties
+                    <generateGitPropertiesFilename>
+                        ${project.basedir}/target/generated-sources/src/main/resources/ai/skymind/${project.groupId}-${project.artifactId}-git.properties
                     </generateGitPropertiesFilename>
                     <gitDescribe>
                         <skip>true</skip>
                     </gitDescribe>
                 </configuration>
             </plugin>
-
             <!-- Add generated git.properties files resource directory, for output of git-commit-id plugin -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -325,14 +330,15 @@
                         <configuration>
                             <resources>
                                 <resource>
-                                    <directory>${project.basedir}/target/generated-sources/src/main/resources</directory>
+                                    <directory>
+                                        ${project.basedir}/target/generated-sources/src/main/resources
+                                    </directory>
                                 </resource>
                             </resources>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
 
         <pluginManagement>
@@ -429,7 +435,7 @@
                                         <artifactId>lint-maven-plugin</artifactId>
                                         <versionRange>[0.0.11,)</versionRange>
                                         <goals>
-                                          <goal>check</goal>
+                                            <goal>check</goal>
                                         </goals>
                                     </pluginExecutionFilter>
                                     <action>
@@ -440,69 +446,57 @@
                         </lifecycleMappingMetadata>
                     </configuration>
                 </plugin>
-
             </plugins>
-
         </pluginManagement>
     </build>
 
-    <dependencyManagement>
+    <profiles>
+        <!-- For running unit tests with nd4j-native: "mvn clean test -P test-nd4j-native"
+             Note that this excludes DL4J-cuda -->
+        <profile>
+            <id>test-nd4j-native</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${dl4j-test-resources.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
+        <profile>
+            <id>test-nd4j-cuda-9.0</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${dl4j-test-resources.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-9.0</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <!-- Default to ALL modules here, unlike nd4j-native -->
+        </profile>
+    </profiles>
 
-        <dependencies>
-            <dependency>
-                <groupId>commons-codec</groupId>
-                <artifactId>commons-codec</artifactId>
-                <version>${commons-codec.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-math3</artifactId>
-                <version>${commonsmath.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-core</artifactId>
-                <version>${logback.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>${guava.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
-    <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
     <reporting>
         <plugins>
             <plugin>
@@ -517,5 +511,4 @@
             </plugin>
         </plugins>
     </reporting>
-
 </project>
