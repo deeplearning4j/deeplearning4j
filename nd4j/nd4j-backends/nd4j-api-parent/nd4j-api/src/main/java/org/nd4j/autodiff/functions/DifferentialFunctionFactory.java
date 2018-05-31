@@ -17,10 +17,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
-import org.nd4j.linalg.api.ops.impl.scatter.ScatterAdd;
-import org.nd4j.linalg.api.ops.impl.scatter.ScatterDiv;
-import org.nd4j.linalg.api.ops.impl.scatter.ScatterMul;
-import org.nd4j.linalg.api.ops.impl.scatter.ScatterSub;
+import org.nd4j.linalg.api.ops.impl.scatter.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
@@ -1604,6 +1601,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable scatterDiv(SDVariable ref, SDVariable indices, SDVariable updates) {
         return new ScatterDiv(sameDiff(), ref, indices, updates).outputVariables()[0];
+    }
+
+    public SDVariable scatterUpdate(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return new ScatterUpdate(sameDiff(), ref, indices, updates).outputVariables()[0];
     }
 
     /**

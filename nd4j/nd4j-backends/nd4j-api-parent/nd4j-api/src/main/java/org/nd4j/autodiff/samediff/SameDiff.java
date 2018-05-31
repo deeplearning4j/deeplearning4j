@@ -592,7 +592,7 @@ public class SameDiff {
 
     /**
      * Update a vertex id with the given shape.
-     * Note that you should use {@link #putShapeForVarName(String, int[])}
+     * Note that you should use {@link #putShapeForVarName(String, long[])}
      * if you want to add a new shape.
      * Update is meant to be an in place replacement
      * of the shape for the vertex id *only*.
@@ -4727,6 +4727,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable scatterUpdate(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterUpdate(null, ref, indices, updates);
+    }
+
+    public SDVariable scatterUpdate(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        SDVariable ret = f().scatterUpdate(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
 
     public SDVariable scatterAdd(SDVariable ref, SDVariable indices, SDVariable updates) {
         return scatterAdd(null, ref, indices, updates);
@@ -4743,7 +4752,6 @@ public class SameDiff {
     public SDVariable scatterDiv(SDVariable ref, SDVariable indices, SDVariable updates) {
         return scatterDiv(null, ref, indices, updates);
     }
-
 
 
     /**

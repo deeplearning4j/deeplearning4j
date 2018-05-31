@@ -83,9 +83,7 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("batch to space failed on forward");
-        }
+        assertEquals(expOut, out);
 
         try {
             GradCheckUtil.checkGradients(sd);
@@ -122,9 +120,7 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("depth to space failed on forward");
-        }
+        assertEquals(expOut, out);
 
         try {
             GradCheckUtil.checkGradients(sd);
@@ -161,9 +157,7 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("depth to space failed on forward");
-        }
+        assertEquals(expOut, out);
 
         try {
             GradCheckUtil.checkGradients(sd);
@@ -204,9 +198,7 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("batch to space failed on forward");
-        }
+        assertEquals(expOut, out);
 
         try {
             GradCheckUtil.checkGradients(sd);
@@ -247,9 +239,7 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("space to batch failed on forward");
-        }
+        assertEquals(expOut, out);
 
         try {
             GradCheckUtil.checkGradients(sd);
@@ -343,9 +333,7 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.error("forward failed");
-        }
+        assertEquals(expOut, out);
 
         boolean passed = GradCheckUtil.checkGradients(sd);
         assertTrue(passed);
@@ -362,15 +350,34 @@ public class GradCheckTransforms {
         Nd4j.getExecutioner().exec(diag);
         SDVariable t = sd.diag(in);
 
-        SDVariable loss = sd.max("loss", t, 0, 1);
+        SDVariable loss = sd.standardDeviation("loss", t,false,0, 1);
 
         sd.associateArrayWithVariable(ia, in);
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("forward failed");
-        }
+        assertEquals(expOut, out);
+
+        boolean passed = GradCheckUtil.checkGradients(sd);
+        assertTrue(passed);
+    }
+
+    @Test
+    public void testDiagPart() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray input = Nd4j.linspace(1,16,16).reshape(4,4);
+        INDArray expOut = Nd4j.create(new float[]{1, 6, 11, 16});
+
+        SDVariable in = sd.var("in", input);
+        SDVariable t = sd.diagPart(in);
+
+        SDVariable loss = sd.standardDeviation("loss", t, true, 0, 1);
+
+        sd.exec();
+        INDArray out = t.getArr();
+
+        assertEquals(expOut, out);
 
         boolean passed = GradCheckUtil.checkGradients(sd);
         assertTrue(passed);

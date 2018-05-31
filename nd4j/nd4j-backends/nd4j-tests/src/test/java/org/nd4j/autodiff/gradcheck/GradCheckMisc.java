@@ -617,7 +617,7 @@ public class GradCheckMisc {
 
         List<String> allFailed = new ArrayList<>();
 
-        for( int i=0; i<4; i++ ){
+        for( int i=0; i<5; i++ ){
             Nd4j.getRandom().setSeed(12345);
 
             SameDiff sd = SameDiff.create();
@@ -650,11 +650,15 @@ public class GradCheckMisc {
                     scatter = sd.scatterDiv("s", in, indices, updates);
                     name = "scatterDiv";
                     break;
+                case 4:
+                    scatter = sd.scatterUpdate("s", in, indices, updates);
+                    name = "scatterUpdate";
+                    break;
                 default:
                     throw new RuntimeException();
             }
 
-            SDVariable loss = sd.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
+            SDVariable loss = sd.sum(scatter);  //.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
             sd.execAndEndResult();
 
             try {
