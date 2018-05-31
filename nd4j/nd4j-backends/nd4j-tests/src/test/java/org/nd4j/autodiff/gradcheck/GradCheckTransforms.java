@@ -28,6 +28,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -299,9 +300,10 @@ public class GradCheckTransforms {
             out[i] = parts[i].getArr();
         }
 
-        if (!expOut.equals(out)) {
-            log.error("forward failed");
-        }
+        assertArrayEquals(expOut, out);
+
+        boolean passed = GradCheckUtil.checkGradients(sd);
+        assertTrue(passed);
     }
 
     @Test
@@ -313,12 +315,15 @@ public class GradCheckTransforms {
         INDArray indexA = Nd4j.create(new float[]{0, 1, 4}, new int[]{1, 3});
         INDArray indexB = Nd4j.create(new float[]{2, 3, 5}, new int[]{1, 3});
 
-        INDArray expOut = Nd4j.create(new int[]{6});
+        INDArray expOut = Nd4j.create(new long[]{6});
 
         DynamicCustomOp dynamicStitch = DynamicCustomOp.builder("dynamic_stitch")
                 .addInputs(indexA, indexB, ia, ib)
                 .addOutputs(expOut).build();
         Nd4j.getExecutioner().exec(dynamicStitch);
+
+        INDArray expOut2 = Nd4j.create(new double[]{5,1,7,2,3,4});
+        assertEquals(expOut2, expOut);
 
         SDVariable in1 = sd.var("in1", new int[]{1, 3});
         SDVariable in2 = sd.var("in2", new int[]{1, 3});
@@ -341,6 +346,9 @@ public class GradCheckTransforms {
         if (!expOut.equals(out)) {
             log.error("forward failed");
         }
+
+        boolean passed = GradCheckUtil.checkGradients(sd);
+        assertTrue(passed);
     }
 
     @Test
@@ -364,11 +372,8 @@ public class GradCheckTransforms {
             log.info("forward failed");
         }
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        boolean passed = GradCheckUtil.checkGradients(sd);
+        assertTrue(passed);
     }
 
     @Test
@@ -439,6 +444,7 @@ public class GradCheckTransforms {
             int dim;
             SDVariable t;
             INDArray expOut;
+            boolean stdevLoss = false;
             switch (i) {
                 case 0:
                     t = in.add(5.0);
@@ -616,12 +622,10 @@ public class GradCheckTransforms {
                     expOut = Transforms.leakyRelu(ia, true);
                     break;
                 case 39:
-                    // TODO DIMENSION ARG???
-                    // TODO fix me
                     t = sd.logSoftmax(in);
-                    ia = Nd4j.rand(minibatch, nOut);
+                    ia = Nd4j.rand(minibatch, nOut).muli(10).subi(5);
                     expOut = Transforms.log(Transforms.softmax(ia, true));
-//                    skipBackward = true;
+                    stdevLoss = true;
                     break;
                 case 40:
                     t = sd.selu(in);
@@ -668,10 +672,10 @@ public class GradCheckTransforms {
                     //Clip by norm, dimension 0, some below threshold, some above
                     double clip = 2.0;
                     ia = Nd4j.rand(ia.shape());
-                    ia.muliRowVector(ia.norm2(0).rdiv(clip));  //Exactly at threshold...
-                    System.out.println(ia.norm2(0));
-                    ia.muliRowVector(Nd4j.linspace(0.9, 1.1, ia.size(1)));
-                    System.out.println(ia.norm2(0));
+                    ia.diviRowVector(ia.norm2(0)).muli(clip);  //Norm2 is now 'clip' (i.e., exactly at threshold
+                    //System.out.println(ia.norm2(0));
+                    ia.muliColumnVector(Nd4j.linspace(0.9, 1.1, ia.size(0)).transpose());
+                    //System.out.println(ia.norm2(0));
 
                     expOut = Nd4j.create(ia.shape());
                     for (int j = 0; j < ia.columns(); j++) {
@@ -682,8 +686,9 @@ public class GradCheckTransforms {
                             expOut.putColumn(j, origCol.mul(clip / origCol.norm2Number().doubleValue()));
                         }
                     }
+                    //System.out.println(expOut.norm2(0));
 
-                    t = sd.clipByNorm(in, clip);
+                    t = sd.clipByNorm(in, clip, 0);
                     break;
                 //TODO clip by norm along other dimensions
                 case 50:
@@ -712,12 +717,17 @@ public class GradCheckTransforms {
                     dim = 0;
                     boolean ex = false;
                     boolean revBool = false;
-                    t = sd.cumsum(in, ex, revBool, dim);
+                    t = sd.cumprod(in, ex, revBool, dim);
                     expOut = Nd4j.create(ia.shape());
-                    DynamicCustomOp cumprod = DynamicCustomOp.builder("cumprod")
-                            .addIntegerArguments((ex) ? 1 : 0, (revBool) ? 1 : 0, dim)
-                            .addInputs(ia).addOutputs(expOut).build();
-                    Nd4j.getExecutioner().exec(cumprod);
+                    for( int s0=0; s0<ia.size(0); s0++){
+                        for( int s1=0; s1<ia.size(1); s1++ ){
+                            double prod = 1.0;
+                            for(int x=0; x<=s0; x++ ){
+                                prod *= ia.getDouble(x, s1);
+                            }
+                            expOut.putScalar(s0, s1, prod);
+                        }
+                    }
                     break;
                 case 53:
                     ia = Nd4j.create(new float[]{4, 2});
@@ -765,7 +775,7 @@ public class GradCheckTransforms {
                 case 60:
                     t = sd.relu6(in, 0);
                     ia = Nd4j.rand(minibatch, nOut);
-                    expOut = Transforms.relu6(ia);
+                    expOut = Transforms.relu6(ia, true);
 //                    skipBackward = true;
                     break;
                 case 61:
@@ -789,7 +799,13 @@ public class GradCheckTransforms {
             String msg = "test: " + i + " - " + name;
             log.info("*** Starting test: " + msg);
 
-            SDVariable loss = sd.mean("loss", t);
+            SDVariable loss;
+            if(stdevLoss){
+                loss = sd.standardDeviation("loss", t, false, Integer.MAX_VALUE);   //.standardDeviation("loss", t, true, Integer.MAX_VALUE);
+            } else {
+                loss = sd.mean("loss", t);
+            }
+
 
 
             sd.associateArrayWithVariable(ia, in);
@@ -990,7 +1006,6 @@ public class GradCheckTransforms {
                             .addOutputs(expOut)
                             .build();
                     Nd4j.getExecutioner().exec(squareDiff);
-                    skipBackward = true;
                     break;
                 default:
                     throw new RuntimeException();

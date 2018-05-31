@@ -20,42 +20,41 @@ package org.deeplearning4j.base;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.common.resources.DL4JResources;
+import org.deeplearning4j.common.resources.ResourceType;
+import org.nd4j.resources.Downloader;
 import org.nd4j.util.ArchiveUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
 
 @Data
 @NoArgsConstructor
+@Slf4j
 public class MnistFetcher {
-    protected static final Logger log = LoggerFactory.getLogger(MnistFetcher.class);
 
-    protected File BASE_DIR = new File(System.getProperty("user.home"));
     protected static final String LOCAL_DIR_NAME = "MNIST";
-    protected File FILE_DIR = new File(BASE_DIR, LOCAL_DIR_NAME);
 
     private File fileDir;
-    private static final String TRAINING_FILES_URL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/train-images-idx3-ubyte.gz";
+    private static final String TRAINING_FILES_URL_RELATIVE = "datasets/mnist/train-images-idx3-ubyte.gz";
     private static final String TRAINING_FILES_MD_5 = "f68b3c2dcbeaaa9fbdd348bbdeb94873";
     private static final String TRAINING_FILES_FILENAME = "train-images-idx3-ubyte.gz";
     public static final String TRAINING_FILES_FILENAME_UNZIPPED = "train-images-idx3-ubyte";
-    private static final String TRAINING_FILE_LABELS_URL =
-                    "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/train-labels-idx1-ubyte.gz";
+    private static final String TRAINING_FILE_LABELS_URL_RELATIVE = "datasets/mnist/train-labels-idx1-ubyte.gz";
     private static final String TRAINING_FILE_LABELS_MD_5 = "d53e105ee54ea40749a09fcbcd1e9432";
     private static final String TRAINING_FILE_LABELS_FILENAME = "train-labels-idx1-ubyte.gz";
     public static final String TRAINING_FILE_LABELS_FILENAME_UNZIPPED = "train-labels-idx1-ubyte";
 
     //Test data:
-    private static final String TEST_FILES_URL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/t10k-images-idx3-ubyte.gz";
+    private static final String TEST_FILES_URL_RELATIVE = "datasets/mnist/t10k-images-idx3-ubyte.gz";
     private static final String TEST_FILES_MD_5 = "9fb629c4189551a2d022fa330f9573f3";
     private static final String TEST_FILES_FILENAME = "t10k-images-idx3-ubyte.gz";
     public static final String TEST_FILES_FILENAME_UNZIPPED = "t10k-images-idx3-ubyte";
-    private static final String TEST_FILE_LABELS_URL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/t10k-labels-idx1-ubyte.gz";
+    private static final String TEST_FILE_LABELS_URL_RELATIVE = "datasets/mnist/t10k-labels-idx1-ubyte.gz";
     private static final String TEST_FILE_LABELS_MD_5 = "ec29112dd5afa0611ce80d1b7f02629c";
     private static final String TEST_FILE_LABELS_FILENAME = "t10k-labels-idx1-ubyte.gz";
     public static final String TEST_FILE_LABELS_FILENAME_UNZIPPED = "t10k-labels-idx1-ubyte";
@@ -66,12 +65,12 @@ public class MnistFetcher {
     }
 
     public File getBaseDir() {
-        return FILE_DIR;
+        return DL4JResources.getDirectory(ResourceType.DATASET, getName());
     }
 
     // --- Train files ---
     public String getTrainingFilesURL() {
-        return TRAINING_FILES_URL;
+        return DL4JResources.getURLString(TRAINING_FILES_URL_RELATIVE);
     }
 
     public String getTrainingFilesMD5() {
@@ -87,7 +86,7 @@ public class MnistFetcher {
     }
 
     public String getTrainingFileLabelsURL() {
-        return TRAINING_FILE_LABELS_URL;
+        return DL4JResources.getURLString(TRAINING_FILE_LABELS_URL_RELATIVE);
     }
 
     public String getTrainingFileLabelsMD5() {
@@ -106,7 +105,7 @@ public class MnistFetcher {
     // --- Test files ---
 
     public String getTestFilesURL() {
-        return TEST_FILES_URL;
+        return DL4JResources.getURLString(TEST_FILES_URL_RELATIVE);
     }
 
     public String getTestFilesMD5() {
@@ -122,7 +121,7 @@ public class MnistFetcher {
     }
 
     public String getTestFileLabelsURL() {
-        return TEST_FILE_LABELS_URL;
+        return DL4JResources.getURLString(TEST_FILE_LABELS_URL_RELATIVE);
     }
 
     public String getTestFileLabelsMD5() {
@@ -153,69 +152,17 @@ public class MnistFetcher {
         File trainFeatures = new File(baseDir, getTrainingFilesFilename());
         File testFeatures = new File(baseDir, getTestFilesFilename());
 
-        downloadAndExtract(new URL(getTrainingFilesURL()), trainFeatures, baseDir, getTrainingFilesMD5());
-        downloadAndExtract(new URL(getTestFilesURL()), testFeatures, baseDir, getTestFilesMD5());
+        Downloader.downloadAndExtract("MNIST", new URL(getTrainingFilesURL()), trainFeatures, baseDir, getTrainingFilesMD5(),3);
+        Downloader.downloadAndExtract("MNIST", new URL(getTestFilesURL()), testFeatures, baseDir, getTestFilesMD5(), 3);
 
         // get labels
         File trainLabels = new File(baseDir, getTrainingFileLabelsFilename());
         File testLabels = new File(baseDir, getTestFileLabelsFilename());
 
-        downloadAndExtract(new URL(getTrainingFileLabelsURL()), trainLabels, baseDir, getTrainingFileLabelsMD5());
-        downloadAndExtract(new URL(getTestFileLabelsURL()), testLabels, baseDir, getTestFileLabelsMD5());
+        Downloader.downloadAndExtract("MNIST", new URL(getTrainingFileLabelsURL()), trainLabels, baseDir, getTrainingFileLabelsMD5(), 3);
+        Downloader.downloadAndExtract("MNIST", new URL(getTestFileLabelsURL()), testLabels, baseDir, getTestFileLabelsMD5(), 3);
 
         fileDir = baseDir;
         return fileDir;
     }
-
-    private void downloadAndExtract(URL url, File f, File extractToDir, String targetMD5) throws IOException {
-        downloadAndExtract(0, url, f, extractToDir, targetMD5);
-    }
-
-    private void downloadAndExtract(int attempt, URL url, File f, File extractToDir, String targetMD5) throws IOException {
-        int maxTries = 3;
-        boolean isCorrectFile = f.exists() && f.isFile() && checkMD5OfFile(targetMD5, f);
-        if (attempt < maxTries) {
-            if(!isCorrectFile) {
-                FileUtils.copyURLToFile(url, f);
-                if (!checkMD5OfFile(targetMD5, f)) {
-                    f.delete();
-                    downloadAndExtract(attempt + 1, url, f, extractToDir, targetMD5);
-                }
-            }
-            // try extracting
-            try{
-                ArchiveUtils.unzipFileTo(f.getAbsolutePath(), extractToDir.getAbsolutePath());
-            } catch (Throwable t){
-                log.warn("Error extracting MNIST files from file {} - retrying...", f.getAbsolutePath(), t);
-                f.delete();
-                downloadAndExtract(attempt + 1, url, f, extractToDir, targetMD5);
-            }
-        } else if (!isCorrectFile) {
-            //Too many attempts
-            throw new IOException("Could not download and extract " + url.getPath() + "\n properly despite trying " + maxTries
-                            + " times, check your connection. File info:" + "\nTarget MD5: " + targetMD5
-                            + "\nHash matches: " + checkMD5OfFile(targetMD5, f) + "\nIs valid file: " + f.isFile());
-        }
-    }
-
-    private boolean checkMD5OfFile(String targetMD5, File file) throws IOException {
-        InputStream in = FileUtils.openInputStream(file);
-        String trueMd5 = DigestUtils.md5Hex(in);
-        IOUtils.closeQuietly(in);
-        return (targetMD5.equals(trueMd5));
-    }
-
-    public static void gunzipFile(File baseDir, File gzFile) throws IOException {
-        log.info("gunzip'ing File: " + gzFile.toString());
-        Process p = Runtime.getRuntime().exec(String.format("gunzip %s", gzFile.getAbsolutePath()));
-        BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-        log.info("Here is the standard error of the command (if any):\n");
-        String s;
-        while ((s = stdError.readLine()) != null) {
-            log.info(s);
-        }
-        stdError.close();
-    }
-
-
 }

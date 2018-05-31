@@ -43,7 +43,10 @@ import java.util.Map;
  *
  * @author Alex Black
  * @see LSTM LSTM class, for the version without peephole connections
+ * @deprecated Will be eventually removed. Use {@link LSTM} instead, which has similar prediction accuracy, but supports
+ * CuDNN for faster network training on CUDA (Nvidia) GPUs
  */
+@Deprecated
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

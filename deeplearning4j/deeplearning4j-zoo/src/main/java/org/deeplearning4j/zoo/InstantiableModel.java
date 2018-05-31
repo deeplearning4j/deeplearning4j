@@ -19,4 +19,6 @@ public interface InstantiableModel {
     String pretrainedUrl(PretrainedType pretrainedType);
 
     long pretrainedChecksum(PretrainedType pretrainedType);
+
+    String modelName();
 }

@@ -24,6 +24,11 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.SquaredDifferenceBpOp;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Squared difference operation, i.e. returns (x - y) * (x - y)
@@ -59,5 +64,10 @@ public class SquaredDifferenceOp extends BaseDynamicTransformOp {
         return "SquaredDifference";
     }
 
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+        SDVariable[] outputs = new SquaredDifferenceBpOp(f().sameDiff(), new SDVariable[]{larg(), rarg(), i_v1.get(0)}).outputVariables();
+        return Arrays.asList(outputs);
+    }
 
 }
