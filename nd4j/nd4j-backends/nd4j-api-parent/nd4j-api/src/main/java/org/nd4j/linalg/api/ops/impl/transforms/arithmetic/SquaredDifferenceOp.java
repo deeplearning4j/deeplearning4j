@@ -36,6 +36,7 @@ import java.util.List;
  * @author Max Pumperla
  */
 public class SquaredDifferenceOp extends BaseDynamicTransformOp {
+    public static final String OP_NAME = "squaredsubtract";
 
     public SquaredDifferenceOp() {}
 
@@ -50,7 +51,7 @@ public class SquaredDifferenceOp extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "squaredsubtract";
+        return OP_NAME;
     }
 
 

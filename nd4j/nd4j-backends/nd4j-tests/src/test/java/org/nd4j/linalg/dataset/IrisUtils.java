@@ -30,7 +30,7 @@ import java.util.List;
 public class IrisUtils {
 
     public static List<DataSet> loadIris(int from, int to) throws IOException {
-        ClassPathResource resource = new ClassPathResource("/iris.dat", IrisUtils.class.getClassLoader());
+        ClassPathResource resource = new ClassPathResource("iris.dat", IrisUtils.class.getClassLoader());
         @SuppressWarnings("unchecked")
         List<String> lines = IOUtils.readLines(resource.getInputStream());
         List<DataSet> list = new ArrayList<>();

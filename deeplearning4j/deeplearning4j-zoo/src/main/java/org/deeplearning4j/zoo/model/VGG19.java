@@ -48,7 +48,7 @@ public class VGG19 extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return DL4JResources.getURLString("vgg19_dl4j_inference.zip");
+            return DL4JResources.getURLString("models/vgg19_dl4j_inference.zip");
         else
             return null;
     }

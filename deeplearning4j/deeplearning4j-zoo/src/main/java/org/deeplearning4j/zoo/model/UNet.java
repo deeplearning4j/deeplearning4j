@@ -50,7 +50,7 @@ public class UNet extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.SEGMENT)
-            return DL4JResources.getURLString("unet_dl4j_segment_inference.v1.zip");
+            return DL4JResources.getURLString("models/unet_dl4j_segment_inference.v1.zip");
         else
             return null;
     }
