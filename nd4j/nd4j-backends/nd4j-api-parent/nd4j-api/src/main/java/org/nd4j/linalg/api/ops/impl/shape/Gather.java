@@ -24,17 +24,17 @@ import java.util.Map;
 @NoArgsConstructor
 public class Gather extends DynamicCustomOp {
 
-    protected int[] broadcast;
+    protected int[] indices;
     protected int axis = 0;
 
 
-    public Gather(SameDiff sameDiff, SDVariable input, int axis, int[] broadcast, boolean inPlace) {
+    public Gather(SameDiff sameDiff, SDVariable input, int[] indices, int axis, boolean inPlace) {
         super(null, sameDiff, new SDVariable[] {input}, inPlace);
 
         addIArgument(axis);
-        addIArgument(broadcast);
+        addIArgument(indices);
         this.axis = axis;
-        this.broadcast = broadcast;
+        this.indices = indices;
     }
 
     public Gather(SameDiff sameDiff, SDVariable input, SDVariable indices, int axis, boolean inPlace) {
@@ -68,12 +68,12 @@ public class Gather extends DynamicCustomOp {
     @Override
     public void resolvePropertiesFromSameDiffBeforeExecution() {
         super.resolvePropertiesFromSameDiffBeforeExecution();
-        if (broadcast != null && numInputArguments() < 2) {
+        if (indices != null && numInputArguments() < 2) {
             if (numInputArguments() == 0) {
-                addInputArgument(args()[0].getArr(), Nd4j.create(ArrayUtil.toFloats(broadcast)).reshape(broadcast.length));
+                addInputArgument(args()[0].getArr(), Nd4j.create(ArrayUtil.toFloats(indices)).reshape(indices.length));
 
             } else if (numInputArguments() == 1) {
-                addInputArgument(Nd4j.create(ArrayUtil.toFloats(broadcast)));
+                addInputArgument(Nd4j.create(ArrayUtil.toFloats(indices)));
             }
 
         }
