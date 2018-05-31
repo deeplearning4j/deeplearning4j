@@ -674,4 +674,35 @@ public class GradCheckMisc {
 
         assertEquals(allFailed.toString(), 0, allFailed.size());
     }
+
+    @Test
+    public void testGatherGradient(){
+        Nd4j.getRandom().setSeed(12345);
+
+        for(int rank=2; rank<=3; rank++){
+            for( int dim=0; dim<rank; dim++ ){
+                SameDiff sd = SameDiff.create();
+
+                int[] inShape;
+                if(rank == 2){
+                    inShape = new int[]{10,10};
+                } else {
+                    inShape = new int[]{10, 10, 10};
+                }
+
+                SDVariable in = sd.var("in", Nd4j.rand(inShape));
+                SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}));
+
+                SDVariable gather = sd.gather(in, indices, dim);
+                sd.execAndEndResult();  //TODO REMOVE THIS
+
+                SDVariable loss = sd.standardDeviation("loss", gather,true, Integer.MAX_VALUE);
+
+                String msg = "rank=" + rank + ", dim=" + dim;
+                assertTrue(msg, GradCheckUtil.checkGradients(sd, "indices"));
+            }
+        }
+
+
+    }
 }

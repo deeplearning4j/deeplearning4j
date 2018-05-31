@@ -46,6 +46,7 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
+import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -1493,6 +1494,65 @@ public class SameDiff {
         variableMap.put(arr.getVarName(), ret);
         return ret;
 
+    }
+
+    /**
+     * Generate a square identity matrix with the specified number of rows
+     * @param rows Number of rows
+     */
+    public SDVariable eye(int rows){
+        return eye(rows, rows);
+    }
+
+    /**
+     * Generate an identity matrix with the specified number of rows and columns
+     * @param rows Number of rows
+     */
+    public SDVariable eye(String name, int rows){
+        return eye(name, rows, rows);
+    }
+
+    /**
+     * Generate an identity matrix with the specified number of rows and columns
+     * @param rows Number of rows
+     * @param cols Number of columns
+     */
+    public SDVariable eye(int rows, int cols){
+        return eye(null, rows, cols);
+    }
+
+    /**
+     * Generate an identity matrix with the specified number of rows and columns
+     * @param rows Number of rows
+     * @param cols Number of columns
+     */
+    public SDVariable eye(String name, int rows, int cols) {
+        return eye(name, rows, cols, null);
+    }
+
+    /**
+     * see {@link #eye(String, int, int, int...)}
+     */
+    public SDVariable eye(int rows, int cols, int... batchDimension){
+        return eye(null, rows, cols, batchDimension);
+    }
+
+    /**
+     * Generate an identity matrix with the specified number of rows and columns, with optional leading dims<br>
+     * Example:<br>
+     * batchShape: [3,3]<br>
+     * numRows: 2<br>
+     * numCols: 4<br>
+     * returns a tensor of shape (3, 3, 2, 4) that consists of 3 * 3 batches of (2,4)-shaped identity matrices:<br>
+     *      1 0 0 0<br>
+     *      0 1 0 0<br>
+     * @param rows Number of rows
+     * @param cols Number of columns
+     * @param batchDimension Batch dimensions. May be null
+     */
+    public SDVariable eye(String name, int rows, int cols, int... batchDimension){
+        SDVariable eye = new Eye(this, rows, cols, batchDimension).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
     }
 
 
@@ -4789,35 +4849,36 @@ public class SameDiff {
                 if (num_outputs <= 0){
                     throw new ND4JIllegalStateException("No output variables found!");
                 }
-                    char ordering = 'c';
-                    if (function.args()[0].getArr() != null) {
-                        ordering = function.args()[0].getArr().ordering();
+                char ordering = 'c';
+                SDVariable[] args = function.args();
+                if (args != null && args.length > 0 && args[0].getArr() != null) {  //Args may be null or length 0 for some ops, like eye
+                    ordering = function.args()[0].getArr().ordering();
+                }
+                SDVariable[] ret = new SDVariable[num_outputs];
+                //dynamic shapes
+                for (int i = 0; i < ret.length; i++) {
+                    SDVariable checkGet = getVariable(baseName);
+                    if (checkGet == null) {
+                        checkGet = var(generateNewVarName(baseName, i), null, new ZeroInitScheme(ordering));
+                    } else if (i > 0 && !importedVarName.contains(baseName)) {
+                        //need to find a new name
+                        String newName = generateNewVarName(baseName, i);
+                        checkGet = getVariable(newName);
                     }
-                    SDVariable[] ret = new SDVariable[num_outputs];
-                    //dynamic shapes
-                    for (int i = 0; i < ret.length; i++) {
-                        SDVariable checkGet = getVariable(baseName);
-                        if (checkGet == null) {
-                            checkGet = var(generateNewVarName(baseName, i), null, new ZeroInitScheme(ordering));
-                        } else if (i > 0 && !importedVarName.contains(baseName)) {
-                            //need to find a new name
-                            String newName = generateNewVarName(baseName, i);
-                            checkGet = getVariable(newName);
-                        }
-                        if (checkGet == null) {
-                            String newName = generateNewVarName(baseName, i);
-                            checkGet = var(newName, null, new ZeroInitScheme(ordering));
-                        }
-                        checkGet.setOutputIndex(i);
-                        checkGet.setCreator(function);
-                        ret[i] = checkGet;
+                    if (checkGet == null) {
+                        String newName = generateNewVarName(baseName, i);
+                        checkGet = var(newName, null, new ZeroInitScheme(ordering));
                     }
+                    checkGet.setOutputIndex(i);
+                    checkGet.setCreator(function);
+                    ret[i] = checkGet;
+                }
 
-                    //Update the internal state: outgoing variables for function
-                    if (getOutputsForFunction(function) == null)
-                        addOutgoingFor(ret, function);
+                //Update the internal state: outgoing variables for function
+                if (getOutputsForFunction(function) == null)
+                    addOutgoingFor(ret, function);
 
-                    return ret;
+                return ret;
             }
 
             //this is for unresolved shapes, we know xyz is always 1 output
@@ -4825,7 +4886,8 @@ public class SameDiff {
                 SDVariable[] ret = new SDVariable[1];
                 SDVariable checkGet = getVariable(baseName);
                 char ordering = 'c';
-                if (function.args()[0].getArr() != null) {
+                SDVariable[] args = function.args();
+                if (args != null && args.length > 0 && function.args()[0].getArr() != null) { //Args may be null or length 0 for some ops, like eye
                     ordering = function.args()[0].getArr().ordering();
                 }
                 if (checkGet == null) {

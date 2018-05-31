@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -381,6 +382,41 @@ public class GradCheckTransforms {
 
         boolean passed = GradCheckUtil.checkGradients(sd);
         assertTrue(passed);
+    }
+
+    @Test
+    public void testEye(){
+
+        int[] rows = new int[]{3,3,3,3};
+        int[] cols = new int[]{3,2,2,2};
+        int[][] batch = new int[][]{null, null, {4}, {3,3}};
+        INDArray[] expOut = new INDArray[4];
+
+        expOut[0] = Nd4j.eye(3);
+        expOut[1] = Nd4j.create(new double[][]{{1,0,0},{0,1,0}});
+        expOut[2] = Nd4j.create(4,3,2);
+        for( int i=0; i<4; i++ ){
+            expOut[2].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
+        }
+        expOut[3] = Nd4j.create(3,3,3,2);
+        for( int i=0; i<3; i++ ){
+            for( int j=0; j<3; j++ ) {
+                expOut[3].get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
+            }
+        }
+
+
+        for(int i=0; i<3; i++ ) {
+            SameDiff sd = SameDiff.create();
+
+            SDVariable eye = sd.eye(rows[i], cols[i], batch[i]);
+
+            INDArray out = sd.execAndEndResult();
+            assertEquals(expOut[i], out);
+
+            assertTrue(GradCheckUtil.checkGradients(sd));
+        }
+
     }
 
     @Test
