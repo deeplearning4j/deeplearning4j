@@ -144,11 +144,11 @@
         <maven.compiler.target>1.7</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <deeplearning4j.version>${project.version}</deeplearning4j.version>
-        <dl4j.version>${project.version}</dl4j.version>
-        <nd4j.version>${project.version}</nd4j.version>
-        <datavec.version>${project.version}</datavec.version>
-        <dl4j-test-resources.version>${project.version}</dl4j-test-resources.version>
+        <deeplearning4j.version>1.0.0-SNAPSHOT</deeplearning4j.version>
+        <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
+        <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
+        <datavec.version>1.0.0-SNAPSHOT</datavec.version>
+        <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
 
         <oshi.version>3.4.2</oshi.version>
         <kafka.version>0.10.1.1</kafka.version>
