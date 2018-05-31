@@ -27,8 +27,8 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
 
         if (block.width() == 1) {
 
-        for (int e = 0; e < block.numI() - 2; e++)
-            dims[e] = INT_ARG(e + 2);
+            for (int e = 0; e < block.numI() - 2; e++)
+                dims[e] = INT_ARG(e + 2);
         } 
         else {
             auto ax = INPUT_VARIABLE(1);

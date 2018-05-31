@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -66,9 +67,9 @@ public class NASNet extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return "http://blob.deeplearning4j.org/models/nasnetmobile_dl4j_inference.v1.zip";
+            return DL4JResources.getURLString("models/nasnetmobile_dl4j_inference.v1.zip");
         else if (pretrainedType == PretrainedType.IMAGENETLARGE)
-            return "http://blob.deeplearning4j.org/models/nasnetlarge_dl4j_inference.v1.zip";
+            return DL4JResources.getURLString("models/nasnetlarge_dl4j_inference.v1.zip");
         else
             return null;
     }

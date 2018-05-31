@@ -395,7 +395,7 @@
 
         <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
         <profile>
-            <id>test-nd4j-cuda-9.2</id>
+            <id>test-nd4j-cuda-9.0</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -408,7 +408,7 @@
                 </dependency>
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-9.2</artifactId>
+                    <artifactId>nd4j-cuda-9.0</artifactId>
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>
@@ -552,6 +552,7 @@
         <module>deeplearning4j-util</module>
         <module>dl4j-perf</module>
         <module>dl4j-integration-tests</module>
+        <module>deeplearning4j-common</module>
     </modules>
 
     <licenses>
@@ -666,7 +667,7 @@
                             <skip>${skipBackendChoice}</skip>
                             <rules>
                                 <requireActiveProfile>
-                                    <profiles>test-nd4j-native,test-nd4j-cuda-9.2</profiles>
+                                    <profiles>test-nd4j-native,test-nd4j-cuda-9.0</profiles>
                                     <all>false</all>
                                 </requireActiveProfile>
                             </rules>

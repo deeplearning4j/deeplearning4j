@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
@@ -51,7 +52,7 @@ public class KerasCustomLayerTest {
     @Test
     public void testCustomLayerImport() throws Exception {
         // file paths
-        String kerasWeightsAndConfigUrl = "http://blob.deeplearning4j.org/models/googlenet_keras_weightsandconfig.h5";
+        String kerasWeightsAndConfigUrl = DL4JResources.getURLString("googlenet_keras_weightsandconfig.h5");
         File cachedKerasFile = testDir.newFile("googlenet_keras_weightsandconfig.h5");
         String outputPath = testDir.newFile("googlenet_dl4j_inference.zip").getAbsolutePath();
 

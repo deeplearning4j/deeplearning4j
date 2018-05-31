@@ -46,7 +46,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * @author saudet
  */
 public class NativeImageLoader extends BaseImageLoader {
-    private static final int MIN_BUFFER_STEP_SIZE = 1024*1024;
+    private static final int MIN_BUFFER_STEP_SIZE = 64 * 1024;
     private byte[] buffer = null;
     private Mat bufferMat = null;
 
@@ -72,7 +72,7 @@ public class NativeImageLoader extends BaseImageLoader {
      * @param width  the width to load
     
      */
-    public NativeImageLoader(int height, int width) {
+    public NativeImageLoader(long height, long width) {
         this.height = height;
         this.width = width;
     }
@@ -85,7 +85,7 @@ public class NativeImageLoader extends BaseImageLoader {
      * @param width  the width to load
      * @param channels the number of channels for the image*
      */
-    public NativeImageLoader(int height, int width, int channels) {
+    public NativeImageLoader(long height, long width, long channels) {
         this.height = height;
         this.width = width;
         this.channels = channels;
@@ -99,7 +99,7 @@ public class NativeImageLoader extends BaseImageLoader {
      * @param channels the number of channels for the image*
      * @param centerCropIfNeeded to crop before rescaling and converting
      */
-    public NativeImageLoader(int height, int width, int channels, boolean centerCropIfNeeded) {
+    public NativeImageLoader(long height, long width, long channels, boolean centerCropIfNeeded) {
         this(height, width, channels);
         this.centerCropIfNeeded = centerCropIfNeeded;
     }
@@ -112,7 +112,7 @@ public class NativeImageLoader extends BaseImageLoader {
      * @param channels the number of channels for the image*
      * @param imageTransform to use before rescaling and converting
      */
-    public NativeImageLoader(int height, int width, int channels, ImageTransform imageTransform) {
+    public NativeImageLoader(long height, long width, long channels, ImageTransform imageTransform) {
         this(height, width, channels);
         this.imageTransform = imageTransform;
     }
@@ -125,7 +125,7 @@ public class NativeImageLoader extends BaseImageLoader {
      * @param channels the number of channels for the image*
      * @param mode how to load multipage image
      */
-    public NativeImageLoader(int height, int width, int channels, MultiPageMode mode) {
+    public NativeImageLoader(long height, long width, long channels, MultiPageMode mode) {
         this(height, width, channels);
         this.multiPageMode = mode;
     }
@@ -347,9 +347,9 @@ public class NativeImageLoader extends BaseImageLoader {
 
 
     protected void fillNDArray(Mat image, INDArray ret) {
-        int rows = image.rows();
-        int cols = image.cols();
-        int channels = image.channels();
+        long rows = image.rows();
+        long cols = image.cols();
+        long channels = image.channels();
 
         if (ret.lengthLong() != rows * cols * channels) {
             throw new ND4JIllegalStateException("INDArray provided to store image not equal to image: {channels: "
@@ -369,9 +369,9 @@ public class NativeImageLoader extends BaseImageLoader {
                             new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]}, direct);
             if (idx instanceof UByteIndexer) {
                 UByteIndexer ubyteidx = (UByteIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
+                for (long k = 0; k < channels; k++) {
+                    for (long i = 0; i < rows; i++) {
+                        for (long j = 0; j < cols; j++) {
                             retidx.put(k, i, j, ubyteidx.get(i, j, k));
                         }
                     }
@@ -379,9 +379,9 @@ public class NativeImageLoader extends BaseImageLoader {
                 done = true;
             } else if (idx instanceof UShortIndexer) {
                 UShortIndexer ushortidx = (UShortIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
+                for (long k = 0; k < channels; k++) {
+                    for (long i = 0; i < rows; i++) {
+                        for (long j = 0; j < cols; j++) {
                             retidx.put(k, i, j, ushortidx.get(i, j, k));
                         }
                     }
@@ -389,9 +389,9 @@ public class NativeImageLoader extends BaseImageLoader {
                 done = true;
             } else if (idx instanceof IntIndexer) {
                 IntIndexer intidx = (IntIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
+                for (long k = 0; k < channels; k++) {
+                    for (long i = 0; i < rows; i++) {
+                        for (long j = 0; j < cols; j++) {
                             retidx.put(k, i, j, intidx.get(i, j, k));
                         }
                     }
@@ -399,9 +399,9 @@ public class NativeImageLoader extends BaseImageLoader {
                 done = true;
             } else if (idx instanceof FloatIndexer) {
                 FloatIndexer floatidx = (FloatIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
+                for (long k = 0; k < channels; k++) {
+                    for (long i = 0; i < rows; i++) {
+                        for (long j = 0; j < cols; j++) {
                             retidx.put(k, i, j, floatidx.get(i, j, k));
                         }
                     }
@@ -413,9 +413,9 @@ public class NativeImageLoader extends BaseImageLoader {
                             new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]}, direct);
             if (idx instanceof UByteIndexer) {
                 UByteIndexer ubyteidx = (UByteIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
+                for (long k = 0; k < channels; k++) {
+                    for (long i = 0; i < rows; i++) {
+                        for (long j = 0; j < cols; j++) {
                             retidx.put(k, i, j, ubyteidx.get(i, j, k));
                         }
                     }
@@ -423,9 +423,9 @@ public class NativeImageLoader extends BaseImageLoader {
                 done = true;
             } else if (idx instanceof UShortIndexer) {
                 UShortIndexer ushortidx = (UShortIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
+                for (long k = 0; k < channels; k++) {
+                    for (long i = 0; i < rows; i++) {
+                        for (long j = 0; j < cols; j++) {
                             retidx.put(k, i, j, ushortidx.get(i, j, k));
                         }
                     }
@@ -433,9 +433,9 @@ public class NativeImageLoader extends BaseImageLoader {
                 done = true;
             } else if (idx instanceof IntIndexer) {
                 IntIndexer intidx = (IntIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
+                for (long k = 0; k < channels; k++) {
+                    for (long i = 0; i < rows; i++) {
+                        for (long j = 0; j < cols; j++) {
                             retidx.put(k, i, j, intidx.get(i, j, k));
                         }
                     }
@@ -443,9 +443,9 @@ public class NativeImageLoader extends BaseImageLoader {
                 done = true;
             } else if (idx instanceof FloatIndexer) {
                 FloatIndexer floatidx = (FloatIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
+                for (long k = 0; k < channels; k++) {
+                    for (long i = 0; i < rows; i++) {
+                        for (long j = 0; j < cols; j++) {
                             retidx.put(k, i, j, floatidx.get(i, j, k));
                         }
                     }
@@ -456,9 +456,9 @@ public class NativeImageLoader extends BaseImageLoader {
 
 
         if (!done) {
-            for (int k = 0; k < channels; k++) {
-                for (int i = 0; i < rows; i++) {
-                    for (int j = 0; j < cols; j++) {
+            for (long k = 0; k < channels; k++) {
+                for (long i = 0; i < rows; i++) {
+                    for (long j = 0; j < cols; j++) {
                         if (channels > 1) {
                             ret.putScalar(k, i, j, idx.getDouble(i, j, k));
                         } else {
@@ -522,7 +522,7 @@ public class NativeImageLoader extends BaseImageLoader {
             int code = -1;
             switch (image.channels()) {
                 case 1:
-                    switch (channels) {
+                    switch ((int)channels) {
                         case 3:
                             code = CV_GRAY2BGR;
                             break;
@@ -532,7 +532,7 @@ public class NativeImageLoader extends BaseImageLoader {
                     }
                     break;
                 case 3:
-                    switch (channels) {
+                    switch ((int)channels) {
                         case 1:
                             code = CV_BGR2GRAY;
                             break;
@@ -542,7 +542,7 @@ public class NativeImageLoader extends BaseImageLoader {
                     }
                     break;
                 case 4:
-                    switch (channels) {
+                    switch ((int)channels) {
                         case 1:
                             code = CV_RGBA2GRAY;
                             break;
@@ -617,10 +617,12 @@ public class NativeImageLoader extends BaseImageLoader {
         return scalingIfNeed(image, height, width);
     }
 
-    protected Mat scalingIfNeed(Mat image, int dstHeight, int dstWidth) {
+    protected Mat scalingIfNeed(Mat image, long dstHeight, long dstWidth) {
         Mat scaled = image;
         if (dstHeight > 0 && dstWidth > 0 && (image.rows() != dstHeight || image.cols() != dstWidth)) {
-            resize(image, scaled = new Mat(), new Size(dstWidth, dstHeight));
+            resize(image, scaled = new Mat(), new Size(
+                    (int)Math.min(dstWidth, Integer.MAX_VALUE),
+                    (int)Math.min(dstHeight, Integer.MAX_VALUE)));
         }
         return scaled;
     }
@@ -708,7 +710,8 @@ public class NativeImageLoader extends BaseImageLoader {
         if (dataType < 0) {
             dataType = pointer instanceof DoublePointer ? CV_64F : CV_32F;
         }
-        Mat mat = new Mat(rows, cols, CV_MAKETYPE(dataType, (int) channels));
+        Mat mat = new Mat((int)Math.min(rows, Integer.MAX_VALUE), (int)Math.min(cols, Integer.MAX_VALUE),
+                CV_MAKETYPE(dataType, (int)Math.min(channels, Integer.MAX_VALUE)));
         boolean direct = !Loader.getPlatform().startsWith("android");
         Indexer matidx = mat.createIndexer(direct);
 
@@ -718,9 +721,9 @@ public class NativeImageLoader extends BaseImageLoader {
             FloatIndexer ptridx = FloatIndexer.create((FloatPointer)pointer, new long[] {channels, rows, cols},
                     new long[] {stride[rank == 3 ? 0 : 1], stride[rank == 3 ? 1 : 2], stride[rank == 3 ? 2 : 3]}, direct);
             FloatIndexer idx = (FloatIndexer)matidx;
-            for (int k = 0; k < channels; k++) {
-                for (int i = 0; i < rows; i++) {
-                    for (int j = 0; j < cols; j++) {
+            for (long k = 0; k < channels; k++) {
+                for (long i = 0; i < rows; i++) {
+                    for (long j = 0; j < cols; j++) {
                         idx.put(i, j, k, ptridx.get(k, i, j));
                     }
                 }
@@ -730,9 +733,9 @@ public class NativeImageLoader extends BaseImageLoader {
             DoubleIndexer ptridx = DoubleIndexer.create((DoublePointer)pointer, new long[] {channels, rows, cols},
                     new long[] {stride[rank == 3 ? 0 : 1], stride[rank == 3 ? 1 : 2], stride[rank == 3 ? 2 : 3]}, direct);
             DoubleIndexer idx = (DoubleIndexer)matidx;
-            for (int k = 0; k < channels; k++) {
-                for (int i = 0; i < rows; i++) {
-                    for (int j = 0; j < cols; j++) {
+            for (long k = 0; k < channels; k++) {
+                for (long i = 0; i < rows; i++) {
+                    for (long j = 0; j < cols; j++) {
                         idx.put(i, j, k, ptridx.get(k, i, j));
                     }
                 }
@@ -741,9 +744,9 @@ public class NativeImageLoader extends BaseImageLoader {
         }
 
         if (!done) {
-            for (int k = 0; k < channels; k++) {
-                for (int i = 0; i < rows; i++) {
-                    for (int j = 0; j < cols; j++) {
+            for (long k = 0; k < channels; k++) {
+                for (long i = 0; i < rows; i++) {
+                    for (long j = 0; j < cols; j++) {
                         if (rank == 3) {
                             matidx.putDouble(new long[] {i, j, k}, array.getDouble(k, i, j));
                         } else {
@@ -764,7 +767,7 @@ public class NativeImageLoader extends BaseImageLoader {
      * @return INDArray
      * @throws IOException
      */
-    private INDArray asMatrix(BytePointer bytes, int length) throws IOException {
+    private INDArray asMatrix(BytePointer bytes, long length) throws IOException {
         PIXA pixa;
         pixa = pixaReadMemMultipageTiff(bytes, length);
         INDArray data;

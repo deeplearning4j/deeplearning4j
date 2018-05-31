@@ -193,6 +193,7 @@ public class YoloUtils {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                             sm = softmax.get(point(i), point(box), all(), point(y), point(x)).dup();
                         }
+                        sm = sm.transpose();    //Convert to row vector
 
                         out.add(new DetectedObject(i, px, py, pw, ph, sm, conf));
                     }

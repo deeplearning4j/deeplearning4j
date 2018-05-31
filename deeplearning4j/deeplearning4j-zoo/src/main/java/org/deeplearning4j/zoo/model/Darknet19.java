@@ -3,6 +3,7 @@ package org.deeplearning4j.zoo.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder;
@@ -54,9 +55,9 @@ public class Darknet19 extends ZooModel {
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
             if (inputShape[1] == 448 && inputShape[2] == 448)
-                return "http://blob.deeplearning4j.org/models/darknet19_448_dl4j_inference.v2.zip";
+                return DL4JResources.getURLString("models/darknet19_448_dl4j_inference.v2.zip");
             else
-                return "http://blob.deeplearning4j.org/models/darknet19_dl4j_inference.v2.zip";
+                return DL4JResources.getURLString("models/darknet19_dl4j_inference.v2.zip");
         else
             return null;
     }
