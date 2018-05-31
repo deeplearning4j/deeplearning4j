@@ -121,7 +121,7 @@ public class TestNativeImageLoader {
         assertEquals(w4, array6.size(3));
 
         int ch5 = 4, pages1 = 1;
-        NativeImageLoader loader6 = new NativeImageLoader(h4, w4, ch5, NativeImageLoader.MultiPageMode.CHANNELS);
+        NativeImageLoader loader6 = new NativeImageLoader(h4, w4, 1, NativeImageLoader.MultiPageMode.CHANNELS);
         INDArray array7 = null;
         try {
             array7 = loader6.asMatrix(
@@ -249,6 +249,14 @@ public class TestNativeImageLoader {
         Java2DNativeImageLoader loader4 = new Java2DNativeImageLoader();
         BufferedImage img12 = loader4.asBufferedImage(array1);
         assertEquals(array1, loader4.asMatrix(img12));
+
+        NativeImageLoader loader5 = new NativeImageLoader(0, 0, 0);
+        INDArray array7 = loader5.asMatrix(f3);
+        assertEquals(4, array7.rank());
+        assertEquals(1, array7.size(0));
+        assertEquals(3, array7.size(1));
+        assertEquals(32, array7.size(2));
+        assertEquals(32, array7.size(3));
     }
 
     @Test

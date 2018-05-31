@@ -46,6 +46,13 @@ public class SConv2D extends Conv2D {
         return ret;
     }
 
+    @Override
+    public long[] iArgs() {
+        if (iArguments.size() == 0)
+            addArgs();
+
+        return super.iArgs();
+    }
 
     @Override
     public boolean isConfigProperties() {

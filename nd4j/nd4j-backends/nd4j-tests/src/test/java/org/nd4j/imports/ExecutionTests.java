@@ -53,17 +53,16 @@ public class ExecutionTests extends BaseNd4jTest {
         map0.put("alpha", array0);
 
         val result_0 = tg.yetAnotherExecMethod(map0);
-        val exp_0 = Nd4j.create(3, 1).assign(6.0);
+        val exp_0 = Nd4j.create(1, 3).assign(6.0);
 
         assertEquals(exp_0, result_0);
-
 
         val array1 = Nd4j.create(3, 3).assign(3.0);
         val map1 = new LinkedHashMap<String, INDArray>();
         map1.put("alpha", array1);
 
         val result_1 = tg.yetAnotherExecMethod(map1);
-        val exp_1 = Nd4j.create(3, 1).assign(9.0);
+        val exp_1 = Nd4j.create(1, 3).assign(9.0);
 
         assertEquals(exp_1, result_1);
     }

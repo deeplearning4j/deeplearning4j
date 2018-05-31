@@ -79,8 +79,8 @@ find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(spark.version>\)'$FROM_VERSION'<\/spark.version>/\1'$TO_VERSION'<\/spark.version>/g' {}" \;
 
-#Spark versions, like <version>xxx_spark_2xxx</version>
+#Spark versions, like <version>xxx_spark_2xxx</version> OR <datavec.spark.version>xxx_spark_2xxx</datavec.spark.version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(version>.*_spark_\)'$FROM_BINARY'\(.*\)<\/\(.*\)version>/\1'$TO_BINARY'\2<\/\3version>/g' {}" \;
+  -exec bash -c "sed_i 's/\(version>.*_spark_\)'$FROM_BINARY'\(.*\)version>/\1'$TO_BINARY'\2version>/g' {}" \;
 
 echo "Done updating Spark versions.";

@@ -33,6 +33,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class RDivOp extends BaseDynamicTransformOp {
+    public static final String OP_NAME = "reversedivide";
 
     public RDivOp() {}
 
@@ -47,7 +48,7 @@ public class RDivOp extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "reversedivide";
+        return OP_NAME;
     }
 
     @Override

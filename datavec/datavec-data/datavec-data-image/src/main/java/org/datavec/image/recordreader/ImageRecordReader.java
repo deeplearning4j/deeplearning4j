@@ -40,38 +40,38 @@ public class ImageRecordReader extends BaseImageRecordReader {
     }
 
     /** Loads images with given height, width, and channels, appending labels returned by the generator. */
-    public ImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator) {
+    public ImageRecordReader(long height, long width, long channels, PathLabelGenerator labelGenerator) {
         super(height, width, channels, labelGenerator);
     }
 
     /** Loads images with given height, width, and channels, appending labels returned by the generator. */
-    public ImageRecordReader(int height, int width, int channels, PathMultiLabelGenerator labelGenerator) {
+    public ImageRecordReader(long height, long width, long channels, PathMultiLabelGenerator labelGenerator) {
         super(height, width, channels, labelGenerator);
     }
 
     /** Loads images with given height, width, and channels, appending no labels. */
-    public ImageRecordReader(int height, int width, int channels) {
+    public ImageRecordReader(long height, long width, long channels) {
         super(height, width, channels, (PathLabelGenerator) null);
     }
 
     /** Loads images with given height, width, and channels, appending labels returned by the generator. */
-    public ImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator,
+    public ImageRecordReader(long height, long width, long channels, PathLabelGenerator labelGenerator,
                     ImageTransform imageTransform) {
         super(height, width, channels, labelGenerator, imageTransform);
     }
 
     /** Loads images with given height, width, and channels, appending no labels. */
-    public ImageRecordReader(int height, int width, int channels, ImageTransform imageTransform) {
+    public ImageRecordReader(long height, long width, long channels, ImageTransform imageTransform) {
         super(height, width, channels, null, imageTransform);
     }
 
     /** Loads images with given  height, width, and channels, appending labels returned by the generator. */
-    public ImageRecordReader(int height, int width, PathLabelGenerator labelGenerator) {
+    public ImageRecordReader(long height, long width, PathLabelGenerator labelGenerator) {
         super(height, width, 1, labelGenerator);
     }
 
     /** Loads images with given height, width, and channels = 1, appending no labels. */
-    public ImageRecordReader(int height, int width) {
+    public ImageRecordReader(long height, long width) {
         super(height, width, 1, null, null);
     }
 

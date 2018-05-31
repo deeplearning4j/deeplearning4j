@@ -92,6 +92,10 @@ namespace simdOps {
 		op_def static T op(T d1, T *params) {
 			return d1 + params[0];
 		}
+		
+		op_def static T startingValue() {
+			return (T)0;
+		}
 	};
 
 
@@ -115,6 +119,10 @@ namespace simdOps {
 		op_def static T op(T d1, T *params) {
 			return d1 - params[0];
 		}
+
+		// op_def static T startingValue() {
+		// 	return (T)0;
+		// }
 	};
 
 	template<typename T>
@@ -223,6 +231,10 @@ namespace simdOps {
 		op_def static T op(T d1, T *params) {
 			return d1 * params[0];
 		}
+
+		op_def static T startingValue() {
+			return (T)1;
+		}
 	};
 
 	template<typename T>
@@ -243,6 +255,10 @@ namespace simdOps {
 		// op for MetaOps
 		op_def static T op(T d1, T *params) {
 			return d1 / params[0];
+		}
+
+		op_def static T startingValue() {
+			return (T)1;
 		}
 	};
 

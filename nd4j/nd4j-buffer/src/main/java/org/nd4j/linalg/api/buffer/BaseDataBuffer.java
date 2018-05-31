@@ -822,8 +822,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void assign(Number value) {
-        for (int i = 0; i < length(); i++)
-            assign(value, i);
+        assign(value, 0);
     }
 
 

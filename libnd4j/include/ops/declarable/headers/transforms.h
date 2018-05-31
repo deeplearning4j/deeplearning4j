@@ -22,11 +22,11 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_cumsum)
-        DECLARE_CONFIGURABLE_OP(cumsum, 1, 1, true, 0, -2);
+        DECLARE_CONFIGURABLE_OP(cumsum, 1, 1, true, 0, 2);
         #endif
 
         #if NOT_EXCLUDED(OP_cumprod)
-        DECLARE_CONFIGURABLE_OP(cumprod, 1, 1, true, 0, -2);
+        DECLARE_CONFIGURABLE_OP(cumprod, 1, 1, true, 0, 2);
         #endif
 
         #if NOT_EXCLUDED(OP_tile)

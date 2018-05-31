@@ -174,8 +174,9 @@
         (20, simdOps::FloorDiv) ,\
         (21, simdOps::FloorMod), \
         (22, simdOps::SquaredSubtract),\
-        (23, simdOps::SafeDivide)
-
+        (23, simdOps::SafeDivide), \
+        (24, simdOps::AMax), \
+        (25, simdOps::AMin)
 
 
 

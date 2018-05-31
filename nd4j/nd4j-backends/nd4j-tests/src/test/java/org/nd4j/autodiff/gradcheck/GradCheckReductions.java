@@ -481,18 +481,19 @@ public class GradCheckReductions extends BaseNd4jTest {
 
                 sd.execAndEndResult();
 
-                // FIXME: we can't swallow exceptions here now, but once release out and stuff stabilized - we can
-                //try {
-                    boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
-                    if (!ok) {
-                        allFailed.add(msg);
-                    }
-                /*
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    allFailed.add(msg + " - EXCEPTION");
-                }
-                */
+
+                boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
+                assertTrue(ok);
+
+//                try {
+//                    boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
+//                    if (!ok) {
+//                        allFailed.add(msg);
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                    allFailed.add(msg + " - EXCEPTION: " + e.getMessage());
+//                }
             }
         }
 

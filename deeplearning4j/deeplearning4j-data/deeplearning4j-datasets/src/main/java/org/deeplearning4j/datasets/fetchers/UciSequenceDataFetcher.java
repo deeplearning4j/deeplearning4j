@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.fetchers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
@@ -24,17 +25,20 @@ import java.util.Random;
  *
  * @author Briton Park (bpark738)
  */
+@Slf4j
 public class UciSequenceDataFetcher extends CacheableExtractableDataSetFetcher {
-
-    private File fileDir;
-    private static Logger log = LoggerFactory.getLogger(UciSequenceDataFetcher.class);
 
     public static int NUM_LABELS = 6;
     public static int NUM_EXAMPLES = NUM_LABELS * 100;
+    private static String url = "https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/synthetic_control.data";
+
+    public static void setURL(String url){
+        UciSequenceDataFetcher.url = url;
+    }
 
     @Override
     public String remoteDataUrl() {
-        return "https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/synthetic_control.data";
+        return url;
     }
 
     @Override
@@ -65,12 +69,11 @@ public class UciSequenceDataFetcher extends CacheableExtractableDataSetFetcher {
     public CSVSequenceRecordReader getRecordReader(long rngSeed, DataSetType set) {
 
         // check empty cache
-        if (LOCAL_CACHE.exists()) {
-            if (LOCAL_CACHE.listFiles().length < 1) LOCAL_CACHE.delete();
-        }
+        File localCache = getLocalCacheDir();
+        deleteIfEmpty(localCache);
 
         try {
-            if (!LOCAL_CACHE.exists()) downloadAndExtract();
+            if (!localCache.exists()) downloadAndExtract();
         } catch (Exception e) {
             throw new RuntimeException("Could not download UCI Sequence data", e);
         }
@@ -79,16 +82,16 @@ public class UciSequenceDataFetcher extends CacheableExtractableDataSetFetcher {
 
         switch (set) {
             case TRAIN:
-                dataPath = new File(LOCAL_CACHE, "/train");
+                dataPath = new File(localCache, "/train");
                 break;
             case TEST:
-                dataPath = new File(LOCAL_CACHE, "/test");
+                dataPath = new File(localCache, "/test");
                 break;
             case VALIDATION:
                 throw new IllegalArgumentException("You will need to manually iterate the directory, UCISequence data does not provide labels");
 
             default:
-                dataPath = new File(LOCAL_CACHE, "/train");
+                dataPath = new File(localCache, "/train");
         }
 
         try {
@@ -117,7 +120,6 @@ public class UciSequenceDataFetcher extends CacheableExtractableDataSetFetcher {
     private static void downloadUCIData(File dataPath) throws Exception {
         //if (dataPath.exists()) return;
 
-        String url = "https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/synthetic_control.data";
         String data = IOUtils.toString(new URL(url), Charset.defaultCharset());
         String[] lines = data.split("\n");
 
@@ -129,13 +131,13 @@ public class UciSequenceDataFetcher extends CacheableExtractableDataSetFetcher {
         for (String line : lines) {
 
             // label value
-            Integer count = new Integer(lineCount++ / 100);
+            int count = lineCount++ / 100;
 
             // replace white space with commas and label value + new line
-            line = line.replaceAll("\\s+", ", " + count.toString() + "\n");
+            line = line.replaceAll("\\s+", ", " + count + "\n");
 
             // add label to last number
-            line = line + ", " + count.toString();
+            line = line + ", " + count;
             linesList.add(line);
         }
 

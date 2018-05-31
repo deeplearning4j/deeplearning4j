@@ -724,6 +724,9 @@ public class DifferentialFunctionFactory {
         return new ClipByNorm(sameDiff(), x, clipValue).outputVariables()[0];
     }
 
+    public SDVariable clipByNorm(SDVariable x, double clipValue, int... dimensions) {
+        return new ClipByNorm(sameDiff(), x, clipValue, dimensions).outputVariables()[0];
+    }
 
     public SDVariable relu(SDVariable iX, double cutoff) {
         return new RectifedLinear(sameDiff(), iX, false, cutoff).outputVariables()[0];
@@ -733,6 +736,9 @@ public class DifferentialFunctionFactory {
         return new Relu6(sameDiff(), iX, false, cutoff).outputVariables()[0];
     }
 
+    public SDVariable relu6Derivative(SDVariable iX, SDVariable wrt, double cutoff) {
+        return new Relu6Derivative(sameDiff(), iX, wrt, cutoff).outputVariables()[0];
+    }
 
     public SDVariable softmax(SDVariable iX) {
         return new SoftMax(sameDiff(), new SDVariable[]{iX}).outputVariables()[0];
@@ -849,6 +855,9 @@ public class DifferentialFunctionFactory {
     public SDVariable[] unstack(SDVariable value, int axis) {
         return new Unstack(sameDiff(), value, axis).outputVariables();
     }
+    public SDVariable[] unstack(SDVariable value, int axis, int num) {
+        return new Unstack(sameDiff(), value, axis, num).outputVariables();
+    }
 
     public SDVariable assign(SDVariable x, SDVariable y) {
         return new Assign(sameDiff(), x, y).outputVariables()[0];
@@ -900,6 +909,10 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable reshape(SDVariable iX, long[] shape) {
+        return new Reshape(sameDiff(), iX, shape).outputVariables()[0];
+    }
+
+    public SDVariable reshape(SDVariable iX, SDVariable shape) {
         return new Reshape(sameDiff(), iX, shape).outputVariables()[0];
     }
 

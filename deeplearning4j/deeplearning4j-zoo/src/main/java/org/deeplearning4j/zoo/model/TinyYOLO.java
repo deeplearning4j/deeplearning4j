@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -89,7 +90,7 @@ public class TinyYOLO extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return "http://blob.deeplearning4j.org/models/tiny-yolo-voc_dl4j_inference.v2.zip";
+            return DL4JResources.getURLString("models/tiny-yolo-voc_dl4j_inference.v2.zip");
         else
             return null;
     }

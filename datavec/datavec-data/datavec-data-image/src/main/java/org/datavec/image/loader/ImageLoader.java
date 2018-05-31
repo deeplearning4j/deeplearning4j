@@ -65,7 +65,7 @@ public class ImageLoader extends BaseImageLoader {
      * @param width  the width to load
     
      */
-    public ImageLoader(int height, int width) {
+    public ImageLoader(long height, long width) {
         super();
         this.height = height;
         this.width = width;
@@ -79,7 +79,7 @@ public class ImageLoader extends BaseImageLoader {
      * @param width  the width to load
      * @param channels the number of channels for the image*
      */
-    public ImageLoader(int height, int width, int channels) {
+    public ImageLoader(long height, long width, long channels) {
         super();
         this.height = height;
         this.width = width;
@@ -94,7 +94,7 @@ public class ImageLoader extends BaseImageLoader {
      * @param channels the number of channels for the image*
      * @param centerCropIfNeeded to crop before rescaling and converting
      */
-    public ImageLoader(int height, int width, int channels, boolean centerCropIfNeeded) {
+    public ImageLoader(long height, long width, long channels, boolean centerCropIfNeeded) {
         this(height, width, channels);
         this.centerCropIfNeeded = centerCropIfNeeded;
     }
@@ -349,7 +349,9 @@ public class ImageLoader extends BaseImageLoader {
 
         int w = image.getWidth(), h = image.getHeight();
         int bands = image.getSampleModel().getNumBands();
-        int[][][] ret = new int[channels][h][w];
+        int[][][] ret = new int[(int)Math.min(channels, Integer.MAX_VALUE)]
+                               [(int)Math.min(h, Integer.MAX_VALUE)]
+                               [(int)Math.min(w, Integer.MAX_VALUE)];
         byte[] pixels = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
 
         for (int i = 0; i < h; i++) {
@@ -357,7 +359,7 @@ public class ImageLoader extends BaseImageLoader {
                 for (int k = 0; k < channels; k++) {
                     if (k >= bands)
                         break;
-                    ret[k][i][j] = pixels[channels * w * i + channels * j + k];
+                    ret[k][i][j] = pixels[(int)Math.min(channels * w * i + channels * j + k, Integer.MAX_VALUE)];
                 }
             }
         }

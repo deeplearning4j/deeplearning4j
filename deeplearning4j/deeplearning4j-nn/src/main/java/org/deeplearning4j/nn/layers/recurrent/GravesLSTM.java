@@ -39,7 +39,10 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
  *
  * @author Alex Black
  * @see LSTM LSTM class, for the version without peephole connections
+ * @deprecated Will be eventually removed. Use {@link LSTM} instead, which has similar prediction accuracy, but supports
+ * CuDNN for faster network training on CUDA (Nvidia) GPUs
  */
+@Deprecated
 @Slf4j
 public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
