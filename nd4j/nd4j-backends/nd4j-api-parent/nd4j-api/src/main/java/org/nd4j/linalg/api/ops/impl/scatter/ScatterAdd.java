@@ -45,9 +45,9 @@ public class ScatterAdd extends DynamicCustomOp {
 
         List<SDVariable> ret = new ArrayList<>(3);
         ret.add(gradOut.get(0));            //Reference array
-        ret.add(f().zerosLike(args()[1]));  //Indices
+        ret.add(f().zerosLike(arg(1)));  //Indices
 
-        SDVariable gather = f().gather(gradOut.get(0), args()[1], 0);       //Updates
+        SDVariable gather = f().gather(gradOut.get(0), arg(1), 0);       //Updates
         ret.add(gather);
 
         return ret;

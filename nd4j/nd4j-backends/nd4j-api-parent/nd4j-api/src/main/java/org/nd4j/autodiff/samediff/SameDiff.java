@@ -6115,7 +6115,12 @@ public class SameDiff {
                     log.trace("Starting execution of CustomOp op");
 
                 DynamicCustomOp customOp = (DynamicCustomOp) differentialFunction;
-                customOp.populateInputsAndOutputsFromSameDiff();
+                try {
+                    customOp.populateInputsAndOutputsFromSameDiff();
+                } catch (Throwable t){
+                    throw new RuntimeException("Error populating inputs and outputs for function \"" + differentialFunction.getOwnName()
+                            + "\" of type " + differentialFunction.getClass().getName(), t);
+                }
                 customOp.assertValidForExecution();
 
                 customOp.updateInputsFromSameDiff();
