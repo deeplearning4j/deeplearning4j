@@ -762,9 +762,12 @@ public class DifferentialFunctionFactory {
         return new HardTanh(sameDiff(), iX, null).outputVariables()[0];
     }
 
-
     public SDVariable hardTanhDerivative(SDVariable iX) {
         return new HardTanhDerivative(sameDiff(), iX, null).outputVariables()[0];
+    }
+
+    public SDVariable hardSigmoid(SDVariable in){
+        return new HardSigmoid(sameDiff(), in, false).outputVariables()[0];
     }
 
 

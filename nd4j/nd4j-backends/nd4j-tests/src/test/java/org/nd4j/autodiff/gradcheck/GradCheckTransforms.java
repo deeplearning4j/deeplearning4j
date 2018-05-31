@@ -472,7 +472,7 @@ public class GradCheckTransforms {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 62; i++) {
+        for (int i = 0; i < 63; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -817,6 +817,10 @@ public class GradCheckTransforms {
                     double value = 42;
                     expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42);
                     t = sd.fill(in, value);
+                    break;
+                case 62:
+                    t = sd.hardSigmoid(in);
+                    expOut = Nd4j.getExecutioner().execAndReturn(new HardSigmoid(ia, ia.dup()));
                     break;
                 default:
                     throw new RuntimeException();

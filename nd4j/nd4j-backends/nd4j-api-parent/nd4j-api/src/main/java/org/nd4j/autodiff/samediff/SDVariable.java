@@ -285,6 +285,56 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.neg(name, this);
     }
 
+    public SDVariable lt(double value){
+        return lt(null, value);
+    }
+
+    public SDVariable lt(String name, double value){
+        return sameDiff.lt(name, this, value);
+    }
+
+    public SDVariable lte(double value){
+        return lte(null, value);
+    }
+
+    public SDVariable lte(String name, double value){
+        return sameDiff.lte(name, this, value);
+    }
+
+    public SDVariable gt(double value){
+        return gt(null, value);
+    }
+
+    public SDVariable gt(String name, double value){
+        return sameDiff.gt(name, this, value);
+    }
+
+    public SDVariable gte(double value){
+        return gte(null, value);
+    }
+
+    public SDVariable gte(String name, double value){
+        return sameDiff.gte(name, this, value);
+    }
+
+
+    public SDVariable eq(double value){
+        return eq(null, value);
+    }
+
+    public SDVariable eq(String name, double value){
+        return sameDiff.eq(name, this, value);
+    }
+
+    public SDVariable neq(double value){
+        return neq(null, value);
+    }
+
+    public SDVariable neq(String name, double value){
+        return sameDiff.neq(name, this, value);
+    }
+
+
     //scalars
 
     /**

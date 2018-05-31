@@ -2728,6 +2728,15 @@ public class SameDiff {
         return hardTanh(null, iX);
     }
 
+    public SDVariable hardSigmoid(SDVariable in){
+        return hardSigmoid(null, in);
+    }
+
+    public SDVariable hardSigmoid(String name, SDVariable in){
+        SDVariable ret = f().hardSigmoid(in);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      * @param iX
      * @return
