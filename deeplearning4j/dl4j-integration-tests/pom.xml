@@ -58,9 +58,7 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin
-                </artifactId>  <!-- Version set by deeplearning4j-parent dependency management -->
-                <version>${maven-compiler-plugin.version}</version>
+                <artifactId>maven-compiler-plugin</artifactId>  <!-- Version set by deeplearning4j-parent dependency management -->
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
