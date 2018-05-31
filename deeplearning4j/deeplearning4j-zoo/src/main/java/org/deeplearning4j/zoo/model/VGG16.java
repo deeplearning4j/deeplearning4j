@@ -53,11 +53,11 @@ public class VGG16 extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return DL4JResources.getURLString("vgg16_dl4j_inference.zip");
+            return DL4JResources.getURLString("models/vgg16_dl4j_inference.zip");
         else if (pretrainedType == PretrainedType.CIFAR10)
-            return DL4JResources.getURLString("vgg16_dl4j_cifar10_inference.v1.zip");
+            return DL4JResources.getURLString("models/vgg16_dl4j_cifar10_inference.v1.zip");
         else if (pretrainedType == PretrainedType.VGGFACE)
-            return DL4JResources.getURLString("vgg16_dl4j_vggface_inference.v1.zip");
+            return DL4JResources.getURLString("models/vgg16_dl4j_vggface_inference.v1.zip");
         else
             return null;
     }
