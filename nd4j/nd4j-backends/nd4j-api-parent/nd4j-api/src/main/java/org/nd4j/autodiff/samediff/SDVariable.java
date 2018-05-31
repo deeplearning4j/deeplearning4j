@@ -7,6 +7,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -858,21 +859,13 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public INDArray eval() {
-
-        SameDiff exec = sameDiff.dup();
-        exec.defineFunction("output", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                return new SDVariable[] { SDVariable.this};
-            }
-        });
-
-        SDVariable output = exec.invokeFunctionOn("output",exec);
-        return output.getSameDiff().execAndEndResult(this.outputIndex);
+        sameDiff.exec();
+        return getArr();
     }
 
-    public int outputIndex = 0;
+  private int outputIndex = 0;
 
+  private DifferentialFunction creator;
 
 
     private void assertShapeEquals(SDVariable variable) {

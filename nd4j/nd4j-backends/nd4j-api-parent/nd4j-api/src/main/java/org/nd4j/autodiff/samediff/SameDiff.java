@@ -4763,8 +4763,8 @@ public class SameDiff {
                             String newName = generateNewVarName(baseName, i);
                             checkGet = var(newName, null, new ZeroInitScheme(ordering));
                         }
-                        checkGet.outputIndex = i;
-
+                        checkGet.setOutputIndex(i);
+                        checkGet.setCreator(function);
                         ret[i] = checkGet;
                     }
 
@@ -4796,7 +4796,10 @@ public class SameDiff {
                     checkGet = var(baseName, null, new ZeroInitScheme(ordering));
                 }
 
+                checkGet.setOutputIndex(0);
+                checkGet.setCreator(function);
                 ret[0] = checkGet;
+
 
                 //Update the internal state: outgoing variables for function
                 if (getOutputsForFunction(function) == null)
@@ -4855,7 +4858,8 @@ public class SameDiff {
                 checkGet = var(baseName + (i > 0 ? ":" + i : ""), shape, new ZeroInitScheme(ordering));
             }
 
-
+            checkGet.setOutputIndex(i);
+            checkGet.setCreator(function);
             ret[i] = checkGet;
         }
 
