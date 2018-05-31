@@ -478,6 +478,19 @@ public class GradCheckUtil {
             }
         }
 
+        //Also check that outgoingArgsReverse values are unique: i.e., shouldn't have the same op appearing multiple times
+        Map<String,String> seen = new HashMap<>();
+        for(Map.Entry<String,String[]> e : outgoingArgsReverse.entrySet()){
+            String[] varNames = e.getValue();
+            for(String s : varNames){
+                if(seen.containsKey(s)){
+                    throw new IllegalStateException("Already saw variable \"" + s + "\" as output for op \"" + seen.get(s)
+                            + "\": expected variables to be present as an output only once");
+                }
+                seen.put(s, e.getKey());
+            }
+        }
+
         //2. Check variableMap
         Map<String, SDVariable> variableMap = getObject("variableMap", sd, SameDiff.class);
         Preconditions.checkState(vars.size() == variableMap.size(), "Variable map size check failed");

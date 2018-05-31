@@ -34,6 +34,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class MulOp  extends BaseDynamicTransformOp {
+    public static final String OP_NAME = "multiply";
 
     public MulOp() {}
 
@@ -48,7 +49,7 @@ public class MulOp  extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "multiply";
+        return OP_NAME;
     }
 
 
