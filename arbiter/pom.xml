@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <!--
   ~ Copyright 2015 Skymind,Inc.
   ~
@@ -14,21 +16,9 @@
   ~    limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>org.deeplearning4j</groupId>
-    <artifactId>arbiter</artifactId>
-    <modules>
-        <module>arbiter-deeplearning4j</module>
-        <module>arbiter-core</module>
-        <module>arbiter-server</module>
-        <module>arbiter-ui</module>
-    </modules>
-    <packaging>pom</packaging>
-    <name>Arbiter</name>
-
-    <url>http://deeplearning4j.org/</url>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>org.deeplearning4j</groupId>
@@ -36,11 +26,29 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <prerequisites>
-        <maven>3.0</maven>
-    </prerequisites>
+    <modelVersion>4.0.0</modelVersion>
 
+    <groupId>org.deeplearning4j</groupId>
+    <artifactId>arbiter</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Arbiter</name>
     <description>Model Evaluation and Testing</description>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <modules>
+        <module>arbiter-deeplearning4j</module>
+        <module>arbiter-core</module>
+        <module>arbiter-server</module>
+        <module>arbiter-ui</module>
+    </modules>
 
     <dependencies>
         <dependency>
@@ -50,23 +58,6 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
-
-    <scm>
-        <connection>scm:git:git@github.com:deeplearning4j/Arbiter.git</connection>
-        <developerConnection>scm:git:git@github.com:deeplearning4j/Arbiter.git</developerConnection>
-        <url>git@github.com:deeplearning4j/Arbiter.git</url>
-        <tag>HEAD</tag>
-    </scm>
-
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-
 
     <build>
         <extensions>
@@ -82,7 +73,6 @@
                 <artifactId>maven-source-plugin</artifactId>
                 <version>${maven-source-plugin.version}</version>
             </plugin>
-
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
@@ -95,7 +85,6 @@
                     </directories>
                 </configuration>
             </plugin>
-
             <!-- Configuration for git-commit-id plugin - used with ND4J version check functionality -->
             <plugin>
                 <groupId>pl.project13.maven</groupId>
@@ -111,14 +100,14 @@
                 </executions>
                 <configuration>
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                    <generateGitPropertiesFilename>${project.basedir}/target/generated-sources/src/main/resources/ai/skymind/${project.groupId}-${project.artifactId}-git.properties
+                    <generateGitPropertiesFilename>
+                        ${project.basedir}/target/generated-sources/src/main/resources/ai/skymind/${project.groupId}-${project.artifactId}-git.properties
                     </generateGitPropertiesFilename>
                     <gitDescribe>
                         <skip>true</skip>
                     </gitDescribe>
                 </configuration>
             </plugin>
-
             <!-- Add generated git.properties files resource directory, for output of git-commit-id plugin -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -134,14 +123,15 @@
                         <configuration>
                             <resources>
                                 <resource>
-                                    <directory>${project.basedir}/target/generated-sources/src/main/resources</directory>
+                                    <directory>
+                                        ${project.basedir}/target/generated-sources/src/main/resources
+                                    </directory>
                                 </resource>
                             </resources>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
 
         <pluginManagement>
@@ -161,8 +151,6 @@
                         </execution>
                     </executions>
                 </plugin>
-
-
                 <plugin>
                     <artifactId>maven-source-plugin</artifactId>
                     <version>${maven-source-plugin.version}</version>
@@ -227,7 +215,6 @@
                         <target>1.7</target>
                     </configuration>
                 </plugin>
-
                 <plugin>
                     <groupId>net.alchim31.maven</groupId>
                     <artifactId>scala-maven-plugin</artifactId>
@@ -271,7 +258,7 @@
                                         <artifactId>lint-maven-plugin</artifactId>
                                         <versionRange>[0.0.11,)</versionRange>
                                         <goals>
-                                          <goal>check</goal>
+                                            <goal>check</goal>
                                         </goals>
                                     </pluginExecutionFilter>
                                     <action>
@@ -282,7 +269,6 @@
                         </lifecycleMappingMetadata>
                     </configuration>
                 </plugin>
-
             </plugins>
         </pluginManagement>
     </build>
@@ -301,6 +287,4 @@
             </plugin>
         </plugins>
     </reporting>
-
-
 </project>
