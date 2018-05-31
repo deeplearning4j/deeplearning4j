@@ -622,14 +622,14 @@ public class GradCheckMisc {
 
             SameDiff sd = SameDiff.create();
 
-            SDVariable in = sd.var("in", new int[]{1, 20});
-            SDVariable indices = sd.var("indices", new int[]{1, 5});
-            SDVariable updates = sd.var("updates", new int[]{1, 5});
+            SDVariable in = sd.var("in", new int[]{20, 10});
+            SDVariable indices = sd.var("indices", new long[]{5});
+            SDVariable updates = sd.var("updates", new int[]{5, 10});
 
 
-            in.setArray(Nd4j.rand(1,20));
+            in.setArray(Nd4j.rand(20,10));
             indices.setArray(Nd4j.create(new double[]{3,4,5, 10, 18}));
-            updates.setArray(Nd4j.rand(1,5).muli(2).subi(1));
+            updates.setArray(Nd4j.rand(5,10).muli(2).subi(1));
 
             SDVariable scatter;
             String name;
@@ -654,11 +654,11 @@ public class GradCheckMisc {
                     throw new RuntimeException();
             }
 
-            SDVariable loss = sd.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
+            SDVariable loss = sd.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
             sd.execAndEndResult();
 
             try {
-                boolean ok = GradCheckUtil.checkGradients(sd);
+                boolean ok = GradCheckUtil.checkGradients(sd, "indices");   //Skip the "indices" array - don't want to grad check this!
                 if(!ok){
                     allFailed.add(name);
                 }

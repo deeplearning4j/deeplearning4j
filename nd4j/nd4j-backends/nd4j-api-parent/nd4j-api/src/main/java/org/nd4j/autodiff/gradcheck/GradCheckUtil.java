@@ -246,6 +246,16 @@ public class GradCheckUtil {
         return checkGradients(sd, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE);
     }
 
+    public static boolean checkGradients(SameDiff sd, String... skipVariables){
+        Set<String> skip = null;
+        if(skipVariables != null){
+            skip = new HashSet<>();
+            Collections.addAll(skip, skipVariables);
+        }
+        return checkGradients(sd, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE,
+                false, DEFAULT_DEBUG_MODE, skip);
+    }
+
     public static boolean checkGradients(SameDiff sd, boolean print, boolean exitOnFirstFailure){
         return checkGradients(sd, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, print, exitOnFirstFailure);
     }
@@ -253,11 +263,11 @@ public class GradCheckUtil {
 
     public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
                                          boolean exitOnFirstFailure) {
-        return checkGradients(sd, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false, DEFAULT_DEBUG_MODE);
+        return checkGradients(sd, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false, DEFAULT_DEBUG_MODE, null);
     }
 
     public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
-                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode){
+                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode, Set<String> skipVariables){
 
         boolean debugBefore = sd.isDebugMode();
         if(debugMode){
@@ -334,6 +344,11 @@ public class GradCheckUtil {
         for(SDVariable s : sd.variables()){
             if (fnOutputs.contains(s.getVarName())) {
                 //This is not an input to the graph
+                continue;
+            }
+
+            if(skipVariables != null && skipVariables.contains(s.getVarName())){
+                log.info("Grad check: skipping variable \"{}\"", s.getVarName());
                 continue;
             }
 
