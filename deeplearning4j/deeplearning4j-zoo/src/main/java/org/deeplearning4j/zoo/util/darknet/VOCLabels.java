@@ -34,6 +34,6 @@ public class VOCLabels extends BaseLabels {
 
     @Override
     protected String resourceMD5() {
-        return "";
+        return "bd70d6c917e90b6b67275b9ebda1b631";
     }
 }
