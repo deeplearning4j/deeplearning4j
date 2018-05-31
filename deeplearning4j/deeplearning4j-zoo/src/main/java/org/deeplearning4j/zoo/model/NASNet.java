@@ -67,9 +67,9 @@ public class NASNet extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return DL4JResources.getURLString("nasnetmobile_dl4j_inference.v1.zip");
+            return DL4JResources.getURLString("models/nasnetmobile_dl4j_inference.v1.zip");
         else if (pretrainedType == PretrainedType.IMAGENETLARGE)
-            return DL4JResources.getURLString("nasnetlarge_dl4j_inference.v1.zip");
+            return DL4JResources.getURLString("models/nasnetlarge_dl4j_inference.v1.zip");
         else
             return null;
     }

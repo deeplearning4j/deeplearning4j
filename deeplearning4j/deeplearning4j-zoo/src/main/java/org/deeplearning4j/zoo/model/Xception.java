@@ -52,7 +52,7 @@ public class Xception extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return DL4JResources.getURLString("xception_dl4j_inference.v2.zip");
+            return DL4JResources.getURLString("models/xception_dl4j_inference.v2.zip");
         else
             return null;
     }

@@ -57,7 +57,7 @@ public class Darknet19 extends ZooModel {
             if (inputShape[1] == 448 && inputShape[2] == 448)
                 return DL4JResources.getURLString("models/darknet19_448_dl4j_inference.v2.zip");
             else
-                return DL4JResources.getURLString("darknet19_dl4j_inference.v2.zip");
+                return DL4JResources.getURLString("models/darknet19_dl4j_inference.v2.zip");
         else
             return null;
     }

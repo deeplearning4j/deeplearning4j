@@ -97,7 +97,7 @@ public class YOLO2 extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return DL4JResources.getURLString("yolo2_dl4j_inference.v3.zip");
+            return DL4JResources.getURLString("models/yolo2_dl4j_inference.v3.zip");
         else
             return null;
     }

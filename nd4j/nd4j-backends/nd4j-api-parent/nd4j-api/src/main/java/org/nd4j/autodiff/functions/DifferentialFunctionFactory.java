@@ -724,6 +724,9 @@ public class DifferentialFunctionFactory {
         return new ClipByNorm(sameDiff(), x, clipValue).outputVariables()[0];
     }
 
+    public SDVariable clipByNorm(SDVariable x, double clipValue, int... dimensions) {
+        return new ClipByNorm(sameDiff(), x, clipValue, dimensions).outputVariables()[0];
+    }
 
     public SDVariable relu(SDVariable iX, double cutoff) {
         return new RectifedLinear(sameDiff(), iX, false, cutoff).outputVariables()[0];
@@ -734,7 +737,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable relu6Derivative(SDVariable iX, SDVariable wrt, double cutoff) {
-        return new Relu6Derivative(sameDiff(), iX, wrt, false, cutoff).outputVariables()[0];
+        return new Relu6Derivative(sameDiff(), iX, wrt, cutoff).outputVariables()[0];
     }
 
     public SDVariable softmax(SDVariable iX) {

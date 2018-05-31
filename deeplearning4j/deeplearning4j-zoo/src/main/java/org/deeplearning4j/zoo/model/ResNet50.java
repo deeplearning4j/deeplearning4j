@@ -49,7 +49,7 @@ public class ResNet50 extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return DL4JResources.getURLString("resnet50_dl4j_inference.v3.zip");
+            return DL4JResources.getURLString("models/resnet50_dl4j_inference.v3.zip");
         else
             return null;
     }

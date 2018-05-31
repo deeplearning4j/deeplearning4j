@@ -765,6 +765,39 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     }
 
     @Test
+    public void testExternalErrorsInvalid(){
+
+        int nIn = 2;
+        int nOut = 4;
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(4).activation(Activation.RELU).build(), "in")
+                .addLayer("1", new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.RELU).build(), "0")
+                .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(nOut).build(), "1")
+                .setOutputs("out")
+                .setInputTypes(InputType.feedForward(nIn))
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray actionInput = Nd4j.randn(3, nIn);
+        INDArray[] input = new INDArray[]{actionInput};
+
+        cg.setInputs(input);
+        cg.feedForward(input, true, false);
+
+        INDArray externalError = Nd4j.rand(3, nIn);
+        try {
+            cg.backpropGradient(externalError);
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage().contains("output layer"));
+        }
+    }
+
+    @Test
     public void testGradientUpdate() {
         DataSetIterator iter = new IrisDataSetIterator(1, 1);
 

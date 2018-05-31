@@ -3503,7 +3503,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public double[] toDoubleVector() {
-        if(!isVector()) {
+        if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
         }
 
@@ -3513,7 +3513,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public float[] toFloatVector() {
-        if(!isVector()) {
+        if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
         }
 
@@ -3539,7 +3539,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int[] toIntVector() {
-        if(!isVector()) {
+        if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
         }
         return dup().data().asInt();
@@ -3547,7 +3547,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public long[] toLongVector() {
-        if(!isVector()) {
+        if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
         }
         return dup().data().asLong();

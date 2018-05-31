@@ -33,7 +33,7 @@ public class GradientChecks {
     public static void afterClass() throws Exception {
         Nd4j.setDataType(initialType);
 
-        GradCheckUtil.logCoverageInformation(true, true);
+        GradCheckUtil.logCoverageInformation(true, true, true);
     }
 
 

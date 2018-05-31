@@ -17,53 +17,50 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
+package org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.List;
 
 /**
- * Addition operation
+ * Backprop op for squared difference operation, i.e. backprop for (x - y) * (x - y)
  *
- * @author Adam Gibson
+ * @author Alex Black
  */
-public class AddOp extends BaseDynamicTransformOp {
-    public static final String OP_NAME = "add";
+public class SquaredDifferenceBpOp extends DynamicCustomOp {
 
-    public AddOp() {
+    public SquaredDifferenceBpOp() {}
+
+    public SquaredDifferenceBpOp(SameDiff sameDiff, SDVariable[] args) {
+        super("squaredsubtract_bp", sameDiff, args);
     }
 
-    public AddOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
-        super(sameDiff, args, inPlace);
-    }
-
-    public AddOp(INDArray[] inputs, INDArray[] outputs) {
-        super(inputs, outputs);
-    }
 
     @Override
     public String opName() {
-        return OP_NAME;
+        return "squaredsubtract_bp";
     }
+
 
     @Override
     public String onnxName() {
-        return "Add";
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "Add";
+        throw new NoOpNameFoundException("No TF opName found for " +  opName());
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return f().addBp(larg(), rarg(), i_v.get(0));
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+        throw new UnsupportedOperationException("Not supported");
     }
-
 
 }
