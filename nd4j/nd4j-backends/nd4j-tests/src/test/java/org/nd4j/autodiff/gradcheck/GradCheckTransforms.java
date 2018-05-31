@@ -431,8 +431,6 @@ public class GradCheckTransforms {
         List<String> allFailed = new ArrayList<>();
         for (int i = 0; i < 62; i++) {
 
-            boolean skipBackward = false;
-
             SameDiff sd = SameDiff.create();
 
             int nOut = 4;
@@ -506,7 +504,6 @@ public class GradCheckTransforms {
                     t = sd.log(in);
                     ia = Nd4j.rand(minibatch, nOut);
                     expOut = Transforms.log(ia, true);
-//                    skipBackward = true;
                     break;
                 case 14:
                     t = sd.neg(in);
@@ -521,7 +518,6 @@ public class GradCheckTransforms {
                     t = sd.acosh(in);
                     ia = Nd4j.rand(minibatch, nOut).addi(1.01); //Only defined for x >= 1
                     expOut = Nd4j.getExecutioner().execAndReturn(new ACosh(ia.dup()));
-//                    skipBackward = true;
                     break;
                 case 17:
                     t = sd.asin(in);
@@ -580,7 +576,6 @@ public class GradCheckTransforms {
                 case 29:
                     t = sd.asinh(in);
                     expOut = Nd4j.getExecutioner().execAndReturn(new ASinh(ia.dup()));
-//                    skipBackward = true;
                     break;
                 case 30:
                     t = sd.exp(in);
@@ -741,13 +736,11 @@ public class GradCheckTransforms {
                     expOut = Nd4j.createUninitialized(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new Erf(ia, expOut));
                     t = sd.erf(in);
-//                    skipBackward = true;
                     break;
                 case 55:
                     expOut = Nd4j.createUninitialized(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new Erfc(ia, expOut));
                     t = sd.erfc(in);
-//                    skipBackward = true;
                     break;
                 case 56:
                     t = sd.expm1(in);
@@ -757,12 +750,10 @@ public class GradCheckTransforms {
                     t = sd.log1p(in);
                     ia = Nd4j.rand(minibatch, nOut);
                     expOut = Transforms.log1p(ia, true);
-//                    skipBackward = true;
                     break;
                 case 58:
                     t = sd.round(in);
                     expOut = Transforms.round(ia, true);
-//                    skipBackward = true;
                     break;
                 case 59:
                     ia = Nd4j.create(new float[]{4, 2});
@@ -770,13 +761,11 @@ public class GradCheckTransforms {
                     t = sd.rsqrt(in);
                     expOut = Nd4j.create(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new RSqrt(ia, expOut));
-//                    skipBackward = true;
                     break;
                 case 60:
                     t = sd.relu6(in, 0);
                     ia = Nd4j.rand(minibatch, nOut);
                     expOut = Transforms.relu6(ia, true);
-//                    skipBackward = true;
                     break;
                 case 61:
                     ia = Nd4j.create(new float[] {2, 2});
@@ -784,7 +773,6 @@ public class GradCheckTransforms {
                     sd.associateArrayWithVariable(ia, in);
                     double value = 42;
                     expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42);
-                    skipBackward = true;
                     t = sd.fill(in, value);
                     break;
                 default:
@@ -827,18 +815,12 @@ public class GradCheckTransforms {
             }
 
             boolean ok;
-            if (skipBackward) {
-                ok = true;
-                msg += " - SKIPPED";
-                allSkipped.add(msg);
-            } else {
-                try {
-                    ok = GradCheckUtil.checkGradients(sd);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    msg += " - EXCEPTION: " + e.getMessage();
-                    ok = false;
-                }
+            try {
+                ok = GradCheckUtil.checkGradients(sd);
+            } catch (Exception e) {
+                e.printStackTrace();
+                msg += " - EXCEPTION: " + e.getMessage();
+                ok = false;
             }
 
 //            assertTrue(msg, ok);
@@ -870,12 +852,8 @@ public class GradCheckTransforms {
         //Test transforms (pairwise)
         Nd4j.getRandom().setSeed(12345);
 
-        List<String> allSkipped = new ArrayList<>();
-
         List<String> allFailed = new ArrayList<>();
         for (int i = 0; i < 23; i++) {
-
-            boolean skipBackward = false;
 
             SameDiff sd = SameDiff.create();
 
@@ -903,11 +881,9 @@ public class GradCheckTransforms {
                     expOut = ia.mul(ib);
                     break;
                 case 3:
-                    // TODO: fix me
-//                    t = in1.div(in2);
-//                    expOut = ia.div(ib);
-//                    break;
-                    continue;
+                    t = in1.div(in2);
+                    expOut = ia.div(ib);
+                    break;
                 case 4:
                     t = in1.rsub(in2);
                     expOut = ia.rsub(ib);
@@ -980,7 +956,6 @@ public class GradCheckTransforms {
                 case 19:
                     t = sd.atan2(in1, in2);
                     expOut = Transforms.atan2(ib, ia);    //Note: y,x order for samediff; x,y order for transforms
-                    skipBackward = true;
                     break;
                 case 20:
                     t = sd.mergeAdd(in1, in2, in2);
@@ -996,7 +971,6 @@ public class GradCheckTransforms {
                     t = in1.truncatedDiv(in2);
                     expOut = Nd4j.create(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new TruncateDivOp(ia, ib, expOut));
-                    skipBackward = true;
                     break;
                 case 22:
                     t = in1.squaredDifference(in2);
@@ -1028,18 +1002,12 @@ public class GradCheckTransforms {
             assertEquals(msg, expOut, out);
 
             boolean ok;
-            if (skipBackward) {
-                ok = true;
-                msg += " - SKIPPED";
-                allSkipped.add(msg);
-            } else {
-                try {
-                    ok = GradCheckUtil.checkGradients(sd);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    msg += " - EXCEPTION";
-                    ok = false;
-                }
+            try {
+                ok = GradCheckUtil.checkGradients(sd);
+            } catch (Exception e) {
+                e.printStackTrace();
+                msg += " - EXCEPTION";
+                ok = false;
             }
 
             if (!ok) {
@@ -1047,10 +1015,6 @@ public class GradCheckTransforms {
             }
         }
 
-        if (allSkipped.size() > 0) {
-            log.info("All backward skipped transforms: " + allSkipped);
-            log.info(allSkipped.size() + " backward passes were skipped.");
-        }
 
         if (allFailed.size() > 0) {
             log.error("All failed transforms: " + allFailed);

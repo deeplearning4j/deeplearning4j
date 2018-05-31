@@ -2848,12 +2848,48 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
-    public SDVariable countZero(SDVariable input) {
-        return countZero(null, input);
+    public SDVariable amax(SDVariable in, int... dimensions){
+        return amax(null, in, dimensions);
     }
 
-    public SDVariable countZero(String name, SDVariable input) {
-        SDVariable res = f().countZero(input);
+    public SDVariable amax(String name, SDVariable in, int... dimensions){
+        SDVariable ret = f().amax(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable amin(SDVariable in, int... dimensions){
+        return amin(null, in, dimensions);
+    }
+
+    public SDVariable amin(String name, SDVariable in, int... dimensions){
+        SDVariable ret = f().amin(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable amean(SDVariable in, int... dimensions){
+        return amean(null, in, dimensions);
+    }
+
+    public SDVariable amean(String name, SDVariable in, int... dimensions){
+        SDVariable ret = f().amean(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable asum(SDVariable in, int... dimensions){
+        return asum(null, in, dimensions);
+    }
+
+    public SDVariable asum(String name, SDVariable in, int... dimensions){
+        SDVariable ret = f().asum(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable countZero(SDVariable input, int... dimensions) {
+        return countZero(null, input, dimensions);
+    }
+
+    public SDVariable countZero(String name, SDVariable input, int... dimensions) {
+        SDVariable res = f().countZero(input, dimensions);
         return updateVariableNameAndReference(res, name);
     }
 
@@ -2866,12 +2902,12 @@ public class SameDiff {
         return updateVariableNameAndReference(res, name);
     }
 
-    public SDVariable countNonZero(SDVariable input) {
-        return countNonZero(null, input);
+    public SDVariable countNonZero(SDVariable input, int... dimensions) {
+        return countNonZero(null, input, dimensions);
     }
 
-    public SDVariable countNonZero(String name, SDVariable input) {
-        SDVariable res = f().countNonZero(input);
+    public SDVariable countNonZero(String name, SDVariable input, int... dimensions) {
+        SDVariable res = f().countNonZero(input, dimensions);
         return updateVariableNameAndReference(res, name);
     }
 
@@ -5271,7 +5307,6 @@ public class SameDiff {
                     }
 
                     if (action instanceof GradientBackwardsMarker) {
-                        log.warn("Action op state is null for " + action.opName());
                         continue;
                     }
 
@@ -6123,8 +6158,8 @@ public class SameDiff {
 
                         if (differentialFunction.outputVariables()[0].getArr() == null) {
                             val var = differentialFunction.outputVariables()[0];
-                            updateArrayForVarName(var.getVarName(), accumulation.z());
-                            updateShapeForVarName(var.getVarName(), accumulation.z().shape());
+                            putArrayForVarName(var.getVarName(), accumulation.z());
+                            putShapeForVarName(var.getVarName(), accumulation.z().shape());
                         }
                     } else if (differentialFunction instanceof BroadcastOp) {
                         BroadcastOp broadcastOp = (BroadcastOp) differentialFunction;
@@ -6868,7 +6903,7 @@ public class SameDiff {
         sb.append("--- Variables ---\n");
         //Work out which function - if any - this arg is an output of...
         Map<String,String> outputOfFn = new HashMap<>();
-        int maxLengthOutputOf = 18;
+        int maxLengthOutputOf = 22;     //Length of "- Output Of Function -"
         for(String s : varMap.keySet()){
             String outputOf = null;
             for(Map.Entry<String,String[]> dfToArgs : outgoingArgsReverse.entrySet()){

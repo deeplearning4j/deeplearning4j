@@ -30,7 +30,7 @@ public class GradCheckUtil {
 
     private static final boolean DEFAULT_PRINT = true;
     private static final boolean DEFAULT_EXIT_FIRST_FAILURE = false;
-    private static final boolean DEFAULT_DEBUG_MODE = true;
+    private static final boolean DEFAULT_DEBUG_MODE = false;
     private static final double DEFAULT_EPS = 1e-5;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-6;

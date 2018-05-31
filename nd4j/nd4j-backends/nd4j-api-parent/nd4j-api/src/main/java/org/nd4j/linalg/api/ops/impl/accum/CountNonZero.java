@@ -36,8 +36,8 @@ import java.util.List;
 @NoArgsConstructor
 public class CountNonZero extends BaseAccumulation {
 
-    public CountNonZero(SameDiff sameDiff, SDVariable input) {
-        super(sameDiff, input);
+    public CountNonZero(SameDiff sameDiff, SDVariable input, int... dimensions) {
+        super(sameDiff, input, dimensions);
     }
 
 

@@ -394,12 +394,12 @@ public class DifferentialFunctionFactory {
         return new Variance(sameDiff(), i_x, dimensions, biasCorrected).outputVariables()[0];
     }
 
-    public SDVariable countNonZero(SDVariable input) {
-        return new CountNonZero(sameDiff(), input).outputVariables()[0];
+    public SDVariable countNonZero(SDVariable input, int... dimensions) {
+        return new CountNonZero(sameDiff(), input, dimensions).outputVariables()[0];
     }
 
-    public SDVariable countZero(SDVariable input) {
-        return new CountZero(sameDiff(), input).outputVariables()[0];
+    public SDVariable countZero(SDVariable input, int... dimensions) {
+        return new CountZero(sameDiff(), input, dimensions).outputVariables()[0];
     }
 
     public SDVariable zeroFraction(SDVariable input) {
@@ -424,6 +424,22 @@ public class DifferentialFunctionFactory {
     public SDVariable min(SDVariable first, SDVariable second) {
         return new org.nd4j.linalg.api.ops.impl.transforms.comparison.Min(sameDiff(), first, second)
                 .outputVariables()[0];
+    }
+
+    public SDVariable amax(SDVariable in, int... dimensions){
+        return new AMax(sameDiff(), in, dimensions).outputVariables()[0];
+    }
+
+    public SDVariable amin(SDVariable in, int... dimensions){
+        return new AMin(sameDiff(), in, dimensions).outputVariables()[0];
+    }
+
+    public SDVariable amean(SDVariable in, int... dimensions){
+        return new AMean(sameDiff(), in, dimensions).outputVariables()[0];
+    }
+
+    public SDVariable asum(SDVariable in, int... dimensions){
+        return new ASum(sameDiff(), in, dimensions).outputVariables()[0];
     }
 
     public SDVariable argmax(SDVariable in, int... dimensions) {
