@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <!--
   ~ /*
   ~  * Copyright 2018 Skymind,Inc.
@@ -16,12 +18,49 @@
   ~  */
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>deeplearning4j</name>
+    <description>Deeplearning4j Monorepo</description>
+    <url>http://deeplearning4j.org/</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <modules>
+        <module>libnd4j</module>
+        <module>nd4j</module>
+        <module>datavec</module>
+        <module>deeplearning4j</module>
+        <module>arbiter</module>
+        <!--<module>nd4s</module>-->
+        <module>gym-java-client</module>
+        <module>rl4j</module>
+        <module>scalnet</module>
+        <module>jumpy</module>
+    </modules>
+
+    <scm>
+        <connection>scm:git://github.com:deeplearning4j/deeplearning4j.git</connection>
+        <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git
+        </developerConnection>
+        <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <repositories>
         <repository>
@@ -54,6 +93,7 @@
             <url>http://scala-tools.org/repo-releases</url>
         </repository>
     </repositories>
+
     <pluginRepositories>
         <pluginRepository>
             <id>sonatype-nexus-snapshots</id>
@@ -80,37 +120,11 @@
             </snapshots>
         </pluginRepository>
         <pluginRepository>
-          <id>scala-tools.org</id>
-          <name>Scala-Tools Maven2 Repository</name>
-          <url>http://scala-tools.org/repo-releases</url>
+            <id>scala-tools.org</id>
+            <name>Scala-Tools Maven2 Repository</name>
+            <url>http://scala-tools.org/repo-releases</url>
         </pluginRepository>
     </pluginRepositories>
-
-    <scm>
-        <connection>scm:git://github.com:deeplearning4j/deeplearning4j.git</connection>
-        <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git</developerConnection>
-        <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
-        <tag>HEAD</tag>
-    </scm>
-
-    <packaging>pom</packaging>
-
-    <name>deeplearning4j</name>
-    <description>Deeplearning4j Monorepo</description>
-    <url>http://deeplearning4j.org/</url>
-
-    <modules>
-        <module>libnd4j</module>
-        <module>nd4j</module>
-        <module>datavec</module>
-        <module>deeplearning4j</module>
-        <module>arbiter</module>
-        <!--<module>nd4s</module>-->
-        <module>gym-java-client</module>
-        <module>rl4j</module>
-        <module>scalnet</module>
-        <module>jumpy</module>
-    </modules>
 
     <distributionManagement>
         <snapshotRepository>
@@ -194,14 +208,16 @@
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>
-        <hadoop.version>2.2.0</hadoop.version>  <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
+        <hadoop.version>2.2.0
+        </hadoop.version>  <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
         <spark.version>1.6.3</spark.version>
         <camel.version>2.18.2</camel.version>
         <zookeeper.version>3.4.6</zookeeper.version>
         <agrona.version>0.5.4</agrona.version>
         <mapdb.version>3.0.5</mapdb.version>
         <sqlite.version>3.15.1</sqlite.version>
-        <playframework.version>2.4.8</playframework.version>    <!-- Play Framework 2.5 dropped Scala 2.10 support - use 2.4 for Spark compatibility w/ Scala 2.10 -->
+        <playframework.version>2.4.8
+        </playframework.version>    <!-- Play Framework 2.5 dropped Scala 2.10 support - use 2.4 for Spark compatibility w/ Scala 2.10 -->
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
         <guava.version>20.0</guava.version>
         <jetbrains-annotations.version>13.0</jetbrains-annotations.version>
@@ -218,7 +234,8 @@
         <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
         <sbt-compiler-maven-plugin.version>1.0.0-beta8</sbt-compiler-maven-plugin.version>
         <maven-git-commit-plugin.version>2.2.2</maven-git-commit-plugin.version>
-        <maven-git-commit-id-plugin.version>${maven-git-commit-plugin.version}</maven-git-commit-id-plugin.version>
+        <maven-git-commit-id-plugin.version>${maven-git-commit-plugin.version}
+        </maven-git-commit-id-plugin.version>
         <maven-build-helper-plugin.version>3.0.0</maven-build-helper-plugin.version>
         <maven-play2-plugin.version>1.0.0-beta5</maven-play2-plugin.version>
         <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
@@ -227,7 +244,8 @@
         <maven-lint-plugin.version>0.0.11</maven-lint-plugin.version>
         <maven-formatter-plugin.version>2.0.0</maven-formatter-plugin.version>
         <maven-lifecycle-mapping-plugin.version>1.0.0</maven-lifecycle-mapping-plugin.version>
-        <maven-lifecycle-mapping.version>${maven-lifecycle-mapping-plugin.version}</maven-lifecycle-mapping.version>
+        <maven-lifecycle-mapping.version>${maven-lifecycle-mapping-plugin.version}
+        </maven-lifecycle-mapping.version>
         <maven-shade-plugin.version>3.0.0</maven-shade-plugin.version>
         <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
         <mockito.version>2.2.6</mockito.version>
@@ -247,7 +265,8 @@
         <scalafmt.version>1.3.0</scalafmt.version>
         <scalacheck.version>1.13.5</scalacheck.version>
 
-        <skipTestResourceEnforcement>false</skipTestResourceEnforcement> <!-- Test resource profile must be enabled unless using -DskipTests etc -->
+        <skipTestResourceEnforcement>false
+        </skipTestResourceEnforcement> <!-- Test resource profile must be enabled unless using -DskipTests etc -->
     </properties>
 
     <profiles>
@@ -299,13 +318,6 @@
                         http://master-jenkins.skymind.io:8088/repository/snapshots
                     </url>
                 </snapshotRepository>
-                <!-- <repository> -->
-                <!--     <id>local-nexus</id> -->
-                <!--     <name>local-nexus</name> -->
-                <!--     <url> -->
-                <!--         http://master-jenkins.skymind.io:8088/service/local/staging/deploy/maven2 -->
-                <!--     </url> -->
-                <!-- </repository> -->
             </distributionManagement>
             <build>
                 <plugins>
@@ -336,7 +348,6 @@
                             <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
                         </configuration>
                     </plugin>
-
                 </plugins>
             </build>
         </profile>
@@ -380,7 +391,9 @@
                 <repository>
                     <id>bintray-deeplearning4j-maven</id>
                     <name>deeplearning4j-maven-releases</name>
-                    <url>https://api.bintray.com/maven/deeplearning4j/maven/${project.artifactId}/;publish=1</url>
+                    <url>
+                        https://api.bintray.com/maven/deeplearning4j/maven/${project.artifactId}/;publish=1
+                    </url>
                 </repository>
             </distributionManagement>
         </profile>
@@ -436,7 +449,6 @@
                 </plugins>
             </build>
         </profile>
-
         <!-- This controls skipping the test backend choice enforcement below -->
         <profile>
             <id>default</id>
@@ -497,7 +509,6 @@
                 </dependency>
             </dependencies>
         </profile>
-
         <profile>
             <id>qa</id>
             <build>
@@ -513,7 +524,8 @@
                                     <goal>copy-dependencies</goal>
                                 </goals>
                                 <configuration>
-                                    <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                                    <outputDirectory>${project.build.directory}/lib
+                                    </outputDirectory>
                                 </configuration>
                             </execution>
                         </executions>
@@ -521,7 +533,6 @@
                 </plugins>
             </build>
         </profile>
-
         <profile>
             <id>release-sign-artifacts</id>
             <activation>
@@ -586,32 +597,31 @@
                 </plugins>
             </build>
         </profile>
-
         <profile>
-          <id>trimSnapshots</id>
-          <build>
-            <plugins>
-              <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.7</version>
-                <executions>
-                  <execution>
-                    <id>remove-old-artifacts</id>
-                    <phase>package</phase>
-                    <goals>
-                      <goal>remove-project-artifact</goal>
-                    </goals>
-                    <configuration>
-                      <removeAll>true</removeAll><!-- remove all versions of built artifacts including all versions.  Install phase will regenerate -->
-                    </configuration>
-                  </execution>
-                </executions>
-              </plugin>
-            </plugins>
-          </build>
+            <id>trimSnapshots</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>1.7</version>
+                        <executions>
+                            <execution>
+                                <id>remove-old-artifacts</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>remove-project-artifact</goal>
+                                </goals>
+                                <configuration>
+                                    <removeAll>true
+                                    </removeAll><!-- remove all versions of built artifacts including all versions.  Install phase will regenerate -->
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
-
         <profile>
             <id>1.9build</id>
             <activation>
@@ -630,5 +640,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>
