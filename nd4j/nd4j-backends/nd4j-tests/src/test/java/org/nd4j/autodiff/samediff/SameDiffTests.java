@@ -251,7 +251,12 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.sum(x, 1); //[1,4].sum(1) == [1,1]
-        assertArrayEquals(new long[]{1, 1}, result.getShape());
+
+        sameDiff.exec();
+
+        INDArray exp = Nd4j.scalar(1+2+3+4);
+        INDArray resultArr = result.getArr();
+        assertEquals(exp, resultArr);
     }
 
 
@@ -1066,7 +1071,7 @@ public class SameDiffTests {
     }
 
 
-    @Test
+    @Test(timeout = 10000L)
     public void testWhileLoop() {
         SameDiff sameDiff = SameDiff.create();
         sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
@@ -1147,7 +1152,7 @@ public class SameDiffTests {
     }
 
 
-    @Test
+    @Test(timeout = 10000L)
     public void testWhileBackwards() {
         SameDiff sameDiff = SameDiff.create();
         sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
