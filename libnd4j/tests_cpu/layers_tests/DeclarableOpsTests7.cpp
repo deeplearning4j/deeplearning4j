@@ -1958,3 +1958,19 @@ TEST_F(DeclarableOpsTests7, cumprod_test1) {
    
 }
  
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_1) {
+    
+    NDArray<float> input('c', {3, 5},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});    
+    NDArray<float> exp(120.f);
+    //************************************//
+
+    nd4j::ops::reduce_sum<float> op;
+    auto result = op.execute({&input}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);    
+    //z->printIndexedBuffer("Result is ");
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete result;
+}

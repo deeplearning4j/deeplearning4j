@@ -923,6 +923,34 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_roll)
         DECLARE_CONFIGURABLE_OP(roll, 1, 1, true, 0, 1);
         #endif
+
+        /**
+         * reduction_sum - tf.reduction_sum operation
+         * 
+         * input params:
+         *    0 - NDArray
+         * 
+         * T_ARG param (optional):
+         * 0 - keep_dims != 0.
+         *
+         * int params (optional):
+         *    0 - axe 1
+         *    1 - axe 2
+         *    ...
+         *    N-1 axe N 
+         *
+         *    All axes are optional and should be between 0 and input->rankOf() - 1
+         *
+         * output:
+         *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
+         */
+        #if NOT_EXCLUDED(OP_reduce_sum)
+        DECLARE_CUSTOM_OP(reduce_sum, 1, 1, false, 0, 0);
+        #endif
+
+        #if NOT_EXCLUDED(OP_reduce_sum_bp)
+        DECLARE_CUSTOM_OP(reduce_sum_bp, 2, 1, false, 0, 0);
+        #endif
     }
 }
 
