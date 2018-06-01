@@ -1020,6 +1020,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             multi.reset();
         }
 
+        for (TrainingListener tl : trainingListeners) {
+            tl.onEpochStart(this);
+        }
+
         boolean destructable = false;
 
         MultiDataSetIterator multiDataSetIterator;
@@ -1038,6 +1042,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if (destructable)
             ((AsyncMultiDataSetIterator) multiDataSetIterator).shutdown();
+
+        for (TrainingListener tl : trainingListeners) {
+            tl.onEpochEnd(this);
+        }
+
         incrementEpochCount();
     }
     /**
@@ -2277,6 +2286,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if(externalEpsilons == null || externalEpsilons.length == 0 && configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE){
             WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "Expected workspace WS_ALL_LAYERS_ACT to be active and open" +
                     " in calcBackpropGradients when workspace mode is not set to NONE");
+        }
+
+        //Validate the network configuration for external errors - no output layers
+        if(externalEpsilons != null && externalEpsilons.length > 0){
+            List<String> outputLayers = configuration.getNetworkOutputs();
+            for(String s : outputLayers ){
+                GraphVertex gv = getVertex(s);
+                if(gv instanceof LayerVertex && ((LayerVertex)gv).getLayer() instanceof IOutputLayer){
+                    throw new IllegalStateException("Cannot perform backprop with external errors in conjunction with an output layer:" +
+                            " output layers cannot use external errors for backprop. Layer name: " + s);
+                }
+            }
+
         }
 
         //Position in array: index of vertex. Value at position: the step (in topological order) that the activation

@@ -51,7 +51,7 @@ public class LeNet extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.MNIST)
-            return DL4JResources.getURLString("lenet_dl4j_mnist_inference.zip");
+            return DL4JResources.getURLString("models/lenet_dl4j_mnist_inference.zip");
         else
             return null;
     }

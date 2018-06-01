@@ -9,6 +9,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -322,8 +323,6 @@ public abstract class DifferentialFunction {
         this.inPlace = inPlace;
         setInstanceId();
         this.extraArgs = extraArgs;
-
-
     }
 
 
@@ -336,7 +335,6 @@ public abstract class DifferentialFunction {
         this.sameDiff = sameDiff;
         setInstanceId();
         this.extraArgs = extraArgs;
-
     }
 
     /**
@@ -371,9 +369,6 @@ public abstract class DifferentialFunction {
     }
 
 
-
-
-
     /**
      * Return the output variables for this differential function.
      * Note that this op *may* dynamically generate variable outputs.
@@ -383,7 +378,22 @@ public abstract class DifferentialFunction {
         return outputVariables(getOwnName() != null ? getOwnName() : opName());
     }
 
+    /**
+     * @return The output variable, or the first output variable, if multiple outputs exist
+     */
+    public SDVariable outputVariable(){
+        return outputVariables()[0];
+    }
 
+
+    public String[] outputVariablesNames(){
+        SDVariable[] outputVars = outputVariables();
+        String[] out = new String[outputVars.length];
+        for( int i=0; i<out.length; i++ ){
+            out[i] = outputVars[i].getVarName();
+        }
+        return out;
+    }
 
 
     /**
@@ -430,6 +440,27 @@ public abstract class DifferentialFunction {
      */
     public  SDVariable[] args() {
         return sameDiff.getInputVariablesForFunction(this);
+    }
+
+    /**
+     * Return the specified argument for this function
+     * @param num Number of the argument. Must be in range 0 to numArgs - 1 inclusive
+     * @return Specified argument
+     */
+    public SDVariable arg(int num){
+        SDVariable[] args = args();
+        Preconditions.checkNotNull(args, "Arguments are null for function %s", this.getOwnName());
+        Preconditions.checkArgument(num >= 0 && num < args.length, "Invalid index: must be 0 to numArgs (0 <= idx < %s)", args.length);
+        return args[num];
+    }
+
+    public String[] argNames(){
+        SDVariable[] args = args();
+        String[] out = new String[args.length];
+        for( int i=0; i<args.length; i++ ){
+            out[i] = args[i].getVarName();
+        }
+        return out;
     }
 
 
@@ -508,16 +539,19 @@ public abstract class DifferentialFunction {
         }
 
         val outputVars = args();
+        boolean copied = false;
         for(int i = 0; i < vals.size(); i++) {
             SDVariable var = outputVars[i];
             SDVariable grad = var.getGradient();
             if(grad != null) {
-                SDVariable gradVar =  f().add(grad, vals.get(i));
-                try {
-                    vals.set(i, gradVar);
-                } catch (UnsupportedOperationException e){
-                    throw new UnsupportedOperationException("Use a mutable list when returning values from "+this.getClass().getSimpleName()+".doDiff (e.g. Arrays.asList instead of Collections.singletonList)", e);
+                if(!copied){
+                    //Don't mutate the original - this could mess with the original op's state!
+                    vals = new ArrayList<>(vals);
+                    copied = true;
                 }
+
+                SDVariable gradVar =  f().add(grad, vals.get(i));
+                vals.set(i, gradVar);
                 sameDiff.setGradientForVariableName(var.getVarName(), gradVar);
             } else {
                 SDVariable gradVar = vals.get(i);

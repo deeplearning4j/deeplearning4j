@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimizer.listener;
 
+import lombok.Data;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
@@ -21,12 +22,15 @@ import org.deeplearning4j.optimize.listeners.PerformanceListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.listeners.TimeIterationListener;
 import org.deeplearning4j.optimize.listeners.checkpoint.CheckpointListener;
+import org.deeplearning4j.optimize.solvers.BaseOptimizer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Triple;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -35,6 +39,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -182,4 +187,118 @@ public class TestListeners extends BaseDL4JTest {
         net.fit(iter);
     }
 
+
+    @Test
+    public void testListenerCalls(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        TestListener tl = new TestListener();
+        net.setListeners(tl);
+
+        DataSetIterator irisIter = new IrisDataSetIterator(50, 150);
+
+        net.fit(irisIter, 2);
+
+        List<Triple<Call,Integer,Integer>> exp = new ArrayList<>();
+        exp.add(new Triple<>(Call.EPOCH_START, 0, 0));
+        exp.add(new Triple<>(Call.ON_FWD, 0, 0));
+        exp.add(new Triple<>(Call.ON_BWD, 0, 0));
+        exp.add(new Triple<>(Call.ON_GRAD, 0, 0));
+        exp.add(new Triple<>(Call.ITER_DONE, 0, 0));
+        exp.add(new Triple<>(Call.ON_FWD, 1, 0));
+        exp.add(new Triple<>(Call.ON_BWD, 1, 0));
+        exp.add(new Triple<>(Call.ON_GRAD, 1, 0));
+        exp.add(new Triple<>(Call.ITER_DONE, 1, 0));
+        exp.add(new Triple<>(Call.ON_FWD, 2, 0));
+        exp.add(new Triple<>(Call.ON_BWD, 2, 0));
+        exp.add(new Triple<>(Call.ON_GRAD, 2, 0));
+        exp.add(new Triple<>(Call.ITER_DONE, 2, 0));
+        exp.add(new Triple<>(Call.EPOCH_END, 3, 0));    //Post updating iter count, pre update epoch count
+
+        exp.add(new Triple<>(Call.EPOCH_START, 3, 1));
+        exp.add(new Triple<>(Call.ON_FWD, 3, 1));
+        exp.add(new Triple<>(Call.ON_BWD, 3, 1));
+        exp.add(new Triple<>(Call.ON_GRAD, 3, 1));
+        exp.add(new Triple<>(Call.ITER_DONE, 3, 1));
+        exp.add(new Triple<>(Call.ON_FWD, 4, 1));
+        exp.add(new Triple<>(Call.ON_BWD, 4, 1));
+        exp.add(new Triple<>(Call.ON_GRAD, 4, 1));
+        exp.add(new Triple<>(Call.ITER_DONE, 4, 1));
+        exp.add(new Triple<>(Call.ON_FWD, 5, 1));
+        exp.add(new Triple<>(Call.ON_BWD, 5, 1));
+        exp.add(new Triple<>(Call.ON_GRAD, 5, 1));
+        exp.add(new Triple<>(Call.ITER_DONE, 5, 1));
+        exp.add(new Triple<>(Call.EPOCH_END, 6, 1));
+
+
+        assertEquals(exp, tl.getCalls());
+
+
+        tl = new TestListener();
+
+        ComputationGraph cg = net.toComputationGraph();
+        cg.setListeners(tl);
+
+        cg.fit(irisIter, 2);
+
+        assertEquals(exp, tl.getCalls());
+    }
+
+    private static enum Call {
+        ITER_DONE,
+        EPOCH_START,
+        EPOCH_END,
+        ON_FWD,
+        ON_GRAD,
+        ON_BWD
+    }
+
+    @Data
+    private static class TestListener implements TrainingListener {
+
+        private List<Triple<Call,Integer,Integer>> calls = new ArrayList<>();
+
+
+        @Override
+        public void iterationDone(Model model, int iteration, int epoch) {
+            calls.add(new Triple<>(Call.ITER_DONE, iteration, epoch));
+        }
+
+        @Override
+        public void onEpochStart(Model model) {
+            calls.add(new Triple<>(Call.EPOCH_START, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+        }
+
+        @Override
+        public void onEpochEnd(Model model) {
+            calls.add(new Triple<>(Call.EPOCH_END, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+        }
+
+        @Override
+        public void onForwardPass(Model model, List<INDArray> activations) {
+            calls.add(new Triple<>(Call.ON_FWD, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+        }
+
+        @Override
+        public void onForwardPass(Model model, Map<String, INDArray> activations) {
+            calls.add(new Triple<>(Call.ON_FWD, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+        }
+
+        @Override
+        public void onGradientCalculation(Model model) {
+            calls.add(new Triple<>(Call.ON_GRAD, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+        }
+
+        @Override
+        public void onBackwardPass(Model model) {
+            calls.add(new Triple<>(Call.ON_BWD, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+        }
+    }
 }

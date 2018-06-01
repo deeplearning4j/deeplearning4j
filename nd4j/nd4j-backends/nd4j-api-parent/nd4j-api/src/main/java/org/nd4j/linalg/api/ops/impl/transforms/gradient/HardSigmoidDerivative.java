@@ -86,6 +86,6 @@ public class HardSigmoidDerivative extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        throw new UnsupportedOperationException("Not supported");
     }
 }

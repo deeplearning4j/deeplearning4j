@@ -17,71 +17,50 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.scalar;
+package org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseScalarOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Scalar max operation.
- * Returns the max of an element
- * in the ndarray of the specified number.
+ * Backprop op for squared difference operation, i.e. backprop for (x - y) * (x - y)
  *
- * @author Adam Gibson
+ * @author Alex Black
  */
-public class ScalarMax extends BaseScalarOp {
-    public ScalarMax() {}
+public class SquaredDifferenceBpOp extends DynamicCustomOp {
 
-    public ScalarMax(INDArray x, INDArray y, INDArray z, long n, Number num) {
-        super(x, y, z, n, num);
+    public SquaredDifferenceBpOp() {}
+
+    public SquaredDifferenceBpOp(SameDiff sameDiff, SDVariable[] args) {
+        super("squaredsubtract_bp", sameDiff, args);
     }
 
-    public ScalarMax(INDArray x, Number num) {
-        super(x, num);
-    }
-
-
-    public ScalarMax(SameDiff sd, SDVariable in, Number number){
-        super(sd, in, number);
-    }
-
-    @Override
-    public int opNum() {
-        return 6;
-    }
 
     @Override
     public String opName() {
-        return "max_scalar";
+        return "squaredsubtract_bp";
     }
+
 
     @Override
     public String onnxName() {
-        return "Max";
+        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "RealMax";
-    }
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (scalarValue != null)
-            this.extraArgs = new Object[]{scalarValue};
-
+        throw new NoOpNameFoundException("No TF opName found for " +  opName());
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable mask = arg().gt(scalarValue.doubleValue());
-        return Collections.singletonList(i_v1.get(0).mul(mask));
+        throw new UnsupportedOperationException("Not supported");
     }
+
 }

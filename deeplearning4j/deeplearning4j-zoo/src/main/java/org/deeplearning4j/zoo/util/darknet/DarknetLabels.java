@@ -6,6 +6,8 @@ import org.deeplearning4j.zoo.util.BaseLabels;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Helper class that returns label descriptions for Darknet models trained with ImageNet.
@@ -15,10 +17,20 @@ import java.net.URL;
 public class DarknetLabels extends BaseLabels {
 
     private boolean shortNames;
+    private int numClasses;
 
-    /** Calls {@code this(true)}. */
+    /** Calls {@code this(true)}.
+     * Defaults to 1000 clasess
+     */
     public DarknetLabels() throws IOException {
         this(true);
+    }
+
+    /**
+     * @param numClasses Number of classes (usually 1000 or 9000, depending on the model)
+     */
+    public DarknetLabels(int numClasses) throws IOException {
+        this(true, numClasses);
     }
 
     @Override
@@ -38,8 +50,22 @@ public class DarknetLabels extends BaseLabels {
      * @param shortnames if true, uses "imagenet.shortnames.list", otherwise "imagenet.labels.list".
      */
     public DarknetLabels(boolean shortnames) throws IOException {
+        this(shortnames, 1000);
+    }
+
+    /**
+     * @param shortnames if true, uses "imagenet.shortnames.list", otherwise "imagenet.labels.list".
+     * @param numClasses Number of classes (usually 1000 or 9000, depending on the model)
+     * @throws IOException
+     */
+    public DarknetLabels(boolean shortnames, int numClasses) throws IOException {
         this.shortNames = shortnames;
-        this.labels = getLabels(shortnames ? "imagenet.shortnames.list" : "imagenet.labels.list");
+        this.numClasses = numClasses;
+        List<String> labels = getLabels(shortnames ? "imagenet.shortnames.list" : "imagenet.labels.list");
+        this.labels = new ArrayList<>();
+        for( int i=0; i<numClasses; i++ ){
+            this.labels.add(labels.get(i));
+        }
     }
 
     @Override

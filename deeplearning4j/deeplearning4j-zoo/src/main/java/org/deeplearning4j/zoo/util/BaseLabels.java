@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.util;
 
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.common.resources.ResourceType;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.resources.Downloader;
@@ -19,7 +20,7 @@ import java.util.Scanner;
  */
 public abstract class BaseLabels implements Labels {
 
-    protected ArrayList<String> labels = null;
+    protected ArrayList<String> labels;
 
     /** Override {@link #getLabels()} when using this constructor. */
     protected BaseLabels() throws IOException {
@@ -59,11 +60,16 @@ public abstract class BaseLabels implements Labels {
 
     @Override
     public String getLabel(int n) {
+        Preconditions.checkArgument(n >= 0 && n < labels.size(), "Invalid index: %s. Must be in range" +
+                "0 <= n < %s", n, labels.size());
         return labels.get(n);
     }
 
     @Override
     public List<List<ClassPrediction>> decodePredictions(INDArray predictions, int n) {
+        Preconditions.checkState(predictions.size(1) == labels.size(), "Invalid input array:" +
+                " expected array with size(1) equal to numLabels (%s), got array with shape %s", labels.size(), predictions.shape());
+
         // FIXME: int cast
         int rows = (int) predictions.size(0);
         int cols = (int) predictions.size(1);

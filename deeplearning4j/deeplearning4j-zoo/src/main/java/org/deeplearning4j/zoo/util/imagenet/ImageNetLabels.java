@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.util.imagenet;
 
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.zoo.util.BaseLabels;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -21,7 +22,7 @@ import java.util.HashMap;
 public class ImageNetLabels extends BaseLabels {
 
     private static final String jsonResource = "imagenet_class_index.json";
-    private ArrayList<String> predictionLabels = null;
+    private ArrayList<String> predictionLabels;
 
     public ImageNetLabels() throws IOException {
         this.predictionLabels = getLabels();
@@ -76,6 +77,9 @@ public class ImageNetLabels extends BaseLabels {
      * @return
      */
     public String decodePredictions(INDArray predictions) {
+        Preconditions.checkState(predictions.size(1) == predictionLabels.size(), "Invalid input array:" +
+                " expected array with size(1) equal to numLabels (%s), got array with shape %s", predictionLabels.size(), predictions.shape());
+
         String predictionDescription = "";
         int[] top5 = new int[5];
         float[] top5Prob = new float[5];
