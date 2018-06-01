@@ -951,6 +951,35 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_reduce_sum_bp)
         DECLARE_CUSTOM_OP(reduce_sum_bp, 2, 1, false, 0, 0);
         #endif
+
+        /**
+         * reduction_prod - tf.reduction_prod operation
+         * 
+         * input params:
+         *    0 - NDArray
+         * 
+         * T_ARG param (optional):
+         * 0 - keep_dims != 0.
+         *
+         * int params (optional):
+         *    0 - axe 1
+         *    1 - axe 2
+         *    ...
+         *    N-1 axe N 
+         *
+         *    All axes are optional and should be between 0 and input->rankOf() - 1
+         *
+         * output:
+         *    0 - NDArray with reduces shape accordingly to axes (the scalar in default case).
+         */
+        #if NOT_EXCLUDED(OP_reduce_prod)
+        DECLARE_CUSTOM_OP(reduce_prod, 1, 1, false, 0, 0);
+        #endif
+
+        #if NOT_EXCLUDED(OP_reduce_prod_bp)
+        DECLARE_CUSTOM_OP(reduce_prod_bp, 2, 1, false, 0, 0);
+        #endif
+
     }
 }
 
