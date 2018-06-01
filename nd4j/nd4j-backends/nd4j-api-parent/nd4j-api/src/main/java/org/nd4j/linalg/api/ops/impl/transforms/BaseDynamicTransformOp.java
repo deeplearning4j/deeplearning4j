@@ -50,7 +50,7 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
             return Collections.singletonList(firstArgShape);
         }
         //Handle broadcast shape: [1,4]+[3,1] = [3,4]
-        Shape.assertBroadcastable(firstArgShape, secondArgShape);
+        Shape.assertBroadcastable(firstArgShape, secondArgShape, this.getClass());
         val outShape = Shape.broadcastOutputShape(firstArgShape, secondArgShape);
 
         return Collections.singletonList(outShape);

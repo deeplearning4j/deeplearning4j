@@ -20,9 +20,11 @@
 package org.nd4j.linalg.api.ops.impl.scalar;
 
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -43,6 +45,9 @@ public class ScalarMin extends BaseScalarOp {
         super(x, num);
     }
 
+    public ScalarMin(SameDiff sd, SDVariable in, Number number){
+        super(sd, in, number);
+    }
 
 
     @Override
@@ -80,6 +85,7 @@ public class ScalarMin extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        throw new UnsupportedOperationException();
+        SDVariable mask = arg().lt(scalarValue.doubleValue());
+        return Collections.singletonList(i_v1.get(0).mul(mask));
     }
 }

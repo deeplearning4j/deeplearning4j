@@ -8,13 +8,11 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SquaredDifferenceOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.FloorModOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.TruncateDivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
@@ -23,12 +21,12 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -83,15 +81,9 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("batch to space failed on forward");
-        }
+        assertEquals(expOut, out);
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -122,15 +114,9 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("depth to space failed on forward");
-        }
+        assertEquals(expOut, out);
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -161,15 +147,9 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("depth to space failed on forward");
-        }
+        assertEquals(expOut, out);
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -204,15 +184,9 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("batch to space failed on forward");
-        }
+        assertEquals(expOut, out);
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -247,22 +221,9 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("space to batch failed on forward");
-        }
+        assertEquals(expOut, out);
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void testRank1(){
-        INDArray arr = Nd4j.create(3L);
-
-        assertEquals(3, arr.length());
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -343,9 +304,7 @@ public class GradCheckTransforms {
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.error("forward failed");
-        }
+        assertEquals(expOut, out);
 
         boolean passed = GradCheckUtil.checkGradients(sd);
         assertTrue(passed);
@@ -362,61 +321,72 @@ public class GradCheckTransforms {
         Nd4j.getExecutioner().exec(diag);
         SDVariable t = sd.diag(in);
 
-        SDVariable loss = sd.max("loss", t, 0, 1);
+        SDVariable loss = sd.standardDeviation("loss", t,false,0, 1);
 
         sd.associateArrayWithVariable(ia, in);
         sd.exec();
         INDArray out = t.getArr();
 
-        if (!expOut.equals(out)) {
-            log.info("forward failed");
-        }
+        assertEquals(expOut, out);
 
         boolean passed = GradCheckUtil.checkGradients(sd);
         assertTrue(passed);
     }
 
     @Test
-    public void testConditions() {
-
+    public void testDiagPart() {
         SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new float[]{4, 2});
-        SDVariable in = sd.var("in", new int[]{1, 2});
-        sd.associateArrayWithVariable(ia, in);
+        INDArray input = Nd4j.linspace(1,16,16).reshape(4,4);
+        INDArray expOut = Nd4j.create(new float[]{1, 6, 11, 16});
 
+        SDVariable in = sd.var("in", input);
+        SDVariable t = sd.diagPart(in);
 
-        INDArray expFinite = Nd4j.create(new float[]{1, 1});
-        SDVariable finite = sd.isFinite(in);
-
-        INDArray expInfinite = Nd4j.create(new float[]{0, 0});
-        SDVariable infinite = sd.isInfinite(in);
-
-        INDArray expNaN =  Nd4j.create(new float[]{0, 0});
-        SDVariable isnan = sd.isNaN(in);
+        SDVariable loss = sd.standardDeviation("loss", t, true, 0, 1);
 
         sd.exec();
-        assert(expFinite.equals(finite.getArr()));
-        assert(expInfinite.equals(infinite.getArr()));
-        assert(expNaN.equals(isnan.getArr()));
+        INDArray out = t.getArr();
 
+        assertEquals(expOut, out);
+
+        boolean passed = GradCheckUtil.checkGradients(sd);
+        assertTrue(passed);
     }
 
     @Test
-    public void invertPermutation() {
-        SameDiff sd = SameDiff.create();
+    public void testEye(){
 
-        INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1});
-        INDArray expOut = Nd4j.create(new float[] {2, 4, 3, 0, 1});
+        int[] rows = new int[]{3,3,3,3};
+        int[] cols = new int[]{3,2,2,2};
+        int[][] batch = new int[][]{null, null, {4}, {3,3}};
+        INDArray[] expOut = new INDArray[4];
 
-        SDVariable input = sd.var("in", new int[] {1, 5});
-        sd.associateArrayWithVariable(ia, input);
+        expOut[0] = Nd4j.eye(3);
+        expOut[1] = Nd4j.create(new double[][]{{1,0,0},{0,1,0}});
+        expOut[2] = Nd4j.create(4,3,2);
+        for( int i=0; i<4; i++ ){
+            expOut[2].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
+        }
+        expOut[3] = Nd4j.create(3,3,3,2);
+        for( int i=0; i<3; i++ ){
+            for( int j=0; j<3; j++ ) {
+                expOut[3].get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
+            }
+        }
 
-        SDVariable out = sd.invertPermutation(input);
 
-        sd.exec();
+        for(int i=0; i<3; i++ ) {
+            SameDiff sd = SameDiff.create();
 
-        assert expOut.equals(out.getArr());
+            SDVariable eye = sd.eye(rows[i], cols[i], batch[i]);
+
+            INDArray out = sd.execAndEndResult();
+            assertEquals(expOut[i], out);
+
+            assertTrue(GradCheckUtil.checkGradients(sd));
+        }
+
     }
 
     @Test
@@ -429,9 +399,7 @@ public class GradCheckTransforms {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 62; i++) {
-
-            boolean skipBackward = false;
+        for (int i = 0; i < 68; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -506,7 +474,6 @@ public class GradCheckTransforms {
                     t = sd.log(in);
                     ia = Nd4j.rand(minibatch, nOut);
                     expOut = Transforms.log(ia, true);
-//                    skipBackward = true;
                     break;
                 case 14:
                     t = sd.neg(in);
@@ -521,7 +488,6 @@ public class GradCheckTransforms {
                     t = sd.acosh(in);
                     ia = Nd4j.rand(minibatch, nOut).addi(1.01); //Only defined for x >= 1
                     expOut = Nd4j.getExecutioner().execAndReturn(new ACosh(ia.dup()));
-//                    skipBackward = true;
                     break;
                 case 17:
                     t = sd.asin(in);
@@ -580,7 +546,6 @@ public class GradCheckTransforms {
                 case 29:
                     t = sd.asinh(in);
                     expOut = Nd4j.getExecutioner().execAndReturn(new ASinh(ia.dup()));
-//                    skipBackward = true;
                     break;
                 case 30:
                     t = sd.exp(in);
@@ -741,13 +706,11 @@ public class GradCheckTransforms {
                     expOut = Nd4j.createUninitialized(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new Erf(ia, expOut));
                     t = sd.erf(in);
-//                    skipBackward = true;
                     break;
                 case 55:
                     expOut = Nd4j.createUninitialized(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new Erfc(ia, expOut));
                     t = sd.erfc(in);
-//                    skipBackward = true;
                     break;
                 case 56:
                     t = sd.expm1(in);
@@ -757,12 +720,10 @@ public class GradCheckTransforms {
                     t = sd.log1p(in);
                     ia = Nd4j.rand(minibatch, nOut);
                     expOut = Transforms.log1p(ia, true);
-//                    skipBackward = true;
                     break;
                 case 58:
                     t = sd.round(in);
                     expOut = Transforms.round(ia, true);
-//                    skipBackward = true;
                     break;
                 case 59:
                     ia = Nd4j.create(new float[]{4, 2});
@@ -770,13 +731,11 @@ public class GradCheckTransforms {
                     t = sd.rsqrt(in);
                     expOut = Nd4j.create(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new RSqrt(ia, expOut));
-//                    skipBackward = true;
                     break;
                 case 60:
                     t = sd.relu6(in, 0);
                     ia = Nd4j.rand(minibatch, nOut);
                     expOut = Transforms.relu6(ia, true);
-//                    skipBackward = true;
                     break;
                 case 61:
                     ia = Nd4j.create(new float[] {2, 2});
@@ -784,8 +743,31 @@ public class GradCheckTransforms {
                     sd.associateArrayWithVariable(ia, in);
                     double value = 42;
                     expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42);
-                    skipBackward = true;
                     t = sd.fill(in, value);
+                    break;
+                case 62:
+                    t = sd.hardSigmoid(in);
+                    expOut = Nd4j.getExecutioner().execAndReturn(new HardSigmoid(ia, ia.dup()));
+                    break;
+                case 63:
+                    t = sd.scalarMax(in, 0.5);
+                    expOut = Transforms.max(ia, 0.5, true);
+                    break;
+                case 64:
+                    t = sd.scalarMin(in, 0.5);
+                    expOut = Transforms.min(ia, 0.5, true);
+                    break;
+                case 65:
+                    t = sd.assign(in, 0.5);
+                    expOut = ia.dup().assign(0.5);
+                    break;
+                case 66:
+                    t = sd.scalarFloorMod(in, 0.5);
+                    expOut = Nd4j.getExecutioner().execAndReturn(new ScalarFMod(ia.dup(), 0.5));
+                    break;
+                case 67:
+                    t = sd.reciprocal(in);
+                    expOut = ia.rdiv(1.0);
                     break;
                 default:
                     throw new RuntimeException();
@@ -827,18 +809,12 @@ public class GradCheckTransforms {
             }
 
             boolean ok;
-            if (skipBackward) {
-                ok = true;
-                msg += " - SKIPPED";
-                allSkipped.add(msg);
-            } else {
-                try {
-                    ok = GradCheckUtil.checkGradients(sd);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    msg += " - EXCEPTION: " + e.getMessage();
-                    ok = false;
-                }
+            try {
+                ok = GradCheckUtil.checkGradients(sd);
+            } catch (Exception e) {
+                e.printStackTrace();
+                msg += " - EXCEPTION: " + e.getMessage();
+                ok = false;
             }
 
 //            assertTrue(msg, ok);
@@ -870,12 +846,8 @@ public class GradCheckTransforms {
         //Test transforms (pairwise)
         Nd4j.getRandom().setSeed(12345);
 
-        List<String> allSkipped = new ArrayList<>();
-
         List<String> allFailed = new ArrayList<>();
         for (int i = 0; i < 23; i++) {
-
-            boolean skipBackward = false;
 
             SameDiff sd = SameDiff.create();
 
@@ -903,11 +875,9 @@ public class GradCheckTransforms {
                     expOut = ia.mul(ib);
                     break;
                 case 3:
-                    // TODO: fix me
-//                    t = in1.div(in2);
-//                    expOut = ia.div(ib);
-//                    break;
-                    continue;
+                    t = in1.div(in2);
+                    expOut = ia.div(ib);
+                    break;
                 case 4:
                     t = in1.rsub(in2);
                     expOut = ia.rsub(ib);
@@ -980,7 +950,6 @@ public class GradCheckTransforms {
                 case 19:
                     t = sd.atan2(in1, in2);
                     expOut = Transforms.atan2(ib, ia);    //Note: y,x order for samediff; x,y order for transforms
-                    skipBackward = true;
                     break;
                 case 20:
                     t = sd.mergeAdd(in1, in2, in2);
@@ -996,7 +965,6 @@ public class GradCheckTransforms {
                     t = in1.truncatedDiv(in2);
                     expOut = Nd4j.create(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new TruncateDivOp(ia, ib, expOut));
-                    skipBackward = true;
                     break;
                 case 22:
                     t = in1.squaredDifference(in2);
@@ -1028,18 +996,12 @@ public class GradCheckTransforms {
             assertEquals(msg, expOut, out);
 
             boolean ok;
-            if (skipBackward) {
-                ok = true;
-                msg += " - SKIPPED";
-                allSkipped.add(msg);
-            } else {
-                try {
-                    ok = GradCheckUtil.checkGradients(sd);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    msg += " - EXCEPTION";
-                    ok = false;
-                }
+            try {
+                ok = GradCheckUtil.checkGradients(sd);
+            } catch (Exception e) {
+                e.printStackTrace();
+                msg += " - EXCEPTION";
+                ok = false;
             }
 
             if (!ok) {
@@ -1047,10 +1009,6 @@ public class GradCheckTransforms {
             }
         }
 
-        if (allSkipped.size() > 0) {
-            log.info("All backward skipped transforms: " + allSkipped);
-            log.info(allSkipped.size() + " backward passes were skipped.");
-        }
 
         if (allFailed.size() > 0) {
             log.error("All failed transforms: " + allFailed);
