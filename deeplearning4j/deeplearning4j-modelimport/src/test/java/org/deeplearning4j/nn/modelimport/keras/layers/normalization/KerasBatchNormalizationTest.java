@@ -80,7 +80,7 @@ public class KerasBatchNormalizationTest {
     @Test
     public void testSetWeights() throws Exception {
         Map<String, INDArray> weights = weightsWithoutGamma();
-        KerasBatchNormalization batchNormalization = new KerasBatchNormalization(2);
+        KerasBatchNormalization batchNormalization = new KerasBatchNormalization(keras2);
 
         batchNormalization.setScale(false);
         batchNormalization.setWeights(weights);
