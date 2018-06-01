@@ -8,20 +8,19 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-public class Reverse extends DynamicCustomOp {
+/**
+ * This is compatibility op for ReverseV2
+ */
+public class ReverseV2 extends DynamicCustomOp {
+    protected final boolean isLegacy = true;
 
-    public Reverse(SameDiff sameDiff, SDVariable i_v, int... dimensions) {
-        super(null, sameDiff, new SDVariable[]{i_v}, false);
-        this.dimensions = dimensions;
-        addIArgument(dimensions);
-    }
-
-    public Reverse() {
+    public ReverseV2() {
+        iArguments.add(isLegacy ? 1L : 0L);
     }
 
     @Override
     public String opName() {
-        return "reverse";
+        return "reverse_v2";
     }
 
     @Override
@@ -31,13 +30,12 @@ public class Reverse extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "Reverse";
+        return "ReverseV2";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable ret = f().reverse(f1.get(0), dimensions);
-        return Arrays.asList(ret);
+        throw new UnsupportedOperationException("BP mode isn't supported for this op");
     }
 
 }
