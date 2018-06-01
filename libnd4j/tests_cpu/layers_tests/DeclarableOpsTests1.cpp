@@ -3912,6 +3912,22 @@ TEST_F(DeclarableOpsTests1, Reverse_9 ) {
     delete results;
 }
 
+TEST_F(DeclarableOpsTests1, Reverse_10 ) {
+    NDArray<double> x('c', {4, 3}, {1.5375735, 0.1592365, 0.09966054, 0.677872, 1.144433, -1.0355669, 0.48456487, -0.67863184, 0.85020787, 0.13950661, 0.20998026, -1.1660044});
+    NDArray<double> i('c', {1}, {-1.0});
+    NDArray<double> e('c', {4, 3}, {0.09966054, 0.1592365, 1.5375735,  -1.0355669, 1.144433, 0.677872,   0.85020787, -0.67863184, 0.48456487,  -1.1660044, 0.20998026, 0.13950661});
+
+    nd4j::ops::reverse<double> op;
+    auto result = op.execute({&x, &i}, {}, {});
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
 ////////////////////////////////////////////////////////////////////
 // CONSTANT mode 2D
 TEST_F(DeclarableOpsTests1, Pad_1) {
