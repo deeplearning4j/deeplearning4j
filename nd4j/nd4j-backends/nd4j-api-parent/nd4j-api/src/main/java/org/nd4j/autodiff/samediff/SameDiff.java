@@ -4900,17 +4900,16 @@ public class SameDiff {
                 val descriptor = customOp.getDescriptor();
                 //can't guess number of outputs, variable
                 int num_outputs = 0;
-                if (descriptor == null || descriptor.getNumOutputs() <= 0) {
-                    if (function instanceof DynamicCustomOp){
-                        DynamicCustomOp dynamicCustomOp  = (DynamicCustomOp) function;
-                            num_outputs = dynamicCustomOp.getNumOutputs();
-                    }
-                }
-                else{
+                if (descriptor != null ) {
                     num_outputs = descriptor.getNumOutputs();
                 }
                 if (num_outputs <= 0){
-                    throw new ND4JIllegalStateException("No output variables found!");
+                    num_outputs = function.getNumOutputs();
+                    if(num_outputs <= 0){
+                        throw new ND4JIllegalStateException("Could not determine number of output variables for op "
+                                + function.getOwnName() + " - " + function.getClass().getSimpleName() + ". Ops can override" +
+                                " getNumOutputs() to specify number of outputs if required");
+                    }
                 }
                 char ordering = 'c';
                 SDVariable[] args = function.args();

@@ -74,4 +74,9 @@ public class ConcatBp extends DynamicCustomOp {
     public Op.Type opType() {
         return Op.Type.CUSTOM;
     }
+
+    @Override
+    public int getNumOutputs(){
+        return args().length - 1;
+    }
 }
