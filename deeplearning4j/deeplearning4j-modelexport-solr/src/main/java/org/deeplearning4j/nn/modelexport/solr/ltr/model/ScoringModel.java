@@ -106,24 +106,28 @@ public class ScoringModel extends AdapterModel {
     return outputScore(model, modelFeatureValuesNormalized);
   }
 
+  public static float outputScore(Model model, float[] modelFeatureValuesNormalized) {
+    final INDArray input = Nd4j.create(modelFeatureValuesNormalized);
+    final INDArray output = output(model, input);
+    return output.getFloat(0);
+  }
+
   /**
    * Currently supports {@link MultiLayerNetwork} and {@link ComputationGraph} models.
    * Pull requests to support additional <code>org.deeplearning4j</code> models are welcome.
    */
-  public static float outputScore(Model model, float[] modelFeatureValuesNormalized) {
-
-    final INDArray input = Nd4j.create(modelFeatureValuesNormalized);
+  public static INDArray output(Model model, INDArray input) {
 
     if (model instanceof MultiLayerNetwork) {
       final MultiLayerNetwork multiLayerNetwork = (MultiLayerNetwork)model;
       final INDArray output = multiLayerNetwork.output(input);
-      return output.getFloat(0);
+      return output;
     }
 
     if (model instanceof ComputationGraph) {
       final ComputationGraph computationGraph = (ComputationGraph)model;
       final INDArray output = computationGraph.outputSingle(input);
-      return output.getFloat(0);
+      return output;
     }
 
     final String message;
