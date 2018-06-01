@@ -378,6 +378,13 @@ public abstract class DifferentialFunction {
         return outputVariables(getOwnName() != null ? getOwnName() : opName());
     }
 
+    /**
+     * @return The output variable, or the first output variable, if multiple outputs exist
+     */
+    public SDVariable outputVariable(){
+        return outputVariables()[0];
+    }
+
 
     public String[] outputVariablesNames(){
         SDVariable[] outputVars = outputVariables();

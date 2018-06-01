@@ -10,7 +10,9 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.FloorModOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.TruncateDivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
@@ -397,7 +399,7 @@ public class GradCheckTransforms {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 63; i++) {
+        for (int i = 0; i < 67; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -746,6 +748,22 @@ public class GradCheckTransforms {
                 case 62:
                     t = sd.hardSigmoid(in);
                     expOut = Nd4j.getExecutioner().execAndReturn(new HardSigmoid(ia, ia.dup()));
+                    break;
+                case 63:
+                    t = sd.scalarMax(in, 0.5);
+                    expOut = Transforms.max(ia, 0.5, true);
+                    break;
+                case 64:
+                    t = sd.scalarMin(in, 0.5);
+                    expOut = Transforms.min(ia, 0.5, true);
+                    break;
+                case 65:
+                    t = sd.assign(in, 0.5);
+                    expOut = ia.dup().assign(0.5);
+                    break;
+                case 66:
+                    t = sd.scalarFloorMod(in, 0.5);
+                    expOut = Nd4j.getExecutioner().execAndReturn(new ScalarFMod(ia.dup(), 0.5));
                     break;
                 default:
                     throw new RuntimeException();

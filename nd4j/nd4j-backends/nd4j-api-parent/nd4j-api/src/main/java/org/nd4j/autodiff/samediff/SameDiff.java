@@ -2900,6 +2900,34 @@ public class SameDiff {
     }
 
 
+    public SDVariable scalarMax(SDVariable in, Number value){
+        return scalarMax(null, in, value);
+    }
+
+    public SDVariable scalarMax(String name, SDVariable in, Number value){
+        SDVariable ret = f().scalarMax(in, value);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable scalarMin(SDVariable in, Number value){
+        return scalarMin(null, in, value);
+    }
+
+    public SDVariable scalarMin(String name, SDVariable in, Number value){
+        SDVariable ret = f().scalarMin(in, value);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable scalarFloorMod(SDVariable in, Number value){
+        return scalarFloorMod(null, in, value);
+    }
+
+    public SDVariable scalarFloorMod(String name, SDVariable in, Number value){
+        SDVariable ret = f().scalarFloorMod(in, value);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
     /**
      * @param iX
      * @param dimensions
@@ -3131,6 +3159,15 @@ public class SameDiff {
 
     public SDVariable assign(String name, SDVariable x, SDVariable y) {
         SDVariable ret = f().assign(x, y);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable assign(SDVariable in, Number value){
+        return assign(null, in, value);
+    }
+
+    public SDVariable assign(String name, SDVariable in, Number value){
+        SDVariable ret = f().assign(in, value);
         return updateVariableNameAndReference(ret, name);
     }
 

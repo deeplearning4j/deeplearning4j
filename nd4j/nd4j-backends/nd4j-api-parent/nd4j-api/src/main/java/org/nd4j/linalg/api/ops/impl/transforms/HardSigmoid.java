@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidDerivative;
 
 import java.util.Collections;
 import java.util.List;
@@ -82,9 +83,8 @@ public class HardSigmoid extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         SDVariable in = arg();
-
-        SDVariable mask = in.gt(-1).mul(in.lt(1));
-        return Collections.singletonList(f1.get(0).mul(mask));
+        SDVariable dOutdIn = new HardSigmoidDerivative(sameDiff, in, false).outputVariables()[0];
+        return Collections.singletonList(dOutdIn.mul(f1.get(0)));
     }
 
 
