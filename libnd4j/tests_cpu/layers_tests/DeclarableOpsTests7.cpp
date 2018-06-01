@@ -1958,3 +1958,140 @@ TEST_F(DeclarableOpsTests7, cumprod_test1) {
    
 }
  
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceMean_test1) {
+
+    NDArray<float> x('c', {2,3,4});
+    NDArray<float> exp('c', {4}, {11., 12., 13., 14.});
+    NDArrayFactory<float>::linspace(1, x);
+    
+        
+    nd4j::ops::reduce_mean<float> op;
+    auto result = op.execute({&x}, {}, {0,1});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceMean_test2) {
+
+    NDArray<float> x('c', {2,3,4});
+    NDArray<float> exp('c', {1,1,4}, {11., 12., 13., 14.});
+    NDArrayFactory<float>::linspace(1, x);
+    
+        
+    nd4j::ops::reduce_mean<float> op;
+    auto result = op.execute({&x}, {1.}, {0,1});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceMean_test3) {
+
+    NDArray<float> x('c', {2,3,4});
+    NDArray<float> exp('c', {3}, {8.5, 12.5, 16.5});
+    NDArrayFactory<float>::linspace(1, x);
+    
+        
+    nd4j::ops::reduce_mean<float> op;
+    auto result = op.execute({&x}, {}, {0,2});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceMean_test4) {
+
+    NDArray<float> x('c', {2,3,4});
+    NDArray<float> exp('c', {1,3,1}, {8.5, 12.5, 16.5});
+    NDArrayFactory<float>::linspace(1, x);
+    
+        
+    nd4j::ops::reduce_mean<float> op;
+    auto result = op.execute({&x}, {1.}, {0,2});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceMean_test5) {
+
+    NDArray<float> x('c', {2,3,4});
+    NDArray<float> exp(12.5);
+    NDArrayFactory<float>::linspace(1, x);
+    
+        
+    nd4j::ops::reduce_mean<float> op;
+    auto result = op.execute({&x}, {}, {});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceMean_test6) {
+
+    NDArray<float> x('c', {2,3,4});
+    NDArray<float> exp(12.5);
+    NDArrayFactory<float>::linspace(1, x);
+           
+    nd4j::ops::reduce_mean<float> op;
+    auto result = op.execute({&x}, {}, {0,1,2});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceMean_test7) {
+
+    NDArray<float> x('c', {2,3,4});
+    NDArray<float> exp('c', {1,1,1}, {12.5});
+    NDArrayFactory<float>::linspace(1, x);
+           
+    nd4j::ops::reduce_mean<float> op;
+    auto result = op.execute({&x}, {1.}, {0,1,2});
+    auto output = result->at(0);    
+        
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
