@@ -44,6 +44,7 @@ public class Gather extends DynamicCustomOp {
         addIArgument(axis);
         this.axis = axis;
     }
+
     @Override
     public String onnxName() {
         return "Gather";

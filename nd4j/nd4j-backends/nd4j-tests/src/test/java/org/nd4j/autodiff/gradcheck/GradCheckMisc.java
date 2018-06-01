@@ -702,7 +702,58 @@ public class GradCheckMisc {
                 assertTrue(msg, GradCheckUtil.checkGradients(sd, "indices"));
             }
         }
+    }
 
 
+    @Test
+    public void testMerge(){
+        Nd4j.getRandom().setSeed(12345);
+
+        List<String> failed = new ArrayList<>();
+
+        for( int t=0; t<3; t++) {
+            for (int numArrays : new int[]{3, 1}) {
+                for (int[] shape : new int[][]{{3, 4}, {3, 4, 5}}) {
+
+                    SameDiff sd = SameDiff.create();
+                    SDVariable[] arr = new SDVariable[numArrays];
+
+                    for (int i = 0; i < numArrays; i++) {
+                        arr[i] = sd.var(String.valueOf(i), Nd4j.rand(shape));
+                    }
+
+                    SDVariable merge;
+                    switch (t){
+                        case 0:
+                            merge = sd.mergeAdd(arr);
+                            break;
+                        case 1:
+                            merge = sd.mergeMax(arr);
+                            break;
+                        case 2:
+                            merge = sd.mergeAvg(arr);
+                            break;
+                        default:
+                            throw new RuntimeException();
+                    }
+
+                    String msg = merge.opName() + " - numArrays=" + numArrays + ", shape=" + Arrays.toString(shape);
+
+                    SDVariable loss = sd.standardDeviation("loss", merge, true);
+
+                    try{
+                        boolean ok = GradCheckUtil.checkGradients(sd);
+                        if(!ok){
+                            failed.add(msg);
+                        }
+                    } catch (Exception e){
+                        e.printStackTrace();
+                        failed.add(msg + " - EXCEPTION: " + e.getMessage());
+                    }
+                }
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 }

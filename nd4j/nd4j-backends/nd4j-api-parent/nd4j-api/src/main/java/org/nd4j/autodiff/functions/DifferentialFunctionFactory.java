@@ -1194,16 +1194,13 @@ public class DifferentialFunctionFactory {
     public SDVariable rdivi(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
         return new RDivOp(sameDiff(), new SDVariable[]{differentialFunction, i_v}, true).outputVariable();
-
     }
 
 
     public SDVariable rsubi(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
         return new RSubOp(sameDiff(), differentialFunction, i_v).outputVariable();
-
     }
-
 
     public SDVariable add(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
@@ -1211,10 +1208,22 @@ public class DifferentialFunctionFactory {
 
     }
 
-    public SDVariable mergeadd(SDVariable[] differentialFunctions) {
+    public SDVariable mergeAdd(SDVariable... differentialFunctions) {
         for (SDVariable df : differentialFunctions)
             validateDifferentialFunctionsameDiff(df);
         return new MergeAddOp(sameDiff(), differentialFunctions, false).outputVariable();
+    }
+
+    public SDVariable mergeMax(SDVariable... differentialFunctions) {
+        for (SDVariable df : differentialFunctions)
+            validateDifferentialFunctionsameDiff(df);
+        return new MergeMax(sameDiff(), differentialFunctions).outputVariable();
+    }
+
+    public SDVariable mergeAvg(SDVariable... differentialFunctions) {
+        for (SDVariable df : differentialFunctions)
+            validateDifferentialFunctionsameDiff(df);
+        return new MergeAvg(sameDiff(), differentialFunctions).outputVariable();
     }
 
     public SDVariable diag(SDVariable sdVariable) {

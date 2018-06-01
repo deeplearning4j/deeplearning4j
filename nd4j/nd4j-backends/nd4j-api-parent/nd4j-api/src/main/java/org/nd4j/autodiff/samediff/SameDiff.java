@@ -2485,9 +2485,26 @@ public class SameDiff {
         return mergeAdd(null, iX);
     }
 
+    public SDVariable mergeAdd(String name, SDVariable... inputs) {
+        SDVariable ret = f().mergeAdd(inputs);
+        return updateVariableNameAndReference(ret, name);
+    }
 
-    public SDVariable mergeAdd(String name, SDVariable[] iX) {
-        SDVariable ret = f().mergeadd(iX);
+    public SDVariable mergeMax(SDVariable... iX) {
+        return mergeMax(null, iX);
+    }
+
+    public SDVariable mergeMax(String name, SDVariable... inputs) {
+        SDVariable ret = f().mergeMax(inputs);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable mergeAvg(SDVariable... inputs) {
+        return mergeAvg(null, inputs);
+    }
+
+    public SDVariable mergeAvg(String name, SDVariable... inputs) {
+        SDVariable ret = f().mergeAvg(inputs);
         return updateVariableNameAndReference(ret, name);
     }
 
