@@ -49,6 +49,47 @@ DECLARE_SHAPE_FN(reduce_mean) {
 
 
 
+//////////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
+
+    NDArray<T> *input  = INPUT_VARIABLE(0);
+    NDArray<T> *gradO  = INPUT_VARIABLE(1);
+
+    NDArray<T> *gradI  = OUTPUT_VARIABLE(0);
+
+    const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+    
+    std::vector<int> dimensions = *block.getIArguments();    
+
+    REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+
+    for(const auto& item : dimensions)
+        REQUIRE_TRUE(item > -input->rankOf() || item < input->rankOf(), 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);    
+    
+    *gradI = *input * (static_cast<T>(gradO->lengthOf()) / input->lengthOf());
+
+    return Status::OK();
+}
+
+
+
+DECLARE_SHAPE_FN(reduce_mean_bp) {    
+
+    const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+
+    std::vector<int> dimensions = *block.getIArguments();
+
+    REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
+    
+    for(const auto& item : dimensions)
+        REQUIRE_TRUE(item > -inputShape->at(0)[0] || item < inputShape->at(0)[0], 0, "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
+    
+    Nd4jLong* gradIshapeInfo(nullptr);
+    COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
+        
+    return SHAPELIST(gradIshapeInfo);
+}
+
 
 }
 }

@@ -940,6 +940,7 @@ namespace nd4j {
         *    reduced tensor with calculated means
         */
         DECLARE_CUSTOM_OP(reduce_mean, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_mean_bp, 2, 1, false, 0, 0)
     }
 }
 
