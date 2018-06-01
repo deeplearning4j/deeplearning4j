@@ -41,6 +41,7 @@ public class FaceNetNN4Small2 extends ZooModel {
     @Builder.Default CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
     @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private int embeddingSize = 128;
 
     private FaceNetNN4Small2() {}
 
@@ -60,7 +61,6 @@ public class FaceNetNN4Small2 extends ZooModel {
     }
 
     public ComputationGraphConfiguration conf() {
-        int embeddingSize = 128;
 
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
                         .activation(Activation.IDENTITY)
@@ -321,14 +321,12 @@ public class FaceNetNN4Small2 extends ZooModel {
                         new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG, new int[] {3, 3},
                                         new int[] {3, 3}).build(),
                         "inception-5b")
-                        .addLayer("bottleneck",
-                                        new DenseLayer.Builder().nIn(2944).nOut(embeddingSize)
-                                                        .activation(Activation.IDENTITY).build(),
-                                        "avgpool")
+                        .addLayer("bottleneck",new DenseLayer.Builder().nOut(embeddingSize)
+                                        .activation(Activation.IDENTITY).build(),"avgpool")
                         .addVertex("embeddings", new L2NormalizeVertex(new int[] {}, 1e-6), "bottleneck")
                         .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
                                         .lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
-                                        .activation(Activation.SOFTMAX).nIn(128).nOut(numClasses).lambda(1e-4).alpha(0.9)
+                                        .activation(Activation.SOFTMAX).nOut(numClasses).lambda(1e-4).alpha(0.9)
                                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build(),
                                         "embeddings")
                         .setOutputs("lossLayer").backprop(true).pretrain(false)
