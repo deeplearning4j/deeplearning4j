@@ -449,7 +449,7 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4}, new long[]{2, 2});
         SDVariable x = sameDiff.var("x", arr);
-        SDVariable result = sameDiff.gather(x, 1, new int[]{1, 0});
+        SDVariable result = sameDiff.gather(x, new int[]{1, 0}, 1);
         INDArray expected = Nd4j.create(new float[]{2, 1, 4, 3}, new long[]{2, 2});
         assertEquals(expected, result.eval());
 
