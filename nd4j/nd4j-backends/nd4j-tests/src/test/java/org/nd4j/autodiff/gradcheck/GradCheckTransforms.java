@@ -399,7 +399,7 @@ public class GradCheckTransforms {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 67; i++) {
+        for (int i = 0; i < 68; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -764,6 +764,10 @@ public class GradCheckTransforms {
                 case 66:
                     t = sd.scalarFloorMod(in, 0.5);
                     expOut = Nd4j.getExecutioner().execAndReturn(new ScalarFMod(ia.dup(), 0.5));
+                    break;
+                case 67:
+                    t = sd.reciprocal(in);
+                    expOut = ia.rdiv(1.0);
                     break;
                 default:
                     throw new RuntimeException();

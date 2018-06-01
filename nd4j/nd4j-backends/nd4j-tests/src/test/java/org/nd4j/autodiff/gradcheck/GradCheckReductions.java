@@ -31,32 +31,10 @@ import static org.junit.Assert.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
-public class GradCheckReductions extends BaseNd4jTest {
-
-    private DataBuffer.Type initialType;
+public class GradCheckReductions extends BaseGradCheck {
 
     public GradCheckReductions(Nd4jBackend backend) {
         super(backend);
-    }
-
-
-    @Override
-    public char ordering() {
-        return 'c';
-    }
-
-    @Before
-    public void before() throws Exception {
-        Nd4j.create(1);
-        initialType = Nd4j.dataType();
-
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
-        Nd4j.getRandom().setSeed(123);
-    }
-
-    @After
-    public void after() throws Exception {
-        Nd4j.setDataType(initialType);
     }
 
     @Test
@@ -99,7 +77,7 @@ public class GradCheckReductions extends BaseNd4jTest {
         //Test reductions: final and only function
         Nd4j.getRandom().setSeed(12345);
 
-        List<String> allFailed = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
 
         for (int i = 0; i < 16; i++) {
 
@@ -188,17 +166,10 @@ public class GradCheckReductions extends BaseNd4jTest {
             sd.associateArrayWithVariable(inputArr, input);
 
 
-            try {
-                boolean ok = GradCheckUtil.checkGradients(sd);
-                if(!ok){
-                    allFailed.add(msg);
-                }
-            } catch (Throwable t){
-                allFailed.add(msg + " - Exception: " + t.getMessage());
-            }
+            check(sd, failed, msg);
         }
 
-        assertEquals(allFailed.toString(), 0, allFailed.size());
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test
@@ -206,7 +177,7 @@ public class GradCheckReductions extends BaseNd4jTest {
         //Test reductions: final, but *not* the only function
         Nd4j.getRandom().setSeed(12345);
 
-        List<String> allFailed = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
 
         for (int dim : new int[]{0, Integer.MAX_VALUE}) {    //These two cases are equivalent here
 
@@ -304,25 +275,11 @@ public class GradCheckReductions extends BaseNd4jTest {
                 sd.associateArrayWithVariable(inputArr, input);
                 sd.associateArrayWithVariable(labelArr, label);
 
-                try {
-                    INDArray out = sd.execAndEndResult();
-                    assertNotNull(out);
-                    assertArrayEquals(new int[]{1, 1}, out.shape());
-
-//                    System.out.println(sd.asFlatPrint());
-
-                    boolean ok = GradCheckUtil.checkGradients(sd);
-                    if (!ok) {
-                        allFailed.add(msg);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    allFailed.add(msg + " - EXCEPTION");
-                }
+                check(sd, failed, msg);
             }
         }
 
-        assertEquals("Failed: " + allFailed, 0, allFailed.size());
+        assertEquals("Failed: " + failed, 0, failed.size());
     }
 
     @Test
@@ -334,7 +291,7 @@ public class GradCheckReductions extends BaseNd4jTest {
         int d1 = 4;
         int d2 = 5;
 
-        List<String> allFailed = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
         for (int reduceDim : new int[]{0, 1, 2}) {
             for (int i = 0; i < 18; i++) {
 
@@ -467,19 +424,11 @@ public class GradCheckReductions extends BaseNd4jTest {
                 sd.associateArrayWithVariable(inputArr, in);
                 sd.associateArrayWithVariable(labelArr, label);
 
-                try {
-                    boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, maxRelError, minAbsError, true, false);
-                    if (!ok) {
-                        allFailed.add(msg);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    allFailed.add(msg + " - EXCEPTION");
-                }
+                check(sd, failed, msg);
             }
         }
 
-        assertEquals("Failed: " + allFailed, 0, allFailed.size());
+        assertEquals("Failed: " + failed, 0, failed.size());
     }
 
 
@@ -492,7 +441,7 @@ public class GradCheckReductions extends BaseNd4jTest {
         int d1 = 4;
         int d2 = 5;
 
-        List<String> allFailed = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
         for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
             for (int i = 0; i < 6; i++) {
 
@@ -552,21 +501,11 @@ public class GradCheckReductions extends BaseNd4jTest {
                 sd.execAndEndResult();
 
 
-                boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
-                assertTrue(msg, ok);
-
-//                try {
-//                    boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
-//                    if (!ok) {
-//                        allFailed.add(msg);
-//                    }
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                    allFailed.add(msg + " - EXCEPTION: " + e.getMessage());
-//                }
+                //boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
+                check(sd, failed, msg);
             }
         }
 
-        assertEquals("Failed: " + allFailed, 0, allFailed.size());
+        assertEquals("Failed: " + failed, 0, failed.size());
     }
 }
