@@ -1020,6 +1020,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             multi.reset();
         }
 
+        for (TrainingListener tl : trainingListeners) {
+            tl.onEpochStart(this);
+        }
+
         boolean destructable = false;
 
         MultiDataSetIterator multiDataSetIterator;
@@ -1038,6 +1042,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if (destructable)
             ((AsyncMultiDataSetIterator) multiDataSetIterator).shutdown();
+
+        for (TrainingListener tl : trainingListeners) {
+            tl.onEpochEnd(this);
+        }
+
         incrementEpochCount();
     }
     /**
