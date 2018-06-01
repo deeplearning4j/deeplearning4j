@@ -3918,7 +3918,7 @@ TEST_F(DeclarableOpsTests1, Reverse_10 ) {
     NDArray<double> e('c', {4, 3}, {0.09966054, 0.1592365, 1.5375735,  -1.0355669, 1.144433, 0.677872,   0.85020787, -0.67863184, 0.48456487,  -1.1660044, 0.20998026, 0.13950661});
 
     nd4j::ops::reverse<double> op;
-    auto result = op.execute({&x, &i}, {}, {});
+    auto result = op.execute({&x, &i}, {}, {1});
 
     auto z = result->at(0);
 
