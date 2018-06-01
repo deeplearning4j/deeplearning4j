@@ -222,7 +222,7 @@ public class GradCheckMisc {
             int[] in2Shape = {3, 4, 5};
             in2Shape[dim_sz1] = 1;
 
-            for (int i = 2; i < 3; i++) {
+            for (int i = 0; i < 8; i++) {
 
                 SameDiff sd = SameDiff.create();
 
@@ -316,7 +316,7 @@ public class GradCheckMisc {
                 otherShape[dim_sz1s[2]] = 1;
             }
 
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 8; i++) {
 
                 SameDiff sd = SameDiff.create();
 
@@ -419,7 +419,7 @@ public class GradCheckMisc {
 
         for (val p : testCases) {
 
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 8; i++) {
 
                 SameDiff sd = SameDiff.create();
 

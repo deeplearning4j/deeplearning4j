@@ -8,13 +8,9 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SquaredDifferenceOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.TruncateDivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
@@ -29,7 +25,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -86,11 +81,7 @@ public class GradCheckTransforms {
 
         assertEquals(expOut, out);
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -123,11 +114,7 @@ public class GradCheckTransforms {
 
         assertEquals(expOut, out);
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -160,11 +147,7 @@ public class GradCheckTransforms {
 
         assertEquals(expOut, out);
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -201,11 +184,7 @@ public class GradCheckTransforms {
 
         assertEquals(expOut, out);
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -242,18 +221,7 @@ public class GradCheckTransforms {
 
         assertEquals(expOut, out);
 
-        try {
-            GradCheckUtil.checkGradients(sd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
-    public void testRank1(){
-        INDArray arr = Nd4j.create(3L);
-
-        assertEquals(3, arr.length());
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -417,49 +385,6 @@ public class GradCheckTransforms {
             assertTrue(GradCheckUtil.checkGradients(sd));
         }
 
-    }
-
-    @Test
-    public void testConditions() {
-
-        SameDiff sd = SameDiff.create();
-
-        INDArray ia = Nd4j.create(new float[]{4, 2});
-        SDVariable in = sd.var("in", new int[]{1, 2});
-        sd.associateArrayWithVariable(ia, in);
-
-
-        INDArray expFinite = Nd4j.create(new float[]{1, 1});
-        SDVariable finite = sd.isFinite(in);
-
-        INDArray expInfinite = Nd4j.create(new float[]{0, 0});
-        SDVariable infinite = sd.isInfinite(in);
-
-        INDArray expNaN =  Nd4j.create(new float[]{0, 0});
-        SDVariable isnan = sd.isNaN(in);
-
-        sd.exec();
-        assert(expFinite.equals(finite.getArr()));
-        assert(expInfinite.equals(infinite.getArr()));
-        assert(expNaN.equals(isnan.getArr()));
-
-    }
-
-    @Test
-    public void invertPermutation() {
-        SameDiff sd = SameDiff.create();
-
-        INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1});
-        INDArray expOut = Nd4j.create(new float[] {2, 4, 3, 0, 1});
-
-        SDVariable input = sd.var("in", new int[] {1, 5});
-        sd.associateArrayWithVariable(ia, input);
-
-        SDVariable out = sd.invertPermutation(input);
-
-        sd.exec();
-
-        assert expOut.equals(out.getArr());
     }
 
     @Test

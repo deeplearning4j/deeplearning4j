@@ -72,9 +72,10 @@ public class GradCheckReductions extends BaseNd4jTest {
 
         sd.exec();
 
-        assert nonZero.getArr().getDouble(0) == 2;
-        assert zero.getArr().getDouble(0) == 2;
+        assertEquals(2, nonZero.getArr().getInt(0));
+        assertEquals(2, zero.getArr().getInt(0));
 
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -89,8 +90,8 @@ public class GradCheckReductions extends BaseNd4jTest {
 
         sd.exec();
 
-        assert zeroFraction.getArr().getDouble(0) == 0.5;
-
+        assertEquals(0.5, zeroFraction.getArr().getDouble(0), 1e-6);
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test

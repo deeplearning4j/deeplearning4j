@@ -3840,6 +3840,51 @@ public class SameDiffTests {
         assertArrayEquals(expShape, shapes.get(0));
     }
 
+
+    @Test
+    public void testConditions() {
+
+        SameDiff sd = SameDiff.create();
+
+        INDArray ia = Nd4j.create(new float[]{4, 2});
+        SDVariable in = sd.var("in", new int[]{1, 2});
+        sd.associateArrayWithVariable(ia, in);
+
+
+        INDArray expFinite = Nd4j.create(new float[]{1, 1});
+        SDVariable finite = sd.isFinite(in);
+
+        INDArray expInfinite = Nd4j.create(new float[]{0, 0});
+        SDVariable infinite = sd.isInfinite(in);
+
+        INDArray expNaN =  Nd4j.create(new float[]{0, 0});
+        SDVariable isnan = sd.isNaN(in);
+
+        sd.exec();
+        assertEquals(expFinite, finite.getArr());
+        assertEquals(expInfinite, infinite.getArr());
+        assertEquals(expNaN, isnan.getArr());
+
+    }
+
+    @Test
+    public void invertPermutation() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1});
+        INDArray expOut = Nd4j.create(new float[] {2, 4, 3, 0, 1});
+
+        SDVariable input = sd.var("in", new int[] {1, 5});
+        sd.associateArrayWithVariable(ia, input);
+
+        SDVariable out = sd.invertPermutation(input);
+
+        sd.exec();
+
+        assertEquals(expOut, out.getArr());
+    }
+
+
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){
         try {
             Field f = fromClass.getDeclaredField(fieldName);
