@@ -29,7 +29,8 @@ namespace nd4j {
 
 #if __GNUC__ <= 4
                             if (!canKeep)
-                                throw std::runtime_error("Can't swap bytes with GCC 4.x");
+                                for (Nd4jLong e = 0; e < length; e++)
+                                    buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             else
                                 for (Nd4jLong e = 0; e < length; e++)
                                     buffer[e] = static_cast<T>(tmp[e]);
@@ -49,7 +50,8 @@ namespace nd4j {
 
 #if __GNUC__ <= 4
                             if (!canKeep)
-                                throw std::runtime_error("Can't swap bytes with GCC 4.x");
+                                for (Nd4jLong e = 0; e < length; e++)
+                                    buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             else
                                 for (Nd4jLong e = 0; e < length; e++)
                                     buffer[e] = static_cast<T>(tmp[e]);
@@ -70,7 +72,8 @@ namespace nd4j {
 
 #if __GNUC__ <= 4
                             if (!canKeep)
-                                throw std::runtime_error("Can't swap bytes with GCC 4.x");
+                                for (Nd4jLong e = 0; e < length; e++)
+                                    buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             else
                                 for (Nd4jLong e = 0; e < length; e++)
                                     buffer[e] = static_cast<T>(tmp[e]);
