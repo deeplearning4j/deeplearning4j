@@ -377,7 +377,7 @@
 
         <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
         <profile>
-            <id>test-nd4j-cuda-9.0</id>
+            <id>test-nd4j-cuda-9.2</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -385,7 +385,7 @@
 
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-9.0</artifactId>
+                    <artifactId>nd4j-cuda-9.2</artifactId>
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>

@@ -26,7 +26,7 @@
 
   <artifactId>deeplearning4j-aws_2.11</artifactId>
   <name>DeepLearning4j-AWS</name>
-  <version>1.0.0_spark_1-SNAPSHOT</version>
+  <version>1.0.0_spark_2-SNAPSHOT</version>
 
   <build>
     <plugins>
@@ -44,8 +44,8 @@
          the properties will be resolved to their defaults (and not the values present during the build). Whereas when
          defined here (the version is spark 1 vs. 2 specific) we can have different version properties simultaneously
          (in different pom files) instead of a single global property -->
-    <spark.version>1.6.3</spark.version>
-    <spark.major.version>1</spark.major.version>
+    <spark.version>2.1.0</spark.version>
+    <spark.major.version>2</spark.major.version>
   </properties>
 
   <dependencies>
@@ -86,7 +86,7 @@
       <id>test-nd4j-native</id>
     </profile>
     <profile>
-      <id>test-nd4j-cuda-9.0</id>
+      <id>test-nd4j-cuda-9.2</id>
     </profile>
   </profiles>
 </project>

@@ -587,7 +587,7 @@
         <javacpp.platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
         <javacpp.platform.sysroot />         <!--              -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
         <javacpp.platform.extension />
-        <spark.version>1.6.3</spark.version>
+        <spark.version>2.1.0</spark.version>
         <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
         <sbt-compiler-maven-plugin.version>1.0.0-beta8</sbt-compiler-maven-plugin.version>
         <maven-build-helper-plugin.version>3.0.0</maven-build-helper-plugin.version>
