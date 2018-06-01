@@ -923,6 +923,23 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_roll)
         DECLARE_CONFIGURABLE_OP(roll, 1, 1, true, 0, 1);
         #endif
+
+        /**
+        * This op calculates mean of elements along given dimensions
+        *
+        * input array:
+        *    x: tensor to calculate mean for        
+        *
+        * float arguments:
+        *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
+        *
+        * int arguments:
+        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *
+        * output array:
+        *    reduced tensor with calculated means
+        */
+        DECLARE_CUSTOM_OP(reduce_mean, 1, 1, false, 0, 0);
     }
 }
 
