@@ -27,9 +27,17 @@ namespace nd4j {
                         } else {
                             auto tmp = reinterpret_cast<float *>(src);
 
+#if __GNUC__ <= 4
+                            if (!canKeep)
+                                throw std::runtime_error("Can't swap bytes with GCC 4.x");
+                            else
+                                for (Nd4jLong e = 0; e < length; e++)
+                                    buffer[e] = static_cast<T>(tmp[e]);
+#else
                             //#pragma omp parallel for simd schedule(guided)
                             for (Nd4jLong e = 0; e < length; e++)
                                 buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+#endif
                         }
                     }
                     break;
@@ -39,9 +47,17 @@ namespace nd4j {
                         } else {
                             auto tmp = reinterpret_cast<double *>(src);
 
+#if __GNUC__ <= 4
+                            if (!canKeep)
+                                throw std::runtime_error("Can't swap bytes with GCC 4.x");
+                            else
+                                for (Nd4jLong e = 0; e < length; e++)
+                                    buffer[e] = static_cast<T>(tmp[e]);
+#else
                             //#pragma omp parallel for simd schedule(guided)
                             for (Nd4jLong e = 0; e < length; e++)
                                 buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+#endif
                         }
                     }
                     break;
@@ -52,9 +68,17 @@ namespace nd4j {
                         } else {
                             auto tmp = reinterpret_cast<float16 *>(src);
 
+#if __GNUC__ <= 4
+                            if (!canKeep)
+                                throw std::runtime_error("Can't swap bytes with GCC 4.x");
+                            else
+                                for (Nd4jLong e = 0; e < length; e++)
+                                    buffer[e] = static_cast<T>(tmp[e]);
+#else
                             //#pragma omp parallel for simd schedule(guided)
                             for (Nd4jLong e = 0; e < length; e++)
                                 buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+#endif
                         }
                     }
                     break;
