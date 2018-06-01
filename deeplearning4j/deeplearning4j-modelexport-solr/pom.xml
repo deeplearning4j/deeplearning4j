@@ -46,6 +46,11 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.solr</groupId>
+            <artifactId>solr-core</artifactId>
+            <version>${lucene-solr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
             <artifactId>solr-ltr</artifactId>
             <version>${lucene-solr.version}</version>
         </dependency>
