@@ -847,7 +847,7 @@ public class GradCheckTransforms {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 23; i++) {
+        for (int i = 0; i < 22; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -956,17 +956,6 @@ public class GradCheckTransforms {
                     expOut = ia.add(ib).add(ib);
                     break;
                 case 21:
-                    ia = Nd4j.create(new float[]{2, 4});
-                    ib = Nd4j.create(new float[]{42, 2});
-
-                    in1 = sd.var("in1", new int[]{1, 2});
-                    in2 = sd.var("in2", new int[]{1, 2});
-
-                    t = in1.truncatedDiv(in2);
-                    expOut = Nd4j.create(ia.shape(), ia.ordering());
-                    Nd4j.getExecutioner().exec(new TruncateDivOp(ia, ib, expOut));
-                    break;
-                case 22:
                     t = in1.squaredDifference(in2);
                     expOut = Nd4j.create(ia.shape(), ia.ordering());
                     DynamicCustomOp squareDiff = DynamicCustomOp.builder("squaredsubtract")

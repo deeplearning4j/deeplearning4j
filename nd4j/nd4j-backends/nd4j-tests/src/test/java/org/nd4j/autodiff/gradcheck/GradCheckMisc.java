@@ -10,6 +10,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -43,12 +44,37 @@ public class GradCheckMisc extends BaseGradCheck {
     @Test
     public void testConcat(){
 
-        int[] concatDim = new int[]{0,0,0,1,1,1,2,2,2};
+//        int[] concatDim = new int[]{0,0,0,1,1,1,2,2,2};
+        int[] concatDim = new int[]{0,0,0};
         List<List<int[]>> origShapes = new ArrayList<>();
         origShapes.add(Arrays.asList(new int[]{3,4}, new int[]{5,4}));
+        origShapes.add(Arrays.asList(new int[]{1,2,3}, new int[]{1,2,3}, new int[]{2,2,3}));
+        origShapes.add(Arrays.asList(new int[]{1,2,3,4}, new int[]{2,2,3,4}));
 
+        List<String> failed = new ArrayList<>();
 
-        fail("not yet implemented");
+        for( int i=0; i<concatDim.length; i++ ){
+
+            SameDiff sd = SameDiff.create();
+            List<int[]> shapes = origShapes.get(i);
+
+            SDVariable[] toConcat = new SDVariable[shapes.size()];
+            INDArray[] orig = new INDArray[shapes.size()];
+            for( int j=0; j<shapes.size(); j++ ){
+                orig[j] = Nd4j.rand(shapes.get(i));
+                toConcat[j] = sd.var(String.valueOf(i), orig[j]);
+            }
+
+            INDArray exp = Nd4j.concat(concatDim[i], orig);
+
+            SDVariable sdConcat = sd.concat(0, toConcat);
+            SDVariable stdev = sd.standardDeviation("out", sdConcat, true);
+
+            String msg = "i=" + i + ", concatDim=" + concatDim[i];
+            check(sd, failed, msg);
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test
@@ -87,6 +113,9 @@ public class GradCheckMisc extends BaseGradCheck {
 
         for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
             for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape)) {
+                String msg = "permute=" + Arrays.toString(perm) + ", source=" + p.getSecond();
+                System.out.println(msg);
+
                 INDArray inArr = p.getFirst().muli(100);
 
                 SameDiff sd = SameDiff.create();
@@ -97,9 +126,9 @@ public class GradCheckMisc extends BaseGradCheck {
 
                 INDArray out = sd.execAndEndResult();
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
-                assertEquals(expOut, out);
+                assertEquals(msg, expOut, out);
 
-                String msg = "permute=" + Arrays.toString(perm) + ", source=" + p.getSecond();
+
                 check(sd, failed, msg);
             }
         }
