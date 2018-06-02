@@ -65,6 +65,14 @@ public class Conv1D extends DynamicCustomOp {
     }
 
     @Override
+    public long[] iArgs() {
+        if (iArguments.size() == 0)
+            addArgs();
+
+        return super.iArgs();
+    }
+
+    @Override
     public Object getValue(Field property) {
         if (config == null) {
             config = Conv1DConfig.builder().build();

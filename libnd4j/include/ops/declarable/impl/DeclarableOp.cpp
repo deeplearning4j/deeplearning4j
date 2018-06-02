@@ -524,7 +524,7 @@ namespace nd4j {
         template <typename T>
         Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs, std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace) {
             // TODO: nullptr here might be replaced
-            return execute(nullptr, inputs, outputs, tArgs, iArgs, isInplace);
+            return execute(ProviderRNG::getInstance().getRNG(), inputs, outputs, tArgs, iArgs, isInplace);
         }
 
         template <typename T>

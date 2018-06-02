@@ -737,7 +737,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public Map<String, INDArray> executeGraph(long id, Map<String, INDArray> map) {
+    public Map<String, INDArray> executeGraph(long id, Map<String, INDArray> map, Map<String, Integer> reverseMap) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

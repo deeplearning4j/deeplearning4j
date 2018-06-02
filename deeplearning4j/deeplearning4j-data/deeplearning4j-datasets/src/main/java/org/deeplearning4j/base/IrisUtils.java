@@ -19,23 +19,41 @@
 package org.deeplearning4j.base;
 
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.common.resources.DL4JResources;
+import org.deeplearning4j.common.resources.ResourceType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.resources.Downloader;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 public class IrisUtils {
 
+    private static final String IRIS_RELATIVE_URL = "datasets/iris.dat";
+    private static final String MD5 = "1c21400a78061197eac64c6748844216";
+
     private IrisUtils() {}
 
     public static List<DataSet> loadIris(int from, int to) throws IOException {
-        ClassPathResource resource = new ClassPathResource("/iris.dat");
+        File rootDir = DL4JResources.getDirectory(ResourceType.DATASET, "iris");
+        File irisData = new File(rootDir, "iris.dat");
+        if(!irisData.exists()){
+            URL url = DL4JResources.getURL(IRIS_RELATIVE_URL);
+            Downloader.download("Iris", url, irisData, MD5, 3);
+        }
+
         @SuppressWarnings("unchecked")
-        List<String> lines = IOUtils.readLines(resource.getInputStream());
+        List<String> lines;
+        try(InputStream is = new FileInputStream(irisData)){
+            lines = IOUtils.readLines(is);
+        }
         List<DataSet> list = new ArrayList<>();
         INDArray ret = Nd4j.ones(Math.abs(to - from), 4);
         double[][] outcomes = new double[lines.size()][3];

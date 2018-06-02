@@ -1,6 +1,0 @@
-# Custom segmentation for long entries
-日本経済新聞,日本 経済 新聞,ニホン ケイザイ シンブン,カスタム名詞
-関西国際空港,関西 国際 空港,カンサイ コクサイ クウコウ,テスト名詞
-
-# Custom reading for sumo wrestler
-朝青龍,朝青龍,アサショウリュウ,カスタム人名

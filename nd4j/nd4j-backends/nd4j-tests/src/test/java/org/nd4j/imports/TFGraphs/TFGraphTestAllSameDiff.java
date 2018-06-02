@@ -55,7 +55,8 @@ public class TFGraphTestAllSameDiff {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;
         }
-        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH);
+        //TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH);
+        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 
 }

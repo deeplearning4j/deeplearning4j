@@ -22,7 +22,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,12 +42,6 @@ public class LBFGS extends BaseOptimizer {
     public LBFGS(NeuralNetConfiguration conf, StepFunction stepFunction,
                     Collection<TrainingListener> trainingListeners, Model model) {
         super(conf, stepFunction, trainingListeners, model);
-    }
-
-    public LBFGS(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<TrainingListener> trainingListeners,
-                    Collection<TerminationCondition> terminationConditions, Model model) {
-        super(conf, stepFunction, trainingListeners, terminationConditions, model);
     }
 
     @Override

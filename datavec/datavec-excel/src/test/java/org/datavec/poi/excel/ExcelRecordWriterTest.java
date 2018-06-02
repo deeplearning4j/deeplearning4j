@@ -6,7 +6,9 @@ import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.primitives.Triple;
 
 import java.io.File;
@@ -18,11 +20,14 @@ import static org.junit.Assert.assertEquals;
 
 public class ExcelRecordWriterTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testWriter() throws Exception  {
         ExcelRecordWriter excelRecordWriter = new ExcelRecordWriter();
         val records = records();
-        File tmpDir = Files.createTempDirectory("testexcel").toFile();
+        File tmpDir = testDir.newFolder();
         File outputFile = new File(tmpDir,"testexcel.xlsx");
         outputFile.deleteOnExit();
         FileSplit fileSplit = new FileSplit(outputFile);

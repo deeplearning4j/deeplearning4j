@@ -34,7 +34,7 @@ public class JacksonLineRecordReaderTest {
     public void testReadJSON() throws Exception {
        
         RecordReader rr = new JacksonLineRecordReader(getFieldSelection(), new ObjectMapper(new JsonFactory()));
-        rr.initialize(new FileSplit(new ClassPathResource("json/json_test_3.txt").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/json/json_test_3.txt").getFile()));
         
         testJacksonRecordReader(rr);
 	}

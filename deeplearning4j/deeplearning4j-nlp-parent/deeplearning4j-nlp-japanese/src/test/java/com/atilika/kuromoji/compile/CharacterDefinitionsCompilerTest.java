@@ -46,7 +46,7 @@ public class CharacterDefinitionsCompilerTest {
         CharacterDefinitionsCompiler compiler =
                         new CharacterDefinitionsCompiler(new BufferedOutputStream(new FileOutputStream(charDef)));
         compiler.readCharacterDefinition(new BufferedInputStream(
-                        CharacterDefinitionsCompilerTest.class.getClassLoader().getResourceAsStream("char.def")),
+                        CharacterDefinitionsCompilerTest.class.getClassLoader().getResourceAsStream("deeplearning4j-nlp-japanese/char.def")),
                         "euc-jp");
         categoryIdMap = invert(compiler.makeCharacterCategoryMap());
         compiler.compile();

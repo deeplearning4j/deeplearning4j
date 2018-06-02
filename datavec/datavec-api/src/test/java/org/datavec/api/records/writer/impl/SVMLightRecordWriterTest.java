@@ -57,7 +57,7 @@ public class SVMLightRecordWriterTest {
         configReader.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         configReader.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
 
-        File inputFile = new ClassPathResource("svmlight/basic.txt").getFile();
+        File inputFile = new ClassPathResource("datavec-api/svmlight/basic.txt").getFile();
         executeTest(configWriter, configReader, inputFile);
     }
 
@@ -71,7 +71,7 @@ public class SVMLightRecordWriterTest {
         configReader.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         configReader.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
 
-        File inputFile = new ClassPathResource("svmlight/noLabels.txt").getFile();
+        File inputFile = new ClassPathResource("datavec-api/svmlight/noLabels.txt").getFile();
         executeTest(configWriter, configReader, inputFile);
     }
 
@@ -85,7 +85,7 @@ public class SVMLightRecordWriterTest {
         configReader.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         configReader.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
 
-        File inputFile = new ClassPathResource("svmlight/multioutput.txt").getFile();
+        File inputFile = new ClassPathResource("datavec-api/svmlight/multioutput.txt").getFile();
         executeTest(configWriter, configReader, inputFile);
     }
 
@@ -102,7 +102,7 @@ public class SVMLightRecordWriterTest {
         configReader.setInt(SVMLightRecordReader.NUM_LABELS, 4);
         configReader.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
 
-        File inputFile = new ClassPathResource("svmlight/multilabel.txt").getFile();
+        File inputFile = new ClassPathResource("datavec-api/svmlight/multilabel.txt").getFile();
         executeTest(configWriter, configReader, inputFile);
     }
 
@@ -119,7 +119,7 @@ public class SVMLightRecordWriterTest {
         configReader.setBoolean(SVMLightRecordReader.MULTILABEL, true);
         configReader.setInt(SVMLightRecordReader.NUM_LABELS, 5);
 
-        File inputFile = new ClassPathResource("svmlight/multilabel.txt").getFile();
+        File inputFile = new ClassPathResource("datavec-api/svmlight/multilabel.txt").getFile();
         executeTest(configWriter, configReader, inputFile);
     }
 

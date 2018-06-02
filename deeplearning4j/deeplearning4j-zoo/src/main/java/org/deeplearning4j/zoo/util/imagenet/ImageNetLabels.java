@@ -1,11 +1,16 @@
 package org.deeplearning4j.zoo.util.imagenet;
 
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.zoo.util.BaseLabels;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -17,16 +22,18 @@ import java.util.HashMap;
 public class ImageNetLabels extends BaseLabels {
 
     private static final String jsonResource = "imagenet_class_index.json";
-    private ArrayList<String> predictionLabels = null;
+    private ArrayList<String> predictionLabels;
 
     public ImageNetLabels() throws IOException {
         this.predictionLabels = getLabels();
     }
 
     protected ArrayList<String> getLabels() throws IOException {
+
+        File localFile = getResourceFile();
         if (predictionLabels == null) {
             HashMap<String, ArrayList<String>> jsonMap;
-            jsonMap = new ObjectMapper().readValue(this.getClass().getResourceAsStream(jsonResource), HashMap.class);
+            jsonMap = new ObjectMapper().readValue(localFile, HashMap.class);
             predictionLabels = new ArrayList<>(jsonMap.size());
             for (int i = 0; i < jsonMap.size(); i++) {
                 predictionLabels.add(jsonMap.get(String.valueOf(i)).get(1));
@@ -44,6 +51,25 @@ public class ImageNetLabels extends BaseLabels {
         return predictionLabels.get(n);
     }
 
+    @Override
+    protected URL getURL() {
+        try {
+            return DL4JResources.getURL("resources/imagenet/" + jsonResource);
+        } catch (MalformedURLException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    protected String resourceName() {
+        return jsonResource;
+    }
+
+    @Override
+    protected String resourceMD5() {
+        return "c2c37ea517e94d9795004a39431a14cb";
+    }
+
     /**
      * Given predictions from the trained model this method will return a string
      * listing the top five matches and the respective probabilities
@@ -51,6 +77,9 @@ public class ImageNetLabels extends BaseLabels {
      * @return
      */
     public String decodePredictions(INDArray predictions) {
+        Preconditions.checkState(predictions.size(1) == predictionLabels.size(), "Invalid input array:" +
+                " expected array with size(1) equal to numLabels (%s), got array with shape %s", predictionLabels.size(), predictions.shape());
+
         String predictionDescription = "";
         int[] top5 = new int[5];
         float[] top5Prob = new float[5];

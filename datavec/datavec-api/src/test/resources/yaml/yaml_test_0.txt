@@ -1,5 +1,0 @@
-a:  aValue0
-b:  bValue0
-c:
-    x:  cxValue0
-    y:  cyValue0

@@ -73,7 +73,7 @@ public class SVMLightRecordReaderTest {
         Configuration config = new Configuration();
         config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -110,7 +110,7 @@ public class SVMLightRecordReaderTest {
         config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         config.setBoolean(SVMLightRecordReader.APPEND_LABEL, false);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -153,7 +153,7 @@ public class SVMLightRecordReaderTest {
         config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         config.setBoolean(SVMLightRecordReader.APPEND_LABEL, true);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/noLabels.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/noLabels.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -195,7 +195,7 @@ public class SVMLightRecordReaderTest {
         Configuration config = new Configuration();
         config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/multioutput.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/multioutput.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -256,7 +256,7 @@ public class SVMLightRecordReaderTest {
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         config.setBoolean(SVMLightRecordReader.MULTILABEL, true);
         config.setInt(SVMLightRecordReader.NUM_LABELS, 4);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/multilabel.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/multilabel.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -327,7 +327,7 @@ public class SVMLightRecordReaderTest {
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 11);
         config.setBoolean(SVMLightRecordReader.MULTILABEL, true);
         config.setInt(SVMLightRecordReader.NUM_LABELS, 5);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/multilabel.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/multilabel.txt").getFile()));
         int i = 0;
         while (rr.hasNext()) {
             List<Writable> record = rr.next();
@@ -344,7 +344,7 @@ public class SVMLightRecordReaderTest {
         config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         config.setBoolean(SVMLightRecordReader.APPEND_LABEL, false);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
 
         Record record = rr.nextRecord();
         List<Writable> recordList = record.getRecord();
@@ -364,7 +364,7 @@ public class SVMLightRecordReaderTest {
         SVMLightRecordReader rr = new SVMLightRecordReader();
         Configuration config = new Configuration();
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 11);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         while (rr.hasNext())
             rr.next();
         rr.next();
@@ -374,7 +374,7 @@ public class SVMLightRecordReaderTest {
     public void failedToSetNumFeaturesException() throws Exception {
         SVMLightRecordReader rr = new SVMLightRecordReader();
         Configuration config = new Configuration();
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         while (rr.hasNext())
             rr.next();
     }
@@ -384,7 +384,7 @@ public class SVMLightRecordReaderTest {
         SVMLightRecordReader rr = new SVMLightRecordReader();
         Configuration config = new Configuration();
         config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/inconsistentNumLabels.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/inconsistentNumLabels.txt").getFile()));
         while (rr.hasNext())
             rr.next();
     }
@@ -393,7 +393,7 @@ public class SVMLightRecordReaderTest {
     public void failedToSetNumMultiabelsException() throws Exception {
         SVMLightRecordReader rr = new SVMLightRecordReader();
         Configuration config = new Configuration();
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/multilabel.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/multilabel.txt").getFile()));
         while (rr.hasNext())
             rr.next();
     }
@@ -403,7 +403,7 @@ public class SVMLightRecordReaderTest {
         SVMLightRecordReader rr = new SVMLightRecordReader();
         Configuration config = new Configuration();
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 9);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         rr.next();
     }
 
@@ -413,7 +413,7 @@ public class SVMLightRecordReaderTest {
         Configuration config = new Configuration();
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         config.setInt(SVMLightRecordReader.NUM_LABELS, 6);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/basic.txt").getFile()));
         rr.next();
     }
 
@@ -423,7 +423,7 @@ public class SVMLightRecordReaderTest {
         Configuration config = new Configuration();
         config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/zeroIndexFeature.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/zeroIndexFeature.txt").getFile()));
         rr.next();
     }
 
@@ -434,7 +434,7 @@ public class SVMLightRecordReaderTest {
         config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
         config.setBoolean(SVMLightRecordReader.MULTILABEL, true);
         config.setInt(SVMLightRecordReader.NUM_LABELS, 2);
-        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/zeroIndexLabel.txt").getFile()));
+        rr.initialize(config, new FileSplit(new ClassPathResource("datavec-api/svmlight/zeroIndexLabel.txt").getFile()));
         rr.next();
     }
 }

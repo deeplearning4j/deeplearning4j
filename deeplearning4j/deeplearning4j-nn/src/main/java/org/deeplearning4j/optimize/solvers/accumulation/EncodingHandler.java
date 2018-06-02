@@ -143,6 +143,7 @@ public class EncodingHandler implements MessageHandler {
                 if (encoded == null)
                     return null;
 
+
                 double encLen = encoded.data().getInt(0);
                 double encodingRatio = encLen * 100.0 / updates.length();
 

@@ -108,9 +108,12 @@
                     </execution>-->
                 </executions>
             </plugin>
-
-
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
 </project>

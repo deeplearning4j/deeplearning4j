@@ -1,7 +1,0 @@
-{
-    "a":"aValue1",
-    "c": {
-        "x": "cxValue1",
-        "y": "cyValue1"
-    }
-}

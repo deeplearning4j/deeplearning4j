@@ -6478,6 +6478,22 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(source, result);
     }
 
+    @Test
+    public void testVariance_4D_1() {
+        val dtype = Nd4j.dataType();
+
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+
+        val x = Nd4j.ones(10, 20, 30, 40);
+        val result = x.var(false, 0, 2, 3);
+
+        Nd4j.getExecutioner().commit();
+
+        log.info("Result shape: {}", result.shapeInfoDataBuffer().asLong());
+
+        Nd4j.setDataType(dtype);
+    }
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;

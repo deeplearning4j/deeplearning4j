@@ -47,7 +47,7 @@ public class ClassPathResourceTest {
 
     @Test
     public void testGetFile1() throws Exception {
-        File intFile = new ClassPathResource("iris.dat").getFile();
+        File intFile = new ClassPathResource("datavec-api/iris.dat").getFile();
 
         assertTrue(intFile.exists());
         if (isWindows) {
@@ -59,7 +59,7 @@ public class ClassPathResourceTest {
 
     @Test
     public void testGetFileSlash1() throws Exception {
-        File intFile = new ClassPathResource("/iris.dat").getFile();
+        File intFile = new ClassPathResource("datavec-api/iris.dat").getFile();
 
         assertTrue(intFile.exists());
         if (isWindows) {
@@ -71,7 +71,7 @@ public class ClassPathResourceTest {
 
     @Test
     public void testGetFileWithSpace1() throws Exception {
-        File intFile = new ClassPathResource("csvsequence test.txt").getFile();
+        File intFile = new ClassPathResource("datavec-api/csvsequence test.txt").getFile();
 
         assertTrue(intFile.exists());
 
@@ -84,7 +84,7 @@ public class ClassPathResourceTest {
 
     @Test
     public void testInputStream() throws Exception {
-        ClassPathResource resource = new ClassPathResource("csvsequence_1.txt");
+        ClassPathResource resource = new ClassPathResource("datavec-api/csvsequence_1.txt");
         File intFile = resource.getFile();
 
         if (isWindows) {
@@ -106,7 +106,7 @@ public class ClassPathResourceTest {
 
     @Test
     public void testInputStreamSlash() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/csvsequence_1.txt");
+        ClassPathResource resource = new ClassPathResource("datavec-api/csvsequence_1.txt");
         File intFile = resource.getFile();
 
         if (isWindows) {

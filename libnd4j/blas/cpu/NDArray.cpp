@@ -1138,7 +1138,7 @@ template <typename T>
 // perform array transformation
     template<typename T>
     template<typename OpName>
-    NDArray<T> NDArray<T>::transform(T *extraParams) {
+    NDArray<T> NDArray<T>::transform(T *extraParams) const {
     
         NDArray<T> result(this->_shapeInfo, true, this->_workspace);
         functions::transform::Transform<T>::template exec<OpName>(this->_buffer, this->_shapeInfo, result._buffer,
@@ -1598,7 +1598,7 @@ template<typename T>
 
     template<typename T>
     template<typename OpName>
-    void NDArray<T>::applyScalar(T scalar, NDArray<T>* target, T *extraParams) {
+    void NDArray<T>::applyScalar(T scalar, NDArray<T>* target, T *extraParams) const {
 
         if (target == nullptr)
             functions::scalar::ScalarTransform<T>::template transform<OpName>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, scalar, extraParams);
@@ -1609,7 +1609,7 @@ template<typename T>
     template<typename T>
     template<typename OpName>
 
-    void NDArray<T>::applyScalar(NDArray<T>& scalar, NDArray<T>* target, T *extraParams) {
+    void NDArray<T>::applyScalar(NDArray<T>& scalar, NDArray<T>* target, T *extraParams) const {
         if (!scalar.isScalar()) {
             throw "Operand is not a scalar!";
         }
@@ -2272,7 +2272,17 @@ template <typename OpName>
 void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target, const bool checkTargetShape, T *extraArgs) const {
 
     if(target == nullptr || other == nullptr)
-        throw "NDArray::applyTrueBroadcast method: target or other = nullptr !";
+        throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");    
+
+    if (isScalar()) {        
+        target->assign(this);
+        target->template applyPairwiseTransform<OpName>(const_cast<NDArray<T>*>(other), extraArgs);
+        return;
+    }
+    if (other->isScalar()) {        
+        this->template applyScalar<OpName>(other->getScalar(0), target, extraArgs);
+        return;
+    }
 
     const NDArray<T>* min(nullptr), *max(nullptr);
     if(this->rankOf() >= other->rankOf()) {
@@ -2287,9 +2297,9 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
     if(checkTargetShape) {
         Nd4jLong* newShapeInfo = nullptr;
         if(!ShapeUtils<T>::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _workspace))          // the rank of target array must be equal to max->rankOf)()
-            throw "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !" ;
+            throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
         if(!shape::equalsSoft(target->getShapeInfo(), newShapeInfo))
-            throw "NDArray::applyTrueBroadcast method: the shape of target array is wrong !";
+            throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape of target array is wrong !");
 
         // if workspace is not null - do not call delete.
         if (_workspace == nullptr)
@@ -2333,8 +2343,8 @@ NDArray<T>* NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, T *extraArgs
 
     Nd4jLong* newShapeInfo = nullptr;
     if(!ShapeUtils<T>::evalBroadcastShapeInfo(*this, *other, true, newShapeInfo, _workspace))          // the rank of new array = max->rankOf)()
-        throw "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !" ;
-    NDArray<T>* result = new NDArray<T>(newShapeInfo, false, this->_workspace);
+        throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
+    auto result = new NDArray<T>(newShapeInfo, false, this->_workspace);
 
     // if workspace is not null - do not call delete.
     if (_workspace == nullptr)
@@ -3080,7 +3090,7 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     NDArray<T> NDArray<T>::operator-(const NDArray<T>& other) const {
         
         if (other.lengthOf() == lengthOf()) {
-            NDArray<T> result(this->_shapeInfo, this->_workspace);
+            NDArray<T> result(_shapeInfo, _workspace);
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Subtract<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, result._buffer, result._shapeInfo, nullptr);
             return result;
         }

@@ -40,17 +40,23 @@ import java.util.Random;
  */
 public class SvhnDataFetcher extends CacheableExtractableDataSetFetcher {
 
+    private static String BASE_URL = "http://ufldl.stanford.edu/";
+
+    public static void setBaseUrl(String baseUrl){
+        BASE_URL = baseUrl;
+    }
+
     public static int NUM_LABELS = 10;
 
     @Override
     public String remoteDataUrl(DataSetType set) {
         switch (set) {
             case TRAIN:
-                return "http://ufldl.stanford.edu/housenumbers/train.tar.gz";
+                return BASE_URL + "housenumbers/train.tar.gz";
             case TEST:
-                return "http://ufldl.stanford.edu/housenumbers/test.tar.gz";
+                return BASE_URL + "housenumbers/test.tar.gz";
             case VALIDATION:
-                return "http://ufldl.stanford.edu/housenumbers/extra.tar.gz";
+                return BASE_URL + "housenumbers/extra.tar.gz";
             default:
                  throw new IllegalArgumentException("Unknown DataSetType:" + set);
         }
@@ -90,23 +96,20 @@ public class SvhnDataFetcher extends CacheableExtractableDataSetFetcher {
     }
 
     public File getDataSetPath(DataSetType set) throws IOException {
+        File localCache = getLocalCacheDir();
         // check empty cache
-        if (LOCAL_CACHE.exists()) {
-            if (LOCAL_CACHE.listFiles().length < 1) {
-                LOCAL_CACHE.delete();
-            }
-        }
+        deleteIfEmpty(localCache);
 
         File datasetPath;
         switch (set) {
             case TRAIN:
-                datasetPath = new File(LOCAL_CACHE, "/train/");
+                datasetPath = new File(localCache, "/train/");
                 break;
             case TEST:
-                datasetPath = new File(LOCAL_CACHE, "/test/");
+                datasetPath = new File(localCache, "/test/");
                 break;
             case VALIDATION:
-                datasetPath = new File(LOCAL_CACHE, "/extra/");
+                datasetPath = new File(localCache, "/extra/");
                 break;
             default:
                 datasetPath = null;

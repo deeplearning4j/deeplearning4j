@@ -14,7 +14,9 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.impl.ActivationHardSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -24,6 +26,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -34,6 +37,9 @@ import static junit.framework.TestCase.assertTrue;
 public class FullModelComparisons {
 
     ClassLoader classLoader = FullModelComparisons.class.getClassLoader();
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void lstmTest() throws IOException, UnsupportedKerasConfigurationException,
@@ -123,12 +129,11 @@ public class FullModelComparisons {
         TestCase.assertEquals(b.getDouble(0, 192), -0.63227624, 1e-7);
         TestCase.assertEquals(b.getDouble(0, 0), 0.06636357, 1e-7);
 
+        File dataDir = testDir.newFolder();
+
         SequenceRecordReader reader = new CSVSequenceRecordReader(0, ";");
-        ClassPathResource dataResource = new ClassPathResource(
-                "data/", classLoader);
-        System.out.print(dataResource.getFile().getAbsolutePath());
-        reader.initialize(new NumberedFileInputSplit(dataResource.getFile().getAbsolutePath()
-                + "/sequences/%d.csv", 0, 282));
+        new ClassPathResource("deeplearning4j-modelimport/data/", classLoader).copyDirectory(dataDir);
+        reader.initialize(new NumberedFileInputSplit(dataDir.getAbsolutePath()+ "/sequences/%d.csv", 0, 282));
 
         DataSetIterator dataSetIterator = new SequenceRecordReaderDataSetIterator(
                 reader, 1, -1, 12, true);

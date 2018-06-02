@@ -565,6 +565,7 @@
         <commons-lang3.version>3.4</commons-lang3.version>
         <commons-collections4.version>4.1</commons-collections4.version>
         <commons-compress.version>1.16.1</commons-compress.version>
+        <commons-codec.version>1.10</commons-codec.version>
         <camel.version>2.18.2</camel.version>
         <unirest.version>1.4.9</unirest.version>
         <mapdb.version>3.0.5</mapdb.version>

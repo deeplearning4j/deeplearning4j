@@ -29,9 +29,12 @@ import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.NumberedFileInputSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,12 +47,15 @@ import static org.junit.Assert.assertFalse;
  */
 public class RegexRecordReaderTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testRegexLineRecordReader() throws Exception {
         String regex = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)";
 
         RecordReader rr = new RegexLineRecordReader(regex, 1);
-        rr.initialize(new FileSplit(new ClassPathResource("/logtestdata/logtestfile0.txt").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/logtestdata/logtestfile0.txt").getFile()));
 
         List<Writable> exp0 = Arrays.asList((Writable) new Text("2016-01-01 23:59:59.001"), new Text("1"),
                         new Text("DEBUG"), new Text("First entry message!"));
@@ -75,7 +81,7 @@ public class RegexRecordReaderTest {
         String regex = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)";
 
         RecordReader rr = new RegexLineRecordReader(regex, 1);
-        rr.initialize(new FileSplit(new ClassPathResource("/logtestdata/logtestfile0.txt").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("datavec-api/logtestdata/logtestfile0.txt").getFile()));
 
         List<List<Writable>> list = new ArrayList<>();
         while (rr.hasNext()) {
@@ -107,8 +113,10 @@ public class RegexRecordReaderTest {
     public void testRegexSequenceRecordReader() throws Exception {
         String regex = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)";
 
-        String path = new ClassPathResource("/logtestdata/logtestfile0.txt").getFile().toURI().toString();
-        path = path.replace("0", "%d");
+        ClassPathResource cpr = new ClassPathResource("datavec-api/logtestdata/");
+        File f = testDir.newFolder();
+        cpr.copyDirectory(f);
+        String path = new File(f, "logtestfile%d.txt").getAbsolutePath();
 
         InputSplit is = new NumberedFileInputSplit(path, 0, 1);
 
@@ -147,8 +155,11 @@ public class RegexRecordReaderTest {
     public void testRegexSequenceRecordReaderMeta() throws Exception {
         String regex = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)";
 
-        String path = new ClassPathResource("/logtestdata/logtestfile0.txt").getFile().toURI().toString();
-        path = path.replace("0", "%d");
+        ClassPathResource cpr = new ClassPathResource("datavec-api/logtestdata/");
+        File f = testDir.newFolder();
+        cpr.copyDirectory(f);
+        String path = new File(f, "logtestfile%d.txt").getAbsolutePath();
+
         InputSplit is = new NumberedFileInputSplit(path, 0, 1);
 
         SequenceRecordReader rr = new RegexSequenceRecordReader(regex, 1);

@@ -1,6 +1,7 @@
 package org.nd4j.serde.binary;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
@@ -69,14 +70,15 @@ public class BinarySerde {
         //compute the databuffer opType from the index
         DataBuffer.Type type = DataBuffer.Type.values()[byteBuffer.getInt()];
         for (int i = 0; i < shapeBufferLength; i++) {
-            shapeBuff.put(i, byteBuffer.getInt());
+            shapeBuff.put(i, byteBuffer.getLong());
         }
 
         //after the rank,data opType, shape buffer (of length shape buffer length) * sizeof(int)
         if (type != DataBuffer.Type.COMPRESSED) {
             ByteBuffer slice = byteBuffer.slice();
             //wrap the data buffer for the last bit
-            DataBuffer buff = Nd4j.createBuffer(slice, type, Shape.length(shapeBuff));
+            // FIXME: int cast
+            DataBuffer buff = Nd4j.createBuffer(slice, type, (int) Shape.length(shapeBuff));
             //advance past the data
             int position = byteBuffer.position() + (buff.getElementSize() * (int) buff.length());
             byteBuffer.position(position);
@@ -292,7 +294,7 @@ public class BinarySerde {
         try (FileInputStream os = new FileInputStream(readFrom)) {
             FileChannel channel = os.getChannel();
             // we read shapeinfo up to max_rank value, which is 32
-            int len = (int) Math.min((32 * 2 + 3) * 4, readFrom.length());
+            int len = (int) Math.min((32 * 2 + 3) * 8, readFrom.length());
             ByteBuffer buffer = ByteBuffer.allocateDirect(len);
             channel.read(buffer);
 
@@ -302,21 +304,22 @@ public class BinarySerde {
             buffer.position(0);
             int rank = byteBuffer.getInt();
 
-            int result[] = new int[Shape.shapeInfoLength(rank)];
+            val result = new long[Shape.shapeInfoLength(rank)];
 
             // filling DataBuffer with shape info
             result[0] = rank;
 
             // skipping two next values (dtype and rank again)
-            byteBuffer.position(12);
+            // please , that this time rank has dtype of LONG, so takes 8 bytes.
+            byteBuffer.position(16);
 
             // filling shape information
             for (int e = 1; e < Shape.shapeInfoLength(rank); e++) {
-                result[e] = byteBuffer.getInt();
+                result[e] = byteBuffer.getLong();
             }
 
             // creating nd4j databuffer now
-            DataBuffer dataBuffer = Nd4j.getDataBufferFactory().createInt(result);
+            DataBuffer dataBuffer = Nd4j.getDataBufferFactory().createLong(result);
             return dataBuffer;
         }
     }

@@ -408,7 +408,7 @@ namespace nd4j {
         *  extraParams - extra parameters for operation
         */
         template<typename OpName>
-        NDArray<T> transform(T *extraParams = nullptr);
+        NDArray<T> transform(T *extraParams = nullptr) const;
 
         /**
         *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in this array
@@ -466,7 +466,7 @@ namespace nd4j {
         *  extraParams - extra parameters for operation
         */ 
         template<typename OpName>
-        void applyScalar(T scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
+        void applyScalar(T scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr) const;
 
         /** 
         *  apply a scalar operation to an array
@@ -475,7 +475,7 @@ namespace nd4j {
         *  extraParams - extra parameters for operation
         */ 
         template<typename OpName>
-        void applyScalar(NDArray<T>& scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
+        void applyScalar(NDArray<T>& scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr) const;
 
 
 #ifndef __JAVACPP_HACK__

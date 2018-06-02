@@ -39,6 +39,23 @@ public class LayerValidation {
         }
     }
 
+    /**
+     * Asserts that the layer nOut value is set for the layer
+     *
+     * @param layerType     Type of layer ("DenseLayer", etc)
+     * @param layerName     Name of the layer (may be null if not set)
+     * @param layerIndex    Index of the layer
+     * @param nOut          nOut value
+     */
+    public static void assertNOutSet(String layerType, String layerName, long layerIndex, long nOut) {
+        if (nOut <= 0) {
+            if (layerName == null)
+                layerName = "(name not set)";
+            throw new DL4JInvalidConfigException(layerType + " (index=" + layerIndex + ", name=" + layerName + ") nOut="
+                    + nOut + "; nOut must be > 0");
+        }
+    }
+
 
 
 

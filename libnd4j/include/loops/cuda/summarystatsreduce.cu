@@ -314,7 +314,7 @@ namespace functions {
                             indexVal.initWithValue(dx[indexX]);
                             sPartials[threadIdx.x] = OpType::op(indexVal, extraParams);
                         }
-#pragma unroll
+
                         for (int x = threadIdx.x + blockDim.x; x < tadLength; x += blockDim.x) {
                             indexX = tadOffsetForBlock + x * tadEWS;
                             SummaryStatsData <T> indexVal2;
@@ -707,6 +707,9 @@ namespace functions {
             int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
             float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
+            // we need shmem buffer big enough to hold double values
+            launchDims.z *= 2;
+
             functions::summarystats::summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
                     opNum,
                         x,
@@ -739,6 +742,9 @@ namespace functions {
 
             int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
             float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
+
+            // we need shmem buffer big enough to hold double values
+            launchDims.z *= 4;
 
             functions::summarystats::summaryStatsReduceHalf<<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
                     opNum,

@@ -4,9 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -14,6 +12,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 
@@ -24,22 +23,10 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class GradCheckMisc {
+public class GradCheckMisc extends BaseGradCheck {
 
-    private DataBuffer.Type initialType;
-
-    @Before
-    public void before() throws Exception {
-        Nd4j.create(1);
-        initialType = Nd4j.dataType();
-
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
-        Nd4j.getRandom().setSeed(123);
-    }
-
-    @After
-    public void after() throws Exception {
-        Nd4j.setDataType(initialType);
+    public GradCheckMisc(Nd4jBackend backend) {
+        super(backend);
     }
 
     /*
@@ -68,6 +55,8 @@ public class GradCheckMisc {
     public void testReshapeGradient() {
         int[] origShape = new int[]{3, 4, 5};
 
+        List<String> failed = new ArrayList<>();
+
         for (int[] toShape : new int[][]{{3, 4 * 5}, {3 * 4, 5}, {1, 3 * 4 * 5}, {3 * 4 * 5, 1}}) {
             for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape)) {
                 INDArray inArr = p.getFirst().muli(100);
@@ -83,15 +72,18 @@ public class GradCheckMisc {
                 assertEquals(expOut, out);
 
                 String msg = "toShape=" + Arrays.toString(toShape) + ", source=" + p.getSecond();
-                boolean ok = GradCheckUtil.checkGradients(sd);
-                assertTrue(msg, ok);
+                check(sd, failed, msg);
             }
         }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test
     public void testPermuteGradient() {
         int[] origShape = new int[]{3, 4, 5};
+
+        List<String> failed = new ArrayList<>();
 
         for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
             for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape)) {
@@ -108,15 +100,18 @@ public class GradCheckMisc {
                 assertEquals(expOut, out);
 
                 String msg = "permute=" + Arrays.toString(perm) + ", source=" + p.getSecond();
-                boolean ok = GradCheckUtil.checkGradients(sd);
-                assertTrue(msg, ok);
+                check(sd, failed, msg);
             }
         }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test
     public void testExpandDimsGradient() {
         val origShape = new long[]{3, 4};
+
+        List<String> failed = new ArrayList<>();
 
         boolean first = true;
         for (int i = 0; i < 3; i++) {
@@ -155,15 +150,17 @@ public class GradCheckMisc {
 
                 String msg = "expandDim=" + i + ", source=" + p.getSecond();
                 log.info("Starting: " + msg);
-                boolean ok = GradCheckUtil.checkGradients(sd);
-                assertTrue(msg, ok);
+                check(sd, failed, msg);
             }
         }
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test
     public void testSqueezeGradient() {
         val origShape = new long[]{3, 4, 5};
+
+        List<String> failed = new ArrayList<>();
 
         for (int i = 0; i < 3; i++) {
 
@@ -204,10 +201,11 @@ public class GradCheckMisc {
                 assertEquals(expOut, out);
 
                 String msg = "squeezeDim=" + i + ", source=" + p.getSecond();
-                boolean ok = GradCheckUtil.checkGradients(sd);
-                assertTrue(msg, ok);
+                check(sd, failed, msg);
             }
         }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test
@@ -215,14 +213,14 @@ public class GradCheckMisc {
 
         Nd4j.getRandom().setSeed(12345);
 
-        List<String> allFailed = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
 
         for (int dim_sz1 : new int[]{0, 1, 2}) {
 
             int[] in2Shape = {3, 4, 5};
             in2Shape[dim_sz1] = 1;
 
-            for (int i = 2; i < 3; i++) {
+            for (int i = 0; i < 8; i++) {
 
                 SameDiff sd = SameDiff.create();
 
@@ -279,25 +277,11 @@ public class GradCheckMisc {
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);
 
-                try {
-                    INDArray out = sd.execAndEndResult();
-                    assertNotNull(out);
-                    assertArrayEquals(new long[]{1, 1}, out.shape());
-
-//                    System.out.println(sd.asFlatPrint());
-
-                    boolean ok = GradCheckUtil.checkGradients(sd);
-                    if (!ok) {
-                        allFailed.add(msg);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    allFailed.add(msg + " - EXCEPTION");
-                }
+                check(sd, failed, msg);
             }
         }
 
-        assertEquals("Failed: " + allFailed, 0, allFailed.size());
+        assertEquals("Failed: " + failed, 0, failed.size());
     }
 
     @Test
@@ -305,7 +289,7 @@ public class GradCheckMisc {
 
         Nd4j.getRandom().setSeed(12345);
 
-        List<String> allFailed = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
 
         for (int[] dim_sz1s : new int[][]{{0, 1}, {0, 2}, {1, 2}, {0,1,2}}) {
 
@@ -316,7 +300,7 @@ public class GradCheckMisc {
                 otherShape[dim_sz1s[2]] = 1;
             }
 
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 8; i++) {
 
                 SameDiff sd = SameDiff.create();
 
@@ -373,34 +357,22 @@ public class GradCheckMisc {
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);
 
-                try {
-                    INDArray out = sd.execAndEndResult();
-                    assertNotNull(out);
-                    assertArrayEquals(new long[]{1, 1}, out.shape());
-
-//                    System.out.println(sd.asFlatPrint());
-
-                    boolean ok = GradCheckUtil.checkGradients(sd);
-                    if (!ok) {
-                        allFailed.add(msg);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    allFailed.add(msg + " - EXCEPTION");
-                }
+                check(sd, failed, msg);
             }
         }
 
-        assertEquals("Failed: " + allFailed, 0, allFailed.size());
+        assertEquals("Failed: " + failed, 0, failed.size());
     }
 
     @Test
     public void testGradientAutoBroadcast3() {
         //These tests: output size > input sizes
 
+        fail("TEST CRASHES JVM");
+
         Nd4j.getRandom().setSeed(12345);
 
-        List<String> allFailed = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
 
         //Test cases: in1Shape, in2Shape, shapeOf(op(in1,in2))
         List<Triple<long[],long[], long[]>> testCases = new ArrayList<>();
@@ -419,7 +391,7 @@ public class GradCheckMisc {
 
         for (val p : testCases) {
 
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 8; i++) {
 
                 SameDiff sd = SameDiff.create();
 
@@ -477,29 +449,11 @@ public class GradCheckMisc {
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);
 
-                try {
-                    INDArray out = sd.execAndEndResult();
-                    assertNotNull(out);
-                    assertArrayEquals(new long[]{1, 1}, out.shape());
-
-                    INDArray bcOut = bcOp.getArr();
-                    assertNotNull(bcOp);
-                    assertArrayEquals(p.getThird(), bcOut.shape());
-
-//                    System.out.println(sd.asFlatPrint());
-
-                    boolean ok = GradCheckUtil.checkGradients(sd);
-                    if (!ok) {
-                        allFailed.add(msg);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    allFailed.add(msg + " - EXCEPTION");
-                }
+                check(sd, failed, msg);
             }
         }
 
-        assertEquals("Failed: " + allFailed, 0, allFailed.size());
+        assertEquals("Failed: " + failed, 0, failed.size());
     }
 
     @Test
@@ -515,6 +469,8 @@ public class GradCheckMisc {
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 1, 1}, new int[]{2, 3, 4}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 0, 2}, new int[]{3, 3, 4}));
 
+        List<String> failed = new ArrayList<>();
+
         for (int i = 0; i < testCases.size(); i++) {
             Triple<int[], int[], int[]> t = testCases.get(i);
             int[] os = t.getFirst();
@@ -529,8 +485,10 @@ public class GradCheckMisc {
 
             String msg = "i=" + i + ": inShape=" + Arrays.toString(os) + ", begin=" + Arrays.toString(b) + ", end=" + Arrays.toString(e);
             log.info("Starting test: " + msg);
-            GradCheckUtil.checkGradients(sd);
+            check(sd, failed, msg);
         }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
 
@@ -594,6 +552,7 @@ public class GradCheckMisc {
         testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, 0, 1).end(3, -999, 4).strides(1, 1, 1).shrinkAxisMask(1 << 1).build());
         testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, 1, 1).end(3, -999, 4).strides(1, 1, 1).shrinkAxisMask(1 << 1).build());
 
+        List<String> failed = new ArrayList<>();
 
         for (int i = 0; i < testCases.size(); i++) {
             SSCase t = testCases.get(i);
@@ -607,7 +566,139 @@ public class GradCheckMisc {
 
             String msg = "i=" + i + ": " + t;
             log.info("Starting test: " + msg);
-            GradCheckUtil.checkGradients(sd);
+            check(sd, failed, msg);
         }
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testScatterOpGradients(){
+
+
+        List<String> failed = new ArrayList<>();
+
+        for( int i=0; i<5; i++ ){
+            Nd4j.getRandom().setSeed(12345);
+
+            SameDiff sd = SameDiff.create();
+
+            SDVariable in = sd.var("in", new int[]{20, 10});
+            SDVariable indices = sd.var("indices", new long[]{5});
+            SDVariable updates = sd.var("updates", new int[]{5, 10});
+
+
+            in.setArray(Nd4j.rand(20,10));
+            indices.setArray(Nd4j.create(new double[]{3,4,5, 10, 18}));
+            updates.setArray(Nd4j.rand(5,10).muli(2).subi(1));
+
+            SDVariable scatter;
+            String name;
+            switch(i) {
+                case 0:
+                    scatter = sd.scatterAdd("s", in, indices, updates);
+                    name = "scatterAdd";
+                    break;
+                case 1:
+                    scatter = sd.scatterSub("s", in, indices, updates);
+                    name = "scatterSub";
+                    break;
+                case 2:
+                    scatter = sd.scatterMul("s", in, indices, updates);
+                    name = "scatterMul";
+                    break;
+                case 3:
+                    scatter = sd.scatterDiv("s", in, indices, updates);
+                    name = "scatterDiv";
+                    break;
+                case 4:
+                    scatter = sd.scatterUpdate("s", in, indices, updates);
+                    name = "scatterUpdate";
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+            SDVariable loss = sd.sum(scatter);  //.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
+            sd.execAndEndResult();
+            check(sd, failed, name);
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testGatherGradient(){
+        Nd4j.getRandom().setSeed(12345);
+
+        List<String> failed = new ArrayList<>();
+
+        for(int rank=2; rank<=3; rank++){
+            for( int dim=0; dim<rank; dim++ ){
+                SameDiff sd = SameDiff.create();
+
+                int[] inShape;
+                if(rank == 2){
+                    inShape = new int[]{10,10};
+                } else {
+                    inShape = new int[]{10, 10, 10};
+                }
+
+                SDVariable in = sd.var("in", Nd4j.rand(inShape));
+                SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}));
+
+                SDVariable gather = sd.gather(in, indices, dim);
+                sd.execAndEndResult();  //TODO REMOVE THIS
+
+                SDVariable loss = sd.standardDeviation("loss", gather,true, Integer.MAX_VALUE);
+
+                String msg = "rank=" + rank + ", dim=" + dim;
+                check(sd, failed, msg);
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+
+    @Test
+    public void testMerge(){
+        Nd4j.getRandom().setSeed(12345);
+
+        List<String> failed = new ArrayList<>();
+
+        for( int t=0; t<3; t++) {
+            for (int numArrays : new int[]{3, 1}) {
+                for (int[] shape : new int[][]{{3, 4}, {3, 4, 5}}) {
+
+                    SameDiff sd = SameDiff.create();
+                    SDVariable[] arr = new SDVariable[numArrays];
+
+                    for (int i = 0; i < numArrays; i++) {
+                        arr[i] = sd.var(String.valueOf(i), Nd4j.rand(shape));
+                    }
+
+                    SDVariable merge;
+                    switch (t){
+                        case 0:
+                            merge = sd.mergeAdd(arr);
+                            break;
+                        case 1:
+                            merge = sd.mergeMax(arr);
+                            break;
+                        case 2:
+                            merge = sd.mergeAvg(arr);
+                            break;
+                        default:
+                            throw new RuntimeException();
+                    }
+
+                    String msg = merge.opName() + " - numArrays=" + numArrays + ", shape=" + Arrays.toString(shape);
+                    SDVariable loss = sd.standardDeviation("loss", merge, true);
+                    check(sd, failed, msg);
+                }
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 }

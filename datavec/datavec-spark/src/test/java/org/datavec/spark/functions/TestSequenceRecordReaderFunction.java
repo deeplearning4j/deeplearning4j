@@ -29,7 +29,9 @@ import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.codec.reader.CodecRecordReader;
 import org.datavec.spark.BaseSparkTest;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
@@ -41,15 +43,17 @@ import static org.junit.Assert.fail;
 
 public class TestSequenceRecordReaderFunction extends BaseSparkTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testSequenceRecordReaderFunctionCSV() throws Exception {
         JavaSparkContext sc = getContext();
 
-        ClassPathResource cpr = new ClassPathResource("/csvsequence/csvsequence_0.txt");
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-spark/csvsequence/").copyDirectory(f);
 
-        String path = cpr.getFile().getAbsolutePath();
-        String folder = path.substring(0, path.length() - 17);
-        path = folder + "*";
+        String path = f.getAbsolutePath() + "/*";
 
         JavaPairRDD<String, PortableDataStream> origData = sc.binaryFiles(path);
         assertEquals(3, origData.count()); //3 CSV files
@@ -68,7 +72,7 @@ public class TestSequenceRecordReaderFunction extends BaseSparkTest {
         }
 
         //Load normally, and check that we get the same results (order not withstanding)
-        InputSplit is = new FileSplit(new File(folder), new String[] {"txt"}, true);
+        InputSplit is = new FileSplit(f, new String[] {"txt"}, true);
         //        System.out.println("Locations:");
         //        System.out.println(Arrays.toString(is.locations()));
 
@@ -115,11 +119,10 @@ public class TestSequenceRecordReaderFunction extends BaseSparkTest {
     public void testSequenceRecordReaderFunctionVideo() throws Exception {
         JavaSparkContext sc = getContext();
 
-        ClassPathResource cpr = new ClassPathResource("/video/shapes_0.mp4");
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-spark/video/").copyDirectory(f);
 
-        String path = cpr.getFile().getAbsolutePath();
-        String folder = path.substring(0, path.length() - 12);
-        path = folder + "*";
+        String path = f.getAbsolutePath() + "/*";
 
         JavaPairRDD<String, PortableDataStream> origData = sc.binaryFiles(path);
         //        System.out.println(origData.collectAsMap().keySet());
@@ -151,7 +154,7 @@ public class TestSequenceRecordReaderFunction extends BaseSparkTest {
         }
 
         //Load normally, and check that we get the same results (order not withstanding)
-        InputSplit is = new FileSplit(new File(folder), new String[] {"mp4"}, true);
+        InputSplit is = new FileSplit(f, new String[] {"mp4"}, true);
         //        System.out.println("Locations:");
         //        System.out.println(Arrays.toString(is.locations()));
 

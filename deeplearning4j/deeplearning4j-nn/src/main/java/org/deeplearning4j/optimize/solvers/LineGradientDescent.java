@@ -21,7 +21,6 @@ package org.deeplearning4j.optimize.solvers;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,12 +38,6 @@ public class LineGradientDescent extends BaseOptimizer {
     public LineGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
                     Collection<TrainingListener> trainingListeners, Model model) {
         super(conf, stepFunction, trainingListeners, model);
-    }
-
-    public LineGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction,
-                    Collection<TrainingListener> trainingListeners,
-                    Collection<TerminationCondition> terminationConditions, Model model) {
-        super(conf, stepFunction, trainingListeners, terminationConditions, model);
     }
 
     @Override

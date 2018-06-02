@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -30,9 +31,14 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class JDBCRecordReaderTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     Connection conn;
     EmbeddedDataSource dataSource;
@@ -42,6 +48,9 @@ public class JDBCRecordReaderTest {
 
     @Before
     public void setUp() throws Exception {
+        File f = testDir.newFolder();
+        System.setProperty("derby.system.home", f.getAbsolutePath());
+
         dataSource = new EmbeddedDataSource();
         dataSource.setDatabaseName(dbName);
         dataSource.setCreateDatabase("create");

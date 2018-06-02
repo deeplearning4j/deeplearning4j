@@ -105,7 +105,7 @@ public class TestSerialization {
         ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
         RecordReader r2 = (RecordReader) ois.readObject();
 
-        File f = new ClassPathResource("iris_tab_delim.txt").getFile();
+        File f = new ClassPathResource("datavec-api/iris_tab_delim.txt").getFile();
 
         r1.initialize(new FileSplit(f));
         r2.initialize(new FileSplit(f));

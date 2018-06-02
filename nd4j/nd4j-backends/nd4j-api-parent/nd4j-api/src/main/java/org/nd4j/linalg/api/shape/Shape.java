@@ -1327,7 +1327,7 @@ public class Shape {
         if (rank > 2 || rank < 1)
             return false;
         else {
-            int len = Shape.length(shapeInfo);
+            long len = Shape.length(shapeInfo);
             DataBuffer shape = Shape.shapeOf(shapeInfo);
             return shape.getInt(0) == len || shape.getInt(1) == len;
         }
@@ -2476,13 +2476,14 @@ public class Shape {
      * @param buffer the buffer to get the rank for
      * @return the rank for the shape buffer
      */
-    public static int length(DataBuffer buffer) {
-        int ret = 1;
+    public static long length(DataBuffer buffer) {
+        long ret = 1;
         val rr = buffer.asLong();
         DataBuffer shape = Shape.shapeOf(buffer);
         int rank = Shape.rank(buffer);
         for (int i = 0; i < rank; i++)
             ret *= shape.getLong(i);
+
         return ret;
     }
 
@@ -3423,10 +3424,15 @@ public class Shape {
         }
     }
 
-    public static void assertBroadcastable(@NonNull long[] x, @NonNull long[] y){
-        if(!areShapesBroadcastable(x, y)){
+    public static void assertBroadcastable(@NonNull long[] x, @NonNull long[] y) {
+        assertBroadcastable(x, y, null);
+    }
+
+    public static void assertBroadcastable(@NonNull long[] x, @NonNull long[] y, Class<?> opClass) {
+        if (!areShapesBroadcastable(x, y)) {
             throw new ND4JIllegalStateException("Arrays are different shape and are not broadcastable." +
-                    " Array 1 shape = " + Arrays.toString(x) + ", array 2 shape = " + Arrays.toString(y));
+                    " Array 1 shape = " + Arrays.toString(x) + ", array 2 shape = " + Arrays.toString(y) +
+                    (opClass == null ? "" : " - op: " + opClass.getName()));
         }
     }
 

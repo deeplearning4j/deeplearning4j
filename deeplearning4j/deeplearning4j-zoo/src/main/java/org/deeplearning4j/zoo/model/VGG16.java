@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -52,11 +53,11 @@ public class VGG16 extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return "http://blob.deeplearning4j.org/models/vgg16_dl4j_inference.zip";
+            return DL4JResources.getURLString("models/vgg16_dl4j_inference.zip");
         else if (pretrainedType == PretrainedType.CIFAR10)
-            return "http://blob.deeplearning4j.org/models/vgg16_dl4j_cifar10_inference.v1.zip";
+            return DL4JResources.getURLString("models/vgg16_dl4j_cifar10_inference.v1.zip");
         else if (pretrainedType == PretrainedType.VGGFACE)
-            return "http://blob.deeplearning4j.org/models/vgg16_dl4j_vggface_inference.v1.zip";
+            return DL4JResources.getURLString("models/vgg16_dl4j_vggface_inference.v1.zip");
         else
             return null;
     }

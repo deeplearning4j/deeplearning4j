@@ -45,7 +45,6 @@
             <artifactId>datavec-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.cleartk</groupId>
             <artifactId>cleartk-snowball</artifactId>
@@ -56,13 +55,17 @@
             <artifactId>cleartk-opennlp-tools</artifactId>
             <version>${cleartk.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
             <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
 </project>

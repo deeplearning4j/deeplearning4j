@@ -33,6 +33,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class SubOp extends BaseDynamicTransformOp {
+    public static final String OP_NAME = "subtract";
 
     public SubOp() {}
 
@@ -47,7 +48,7 @@ public class SubOp extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "subtract";
+        return OP_NAME;
     }
 
 

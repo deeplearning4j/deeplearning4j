@@ -33,6 +33,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class DivOp extends BaseDynamicTransformOp {
+    public static final String OP_NAME = "divide";
 
     public DivOp() {}
 
@@ -47,7 +48,7 @@ public class DivOp extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "divide";
+        return OP_NAME;
     }
 
     @Override

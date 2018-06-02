@@ -46,7 +46,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
     @Test
     @Ignore
     public void testCreateNpy() throws Exception {
-        INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("test.npy").getFile());
+        INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("nd4j-tests/test.npy").getFile());
         assertEquals(2, arrCreate.size(0));
         assertEquals(2, arrCreate.size(1));
         assertEquals(1.0, arrCreate.getDouble(0, 0), 1e-1);
@@ -58,7 +58,7 @@ public class TestNDArrayCreation extends BaseNd4jTest {
 
     @Test
     public void testCreateNpy3() throws Exception {
-        INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("rank3.npy").getFile());
+        INDArray arrCreate = Nd4j.createFromNpyFile(new ClassPathResource("nd4j-tests/rank3.npy").getFile());
         assertEquals(8, arrCreate.length());
         assertEquals(3, arrCreate.rank());
 

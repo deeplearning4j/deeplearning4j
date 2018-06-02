@@ -29,11 +29,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * OldReverse 'Subtraction operation
+ * Reverse subtraction operation
  *
  * @author Adam Gibson
  */
 public class RSubOp extends BaseDynamicTransformOp {
+    public static final String OP_NAME = "reversesubtract";
+
 
     public RSubOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace){
         super(sameDiff, args, inPlace);
@@ -51,7 +53,7 @@ public class RSubOp extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "reversesubtract";
+        return OP_NAME;
     }
 
     @Override
