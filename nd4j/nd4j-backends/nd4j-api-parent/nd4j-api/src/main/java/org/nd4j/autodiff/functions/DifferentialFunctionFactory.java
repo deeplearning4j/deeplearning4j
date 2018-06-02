@@ -1236,6 +1236,10 @@ public class DifferentialFunctionFactory {
         return new DiagPart(sameDiff(), new SDVariable[]{sdVariable}, false).outputVariable();
     }
 
+    public SDVariable setDiag(SDVariable in, SDVariable diag){
+        return new MatrixSetDiag(sameDiff(), in, diag, false).outputVariable();
+    }
+
 
     public SDVariable batchToSpace(SDVariable differentialFunction, int[] blocks, int[][] crops) {
         validateDifferentialFunctionsameDiff(differentialFunction);

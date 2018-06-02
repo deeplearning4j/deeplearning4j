@@ -2712,6 +2712,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable setDiag(SDVariable in, SDVariable diag){
+        return setDiag(null, in, diag);
+    }
+
+    public SDVariable setDiag(String name, SDVariable in, SDVariable diag){
+        SDVariable ret = f().setDiag(in, diag);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public SDVariable oneHot(SDVariable indices, int depth) {
         return oneHot(null, indices, depth, -1, 1.00, 0.00);
     }

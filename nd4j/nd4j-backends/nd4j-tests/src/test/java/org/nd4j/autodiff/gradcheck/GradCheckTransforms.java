@@ -395,12 +395,10 @@ public class GradCheckTransforms {
         //Test transforms (non-pairwise)
         Nd4j.getRandom().setSeed(12345);
 
-        // TODO: to speed up integration of new ops for TF import, we sometimes skip "doDiff" implementations.
-        // get back to those after release
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 70; i++) {
+        for (int i = 0; i < 72; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -778,6 +776,15 @@ public class GradCheckTransforms {
                     t = sd.rank(in);
                     expOut = Nd4j.create(new double[]{ia.rank()});
                     break;
+                case 70:
+                    t = sd.onesLike(in);
+                    expOut = Nd4j.ones(ia.shape());
+                    break;
+                case 71:
+                    ia = Nd4j.randn(nOut, nOut);
+                    t = sd.diagPart(in);
+                    expOut = Nd4j.trueVector(new double[]{ia.getDouble(0,0), ia.getDouble(1,1), ia.getDouble(2,2), ia.getDouble(3,3)});
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -856,7 +863,7 @@ public class GradCheckTransforms {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 22; i++) {
+        for (int i = 0; i < 23; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -972,6 +979,16 @@ public class GradCheckTransforms {
                             .addOutputs(expOut)
                             .build();
                     Nd4j.getExecutioner().exec(squareDiff);
+                    break;
+                case 22:
+                    //set diag
+                    ia = Nd4j.randn(nOut, nOut);
+                    ib = Nd4j.randn(1, nOut).reshape(nOut);
+                    expOut = ia.dup();
+                    for( int j=0; j<nOut; j++ ){
+                        expOut.putScalar(j,j, ib.getDouble(j));
+                    }
+                    t = sd.setDiag(in1, in2);
                     break;
                 default:
                     throw new RuntimeException();
