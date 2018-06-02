@@ -25,6 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -96,7 +97,7 @@ public class ScalarSet extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        throw new UnsupportedOperationException();
+        return Collections.singletonList(f().zerosLike(arg()));
     }
 
 }

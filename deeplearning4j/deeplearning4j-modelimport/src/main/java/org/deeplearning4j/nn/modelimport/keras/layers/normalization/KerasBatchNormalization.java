@@ -181,7 +181,9 @@ public class KerasBatchNormalization extends KerasLayer {
                 throw new InvalidKerasConfigurationException(
                         "Parameter " + PARAM_NAME_GAMMA + " does not exist in weights");
         } else {
-            INDArray dummyGamma = Nd4j.onesLike(weights.get(PARAM_NAME_GAMMA));
+            INDArray dummyGamma = weights.containsKey(PARAM_NAME_GAMMA)
+                    ? Nd4j.onesLike(weights.get(PARAM_NAME_GAMMA))
+                    : Nd4j.onesLike(weights.get(PARAM_NAME_BETA));
             this.weights.put(BatchNormalizationParamInitializer.GAMMA, dummyGamma);
         }
         if (weights.containsKey(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()))

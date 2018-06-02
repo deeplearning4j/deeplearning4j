@@ -7,38 +7,16 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by susaneraly on 3/28/18.
  */
 public class Reciprocal extends BaseTransformOp {
-    public Reciprocal(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
-        super(sameDiff, i_v1, i_v2);
-    }
 
-    public Reciprocal(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-    }
-
-    public Reciprocal(SameDiff sameDiff) {
-        super(sameDiff);
-    }
-
-    public Reciprocal(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-    }
-
-    public Reciprocal(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
-
-    public Reciprocal(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Reciprocal(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+    public Reciprocal(SameDiff sameDiff, SDVariable in, boolean inPlace) {
+        super(sameDiff, in, inPlace);
     }
 
     public Reciprocal() {
@@ -86,6 +64,6 @@ public class Reciprocal extends BaseTransformOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         // -1/(x^2)
         SDVariable g = f().pow(arg(), 2).rdiv(-1).mul(i_v1.get(0));
-        return Arrays.asList(g);
+        return Collections.singletonList(g);
     }
 }

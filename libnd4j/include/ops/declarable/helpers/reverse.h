@@ -20,7 +20,7 @@ namespace helpers {
 
 
 	template<typename T>
-	void reverse(const NDArray<T>* input, NDArray<T>* output, const std::vector<int>* intArgs);
+	void reverse(const NDArray<T>* input, NDArray<T>* output, const std::vector<int>* intArgs, bool isLegacy);
 
     
 
