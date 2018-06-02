@@ -108,11 +108,11 @@ public class Gather extends DynamicCustomOp {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
         val broadcast = PropertyMapping.builder()
-                .onnxAttrName("broadcast")
+                .onnxAttrName("indices")
                 .tfInputPosition(1)
-                .propertyNames(new String[]{"broadcast"}).build();
+                .propertyNames(new String[]{"indices"}).build();
 
-        map.put("broadcast", broadcast);
+        map.put("indices", broadcast);
 
         ret.put(tensorflowNames()[0], map);
         ret.put(onnxName(), map);
@@ -120,8 +120,8 @@ public class Gather extends DynamicCustomOp {
         Map<String, PropertyMapping> map2 = new HashMap<>();
         val broadcast2 = PropertyMapping.builder()
                 .tfInputPosition(1)
-                .propertyNames(new String[]{"broadcast"}).build();
-        map2.put("broadcast", broadcast2);
+                .propertyNames(new String[]{"indices"}).build();
+        map2.put("indices", broadcast2);
 
         val axis2 = PropertyMapping.builder()
                 .tfInputPosition(2)

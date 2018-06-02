@@ -13,13 +13,14 @@ namespace nd4j {
             // normal distribution
             auto rng = block.getRNG();
 
-            if (rng == nullptr)
-                return Status::THROW("RNG is null, aborting...");
+            REQUIRE_TRUE(rng != nullptr, 0, "RNG isn't defined for this Graph instance");
 
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
             functions::random::RandomFunction<T>::template execTransform<randomOps::GaussianDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
+
+            z->printIndexedBuffer("random_normal result");
 
             return Status::OK();
         }
