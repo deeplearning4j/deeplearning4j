@@ -2630,11 +2630,11 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
-    public SDVariable stack(SDVariable[] values, int axis) {
-        return stack(null, values, axis);
+    public SDVariable stack(int axis, SDVariable... values) {
+        return stack(null, axis, values);
     }
 
-    public SDVariable stack(String name, SDVariable[] values, int axis) {
+    public SDVariable stack(String name, int axis, SDVariable... values) {
         SDVariable ret = f().stack(values, axis);
         return updateVariableNameAndReference(ret, name);
     }

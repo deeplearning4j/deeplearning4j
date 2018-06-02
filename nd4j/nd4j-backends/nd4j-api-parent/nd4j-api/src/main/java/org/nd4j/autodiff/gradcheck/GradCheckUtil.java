@@ -628,7 +628,7 @@ public class GradCheckUtil {
                 FirstIndex.class,
                 IAMax.class,
                 IAMin.class,
-                LastIndex.class
+                LastIndex.class,
                 //Exclude Random ops
                 LegacyDropOut.class,
                 LegacyDropOutInverted.class,
