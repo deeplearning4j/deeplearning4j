@@ -6,13 +6,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-cuda-9.2</artifactId>
+    <artifactId>nd4j-cuda-9.0</artifactId>
     <name>nd4j-cuda</name>
 
     <properties>
-        <cuda.version>9.2</cuda.version>
-        <cudnn.version>7.1</cudnn.version>
-        <javacpp-presets.cuda.version>1.4.2-SNAPSHOT</javacpp-presets.cuda.version>
+        <cuda.version>9.0</cuda.version>
+        <cudnn.version>7.0</cudnn.version>
+        <javacpp-presets.cuda.version>1.4.1</javacpp-presets.cuda.version>
         <maven.compiler.target>1.7</maven.compiler.target>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.testTarget>1.8</maven.compiler.testTarget>

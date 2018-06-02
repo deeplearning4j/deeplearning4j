@@ -24,15 +24,15 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <version>1.0.0_spark_2-SNAPSHOT</version>
+    <version>1.0.0_spark_1-SNAPSHOT</version>
     <artifactId>datavec-spark_2.10</artifactId>
 
     <properties>
         <!-- These Spark versions have to be here, and NOT in the datavec parent pom. Otherwise, the properties
          will be resolved to their defaults. Whereas when defined here (the version outputStream spark 1 vs. 2 specific) we can
          have different version properties simultaneously (in different pom files) instead of a single global property -->
-        <spark.version>2.1.0</spark.version>
-        <spark.major.version>2</spark.major.version>
+        <spark.version>1.6.3</spark.version>
+        <spark.major.version>1</spark.major.version>
     </properties>
 
     <build>
