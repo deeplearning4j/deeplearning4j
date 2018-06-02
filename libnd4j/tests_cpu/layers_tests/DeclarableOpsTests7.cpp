@@ -2100,13 +2100,14 @@ TEST_F(DeclarableOpsTests7, reduceMean_test7) {
 TEST_F(DeclarableOpsTests7, reduceMeanBP_test1) {
 
     NDArray<float> x('c', {2,3,4});
-    NDArray<float> gradO('c', {4});
-    NDArray<float> exp('c', {2,3,4}, {0.16667, 0.33333, 0.5    , 0.66667,0.83333, 1.     , 1.16667, 1.33333,1.5    , 1.66667, 1.83333, 2.,2.16667, 2.33333, 2.5    , 2.66667,2.83333, 3.     , 3.16667, 3.33333,3.5    , 3.66667, 3.83333, 4.});
-    NDArrayFactory<float>::linspace(1, x);    
+    NDArray<float> gradO('c', {4}, {10,20,30,40});
+    NDArray<float> exp('c', {2,3,4}, {1.666667, 3.333333, 5.000000, 6.666667, 1.666667, 3.333333, 5.000000, 6.666667, 1.666667, 3.333333, 5.000000, 6.666667, 1.666667, 3.333333, 5.000000, 
+                                      6.666667, 1.666667, 3.333333, 5.000000, 6.666667, 1.666667, 3.333333, 5.000000, 6.666667});
+    NDArrayFactory<float>::linspace(1, x);
 
     nd4j::ops::reduce_mean_bp<float> op;
     auto result = op.execute({&x, &gradO}, {}, {0,1});
-    auto output = result->at(0);    
+    auto output = result->at(0);        
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -2120,13 +2121,14 @@ TEST_F(DeclarableOpsTests7, reduceMeanBP_test1) {
 TEST_F(DeclarableOpsTests7, reduceMeanBP_test2) {
 
     NDArray<float> x('c', {2,3,4});
-    NDArray<float> gradO('c', {2,4});
-    NDArray<float> exp('c', {2,3,4}, {0.33333, 0.66667, 1., 1.33333,1.66667, 2., 2.33333, 2.66667,3., 3.33333, 3.66667, 4.,4.33333, 4.66667, 5., 5.33333,5.66667, 6., 6.33333, 6.66667,7., 7.33333, 7.66667, 8.});
+    NDArray<float> gradO('c', {2,4}, {10,20,30,40,50,60,70,80});
+    NDArray<float> exp('c', {2,3,4}, {3.333333, 6.666667, 10.000000, 13.333334, 3.333333, 6.666667, 10.000000, 13.333334, 3.333333, 6.666667, 10.000000, 13.333334, 16.666668, 20.000000, 
+                                     23.333334, 26.666668, 16.666668, 20.000000, 23.333334, 26.666668, 16.666668, 20.000000, 23.333334, 26.666668});
     NDArrayFactory<float>::linspace(1, x);    
 
     nd4j::ops::reduce_mean_bp<float> op;
     auto result = op.execute({&x, &gradO}, {}, {1});
-    auto output = result->at(0);    
+    auto output = result->at(0);        
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -2141,14 +2143,15 @@ TEST_F(DeclarableOpsTests7, reduceMeanBP_test2) {
 TEST_F(DeclarableOpsTests7, reduceMeanBP_test3) {
 
     NDArray<float> x('c', {2,3,4});
-    NDArray<float> gradO(580);
-    NDArray<float> exp('c', {2,3,4}, {0.04167, 0.08333, 0.125  , 0.16667,0.20833, 0.25   , 0.29167, 0.33333,0.375  , 0.41667, 0.45833, 0.5 ,0.54167, 0.58333, 0.625  , 0.66667,
-                                      0.70833, 0.75   , 0.79167, 0.83333,0.875  , 0.91667, 0.95833, 1.});
+    NDArray<float> gradO(48);
+    NDArray<float> exp('c', {2,3,4});
+
+    exp = 2.f;
     NDArrayFactory<float>::linspace(1, x);
             
     nd4j::ops::reduce_mean_bp<float> op;
     auto result = op.execute({&x, &gradO}, {}, {});
-    auto output = result->at(0);    
+    auto output = result->at(0);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
