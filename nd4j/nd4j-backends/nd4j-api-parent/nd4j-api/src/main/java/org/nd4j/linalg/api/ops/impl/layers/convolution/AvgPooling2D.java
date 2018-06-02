@@ -36,13 +36,13 @@ public class AvgPooling2D extends DynamicCustomOp {
 
 
     @Builder(builderMethodName = "builder")
-    public AvgPooling2D(SameDiff sameDiff, SDVariable[] inputs, INDArray[] arrayInputs, INDArray[] arrayOutputs, Pooling2DConfig config) {
-        super(null,sameDiff, inputs, false);
-        if(arrayInputs != null) {
-            addInputArgument(arrayInputs);
+    public AvgPooling2D(SameDiff sameDiff, SDVariable input, INDArray arrayInput, INDArray arrayOutput, Pooling2DConfig config) {
+        super(null,sameDiff, new SDVariable[]{input}, false);
+        if(arrayInput != null) {
+            addInputArgument(arrayInput);
         }
-        if(arrayOutputs != null) {
-            addOutputArgument(arrayOutputs);
+        if(arrayOutput != null) {
+            addOutputArgument(arrayOutput);
         }
         config.setType(Pooling2D.Pooling2DType.AVG);
 

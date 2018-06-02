@@ -34,14 +34,14 @@ public class MaxPooling2D extends DynamicCustomOp {
 
     @Builder(builderMethodName = "builder")
     @SuppressWarnings("Used in lombok")
-    public MaxPooling2D(SameDiff sameDiff, SDVariable[] inputs, INDArray[] arrayInputs, INDArray[] arrayOutputs, Pooling2DConfig config) {
-        super(null, sameDiff, inputs, false);
-        if (arrayInputs != null) {
-            addInputArgument(arrayInputs);
+    public MaxPooling2D(SameDiff sameDiff, SDVariable input, INDArray arrayInput, INDArray arrayOutput, Pooling2DConfig config) {
+        super(null, sameDiff, new SDVariable[]{input}, false);
+        if (arrayInput != null) {
+            addInputArgument(arrayInput);
         }
 
-        if (arrayOutputs != null) {
-            addOutputArgument(arrayOutputs);
+        if (arrayOutput != null) {
+            addOutputArgument(arrayOutput);
         }
         config.setType(Pooling2D.Pooling2DType.MAX);
 

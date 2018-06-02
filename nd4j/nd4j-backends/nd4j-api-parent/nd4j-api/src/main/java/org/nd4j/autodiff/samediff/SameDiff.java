@@ -1721,48 +1721,48 @@ public class SameDiff {
     /**
      * Average pooling 2d operation.
      *
-     * @param inputs       the inputs to average pooling 2d
+     * @param input       the input to average pooling 2d
      * @param pooling2DConfig the configuration
      * @return
      */
-    public SDVariable avgPooling2d(SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
-        return avgPooling2d(null, inputs, pooling2DConfig);
+    public SDVariable avgPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
+        return avgPooling2d(null, input, pooling2DConfig);
     }
 
     /**
      * Average pooling 2d operation.
      *
      * @param name         name of the operation in SameDiff
-     * @param inputs       the inputs to average pooling 2d
+     * @param input       the input to average pooling 2d
      * @param pooling2DConfig the configuration
      * @return
      */
-    public SDVariable avgPooling2d(String name, SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
-        SDVariable ret = f().avgPooling2d(inputs, pooling2DConfig);
+    public SDVariable avgPooling2d(String name, SDVariable input, Pooling2DConfig pooling2DConfig) {
+        SDVariable ret = f().avgPooling2d(input, pooling2DConfig);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
      * Max pooling 2d operation.
      *
-     * @param inputs       the inputs to max pooling 2d
+     * @param input       the input to max pooling 2d
      * @param pooling2DConfig the configuration
      * @return
      */
-    public SDVariable maxPooling2d(SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
-        return maxPooling2d(null, inputs, pooling2DConfig);
+    public SDVariable maxPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
+        return maxPooling2d(null, input, pooling2DConfig);
     }
 
     /**
      * Max pooling 2d operation.
      *
      * @param name         name of the operation in SameDiff
-     * @param inputs       the inputs to max pooling 2d
+     * @param input       the input to max pooling 2d
      * @param pooling2DConfig the configuration
      * @return
      */
-    public SDVariable maxPooling2d(String name, SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
-        SDVariable ret = f().maxPooling2d(inputs, pooling2DConfig);
+    public SDVariable maxPooling2d(String name, SDVariable input, Pooling2DConfig pooling2DConfig) {
+        SDVariable ret = f().maxPooling2d(input, pooling2DConfig);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -1864,6 +1864,18 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable conv2d(SDVariable layerInput, SDVariable weights, Conv2DConfig config){
+        return conv2d(layerInput, weights, null, config);
+    }
+
+    public SDVariable conv2d(SDVariable layerInput, SDVariable weights, SDVariable bias, Conv2DConfig config){
+        SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
+        arr[0] = layerInput;
+        arr[1] = weights;
+        if(bias != null)
+            arr[2] = bias;
+        return conv2d(arr, config);
+    }
 
     /**
      * Conv2d operation.
@@ -2015,6 +2027,23 @@ public class SameDiff {
         return updateVariableNameAndReference(res, name);
     }
 
+    public SDVariable im2Col(SDVariable in, Conv2DConfig config){
+        return im2Col(null, in, config);
+    }
+
+    public SDVariable im2Col(String name, SDVariable in, Conv2DConfig config){
+        SDVariable ret = f().im2Col(in, config);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable col2Im(SDVariable in, Conv2DConfig config){
+        return col2Im(null, in, config);
+    }
+
+    public SDVariable col2Im(String name, SDVariable in, Conv2DConfig config){
+        SDVariable ret = f().col2Im(in, config);
+        return updateVariableNameAndReference(ret, name);
+    }
 
     /**
      * @param name
@@ -4916,15 +4945,14 @@ public class SameDiff {
         if (outputShape == null || outputShape.isEmpty()) {
             if (function instanceof CustomOp) {
                 CustomOp customOp = (CustomOp) function;
-                val descriptor = customOp.getDescriptor();
                 //can't guess number of outputs, variable
-                int num_outputs = 0;
-                if (descriptor != null ) {
-                    num_outputs = descriptor.getNumOutputs();
-                }
-                if (num_outputs <= 0){
-                    num_outputs = function.getNumOutputs();
-                    if(num_outputs <= 0){
+                int num_outputs = function.getNumOutputs(); //Use this in preference - if set. Descriptor might specify 2, but it can sometimes be 2+
+                if(num_outputs <= 0) {
+                    val descriptor = customOp.getDescriptor();
+                    if (descriptor != null) {
+                        num_outputs = descriptor.getNumOutputs();
+                    }
+                    if (num_outputs <= 0) {
                         throw new ND4JIllegalStateException("Could not determine number of output variables for op "
                                 + function.getOwnName() + " - " + function.getClass().getSimpleName() + ". Ops can override" +
                                 " getNumOutputs() to specify number of outputs if required");

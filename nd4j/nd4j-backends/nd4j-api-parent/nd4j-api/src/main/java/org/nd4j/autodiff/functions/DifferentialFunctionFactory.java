@@ -183,9 +183,9 @@ public class DifferentialFunctionFactory {
      * @param pooling2DConfig the configuration
      * @return
      */
-    public SDVariable avgPooling2d(SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
+    public SDVariable avgPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
         AvgPooling2D avgPooling2D = AvgPooling2D.builder()
-                .inputs(inputs)
+                .input(input)
                 .sameDiff(sameDiff())
                 .config(pooling2DConfig)
                 .build();
@@ -200,9 +200,9 @@ public class DifferentialFunctionFactory {
      * @param pooling2DConfig the configuration
      * @return
      */
-    public SDVariable maxPooling2d(SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
+    public SDVariable maxPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
         MaxPooling2D maxPooling2D = MaxPooling2D.builder()
-                .inputs(inputs)
+                .input(input)
                 .sameDiff(sameDiff())
                 .config(pooling2DConfig)
                 .build();
@@ -338,6 +338,14 @@ public class DifferentialFunctionFactory {
 
         val outputVars = batchNorm.outputVariables();
         return outputVars[0];
+    }
+
+    public SDVariable im2Col(SDVariable input, Conv2DConfig config){
+        return new Im2col(sameDiff(), input, config).outputVariable();
+    }
+
+    public SDVariable col2Im(SDVariable input, Conv2DConfig config){
+        return new Col2Im(sameDiff(), input, config).outputVariable();
     }
 
     public SDVariable[] moments(SDVariable input, int... axes) {

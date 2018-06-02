@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
 import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
@@ -646,7 +647,9 @@ public class GradCheckUtil {
                 ProbablisticMerge.class,
                 Range.class,
                 TruncatedNormalDistribution.class,
-                UniformDistribution.class
+                UniformDistribution.class,
+                //Other ops we don't intend to be differentiable (only used as part of backprop, etc)
+                Col2Im.class
         );
 
         return new HashSet<>(list);
