@@ -2584,6 +2584,16 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable rank(SDVariable in){
+        return rank(null, in);
+    }
+
+    public SDVariable rank(String name, SDVariable in){
+        SDVariable ret = f().rank(in);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
     public SDVariable cross(SDVariable a, SDVariable b) {
         return cross(null, a, b);
     }
@@ -5421,7 +5431,7 @@ public class SameDiff {
                 }
 
                 //start with scalar backprop
-                SDVariable initialGrad = sameDiff.var("one-var", Nd4j.scalar(1.0));
+                SDVariable initialGrad = sameDiff.var("one-var", Nd4j.trueScalar(1.0));
                 sameDiff.forwardVarForGrad.put(firstBackward.getVarName(), initialGrad);
                 sameDiff.gradients.put(firstBackward.getVarName(), initialGrad);
 

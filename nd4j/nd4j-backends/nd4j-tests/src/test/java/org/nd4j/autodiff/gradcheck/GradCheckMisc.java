@@ -16,6 +16,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,7 +62,7 @@ public class GradCheckMisc extends BaseGradCheck {
             SDVariable[] toConcat = new SDVariable[shapes.size()];
             INDArray[] orig = new INDArray[shapes.size()];
             for( int j=0; j<shapes.size(); j++ ){
-                orig[j] = Nd4j.rand(shapes.get(i));
+                orig[j] = Nd4j.rand(shapes.get(j));
                 toConcat[j] = sd.var(String.valueOf(i), orig[j]);
             }
 
@@ -697,7 +698,7 @@ public class GradCheckMisc extends BaseGradCheck {
 
         for( int t=0; t<3; t++) {
             for (int numArrays : new int[]{3, 1}) {
-                for (int[] shape : new int[][]{{3, 4}, {3, 4, 5}}) {
+                for (long[] shape : new long[][]{{1}, {3, 4}, {3, 4, 5}}) {
 
                     SameDiff sd = SameDiff.create();
                     SDVariable[] arr = new SDVariable[numArrays];
@@ -723,6 +724,126 @@ public class GradCheckMisc extends BaseGradCheck {
 
                     String msg = merge.opName() + " - numArrays=" + numArrays + ", shape=" + Arrays.toString(shape);
                     SDVariable loss = sd.standardDeviation("loss", merge, true);
+                    check(sd, failed, msg);
+                }
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testStack(){
+        Nd4j.getRandom().setSeed(12345);
+
+        List<String> failed = new ArrayList<>();
+
+        List<long[]> origShape = Arrays.asList(
+                new long[]{1},
+                new long[]{1,1},
+                new long[]{3,4},
+                new long[]{3,4,5},
+                new long[]{3,4,5,6}
+        );
+
+        for( long[] shape : origShape ){
+            for( int axis = 0; axis <= shape.length; axis++ ){
+                for( int numInputs : new int[]{1, 3}){
+
+                    long[] expOutShape = new long[shape.length+1];
+                    int x=0;
+                    for( int i=0; i<=shape.length; i++ ){
+                        if(i == axis){
+                            expOutShape[i] = numInputs;
+                        } else {
+                            expOutShape[i] = shape[x++];
+                        }
+                    }
+
+
+                    SameDiff sd = SameDiff.create();
+
+                    SDVariable[] in = new SDVariable[numInputs];
+                    INDArray[] inArr = new INDArray[numInputs];
+                    for( int i=0; i<numInputs; i++ ){
+                        inArr[i] = Nd4j.rand(shape);
+                        in[i] = sd.var(String.valueOf(i), inArr[i]);
+                    }
+
+                    SDVariable stack = sd.stack(axis, in);
+
+                    INDArray out = sd.execAndEndResult();
+                    assertArrayEquals(expOutShape, out.shape());
+
+                    if(ArrayUtil.prodLong(shape) == 1){
+                        SDVariable loss = sd.sum("loss", stack);
+                    } else {
+                        SDVariable loss = sd.standardDeviation("loss", stack, true);
+                    }
+
+                    String msg = Arrays.toString(shape) + ", axis=" + axis + ", numInputs=" + numInputs;
+                    check(sd, failed, msg);
+                }
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+
+    @Test
+    public void testUnStack(){
+        Nd4j.getRandom().setSeed(12345);
+
+        List<String> failed = new ArrayList<>();
+
+        List<long[]> unstackedShape = Arrays.asList(
+                new long[]{1},
+                new long[]{1,1},
+                new long[]{3,4},
+                new long[]{3,4,5},
+                new long[]{3,4,5,6}
+        );
+
+        for( long[] shape : unstackedShape ){
+            for( int axis = 0; axis <= shape.length; axis++ ){
+                for( int numInputs : new int[]{1, 3}){
+
+                    long[] stackedShape = new long[shape.length+1];
+                    int x=0;
+                    for( int i=0; i<=shape.length; i++ ){
+                        if(i == axis){
+                            stackedShape[i] = numInputs;
+                        } else {
+                            stackedShape[i] = shape[x++];
+                        }
+                    }
+
+
+                    SameDiff sd = SameDiff.create();
+                    INDArray in = Nd4j.rand(stackedShape);
+                    SDVariable var = sd.var("var", in);
+
+                    SDVariable[] unstacked = sd.unstack(var, axis, numInputs);
+
+                    //for gradient check, need to combine to single scalar output...
+                    SDVariable merged = sd.mergeAvg(unstacked);
+
+                    if(ArrayUtil.prodLong(stackedShape) == 1){
+                        SDVariable loss = sd.sum("loss", merged);
+                    } else {
+                        SDVariable loss = sd.standardDeviation("loss", merged, true);
+                    }
+
+                    String msg = "Unstacked shape = " + Arrays.toString(shape) + ", stacked shape = " + Arrays.toString(stackedShape)
+                            + ", axis=" + axis + ", numInputs=" + numInputs;
+
+                    sd.execAndEndResult();
+                    for(SDVariable v : unstacked){
+                        assertArrayEquals(msg, shape, v.getArr().shape());
+                    }
+
+
                     check(sd, failed, msg);
                 }
             }

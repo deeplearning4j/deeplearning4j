@@ -24,6 +24,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
@@ -399,7 +400,7 @@ public class GradCheckTransforms {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 68; i++) {
+        for (int i = 0; i < 70; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -768,6 +769,14 @@ public class GradCheckTransforms {
                 case 67:
                     t = sd.reciprocal(in);
                     expOut = ia.rdiv(1.0);
+                    break;
+                case 68:
+                    t = sd.shape(in);
+                    expOut = Nd4j.create(ArrayUtil.toDouble(ia.shape()));
+                    break;
+                case 69:
+                    t = sd.rank(in);
+                    expOut = Nd4j.create(new double[]{ia.rank()});
                     break;
                 default:
                     throw new RuntimeException();

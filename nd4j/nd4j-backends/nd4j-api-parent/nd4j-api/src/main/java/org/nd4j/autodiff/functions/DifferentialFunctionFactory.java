@@ -1287,6 +1287,10 @@ public class DifferentialFunctionFactory {
         return new org.nd4j.linalg.api.ops.impl.shape.Shape(sameDiff(), df, false).outputVariable();
     }
 
+    public SDVariable rank(SDVariable df){
+        return new Rank(sameDiff(), df, false).outputVariable();
+    }
+
     public SDVariable gather(SDVariable df, int[] indices, int axis) {
         validateDifferentialFunctionsameDiff(df);
         return new Gather(sameDiff(), df, indices, axis, false).outputVariable();

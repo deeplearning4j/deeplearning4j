@@ -200,7 +200,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             }
             return null;
         } else {
-            INDArray newAlloc = getWeightInitScheme().create(sameDiff.getShapeForVarName(getVarName()));
+            long[] shape = sameDiff.getShapeForVarName(getVarName());
+            INDArray newAlloc = getWeightInitScheme().create(shape);
             sameDiff.associateArrayWithVariable(newAlloc,this);
 
         }
