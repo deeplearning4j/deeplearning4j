@@ -142,6 +142,8 @@
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
+        <maven.compiler.testSource>1.8</maven.compiler.testSource>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <deeplearning4j.version>1.0.0-SNAPSHOT</deeplearning4j.version>
@@ -174,7 +176,12 @@
 
         <javacpp.version>1.4.2-SNAPSHOT</javacpp.version>
         <javacpp-presets.version>1.4.2-SNAPSHOT</javacpp-presets.version>
+        <javacpp-presets.cuda.version>1.4.1</javacpp-presets.cuda.version>
         <javacv.version>1.4.2-SNAPSHOT</javacv.version>
+        <cuda.version>9.0</cuda.version>
+        <cudnn.version>7.0</cudnn.version>
+        <openblas.version>0.3.0</openblas.version>
+        <mkl.version>2018.1</mkl.version>
         <opencv.version>3.4.1</opencv.version>
         <ffmpeg.version>4.0</ffmpeg.version>
         <leptonica.version>1.76.0</leptonica.version>

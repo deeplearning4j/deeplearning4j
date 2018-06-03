@@ -9,15 +9,6 @@
     <artifactId>nd4j-native</artifactId>
     <name>nd4j-native</name>
 
-    <properties>
-        <openblas.version>0.2.20</openblas.version>
-        <mkl.version>2018.1</mkl.version>
-        <maven.compiler.target>1.7</maven.compiler.target>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
-        <maven.compiler.testSource>1.8</maven.compiler.testSource>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>${dependency.groupId}</groupId>

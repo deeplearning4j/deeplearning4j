@@ -10,9 +10,6 @@
     <name>nd4j-cuda-platform</name>
 
     <properties>
-        <cuda.version>9.0</cuda.version>
-        <cudnn.version>7.0</cudnn.version>
-        <javacpp-presets.cuda.version>1.4.1</javacpp-presets.cuda.version>
         <nd4j.backend>nd4j-cuda-${cuda.version}</nd4j.backend>
     </properties>
 
