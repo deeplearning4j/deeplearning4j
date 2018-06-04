@@ -333,7 +333,7 @@ namespace randomOps {
 
         static inline void
         specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
-            const T two_pi = (T) 2.0 * 3.14159265358979323846;
+            const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
             auto zLength = shape::length(zShapeBuffer);
             auto yEWS = shape::elementWiseStride(yShapeBuffer);
@@ -353,7 +353,7 @@ namespace randomOps {
             T mean = extraArguments[0];
             T stddev = extraArguments[1];
 
-#pragma omp parallel num_threads(_threads) if (_threads > 1)
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
                 Nd4jLong start = span * tid;
@@ -489,7 +489,7 @@ namespace randomOps {
 
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
-#pragma omp parallel num_threads(_threads) if (_threads > 1)
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
                 Nd4jLong start = span * tid;
@@ -615,7 +615,7 @@ namespace randomOps {
 
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
-#pragma omp parallel num_threads(_threads) if (_threads > 1)
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
                 Nd4jLong start = span * tid;
@@ -770,7 +770,7 @@ namespace randomOps {
             T mean = extraArguments[0];
             T stddev = extraArguments[1];
 
-#pragma omp parallel num_threads(_threads) if (_threads > 1)
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
                 Nd4jLong start = span * tid; 
@@ -928,7 +928,7 @@ namespace randomOps {
             T mean = extraArguments[0];
             T stddev = extraArguments[1];
 
-#pragma omp parallel num_threads(_threads) if (_threads > 1)
+#pragma omp parallel num_threads(_threads) if (_threads > 1) proc_bind(spread)
             {
                 int tid = omp_get_thread_num();
                 Nd4jLong start = span * tid;
