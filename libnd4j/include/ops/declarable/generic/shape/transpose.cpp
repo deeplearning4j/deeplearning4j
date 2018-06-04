@@ -23,7 +23,6 @@ namespace ops {
                 auto t = x->transpose();
                 output->assign(t);
                 STORE_RESULT(*output);
-
                 delete t;
             }
         } else {
