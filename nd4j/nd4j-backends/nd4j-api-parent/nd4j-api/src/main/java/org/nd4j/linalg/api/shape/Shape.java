@@ -3424,10 +3424,15 @@ public class Shape {
         }
     }
 
-    public static void assertBroadcastable(@NonNull long[] x, @NonNull long[] y){
-        if(!areShapesBroadcastable(x, y)){
+    public static void assertBroadcastable(@NonNull long[] x, @NonNull long[] y) {
+        assertBroadcastable(x, y, null);
+    }
+
+    public static void assertBroadcastable(@NonNull long[] x, @NonNull long[] y, Class<?> opClass) {
+        if (!areShapesBroadcastable(x, y)) {
             throw new ND4JIllegalStateException("Arrays are different shape and are not broadcastable." +
-                    " Array 1 shape = " + Arrays.toString(x) + ", array 2 shape = " + Arrays.toString(y));
+                    " Array 1 shape = " + Arrays.toString(x) + ", array 2 shape = " + Arrays.toString(y) +
+                    (opClass == null ? "" : " - op: " + opClass.getName()));
         }
     }
 

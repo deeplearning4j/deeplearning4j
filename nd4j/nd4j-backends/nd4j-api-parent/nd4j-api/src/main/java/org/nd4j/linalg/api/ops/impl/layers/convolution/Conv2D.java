@@ -239,16 +239,15 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        List<SDVariable> ret = new ArrayList<>();
-        List<DifferentialFunction> inputs = new ArrayList<>();
-        inputs.addAll(Arrays.asList(args()));
+        List<SDVariable> inputs = new ArrayList<>(Arrays.asList(args()));
         inputs.add(f1.get(0));
         Conv2DDerivative conv2DDerivative = Conv2DDerivative.derivativeBuilder()
+                .sameDiff(sameDiff)
                 .config(config)
                 .outputs(outputArguments())
                 .inputFunctions(inputs.toArray(new SDVariable[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(conv2DDerivative.outputVariables()));
+        List<SDVariable> ret = Arrays.asList(conv2DDerivative.outputVariables());
         return ret;
     }
 

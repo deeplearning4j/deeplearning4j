@@ -114,4 +114,9 @@ public class Unstack extends DynamicCustomOp {
         return num;
     }
 
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Collections.singletonList(sameDiff.stack(axis, f1.toArray(new SDVariable[f1.size()])));
+    }
+
 }
