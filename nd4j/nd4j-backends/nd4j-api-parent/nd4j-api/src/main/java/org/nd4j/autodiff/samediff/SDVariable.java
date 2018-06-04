@@ -7,6 +7,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -159,19 +160,30 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     /**
-     * A getter for the allocated ndarray
-     * with this {@link SDVariable}.
+     * A getter for the allocated ndarray with this {@link SDVariable}.
      *
-     * This getter will lazy initialize an array if one is not found
-     * based on the associated shape and {@link WeightInitScheme}
-     * if neither are found, an {@link ND4JIllegalStateException}
-     * is thrown.
+     * This getter will lazy initialize an array if one is not found based on the associated shape and
+     * {@link WeightInitScheme} - if this is possible. If this is not possible (due to shapes being unknown, etc)
+     * null is returned
      *
-     * If a {@link DifferentialFunction} is defined, note that
-     * its getArr() method is called instead.
      * @return the {@link INDArray} associated with this variable.
      */
     public INDArray getArr() {
+        return getArr(false);
+    }
+
+    /**
+     * A getter for the allocated ndarray with this {@link SDVariable}.
+     *
+     * This getter will lazy initialize an array if one is not found based on the associated shape and
+     * {@link WeightInitScheme} - if this is possible.<br>
+     * If this is not possible (due to shapes being unknown, etc) either:<br>
+     * (a) null is returned - if enforceExistence == false, or<br>
+     * (b) an IllegalStateException is thrown, if enforceExistence == true
+     *
+     * @return the {@link INDArray} associated with this variable.
+     */
+    public INDArray getArr(boolean enforceExistence){
         if(sameDiff.arrayAlreadyExistsForVarName(getVarName()))
             return sameDiff.getArrForVarName(getVarName());
 
@@ -181,10 +193,13 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                     getScalarValue().doubleValue());
             sameDiff.associateArrayWithVariable(arr,this);
         }
-        else if(sameDiff.getShapeForVarName(getVarName()) == null)
+        else if(sameDiff.getShapeForVarName(getVarName()) == null) {
+            if (enforceExistence) {
+                throw new IllegalStateException("Cannot get array for SDVariable \"" + getVarName() + "\": no array has" +
+                        " been defined, and array shape cannot be calculated");
+            }
             return null;
-
-        else {
+        } else {
             INDArray newAlloc = getWeightInitScheme().create(sameDiff.getShapeForVarName(getVarName()));
             sameDiff.associateArrayWithVariable(newAlloc,this);
 
@@ -253,6 +268,124 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.var(this);
     }
 
+
+    /**
+     * Negate op
+     * @return Negated variable
+     */
+    public SDVariable neg(){
+        return f().neg(this);
+    }
+
+    /**
+     * Negate op
+     * @return Negated variable
+     */
+    public SDVariable neg(String name){
+        return sameDiff.neg(name, this);
+    }
+
+    public SDVariable lt(double value){
+        return lt(null, value);
+    }
+
+    public SDVariable lt(String name, double value){
+        return sameDiff.lt(name, this, value);
+    }
+
+    public SDVariable lte(double value){
+        return lte(null, value);
+    }
+
+    public SDVariable lte(String name, double value){
+        return sameDiff.lte(name, this, value);
+    }
+
+    public SDVariable gt(double value){
+        return gt(null, value);
+    }
+
+    public SDVariable gt(String name, double value){
+        return sameDiff.gt(name, this, value);
+    }
+
+    public SDVariable gte(double value){
+        return gte(null, value);
+    }
+
+    public SDVariable gte(String name, double value){
+        return sameDiff.gte(name, this, value);
+    }
+
+
+    public SDVariable eq(double value){
+        return eq(null, value);
+    }
+
+    public SDVariable eq(String name, double value){
+        return sameDiff.eq(name, this, value);
+    }
+
+    public SDVariable neq(double value){
+        return neq(null, value);
+    }
+
+    public SDVariable neq(String name, double value){
+        return sameDiff.neq(name, this, value);
+    }
+
+
+
+
+
+    public SDVariable lt(SDVariable other){
+        return lt(null, other);
+    }
+
+    public SDVariable lt(String name, SDVariable other){
+        return sameDiff.lt(name, this, other);
+    }
+
+    public SDVariable lte(SDVariable other){
+        return lte(null, other);
+    }
+
+    public SDVariable lte(String name, SDVariable other){
+        return sameDiff.lte(name, this, other);
+    }
+
+    public SDVariable gt(SDVariable other){
+        return gt(null, other);
+    }
+
+    public SDVariable gt(String name, SDVariable other){
+        return sameDiff.gt(name, this, other);
+    }
+
+    public SDVariable gte(SDVariable other){
+        return gte(null, other);
+    }
+
+    public SDVariable gte(String name, SDVariable other){
+        return sameDiff.gte(name, this, other);
+    }
+
+
+    public SDVariable eq(SDVariable other){
+        return eq(null, other);
+    }
+
+    public SDVariable eq(String name, SDVariable other){
+        return sameDiff.eq(name, this, other);
+    }
+
+    public SDVariable neq(SDVariable other){
+        return neq(null, other);
+    }
+
+    public SDVariable neq(String name, SDVariable other){
+        return sameDiff.neq(name, this, other);
+    }
 
 
     //scalars
@@ -851,6 +984,10 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return result;
     }
 
+    public SDVariable setArray(INDArray array){
+        sameDiff.associateArrayWithVariable(array, this);
+        return this;
+    }
 
 
     /**
@@ -858,21 +995,13 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public INDArray eval() {
-
-        SameDiff exec = sameDiff.dup();
-        exec.defineFunction("output", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                return new SDVariable[] { SDVariable.this};
-            }
-        });
-
-        SDVariable output = exec.invokeFunctionOn("output",exec);
-        return output.getSameDiff().execAndEndResult(this.outputIndex);
+        sameDiff.exec();
+        return getArr();
     }
 
-    public int outputIndex = 0;
+  private int outputIndex = 0;
 
+  private DifferentialFunction creator;
 
 
     private void assertShapeEquals(SDVariable variable) {

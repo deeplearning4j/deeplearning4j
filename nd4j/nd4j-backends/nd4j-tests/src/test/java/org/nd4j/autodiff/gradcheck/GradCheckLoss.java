@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -20,25 +21,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
-public class GradCheckLoss {
-    private DataBuffer.Type initialType;
-
-    @Before
-    public void before() throws Exception {
-        Nd4j.create(1);
-        initialType = Nd4j.dataType();
-
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
-        Nd4j.getRandom().setSeed(123);
+public class GradCheckLoss extends BaseGradCheck {
+    public GradCheckLoss(Nd4jBackend backend) {
+        super(backend);
     }
-
-    @After
-    public void after() throws Exception {
-        Nd4j.setDataType(initialType);
-    }
-
-
-
 
     @Test
     public void testLossSimple2d() {

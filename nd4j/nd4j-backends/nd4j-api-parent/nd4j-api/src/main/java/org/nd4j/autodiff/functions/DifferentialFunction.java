@@ -9,6 +9,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -377,6 +378,13 @@ public abstract class DifferentialFunction {
         return outputVariables(getOwnName() != null ? getOwnName() : opName());
     }
 
+    /**
+     * @return The output variable, or the first output variable, if multiple outputs exist
+     */
+    public SDVariable outputVariable(){
+        return outputVariables()[0];
+    }
+
 
     public String[] outputVariablesNames(){
         SDVariable[] outputVars = outputVariables();
@@ -432,6 +440,18 @@ public abstract class DifferentialFunction {
      */
     public  SDVariable[] args() {
         return sameDiff.getInputVariablesForFunction(this);
+    }
+
+    /**
+     * Return the specified argument for this function
+     * @param num Number of the argument. Must be in range 0 to numArgs - 1 inclusive
+     * @return Specified argument
+     */
+    public SDVariable arg(int num){
+        SDVariable[] args = args();
+        Preconditions.checkNotNull(args, "Arguments are null for function %s", this.getOwnName());
+        Preconditions.checkArgument(num >= 0 && num < args.length, "Invalid index: must be 0 to numArgs (0 <= idx < %s)", args.length);
+        return args[num];
     }
 
     public String[] argNames(){
