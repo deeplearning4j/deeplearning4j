@@ -140,7 +140,7 @@ public class Gather extends DynamicCustomOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> gradOut){
+    public List<SDVariable> doDiff(List<SDVariable> i_v){
         //2 args: input and indices. Plus integer dimension arg
         //Gather backprop is just scatter add
 
@@ -148,9 +148,24 @@ public class Gather extends DynamicCustomOp {
         SDVariable inputGrad = sameDiff.zerosLike(arg(0));
 
         if(axis == 0){
-            inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), gradOut.get(0));
+            inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v.get(0));
         } else {
-            throw new UnsupportedOperationException("Gather backprop for axis > 0 not yet implemented");
+            int ndim = arg(0).getShape().length;
+            int[] permDims = new int[ndim];
+            permDims[0] = axis;
+            for(int i=0; i<axis; i++){
+                permDims[i+1] = i;
+            }
+            for(int i=axis+1; i<ndim; i++){
+                permDims[i] = i;
+            }
+            inputGrad = sameDiff.permute(inputGrad, permDims);
+            inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v.get(0));
+            int[] reverseDims = new int[ndim];
+            for(int i=0; i<ndim; i++){
+                reverseDims[permDims[i]] = i;
+            }
+            inputGrad = sameDiff.permute(inputGrad, reverseDims);
         }
 
         return Arrays.asList(inputGrad, indicesGrad);
