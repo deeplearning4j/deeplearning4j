@@ -6,9 +6,10 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cstdio>
+#ifdef __GNUC__
 #include <sys/types.h>
 #include <sys/wait.h>
-
+#endif
 namespace nd4j {
 namespace graph {
 
