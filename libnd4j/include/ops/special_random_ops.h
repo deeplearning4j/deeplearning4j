@@ -6,6 +6,7 @@
 #define LIBND4J_SPECIAL_RANDOM_OPS_H
 
 #include <ops/random_ops.h>
+#include <helpers/shape.h>
 
 namespace randomOps {
 
