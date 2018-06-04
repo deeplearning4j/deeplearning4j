@@ -38,7 +38,7 @@ __device__ void scalarSimpleGeneric(
         T *dy,
         Nd4jLong incy, T *params,
         T *result, Nd4jLong resultStride, int *allocationBuffer) {
-/*
+
     functions::scalar::ScalarTransform<T>::template transformCuda<OpClass>(
             n,
             dx,
@@ -49,7 +49,6 @@ __device__ void scalarSimpleGeneric(
             resultStride,
             allocationBuffer,
             NULL);
-    */
 }
 
 /*
