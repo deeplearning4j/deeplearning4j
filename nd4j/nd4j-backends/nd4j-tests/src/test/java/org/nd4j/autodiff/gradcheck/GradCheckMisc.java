@@ -10,17 +10,20 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Slf4j
 public class GradCheckMisc extends BaseGradCheck {
@@ -41,14 +44,39 @@ public class GradCheckMisc extends BaseGradCheck {
      */
 
     @Test
-    public void testConcat(){
+    public void testConcat() {
 
-        int[] concatDim = new int[]{0,0,0,1,1,1,2,2,2};
+//        int[] concatDim = new int[]{0,0,0,1,1,1,2,2,2};
+        int[] concatDim = new int[]{0, 0, 0};
         List<List<int[]>> origShapes = new ArrayList<>();
-        origShapes.add(Arrays.asList(new int[]{3,4}, new int[]{5,4}));
+        origShapes.add(Arrays.asList(new int[]{3, 4}, new int[]{5, 4}));
+        origShapes.add(Arrays.asList(new int[]{1, 2, 3}, new int[]{1, 2, 3}, new int[]{2, 2, 3}));
+        origShapes.add(Arrays.asList(new int[]{1, 2, 3, 4}, new int[]{2, 2, 3, 4}));
 
+        List<String> failed = new ArrayList<>();
 
-        fail("not yet implemented");
+        for (int i = 0; i < concatDim.length; i++) {
+
+            SameDiff sd = SameDiff.create();
+            List<int[]> shapes = origShapes.get(i);
+
+            SDVariable[] toConcat = new SDVariable[shapes.size()];
+            INDArray[] orig = new INDArray[shapes.size()];
+            for (int j = 0; j < shapes.size(); j++) {
+                orig[j] = Nd4j.rand(shapes.get(j));
+                toConcat[j] = sd.var(String.valueOf(i), orig[j]);
+            }
+
+            INDArray exp = Nd4j.concat(concatDim[i], orig);
+
+            SDVariable sdConcat = sd.concat(0, toConcat);
+            SDVariable stdev = sd.standardDeviation("out", sdConcat, true);
+
+            String msg = "i=" + i + ", concatDim=" + concatDim[i];
+            check(sd, failed, msg);
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test
@@ -87,6 +115,9 @@ public class GradCheckMisc extends BaseGradCheck {
 
         for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
             for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape)) {
+                String msg = "permute=" + Arrays.toString(perm) + ", source=" + p.getSecond();
+                System.out.println(msg);
+
                 INDArray inArr = p.getFirst().muli(100);
 
                 SameDiff sd = SameDiff.create();
@@ -97,9 +128,9 @@ public class GradCheckMisc extends BaseGradCheck {
 
                 INDArray out = sd.execAndEndResult();
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
-                assertEquals(expOut, out);
+                assertEquals(msg, expOut, out);
 
-                String msg = "permute=" + Arrays.toString(perm) + ", source=" + p.getSecond();
+
                 check(sd, failed, msg);
             }
         }
@@ -291,12 +322,12 @@ public class GradCheckMisc extends BaseGradCheck {
 
         List<String> failed = new ArrayList<>();
 
-        for (int[] dim_sz1s : new int[][]{{0, 1}, {0, 2}, {1, 2}, {0,1,2}}) {
+        for (int[] dim_sz1s : new int[][]{{0, 1}, {0, 2}, {1, 2}, {0, 1, 2}}) {
 
             int[] otherShape = {3, 4, 5};
             otherShape[dim_sz1s[0]] = 1;
             otherShape[dim_sz1s[1]] = 1;
-            if(dim_sz1s.length == 3){
+            if (dim_sz1s.length == 3) {
                 otherShape[dim_sz1s[2]] = 1;
             }
 
@@ -351,7 +382,7 @@ public class GradCheckMisc extends BaseGradCheck {
                 String msg = "(test " + i + ": " + name + ", dimensions=" + Arrays.toString(dim_sz1s) + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray in3Arr = Nd4j.randn(new int[]{3,4,5}).muli(100);
+                INDArray in3Arr = Nd4j.randn(new int[]{3, 4, 5}).muli(100);
                 INDArray in2Arr = Nd4j.randn(otherShape).muli(100);
 
                 sd.associateArrayWithVariable(in3Arr, in3);
@@ -375,19 +406,19 @@ public class GradCheckMisc extends BaseGradCheck {
         List<String> failed = new ArrayList<>();
 
         //Test cases: in1Shape, in2Shape, shapeOf(op(in1,in2))
-        List<Triple<long[],long[], long[]>> testCases = new ArrayList<>();
-        testCases.add(new Triple<>(new long[]{3,1}, new long[]{1,4}, new long[]{3,4}));
-        testCases.add(new Triple<>(new long[]{3,1}, new long[]{3,4}, new long[]{3,4}));
-        testCases.add(new Triple<>(new long[]{3,4}, new long[]{1,4}, new long[]{3,4}));
-        testCases.add(new Triple<>(new long[]{3,4,1}, new long[]{1,1,5}, new long[]{3,4,5}));
-        testCases.add(new Triple<>(new long[]{3,4,1}, new long[]{3,1,5}, new long[]{3,4,5}));
-        testCases.add(new Triple<>(new long[]{3,1,5}, new long[]{1,4,1}, new long[]{3,4,5}));
-        testCases.add(new Triple<>(new long[]{3,1,5}, new long[]{1,4,5}, new long[]{3,4,5}));
-        testCases.add(new Triple<>(new long[]{3,1,5}, new long[]{3,4,5}, new long[]{3,4,5}));
-        testCases.add(new Triple<>(new long[]{3,1,1,1}, new long[]{1,4,5,6}, new long[]{3,4,5,6}));
-        testCases.add(new Triple<>(new long[]{1,1,1,6}, new long[]{3,4,5,6}, new long[]{3,4,5,6}));
-        testCases.add(new Triple<>(new long[]{1,4,5,1}, new long[]{3,1,1,6}, new long[]{3,4,5,6}));
-        testCases.add(new Triple<>(new long[]{1,6}, new long[]{3,4,5,1}, new long[]{3,4,5,6}));
+        List<Triple<long[], long[], long[]>> testCases = new ArrayList<>();
+        testCases.add(new Triple<>(new long[]{3, 1}, new long[]{1, 4}, new long[]{3, 4}));
+        testCases.add(new Triple<>(new long[]{3, 1}, new long[]{3, 4}, new long[]{3, 4}));
+        testCases.add(new Triple<>(new long[]{3, 4}, new long[]{1, 4}, new long[]{3, 4}));
+        testCases.add(new Triple<>(new long[]{3, 4, 1}, new long[]{1, 1, 5}, new long[]{3, 4, 5}));
+        testCases.add(new Triple<>(new long[]{3, 4, 1}, new long[]{3, 1, 5}, new long[]{3, 4, 5}));
+        testCases.add(new Triple<>(new long[]{3, 1, 5}, new long[]{1, 4, 1}, new long[]{3, 4, 5}));
+        testCases.add(new Triple<>(new long[]{3, 1, 5}, new long[]{1, 4, 5}, new long[]{3, 4, 5}));
+        testCases.add(new Triple<>(new long[]{3, 1, 5}, new long[]{3, 4, 5}, new long[]{3, 4, 5}));
+        testCases.add(new Triple<>(new long[]{3, 1, 1, 1}, new long[]{1, 4, 5, 6}, new long[]{3, 4, 5, 6}));
+        testCases.add(new Triple<>(new long[]{1, 1, 1, 6}, new long[]{3, 4, 5, 6}, new long[]{3, 4, 5, 6}));
+        testCases.add(new Triple<>(new long[]{1, 4, 5, 1}, new long[]{3, 1, 1, 6}, new long[]{3, 4, 5, 6}));
+        testCases.add(new Triple<>(new long[]{1, 6}, new long[]{3, 4, 5, 1}, new long[]{3, 4, 5, 6}));
 
         for (val p : testCases) {
 
@@ -572,12 +603,12 @@ public class GradCheckMisc extends BaseGradCheck {
     }
 
     @Test
-    public void testScatterOpGradients(){
+    public void testScatterOpGradients() {
 
 
         List<String> failed = new ArrayList<>();
 
-        for( int i=0; i<5; i++ ){
+        for (int i = 0; i < 5; i++) {
             Nd4j.getRandom().setSeed(12345);
 
             SameDiff sd = SameDiff.create();
@@ -587,13 +618,13 @@ public class GradCheckMisc extends BaseGradCheck {
             SDVariable updates = sd.var("updates", new int[]{5, 10});
 
 
-            in.setArray(Nd4j.rand(20,10));
-            indices.setArray(Nd4j.create(new double[]{3,4,5, 10, 18}));
-            updates.setArray(Nd4j.rand(5,10).muli(2).subi(1));
+            in.setArray(Nd4j.rand(20, 10));
+            indices.setArray(Nd4j.create(new double[]{3, 4, 5, 10, 18}));
+            updates.setArray(Nd4j.rand(5, 10).muli(2).subi(1));
 
             SDVariable scatter;
             String name;
-            switch(i) {
+            switch (i) {
                 case 0:
                     scatter = sd.scatterAdd("s", in, indices, updates);
                     name = "scatterAdd";
@@ -627,18 +658,18 @@ public class GradCheckMisc extends BaseGradCheck {
     }
 
     @Test
-    public void testGatherGradient(){
+    public void testGatherGradient() {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
 
-        for(int rank=2; rank<=3; rank++){
-            for( int dim=0; dim<rank; dim++ ){
+        for (int rank = 2; rank <= 3; rank++) {
+            for (int dim = 0; dim < rank; dim++) {
                 SameDiff sd = SameDiff.create();
 
                 int[] inShape;
-                if(rank == 2){
-                    inShape = new int[]{10,10};
+                if (rank == 2) {
+                    inShape = new int[]{10, 10};
                 } else {
                     inShape = new int[]{10, 10, 10};
                 }
@@ -649,7 +680,7 @@ public class GradCheckMisc extends BaseGradCheck {
                 SDVariable gather = sd.gather(in, indices, dim);
                 sd.execAndEndResult();  //TODO REMOVE THIS
 
-                SDVariable loss = sd.standardDeviation("loss", gather,true, Integer.MAX_VALUE);
+                SDVariable loss = sd.standardDeviation("loss", gather, true, Integer.MAX_VALUE);
 
                 String msg = "rank=" + rank + ", dim=" + dim;
                 check(sd, failed, msg);
@@ -661,14 +692,14 @@ public class GradCheckMisc extends BaseGradCheck {
 
 
     @Test
-    public void testMerge(){
+    public void testMerge() {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
 
-        for( int t=0; t<3; t++) {
+        for (int t = 0; t < 3; t++) {
             for (int numArrays : new int[]{3, 1}) {
-                for (int[] shape : new int[][]{{3, 4}, {3, 4, 5}}) {
+                for (long[] shape : new long[][]{{1}, {3, 4}, {3, 4, 5}}) {
 
                     SameDiff sd = SameDiff.create();
                     SDVariable[] arr = new SDVariable[numArrays];
@@ -678,7 +709,7 @@ public class GradCheckMisc extends BaseGradCheck {
                     }
 
                     SDVariable merge;
-                    switch (t){
+                    switch (t) {
                         case 0:
                             merge = sd.mergeAdd(arr);
                             break;
@@ -697,6 +728,190 @@ public class GradCheckMisc extends BaseGradCheck {
                     check(sd, failed, msg);
                 }
             }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testStack() {
+        Nd4j.getRandom().setSeed(12345);
+
+        List<String> failed = new ArrayList<>();
+
+        List<long[]> origShape = Arrays.asList(
+                new long[]{1},
+                new long[]{1, 1},
+                new long[]{3, 4},
+                new long[]{3, 4, 5},
+                new long[]{3, 4, 5, 6}
+        );
+
+        for (long[] shape : origShape) {
+            for (int axis = 0; axis <= shape.length; axis++) {
+                for (int numInputs : new int[]{1, 3}) {
+
+                    long[] expOutShape = new long[shape.length + 1];
+                    int x = 0;
+                    for (int i = 0; i <= shape.length; i++) {
+                        if (i == axis) {
+                            expOutShape[i] = numInputs;
+                        } else {
+                            expOutShape[i] = shape[x++];
+                        }
+                    }
+
+
+                    SameDiff sd = SameDiff.create();
+
+                    SDVariable[] in = new SDVariable[numInputs];
+                    INDArray[] inArr = new INDArray[numInputs];
+                    for (int i = 0; i < numInputs; i++) {
+                        inArr[i] = Nd4j.rand(shape);
+                        in[i] = sd.var(String.valueOf(i), inArr[i]);
+                    }
+
+                    SDVariable stack = sd.stack(axis, in);
+
+                    INDArray out = sd.execAndEndResult();
+                    assertArrayEquals(expOutShape, out.shape());
+
+                    if (ArrayUtil.prodLong(shape) == 1) {
+                        SDVariable loss = sd.sum("loss", stack);
+                    } else {
+                        SDVariable loss = sd.standardDeviation("loss", stack, true);
+                    }
+
+                    String msg = Arrays.toString(shape) + ", axis=" + axis + ", numInputs=" + numInputs;
+                    check(sd, failed, msg);
+                }
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+
+    @Test
+    public void testUnStack() {
+        Nd4j.getRandom().setSeed(12345);
+
+        List<String> failed = new ArrayList<>();
+
+        List<long[]> unstackedShape = Arrays.asList(
+                new long[]{1},
+                new long[]{1, 1},
+                new long[]{3, 4},
+                new long[]{3, 4, 5},
+                new long[]{3, 4, 5, 6}
+        );
+
+        for (long[] shape : unstackedShape) {
+            for (int axis = 0; axis <= shape.length; axis++) {
+                for (int numInputs : new int[]{1, 3}) {
+
+                    long[] stackedShape = new long[shape.length + 1];
+                    int x = 0;
+                    for (int i = 0; i <= shape.length; i++) {
+                        if (i == axis) {
+                            stackedShape[i] = numInputs;
+                        } else {
+                            stackedShape[i] = shape[x++];
+                        }
+                    }
+
+
+                    SameDiff sd = SameDiff.create();
+                    INDArray in = Nd4j.rand(stackedShape);
+                    SDVariable var = sd.var("var", in);
+
+                    SDVariable[] unstacked = sd.unstack(var, axis, numInputs);
+
+                    //for gradient check, need to combine to single scalar output...
+                    SDVariable merged = sd.mergeAvg(unstacked);
+
+                    if (ArrayUtil.prodLong(stackedShape) == 1) {
+                        SDVariable loss = sd.sum("loss", merged);
+                    } else {
+                        SDVariable loss = sd.standardDeviation("loss", merged, true);
+                    }
+
+                    String msg = "Unstacked shape = " + Arrays.toString(shape) + ", stacked shape = " + Arrays.toString(stackedShape)
+                            + ", axis=" + axis + ", numInputs=" + numInputs;
+
+                    sd.execAndEndResult();
+                    for (SDVariable v : unstacked) {
+                        assertArrayEquals(msg, shape, v.getArr().shape());
+                    }
+
+
+                    check(sd, failed, msg);
+                }
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testTile() {
+        Nd4j.getRandom().setSeed(12345);
+
+        List<int[]> tileArg = Arrays.asList(
+                new int[]{1},
+                new int[]{5},
+                new int[]{3,4},
+                new int[]{2,3},
+                new int[]{2,3,4}
+        );
+
+        INDArray[] orig = new INDArray[tileArg.size()];
+        orig[0] = Nd4j.valueArrayOf(new long[]{1}, 3.0);
+        orig[1] = Nd4j.valueArrayOf(new long[]{1}, 3.0);
+        orig[2] = Nd4j.valueArrayOf(new long[]{1,1}, 3.0);
+        orig[3] = Nd4j.linspace(1,4,4).reshape('c', 2,2);
+
+        INDArray[] exp = new INDArray[tileArg.size()];
+        exp[0] = Nd4j.trueVector(new double[]{3});
+        exp[1] = Nd4j.trueVector(new double[]{3,3,3,3,3});
+        exp[2] = Nd4j.valueArrayOf(new long[]{3,4}, 3.0);
+        exp[3] = Nd4j.create(2*2, 2*3);
+        for( int i=0; i<2; i++ ){
+            for( int j=0; j<2; j++ ){
+                exp[3].get(interval(2*i,2*(i+1)), interval(2*j,2*(j+1))).assign(orig[3]);
+            }
+        }
+        exp[4] = Nd4j.create(3*2, 4*3, 5*4);
+        for( int i=0; i<2; i++ ){
+            for( int j=0; j<3; j++ ){
+                for( int k=0; k<4; k++ ) {
+                    exp[4].get(interval(3 * i, 3 * (i + 1)), interval(4 * j, 4 * (j + 1)), interval(5*k, 5*(k+1))).assign(orig[4]);
+                }
+            }
+        }
+
+        List<String> failed = new ArrayList<>();
+
+        for (int i = 0; i < tileArg.size(); i++) {
+            int[] tArg = tileArg.get(i);
+            INDArray inArr = orig[i];
+
+            SameDiff sd = SameDiff.create();
+            SDVariable var = sd.var("in", inArr);
+            SDVariable tile = sd.tile(var, tArg);
+
+            if(exp[i].length() == 1){
+                SDVariable loss = sd.sum("loss", tile);
+            } else {
+                SDVariable loss = sd.standardDeviation("loss", tile, true);
+            }
+
+            sd.execAndEndResult();
+            INDArray tiled = tile.getArr();
+            assertEquals(exp[i], tiled);
+
+            String msg = "Shape=" + Arrays.toString(inArr.shape()) + " - tile=" + Arrays.toString(tArg);
+            check(sd, failed, msg);
         }
 
         assertEquals(failed.toString(), 0, failed.size());

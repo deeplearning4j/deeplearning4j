@@ -40,6 +40,10 @@ public class BaseGradCheck extends BaseNd4jTest {
 
     public static void check(SameDiff sd, List<String> failed, String msg){
         try {
+            //TODO REMOVE THIS ONCE REDUCTION GRADIENTS ARE DONE - IT'S A HACK TO AVOID EXCEPTION: "Cannot get rank from null shape array"
+            sd.execAndEndResult();
+
+
             boolean ok = GradCheckUtil.checkGradients(sd);
             if(!ok){
                 failed.add(msg);

@@ -24,6 +24,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
@@ -394,12 +395,10 @@ public class GradCheckTransforms {
         //Test transforms (non-pairwise)
         Nd4j.getRandom().setSeed(12345);
 
-        // TODO: to speed up integration of new ops for TF import, we sometimes skip "doDiff" implementations.
-        // get back to those after release
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 68; i++) {
+        for (int i = 0; i < 72; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -769,6 +768,23 @@ public class GradCheckTransforms {
                     t = sd.reciprocal(in);
                     expOut = ia.rdiv(1.0);
                     break;
+                case 68:
+                    t = sd.shape(in);
+                    expOut = Nd4j.create(ArrayUtil.toDouble(ia.shape()));
+                    break;
+                case 69:
+                    t = sd.rank(in);
+                    expOut = Nd4j.create(new double[]{ia.rank()});
+                    break;
+                case 70:
+                    t = sd.onesLike(in);
+                    expOut = Nd4j.ones(ia.shape());
+                    break;
+                case 71:
+                    ia = Nd4j.randn(nOut, nOut);
+                    t = sd.diagPart(in);
+                    expOut = Nd4j.trueVector(new double[]{ia.getDouble(0,0), ia.getDouble(1,1), ia.getDouble(2,2), ia.getDouble(3,3)});
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -956,17 +972,6 @@ public class GradCheckTransforms {
                     expOut = ia.add(ib).add(ib);
                     break;
                 case 21:
-                    ia = Nd4j.create(new float[]{2, 4});
-                    ib = Nd4j.create(new float[]{42, 2});
-
-                    in1 = sd.var("in1", new int[]{1, 2});
-                    in2 = sd.var("in2", new int[]{1, 2});
-
-                    t = in1.truncatedDiv(in2);
-                    expOut = Nd4j.create(ia.shape(), ia.ordering());
-                    Nd4j.getExecutioner().exec(new TruncateDivOp(ia, ib, expOut));
-                    break;
-                case 22:
                     t = in1.squaredDifference(in2);
                     expOut = Nd4j.create(ia.shape(), ia.ordering());
                     DynamicCustomOp squareDiff = DynamicCustomOp.builder("squaredsubtract")
@@ -974,6 +979,16 @@ public class GradCheckTransforms {
                             .addOutputs(expOut)
                             .build();
                     Nd4j.getExecutioner().exec(squareDiff);
+                    break;
+                case 22:
+                    //set diag
+                    ia = Nd4j.randn(nOut, nOut);
+                    ib = Nd4j.randn(1, nOut).reshape(nOut);
+                    expOut = ia.dup();
+                    for( int j=0; j<nOut; j++ ){
+                        expOut.putScalar(j,j, ib.getDouble(j));
+                    }
+                    t = sd.setDiag(in1, in2);
                     break;
                 default:
                     throw new RuntimeException();
