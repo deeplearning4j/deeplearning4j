@@ -26,6 +26,13 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
+    <properties>
+        <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
+        <cuda.version>9.0</cuda.version>
+        <cudnn.version>7.0</cudnn.version>
+        <javacpp-presets.cuda.version>1.4.1</javacpp-presets.cuda.version>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <dependency>

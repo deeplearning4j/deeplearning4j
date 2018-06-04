@@ -9,6 +9,13 @@
     <artifactId>nd4j-cuda-9.0</artifactId>
     <name>nd4j-cuda</name>
 
+    <properties>
+        <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
+        <cuda.version>9.0</cuda.version>
+        <cudnn.version>7.0</cudnn.version>
+        <javacpp-presets.cuda.version>1.4.1</javacpp-presets.cuda.version>
+    </properties>
+
     <build>
         <testSourceDirectory>../../nd4j-tests/src/test/java</testSourceDirectory>
         <testResources>
