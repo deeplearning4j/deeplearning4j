@@ -16,7 +16,8 @@ CUSTOM_OP_IMPL(reduce_variance, 1, 1, false, 0, 0) {
 
     NDArray<T> *output  = OUTPUT_VARIABLE(0);
 
-    const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+    const bool keepDims      = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+    const bool biasCorrected = block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;
     
     std::vector<int> dimensions = *block.getIArguments();    
 
@@ -25,7 +26,7 @@ CUSTOM_OP_IMPL(reduce_variance, 1, 1, false, 0, 0) {
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item > -input->rankOf() || item < input->rankOf(), 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
         
-    input->template varianceAlongDimension<simdOps::SummaryStatsVariance<T>>(output, false, dimensions);    // biased variance
+    input->template varianceAlongDimension<simdOps::SummaryStatsVariance<T>>(output, biasCorrected, dimensions);
 
     return Status::OK();
 }
@@ -58,29 +59,33 @@ CUSTOM_OP_IMPL(reduce_variance_bp, 2, 1, false, 0, 0) {
     NDArray<T> *gradI  = OUTPUT_VARIABLE(0);
 
     const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+    const bool biasCorrected = block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;
     
     std::vector<int> dimensions = *block.getIArguments();    
 
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_VARIANCE OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
     for(const auto& item : dimensions)
-        REQUIRE_TRUE(item > -input->rankOf() || item < input->rankOf(), 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);    
-    
-    
-    if(gradO->isScalar()) {
-        
-        *gradI = (*gradO)(0) / input->lengthOf();            
-    }
-    else {
-        
-        Nd4jLong* gradOShapeKeepDims = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());
-        NDArray<T>* gradOReshaped = gradO->reshape(gradO->ordering(), ShapeUtils<T>::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
+        REQUIRE_TRUE(item > -input->rankOf() || item < input->rankOf(), 0, "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);        
 
-        *gradI = (static_cast<T>(gradO->lengthOf()) / input->lengthOf());        
-        *gradI *= *gradOReshaped;                                                   // automatic broadcasting happens during this multiplication
+    const Nd4jLong N = input->lengthOf() / gradO->lengthOf();
+    const Nd4jLong NminusOne = biasCorrected ? N - 1 : N;
+    const T factor1 = static_cast<T>(2) / NminusOne;
+    const T factor2 = static_cast<T>(2) / (N * NminusOne);
+    
+    NDArray<T> mean = input->template reduceAlongDims<simdOps::Mean<T>>(dimensions, true);
+    NDArray<T> difference = *input - mean;                                                      // automatic broadcasting happens here
+    NDArray<T> sum = difference.template reduceAlongDims<simdOps::Sum<T>>(dimensions, true);
 
-        delete gradOReshaped;
-    }
+    gradI->assign(difference * factor1 - sum * factor2);                                    // automatic broadcasting happens here
+
+    if(!keepDims) 
+        gradO = gradO->reshape(gradO->ordering(), ShapeUtils<T>::pullShapeFromShapeInfo(mean.getShapeInfo()));  // for example could be something like [a,b] -> [1,a,1,b]
+    
+    *gradI *= *gradO;                                                  // automatic broadcasting happens here
+    
+    if(!keepDims)
+        delete gradO;
 
     return Status::OK();
 }

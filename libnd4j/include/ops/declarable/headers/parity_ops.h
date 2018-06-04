@@ -943,13 +943,14 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(reduce_mean_bp, 2, 1, false, 0, 0)
 
         /**
-        * This op calculates biased sample variance of elements along given dimensions
+        * This op calculates sample variance of elements along given dimensions
         *
         * input array:
         *    x: tensor to calculate mean for        
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
+        *   biasCorrected -  if non zero, then bias correction will be applied, default value is zero
         *
         * int arguments:
         *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
@@ -959,6 +960,26 @@ namespace nd4j {
         */
         DECLARE_CUSTOM_OP(reduce_variance, 1, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(reduce_variance_bp, 2, 1, false, 0, 0)
+
+
+        /**
+        * This op calculates sample standard deviation of elements along given dimensions
+        *
+        * input array:
+        *    x: tensor to calculate mean for        
+        *
+        * float arguments:
+        *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
+        *   biasCorrected - if non zero, then bias correction will be applied, default value is zero
+        *
+        * int arguments:
+        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *
+        * output array:
+        *    reduced tensor with calculated means
+        */
+        DECLARE_CUSTOM_OP(reduce_stdev, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(reduce_stdev_bp, 2, 1, false, 0, 0)
     }
 }
 

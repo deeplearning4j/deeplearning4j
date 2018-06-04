@@ -2585,3 +2585,148 @@ TEST_F(DeclarableOpsTests7, reduceVariance_test7) {
 
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceStDev_test1) {
+
+    NDArray<float> x('c', {2,3,4}, {27.,34.,5.,4.,54.,6.,65.,8.,37.,45.,8.,67.,96.,10.,65.,41.,33.,85.,92.,24.,25.,55.,49.,76.});
+    NDArray<float> exp('c', {4}, {24.54022, 26.96551, 31.52072, 27.49343});
+        
+    nd4j::ops::reduce_stdev<float> op;
+    auto result = op.execute({&x}, {}, {0,1});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceStDev_test2) {
+
+    NDArray<float> x('c', {2,3,4}, {27.,34.,5.,4.,54.,6.,65.,8.,37.,45.,8.,67.,96.,10.,65.,41.,33.,85.,92.,24.,25.,55.,49.,76.});
+    NDArray<float> exp('c', {1,1,4}, {24.54022, 26.96551, 31.52072, 27.49343});
+    
+    nd4j::ops::reduce_stdev<float> op;
+    auto result = op.execute({&x}, {1.}, {0,1});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceStDev_test3) {
+
+    NDArray<float> x('c', {2,3,4}, {27.,34.,5.,4.,54.,6.,65.,8.,37.,45.,8.,67.,96.,10.,65.,41.,33.,85.,92.,24.,25.,55.,49.,76.});
+    NDArray<float> exp('c', {3}, {30.01562, 31.14257, 20.59581});
+        
+    nd4j::ops::reduce_stdev<float> op;
+    auto result = op.execute({&x}, {}, {0,2});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceStDev_test4) {
+
+    NDArray<float> x('c', {2,3,4}, {27.,34.,5.,4.,54.,6.,65.,8.,37.,45.,8.,67.,96.,10.,65.,41.,33.,85.,92.,24.,25.,55.,49.,76.});
+    NDArray<float> exp('c', {1,3,1}, {30.01562, 31.14257, 20.59581});  
+        
+    nd4j::ops::reduce_stdev<float> op;
+    auto result = op.execute({&x}, {1.}, {0,2});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceStDev_test5) {
+
+    NDArray<float> x('c', {2,3,4}, {27.,34.,5.,4.,54.,6.,65.,8.,37.,45.,8.,67.,96.,10.,65.,41.,33.,85.,92.,24.,25.,55.,49.,76.});
+    NDArray<float> exp(28.08367);
+        
+    nd4j::ops::reduce_stdev<float> op;
+    auto result = op.execute({&x}, {}, {});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceStDev_test6) {
+
+    NDArray<float> x('c', {2,3,4}, {27.,34.,5.,4.,54.,6.,65.,8.,37.,45.,8.,67.,96.,10.,65.,41.,33.,85.,92.,24.,25.,55.,49.,76.});
+    NDArray<float> exp(28.08367);
+           
+    nd4j::ops::reduce_stdev<float> op;
+    auto result = op.execute({&x}, {}, {0,1,2});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceStDev_test7) {
+
+    NDArray<float> x('c', {2,3,4}, {27.,34.,5.,4.,54.,6.,65.,8.,37.,45.,8.,67.,96.,10.,65.,41.,33.,85.,92.,24.,25.,55.,49.,76.});
+    NDArray<float> exp('c', {1,1,1}, {28.08367});
+           
+    nd4j::ops::reduce_stdev<float> op;
+    auto result = op.execute({&x}, {1.}, {0,1,2});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceStDev_test8) {
+
+    NDArray<float> x('c', {2,3,4}, {27.,34.,5.,4.,54.,6.,65.,8.,37.,45.,8.,67.,96.,10.,65.,41.,33.,85.,92.,24.,25.,55.,49.,76.});
+    NDArray<float> exp('c', {4}, {26.88246, 29.53924, 34.52921, 30.11755});
+        
+    nd4j::ops::reduce_stdev<float> op;
+    auto result = op.execute({&x}, {0.,1.}, {0,1});
+    auto output = result->at(0);    
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
