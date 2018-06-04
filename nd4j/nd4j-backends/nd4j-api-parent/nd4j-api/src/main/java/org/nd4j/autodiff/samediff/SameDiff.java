@@ -5674,9 +5674,11 @@ public class SameDiff {
     private Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec_cache;
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec() {
 
+        /*
         if (exec_cache != null){
             return exec_cache;
         }
+        */
 
         if(log.isTraceEnabled()){
             log.trace("Starting execution: {} functions", functionInstancesById.size());
