@@ -7,7 +7,6 @@ import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.validation.GradCheckUtil;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -31,7 +30,8 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @Slf4j
 public class GradCheckTransforms {
@@ -782,8 +782,6 @@ public class GradCheckTransforms {
                 loss = sd.mean("loss", t);
             }
 
-
-
             sd.associateArrayWithVariable(ia, in);
 
             tc.testName(name);
@@ -830,119 +828,123 @@ public class GradCheckTransforms {
             INDArray ib = Nd4j.randn(minibatch, nOut);
 
             SDVariable t;
-            INDArray expOut;
+            TestCase tc = new TestCase(sd);
             switch (i) {
                 case 0:
                     t = in1.add(in2);
-                    expOut = ia.add(ib);
+                    tc.expectedOutput(t.getVarName(), ia.add(ib));
                     break;
                 case 1:
                     t = in1.sub(in2);
-                    expOut = ia.sub(ib);
+                    tc.expectedOutput(t.getVarName(),ia.sub(ib));
                     break;
                 case 2:
                     t = in1.mul(in2);
-                    expOut = ia.mul(ib);
+                    tc.expectedOutput(t.getVarName(), ia.mul(ib));
                     break;
                 case 3:
                     t = in1.div(in2);
-                    expOut = ia.div(ib);
+                    tc.expectedOutput(t.getVarName(), ia.div(ib));
                     break;
                 case 4:
                     t = in1.rsub(in2);
-                    expOut = ia.rsub(ib);
+                    tc.expectedOutput(t.getVarName(), ia.rsub(ib));
                     break;
                 case 5:
                     t = in1.rdiv(in2);
-                    expOut = ia.rdiv(ib);
+                    tc.expectedOutput(t.getVarName(), ia.rdiv(ib));
                     break;
                 case 6:
                     t = sd.eq(in1, in2);
-                    expOut = ia.eq(ib);
+                    tc.expectedOutput(t.getVarName(), ia.eq(ib));
                     break;
                 case 7:
                     t = sd.neq(in1, in2);
-                    expOut = ia.neq(ib);
+                    tc.expectedOutput(t.getVarName(), ia.neq(ib));
                     break;
                 case 8:
                     t = sd.gt(in1, in2);
-                    expOut = ia.gt(ib);
+                    tc.expectedOutput(t.getVarName(), ia.gt(ib));
                     break;
                 case 9:
                     t = sd.lt(in1, in2);
-                    expOut = ia.lt(ib);
+                    tc.expectedOutput(t.getVarName(), ia.lt(ib));
                     break;
                 case 10:
                     t = sd.gte(in1, in2);
-                    expOut = ia.dup();
-                    Nd4j.getExecutioner().exec(new GreaterThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut}));
+                    INDArray expOut10 = ia.dup();
+                    Nd4j.getExecutioner().exec(new GreaterThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut10}));
+                    tc.expectedOutput(t.getVarName(), expOut10);
                     break;
                 case 11:
                     t = sd.lte(in1, in2);
-                    expOut = ia.dup();
-                    Nd4j.getExecutioner().exec(new LessThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut}));
+                    INDArray expOut11 = ia.dup();
+                    Nd4j.getExecutioner().exec(new LessThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut11}));
+                    tc.expectedOutput(t.getVarName(), expOut11);
                     break;
                 case 12:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
                     t = sd.or(in1, in2);
-                    expOut = Transforms.or(ia, ib);
+                    tc.expectedOutput(t.getVarName(), Transforms.or(ia, ib));
                     break;
                 case 13:
                     ib = Nd4j.randn(nOut, nOut);
                     t = sd.mmul(in1, in2);
-                    expOut = ia.mmul(ib);
+                    tc.expectedOutput(t.getVarName(), ia.mmul(ib));
                     break;
                 case 14:
                     t = sd.max(in1, in2);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new OldMax(ia, ib, ia.dup(), ia.length()));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new OldMax(ia, ib, ia.dup(), ia.length())));
                     break;
                 case 15:
                     t = sd.min(in1, in2);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new OldMin(ia, ib, ia.dup(), ia.length()));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new OldMin(ia, ib, ia.dup(), ia.length())));
                     break;
                 case 16:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
                     t = sd.and(in1, in2);
-                    expOut = Transforms.and(ia, ib);
+                    tc.expectedOutput(t.getVarName(), Transforms.and(ia, ib));
                     break;
                 case 17:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
                     t = sd.xor(in1, in2);
-                    expOut = Transforms.xor(ia, ib);
+                    tc.expectedOutput(t.getVarName(), Transforms.xor(ia, ib));
                     break;
                 case 18:
                     t = sd.assign(in1, in2);
-                    expOut = ib;
+                    tc.expectedOutput(t.getVarName(), ib);
                     break;
                 case 19:
                     t = sd.atan2(in1, in2);
-                    expOut = Transforms.atan2(ib, ia);    //Note: y,x order for samediff; x,y order for transforms
+                    tc.expectedOutput(t.getVarName(), Transforms.atan2(ib, ia));    //Note: y,x order for samediff; x,y order for transforms
                     break;
                 case 20:
                     t = sd.mergeAdd(in1, in2, in2);
-                    expOut = ia.add(ib).add(ib);
+                    tc.expectedOutput(t.getVarName(), ia.add(ib).add(ib));
                     break;
                 case 21:
                     t = in1.squaredDifference(in2);
-                    expOut = Nd4j.create(ia.shape(), ia.ordering());
+                    INDArray expOut21 = Nd4j.create(ia.shape(), ia.ordering());
                     DynamicCustomOp squareDiff = DynamicCustomOp.builder("squaredsubtract")
                             .addInputs(ia, ib)
-                            .addOutputs(expOut)
+                            .addOutputs(expOut21)
                             .build();
                     Nd4j.getExecutioner().exec(squareDiff);
+                    tc.expectedOutput(t.getVarName(), expOut21);
                     break;
                 case 22:
                     //set diag
                     ia = Nd4j.randn(nOut, nOut);
                     ib = Nd4j.randn(1, nOut).reshape(nOut);
-                    expOut = ia.dup();
+                    INDArray expOut22 = ia.dup();
                     for( int j=0; j<nOut; j++ ){
-                        expOut.putScalar(j,j, ib.getDouble(j));
+                        expOut22.putScalar(j,j, ib.getDouble(j));
                     }
                     t = sd.setDiag(in1, in2);
+                    tc.expectedOutput(t.getVarName(), expOut22);
                     break;
                 default:
                     throw new RuntimeException();
@@ -959,25 +961,13 @@ public class GradCheckTransforms {
 
             sd.associateArrayWithVariable(ia, in1);
             sd.associateArrayWithVariable(ib, in2);
-            sd.exec();
-            INDArray out = t.getArr();
 
-            assertEquals(msg, expOut, out);
-
-            boolean ok;
-            try {
-                ok = GradCheckUtil.checkGradients(sd);
-            } catch (Exception e) {
-                e.printStackTrace();
-                msg += " - EXCEPTION";
-                ok = false;
-            }
-
-            if (!ok) {
-                allFailed.add(msg);
+            tc.testName(name);
+            String error = OpValidation.validate(tc);
+            if(error != null){
+                allFailed.add(name);
             }
         }
-
 
         if (allFailed.size() > 0) {
             log.error("All failed transforms: " + allFailed);

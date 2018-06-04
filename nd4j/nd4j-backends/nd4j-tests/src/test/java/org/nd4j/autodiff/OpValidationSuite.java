@@ -19,6 +19,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+        OpValidationTests.class,
         GradCheckLoss.class,
         GradCheckMisc.class,
         GradCheckReductions.class,
