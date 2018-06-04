@@ -47,8 +47,9 @@ namespace ops {
     CUSTOM_OP_IMPL(reduce_prod_bp, 2, 1, false, 0, 0) {
 
         auto input = INPUT_VARIABLE(0);
-        auto epsilonNext = INPUT_VARIABLE(1);
-        auto epsilon = OUTPUT_VARIABLE(0);
+        auto epsilon = INPUT_VARIABLE(1);
+        auto output = OUTPUT_VARIABLE(0);
+        REQUIRE_TRUE(output->isSameShape(epsilon), 0, "The output and the second param should have the equal shapes.");
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
         T keepDimsT = (keepDims?T(1.f):T(0.f));
         // at first step we build fwd activation
@@ -66,30 +67,18 @@ namespace ops {
         if (tmpResult->status() != ND4J_STATUS_OK)
             return tmpResult->status();
 
-        auto tempSum = tmpResult->at(0);
+        auto tempProd = tmpResult->at(0);
 
-        // now we do reduce_sum backward pass
-        auto filterRoutine = LAMBDA_TT(_x, _e) {
-            return _x > (T) 0.0f ? _e  : (T) 0.0f;
-        };
-        tempSum->applyPairwiseLambda(epsilonNext, filterRoutine);
+//        // now we do reduce_sum backward pass
+//        auto filterRoutine = LAMBDA_TT(_x, _e) {
+//            return _x != (T) 1.f ? _e  : (T) 1.f;
+//        };
 
-        // now we split updated array into 2 chunks along last dimension
-        nd4j::ops::concat_bp<T> opc;
-        auto dec = opc.execute({input, input, tempSum}, {},{-1});
-        if (dec->status() != ND4J_STATUS_OK)
-            return dec->status();
-
-        // and now we subtract two parts of epsilons and pass result out
-        auto pos = dec->at(0);
-        auto neg = dec->at(1);
-
-        pos->template applyPairwiseTransform<simdOps::Subtract<T>>(neg, epsilon, nullptr);
+        tempProd->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
 
         delete tmpResult;
-        delete dec;
-        return ND4J_STATUS_OK;
 
+        return ND4J_STATUS_OK;
     }
 #endif
 
