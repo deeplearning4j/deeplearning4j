@@ -13,6 +13,28 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.accum.All;
+import org.nd4j.linalg.api.ops.impl.accum.Any;
+import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
+import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
+import org.nd4j.linalg.api.ops.impl.shape.Eye;
+import org.nd4j.linalg.api.ops.impl.shape.OneHot;
+import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
+import org.nd4j.linalg.api.ops.impl.transforms.BinaryMinimalRelativeError;
+import org.nd4j.linalg.api.ops.impl.transforms.Histogram;
+import org.nd4j.linalg.api.ops.impl.transforms.LegacyDropOut;
+import org.nd4j.linalg.api.ops.impl.transforms.LegacyDropOutInverted;
+import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
+import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
+import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
@@ -30,7 +52,7 @@ public class GradCheckUtil {
 
     private static final boolean DEFAULT_PRINT = true;
     private static final boolean DEFAULT_EXIT_FIRST_FAILURE = false;
-    private static final boolean DEFAULT_DEBUG_MODE = true;
+    private static final boolean DEFAULT_DEBUG_MODE = false;
     private static final double DEFAULT_EPS = 1e-5;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-6;
@@ -92,11 +114,17 @@ public class GradCheckUtil {
     }
 
     public static void logCoverageInformation( boolean logSeen, boolean logUnseen, boolean excludeBackpropOps ){
+        //Set of ops that we can't gradient check
+        Set<Class> excludedFromCoverage = excludedFromGradientCheckCoverage();
 
         int countSeen = 0;
         if(logSeen){
             log.info(" --- Gradient Checks: Classes Seen in Tests ---");
             for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
+                if(excludedFromCoverage.contains(e.getKey())){
+                    continue;
+                }
+
                 if(e.getValue() > 0 && (!excludeBackpropOps || !isBackpropOp(e.getKey()))){
                     log.info("GradientCheck: Seen {} instances of op {}", e.getValue(), e.getKey().getName());
                     countSeen++;
@@ -107,6 +135,10 @@ public class GradCheckUtil {
         if(logUnseen){
             log.info(" --- Gradient Checks: Classes NOT Seen in Tests ---");
             for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
+                if(excludedFromCoverage.contains(e.getKey())){
+                    continue;
+                }
+
                 if(e.getValue() == 0 && (!excludeBackpropOps || !isBackpropOp(e.getKey()))){
                     log.info("GradientCheck: NO instances of op {}", e.getKey().getName());
                 }
@@ -131,6 +163,7 @@ public class GradCheckUtil {
         log.info("*****************************************************");
         log.info("Gradient Checks: {} of {} classes checked ({}% coverage - {} backprop ops)", countSeen, total, fracPc,
                 (excludeBackpropOps ? "excluding" : "including"));
+        log.info("({} ops excluded from gradient check coverage information)", excludedFromCoverage.size());
         log.info("*****************************************************");
     }
 
@@ -246,6 +279,16 @@ public class GradCheckUtil {
         return checkGradients(sd, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE);
     }
 
+    public static boolean checkGradients(SameDiff sd, String... skipVariables){
+        Set<String> skip = null;
+        if(skipVariables != null){
+            skip = new HashSet<>();
+            Collections.addAll(skip, skipVariables);
+        }
+        return checkGradients(sd, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE,
+                false, DEFAULT_DEBUG_MODE, skip);
+    }
+
     public static boolean checkGradients(SameDiff sd, boolean print, boolean exitOnFirstFailure){
         return checkGradients(sd, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, print, exitOnFirstFailure);
     }
@@ -253,11 +296,11 @@ public class GradCheckUtil {
 
     public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
                                          boolean exitOnFirstFailure) {
-        return checkGradients(sd, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false, DEFAULT_DEBUG_MODE);
+        return checkGradients(sd, eps, maxRelError, minAbsError, print, exitOnFirstFailure, false, DEFAULT_DEBUG_MODE, null);
     }
 
     public static boolean checkGradients(SameDiff sd, double eps, double maxRelError, double minAbsError, boolean print,
-                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode){
+                                         boolean exitOnFirstFailure, boolean skipValidation, boolean debugMode, Set<String> skipVariables){
 
         boolean debugBefore = sd.isDebugMode();
         if(debugMode){
@@ -334,6 +377,11 @@ public class GradCheckUtil {
         for(SDVariable s : sd.variables()){
             if (fnOutputs.contains(s.getVarName())) {
                 //This is not an input to the graph
+                continue;
+            }
+
+            if(skipVariables != null && skipVariables.contains(s.getVarName())){
+                log.info("Grad check: skipping variable \"{}\"", s.getVarName());
                 continue;
             }
 
@@ -534,5 +582,76 @@ public class GradCheckUtil {
         } catch (Exception e){
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Returns a list of classes that are not gradient checkable.
+     * An operation may not be gradient checkable due to, for example:
+     * (a) Having no real-valued arguments<br>
+     * (b) Having random output (dropout, for example)<br>
+     *
+     * Note that hawving non-real-valued output is OK - we still want to test these, as they
+     * should pass back zero gradients!
+     */
+    public static final Set<Class> excludedFromGradientCheckCoverage(){
+        List list = Arrays.asList(
+                //Exclude misc
+                DynamicCustomOp.class,
+                EqualsWithEps.class,
+                ConfusionMatrix.class,
+                Eye.class,
+                OneHot.class,
+                BinaryMinimalRelativeError.class,
+                BinaryMinimalRelativeError.class,
+                Histogram.class,
+                //Exclude manual broadcast ops: SameDiff uses auto broadcasting
+                BroadcastAMax.class,
+                BroadcastAMax.class,
+                BroadcastAddOp.class,
+                BroadcastCopyOp.class,
+                BroadcastDivOp.class,
+                BroadcastEqualTo.class,
+                BroadcastGreaterThan.class,
+                BroadcastGreaterThanOrEqual.class,
+                BroadcastLessThan.class,
+                BroadcastLessThanOrEqual.class,
+                BroadcastMax.class,
+                BroadcastMin.class,
+                BroadcastMulOp.class,
+                BroadcastNotEqual.class,
+                BroadcastRDivOp.class,
+                BroadcastRSubOp.class,
+                BroadcastSubOp.class,
+                //Exclude boolean operations:
+                Any.class,
+                All.class,
+                //Exclude index accumulations (index out, not real-valued)
+                FirstIndex.class,
+                IAMax.class,
+                IAMin.class,
+                LastIndex.class,
+                //Exclude Random ops
+                LegacyDropOut.class,
+                LegacyDropOutInverted.class,
+                RandomStandardNormal.class,
+                DistributionUniform.class,
+                AlphaDropOut.class,
+                BernoulliDistribution.class,
+                BinomialDistribution.class,
+                BinomialDistributionEx.class,
+                Choice.class,
+                DropOut.class,
+                DropOutInverted.class,
+                GaussianDistribution.class,
+                LogNormalDistribution.class,
+                ProbablisticMerge.class,
+                Range.class,
+                TruncatedNormalDistribution.class,
+                UniformDistribution.class,
+                //Other ops we don't intend to be differentiable (only used as part of backprop, etc)
+                Col2Im.class
+        );
+
+        return new HashSet<>(list);
     }
 }

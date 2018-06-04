@@ -51,4 +51,13 @@ public class Conv2DDerivative extends Conv2D {
         throw new UnsupportedOperationException("Unable to take derivative of derivative.");
     }
 
+    @Override
+    public int getNumOutputs(){
+        if(args().length == 4){
+            return 3;   //Includes bias
+        } else {
+            return 2;   //No bias - only input + weight grads
+        }
+    }
+
 }

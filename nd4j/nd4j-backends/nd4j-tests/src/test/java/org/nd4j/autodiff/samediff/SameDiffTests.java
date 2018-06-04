@@ -10,6 +10,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.Mean;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
@@ -250,7 +251,12 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.sum(x, 1); //[1,4].sum(1) == [1,1]
-        assertArrayEquals(new long[]{1, 1}, result.getShape());
+
+        sameDiff.exec();
+
+        INDArray exp = Nd4j.scalar(1+2+3+4);
+        INDArray resultArr = result.getArr();
+        assertEquals(exp, resultArr);
     }
 
 
@@ -482,7 +488,7 @@ public class SameDiffTests {
         INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6)).reshape(3, 2);
         SDVariable x1 = sameDiff.var("x1", arr1);
         SDVariable x2 = sameDiff.var("x2", arr2);
-        SDVariable result = sameDiff.stack(new SDVariable[]{x1, x2}, 1);
+        SDVariable result = sameDiff.stack(1, x1, x2);
         assertArrayEquals(new long[]{3, 2, 2}, result.eval().shape());
     }
 
@@ -507,7 +513,7 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.ones(3, 2);
         SDVariable x1 = sameDiff.var("x1", arr1);
         SDVariable x2 = sameDiff.var("x2", arr2);
-        SDVariable stacked = sameDiff.stack(new SDVariable[]{x1, x2}, 0);
+        SDVariable stacked = sameDiff.stack(0, x1, x2);
         SDVariable[] result = sameDiff.unstack(stacked, 0, 2);
         assertEquals(arr1, result[0].eval());
         assertEquals(arr2, result[1].eval());
@@ -1065,7 +1071,7 @@ public class SameDiffTests {
     }
 
 
-    @Test
+    @Test(timeout = 10000L)
     public void testWhileLoop() {
         SameDiff sameDiff = SameDiff.create();
         sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
@@ -1146,7 +1152,7 @@ public class SameDiffTests {
     }
 
 
-    @Test
+    @Test(timeout = 10000L)
     public void testWhileBackwards() {
         SameDiff sameDiff = SameDiff.create();
         sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
@@ -2567,9 +2573,6 @@ public class SameDiffTests {
 
         SDVariable in = sd.var("in", inArr);
 
-
-        SDVariable[] vars = new SDVariable[]{in};
-
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
                 .kh(kH).kw(kW)
                 .ph(0).pw(0)
@@ -2578,7 +2581,7 @@ public class SameDiffTests {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.maxPooling2d(vars, pooling2DConfig);
+        SDVariable out = sd.maxPooling2d(in, pooling2DConfig);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
@@ -2602,9 +2605,6 @@ public class SameDiffTests {
 
         SDVariable in = sd.var("in", inArr);
 
-
-        SDVariable[] vars = new SDVariable[]{in};
-
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
                 .kh(kH).kw(kW)
                 .ph(0).pw(0)
@@ -2613,7 +2613,7 @@ public class SameDiffTests {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.avgPooling2d(vars, pooling2DConfig);
+        SDVariable out = sd.avgPooling2d(in, pooling2DConfig);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
@@ -3790,27 +3790,99 @@ public class SameDiffTests {
     }
 
     @Test
-    public void validateInternalState2() {
+    public void testGather2(){
+
+        INDArray in = Nd4j.rand(10,10);
+        INDArray indices = Nd4j.create(new double[]{0,1,5});
+
         SameDiff sd = SameDiff.create();
 
-        int nOut = 4;
-        int minibatch = 10;
-        SDVariable a = sd.var("A", new int[]{minibatch, nOut});
-        SDVariable b = sd.var("B", new int[]{minibatch, nOut});
+        SDVariable var = sd.var("in", in);
+        SDVariable varIndices = sd.var("indices", indices);
+        SDVariable gather = sd.gather(var, varIndices, 0);
 
-        SDVariable add1 = a.add("add1",b);
-        SDVariable add2 = a.add("add2",b);
+        System.out.println(in);
 
-        SDVariable mul = add1.mul("mul",add2);
-        SDVariable sum = sd.sum("sum", mul, Integer.MAX_VALUE);
+        INDArray exp = Nd4j.pullRows(in, 1, new int[]{0,1,5});  //Along dimension 1 -> equiv to "indexes for axis 0"
+        INDArray act = sd.execAndEndResult();
 
-        Map<List<String>, DifferentialFunction> incomingArgs = getObject("incomingArgs", sd, SameDiff.class);
+        assertEquals(exp, act);
+    }
 
-        System.out.println();
+    @Test
+    public void testGatherOp(){
+
+        INDArray in = Nd4j.rand(10,10);
+        INDArray indices = Nd4j.create(new double[]{0,1,5});
+        INDArray out = Nd4j.create(3, 10);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("gather")
+                .addIntegerArguments(0) //Indexes are for dimension 0
+                .addInputs(in, indices)
+                .addOutputs(out)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        System.out.println(out);
+
+        INDArray exp = Nd4j.pullRows(in, 1, new int[]{0,1,5});  //Along dimension 1 == indexes for dimension 0
+
+        assertEquals(exp, out);
+
+        //Shape function:
+        List<long[]> shapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        long[] expShape = new long[]{3,10};
+
+        assertEquals(1, shapes.size());
+
+        assertArrayEquals(expShape, shapes.get(0));
+    }
 
 
+    @Test
+    public void testConditions() {
+
+        SameDiff sd = SameDiff.create();
+
+        INDArray ia = Nd4j.create(new float[]{4, 2});
+        SDVariable in = sd.var("in", new int[]{1, 2});
+        sd.associateArrayWithVariable(ia, in);
+
+
+        INDArray expFinite = Nd4j.create(new float[]{1, 1});
+        SDVariable finite = sd.isFinite(in);
+
+        INDArray expInfinite = Nd4j.create(new float[]{0, 0});
+        SDVariable infinite = sd.isInfinite(in);
+
+        INDArray expNaN =  Nd4j.create(new float[]{0, 0});
+        SDVariable isnan = sd.isNaN(in);
+
+        sd.exec();
+        assertEquals(expFinite, finite.getArr());
+        assertEquals(expInfinite, infinite.getArr());
+        assertEquals(expNaN, isnan.getArr());
 
     }
+
+    @Test
+    public void invertPermutation() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1});
+        INDArray expOut = Nd4j.create(new float[] {2, 4, 3, 0, 1});
+
+        SDVariable input = sd.var("in", new int[] {1, 5});
+        sd.associateArrayWithVariable(ia, input);
+
+        SDVariable out = sd.invertPermutation(input);
+
+        sd.exec();
+
+        assertEquals(expOut, out.getArr());
+    }
+
 
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){
         try {

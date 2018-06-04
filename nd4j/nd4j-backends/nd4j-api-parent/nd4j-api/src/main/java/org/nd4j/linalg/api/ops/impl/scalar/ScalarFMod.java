@@ -13,6 +13,7 @@
 package org.nd4j.linalg.api.ops.impl.scalar;
 
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
@@ -20,7 +21,7 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import java.util.List;
 
 /**
- * Scalar floating-point remainder (fmod)
+ * Scalar floating-point remainder (fmod aka 'floormod')
  *
  * @author Adam Gibson
  */
@@ -35,7 +36,9 @@ public class ScalarFMod extends BaseScalarOp {
         super(x, num);
     }
 
-
+    public ScalarFMod(SameDiff sd, SDVariable in, Number number){
+        super(sd, in, number);
+    }
 
     @Override
     public int opNum() {
@@ -60,6 +63,6 @@ public class ScalarFMod extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        throw new UnsupportedOperationException();
+        return i_v1;    //Return unmodified
     }
 }

@@ -42,6 +42,7 @@ public class Permute extends Transpose {
         for (int i = 0; i < reverseDims.length; i++) {
             reverseDims[i] = ArrayUtils.indexOf(permuteDims, i);
         }
+        addIArgument(permuteDims);
     }
 
     public Permute() {

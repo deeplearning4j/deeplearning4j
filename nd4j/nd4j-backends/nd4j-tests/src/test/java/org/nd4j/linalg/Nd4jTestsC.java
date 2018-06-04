@@ -6494,6 +6494,46 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.setDataType(dtype);
     }
 
+
+    @Test
+    public void testEye(){
+
+        int[] rows = new int[]{3,3,3,3};
+        int[] cols = new int[]{3,2,2,2};
+        int[][] batch = new int[][]{null, null, {4}, {3,3}};
+        INDArray[] expOut = new INDArray[4];
+
+        expOut[0] = Nd4j.eye(3);
+        expOut[1] = Nd4j.create(new double[][]{{1,0,0},{0,1,0}});
+        expOut[2] = Nd4j.create(4,3,2);
+        for( int i=0; i<4; i++ ){
+            expOut[2].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
+        }
+        expOut[3] = Nd4j.create(3,3,3,2);
+        for( int i=0; i<3; i++ ){
+            for( int j=0; j<3; j++ ) {
+                expOut[3].get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
+            }
+        }
+
+
+        for(int i=0; i<3; i++ ) {
+            INDArray out = Nd4j.create(expOut[i].shape());
+
+            DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("eye")
+                    .addOutputs(out)
+                    .addIntegerArguments(rows[i], cols[i]);
+            if(batch[i] != null){
+                op.addIntegerArguments(batch[i]);
+            }
+
+            Nd4j.getExecutioner().exec(op.build());
+
+            assertEquals(expOut[i], out);
+        }
+    }
+
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;
