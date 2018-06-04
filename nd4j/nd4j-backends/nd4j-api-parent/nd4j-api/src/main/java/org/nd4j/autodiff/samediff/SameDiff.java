@@ -1401,7 +1401,8 @@ public class SameDiff {
      */
     public SDVariable var(String name, long[] shape, WeightInitScheme weightInitScheme) {
         if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
-            return variableMap.get(name);
+            throw new IllegalArgumentException("Another variable with the name " + name +
+                    " already exists.");
 
 
         if (name == null || name.length() < 1)
@@ -1443,6 +1444,7 @@ public class SameDiff {
     }
 
 
+
     /**
      * Initialize a {@link SDVariable}
      * reference tying this variable to this
@@ -1458,7 +1460,6 @@ public class SameDiff {
     public SDVariable var(final SDVariable arr) {
         if (variableMap.containsKey(arr.getVarName()) && variableMap.get(arr.getVarName()).getArr() != null)
             return variableMap.get(arr.getVarName());
-
 
         if (arr.getVarName() == null || arr.getVarName().length() < 1)
             throw new IllegalArgumentException("Name for variable must be defined");
@@ -1495,6 +1496,32 @@ public class SameDiff {
         return ret;
 
     }
+
+    // auto naming
+
+    private String getNewVarName(){
+        Integer i = 0;
+        String varName = "sd_var_" + i.toString();
+        while(variableMap.containsKey(varName)){
+            i++;
+            varName = "sd_var_" + i.toString();
+        }
+        return varName;
+    }
+    public SDVariable var(int[] shape) {
+        return var(getNewVarName(), shape);
+    }
+    public SDVariable var(long[] shape) {
+        return var(getNewVarName(), shape);
+    }
+    public SDVariable var(long[] shape, WeightInitScheme weightInitScheme) {
+        return var(getNewVarName(), shape, weightInitScheme);
+    }
+    public SDVariable var(INDArray arr) {
+        return var(getNewVarName(), arr);
+    }
+
+
 
     /**
      * Generate a square identity matrix with the specified number of rows
@@ -1598,7 +1625,8 @@ public class SameDiff {
      */
     public SDVariable var(String name, INDArray arr) {
         if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
-            return variableMap.get(name);
+            throw new IllegalArgumentException("Another variable with the name " + name +
+                    " already exists.");
 
 
         if (name == null || name.length() < 1)
