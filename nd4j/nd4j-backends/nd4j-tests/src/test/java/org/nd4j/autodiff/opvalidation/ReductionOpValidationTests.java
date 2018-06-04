@@ -12,6 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class ReductionOpValidationTests {
 
@@ -46,20 +47,28 @@ public class ReductionOpValidationTests {
         //sum_bp op: has 2 inputs (original pre-reduce input, and gradient at output (epsilon))
         //out = sum_j (in_j) -> dL/dIn = dL/dOut * dOut/dIn = dL/dOut
 
-        INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3,4);
-        INDArray dLdOut = Nd4j.trueScalar(0.5);
-        INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), 0.5);
-        INDArray dLdIn = Nd4j.createUninitialized(3,4);
+        for(boolean keepDims : new boolean[]{false, true}) {
 
-        OpValidation.validate(new OpTestCase(
-                DynamicCustomOp.builder("sum_bp")
-                .addInputs(preReduceInput, dLdOut)
-                .addOutputs(dLdIn)
-                //TODO Not sure if we're going with "no reduction dimension == full array reduce" or using Integer.MAX_VALUE to signify this
-                //.addIntegerArguments(Integer.MAX_VALUE)
-                .build())
-                .expectedOutput(0, dLdInExpected)
-        );
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+            INDArray dLdOut;
+            if(keepDims){
+                dLdOut = Nd4j.valueArrayOf(new long[]{1,1}, 0.5);
+            } else {
+                dLdOut = Nd4j.trueScalar(0.5);
+            }
+            INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), 0.5);
+            INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+
+            OpValidation.validate(new OpTestCase(
+                    DynamicCustomOp.builder("sum_bp")
+                            .addInputs(preReduceInput, dLdOut)
+                            .addOutputs(dLdIn)
+                            //First int arg: Keep dimensions. Lack of other (dimension) args: means "full array reduce"
+                            .addIntegerArguments(keepDims ? 1 : 0)
+                            .build())
+                    .expectedOutput(0, dLdInExpected)
+            );
+        }
     }
 
     @Test
@@ -68,25 +77,127 @@ public class ReductionOpValidationTests {
 
         //Inputs/outputs as before - but note that the output is no longer a scalar
 
-        INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3,4);
-        INDArray dLdOut_0 = Nd4j.create(new double[]{1,2,3,4}, new long[]{4});      //Rank 1, 4 elements
-        INDArray dLdInExpected_0 = Nd4j.createUninitialized(preReduceInput.shape());
-        for( int i=0; i<3; i++ ){
+        for( boolean keepDims : new boolean[]{false, true}) {
 
+            long[] reducedShape_0 = (keepDims ? new long[]{1,4} : new long[]{4});
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+            INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
+            INDArray dLdInExpected_0 = Nd4j.createUninitialized(preReduceInput.shape());
+            for (int i = 0; i < 3; i++) {
+                dLdInExpected_0.putRow(i, dLdOut_0);
+            }
+
+            INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+
+            OpValidation.validate(new OpTestCase(
+                    DynamicCustomOp.builder("sum_bp")
+                            .addInputs(preReduceInput, dLdOut_0)
+                            .addOutputs(dLdIn)
+                            .addIntegerArguments(keepDims ? 1 : 0, 0) //Reduction along dimension 0
+                            .build())
+                    .expectedOutput(0, dLdInExpected_0)
+            );
+
+
+            long[] reducedShape_1 = (keepDims ? new long[]{3,1} : new long[]{3});
+            INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3}, reducedShape_1);
+            INDArray dLdInExpected_1 = Nd4j.createUninitialized(preReduceInput.shape());
+            for (int i = 0; i < 4; i++) {
+                dLdInExpected_0.putColumn(i, dLdOut_1);
+            }
+
+            dLdIn = Nd4j.createUninitialized(3, 4);
+
+            OpValidation.validate(new OpTestCase(
+                    DynamicCustomOp.builder("sum_bp")
+                            .addInputs(preReduceInput, dLdOut_1)
+                            .addOutputs(dLdIn)
+                            .addIntegerArguments(keepDims ? 1 : 0, 1) //Reduction along dimension 1
+                            .build())
+                    .expectedOutput(0, dLdInExpected_1)
+            );
         }
-
-        INDArray dLdIn = Nd4j.createUninitialized(3,4);
-
-        OpValidation.validate(new OpTestCase(
-                DynamicCustomOp.builder("sum_bp")
-                        .addInputs(preReduceInput, dLdOut_0)
-                        .addOutputs(dLdIn)
-                        .addIntegerArguments(0) //Reduction along dimension 0
-                        .build())
-                .expectedOutput(0, dLdInExpected_0)
-        );
     }
 
 
+    @Test
+    public void testMean(){
+
+        //dL/dIn_i = dL/dOut * dOut/dIn_i = dL/dOut * (1/N * sum_j (in_j))
+        //         = 1/N * dL/dOut
+        // i.e., same as SUM case but divided by N
+        //NOTE: N = num values in array
+        //But for "along dimension" case - it's the number of elements in that TAD
+
+        fail();
+    }
+
+
+    @Test
+    public void testMin(){
+
+        //dL/dIn_i  = dL/dOut * dOut/dIn_i
+        //          = dL/dOut                   if in_i == out (== min(in))
+        //          = 0                         otherwise
+
+
+        fail();
+    }
+
+
+    @Test
+    public void testMax(){
+
+        //dL/dIn_i  = dL/dOut * dOut/dIn_i
+        //          = dL/dOut                   if in_i == out (== max(in))
+        //          = 0                         otherwise
+
+
+        fail();
+    }
+
+    @Test
+    public void testProd(){
+
+        //dL/dIn_i  = dL/dOut * dOut/dIn_i
+        //          = dL/dOut * d(prod(in))/dIn_i
+        //          = dL/dOut * (prod(in) / in_i)
+
+        fail();
+    }
+
+    @Test
+    public void testStdev(){
+
+        fail();
+    }
+
+    @Test
+    public void testVariance(){
+
+        fail();
+    }
+
+    @Test
+    public void testCumSum(){
+
+        //dL/dIn_i  = dL/dOut * dOut/dIn_i
+        //          = dL/dOut * d(in_0 + ... + in_i)/dIn_i
+        //          = dL/dOut
+
+        fail();
+    }
+
+    @Test
+    public void testCumProd(){
+
+        //dL/dIn_i  = dL/dOut * dOut/dIn_i
+        //          = dL/dOut * d(in_0 * ... * in_i)/dIn_i
+        //          = dL/dOut * prod_(j=0..i-1)(in_j)
+        //          = dL/dOut * cumProd(in)/in_i
+        // (note: edge case for i=0 is dL/dOut * 1
+
+        fail();
+    }
 
 }
