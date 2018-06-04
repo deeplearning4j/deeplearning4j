@@ -1499,15 +1499,16 @@ public class SameDiff {
 
     // auto naming
 
+    private Integer _var_id = 0;
     private String getNewVarName(){
-        Integer i = 0;
-        String varName = "sd_var_" + i.toString();
+        String varName = "sd_var_" + _var_id.toString();
         while(variableMap.containsKey(varName)){
-            i++;
-            varName = "sd_var_" + i.toString();
+            _var_id++;
+            varName = "sd_var_" + _var_id.toString();
         }
         return varName;
     }
+    
     public SDVariable var(int[] shape) {
         return var(getNewVarName(), shape);
     }
