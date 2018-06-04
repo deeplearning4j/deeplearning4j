@@ -1401,11 +1401,12 @@ public class SameDiff {
      */
     public SDVariable var(String name, long[] shape, WeightInitScheme weightInitScheme) {
         if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
-            return variableMap.get(name);
+            throw new IllegalArgumentException("Another variable with the name " + name +
+                    " already exists.");
 
 
         if (name == null || name.length() < 1)
-            throw new IllegalArgumentException("Name for variable must be defined");
+            name = getNewVarName();
 
         if (workspace == null)
             initWorkspace();
@@ -1434,13 +1435,16 @@ public class SameDiff {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(String name, long[] shape) {
+    public SDVariable var(String name, long... shape) {
+        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
         return var(name, shape, new ZeroInitScheme());
     }
 
-    public SDVariable var(String name, int[] shape) {
+    public SDVariable var(String name, int... shape) {
+        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
+
 
 
     /**
@@ -1458,7 +1462,6 @@ public class SameDiff {
     public SDVariable var(final SDVariable arr) {
         if (variableMap.containsKey(arr.getVarName()) && variableMap.get(arr.getVarName()).getArr() != null)
             return variableMap.get(arr.getVarName());
-
 
         if (arr.getVarName() == null || arr.getVarName().length() < 1)
             throw new IllegalArgumentException("Name for variable must be defined");
@@ -1495,6 +1498,33 @@ public class SameDiff {
         return ret;
 
     }
+
+    // auto naming
+
+    private int _var_id = 0;
+    private String getNewVarName(){
+        String varName = "sd_var_" + String.valueOf(_var_id);
+        while(variableMap.containsKey(varName)){
+            _var_id++;
+        varName = "sd_var_" + String.valueOf(_var_id);
+        }
+        return varName;
+    }
+    
+    public SDVariable var(int... shape) {
+        return var(getNewVarName(), shape);
+    }
+    public SDVariable var(long... shape) {
+        return var(getNewVarName(), shape);
+    }
+    public SDVariable var(WeightInitScheme weightInitScheme, long... shape) {
+        return var(getNewVarName(), shape, weightInitScheme);
+    }
+    public SDVariable var(INDArray arr) {
+        return var(getNewVarName(), arr);
+    }
+
+
 
     /**
      * Generate a square identity matrix with the specified number of rows
@@ -1598,11 +1628,12 @@ public class SameDiff {
      */
     public SDVariable var(String name, INDArray arr) {
         if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
-            return variableMap.get(name);
+            throw new IllegalArgumentException("Another variable with the name " + name +
+                    " already exists.");
 
 
         if (name == null || name.length() < 1)
-            throw new IllegalArgumentException("Name for variable must be defined");
+            name = getNewVarName();
 
         if (arr == null)
             throw new IllegalArgumentException("Array for " + name + " must not be null");
