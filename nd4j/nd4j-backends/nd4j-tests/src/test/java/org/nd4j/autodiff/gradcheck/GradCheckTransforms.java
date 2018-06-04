@@ -384,259 +384,261 @@ public class GradCheckTransforms {
 
             int dim;
             SDVariable t;
-            INDArray expOut;
+            TestCase tc = new TestCase(sd);
             boolean stdevLoss = false;
             switch (i) {
                 case 0:
                     t = in.add(5.0);
-                    expOut = ia.add(5.0);
+                    tc.expectedOutput(t.getVarName(), ia.add(5.0));
                     break;
                 case 1:
                     t = in.sub(5.0);
-                    expOut = ia.sub(5.0);
+                    tc.expectedOutput(t.getVarName(), ia.sub(5.0));
                     break;
                 case 2:
                     t = in.mul(2.5);
-                    expOut = ia.mul(2.5);
+                    tc.expectedOutput(t.getVarName(), ia.mul(2.5));
                     break;
                 case 3:
                     t = in.div(4.0);
-                    expOut = ia.div(4.0);
+                    tc.expectedOutput(t.getVarName(), ia.div(4.0));
                     break;
                 case 4:
                     t = in.rsub(5.0);
-                    expOut = ia.rsub(5.0);
+                    tc.expectedOutput(t.getVarName(), ia.rsub(5.0));
                     break;
                 case 5:
                     t = in.rdiv(1.0);
-                    expOut = ia.rdiv(1.0);
+                    tc.expectedOutput(t.getVarName(), ia.rdiv(1.0));
                     break;
                 case 6:
                     t = sd.pow(in, 2.5);
                     ia = Nd4j.rand(minibatch, nOut);
-                    expOut = Transforms.pow(ia, 2.5, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.pow(ia, 2.5, true));
                     break;
                 case 7:
                     t = sd.sigmoid(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(2).subi(1.0);
-                    expOut = Transforms.sigmoid(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.sigmoid(ia, true));
                     break;
                 case 8:
                     t = sd.tanh(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(2).subi(1.0);
-                    expOut = Transforms.tanh(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.tanh(ia, true));
                     break;
                 case 9:
                     t = sd.tan(in);
                     ia = Nd4j.rand(minibatch, nOut);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new Tan(ia.dup()));
+                    tc.expectedOutput(t.getVarName(), Transforms.tan(ia));
                     break;
                 case 10:
                     t = sd.cos(in);
-                    expOut = Transforms.cos(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.cos(ia, true));
                     break;
                 case 11:
                     t = sd.sin(in);
-                    expOut = Transforms.sin(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.sin(ia, true));
                     break;
                 case 12:
                     t = sd.softplus(in);
-                    expOut = Transforms.softPlus(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.softPlus(ia, true));
                     break;
                 case 13:
                     t = sd.log(in);
                     ia = Nd4j.rand(minibatch, nOut);
-                    expOut = Transforms.log(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.log(ia, true));
                     break;
                 case 14:
                     t = sd.neg(in);
-                    expOut = ia.neg();
+                    tc.expectedOutput(t.getVarName(), ia.neg());
                     break;
                 case 15:
                     t = sd.acos(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(1.8).subi(0.9);
-                    expOut = Transforms.acos(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.acos(ia, true));
                     break;
                 case 16:
                     t = sd.acosh(in);
                     ia = Nd4j.rand(minibatch, nOut).addi(1.01); //Only defined for x >= 1
-                    expOut = Nd4j.getExecutioner().execAndReturn(new ACosh(ia.dup()));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new ACosh(ia.dup())));
                     break;
                 case 17:
                     t = sd.asin(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(1.8).subi(0.9);
-                    expOut = Transforms.asin(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.asin(ia, true));
                     break;
                 case 18:
                     t = sd.atan(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(4).subi(2);
-                    expOut = Transforms.atan(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.atan(ia, true));
                     break;
                 case 19:
                     t = sd.atanh(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(1.8).subi(0.9);
-                    expOut = Transforms.atanh(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.atanh(ia, true));
                     break;
                 case 20:
                     t = sd.cosh(in);
-                    expOut = Transforms.cosh(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.cosh(ia, true));
                     break;
                 case 21:
                     t = sd.cube(in);
-                    expOut = Transforms.pow(ia, 3.0, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.pow(ia, 3.0, true));
                     break;
                 case 22:
                     t = sd.elu(in);
-                    expOut = Transforms.elu(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.elu(ia, true));
                     break;
                 case 23:
                     //TODO SHOULDN'T THIS HAVE A DIMENSION ARG???
                     t = sd.softmax(in);
                     ia = Nd4j.rand(minibatch, nOut);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(ia.dup()));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new OldSoftMax(ia.dup())));
                     break;
                 case 24:
                     t = sd.sqrt(in);
                     ia = Nd4j.rand(minibatch, nOut);
-                    expOut = Transforms.sqrt(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.sqrt(ia, true));
                     break;
                 case 25:
                     t = sd.square(in);
-                    expOut = Transforms.pow(ia, 2.0, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.pow(ia, 2.0, true));
                     break;
                 case 26:
                     t = sd.transpose(in);
-                    expOut = ia.transpose().dup();
+                    tc.expectedOutput(t.getVarName(), ia.transpose().dup());
                     break;
                 case 27:
                     t = sd.abs(in);
-                    expOut = Transforms.abs(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.abs(ia, true));
                     break;
                 case 28:
                     t = sd.sinh(in);
-                    expOut = Transforms.sinh(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.sinh(ia, true));
                     break;
                 case 29:
                     t = sd.asinh(in);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new ASinh(ia.dup()));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new ASinh(ia.dup())));
                     break;
                 case 30:
                     t = sd.exp(in);
-                    expOut = Transforms.exp(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.exp(ia, true));
                     break;
                 case 31:
                     t = sd.floor(in);
-                    expOut = Transforms.floor(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.floor(ia, true));
                     break;
                 case 32:
                     t = sd.relu(in, 0.0);
                     ia = Nd4j.rand(minibatch, nOut);
-                    expOut = Transforms.relu(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.relu(ia, true));
                     break;
                 case 33:
                     t = sd.hardTanh(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(2).subi(1.0);
-                    expOut = Transforms.hardTanh(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.hardTanh(ia, true));
                     break;
                 case 34:
                     t = sd.logSigmoid(in);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new LogSigmoid(ia.dup()));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new LogSigmoid(ia.dup())));
                     break;
                 case 35:
                     t = sd.swish(in);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new Swish(ia.dup()));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new Swish(ia.dup())));
                     break;
                 case 36:
                     t = sd.sign(in);
-                    expOut = Transforms.sign(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.sign(ia, true));
                     break;
                 case 37:
                     t = sd.softsign(in);
-                    expOut = Transforms.softsign(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.softsign(ia, true));
                     break;
                 case 38:
                     t = sd.leakyRelu(in, 0.0);
                     ia = Nd4j.rand(minibatch, nOut);
-                    expOut = Transforms.leakyRelu(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.leakyRelu(ia, true));
                     break;
                 case 39:
                     t = sd.logSoftmax(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(10).subi(5);
-                    expOut = Transforms.log(Transforms.softmax(ia, true));
+                    tc.expectedOutput(t.getVarName(), Transforms.log(Transforms.softmax(ia, true)));
                     stdevLoss = true;
                     break;
                 case 40:
                     t = sd.selu(in);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new SELU(ia.dup()));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new SELU(ia.dup())));
                     break;
                 case 41:
                     t = sd.gt(in, 1.0);
-                    expOut = ia.gt(1.0);
+                    tc.expectedOutput(t.getVarName(), ia.gt(1.0));
                     break;
                 case 42:
                     t = sd.gte(in, 1.0);
-                    expOut = ia.gte(1.0);
+                    tc.expectedOutput(t.getVarName(), ia.gte(1.0));
                     break;
                 case 43:
                     t = sd.lt(in, 1.0);
-                    expOut = ia.lt(1.0);
+                    tc.expectedOutput(t.getVarName(), ia.lt(1.0));
                     break;
                 case 44:
                     t = sd.lte(in, 1.0);
-                    expOut = ia.lte(1.0);
+                    tc.expectedOutput(t.getVarName(), ia.lte(1.0));
                     break;
                 case 45:
                     t = sd.eq(in, 2.0);
                     ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut).reshape('c', minibatch, nOut);
-                    expOut = ia.eq(2.0);
+                    tc.expectedOutput(t.getVarName(), ia.eq(2.0));
                     break;
                 case 46:
                     t = sd.neq(in, 2.0);
                     ia = Nd4j.linspace(1, minibatch * nOut, minibatch * nOut).reshape('c', minibatch, nOut);
-                    expOut = ia.neq(2.0);
+                    tc.expectedOutput(t.getVarName(), ia.neq(2.0));
                     break;
                 case 47:
                     t = sd.ceil(in);
-                    expOut = Transforms.ceil(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.ceil(ia, true));
                     break;
                 case 48:
                     ia = Nd4j.randn(ia.shape()).muli(2);
                     t = sd.clipByValue(in, -3, 2);
-                    expOut = ia.dup();
-                    BooleanIndexing.replaceWhere(expOut, -3, Conditions.lessThan(-3));
-                    BooleanIndexing.replaceWhere(expOut, 2, Conditions.greaterThan(2));
+                    INDArray expOut48 = ia.dup();
+                    BooleanIndexing.replaceWhere(expOut48, -3, Conditions.lessThan(-3));
+                    BooleanIndexing.replaceWhere(expOut48, 2, Conditions.greaterThan(2));
+                    tc.expectedOutput(t.getVarName(), expOut48);
                     break;
                 case 49:
                     //Clip by norm, dimension 0, some below threshold, some above
                     double clip = 2.0;
+                    t = sd.clipByNorm(in, clip, 0);
                     ia = Nd4j.rand(ia.shape());
                     ia.diviRowVector(ia.norm2(0)).muli(clip);  //Norm2 is now 'clip' (i.e., exactly at threshold
                     //System.out.println(ia.norm2(0));
                     ia.muliColumnVector(Nd4j.linspace(0.9, 1.1, ia.size(0)).transpose());
                     //System.out.println(ia.norm2(0));
 
-                    expOut = Nd4j.create(ia.shape());
+                    INDArray expOut49 = Nd4j.create(ia.shape());
                     for (int j = 0; j < ia.columns(); j++) {
                         INDArray origCol = ia.getColumn(j);
                         if (origCol.norm2Number().doubleValue() < clip) {
-                            expOut.putColumn(j, origCol);
+                            expOut49.putColumn(j, origCol);
                         } else {
-                            expOut.putColumn(j, origCol.mul(clip / origCol.norm2Number().doubleValue()));
+                            expOut49.putColumn(j, origCol.mul(clip / origCol.norm2Number().doubleValue()));
                         }
                     }
+                    tc.expectedOutput(t.getVarName(), expOut49);
                     //System.out.println(expOut.norm2(0));
-
-                    t = sd.clipByNorm(in, clip, 0);
                     break;
                 //TODO clip by norm along other dimensions
                 case 50:
                     dim = 1;
                     t = sd.reverse(in, dim);
-                    expOut = Nd4j.create(ia.shape());
+                    INDArray expOut50 = Nd4j.create(ia.shape());
                     DynamicCustomOp reverse = DynamicCustomOp.builder("reverse")
                             .addIntegerArguments(dim)
-                            .addInputs(ia).addOutputs(expOut).build();
+                            .addInputs(ia).addOutputs(expOut50).build();
                     Nd4j.getExecutioner().exec(reverse);
+                    tc.expectedOutput(t.getVarName(), expOut50);
                     break;
                 case 51:
                     dim = 0;
@@ -645,119 +647,121 @@ public class GradCheckTransforms {
 
 
                     t = sd.cumsum(in, exclusive, reverseBool, dim);
-                    expOut = Nd4j.create(ia.shape());
+                    INDArray expOut51 = Nd4j.create(ia.shape());
                     DynamicCustomOp cumsum = DynamicCustomOp.builder("cumsum")
                             .addIntegerArguments((exclusive) ? 1 : 0, (reverseBool) ? 1 : 0, dim)
-                            .addInputs(ia).addOutputs(expOut).build();
+                            .addInputs(ia).addOutputs(expOut51).build();
                     Nd4j.getExecutioner().exec(cumsum);
+                    tc.expectedOutput(t.getVarName(), expOut51);
                     break;
                 case 52:
                     dim = 0;
                     boolean ex = false;
                     boolean revBool = false;
                     t = sd.cumprod(in, ex, revBool, dim);
-                    expOut = Nd4j.create(ia.shape());
+                    INDArray expOut52 = Nd4j.create(ia.shape());
                     for( int s0=0; s0<ia.size(0); s0++){
                         for( int s1=0; s1<ia.size(1); s1++ ){
                             double prod = 1.0;
                             for(int x=0; x<=s0; x++ ){
                                 prod *= ia.getDouble(x, s1);
                             }
-                            expOut.putScalar(s0, s1, prod);
+                            expOut52.putScalar(s0, s1, prod);
                         }
                     }
+                    tc.expectedOutput(t.getVarName(), expOut52);
                     break;
                 case 53:
+                    t = sd.diag(in);
                     ia = Nd4j.create(new float[]{4, 2});
                     in = sd.var("in", new int[]{1, 2});
-                    expOut = Nd4j.create(new int[]{2, 2});
-                    DynamicCustomOp op = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut).build();
+                    INDArray expOut53 = Nd4j.create(new int[]{2, 2});
+                    DynamicCustomOp op = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut53).build();
                     Nd4j.getExecutioner().exec(op);
-                    t = sd.diag(in);
+                    tc.expectedOutput(t.getVarName(), expOut53);
                     break;
                 case 54:
-                    expOut = Nd4j.createUninitialized(ia.shape(), ia.ordering());
-                    Nd4j.getExecutioner().exec(new Erf(ia, expOut));
                     t = sd.erf(in);
+                    INDArray expOut54 = Nd4j.createUninitialized(ia.shape(), ia.ordering());
+                    Nd4j.getExecutioner().exec(new Erf(ia, expOut54));
+                    tc.expectedOutput(t.getVarName(), expOut54);
                     break;
                 case 55:
-                    expOut = Nd4j.createUninitialized(ia.shape(), ia.ordering());
-                    Nd4j.getExecutioner().exec(new Erfc(ia, expOut));
                     t = sd.erfc(in);
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new Erfc(ia, Nd4j.createUninitialized(ia.shape(), ia.ordering()))));
                     break;
                 case 56:
                     t = sd.expm1(in);
-                    expOut = Transforms.expm1(ia, true);
+                    tc.expectedOutput(t.getVarName(),Transforms.expm1(ia, true));
                     break;
                 case 57:
                     t = sd.log1p(in);
                     ia = Nd4j.rand(minibatch, nOut);
-                    expOut = Transforms.log1p(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.log1p(ia, true));
                     break;
                 case 58:
                     t = sd.round(in);
-                    expOut = Transforms.round(ia, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.round(ia, true));
                     break;
                 case 59:
                     ia = Nd4j.create(new float[]{4, 2});
                     in = sd.var("in", new int[]{1, 2});
                     t = sd.rsqrt(in);
-                    expOut = Nd4j.create(ia.shape(), ia.ordering());
-                    Nd4j.getExecutioner().exec(new RSqrt(ia, expOut));
+                    tc.expectedOutput(t.getVarName(),Nd4j.getExecutioner().execAndReturn(new RSqrt(ia, Nd4j.create(ia.shape(), ia.ordering()))));
                     break;
                 case 60:
                     t = sd.relu6(in, 0);
                     ia = Nd4j.rand(minibatch, nOut);
-                    expOut = Transforms.relu6(ia, true);
+                    tc.expectedOutput(t.getVarName(),Transforms.relu6(ia, true));
                     break;
                 case 61:
                     ia = Nd4j.create(new float[] {2, 2});
                     in = sd.var("in", new int[]{1, 2});
                     sd.associateArrayWithVariable(ia, in);
                     double value = 42;
-                    expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42);
                     t = sd.fill(in, value);
+                    tc.expectedOutput(t.getVarName(), Nd4j.valueArrayOf(new int[]{2,2}, 42));
                     break;
                 case 62:
                     t = sd.hardSigmoid(in);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new HardSigmoid(ia, ia.dup()));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new HardSigmoid(ia, ia.dup())));
                     break;
                 case 63:
                     t = sd.scalarMax(in, 0.5);
-                    expOut = Transforms.max(ia, 0.5, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.max(ia, 0.5, true));
                     break;
                 case 64:
                     t = sd.scalarMin(in, 0.5);
-                    expOut = Transforms.min(ia, 0.5, true);
+                    tc.expectedOutput(t.getVarName(), Transforms.min(ia, 0.5, true));
                     break;
                 case 65:
                     t = sd.assign(in, 0.5);
-                    expOut = ia.dup().assign(0.5);
+                    tc.expectedOutput(t.getVarName(), ia.dup().assign(0.5));
                     break;
                 case 66:
                     t = sd.scalarFloorMod(in, 0.5);
-                    expOut = Nd4j.getExecutioner().execAndReturn(new ScalarFMod(ia.dup(), 0.5));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().execAndReturn(new ScalarFMod(ia.dup(), 0.5)));
                     break;
                 case 67:
                     t = sd.reciprocal(in);
-                    expOut = ia.rdiv(1.0);
+                    tc.expectedOutput(t.getVarName(), ia.rdiv(1.0));
                     break;
                 case 68:
                     t = sd.shape(in);
-                    expOut = Nd4j.create(ArrayUtil.toDouble(ia.shape()));
+                    tc.expectedOutput(t.getVarName(), Nd4j.create(ArrayUtil.toDouble(ia.shape())));
                     break;
                 case 69:
                     t = sd.rank(in);
-                    expOut = Nd4j.create(new double[]{ia.rank()});
+                    tc.expectedOutput(t.getVarName(), Nd4j.create(new double[]{ia.rank()}));
                     break;
                 case 70:
                     t = sd.onesLike(in);
-                    expOut = Nd4j.ones(ia.shape());
+                    tc.expectedOutput(t.getVarName(), Nd4j.ones(ia.shape()));
                     break;
                 case 71:
                     ia = Nd4j.randn(nOut, nOut);
                     t = sd.diagPart(in);
-                    expOut = Nd4j.trueVector(new double[]{ia.getDouble(0,0), ia.getDouble(1,1), ia.getDouble(2,2), ia.getDouble(3,3)});
+                    tc.expectedOutput(t.getVarName(), Nd4j.trueVector(new double[]{ia.getDouble(0,0), ia.getDouble(1,1), ia.getDouble(2,2), ia.getDouble(3,3)}));
                     break;
                 default:
                     throw new RuntimeException();
@@ -781,35 +785,11 @@ public class GradCheckTransforms {
 
 
             sd.associateArrayWithVariable(ia, in);
-            try {
-                sd.exec();
-            } catch (Exception e){
-                log.error("Error during execution of op: {} - {}", i, name);
-                log.error("",e);
-                allFailed.add(msg + " - EXCEPTION ON EXEC() - " + e.getMessage());
-                continue;
-            }
-            INDArray out = t.getArr();
 
-            out.shape();
-
-            if (!expOut.equals(out)) {
-                allFailed.add(msg + " - FAILED ON FORWARD");
-                continue;
-            }
-
-            boolean ok;
-            try {
-                ok = GradCheckUtil.checkGradients(sd);
-            } catch (Exception e) {
-                e.printStackTrace();
-                msg += " - EXCEPTION: " + e.getMessage();
-                ok = false;
-            }
-
-//            assertTrue(msg, ok);
-            if (!ok) {
-                allFailed.add(msg);
+            tc.testName(name);
+            String error = OpValidation.validate(tc);
+            if(error != null){
+                allFailed.add(name);
             }
         }
 
