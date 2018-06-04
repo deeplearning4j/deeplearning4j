@@ -1406,7 +1406,7 @@ public class SameDiff {
 
 
         if (name == null || name.length() < 1)
-            throw new IllegalArgumentException("Name for variable must be defined");
+            name = getNewVarName();
 
         if (workspace == null)
             initWorkspace();
@@ -1630,7 +1630,7 @@ public class SameDiff {
 
 
         if (name == null || name.length() < 1)
-            throw new IllegalArgumentException("Name for variable must be defined");
+            name = getNewVarName();
 
         if (arr == null)
             throw new IllegalArgumentException("Array for " + name + " must not be null");
