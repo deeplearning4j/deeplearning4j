@@ -3245,6 +3245,126 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_1) {
     delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_2) {
+
+    NDArray<float> x('c', {2,3,4});
+    NDArray<float> exp('c', {1,1,4}, {66.f, 72.f, 78.f, 84.f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::reduce_norm1<float> op;
+    auto result = op.execute({&x}, {1.}, {0, 1});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_3) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {3}, {68.f, 100.f, 132.f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::reduce_norm1<float> op;
+    auto result = op.execute({&x}, {}, {0, 2});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_4) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {1,3,1}, {68.f, 100.f, 132.f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::reduce_norm1<float> op;
+    auto result = op.execute({&x}, {1.}, {0, 2});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_5) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp(300.f);
+    NDArrayFactory<float>::linspace(1, x);
+    
+    nd4j::ops::reduce_norm1<float> op;
+    auto result = op.execute({&x}, {}, {});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_6) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp(300.f);
+    NDArrayFactory<float>::linspace(1, x);
+           
+    nd4j::ops::reduce_norm1<float> op;
+    auto result = op.execute({&x}, {}, {0,1,2});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_7) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {1, 1, 1}, {300.f});
+    NDArrayFactory<float>::linspace(1, x);
+//    x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
+    nd4j::ops::reduce_norm1<float> op;
+    auto result = op.execute({&x}, {1.}, {0,1,2});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_1) {
 
     NDArray<float> x('c', {2, 3, 4});
@@ -3255,6 +3375,126 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_1) {
     auto result = op.execute({&x}, {}, {0,1});
     auto output = result->at(0);
     output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_2) {
+
+    NDArray<float> x('c', {2,3,4});
+    NDArray<float> exp('c', {1,1,4}, {31.7175f, 33.823071f, 35.97221f, 38.15757f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::reduce_norm2<float> op;
+    auto result = op.execute({&x}, {1.}, {0, 1});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_3) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {3}, {29.597298f, 39.344631f, 49.759422f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::reduce_norm2<float> op;
+    auto result = op.execute({&x}, {}, {0, 2});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_4) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {1,3,1}, {29.597298f, 39.344631f, 49.759422f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::reduce_norm2<float> op;
+    auto result = op.execute({&x}, {1.}, {0, 2});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_5) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp(70.f);
+    NDArrayFactory<float>::linspace(1, x);
+    
+    nd4j::ops::reduce_norm2<float> op;
+    auto result = op.execute({&x}, {}, {});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_6) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp(70.f);
+    NDArrayFactory<float>::linspace(1, x);
+           
+    nd4j::ops::reduce_norm2<float> op;
+    auto result = op.execute({&x}, {}, {0,1,2});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_7) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {1, 1, 1}, {70.f});
+    NDArrayFactory<float>::linspace(1, x);
+//    x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
+    nd4j::ops::reduce_norm2<float> op;
+    auto result = op.execute({&x}, {1.}, {0,1,2});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -3280,6 +3520,25 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_2) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {1,1,4}, {21.f, 22.f, 23.f, 24.f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::reduce_norm_max<float> op;
+    auto result = op.execute({&x}, {1.f}, {0,1});
+    auto output = result->at(0);
+    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
 
 TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_1) {
 
