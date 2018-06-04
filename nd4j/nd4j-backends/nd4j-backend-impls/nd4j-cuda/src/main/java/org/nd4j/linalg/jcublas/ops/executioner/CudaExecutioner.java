@@ -45,6 +45,7 @@ import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.CopyOp;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
@@ -1994,6 +1995,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (op.z() != null)
             log.info("Z: {}", op.z().shapeInfoDataBuffer().asLong());
+
+        if (op instanceof TruncatedNormalDistribution) {
+            log.info("Mean: {}; Stddev: {}", 0.0,  (Double) ((TruncatedNormalDistribution) op).getExtraArgs()[1]);
+        }
 
         if (op.x() != null && op.y() != null && op.z() != null) {
             // triple arg call

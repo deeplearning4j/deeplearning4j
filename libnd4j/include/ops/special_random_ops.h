@@ -736,7 +736,7 @@ namespace randomOps {
                     result0 = z0 * stddev + realMean0;
                     result1 = z1 * stddev + realMean1;
                     generation0 += zLength;
-                } while (aRealMean0 + nd4j::math::nd4j_abs<T>(result0) > ds || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds || blocker++ > 100);
+                } while (aRealMean0 + nd4j::math::nd4j_abs<T>(result0) > ds || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds || blocker++ > 5);
 
                 z[e*zEWS] = result0;
                 if((epm) < zLength)
