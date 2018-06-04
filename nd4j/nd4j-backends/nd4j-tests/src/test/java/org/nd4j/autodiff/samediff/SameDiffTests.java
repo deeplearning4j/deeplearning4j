@@ -2573,9 +2573,6 @@ public class SameDiffTests {
 
         SDVariable in = sd.var("in", inArr);
 
-
-        SDVariable[] vars = new SDVariable[]{in};
-
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
                 .kh(kH).kw(kW)
                 .ph(0).pw(0)
@@ -2584,7 +2581,7 @@ public class SameDiffTests {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.maxPooling2d(vars, pooling2DConfig);
+        SDVariable out = sd.maxPooling2d(in, pooling2DConfig);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
@@ -2608,9 +2605,6 @@ public class SameDiffTests {
 
         SDVariable in = sd.var("in", inArr);
 
-
-        SDVariable[] vars = new SDVariable[]{in};
-
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
                 .kh(kH).kw(kW)
                 .ph(0).pw(0)
@@ -2619,7 +2613,7 @@ public class SameDiffTests {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.avgPooling2d(vars, pooling2DConfig);
+        SDVariable out = sd.avgPooling2d(in, pooling2DConfig);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
