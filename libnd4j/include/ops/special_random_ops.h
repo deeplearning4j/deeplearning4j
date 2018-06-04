@@ -725,6 +725,7 @@ namespace randomOps {
                 T realMean1 = y == z ? mean : y[epm * yEWS];
                 T aRealMean0 = nd4j::math::nd4j_abs<T>(realMean0);
                 T aRealMean1 = nd4j::math::nd4j_abs<T>(realMean1);
+                int blocker = 0;
                 do {
                     T u0 = buffer->relativeT<T>(e + generation0, epsilon, static_cast<T>(1.0f));
                     T u1 = buffer->relativeT<T>(epm + generation0, epsilon, static_cast<T>(1.0f));
@@ -735,7 +736,7 @@ namespace randomOps {
                     result0 = z0 * stddev + realMean0;
                     result1 = z1 * stddev + realMean1;
                     generation0 += zLength;
-                } while (aRealMean0 + nd4j::math::nd4j_abs<T>(result0) > ds || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds);
+                } while (aRealMean0 + nd4j::math::nd4j_abs<T>(result0) > ds || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds || blocker++ > 100);
 
                 z[e*zEWS] = result0;
                 if((epm) < zLength)
