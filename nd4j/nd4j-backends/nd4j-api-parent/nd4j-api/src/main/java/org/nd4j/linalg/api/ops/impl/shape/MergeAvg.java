@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -15,6 +16,12 @@ import java.util.Map;
 
 @Slf4j
 public class MergeAvg extends DynamicCustomOp {
+
+    public MergeAvg(SameDiff sameDiff, SDVariable... inputs) {
+        super(null, sameDiff, inputs);
+    }
+
+    public MergeAvg(){ }
 
     @Override
     public String opName() {
@@ -51,5 +58,14 @@ public class MergeAvg extends DynamicCustomOp {
         return "MergeAvg";
     }
 
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        int nArgs = args().length;
+        SDVariable gradient = sameDiff.setupFunction(i_v.get(0)).div(nArgs);
+        List<SDVariable> ret = new ArrayList<>();
+        for (int i = 0; i < args().length; i++)
+            ret.add(gradient);
+        return ret;
+    }
 
 }

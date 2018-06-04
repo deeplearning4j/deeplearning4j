@@ -268,8 +268,8 @@ namespace nd4j {
          * 
          */
         #if NOT_EXCLUDED(OP_slice)
-        DECLARE_CUSTOM_OP(slice, 1, 1, false, 0, -1);
-        DECLARE_CUSTOM_OP(slice_bp, 2, 1, false, 0, -1);
+        DECLARE_CUSTOM_OP(slice, 1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(slice_bp, 2, 1, false, 0, -2);
         #endif
 
         /**

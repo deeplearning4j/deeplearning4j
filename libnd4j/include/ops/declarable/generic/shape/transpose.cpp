@@ -31,10 +31,10 @@ namespace ops {
             auto w = block.width();
             auto a = arguments.size();
 
-            if (block.width() == 2 && arguments.size() == 0) {
+            if (w == 2 && a == 0) {
                 auto axis = INPUT_VARIABLE(1);
                 for (int e = 0; e < axis->lengthOf(); e++) {
-                    int ax = (int) axis->getScalar(e);
+                    auto ax = static_cast<int>(axis->getScalar(e));
                     if (ax < 0)
                         ax += x->rankOf();
 
@@ -42,7 +42,7 @@ namespace ops {
                 }
 
                 replace = true;
-            } else if (arguments.size() == 0) {
+            } else if (a == 0) {
                 for (int e = x->rankOf() - 1; e >= 0; e--)
                     arguments.emplace_back(e);
             }
@@ -98,7 +98,7 @@ namespace ops {
                 newshape[3] = 99;
                 shapeList->push_back(newshape);
             } else if (arguments->size() > 0 || inputShape->size() > 1) {
-                std::vector<int> axis = arguments->size() > 0 ? *arguments : (INPUT_VARIABLE(1))->template asVectorT<int>();
+                auto axis = arguments->size() > 0 ? *arguments : (INPUT_VARIABLE(1))->template asVectorT<int>();
                 auto outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(axis.data(), axis.size(), *INPUT_VARIABLE(0), block.workspace());
                 shapeList->push_back(outputShapeInfo);
             } else if (inputShape->size() == 2) {

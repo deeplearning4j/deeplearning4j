@@ -15,7 +15,9 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,6 +44,7 @@ public class Gather extends DynamicCustomOp {
         addIArgument(axis);
         this.axis = axis;
     }
+
     @Override
     public String onnxName() {
         return "Gather";
@@ -84,6 +87,13 @@ public class Gather extends DynamicCustomOp {
 
         if (numOutputArguments() < getDescriptor().getNumOutputs()) {
             val outputs = outputVariables();
+            //Check that ALL variables have an array before setting
+            for(SDVariable v : outputs){
+                if(v.getArr() == null){
+                    return;
+                }
+            }
+
             for (int i = 0; i < outputs.length; i++) {
                 val output = outputs[i].getArr();
                 addOutputArgument(output);
@@ -98,11 +108,11 @@ public class Gather extends DynamicCustomOp {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
         Map<String, PropertyMapping> map = new HashMap<>();
         val broadcast = PropertyMapping.builder()
-                .onnxAttrName("broadcast")
+                .onnxAttrName("indices")
                 .tfInputPosition(1)
-                .propertyNames(new String[]{"broadcast"}).build();
+                .propertyNames(new String[]{"indices"}).build();
 
-        map.put("broadcast", broadcast);
+        map.put("indices", broadcast);
 
         ret.put(tensorflowNames()[0], map);
         ret.put(onnxName(), map);
@@ -110,8 +120,8 @@ public class Gather extends DynamicCustomOp {
         Map<String, PropertyMapping> map2 = new HashMap<>();
         val broadcast2 = PropertyMapping.builder()
                 .tfInputPosition(1)
-                .propertyNames(new String[]{"broadcast"}).build();
-        map2.put("broadcast", broadcast2);
+                .propertyNames(new String[]{"indices"}).build();
+        map2.put("indices", broadcast2);
 
         val axis2 = PropertyMapping.builder()
                 .tfInputPosition(2)
@@ -127,5 +137,22 @@ public class Gather extends DynamicCustomOp {
     @Override
     public String opName() {
         return "gather";
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradOut){
+        //2 args: input and indices. Plus integer dimension arg
+        //Gather backprop is just scatter add
+
+        SDVariable indicesGrad = sameDiff.zerosLike(arg(1));
+        SDVariable inputGrad = sameDiff.zerosLike(arg(0));
+
+        if(axis == 0){
+            inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), gradOut.get(0));
+        } else {
+            throw new UnsupportedOperationException("Gather backprop for axis > 0 not yet implemented");
+        }
+
+        return Arrays.asList(inputGrad, indicesGrad);
     }
 }
