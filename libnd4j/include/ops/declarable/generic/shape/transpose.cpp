@@ -13,15 +13,18 @@ namespace ops {
 
     //////////////////////////////////////////////////////////////////////////
     CUSTOM_OP_IMPL(transpose, 1, 1, true, 0, 0) {
-        NDArray<T>* x = INPUT_VARIABLE(0);
+        auto x = INPUT_VARIABLE(0);
         if (block.width() == 1) {
             if (block.isInplace()) {
                 x->transposei();
                 STORE_RESULT(*x);
             } else {
-                NDArray<T> *output = OUTPUT_VARIABLE(0);
-                x->transpose(*output);
+                auto output = OUTPUT_VARIABLE(0);
+                auto t = x->transpose();
+                output->assign(t);
                 STORE_RESULT(*output);
+
+                delete t;
             }
         } else {
             // this is tf-mode transpose, that's nd4j permute
