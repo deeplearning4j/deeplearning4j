@@ -7,6 +7,9 @@ import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.validation.GradCheckUtil;
+import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -75,14 +78,12 @@ public class GradCheckTransforms {
         sd.associateArrayWithVariable(a, sdA);
         sd.associateArrayWithVariable(b, sdB);
 
-        SDVariable t = sd.cross(sdA, sdB);
+        SDVariable t = sd.cross("cross", sdA, sdB);
         SDVariable loss = sd.mean("loss", t);
-        sd.exec();
-        INDArray out = t.getArr();
 
-        assertEquals(expOut, out);
-
-        assertTrue(GradCheckUtil.checkGradients(sd));
+        OpValidation.validate(new TestCase(sd)
+                        .expectedOutput("cross", expOut)
+                        .gradientCheck(true));
     }
 
     @Test
@@ -108,14 +109,12 @@ public class GradCheckTransforms {
 
         sd.associateArrayWithVariable(input, sdInput);
 
-        SDVariable t = sd.spaceToDepth(sdInput, blockSize, dataFormat);
+        SDVariable t = sd.spaceToDepth("std", sdInput, blockSize, dataFormat);
         SDVariable loss = sd.mean("loss", t);
-        sd.exec();
-        INDArray out = t.getArr();
 
-        assertEquals(expOut, out);
-
-        assertTrue(GradCheckUtil.checkGradients(sd));
+        OpValidation.validate(new TestCase(sd)
+                .expectedOutput("std", expOut)
+                .gradientCheck(true));
     }
 
     @Test
@@ -141,14 +140,12 @@ public class GradCheckTransforms {
 
         sd.associateArrayWithVariable(input, sdInput);
 
-        SDVariable t = sd.depthToSpace(sdInput, blockSize, dataFormat);
+        SDVariable t = sd.depthToSpace("dts", sdInput, blockSize, dataFormat);
         SDVariable loss = sd.mean("loss", t);
-        sd.exec();
-        INDArray out = t.getArr();
 
-        assertEquals(expOut, out);
-
-        assertTrue(GradCheckUtil.checkGradients(sd));
+        OpValidation.validate(new TestCase(sd)
+                .expectedOutput("dts", expOut)
+                .gradientCheck(true));
     }
 
     @Test
@@ -178,14 +175,12 @@ public class GradCheckTransforms {
 
         sd.associateArrayWithVariable(input, sdInput);
 
-        SDVariable t = sd.batchToSpace(sdInput, new int[]{2, 2}, new int[][]{{0, 0}, {0, 0}});
+        SDVariable t = sd.batchToSpace("bts", sdInput, new int[]{2, 2}, new int[][]{{0, 0}, {0, 0}});
         SDVariable loss = sd.mean("loss", t);
-        sd.exec();
-        INDArray out = t.getArr();
 
-        assertEquals(expOut, out);
-
-        assertTrue(GradCheckUtil.checkGradients(sd));
+        OpValidation.validate(new TestCase(sd)
+                .expectedOutput("bts", expOut)
+                .gradientCheck(true));
     }
 
     @Test
@@ -215,14 +210,12 @@ public class GradCheckTransforms {
 
         sd.associateArrayWithVariable(input, sdInput);
 
-        SDVariable t = sd.spaceToBatch(sdInput, new int[]{2, 2}, new int[][]{{0, 0}, {0, 0}});
+        SDVariable t = sd.spaceToBatch("stb", sdInput, new int[]{2, 2}, new int[][]{{0, 0}, {0, 0}});
         SDVariable loss = sd.mean("loss", t);
-        sd.exec();
-        INDArray out = t.getArr();
 
-        assertEquals(expOut, out);
-
-        assertTrue(GradCheckUtil.checkGradients(sd));
+        OpValidation.validate(new TestCase(sd)
+                .expectedOutput("stb", expOut)
+                .gradientCheck(true));
     }
 
     @Test
@@ -246,7 +239,7 @@ public class GradCheckTransforms {
                 .addOutputs(expOut1, expOut2).build();
         Nd4j.getExecutioner().exec(dynamicPartition);
 
-        SDVariable[] parts = sd.dynamicPartition(in, sdPartitions, numPartitions);
+        SDVariable[] parts = sd.dynamicPartition(new String[]{"dp0", "dp1"}, in, sdPartitions, numPartitions);
 
         // merge the output partitions together again, to retrieve a single
         // tensor and finally a scalar.
@@ -254,16 +247,11 @@ public class GradCheckTransforms {
         SDVariable loss = sd.mean("loss", t);
 
         sd.associateArrayWithVariable(ia, in);
-        sd.exec();
-        INDArray[] out = new INDArray[numPartitions];
-        for (int i = 0; i < parts.length; i++) {
-            out[i] = parts[i].getArr();
-        }
 
-        assertArrayEquals(expOut, out);
-
-        boolean passed = GradCheckUtil.checkGradients(sd);
-        assertTrue(passed);
+        OpValidation.validate(new TestCase(sd)
+                .expectedOutput("dp0", expOut[0])
+                .expectedOutput("dp1", expOut[1])
+                .gradientCheck(true));
     }
 
     @Test
@@ -296,17 +284,12 @@ public class GradCheckTransforms {
         sd.associateArrayWithVariable(indexA, index1);
         sd.associateArrayWithVariable(indexB, index2);
 
-        SDVariable t = sd.dynamicStitch(new SDVariable[]{index1, index2}, new SDVariable[]{in1, in2});
-
+        SDVariable t = sd.dynamicStitch("ds", new SDVariable[]{index1, index2}, new SDVariable[]{in1, in2});
         SDVariable loss = sd.mean("loss", t);
 
-        sd.exec();
-        INDArray out = t.getArr();
-
-        assertEquals(expOut, out);
-
-        boolean passed = GradCheckUtil.checkGradients(sd);
-        assertTrue(passed);
+        OpValidation.validate(new TestCase(sd)
+                .expectedOutput("ds", expOut)
+                .gradientCheck(true));
     }
 
     @Test
@@ -318,18 +301,15 @@ public class GradCheckTransforms {
         INDArray expOut = Nd4j.create(new int[]{2, 2});
         DynamicCustomOp diag = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut).build();
         Nd4j.getExecutioner().exec(diag);
-        SDVariable t = sd.diag(in);
+        SDVariable t = sd.diag("diag", in);
 
         SDVariable loss = sd.standardDeviation("loss", t,false,0, 1);
 
         sd.associateArrayWithVariable(ia, in);
-        sd.exec();
-        INDArray out = t.getArr();
 
-        assertEquals(expOut, out);
-
-        boolean passed = GradCheckUtil.checkGradients(sd);
-        assertTrue(passed);
+        OpValidation.validate(new TestCase(sd)
+                .expectedOutput("diag", expOut)
+                .gradientCheck(true));
     }
 
     @Test
@@ -340,17 +320,13 @@ public class GradCheckTransforms {
         INDArray expOut = Nd4j.create(new float[]{1, 6, 11, 16});
 
         SDVariable in = sd.var("in", input);
-        SDVariable t = sd.diagPart(in);
+        SDVariable t = sd.diagPart("dp", in);
 
         SDVariable loss = sd.standardDeviation("loss", t, true, 0, 1);
 
-        sd.exec();
-        INDArray out = t.getArr();
-
-        assertEquals(expOut, out);
-
-        boolean passed = GradCheckUtil.checkGradients(sd);
-        assertTrue(passed);
+        OpValidation.validate(new TestCase(sd)
+                .expectedOutput("dp", expOut)
+                .gradientCheck(true));
     }
 
     @Test
@@ -377,13 +353,13 @@ public class GradCheckTransforms {
 
         for(int i=0; i<3; i++ ) {
             SameDiff sd = SameDiff.create();
+            SDVariable eye = sd.eye("e", rows[i], cols[i], batch[i]);
 
-            SDVariable eye = sd.eye(rows[i], cols[i], batch[i]);
+            SDVariable loss = sd.standardDeviation("loss", eye, true);
 
-            INDArray out = sd.execAndEndResult();
-            assertEquals(expOut[i], out);
-
-            assertTrue(GradCheckUtil.checkGradients(sd));
+            OpValidation.validate(new TestCase(sd)
+                    .expectedOutput("e", expOut[i])
+                    .gradientCheck(true));
         }
 
     }

@@ -50,6 +50,9 @@ public class TestCase {
     private Set<String> gradCheckSkipVariables;
 
 
+    public TestCase(SameDiff sameDiff){
+        this.sameDiff = sameDiff;
+    }
 
     public TestCase expectedOutput(@NonNull String name, @NonNull INDArray expected){
         if(fwdTestFns == null)

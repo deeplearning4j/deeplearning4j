@@ -6,6 +6,7 @@ import org.nd4j.autodiff.loss.LossFunctions;
 import org.nd4j.autodiff.loss.LossInfo;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.validation.GradCheckUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
