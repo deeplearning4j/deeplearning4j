@@ -60,10 +60,12 @@ GraphUtils::makeCommandLine(GraphUtils::OpList& ops) {
 
 int 
 GraphUtils::runPreprocessor(char const* input, char const* output) {
+    int status = 0;
+
+#ifdef __GNUC__
     int pipefd[2];
     pipe(pipefd);
     pid_t pid = fork();
-    int status = 0;
     if (pid == 0)
     {
         close(pipefd[0]);    // close reading end in the child
@@ -73,7 +75,6 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
 
         close(pipefd[1]);    // this descriptor is no longer needed
 
-#ifdef __GNUC__
     #if __CNUC__ < 4 && __GNUC_MINOR__ < 9
     #pragma error "Compiler version should be greater then 4.9"
     #endif
@@ -126,7 +127,6 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     status = err;
     nd4j_printf("Header file %s was generated.\n", output);
 //    nd4j_printf("Running build script\n%s\n", cmdline.c_str());
-#endif
     }
     else
     {
@@ -139,6 +139,7 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
         }
         waitpid(pid, &status, 0);
     }
+#endif
     return status;
 }
 
