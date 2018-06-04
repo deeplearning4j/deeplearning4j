@@ -1986,6 +1986,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         PointerPointer extraZZ = extraz.get().put(AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer()),
                 context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer());
 
+        if (op.x() != null)
+            log.info("X: {}", op.x().shapeInfoDataBuffer().asLong());
+
+        if (op.y() != null)
+            log.info("Y: {}", op.y().shapeInfoDataBuffer().asLong());
+
+        if (op.z() != null)
+            log.info("Z: {}", op.z().shapeInfoDataBuffer().asLong());
+
         if (op.x() != null && op.y() != null && op.z() != null) {
             // triple arg call
             if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {

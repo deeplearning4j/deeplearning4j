@@ -682,20 +682,20 @@ namespace randomOps {
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-                buffer = (nd4j::random::RandomBuffer *) shmem;
+                buffer = reinterpret_cast<nd4j::random::RandomBuffer *>(shmem);
                 cB = shmem;
                 devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
                 dB = reinterpret_cast<unsigned char *> (state);
 
-                tZ = (T *) (shmem + sizeof(nd4j::random::RandomBuffer));
+                tZ = reinterpret_cast<T *>(shmem + sizeof(nd4j::random::RandomBuffer));
 
                 zLength = shape::length(zShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
                 yEWS = shape::elementWiseStride(yShapeBuffer);
 
 
-                epsilon = (T) 1e-6f;
-                two_pi = (T) 2.0 * (T) 3.14159265358979323846;
+                epsilon = static_cast<T>(1e-6f);
+                two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
                 mean = extraArguments[0];
                 stddev = extraArguments[1];
@@ -714,28 +714,31 @@ namespace randomOps {
             int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
             T result0, result1, u0, u1, z0, z1;
 
-            T ds = nd4j::math::nd4j_abs<T>(stddev) * (T) 2.0f;
+            T ds = nd4j::math::nd4j_abs<T>(stddev) * static_cast<T>(2.0f);
             for (Nd4jLong e = tid; e < middle; e += step) {
                 // we need to get random values
 
                 Nd4jLong generation0 = 0;
+                auto epm = e + middle;
                 T realMean0 = y == z ? mean : y[e * yEWS];
-                T realMean1 = y == z ? mean : y[(e + middle) * yEWS];
+                T realMean1 = y == z ? mean : y[epm * yEWS];
+                T aRealMean0 = nd4j::math::nd4j_abs<T>(realMean0);
+                T aRealMean1 = nd4j::math::nd4j_abs<T>(realMean1);
                 do {
-                    T u0 = buffer->relativeT<T>(e + generation0, epsilon, (T) 1.0f);
-                    T u1 = buffer->relativeT<T>(e + middle + generation0, epsilon, (T) 1.0f);
+                    T u0 = buffer->relativeT<T>(e + generation0, epsilon, static_cast<T>(1.0f));
+                    T u1 = buffer->relativeT<T>(epm + generation0, epsilon, static_cast<T>(1.0f));
 
-                    z0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                    z1 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                    z0 = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
+                    z1 = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
 
                     result0 = z0 * stddev + realMean0;
                     result1 = z1 * stddev + realMean1;
                     generation0 += zLength;
-                } while (nd4j::math::nd4j_abs<T>(realMean0) + nd4j::math::nd4j_abs<T>(result0) > ds || nd4j::math::nd4j_abs<T>(realMean1) + nd4j::math::nd4j_abs<T>(result1) > ds);
+                } while (aRealMean0 + nd4j::math::nd4j_abs<T>(result0) > ds || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds);
 
                 z[e*zEWS] = result0;
-                if((e+middle) < zLength)
-                    z[(e + middle) * zEWS] = result1;
+                if((epm) < zLength)
+                    z[epm * zEWS] = result1;
             }
 
             __syncthreads();
