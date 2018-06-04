@@ -1435,11 +1435,13 @@ public class SameDiff {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(String name, long[] shape) {
+    public SDVariable var(String name, long... shape) {
+        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
         return var(name, shape, new ZeroInitScheme());
     }
 
-    public SDVariable var(String name, int[] shape) {
+    public SDVariable var(String name, int... shape) {
+        Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
 
@@ -1499,23 +1501,23 @@ public class SameDiff {
 
     // auto naming
 
-    private Integer _var_id = 0;
+    private int _var_id = 0;
     private String getNewVarName(){
-        String varName = "sd_var_" + _var_id.toString();
+        String varName = "sd_var_" + String.valueOf(_var_id);
         while(variableMap.containsKey(varName)){
             _var_id++;
-            varName = "sd_var_" + _var_id.toString();
+        varName = "sd_var_" + String.valueOf(_var_id);
         }
         return varName;
     }
     
-    public SDVariable var(int[] shape) {
+    public SDVariable var(int... shape) {
         return var(getNewVarName(), shape);
     }
-    public SDVariable var(long[] shape) {
+    public SDVariable var(long... shape) {
         return var(getNewVarName(), shape);
     }
-    public SDVariable var(long[] shape, WeightInitScheme weightInitScheme) {
+    public SDVariable var(WeightInitScheme weightInitScheme, long... shape) {
         return var(getNewVarName(), shape, weightInitScheme);
     }
     public SDVariable var(INDArray arr) {
