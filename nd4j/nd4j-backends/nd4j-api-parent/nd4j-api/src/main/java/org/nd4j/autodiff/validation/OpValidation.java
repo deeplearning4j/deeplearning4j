@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.LegacyDropOutInverted;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.impl.*;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
 
 import java.io.IOException;
@@ -43,6 +44,7 @@ public class OpValidation {
      * @return NULL if test passes, or error message otherwise
      */
     public static String validate(TestCase testCase){
+        testCase.assertConfigValid();
 
         //First: collect coverage information
         collectCoverageInformation(testCase);
@@ -69,7 +71,7 @@ public class OpValidation {
                     throw new IllegalStateException("Null INDArray after forward pass for variable \"" + e.getKey() + "\"");
                 }
 
-                String error = null;
+                String error;
                 try{
                     error = e.getValue().apply(actual);
                 } catch (Throwable t){
@@ -101,6 +103,54 @@ public class OpValidation {
     }
 
 
+    public static String validate(OpTestCase testCase){
+        collectCoverageInformation(testCase);
+
+        //Check shape function:
+        List<long[]> outShapes;
+        try{
+            outShapes = Nd4j.getExecutioner().calculateOutputShape(testCase.op());
+        } catch (Throwable t){
+            throw new IllegalStateException("Error calculating output shapes during op validation", t);
+        }
+
+        if(outShapes.size() != testCase.testFns().size()){
+            return "Expected number of output shapes and number of outputs differ. " + outShapes.size() + " output shapes," +
+                    " but OpTestCase specifies " + testCase.testFns().size() + " outputs expected";
+        }
+
+        for( int i=0; i<outShapes.size(); i++ ){
+            long[] act = outShapes.get(i);
+            long[] exp = testCase.expShapes().get(i);
+            if(!Arrays.equals(exp, act)){
+                return "Shape function check failed for output " + i + ": expected shape " + Arrays.toString(exp) +
+                        ", actual shape " + Arrays.toString(act);
+            }
+        }
+
+        //Check the outputs:
+        try {
+            Nd4j.getExecutioner().exec(testCase.op());
+        } catch (Throwable t){
+            throw new IllegalStateException("Error during op execution", t);
+        }
+
+        for( int i=0; i<testCase.testFns().size(); i++ ){
+            String error;
+            try{
+                error = testCase.testFns().get(i).apply(testCase.op().outputArguments()[i]);
+            } catch (Throwable t){
+                throw new IllegalStateException("Exception thrown during op output validation for output " + i, t);
+            }
+
+            if(error != null){
+                return error;
+            }
+        }
+
+        return null;    //OK
+    }
+
 
 
     //==================================================================================================================
@@ -109,6 +159,7 @@ public class OpValidation {
     private static List<Class> allOps;
     private static Map<Class,Integer> gradCheckCoverageCountPerClass = new LinkedHashMap<>();
     private static Map<Class,Integer> fwdPassCoverageCountPerClass = new LinkedHashMap<>();
+    private static Map<Class,Integer> singleOpTestCountPerClass = new LinkedHashMap<>();
 
 
     private static void collectCoverageInformation(TestCase testCase){
@@ -147,6 +198,12 @@ public class OpValidation {
                 fwdPassCoverageCountPerClass.put(c, fwdPassCoverageCountPerClass.get(c)+1);
             }
         }
+    }
+
+    private static void collectCoverageInformation(OpTestCase testCase){
+        //TODO we're basically assuming subtypes of DynamicCustomOp here, for coverage... not DCO itself
+        singleOpTestCountPerClass.put(testCase.op().getClass(),
+                singleOpTestCountPerClass.get(testCase.op().getClass()) + 1);
     }
 
     //Collect coverage information
@@ -200,6 +257,7 @@ public class OpValidation {
         for(Class c : allOps){
             gradCheckCoverageCountPerClass.put(c, 0);
             fwdPassCoverageCountPerClass.put(c, 0);
+            singleOpTestCountPerClass.put(c, 0);
         }
     }
 

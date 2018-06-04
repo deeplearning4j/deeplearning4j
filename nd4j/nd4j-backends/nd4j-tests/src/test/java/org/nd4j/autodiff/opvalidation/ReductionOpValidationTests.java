@@ -1,12 +1,13 @@
-package org.nd4j.autodiff;
+package org.nd4j.autodiff.opvalidation;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-public class OpValidationTests {
+public class ReductionOpValidationTests {
 
     private DataBuffer.Type initialType;
 
@@ -30,9 +31,6 @@ public class OpValidationTests {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
-
-
-
 
 
 

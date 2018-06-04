@@ -8,7 +8,7 @@ import org.nd4j.autodiff.gradcheck.GradCheckLoss;
 import org.nd4j.autodiff.gradcheck.GradCheckMisc;
 import org.nd4j.autodiff.gradcheck.GradCheckReductions;
 import org.nd4j.autodiff.gradcheck.GradCheckTransforms;
-import org.nd4j.autodiff.validation.GradCheckUtil;
+import org.nd4j.autodiff.opvalidation.ReductionOpValidationTests;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
@@ -19,7 +19,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        OpValidationTests.class,
+        ReductionOpValidationTests.class,
         GradCheckLoss.class,
         GradCheckMisc.class,
         GradCheckReductions.class,
