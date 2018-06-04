@@ -488,7 +488,7 @@ public class SameDiffTests {
         INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6)).reshape(3, 2);
         SDVariable x1 = sameDiff.var("x1", arr1);
         SDVariable x2 = sameDiff.var("x2", arr2);
-        SDVariable result = sameDiff.stack(new SDVariable[]{x1, x2}, 1);
+        SDVariable result = sameDiff.stack(1, x1, x2);
         assertArrayEquals(new long[]{3, 2, 2}, result.eval().shape());
     }
 
@@ -513,7 +513,7 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.ones(3, 2);
         SDVariable x1 = sameDiff.var("x1", arr1);
         SDVariable x2 = sameDiff.var("x2", arr2);
-        SDVariable stacked = sameDiff.stack(new SDVariable[]{x1, x2}, 0);
+        SDVariable stacked = sameDiff.stack(0, x1, x2);
         SDVariable[] result = sameDiff.unstack(stacked, 0, 2);
         assertEquals(arr1, result[0].eval());
         assertEquals(arr2, result[1].eval());
@@ -2573,9 +2573,6 @@ public class SameDiffTests {
 
         SDVariable in = sd.var("in", inArr);
 
-
-        SDVariable[] vars = new SDVariable[]{in};
-
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
                 .kh(kH).kw(kW)
                 .ph(0).pw(0)
@@ -2584,7 +2581,7 @@ public class SameDiffTests {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.maxPooling2d(vars, pooling2DConfig);
+        SDVariable out = sd.maxPooling2d(in, pooling2DConfig);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
@@ -2608,9 +2605,6 @@ public class SameDiffTests {
 
         SDVariable in = sd.var("in", inArr);
 
-
-        SDVariable[] vars = new SDVariable[]{in};
-
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
                 .kh(kH).kw(kW)
                 .ph(0).pw(0)
@@ -2619,7 +2613,7 @@ public class SameDiffTests {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.avgPooling2d(vars, pooling2DConfig);
+        SDVariable out = sd.avgPooling2d(in, pooling2DConfig);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();

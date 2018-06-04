@@ -39,13 +39,13 @@ namespace helpers {
             ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode)
-                ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, params[0], params[1], params[2], params[3], params[6], params[7]);            
+                ConvolutionUtils<T>::calcPadding2D(pY, pX, oY, oX, inY, inX, params[0], params[1], params[2], params[3], params[6], params[7]);            
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
-            std::vector<T> argT = {(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T)dX, (T)1.f, (T)0.f, (T)1.f, (T) oY, (T) oX};
-
-            input->template applyTransform<simdOps::Pooling2D<T>>(values, argT.data());
+            std::vector<T> argT = {(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T)dX, (T)1.f, (T)0.f, (T)1.f};
+            ConvolutionUtils<T>::pooling2d(*input, *values, argT.data());
+            
             if (nullptr != indices) {
                 // for max_pool_with_argmax 
                 int total = input->lengthOf();
