@@ -29,9 +29,14 @@ public class Col2Im extends DynamicCustomOp {
             this.sameDiff = sameDiff;
         }
 
-
         this.conv2DConfig = conv2DConfig;
 
+        addArgs();
+    }
+
+    public Col2Im(SameDiff sd, SDVariable input, Conv2DConfig config){
+        super(null, sd, new SDVariable[]{input});
+        this.conv2DConfig = config;
         addArgs();
     }
 

@@ -31,32 +31,10 @@ import static org.junit.Assert.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
-public class GradCheckReductions extends BaseNd4jTest {
-
-    private DataBuffer.Type initialType;
+public class GradCheckReductions extends BaseGradCheck {
 
     public GradCheckReductions(Nd4jBackend backend) {
         super(backend);
-    }
-
-
-    @Override
-    public char ordering() {
-        return 'c';
-    }
-
-    @Before
-    public void before() throws Exception {
-        Nd4j.create(1);
-        initialType = Nd4j.dataType();
-
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
-        Nd4j.getRandom().setSeed(123);
-    }
-
-    @After
-    public void after() throws Exception {
-        Nd4j.setDataType(initialType);
     }
 
     @Test
@@ -72,9 +50,10 @@ public class GradCheckReductions extends BaseNd4jTest {
 
         sd.exec();
 
-        assert nonZero.getArr().getDouble(0) == 2;
-        assert zero.getArr().getDouble(0) == 2;
+        assertEquals(2, nonZero.getArr().getInt(0));
+        assertEquals(2, zero.getArr().getInt(0));
 
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -89,8 +68,8 @@ public class GradCheckReductions extends BaseNd4jTest {
 
         sd.exec();
 
-        assert zeroFraction.getArr().getDouble(0) == 0.5;
-
+        assertEquals(0.5, zeroFraction.getArr().getDouble(0), 1e-6);
+        assertTrue(GradCheckUtil.checkGradients(sd));
     }
 
     @Test
@@ -98,11 +77,11 @@ public class GradCheckReductions extends BaseNd4jTest {
         //Test reductions: final and only function
         Nd4j.getRandom().setSeed(12345);
 
-        for (int i = 0; i < 12; i++) {
+        List<String> failed = new ArrayList<>();
+
+        for (int i = 0; i < 16; i++) {
 
             SameDiff sd = SameDiff.create();
-
-            boolean skipBackward = false;
 
             int nOut = 4;
             int minibatch = 10;
@@ -154,12 +133,26 @@ public class GradCheckReductions extends BaseNd4jTest {
                 case 10:
                     loss = sd.countNonZero("loss", input);
                     name = "countNonZero";
-                    skipBackward = true;
                     break;
                 case 11:
                     loss = sd.countZero("loss", input);
                     name = "countZero";
-                    skipBackward = true;
+                    break;
+                case 12:
+                    loss = sd.amax("loss", input);
+                    name = "amax";
+                    break;
+                case 13:
+                    loss = sd.amin("loss", input);
+                    name = "amin";
+                    break;
+                case 14:
+                    loss = sd.asum("loss", input);
+                    name = "asum";
+                    break;
+                case 15:
+                    loss = sd.amean("loss", input);
+                    name = "amean";
                     break;
                 default:
                     throw new RuntimeException();
@@ -172,11 +165,11 @@ public class GradCheckReductions extends BaseNd4jTest {
             INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
             sd.associateArrayWithVariable(inputArr, input);
 
-            if (!skipBackward) {
-                boolean ok = GradCheckUtil.checkGradients(sd);
-                assertTrue(msg, ok);
-            }
+
+            check(sd, failed, msg);
         }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test
@@ -184,11 +177,11 @@ public class GradCheckReductions extends BaseNd4jTest {
         //Test reductions: final, but *not* the only function
         Nd4j.getRandom().setSeed(12345);
 
-        List<String> allFailed = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
 
         for (int dim : new int[]{0, Integer.MAX_VALUE}) {    //These two cases are equivalent here
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 16; i++) {
 
                 SameDiff sd = SameDiff.create();
 
@@ -244,6 +237,30 @@ public class GradCheckReductions extends BaseNd4jTest {
                         loss = sd.normmax("loss", msePerEx, dim);
                         name = "normmax";
                         break;
+                    case 10:
+                        loss = sd.countNonZero("loss", input, dim);
+                        name = "countNonZero";
+                        break;
+                    case 11:
+                        loss = sd.countZero("loss", input, dim);
+                        name = "countZero";
+                        break;
+                    case 12:
+                        loss = sd.amax("loss", input, dim);
+                        name = "amax";
+                        break;
+                    case 13:
+                        loss = sd.amin("loss", input, dim);
+                        name = "amin";
+                        break;
+                    case 14:
+                        loss = sd.asum("loss", input, dim);
+                        name = "asum";
+                        break;
+                    case 15:
+                        loss = sd.amean("loss", input, dim);
+                        name = "amean";
+                        break;
                     default:
                         throw new RuntimeException();
                 }
@@ -258,25 +275,11 @@ public class GradCheckReductions extends BaseNd4jTest {
                 sd.associateArrayWithVariable(inputArr, input);
                 sd.associateArrayWithVariable(labelArr, label);
 
-                try {
-                    INDArray out = sd.execAndEndResult();
-                    assertNotNull(out);
-                    assertArrayEquals(new int[]{1, 1}, out.shape());
-
-//                    System.out.println(sd.asFlatPrint());
-
-                    boolean ok = GradCheckUtil.checkGradients(sd);
-                    if (!ok) {
-                        allFailed.add(msg);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    allFailed.add(msg + " - EXCEPTION");
-                }
+                check(sd, failed, msg);
             }
         }
 
-        assertEquals("Failed: " + allFailed, 0, allFailed.size());
+        assertEquals("Failed: " + failed, 0, failed.size());
     }
 
     @Test
@@ -288,9 +291,9 @@ public class GradCheckReductions extends BaseNd4jTest {
         int d1 = 4;
         int d2 = 5;
 
-        List<String> allFailed = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
         for (int reduceDim : new int[]{0, 1, 2}) {
-            for (int i = 0; i < 12; i++) {
+            for (int i = 0; i < 18; i++) {
 
                 int[] outShape;
                 switch (reduceDim) {
@@ -380,6 +383,30 @@ public class GradCheckReductions extends BaseNd4jTest {
                         reduced = sd.argmin("reduced", second, reduceDim);
                         name = "argmin";
                         break;
+                    case 12:
+                        reduced = sd.countNonZero("loss", second, reduceDim);
+                        name = "countNonZero";
+                        break;
+                    case 13:
+                        reduced = sd.countZero("loss", second, reduceDim);
+                        name = "countZero";
+                        break;
+                    case 14:
+                        reduced = sd.amax("loss", second, reduceDim);
+                        name = "amax";
+                        break;
+                    case 15:
+                        reduced = sd.amin("loss", second, reduceDim);
+                        name = "amin";
+                        break;
+                    case 16:
+                        reduced = sd.asum("loss", second, reduceDim);
+                        name = "asum";
+                        break;
+                    case 17:
+                        reduced = sd.amean("loss", second, reduceDim);
+                        name = "amean";
+                        break;
                     default:
                         throw new RuntimeException();
                 }
@@ -397,19 +424,11 @@ public class GradCheckReductions extends BaseNd4jTest {
                 sd.associateArrayWithVariable(inputArr, in);
                 sd.associateArrayWithVariable(labelArr, label);
 
-                try {
-                    boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, maxRelError, minAbsError, true, false);
-                    if (!ok) {
-                        allFailed.add(msg);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    allFailed.add(msg + " - EXCEPTION");
-                }
+                check(sd, failed, msg);
             }
         }
 
-        assertEquals("Failed: " + allFailed, 0, allFailed.size());
+        assertEquals("Failed: " + failed, 0, failed.size());
     }
 
 
@@ -422,7 +441,7 @@ public class GradCheckReductions extends BaseNd4jTest {
         int d1 = 4;
         int d2 = 5;
 
-        List<String> allFailed = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
         for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
             for (int i = 0; i < 6; i++) {
 
@@ -482,21 +501,11 @@ public class GradCheckReductions extends BaseNd4jTest {
                 sd.execAndEndResult();
 
 
-                boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
-                assertTrue(ok);
-
-//                try {
-//                    boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
-//                    if (!ok) {
-//                        allFailed.add(msg);
-//                    }
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                    allFailed.add(msg + " - EXCEPTION: " + e.getMessage());
-//                }
+                //boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
+                check(sd, failed, msg);
             }
         }
 
-        assertEquals("Failed: " + allFailed, 0, allFailed.size());
+        assertEquals("Failed: " + failed, 0, failed.size());
     }
 }

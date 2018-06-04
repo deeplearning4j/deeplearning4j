@@ -1,5 +1,6 @@
 //
-// Created by raver119 on 29/10/17.
+// @author raver119@gmail.com, created on 29/10/17.
+// @author Yurii Shyrma (iuriish@yahoo.com), changed on 14.05.2018
 //
 
 #include <op_boilerplate.h>
@@ -9,223 +10,194 @@
 #include <ops/declarable/generic/helpers/convolutions.h>
 
 namespace nd4j {
-    namespace ops {
-        CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 11) {
+namespace ops  {
 
-            NDArray<T> *x = INPUT_VARIABLE(0);
+CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
 
-            REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
+    NDArray<T>* input = INPUT_VARIABLE(0);
 
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-            std::vector<int> argI = *(block.getIArguments());
-            auto z = OUTPUT_VARIABLE(0);
+    REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
 
-            int kY = argI[0];
-            int kX = argI[1];
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    std::vector<int> argI = *(block.getIArguments());
+    NDArray<T>* output = OUTPUT_VARIABLE(0);
 
-            int sY = argI[2];
-            int sX = argI[3];
+    const int kH = INT_ARG(0);
+    const int kW = INT_ARG(1);
+    const int sH = INT_ARG(2);
+    const int sW = INT_ARG(3);
+          int pH = INT_ARG(4);
+          int pW = INT_ARG(5);
+    const int dH = INT_ARG(6);
+    const int dW = INT_ARG(7);
+    const bool isSameMode = INT_ARG(8);
+    const int extraParam0 = INT_ARG(9);
 
-            int pY = argI[4];
-            int pX = argI[5];
+    int oH = 0;
+    int oW = 0;
 
-            int dY = argI[6];
-            int dX = argI[7];
+    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NDHWC, 1-NCDHW    
 
-            int oY = 0;
-            int oX = 0;
+    const int iH = isNCHW ? input->sizeAt(2) : input->sizeAt(1);
+    const int iW = isNCHW ? input->sizeAt(3) : input->sizeAt(2);
 
-            bool isNCHW = true;
-            if (block.getIArguments()->size() > 10)
-                isNCHW = INT_ARG(10) == 0;
+    if (!isNCHW) {
+        input  = input->permute({0, 3, 1, 2});                // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+        output = output->permute({0, 3, 1, 2});               // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    }            
 
-            const int inY = isNCHW ? x->sizeAt(2) : x->sizeAt(1);
-            const int inX = isNCHW ? x->sizeAt(3) : x->sizeAt(2);
+    ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-            if (!isNCHW) {
-                x = x->permute({0, 3, 1, 2});
+    if (isSameMode)
+        ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);            
+            
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;    
+    T extraParams[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW, 1, (T)extraParam0};
+    ConvolutionUtils<T>::pooling2d(*input, *output, extraParams);
 
-                // FIXME: eventually we want NWHC impl
-                z->permutei({0, 3, 1, 2});
-                z->streamline('c');
-            }
-
-            const bool isSameMode = INT_ARG(8) > 0;
-
-            ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
-
-            if (isSameMode) {
-                ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, argI[0], argI[1],
-                                                    argI[2], argI[3], argI[6], argI[7]);
-            }
-
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
-            std::vector<T> argT = {(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T)dX, (T)1.f, (T)1.f, (T) argI[9], (T) oY, (T) oX};
-
-
-            x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
-
-            STORE_RESULT(*z);
-
-            if (!isNCHW) {
-                delete x;
-                z->permutei({0, 2, 3, 1});
-                z->streamline('c');
-
-                //z->printShapeInfo("avg pool shape");
-                //z->printIndexedBuffer("avg pool final");
-            }
-
-            return ND4J_STATUS_OK;
-        }
-
-        DECLARE_SYN(AvgPool2D, avgpool2d);
-        DECLARE_SYN(AvgPool, avgpool2d);
-        DECLARE_SYN(avgpool, avgpool2d);
-
-        DECLARE_SHAPE_FN(avgpool2d) {
-            auto inShape = inputShape->at(0);
-            auto shapeOf = shape::shapeOf(inShape);
-
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-            std::vector<int> argI = *(block.getIArguments());
-            int kH = argI[0];
-            int kW = argI[1];
-            int sH = argI[2];
-            int sW = argI[3];
-            int pH = argI[4];
-            int pW = argI[5];
-            int dH = argI[6];
-            int dW = argI[7];
-            int isSameMode = argI[8];
-
-            bool isNCHW = true;
-            if (block.getIArguments()->size() > 10)
-                isNCHW = INT_ARG(10) == 0;
-
-            int bS = shapeOf[0];
-            int iD = isNCHW ? shapeOf[1] : shapeOf[3];
-            int iH = isNCHW ? shapeOf[2] : shapeOf[1];
-            int iW = isNCHW ? shapeOf[3] : shapeOf[2];
-
-
-            char order = shape::order(inShape); // output order must be equal to input order
-
-            // calculate output Height/Width
-            int oH, oW;
-            ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
-
-            // allocate memory for new shape
-            Nd4jLong* newShapeInfo = nullptr;
-            ALLOCATE(newShapeInfo, block.getWorkspace(), 12, Nd4jLong);
-            if (isNCHW) {
-                newShapeInfo[0] = 4;        // rank
-                newShapeInfo[1] = bS;
-                newShapeInfo[2] = iD;
-                newShapeInfo[3] = oH;
-                newShapeInfo[4] = oW;
-            } else {
-                newShapeInfo[0] = 4;        // rank
-                newShapeInfo[1] = bS;
-                newShapeInfo[2] = oH;
-                newShapeInfo[3] = oW;
-                newShapeInfo[4] = iD;
-            }
-            shape::updateStrides(newShapeInfo, order);
-
-            return SHAPELIST(newShapeInfo);
-        }
-
-
-        //////////////////////////////////////////////////////////////////////////
-        CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 9) {
-
-            NDArray<T>* input = INPUT_VARIABLE(0);
-            REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
-            NDArray<T>* epsilon = INPUT_VARIABLE(1);
-            NDArray<T>* outEpsilon = OUTPUT_VARIABLE(0);
-            std::vector<int> argI = *(block.getIArguments());
-
-            int kH = argI[0];
-            int kW = argI[1];
-            int sH = argI[2];
-            int sW = argI[3];
-            int pH = argI[4];
-            int pW = argI[5];
-            int dH = argI[6];
-            int dW = argI[7];
-            int isSameMode = argI[8];
-
-            int bS = input->getShapeInfo()[1];
-            int iD = input->getShapeInfo()[2];
-            int iH = input->getShapeInfo()[3];
-            int iW = input->getShapeInfo()[4];
-
-            // calculate output Height/Width
-            int oH, oW;
-            ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
-
-            bool cOrderStrides = false;
-            bool isEpsilonDup = false;
-            if (epsilon->ordering() != 'c') {
-                epsilon = epsilon->dup('c');
-                cOrderStrides = true;
-                isEpsilonDup = true;
-            }
-
-            Nd4jLong strideToCompare[] = {oH*oW, iD*oH*oW, oW, 1};
-            if (!cOrderStrides && shape::strideDescendingCAscendingF(epsilon->getShapeInfo())) {
-                cOrderStrides = true;
-            }
-            else if (!shape::strideEquals(strideToCompare, 4, epsilon->stridesOf(), epsilon->rankOf())) {
-                epsilon = epsilon->dup('c');
-                cOrderStrides = true;
-                isEpsilonDup = true;
-            }
-
-            NDArray<T>* col6d = nullptr;
-            NDArray<T>* col6dPermuted = nullptr;
-            NDArray<T>* epsilon1d = nullptr;
-
-            if (cOrderStrides) {
-                col6d = new NDArray<T>('c', {bS, iD, oH, oW, kH, kW}, block.getWorkspace());
-                col6dPermuted = col6d->permute({0, 1, 4, 5, 2, 3});
-                epsilon1d = epsilon->reshape('c', {(int) epsilon->lengthOf(), 1}); //zero copy reshape
-            }
-            else {
-                col6d = new NDArray<T>('c', {iD, bS, oH, oW, kH, kW}, block.getWorkspace());
-                col6dPermuted = col6d->permute({1, 0, 4, 5, 2, 3});
-                NDArray<T>* epsilonTemp = epsilon->permute({1, 0, 2, 3});
-                epsilon1d = epsilonTemp->reshape('c', {(int) epsilon->lengthOf(), 1}); //Should be a zero-copy reshape always
-                delete epsilonTemp;
-            }
-
-            NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW});
-            col2d->addiColumnVector(epsilon1d);
-
-            T extraParams3[] = {(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW};   			// ??? zeros
-            col6dPermuted->template applyTransform<simdOps::Col2Im<T>>(outEpsilon, extraParams3);
-            outEpsilon->template applyScalar<simdOps::Divide<T>>((T) kH*kW, outEpsilon);
-
-            STORE_RESULT(*outEpsilon);
-
-            if(isEpsilonDup)
-                delete epsilon;
-            delete col6d;
-            delete col6dPermuted;
-            delete epsilon1d;
-            delete col2d;
-
-            return ND4J_STATUS_OK;
-        }
-
-        DECLARE_SHAPE_FN(avgpool2d_bp) {
-            // FIXME: memcpy should be removed
-            Nd4jLong* newShapeInfo = nullptr;
-            COPY_SHAPE(inputShape->at(0), newShapeInfo);
-            return SHAPELIST(newShapeInfo);
-        }
+    if (!isNCHW) {
+        delete input;
+        delete output;
     }
+
+    return Status::OK();
+}
+
+DECLARE_SYN(AvgPool2D, avgpool2d);
+DECLARE_SYN(AvgPool, avgpool2d);
+DECLARE_SYN(avgpool, avgpool2d);
+
+DECLARE_SHAPE_FN(avgpool2d) {
+    
+    auto inShape = inputShape->at(0);
+    auto shapeOf = shape::shapeOf(inShape);
+
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    std::vector<int> argI = *(block.getIArguments());
+    const int kH = INT_ARG(0);
+    const int kW = INT_ARG(1);
+    const int sH = INT_ARG(2);
+    const int sW = INT_ARG(3);
+    const int pH = INT_ARG(4);
+    const int pW = INT_ARG(5);
+    const int dH = INT_ARG(6);
+    const int dW = INT_ARG(7);
+    const int isSameMode = INT_ARG(8);
+
+    const int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NDHWC, 1-NCDHW    
+
+    const int bS = shapeOf[0];
+    const int iD = isNCHW ? shapeOf[1] : shapeOf[3];
+    const int iH = isNCHW ? shapeOf[2] : shapeOf[1];
+    const int iW = isNCHW ? shapeOf[3] : shapeOf[2];
+
+    const char order = shape::order(inShape); // output order must be equal to input order
+
+    // calculate output Height/Width
+    int oH, oW;
+    ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+
+    // allocate memory for new shape
+    Nd4jLong* newShapeInfo = nullptr;
+    ALLOCATE(newShapeInfo, block.getWorkspace(), 12, Nd4jLong);
+    if (isNCHW) {
+        newShapeInfo[0] = 4;        // rank
+        newShapeInfo[1] = bS;
+        newShapeInfo[2] = iD;
+        newShapeInfo[3] = oH;
+        newShapeInfo[4] = oW;
+    } else {
+        newShapeInfo[0] = 4;        // rank
+        newShapeInfo[1] = bS;
+        newShapeInfo[2] = oH;
+        newShapeInfo[3] = oW;
+        newShapeInfo[4] = iD;
+    }
+    shape::updateStrides(newShapeInfo, order);
+
+    return SHAPELIST(newShapeInfo);
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
+
+    NDArray<T>* input = INPUT_VARIABLE(0);                          // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    NDArray<T>* gradO = INPUT_VARIABLE(1);                          // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    NDArray<T>* gradI = OUTPUT_VARIABLE(0);                         // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+
+    int kH = INT_ARG(0);                                                        // filter(kernel) height
+    int kW = INT_ARG(1);                                                        // filter(kernel) width
+    int sH = INT_ARG(2);                                                        // strides height
+    int sW = INT_ARG(3);                                                        // strides width
+    int pH = INT_ARG(4);                                                        // paddings height
+    int pW = INT_ARG(5);                                                        // paddings width
+    int dH = INT_ARG(6);                                                        // dilations height
+    int dW = INT_ARG(7);                                                        // dilations width
+    int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
+    int extraParam0 = INT_ARG(9);
+    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // 0-NHWC, 1-NCHW    
+
+    REQUIRE_TRUE(input->rankOf() == 4, 0, "AVGPOOL2D_BP op: input should have rank of 4, but got %i instead", input->rankOf());
+
+    int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
+    int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
+    ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+
+    std::string expectedGradOShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,iC,oH,oW,  0,indIOioC,indIiH,indIiH+1}));
+    std::string expectedGradIShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,iC,iH,iW,  0,indIOioC,indIiH,indIiH+1}));
+    REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(gradO), 0, "AVGPOOL2D_BP op: wrong shape of output's gradients array (next epsilon), expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradO).c_str());    
+    REQUIRE_TRUE(expectedGradIShape == ShapeUtils<T>::shapeAsString(gradI), 0, "AVGPOOL2D_BP op: wrong shape of input's gradients array (epsilon), expected is %s, but got %s instead !", expectedGradIShape.c_str(), ShapeUtils<T>::shapeAsString(gradI).c_str());
+
+    if(!isNCHW) {
+        gradI = gradI->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]                        
+        gradO = gradO->permute({0, 3, 1, 2});                                   // [bS, oH, oW, iC] -> [bS, iC, oH, oW]                        
+    }
+    
+    if(isSameMode)                       // SAME        
+        ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+
+    // NDArray<T> columnsWrongShape(input->ordering(), {bS, iC, oH, oW, kH, kW}, input->getWorkspace());    
+    // NDArray<T>* columns = columnsWrongShape.permute({0, 1, 4, 5, 2, 3});                                // [bS, iC, oH, oW, kH, kW] -> [bS, iC, kH, kW, oH, oW]
+    // NDArray<T>* gradOVector = gradO->reshape('c', {(int) gradO->lengthOf(), 1}); 
+    // NDArray<T>* columns2d = columnsWrongShape.reshape('c', {bS*iC*oH*oW, kH*kW});
+    
+    // columns2d->addiColumnVector(gradOVector);
+
+    // columns->template applyTransform<simdOps::Col2Im<T>>(gradI, std::vector<T>({(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW}).data());
+
+    // *gradI /= kH*kW; 
+        
+    NDArray<T> temp;    // does not mean anything, just to fit pooling2dBP signature
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
+    std::vector<T> argT = {(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T)dW, 1., (T)extraParam0};    
+    ConvolutionUtils<T>::pooling2dBP(temp, *gradO, *gradI, argT.data());
+
+    if(!isNCHW) {
+        delete gradI;
+        delete gradO;
+    }
+    // delete columns;
+    // delete columns2d;
+    // delete gradOVector;
+    
+    return Status::OK();
+
+}
+
+DECLARE_SHAPE_FN(avgpool2d_bp) {
+                
+    REQUIRE_TRUE(inputShape->at(0)[0] == 4, 0, "AVGPOOL2D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
+    REQUIRE_TRUE(inputShape->at(1)[0] == 4, 0, "AVGPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!", inputShape->at(1)[0]);
+    
+    Nd4jLong* gradIShapeInfo(nullptr);
+    COPY_SHAPE(inputShape->at(0), gradIShapeInfo);
+    
+    return SHAPELIST(gradIShapeInfo);
+}
+
+
+}
 }
 
 #endif
