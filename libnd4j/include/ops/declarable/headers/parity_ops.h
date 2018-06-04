@@ -998,7 +998,7 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_reduce_mean)
         DECLARE_CUSTOM_OP(reduce_mean, 1, 1, false, 0, 0);
         #endif
-        #if NOT_EXCLUDED(OP_reduce_mean)
+        #if NOT_EXCLUDED(OP_reduce_mean_bp)
         DECLARE_CUSTOM_OP(reduce_mean_bp, 2, 1, false, 0, 0);
         #endif
 
@@ -1020,7 +1020,7 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_reduce_min)
         DECLARE_CUSTOM_OP(reduce_min, 1, 1, false, 0, 0);
         #endif
-        #if NOT_EXCLUDED(OP_reduce_min)
+        #if NOT_EXCLUDED(OP_reduce_min_bp)
         DECLARE_CUSTOM_OP(reduce_min_bp, 2, 1, false, 0, 0);
         #endif
 
@@ -1042,7 +1042,7 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_reduce_max)
         DECLARE_CUSTOM_OP(reduce_max, 1, 1, false, 0, 0);
         #endif
-        #if NOT_EXCLUDED(OP_reduce_max)
+        #if NOT_EXCLUDED(OP_reduce_max_bp)
         DECLARE_CUSTOM_OP(reduce_max_bp, 2, 1, false, 0, 0);
         #endif
 
@@ -1064,9 +1064,101 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_reduce_dot)
         DECLARE_CUSTOM_OP(reduce_dot, 1, 1, false, 0, 0);
         #endif
-        #if NOT_EXCLUDED(OP_reduce_dot)
+        #if NOT_EXCLUDED(OP_reduce_dot_bp)
         DECLARE_CUSTOM_OP(reduce_dot_bp, 2, 1, false, 0, 0);
         #endif
+
+       /**
+        * This op calculates norm1 of elements along given dimensions
+        *
+        * input array:
+        *    x: tensor to calculate mean for        
+        *
+        * float arguments:
+        *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
+        *
+        * int arguments:
+        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *
+        * output array:
+        *    reduced tensor with calculated norm
+        */
+        #if NOT_EXCLUDED(OP_reduce_dot)
+        DECLARE_CUSTOM_OP(reduce_norm1, 1, 1, false, 0, 0);
+        #endif
+        #if NOT_EXCLUDED(OP_reduce_norm1_bp)
+        DECLARE_CUSTOM_OP(reduce_norm1_bp, 2, 1, false, 0, 0);
+        #endif
+
+       /**
+        * This op calculates norm1 of elements along given dimensions
+        *
+        * input array:
+        *    x: tensor to calculate mean for        
+        *
+        * float arguments:
+        *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
+        *
+        * int arguments:
+        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *
+        * output array:
+        *    reduced tensor with calculated norm
+        */
+        #if NOT_EXCLUDED(OP_reduce_norm2)
+        DECLARE_CUSTOM_OP(reduce_norm2, 1, 1, false, 0, 0);
+        #endif
+        #if NOT_EXCLUDED(OP_reduce_norm2_bp)
+        DECLARE_CUSTOM_OP(reduce_norm2_bp, 2, 1, false, 0, 0);
+        #endif
+
+
+       /**
+        * This op calculates norm1 of elements along given dimensions
+        *
+        * input array:
+        *    x: tensor to calculate mean for        
+        *
+        * float arguments:
+        *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
+        *
+        * int arguments:
+        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *
+        * output array:
+        *    reduced tensor with calculated norm
+        */
+        #if NOT_EXCLUDED(OP_reduce_dot)
+        DECLARE_CUSTOM_OP(reduce_sqnorm, 1, 1, false, 0, 0);
+        #endif
+        #if NOT_EXCLUDED(OP_reduce_sqnorm_bp)
+        DECLARE_CUSTOM_OP(reduce_sqnorm_bp, 2, 1, false, 0, 0);
+        #endif
+
+       /**
+        * This op calculates norm max of elements along given dimensions
+        *
+        * input array:
+        *    x: tensor to calculate mean for        
+        *
+        * float arguments:
+        *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
+        *
+        * int arguments:
+        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *
+        * output array:
+        *    reduced tensor with calculated norm
+        */
+        #if NOT_EXCLUDED(OP_reduce_norm_max)
+        DECLARE_CUSTOM_OP(reduce_norm_max, 1, 1, false, 0, 0);
+        #endif
+        #if NOT_EXCLUDED(OP_reduce_norm_max_bp)
+        DECLARE_CUSTOM_OP(reduce_norm_max_bp, 2, 1, false, 0, 0);
+        #endif
+
+
+
 
     }
 }

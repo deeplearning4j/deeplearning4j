@@ -6,9 +6,9 @@
 
 namespace nd4j {
 namespace ops {
-#if NOT_EXCLUDED(OP_reduce_dot)
+#if NOT_EXCLUDED(OP_reduce_norm2)
 
-    CUSTOM_OP_IMPL(reduce_dot, 1, 1, false, 0, 0) {
+    CUSTOM_OP_IMPL(reduce_norm2, 1, 1, false, 0, 0) {
         NDArray<T>* input = INPUT_VARIABLE(0);
         NDArray<T>* output = OUTPUT_VARIABLE(0);
         std::vector<int> axes = *block.getIArguments();
@@ -17,12 +17,12 @@ namespace ops {
             REQUIRE_TRUE(item > -input->shapeInfo()[0] || item <input->shapeInfo()[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-        input->template reduceAlongDimension<simdOps::Dot<T>>(output, axes, keepDims);
+        input->template reduceAlongDimension<simdOps::Norm2<T>>(output, axes, keepDims);
 
         return ND4J_STATUS_OK;
     }
 
-    DECLARE_SHAPE_FN(reduce_dot) {    
+    DECLARE_SHAPE_FN(reduce_norm2) {    
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
@@ -32,9 +32,9 @@ namespace ops {
         return SHAPELIST(outShapeInfo);
     }
 #endif 
-#if NOT_EXCLUDED(OP_reduce_dot_bp)
+#if NOT_EXCLUDED(OP_reduce_norm2_bp)
 
-    DECLARE_SHAPE_FN(reduce_dot_bp) {    
+    DECLARE_SHAPE_FN(reduce_norm2_bp) {    
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
@@ -44,19 +44,19 @@ namespace ops {
         return SHAPELIST(outShapeInfo);
     }
 
-    CUSTOM_OP_IMPL(reduce_dot_bp, 2, 1, false, 0, 0) {
+    CUSTOM_OP_IMPL(reduce_norm2_bp, 2, 1, false, 0, 0) {
 
             auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_dot_bp: The second param shape should be the same as result shape.");
+            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_norm2_bp: The second param shape should be the same as result shape.");
             output->assign(epsilon);
 //            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
 //            T keepDimsT = (keepDims?T(1.f):T(0.f));
 #if 0
             // at first step we build fwd activation
-            nd4j::ops::reduce_dot<T> op;
+            nd4j::ops::reduce_norm2<T> op;
             std::vector<Nd4jLong> axes;
 
             if (block.numI() > 0) {
