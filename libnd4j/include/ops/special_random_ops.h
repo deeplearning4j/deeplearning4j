@@ -668,8 +668,8 @@ namespace randomOps {
             __shared__ T two_pi;
 
             __shared__ Nd4jLong zLength;
-            __shared__ int zEWS;
-            __shared__ int yEWS;
+            __shared__ Nd4jLong zEWS;
+            __shared__ Nd4jLong yEWS;
             __shared__ T mean;
             __shared__ T stddev;
             __shared__ int step;
@@ -726,20 +726,28 @@ namespace randomOps {
                 T aRealMean0 = nd4j::math::nd4j_abs<T>(realMean0);
                 T aRealMean1 = nd4j::math::nd4j_abs<T>(realMean1);
                 int blocker = 0;
-                /*
+
                 do {
                     T u0 = buffer->relativeT<T>(e + generation0, epsilon, static_cast<T>(1.0f));
                     T u1 = buffer->relativeT<T>(epm + generation0, epsilon, static_cast<T>(1.0f));
 
-                    z0 = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                    z1 = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0)) * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                    auto uT = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0));
+                    auto uP = two_pi * u1;
+
+                    z0 = uT * nd4j::math::nd4j_cos<T>(uP);
+                    z1 = uT * nd4j::math::nd4j_sin<T>(uP);
 
                     result0 = z0 * stddev + realMean0;
                     result1 = z1 * stddev + realMean1;
+
                     generation0 += zLength;
-                } while (aRealMean0 + nd4j::math::nd4j_abs<T>(result0) > ds || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds || blocker++ > 5);
-*/
-                z[e*zEWS] = result0;
+
+                    if (generation0 > 100)
+                        printf("tid: %i\n", tid);
+
+                } while (ds < aRealMean0 + nd4j::math::nd4j_abs<T>(result0) || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds);
+
+                z[e * zEWS] = result0;
                 if((epm) < zLength)
                     z[epm * zEWS] = result1;
             }
