@@ -196,7 +196,7 @@ namespace nd4j {
 #else
                 auto ret = static_cast<uint64_t>(buffer[actualPosition]);
 #endif
-/*
+
                 if (tempGen != generation)
                     ret = safeShift(ret, tempGen);
 
@@ -207,11 +207,11 @@ namespace nd4j {
                     ret = safeShift(ret, amplifier);
 
 #ifdef __CUDACC__
-                __syncthreads();
+//                __syncthreads();
 #endif
                 if (amplifier != seed || generation > 1 || tempGen != generation)
                     ret = next64(seedConv(static_cast<Nd4jLong>(ret)));
-*/
+
                 return ret;
             }
 
