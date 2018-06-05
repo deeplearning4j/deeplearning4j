@@ -10,13 +10,10 @@
     <name>nd4j-cuda</name>
 
     <properties>
+        <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
         <cuda.version>9.0</cuda.version>
         <cudnn.version>7.0</cudnn.version>
         <javacpp-presets.cuda.version>1.4.1</javacpp-presets.cuda.version>
-        <maven.compiler.target>1.7</maven.compiler.target>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
-        <maven.compiler.testSource>1.8</maven.compiler.testSource>
     </properties>
 
     <build>
@@ -273,6 +270,9 @@
     </dependencies>
 
     <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
         <profile>
             <id>msvc</id>
             <activation>

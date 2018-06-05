@@ -71,7 +71,7 @@ public class ParameterServerClientTest {
 
 
 
-    @Test
+    @Test(timeout = 60000L)
     public void testServer() throws Exception {
         int subscriberPort = 40625 + new java.util.Random().nextInt(100);
         ParameterServerClient client = ParameterServerClient.builder().aeron(aeron)

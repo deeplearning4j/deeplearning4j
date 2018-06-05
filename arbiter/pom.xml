@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <!--
   ~ Copyright 2015 Skymind,Inc.
   ~
@@ -14,78 +16,39 @@
   ~    limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <parent>
+        <groupId>org.deeplearning4j</groupId>
+        <artifactId>deeplearning4j</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>org.deeplearning4j</groupId>
     <artifactId>arbiter</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Arbiter</name>
+    <description>Model Evaluation and Testing</description>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <modules>
         <module>arbiter-deeplearning4j</module>
         <module>arbiter-core</module>
         <module>arbiter-server</module>
         <module>arbiter-ui</module>
     </modules>
-    <packaging>pom</packaging>
-    <name>Arbiter</name>
-
-    <url>http://deeplearning4j.org/</url>
-
-    <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
-    </parent>
-
-    <repositories>
-        <repository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-    <prerequisites>
-        <maven>3.0</maven>
-    </prerequisites>
-
-    <description>Model Evaluation and Testing</description>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
-        <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
-        <datavec.version>1.0.0-SNAPSHOT</datavec.version>
-        <commons.math.version>3.4.1</commons.math.version>
-        <commons.lang.version>3.3.1</commons.lang.version>
-        <commons.io.version>2.4</commons.io.version>
-        <lombok.version>1.16.20</lombok.version>
-        <junit.version>4.12</junit.version>
-        <slf4j.version>1.7.21</slf4j.version>
-        <logback.version>1.1.2</logback.version>
-        <arg4j.version>2.33</arg4j.version>
-        <guava.version>19.0</guava.version>
-        <jackson.version>2.5.1</jackson.version>
-        <dropwizard.version>0.8.0</dropwizard.version>
-        <jodatime.version>2.9.2</jodatime.version>
-        <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
-        <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
-        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
-        <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
-        <maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>
-        <maven-scala-plugin.version>3.2.2</maven-scala-plugin.version>
-        <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
-        <sbt-compiler-maven-plugin.version>1.0.0-beta8</sbt-compiler-maven-plugin.version>
-        <maven-git-commit-plugin.version>2.2.2</maven-git-commit-plugin.version>
-        <maven-build-helper-plugin.version>3.0.0</maven-build-helper-plugin.version>
-        <maven-play2-plugin.version>1.0.0-beta5</maven-play2-plugin.version>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -95,307 +58,6 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
-
-    <profiles>
-
-        <profile>
-            <id>skymindnexus-skil</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>skymindnexus-skil</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <repository>
-                    <id>skymindnexus</id>
-                    <name>skymindnexus</name>
-                    <url>https://nexus.skymind.io/repository/skil/</url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>local-nexus</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>nexus</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>local-nexus</id>
-                    <name>local-nexus</name>
-                    <url>
-                        http://master-jenkins.skymind.io:8088/repository/snapshots
-                    </url>
-                </snapshotRepository>
-                <!-- <repository> -->
-                <!--     <id>local-nexus</id> -->
-                <!--     <name>local-nexus</name> -->
-                <!--     <url> -->
-                <!--         http://master-jenkins.skymind.io:8088/service/local/staging/deploy/maven2 -->
-                <!--     </url> -->
-                <!-- </repository> -->
-            </distributionManagement>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <version>2.8.2</version>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.6</version>
-                        <executions>
-                            <execution>
-                                <id>default-deploy</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>deploy</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>local-nexus</serverId>
-                            <nexusUrl>http://master-jenkins.skymind.io:8088/</nexusUrl>
-                            <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>local-jfrog</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>jfrog</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>local-jfrog</id>
-                    <name>local-jfrog</name>
-                    <url>http://master-jenkins.skymind.io:8081/artifactory/libs-snapshot-local
-                    </url>
-                </snapshotRepository>
-                <repository>
-                    <id>local-jfrog</id>
-                    <name>local-jfrog</name>
-                    <url>http://master-jenkins.skymind.io:8081/artifactory/libs-release-local
-                    </url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>Bintray-artifactory</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>bintray</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>bintray-deeplearning4j-maven</id>
-                    <name>deeplearning4j-maven-snapshots</name>
-                    <url>https://oss.jfrog.org/artifactory/oss-snapshot-local</url>
-                </snapshotRepository>
-                <repository>
-                    <id>bintray-deeplearning4j-maven</id>
-                    <name>deeplearning4j-maven-releases</name>
-                    <url>https://api.bintray.com/maven/deeplearning4j/maven/${project.artifactId}/;publish=1</url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>sonatype-nexus</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>sonatype</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>sonatype-nexus-snapshots</id>
-                    <name>Sonatype Nexus snapshot repository</name>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-                <repository>
-                    <id>nexus-releases</id>
-                    <name>Nexus Release Repository</name>
-                    <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <version>${maven-deploy-plugin.version}</version>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.6</version>
-                        <executions>
-                            <execution>
-                                <id>default-deploy</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>deploy</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>sonatype-nexus-snapshots</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-
-        <profile>
-            <id>qa</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <version>2.10</version>
-                        <executions>
-                            <execution>
-                                <phase>install</phase>
-                                <goals>
-                                    <goal>copy-dependencies</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>release-sign-artifacts</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
-                        <configuration>
-                            <passphrase>${gpg.passphrase}</passphrase>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>${maven-source-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>${maven-javadoc-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-          <id>trimSnapshots</id>
-          <build>
-            <plugins>
-              <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.7</version>
-                <executions>
-                  <execution>
-                    <id>remove-old-artifacts</id>
-                    <phase>package</phase>
-                    <goals>
-                      <goal>remove-project-artifact</goal>
-                    </goals>
-                    <configuration>
-                      <removeAll>true</removeAll>
-                    </configuration>
-                  </execution>
-                </executions>
-              </plugin>
-            </plugins>
-          </build>
-        </profile>
-
-    </profiles>
-
-    <scm>
-        <connection>scm:git:git@github.com:deeplearning4j/Arbiter.git</connection>
-        <developerConnection>scm:git:git@github.com:deeplearning4j/Arbiter.git</developerConnection>
-        <url>git@github.com:deeplearning4j/Arbiter.git</url>
-        <tag>HEAD</tag>
-    </scm>
-
-
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-
 
     <build>
         <extensions>
@@ -411,7 +73,6 @@
                 <artifactId>maven-source-plugin</artifactId>
                 <version>${maven-source-plugin.version}</version>
             </plugin>
-
             <plugin>
                 <groupId>net.revelc.code.formatter</groupId>
                 <artifactId>formatter-maven-plugin</artifactId>
@@ -424,7 +85,6 @@
                     </directories>
                 </configuration>
             </plugin>
-
             <!-- Configuration for git-commit-id plugin - used with ND4J version check functionality -->
             <plugin>
                 <groupId>pl.project13.maven</groupId>
@@ -440,14 +100,14 @@
                 </executions>
                 <configuration>
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                    <generateGitPropertiesFilename>${project.basedir}/target/generated-sources/src/main/resources/ai/skymind/${project.groupId}-${project.artifactId}-git.properties
+                    <generateGitPropertiesFilename>
+                        ${project.basedir}/target/generated-sources/src/main/resources/ai/skymind/${project.groupId}-${project.artifactId}-git.properties
                     </generateGitPropertiesFilename>
                     <gitDescribe>
                         <skip>true</skip>
                     </gitDescribe>
                 </configuration>
             </plugin>
-
             <!-- Add generated git.properties files resource directory, for output of git-commit-id plugin -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -463,14 +123,15 @@
                         <configuration>
                             <resources>
                                 <resource>
-                                    <directory>${project.basedir}/target/generated-sources/src/main/resources</directory>
+                                    <directory>
+                                        ${project.basedir}/target/generated-sources/src/main/resources
+                                    </directory>
                                 </resource>
                             </resources>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
 
         <pluginManagement>
@@ -490,8 +151,6 @@
                         </execution>
                     </executions>
                 </plugin>
-
-
                 <plugin>
                     <artifactId>maven-source-plugin</artifactId>
                     <version>${maven-source-plugin.version}</version>
@@ -556,7 +215,6 @@
                         <target>1.7</target>
                     </configuration>
                 </plugin>
-
                 <plugin>
                     <groupId>net.alchim31.maven</groupId>
                     <artifactId>scala-maven-plugin</artifactId>
@@ -600,7 +258,7 @@
                                         <artifactId>lint-maven-plugin</artifactId>
                                         <versionRange>[0.0.11,)</versionRange>
                                         <goals>
-                                          <goal>check</goal>
+                                            <goal>check</goal>
                                         </goals>
                                     </pluginExecutionFilter>
                                     <action>
@@ -611,7 +269,6 @@
                         </lifecycleMappingMetadata>
                     </configuration>
                 </plugin>
-
             </plugins>
         </pluginManagement>
     </build>
@@ -630,6 +287,4 @@
             </plugin>
         </plugins>
     </reporting>
-
-
 </project>

@@ -2,10 +2,8 @@ package org.nd4j.parameterserver.distributed.logic;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -34,6 +32,9 @@ public class ClipboardTest {
     public void tearDown() throws Exception {
 
     }
+
+    @Rule
+    public Timeout globalTimeout = Timeout.seconds(30);
 
     @Test
     public void testPin1() throws Exception {

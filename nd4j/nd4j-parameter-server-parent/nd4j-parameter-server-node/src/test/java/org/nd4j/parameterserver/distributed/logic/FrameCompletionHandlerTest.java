@@ -1,7 +1,9 @@
 package org.nd4j.parameterserver.distributed.logic;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHandler;
 
 import static org.junit.Assert.*;
@@ -14,6 +16,9 @@ public class FrameCompletionHandlerTest {
     public void setUp() throws Exception {
 
     }
+
+    @Rule
+    public Timeout globalTimeout = Timeout.seconds(30);
 
     /**
      * This test emulates 2 frames being processed at the same time
