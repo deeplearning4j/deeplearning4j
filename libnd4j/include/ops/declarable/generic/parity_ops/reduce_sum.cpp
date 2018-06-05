@@ -38,9 +38,9 @@ namespace ops {
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
-        std::vector<int> dimensions = *block.getIArguments();
-        Nd4jLong* outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
-
+        //std::vector<int> dimensions = *block.getIArguments();
+        Nd4jLong* outShapeInfo;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
+        COPY_SHAPE(inputShape->at(0), outShapeInfo);
         return SHAPELIST(outShapeInfo);
     }
 
@@ -50,7 +50,7 @@ namespace ops {
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_sum_bp: The second param shape should be the same as result shape.");
+            //REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_sum_bp: The second param shape should be the same as result shape.");
             output->assign(epsilon);
 //            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
 //            T keepDimsT = (keepDims?T(1.f):T(0.f));
