@@ -11,7 +11,7 @@ import static junit.framework.TestCase.assertEquals;
  */
 public class UpdaterStorageTests {
 
-    @Test
+    @Test(timeout = 30000L)
     public void testInMemory() {
         UpdateStorage updateStorage = new RocksDbStorage("/tmp/rocksdb");
         NDArrayMessage message = NDArrayMessage.wholeArrayUpdate(Nd4j.scalar(1.0));
