@@ -49,6 +49,7 @@ namespace nd4j {
                     auto xr = x->reshape(order, shapeNew);
                     ret->assign(xr);
                     STORE_RESULT(*ret);
+                    delete xr;
                     return ND4J_STATUS_OK;
                 }
             } else if (block.width() == 2) {
