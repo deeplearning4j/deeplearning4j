@@ -864,12 +864,12 @@ namespace randomOps {
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-                buffer = (nd4j::random::RandomBuffer *) shmem;
+                buffer = reinterpret_cast<nd4j::random::RandomBuffer *>(shmem);
                 cB = shmem;
                 devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
                 dB = reinterpret_cast<unsigned char *> (state);
 
-                tZ = (T *) (shmem + sizeof(nd4j::random::RandomBuffer));
+                tZ = reinterpret_cast<T*>(shmem + sizeof(nd4j::random::RandomBuffer));
 
                 zLength = shape::length(zShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
@@ -877,7 +877,7 @@ namespace randomOps {
 
 
                 epsilon = static_cast<T>(1e-5);
-                two_pi = static_cast<T>(2.0 f)* static_cast<T>(3.14159265358979323846);
+                two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
                 mean = extraArguments[0];
                 stddev = extraArguments[1];
