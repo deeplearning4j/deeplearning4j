@@ -183,8 +183,6 @@ namespace nd4j {
             }
 
             inline _CUDA_D uint64_t getElement(Nd4jLong position) {
-                uint64_t ret = 932323L;
-/*
                 Nd4jLong actualPosition = this->getOffset() + position;
                 Nd4jLong tempGen = generation;
                 if (actualPosition >= this->size) {
@@ -214,7 +212,6 @@ namespace nd4j {
                 if (amplifier != seed || generation > 1 || tempGen != generation)
                     ret = next64(seedConv(static_cast<Nd4jLong>(ret)));
 
-*/
                 return ret;
             }
 
