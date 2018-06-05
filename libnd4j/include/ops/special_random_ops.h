@@ -820,7 +820,7 @@ namespace randomOps {
                     } while (aRealMean0 + nd4j::math::nd4j_abs<T>(result0) > ds || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds);
 
                     z[e*zEWS] = result0;
-                    if((epm < zLength)
+                    if(epm < zLength)
                         z[epm * zEWS] = result1;
                 }                            
             }
