@@ -45,12 +45,11 @@ namespace nd4j {
                         return ND4J_STATUS_OK;
                     }
                 } else {
-                    auto ret = OUTPUT_VARIABLE(0);
-                    auto xr = x->reshape(order, shapeNew);
-                    ret->assign(xr);
-                    STORE_RESULT(*ret);
-                    delete xr;
-                    return ND4J_STATUS_OK;
+                    auto ret = new NDArray<T>(*x);
+                    if (ret->reshapei(order, shapeNew)) {
+                        STORE_RESULT(*ret);
+                        return ND4J_STATUS_OK;
+                    }
                 }
             } else if (block.width() == 2) {
                 auto s = INPUT_VARIABLE(1);
