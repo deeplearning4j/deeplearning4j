@@ -48,7 +48,7 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
         val inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
         val outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
-        return permuted.reshape('c', outShape);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, permuted.reshape('c', outShape));
     }
 
     @Override
@@ -58,7 +58,7 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
 
         INDArray epsilonsReshaped = epsilons.reshape('c', epsilons.size(0), inputHeight, inputWidth, numChannels);
 
-        return epsilonsReshaped.permute(0, 3, 1, 2);    //To [n, c, h, w]
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilonsReshaped.permute(0, 3, 1, 2));    //To [n, c, h, w]
     }
 
     @Override

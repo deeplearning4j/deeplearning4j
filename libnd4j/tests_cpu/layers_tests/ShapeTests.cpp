@@ -308,3 +308,40 @@ TEST_F(ShapeTests, Tests_Transpose_119_1) {
 
     delete e;
 }
+
+TEST_F(ShapeTests, Tests_Transpose_119_2) {
+    NDArray<float> x('c', {3, 5});
+    NDArrayFactory<float>::linspace(1.0f, x);
+
+    auto exp = x.transpose();
+
+    nd4j::ops::transpose<float> op;
+    auto result = op.execute({&x},{}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp->isSameShape(z));
+    ASSERT_TRUE(exp->equalsTo(z));
+
+    delete exp;
+    delete result;
+}
+
+TEST_F(ShapeTests, Tests_Transpose_119_3) {
+    NDArray<float> x('c', {3, 5});
+    NDArrayFactory<float>::linspace(1.0f, x);
+
+    NDArray<float> z('c', {5, 3});
+
+    auto exp = x.transpose();
+
+    nd4j::ops::transpose<float> op;
+    auto result = op.execute({&x}, {&z}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+
+    ASSERT_TRUE(exp->isSameShape(z));
+    ASSERT_TRUE(exp->equalsTo(z));
+
+    delete exp;
+}

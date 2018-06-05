@@ -1,7 +1,9 @@
 package org.nd4j.parameterserver.distributed.logic.routing;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.io.StringUtils;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -33,6 +35,9 @@ public class InterleavedRouterTest {
         transport.setIpAndPort("8.9.10.11", 87312);
         originator = HashUtil.getLongHash(transport.getIp() + ":" + transport.getPort());
     }
+
+    @Rule
+    public Timeout globalTimeout = Timeout.seconds(30);
 
     /**
      * Testing default assignment for everything, but training requests
