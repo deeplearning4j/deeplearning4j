@@ -48,6 +48,7 @@ namespace nd4j {
                     auto ret = OUTPUT_VARIABLE(0);
                     auto xr = x->reshape(order, shapeNew);
                     ret->assign(xr);
+                    STORE_RESULT(*ret)
                     delete xr;
                     return ND4J_STATUS_OK;
                 }
@@ -68,18 +69,15 @@ namespace nd4j {
 
                 if (block.isInplace()) {
                     if (x->reshapei(order, shapeNew)) {
-                        nd4j_printf("OVERWRITE A!!\n","");
-                        OVERWRITE_RESULT(x);
+                        STORE_RESULT(*x);
                         return ND4J_STATUS_OK;
                     }
                 } else {
                     auto ret = OUTPUT_VARIABLE(0);
                     auto xr = x->reshape(order, shapeNew);
                     ret->assign(xr);
-
                     delete xr;
-
-                    return Status::OK();
+                    return ND4J_STATUS_OK;
                 }
             }
 
