@@ -185,7 +185,7 @@ The upload command for a deb package built for cuda is:
 ./packages/push_to_bintray.sh myAPIUser myAPIKey deeplearning4j blasbuild/cuda/libnd4j-0.8.0.fc7.3.1611.x86_64.deb https://github.com/deeplearning4j
 ```
 
-##Running tests
+## Running tests
 
 Tests are written with [gtest](https://github.com/google/googletest), 
 run using cmake.
