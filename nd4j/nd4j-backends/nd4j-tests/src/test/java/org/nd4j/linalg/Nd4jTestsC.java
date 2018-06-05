@@ -6533,6 +6533,23 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testTranspose_Custom(){
+
+        INDArray arr = Nd4j.linspace(1,15, 15).reshape(5,3);
+        INDArray out = Nd4j.create(3,5);
+
+        val op = DynamicCustomOp.builder("transpose")
+                .addInputs(arr)
+                .addOutputs(out)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = arr.transpose();
+        assertEquals(exp, out);
+    }
+
 
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
