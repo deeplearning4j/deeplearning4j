@@ -614,9 +614,9 @@ public class SameDiffTests {
         // Test with static max len
         int maxlen = 5;
         INDArray expected = Nd4j.create(new float[] {1, 0, 0, 0, 0,
-                        1, 1, 1, 0, 0,
-                        1, 1, 0, 0, 0},
-                new long[]{3, 5});
+                                                     1, 1, 1, 0, 0,
+                                                     1, 1, 0, 0, 0},
+                                                   new long[]{3, 5});
         SDVariable result1 = sameDiff.sequenceMask(lengths, maxlen);
         assertArrayEquals(expected.shape(), result1.eval().shape());
         assertEquals(expected, result1.eval());
@@ -3604,9 +3604,9 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
         INDArray arr3 = Nd4j.ones(3, 3);
         INDArray expected = Nd4j.create(new float[]{1, 1, 1,
-                        1, 1, 1,
-                        0, 0, 0},
-                new long[]{3, 3});
+                                                    1, 1, 1,
+                                                    0, 0, 0},
+                                            new long[]{3, 3});
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -3625,9 +3625,9 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
         INDArray arr3 = Nd4j.zeros(3, 3);
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
-                        0, 0, 0,
-                        1, 1, 1},
-                new long[]{3, 3});
+                                                    0, 0, 0,
+                                                   1, 1, 1},
+                                           new long[]{3, 3});
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -3646,9 +3646,9 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
         INDArray arr3 = Nd4j.ones(3, 3);
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
-                        0, 0, 0,
-                        1, 1, 1},
-                new long[]{3, 3});
+                                                    0, 0, 0,
+                                                    1, 1, 1},
+                                            new long[]{3, 3});
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -3667,9 +3667,9 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.create(new float[]{0,1}, new long[]{2});
         INDArray arr3 = Nd4j.ones(3, 3).assign(2);
         INDArray expected = Nd4j.create(new float[]{0.5f, 0.5f, 0.5f,
-                        0.5f, 0.5f, 0.5f,
-                        1.0f, 1.0f, 1.0f},
-                new long[]{3, 3});
+                                                    0.5f, 0.5f, 0.5f,
+                                                    1.0f, 1.0f, 1.0f},
+                                            new long[]{3, 3});
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
