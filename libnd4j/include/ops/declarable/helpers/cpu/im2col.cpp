@@ -31,16 +31,16 @@ namespace nd4j {
                 const int iW = inShape[3];
                 const int oH = outShape[4];
                 const int oW = outShape[5];
-                const Nd4jLong outStride0  = outStride[0];
-                const Nd4jLong outStride1  = outStride[1];
-                const Nd4jLong outStride2  = outStride[2];
-                const Nd4jLong outStride3  = outStride[3];
-                const Nd4jLong outStride4  = outStride[4];
-                const Nd4jLong outStride5  = outStride[5];
-                const Nd4jLong inStride0   = inStride[0];
-                const Nd4jLong inStride1   = inStride[1];
-                const Nd4jLong inStride2   = inStride[2];
-                const Nd4jLong inStride3   = inStride[3];
+                const int outStride0  = outStride[0];
+                const int outStride1  = outStride[1];
+                const int outStride2  = outStride[2];
+                const int outStride3  = outStride[3];
+                const int outStride4  = outStride[4];
+                const int outStride5  = outStride[5];
+                const int inStride0   = inStride[0];
+                const int inStride1   = inStride[1];
+                const int inStride2   = inStride[2];
+                const int inStride3   = inStride[3];
 
                 int inRowStart, inColStart, inRow, inCol;
                 T *in0, *in1;

@@ -56,7 +56,7 @@ public class VoidParameterServerTest {
 
     }
 
-    @Test
+    @Test(timeout = 30000L)
     public void testNodeRole1() throws Exception {
         final VoidConfiguration conf = VoidConfiguration.builder().unicastPort(34567).multicastPort(45678)
                         .numberOfShards(10).multicastNetwork("224.0.1.1").shardAddresses(localIPs).ttl(4).build();
@@ -68,7 +68,7 @@ public class VoidParameterServerTest {
         node.shutdown();
     }
 
-    @Test
+    @Test(timeout = 30000L)
     public void testNodeRole2() throws Exception {
         final VoidConfiguration conf = VoidConfiguration.builder().unicastPort(34567).multicastPort(45678)
                         .numberOfShards(10).shardAddresses(badIPs).backupAddresses(localIPs)
@@ -81,7 +81,7 @@ public class VoidParameterServerTest {
         node.shutdown();
     }
 
-    @Test
+    @Test(timeout = 30000L)
     public void testNodeRole3() throws Exception {
         final VoidConfiguration conf = VoidConfiguration.builder().unicastPort(34567).multicastPort(45678)
                         .numberOfShards(10).shardAddresses(badIPs).backupAddresses(badIPs).multicastNetwork("224.0.1.1")
@@ -94,7 +94,7 @@ public class VoidParameterServerTest {
         node.shutdown();
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void testNodeInitialization1() throws Exception {
         final AtomicInteger failCnt = new AtomicInteger(0);
         final AtomicInteger passCnt = new AtomicInteger(0);
@@ -139,7 +139,7 @@ public class VoidParameterServerTest {
      *
      * @throws Exception
      */
-    @Test
+    @Test(timeout = 60000L)
     public void testNodeInitialization2() throws Exception {
         final AtomicInteger failCnt = new AtomicInteger(0);
         final AtomicInteger passCnt = new AtomicInteger(0);
@@ -388,7 +388,7 @@ public class VoidParameterServerTest {
      *
      * @throws Exception
      */
-    @Test
+    @Test(timeout = 60000L)
     public void testNodeInitialization3() throws Exception {
         final AtomicInteger failCnt = new AtomicInteger(0);
         final AtomicInteger passCnt = new AtomicInteger(0);
