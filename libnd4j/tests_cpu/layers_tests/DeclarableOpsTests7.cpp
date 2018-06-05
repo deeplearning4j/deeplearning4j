@@ -3780,13 +3780,74 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_BP_1) {
     
     NDArray<float> input('c', {3, 4},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.});    
     NDArray<float> eps(0.5f);
+    NDArray<float> exp('c', {3, 4}, {0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,0.5f});
+    //************************************//
+
+    nd4j::ops::reduce_sum_bp<float> op;
+    auto result = op.execute({&input, &eps}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);    
+//    z->printIndexedBuffer("Result is ");
+    z->printShapeInfo();
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_BP_2) {
+    
+    NDArray<float> input('c', {3, 4},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.});    
+    NDArray<float> eps('c', {1, 1}, {0.5f});
     NDArray<float> exp('c', {3, 4}, {0.5f, 0.5f, 0.5f, 0.5f, 
                                      0.5f, 0.5f, 0.5f, 0.5f, 
                                      0.5f, 0.5f, 0.5f,0.5f});
     //************************************//
 
     nd4j::ops::reduce_sum_bp<float> op;
-    auto result = op.execute({&input, &eps}, {}, {});
+    auto result = op.execute({&input, &eps}, {1.f}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);    
+//  z->printIndexedBuffer("Result is ");
+//  z->printShapeInfo();
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_BP_3) {
+    
+    NDArray<float> input('c', {3, 4},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.});    
+    NDArray<float> eps('c', {4}, {1.f, 2.f, 3.f, 4.f});
+    NDArray<float> exp('c', {3, 4}, {1.f, 2.f, 3.f, 4.f, 
+                                     1.f, 2.f, 3.f, 4.f, 
+                                     1.f, 2.f, 3.f, 4.f});
+    //************************************//
+
+    nd4j::ops::reduce_sum_bp<float> op;
+    auto result = op.execute({&input, &eps}, {}, {0});
+
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);    
+    z->printIndexedBuffer("Result is ");
+    z->printShapeInfo();
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_BP_4) {
+    
+    NDArray<float> input('c', {3, 4},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.});    
+    NDArray<float> eps('c', {1, 4}, {1.f, 2.f, 3.f, 4.f});
+    NDArray<float> exp('c', {3, 4}, {1.f, 2.f, 3.f, 4.f, 
+                                     1.f, 2.f, 3.f, 4.f, 
+                                     1.f, 2.f, 3.f, 4.f});
+    //************************************//
+
+    nd4j::ops::reduce_sum_bp<float> op;
+    auto result = op.execute({&input, &eps}, {1.f}, {0});
 
     ASSERT_EQ(Status::OK(), result->status());
     auto z = result->at(0);    

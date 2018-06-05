@@ -46,36 +46,30 @@ namespace ops {
 
     CUSTOM_OP_IMPL(reduce_sum_bp, 2, 1, false, 0, 0) {
 
-//            auto input = INPUT_VARIABLE(0);
+            auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
             //REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_sum_bp: The second param shape should be the same as result shape.");
-            output->assign(epsilon);
-//            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-//            T keepDimsT = (keepDims?T(1.f):T(0.f));
-            /*
-            // at first step we build fwd activation
-            nd4j::ops::reduce_sum<T> op;
-            std::vector<Nd4jLong> axes;
-
-            if (block.numI() > 0) {
-                for (int e = 0; e < block.numI(); e++)
-                    axes.emplace_back(INT_ARG(e));// = *block.getIArguments();
+            if (epsilon->isScalar()) {
+                output->assign(epsilon);
             }
-            std::vector<T> tVec(1);
-            tVec[0] = (keepDims?T(1.0):T(0.0));
-            std::vector<NDArray<T>*> inputVec({input});
-            auto tmpResult = op.execute(inputVec, tVec, axes, false); 
-            if (tmpResult->status() != ND4J_STATUS_OK)
-                return tmpResult->status();
+            else {
+                auto axes = *block.getIArguments();
+//                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
+                std::vector<int> dimensions; //(input->rankOf() - axes.size());
+                for (Nd4jLong e = 0; e < input->rankOf(); e++) {
+                    if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
+                        dimensions.emplace_back(e);
+                    }
+                }
+                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
+                //output->
+                for (Nd4jLong e = 0; e < outList->size(); ++e) {
+                    outList->at(e)->assign(epsilon);
+                }
+            }
 
-            NDArray<T>* tempSum = tmpResult->at(0);
-
-            tempSum->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
-
-            delete tmpResult;
-            */
             return ND4J_STATUS_OK;
     }
 #endif
