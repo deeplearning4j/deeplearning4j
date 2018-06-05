@@ -713,7 +713,7 @@ namespace randomOps {
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
             int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
-            T result0, result1, u0, u1, z0, z1;
+            T result0, result1, u0, u1, z0, z1, uT, uP;
 
             T ds = nd4j::math::nd4j_abs<T>(stddev) * static_cast<T>(2.0f);
             for (Nd4jLong e = tid; e < middle; e += step) {
@@ -728,11 +728,11 @@ namespace randomOps {
                 int blocker = 0;
 
                 do {
-                    T u0 = buffer->relativeT<T>(e + generation0, epsilon, static_cast<T>(1.0f));
-                    T u1 = buffer->relativeT<T>(epm + generation0, epsilon, static_cast<T>(1.0f));
+                    u0 = buffer->relativeT<T>(e + generation0, epsilon, static_cast<T>(1.0f));
+                    u1 = buffer->relativeT<T>(epm + generation0, epsilon, static_cast<T>(1.0f));
 
-                    auto uT = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0));
-                    auto uP = two_pi * u1;
+                    uT = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0));
+                    uP = two_pi * u1;
 
                     z0 = uT * nd4j::math::nd4j_cos<T>(uP);
                     z1 = uT * nd4j::math::nd4j_sin<T>(uP);
@@ -742,7 +742,7 @@ namespace randomOps {
 
                     generation0 += zLength;
 
-                    if (generation0 > 100)
+                    if (blocker++ > 100)
                         printf("tid: %i\n", tid);
 
                 } while (ds < aRealMean0 + nd4j::math::nd4j_abs<T>(result0) || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds);
