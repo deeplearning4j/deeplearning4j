@@ -21,6 +21,11 @@ public class ClassificationScoreCalculator extends BaseIEvaluationScoreCalculato
         this.metric = metric;
     }
 
+    public ClassificationScoreCalculator(Evaluation.Metric metric, MultiDataSetIterator iterator){
+        super(iterator);
+        this.metric = metric;
+    }
+
     @Override
     protected Evaluation newEval() {
         return new Evaluation();
