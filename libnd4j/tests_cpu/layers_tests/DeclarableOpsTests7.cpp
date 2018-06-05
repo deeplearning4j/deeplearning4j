@@ -3856,3 +3856,24 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_BP_4) {
     ASSERT_TRUE(exp.equalsTo(z));
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_1) {
+    
+    NDArray<float> input('c', {3, 5},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});    
+    NDArray<float> eps(1307674368000.f);
+    //************************************//
+//    NDArray<float> exp('c', {3, 4}, {0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,0.5f});
+    //************************************//
+    NDArray<float> exp('c', {3, 5},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});    
+
+    nd4j::ops::reduce_prod_bp<float> op;
+    auto result = op.execute({&input, &eps}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);    
+    z->printIndexedBuffer("Result is ");
+    z->printShapeInfo();
+    //ASSERT_TRUE(exp.equalsTo(z));
+    delete result;
+}

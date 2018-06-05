@@ -45,11 +45,11 @@ namespace ops {
     }
 
     CUSTOM_OP_IMPL(reduce_prod_bp, 2, 1, false, 0, 0) {
-
+//	dL/dIn_i = dL/dOut * (prod(in) / in_i) <==> epsilon_i * (prod(in) / in_i)
         auto input = INPUT_VARIABLE(0);
         auto epsilon = INPUT_VARIABLE(1);
         auto output = OUTPUT_VARIABLE(0);
-        REQUIRE_TRUE(output->isSameShape(epsilon), 0, "The output and the second param should have the equal shapes.");
+//        REQUIRE_TRUE(output->isSameShape(epsilon), 0, "The output and the second param should have the equal shapes.");
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
         T keepDimsT = (keepDims?T(1.f):T(0.f));
         // at first step we build fwd activation
@@ -66,16 +66,37 @@ namespace ops {
         auto tmpResult = op.execute(inputVec, tVec, axes, false); 
         if (tmpResult->status() != ND4J_STATUS_OK)
             return tmpResult->status();
-
         auto tempProd = tmpResult->at(0);
+        REQUIRE_TRUE(tempProd->isSameShape(epsilon), 0, "reduce_prod_bp: The the second param and reduce_sum output should have the equal shapes.");
+    
+        // tempProd has equal shape with epsilon
+        if (epsilon->isScalar()) {
+            auto backpropRoutine = LAMBDA_T(_x, epsilon, tempProd) {
+                return (*epsilon)(0) * ((*tempProd)(0) / _x);
+            };
+            input->applyLambda(backpropRoutine, output);  
+        } 
+        else { // result 
+            auto backpropRoutine = LAMBDA_TTT(_e, _x, _y) {
+                return _e * _x / _y;
+            };
 
-//        // now we do reduce_sum backward pass
-//        auto filterRoutine = LAMBDA_TT(_x, _e) {
-//            return _x != (T) 1.f ? _e  : (T) 1.f;
-//        };
-
-        tempProd->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
-
+//                auto axes = *block.getIArguments();
+//                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
+            std::vector<int> dimensions; //(input->rankOf() - axes.size());
+            for (Nd4jLong e = 0; e < input->rankOf(); e++) {
+                if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
+                    dimensions.emplace_back(e);
+                }
+            }
+            std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
+            std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
+            //output->
+            for (Nd4jLong e = 0; e < outList->size(); ++e) {
+                //outList->at(e)->assign(epsilon);
+                epsilon->applyTriplewiseLambda(tempProd, inList->at(e), backpropRoutine, outList->at(e));
+            }
+        }
         delete tmpResult;
 
         return ND4J_STATUS_OK;
