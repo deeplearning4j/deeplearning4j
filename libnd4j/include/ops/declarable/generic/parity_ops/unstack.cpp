@@ -67,7 +67,7 @@ namespace nd4j {
                 shape[e] = shape::shapeOf(tad.tadOnlyShapeInfo)[e];
 
             // remove leading 1
-            if (shape.size() == 2 && shape[0] == 1)
+            if (inShape[0] == 2 && shape.size() == 2)
                 shape.erase(shape.begin());
             
             auto result = SHAPELIST();
