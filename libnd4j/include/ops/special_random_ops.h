@@ -741,6 +741,10 @@ namespace randomOps {
                     result1 = z1 * stddev + realMean1;
 
                     generation0 += zLength;
+
+                    if (++blocker > 10)
+                        printf("tid: %i\n", tid);
+
                 } while (++blocker > 10 || ds < aRealMean0 + nd4j::math::nd4j_abs<T>(result0) || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds);
 
                 z[e * zEWS] = result0;

@@ -183,7 +183,8 @@ namespace nd4j {
             }
 
             inline _CUDA_D uint64_t getElement(Nd4jLong position) {
-
+                uint64_t ret = 932323L;
+/*
                 Nd4jLong actualPosition = this->getOffset() + position;
                 Nd4jLong tempGen = generation;
                 if (actualPosition >= this->size) {
@@ -197,7 +198,7 @@ namespace nd4j {
 #else
                 auto ret = static_cast<uint64_t>(buffer[actualPosition]);
 #endif
-/*
+
                 if (tempGen != generation)
                     ret = safeShift(ret, tempGen);
 
