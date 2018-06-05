@@ -125,6 +125,21 @@ public class Reshape extends DynamicCustomOp {
     }
 
     @Override
+    public List<long[]> calculateOutputShape() {
+        if (shape != null){
+            for(long d: shape){
+                if (d < 0){
+                    return super.calculateOutputShape();
+                }
+            }
+            List<long[]> ret = new ArrayList<>();
+            ret.add(shape);
+            return ret;
+        }
+        return super.calculateOutputShape();
+    }
+
+    @Override
     public void resolvePropertiesFromSameDiffBeforeExecution() {
         super.resolvePropertiesFromSameDiffBeforeExecution();
         if (arrName != null) {
