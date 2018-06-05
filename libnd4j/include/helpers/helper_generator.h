@@ -190,7 +190,7 @@ namespace nd4j {
                     actualPosition = actualPosition % this->size;
                 }
 #ifdef __CUDACC__
-                __syncthreads();
+//                __syncthreads();
 
                 auto ret = static_cast<uint64_t>(devBuffer[actualPosition]);
 #else
