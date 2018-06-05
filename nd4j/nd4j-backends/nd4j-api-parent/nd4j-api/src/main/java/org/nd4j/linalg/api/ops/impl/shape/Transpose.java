@@ -34,7 +34,6 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.io.File;
 import java.util.*;
 
 /**
