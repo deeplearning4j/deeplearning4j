@@ -34,6 +34,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.io.File;
 import java.util.*;
 
 /**
@@ -102,7 +103,7 @@ public class Transpose extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-        //permute dimensions re not specified as second input
+        //permute dimensions are not specified as second input
         if (nodeDef.getInputCount() < 2)
             return;
         NodeDef permuteDimsNode = null;
@@ -125,7 +126,6 @@ public class Transpose extends DynamicCustomOp {
         if (arg().getShape() == null) {
             return;
         }
-
 
         INDArray arr = sameDiff.getArrForVarName(arg().getVarName());
         if (arr == null) {
@@ -156,6 +156,9 @@ public class Transpose extends DynamicCustomOp {
 
     @Override
     public List<long[]> calculateOutputShape() {
+        if (args().length > 1){
+            return super.calculateOutputShape();
+        }
         if (permuteDims == null && arg() != null && arg().getShape() != null) {
             this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arg().getShape().length));
             val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
