@@ -73,7 +73,7 @@ public class RemoteParameterServerClientTests {
         CloseHelper.close(aeron);
     }
 
-    @Test
+    @Test(timeout = 60000L)
     public void remoteTests() throws Exception {
         if (masterStatus.get() != 0 || slaveStatus.get() != 0)
             throw new IllegalStateException("Master or slave failed to start. Exiting");

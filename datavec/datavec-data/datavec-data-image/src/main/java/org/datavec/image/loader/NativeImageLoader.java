@@ -54,11 +54,9 @@ public class NativeImageLoader extends BaseImageLoader {
                     "png", "tif", "tiff", "exr", "webp", "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM",
                     "PNG", "TIF", "TIFF", "EXR", "WEBP"};
 
-    public enum MultiPageMode{
-        MINIBATCH, CHANNELS, FIRST
-    }
-
     protected OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
+
+    boolean direct = !Loader.getPlatform().startsWith("android");
 
     /**
      * Loads images with no scaling or conversion.
@@ -356,7 +354,6 @@ public class NativeImageLoader extends BaseImageLoader {
                             + channels + ", rows: " + rows + ", columns: " + cols + "}");
         }
 
-        boolean direct = !Loader.getPlatform().startsWith("android");
         Indexer idx = image.createIndexer(direct);
         Pointer pointer = ret.data().pointer();
         long[] stride = ret.stride();
@@ -408,6 +405,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 }
                 done = true;
             }
+            retidx.release();
         } else if (pointer instanceof DoublePointer) {
             DoubleIndexer retidx = DoubleIndexer.create((DoublePointer) pagedPointer.asDoublePointer(),
                             new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]}, direct);
@@ -452,6 +450,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 }
                 done = true;
             }
+            retidx.release();
         }
 
 
@@ -469,6 +468,7 @@ public class NativeImageLoader extends BaseImageLoader {
             }
         }
 
+        idx.release();
         image.data();
         Nd4j.getAffinityManager().tagLocation(ret, AffinityManager.Location.HOST);
     }
@@ -712,7 +712,6 @@ public class NativeImageLoader extends BaseImageLoader {
         }
         Mat mat = new Mat((int)Math.min(rows, Integer.MAX_VALUE), (int)Math.min(cols, Integer.MAX_VALUE),
                 CV_MAKETYPE(dataType, (int)Math.min(channels, Integer.MAX_VALUE)));
-        boolean direct = !Loader.getPlatform().startsWith("android");
         Indexer matidx = mat.createIndexer(direct);
 
         Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
@@ -729,6 +728,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 }
             }
             done = true;
+            ptridx.release();
         } else if (pointer instanceof DoublePointer && dataType == CV_64F) {
             DoubleIndexer ptridx = DoubleIndexer.create((DoublePointer)pointer, new long[] {channels, rows, cols},
                     new long[] {stride[rank == 3 ? 0 : 1], stride[rank == 3 ? 1 : 2], stride[rank == 3 ? 2 : 3]}, direct);
@@ -741,6 +741,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 }
             }
             done = true;
+            ptridx.release();
         }
 
         if (!done) {
@@ -757,6 +758,7 @@ public class NativeImageLoader extends BaseImageLoader {
             }
         }
 
+        matidx.release();
         return mat;
     }
 

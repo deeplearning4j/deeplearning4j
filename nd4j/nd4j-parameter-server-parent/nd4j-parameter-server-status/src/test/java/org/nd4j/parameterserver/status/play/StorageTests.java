@@ -11,7 +11,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class StorageTests {
 
-    @Test
+    @Test(timeout = 20000L)
     public void testMapStorage() throws Exception {
         StatusStorage mapDb = new MapDbStatusStorage();
         assertEquals(SubscriberState.empty(), mapDb.getState(-1));
@@ -26,7 +26,7 @@ public class StorageTests {
 
     }
 
-    @Test
+    @Test(timeout = 20000L)
     public void testStorage() throws Exception {
         StatusStorage statusStorage = new InMemoryStatusStorage();
         assertEquals(SubscriberState.empty(), statusStorage.getState(-1));
