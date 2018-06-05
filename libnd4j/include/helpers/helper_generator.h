@@ -102,7 +102,7 @@ namespace nd4j {
 
             __host__
             Nd4jPointer getDevicePointer() {
-                return (Nd4jPointer) devHolder;
+                return reinterpret_cast<Nd4jPointer>(devHolder);
             }
 
             __host__
@@ -138,16 +138,16 @@ namespace nd4j {
             }
 
 #ifdef __CUDACC__
-            __device__ __host__ curandGenerator_t *getGeneratorPointer() {
+            _CUDA_HD curandGenerator_t *getGeneratorPointer() {
                 return &gen;
             }
 
-            __host__ __device__ curandGenerator_t getGenerator() {
+            _CUDA_HD curandGenerator_t getGenerator() {
                 return gen;
             }
 
-            __host__
-            void setBuffer(uint64_t *ptr) {
+
+            _CUDA_H void setBuffer(uint64_t *ptr) {
                 this->buffer = ptr;
             }
 #endif
@@ -193,11 +193,9 @@ namespace nd4j {
 #ifdef __CUDACC__
                 __syncthreads();
 
-//                int *intBuffer = (int *) devBuffer;
-
-                uint64_t ret = (uint64_t) devBuffer[actualPosition];
+                auto ret = static_cast<uint64_t>(devBuffer[actualPosition]);
 #else
-                uint64_t ret = (uint64_t) buffer[actualPosition];
+                auto ret = static_cast<uint64_t>(buffer[actualPosition]);
 #endif
 
                 if (tempGen != generation)
@@ -213,25 +211,25 @@ namespace nd4j {
                 __syncthreads();
 #endif
                 if (amplifier != seed || generation > 1 || tempGen != generation)
-                    ret = next64(seedConv((Nd4jLong) ret));
+                    ret = next64(seedConv(static_cast<Nd4jLong>(ret)));
 
 
                 return ret;
             }
 
             uint64_t _CUDA_HD next64(uint64_t shiftedSeed) {
-                const uint64_t s0 = (uint64_t) shiftedSeed;
-                uint64_t s1 = (uint64_t) shiftedSeed % MAX_INT + 11;
+                const auto s0 = static_cast<uint64_t>(shiftedSeed);
+                auto s1 = static_cast<uint64_t>(shiftedSeed) % MAX_INT + 11;
                 uint64_t r0, r1;
 
                 s1 ^= s0;
-                r0 = rotl(s0, 55) ^ s1 ^ (s1 << 14); // a, b
+                r0 = rotl(s0, 55) ^ s1 ^ (s1 << 14L); // a, b
                 r1 = rotl(s1, 36); // c
 
                 return r0 + r1;
             }
 
-            static _CUDA_HD inline uint64_t rotl(const uint64_t x, int k) {
+            static _CUDA_HD inline uint64_t rotl(const uint64_t x, uint64_t k) {
                 return (x << k) | (x >> (64 - k));
             }
 
@@ -242,7 +240,7 @@ namespace nd4j {
             }
 
             uint64_t _CUDA_HD seedConv(Nd4jLong seed) {
-                uint64_t x = (uint64_t) seed;
+                uint64_t x = static_cast<uint64_t>(seed);
                 uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
                 z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
                 z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
@@ -338,8 +336,8 @@ namespace nd4j {
             * @return
             */
             int _CUDA_D nextInt() {
-                int r = (int) nextUInt();
-                return r < 0 ? -1 * r : r;
+                auto r = static_cast<int>(nextUInt());
+                return r < 0 ? -r : r;
             };
 
             uint64_t _CUDA_D nextUInt() {
@@ -355,7 +353,7 @@ namespace nd4j {
                 int r = nextInt();
                 int m = to - 1;
                 if ((to & m) == 0)  // i.e., bound is a power of 2
-                    r = (int) ((to * (Nd4jLong) r) >> 31);
+                    r = ((to *  r) >> 31L);
                 else {
                     for (int u = r;
                          u - (r = u % to) + m < 0;
@@ -384,8 +382,8 @@ namespace nd4j {
              */
             template<typename T>
             _CUDA_D T nextMaxT() {
-                T rnd = (T) getNextElement();
-                return rnd < 0 ? -1 * rnd : rnd;
+                T rnd = static_cast<T>(getNextElement());
+                return rnd < 0 ? -rnd : rnd;
             }
 
 
@@ -395,7 +393,7 @@ namespace nd4j {
              */
             template<typename T>
             _CUDA_D T nextT() {
-                return (T) nextUInt() / (T) MAX_UINT;
+                return static_cast<T>(nextUInt()) / static_cast<T>(MAX_UINT);
             }
 
             /**
@@ -405,10 +403,10 @@ namespace nd4j {
              */
             template<typename T>
             _CUDA_D T nextT(T to) {
-                if (to == (T) 1.0f)
+                if (to == static_cast<T>(1.0f))
                     return nextT<T>();
 
-                return nextT<T>((T) 0.0f, to);
+                return nextT<T>(static_cast<T>(0.0f), to);
             }
 
             /**
@@ -430,7 +428,7 @@ namespace nd4j {
              *  relative methods are made as workaround for lock-free concurrent execution
              */
             inline int _CUDA_D relativeInt(Nd4jLong index) {
-                return (int) (relativeUInt(index) % ((unsigned int) MAX_INT + 1));
+                return static_cast<int>(relativeUInt(index) % ((unsigned int) MAX_INT + 1));
             }
 
             /**
@@ -441,7 +439,7 @@ namespace nd4j {
              * @return
              */
             inline int _CUDA_D relativeInt(Nd4jLong index, int to) {
-                int rel = relativeInt(index);
+                auto rel = relativeInt(index);
                 return rel % to;
             }
 
@@ -481,8 +479,8 @@ namespace nd4j {
             inline _CUDA_D T relativeT(Nd4jLong index) {
                 if (sizeof(T) < 4) {
                     // FIXME: this is fast hack for short types, like fp16. This should be improved.
-                    return (T)((float) relativeUInt(index) / (float) MAX_UINT);
-                } else return (T) relativeUInt(index) / (T) MAX_UINT;
+                    return static_cast<T>((float) relativeUInt(index) / (float) MAX_UINT);
+                } else return static_cast<T>(relativeUInt(index)) / static_cast<T>(MAX_UINT);
             }
 
 /**
@@ -495,10 +493,10 @@ namespace nd4j {
 
             template<typename T>
             _CUDA_D T relativeT(Nd4jLong index, T to) {
-                if (to == (T) 1.0f)
+                if (to == static_cast<T>(1.0f))
                     return relativeT<T>(index);
 
-                return relativeT<T>(index, (T) 0.0f, to);
+                return relativeT<T>(index, static_cast<T>(0.0f), to);
             }
 
 /**
@@ -527,7 +525,7 @@ namespace nd4j {
 
             _CUDA_HD IGenerator(nd4j::random::RandomBuffer *buffer) {
                 this->limit = buffer->getSize();
-                this->buffer = (uint64_t *) buffer->getBuffer();
+                this->buffer = reinterpret_cast<uint64_t *>(buffer->getBuffer());
                 this->realBuffer = buffer;
                 this->seed = buffer->getSeed();
             }
@@ -579,7 +577,7 @@ namespace nd4j {
             }
 
             uint64_t _CUDA_HD seedConv(Nd4jLong seed) {
-                uint64_t x = (uint64_t) seed;
+                uint64_t x = static_cast<uint64_t>(seed);
                 uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
                 z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
                 z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
