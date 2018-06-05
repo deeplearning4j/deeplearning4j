@@ -742,7 +742,7 @@ namespace randomOps {
 
                     generation0 += zLength;
 
-                    if (blocker++ > 100)
+                    if (blocker++ > 10)
                         printf("tid: %i\n", tid);
 
                 } while (ds < aRealMean0 + nd4j::math::nd4j_abs<T>(result0) || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds);
@@ -759,7 +759,7 @@ namespace randomOps {
 
         static inline void
         specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
-            const T two_pi = (T) 2.0 * 3.14159265358979323846;
+            const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
             Nd4jLong zLength = shape::length(zShapeBuffer);
             auto yEWS = shape::elementWiseStride(yShapeBuffer);
@@ -791,7 +791,7 @@ namespace randomOps {
     
                 T z0, z1;
                 T u0, u1;
-                T result0, result1, lnu0;
+                T result0, result1, lnu0, lnu1;
 
                 T ds = nd4j::math::nd4j_abs<T>(stddev) * (T) 2.0f;
 
@@ -801,23 +801,27 @@ namespace randomOps {
                     * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
                     */
                     Nd4jLong generation0 = 0;
+                    auto epm = e + middle;
                     T realMean0 = y == z ? mean : y[e * yEWS];
-                    T realMean1 = y == z ? mean : y[(e + middle) * yEWS];
+                    T realMean1 = y == z ? mean : y[epm * yEWS];
+                    T aRealMean0 = nd4j::math::nd4j_abs<T>(realMean0);
+                    T aRealMean1 = nd4j::math::nd4j_abs<T>(realMean1);
                     do {
-                        u0 = buffer->relativeT<T>(e + generation0, (T) 1e-6f, (T) 1.0f);
-                        u1 = buffer->relativeT<T>((e + middle + generation0), (T) 1e-6f, (T) 1.0f);
-                        lnu0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0));
-                        z0 = lnu0 * nd4j::math::nd4j_cos<T>(two_pi * u1);
-                        z1 = lnu0 * nd4j::math::nd4j_sin<T>(two_pi * u1);
+                        u0 = buffer->relativeT<T>(e + generation0, static_cast<T>(1e-6f), static_cast<T>(1.0f));
+                        u1 = buffer->relativeT<T>((epm + generation0), static_cast<T>(1e-6f), static_cast<T>(1.0f));
+                        lnu0 = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0));
+                        lnu1 = two_pi * u1;
+                        z0 = lnu0 * nd4j::math::nd4j_cos<T>(lnu1);
+                        z1 = lnu0 * nd4j::math::nd4j_sin<T>(lnu1);
 
                         result0 = z0 * stddev + realMean0;
-                        result1 = z1 * stddev + realMean1;                            
+                        result1 = z1 * stddev + realMean1;
                         generation0 += zLength;
-                    } while (nd4j::math::nd4j_abs<T>(realMean0) + nd4j::math::nd4j_abs<T>(result0) > ds || nd4j::math::nd4j_abs<T>(realMean1) + nd4j::math::nd4j_abs<T>(result1) > ds);
+                    } while (aRealMean0 + nd4j::math::nd4j_abs<T>(result0) > ds || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds);
 
                     z[e*zEWS] = result0;
-                    if((e+middle) < zLength) 
-                        z[(e + middle) * zEWS] = result1;
+                    if((epm < zLength)
+                        z[epm * zEWS] = result1;
                 }                            
             }
             // update rng state
@@ -845,8 +849,8 @@ namespace randomOps {
             __shared__ T two_pi;
 
             __shared__ Nd4jLong zLength;
-            __shared__ int zEWS;
-            __shared__ int yEWS;
+            __shared__ Nd4jLong zEWS;
+            __shared__ Nd4jLong yEWS;
             __shared__ T mean;
             __shared__ T stddev;
             __shared__ int step;
@@ -872,8 +876,8 @@ namespace randomOps {
                 yEWS = shape::elementWiseStride(yShapeBuffer);
 
 
-                epsilon = (T) 1e-5;
-                two_pi = (T) 2.0 * (T) 3.14159265358979323846;
+                epsilon = static_cast<T>(1e-5);
+                two_pi = static_cast<T>(2.0 f)* static_cast<T>(3.14159265358979323846);
 
                 mean = extraArguments[0];
                 stddev = extraArguments[1];
@@ -893,11 +897,11 @@ namespace randomOps {
             for (Nd4jLong e = tid; e < zLength; e += step) {
                 // we need to get random values
 
-                tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, (T) 1.0f);
+                tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
 
                 // fix for "next rng value"
                 if (e + 1 >= zLength && e % 2 == 0) {
-                    tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, (T) 1.0f);
+                    tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, static_cast<T>(1.0f));
                 }
 
                 T realMean = y == z ? mean : y[e * yEWS];
@@ -905,9 +909,9 @@ namespace randomOps {
                 __syncthreads();
 
                 if (e % 2 == 0)
-                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean);
+                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean);
                 else
-                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T>(two_pi * tZ[threadIdx.x])) * stddev + realMean);
+                    z[e *zEWS] =  nd4j::math::nd4j_exp<T>((nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T>(two_pi * tZ[threadIdx.x])) * stddev + realMean);
                 __syncthreads();
             }
 
@@ -918,7 +922,7 @@ namespace randomOps {
 
         static inline void
         specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
-            const T two_pi = (T) 2.0 * 3.14159265358979323846;
+            const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
             Nd4jLong zLength = shape::length(zShapeBuffer);
             auto yEWS = shape::elementWiseStride(yShapeBuffer);
@@ -933,7 +937,7 @@ namespace randomOps {
             // we're enforcing even chunks, since it's mandatory for this algorithm
             span -= span % 2;
 
-            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
+            auto buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
             T mean = extraArguments[0];
             T stddev = extraArguments[1];
@@ -955,9 +959,9 @@ namespace randomOps {
                         /*
                          * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
                          */
-                        u0 = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
-                        u1 = buffer->relativeT<T>((e + 1), (T) 1e-5f, (T) 1.0f);
-                        lnU0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0));
+                        u0 = buffer->relativeT<T>(e, static_cast<T>(1e-5f), static_cast<T>(1.0f));
+                        u1 = buffer->relativeT<T>((e + 1), static_cast<T>(1e-5f), static_cast<T>(1.0f));
+                        lnU0 = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0));
                         z0 = lnU0 * nd4j::math::nd4j_cos<T>(two_pi * u1);
                         z1 = lnU0 * nd4j::math::nd4j_sin<T>(two_pi * u1);
 
