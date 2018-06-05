@@ -8,7 +8,7 @@ import play.server.Server;
  */
 public class StatusServerTests {
 
-    @Test
+    @Test(timeout = 20000L)
     public void runStatusServer() {
         Server server = StatusServer.startServer(new InMemoryStatusStorage(), 65236);
         server.stop();

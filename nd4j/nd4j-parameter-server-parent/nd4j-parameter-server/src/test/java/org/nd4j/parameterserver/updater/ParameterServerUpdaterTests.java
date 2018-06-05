@@ -15,7 +15,7 @@ import static org.junit.Assume.assumeNotNull;
  */
 public class ParameterServerUpdaterTests {
 
-    @Test
+    @Test(timeout = 30000L)
     public void synchronousTest() {
         int cores = Runtime.getRuntime().availableProcessors();
         ParameterServerUpdater updater = new SynchronousParameterUpdater(new NoUpdateStorage(),
