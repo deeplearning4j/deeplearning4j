@@ -728,8 +728,8 @@ namespace randomOps {
                 int blocker = 0;
 
                 do {
-                    u0 = static_cast<T>(0.7f); //buffer->relativeT<T>(e + generation0, epsilon, static_cast<T>(1.0f));
-                    u1 = static_cast<T>(0.7f); //buffer->relativeT<T>(epm + generation0, epsilon, static_cast<T>(1.0f));
+                    u0 = buffer->relativeT<T>(e + generation0, epsilon, static_cast<T>(1.0f));
+                    u1 = buffer->relativeT<T>(epm + generation0, epsilon, static_cast<T>(1.0f));
 
                     uT = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0));
                     uP = two_pi * u1;
@@ -741,10 +741,6 @@ namespace randomOps {
                     result1 = z1 * stddev + realMean1;
 
                     generation0 += zLength;
-
-                    if (blocker++ > 10)
-                        printf("tid: %i\n", tid);
-
                 } while (ds < aRealMean0 + nd4j::math::nd4j_abs<T>(result0) || aRealMean1 + nd4j::math::nd4j_abs<T>(result1) > ds);
 
                 z[e * zEWS] = result0;
