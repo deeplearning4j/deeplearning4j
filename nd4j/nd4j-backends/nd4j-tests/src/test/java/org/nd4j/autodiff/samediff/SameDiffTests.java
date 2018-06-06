@@ -3884,6 +3884,17 @@ public class SameDiffTests {
     }
 
 
+    @Test
+    public void testGet(){
+        SameDiff sd  = SameDiff.create();
+        INDArray arr = Nd4j.create(10, 10, 10);
+        SDVariable x = sd.var(arr);
+
+        INDArray expOut1 = arr.get(NDArrayIndex.point(4), NDArrayIndex.point(2));
+        SDVariable result1 = x.get(SDIndex.point(4), SDIndex.point(5));
+
+        assertEquals(expOut1, result1);
+    }
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){
         try {
             Field f = fromClass.getDeclaredField(fieldName);

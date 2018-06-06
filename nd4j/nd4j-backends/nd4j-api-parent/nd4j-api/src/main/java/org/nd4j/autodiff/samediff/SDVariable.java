@@ -1052,6 +1052,74 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
+   public SDVariable get(SDIndex... indices){
+       int ndims = indices.length;
+       int[] begin = new int[ndims];
+       int[] end = new int[ndims];
+       int[] strides = new int[ndims];
+       int[] begin_mask_arr = new int[ndims];
+       int[] end_mask_arr = new int[ndims];
+       int[] shrink_axis_mask_arr = new int[ndims];
+       for(int i=0; i<ndims; i++){
+           strides[i] = 1;
+           SDIndex index = indices[i];
+           if(index.indexType == SDIndex.ALL){
+               begin_mask_arr[i] = 1;
+               end_mask_arr[i] = 1;
+           }
+           else if(index.indexType == SDIndex.POINT){
+               if(index.point_index == null){
+                   begin_mask_arr[i] = 1;
+                   end_mask_arr[i] = 1;
+               }
+               else {
+                   begin[i] = index.point_index;
+                   end[i] = index.point_index + 1;
+                   shrink_axis_mask_arr[i] = 1;
+               }
+           }
+           else if(index.indexType == SDIndex.INTERVAL){
+               if(index.interval_begin == null){
+                   begin_mask_arr[i] = 1;
+               }
+               else{
+                   begin[i] = index.interval_begin;
+               }
+               if(index.interval_end == null){
+                   end_mask_arr[i] = 1;
+               }
+               else{
+                   end[i] = index.interval_end;
+               }
+               if(index.interval_strides == null){
+                   strides[i] = 1;
+               }
+               else{
+                   strides[i] = index.interval_strides;
+               }
+           }
+       }
+
+       // convert binary int[] to int
+        int begin_mask = binArrToInt(begin_mask_arr);
+       int end_mask = binArrToInt(end_mask_arr);
+       int shrink_axis = binArrToInt(shrink_axis_mask_arr);
+
+       return this.sameDiff.stridedSlice(this, begin, end, strides,
+               begin_mask, end_mask, 0, 0, shrink_axis);
+   }
+
+   private static int binArrToInt(int[] arr){
+        int x = 0;
+        int m = 1;
+        for(int i = arr.length - 1; i >= 0; i++){
+            if(arr[i] == 1){
+                x += m;
+            }
+            m *= 2;
+        }
+        return x;
+   }
 
 
 }
