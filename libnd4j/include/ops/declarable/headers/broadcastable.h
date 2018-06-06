@@ -5,6 +5,7 @@
 #ifndef LIBND4J_HEADERS_BROADCASTABLE_H
 #define LIBND4J_HEADERS_BROADCASTABLE_H
 
+#include <ops/declarable/BroadcastableOp.h>
 #include <ops/declarable/headers/common.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
@@ -50,7 +51,7 @@ namespace nd4j {
          * This operation returns Z = Add(X, Y)
          */
         #if NOT_EXCLUDED(OP_add)
-        DECLARE_CUSTOM_OP(add, 2, 1, true, 0, 0);
+        DECLARE_BROADCASTABLE_OP(add, 0, 0);
         DECLARE_CUSTOM_OP(add_bp, 3, 2, false, 0, 0);
         #endif
 
@@ -279,14 +280,14 @@ namespace nd4j {
          *
          */
         #if NOT_EXCLUDED(OP_boolean_and)
-        DECLARE_CUSTOM_OP(boolean_and, 2, 1, false, 0, 0);
+        DECLARE_BROADCASTABLE_OP(boolean_and, 0, 0);
         #endif
 
         /**
          *
          */
         #if NOT_EXCLUDED(OP_boolean_or)
-        DECLARE_CUSTOM_OP(boolean_or, 2, 1, false, 0, 0);
+        DECLARE_BROADCASTABLE_OP(boolean_or, 0, 0);
         #endif
 
         /**
