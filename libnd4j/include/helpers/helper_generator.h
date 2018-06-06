@@ -7,6 +7,7 @@
 
 #include <op_boilerplate.h>
 #include <pointercast.h>
+#include <array/DataTypeUtils.h>
 #include <dll.h>
 
 #ifdef _MSC_VER
@@ -221,7 +222,7 @@ namespace nd4j {
                 uint64_t r0, r1;
 
                 s1 ^= s0;
-                r0 = rotl(s0, 55) ^ s1 ^ (s1 << 14L); // a, b
+                r0 = rotl(s0, 55) ^ s1 ^ (s1 << 14); // a, b
                 r1 = rotl(s1, 36); // c
 
                 return r0 + r1;
@@ -334,11 +335,11 @@ namespace nd4j {
             * @return
             */
             int _CUDA_D nextInt() {
-                auto r = static_cast<int>(nextUInt());
-                return r < 0 ? -r : r;
+                auto u = nextUInt64();
+                return u <= nd4j::DataTypeUtils::max<int>() ? static_cast<int>(u) : static_cast<int>(u % nd4j::DataTypeUtils::max<int>());
             };
 
-            uint64_t _CUDA_D nextUInt() {
+            uint64_t _CUDA_D nextUInt64() {
                 return getNextElement();
             }
 
@@ -351,7 +352,7 @@ namespace nd4j {
                 int r = nextInt();
                 int m = to - 1;
                 if ((to & m) == 0)  // i.e., bound is a power of 2
-                    r = ((to *  r) >> 31L);
+                    r = ((to * (Nd4jLong) r) >> 31);
                 else {
                     for (int u = r;
                          u - (r = u % to) + m < 0;
@@ -375,23 +376,14 @@ namespace nd4j {
 
 
             /**
-             * This method returns random T in range of [0..MAX_FLOAT]
-             * @return
-             */
-            template<typename T>
-            _CUDA_D T nextMaxT() {
-                T rnd = static_cast<T>(getNextElement());
-                return rnd < 0 ? -rnd : rnd;
-            }
-
-
-            /**
              * This method returns random T in range of [0..1]
              * @return
              */
             template<typename T>
             _CUDA_D T nextT() {
-                return static_cast<T>(nextUInt()) / static_cast<T>(MAX_UINT);
+                auto u = static_cast<float>(nextUInt64());
+                auto m = static_cast<float>(nd4j::DataTypeUtils::max<uint64_t>());
+                return static_cast<T>(u / m);
             }
 
             /**
@@ -418,7 +410,7 @@ namespace nd4j {
                 return from + (nextT<T>() * (to - from));
             }
 
-            inline _CUDA_D uint64_t relativeUInt(Nd4jLong index) {
+            inline _CUDA_D uint64_t relativeUInt64(Nd4jLong index) {
                 return getElement(index);
             }
 
@@ -426,7 +418,8 @@ namespace nd4j {
              *  relative methods are made as workaround for lock-free concurrent execution
              */
             inline int _CUDA_D relativeInt(Nd4jLong index) {
-                return static_cast<int>(relativeUInt(index) % ((unsigned int) MAX_INT + 1));
+                auto u = relativeUInt64(index);
+                return u <= nd4j::DataTypeUtils::max<int>() ? static_cast<int>(u) : static_cast<int>(u % nd4j::DataTypeUtils::max<int>());
             }
 
             /**
@@ -462,23 +455,16 @@ namespace nd4j {
              * @param index
              * @return
              */
-/*
-            template <typename T>
-            T relativeT(Nd4jLong index);
-
-            template <typename T>
-            T relativeT(Nd4jLong index, T to);
-
-            template <typename T>
-            T relativeT(Nd4jLong index, T from, T to);
-
-            */
             template <typename T>
             inline _CUDA_D T relativeT(Nd4jLong index) {
-                if (sizeof(T) < 4) {
-                    // FIXME: this is fast hack for short types, like fp16. This should be improved.
-                    return static_cast<T>((float) relativeUInt(index) / (float) MAX_UINT);
-                } else return static_cast<T>(relativeUInt(index)) / static_cast<T>(MAX_UINT);
+                /**
+                 * Basically we just get float u/m value, and convert into to
+                 *
+                 * FIXME: once we add support for additional datatypes this code must be tweaked
+                 */
+                auto u = static_cast<float>(relativeUInt64(index));
+                auto m = static_cast<float> (nd4j::DataTypeUtils::max<uint64_t>());
+                return static_cast<T>(u / m);
             }
 
 /**
