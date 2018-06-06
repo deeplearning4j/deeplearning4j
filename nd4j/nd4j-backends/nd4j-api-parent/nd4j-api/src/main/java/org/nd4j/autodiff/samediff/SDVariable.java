@@ -1063,11 +1063,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
        for(int i=0; i<ndims; i++){
            strides[i] = 1;
            SDIndex index = indices[i];
-           if(index.indexType == SDIndex.ALL){
+           if(index.indexType == SDIndex.IndexType.ALL){
                begin_mask_arr[i] = 1;
                end_mask_arr[i] = 1;
            }
-           else if(index.indexType == SDIndex.POINT){
+           else if(index.indexType == SDIndex.IndexType.POINT){
                if(index.point_index == null){
                    begin_mask_arr[i] = 1;
                    end_mask_arr[i] = 1;
@@ -1078,7 +1078,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                    shrink_axis_mask_arr[i] = 1;
                }
            }
-           else if(index.indexType == SDIndex.INTERVAL){
+           else if(index.indexType == SDIndex.IndexType.INTERVAL){
                if(index.interval_begin == null){
                    begin_mask_arr[i] = 1;
                }
