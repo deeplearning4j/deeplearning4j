@@ -69,7 +69,7 @@ namespace ops {
                 output->assign(input);
 
                 delete input;
-            }
+             }
         }
         return Status::OK();
     }

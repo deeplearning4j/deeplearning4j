@@ -276,6 +276,20 @@ namespace nd4j {
         #endif
 
         /**
+         *
+         */
+        #if NOT_EXCLUDED(OP_boolean_and)
+        DECLARE_CUSTOM_OP(boolean_and, 2, 1, false, 0, 0);
+        #endif
+
+        /**
+         *
+         */
+        #if NOT_EXCLUDED(OP_boolean_or)
+        DECLARE_CUSTOM_OP(boolean_or, 2, 1, false, 0, 0);
+        #endif
+
+        /**
          * This operation performs calculation of percentile of input array along given axises
          *
          * Input - tensor with rank N > 0
@@ -290,8 +304,6 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_percentile)
         DECLARE_CUSTOM_OP(percentile, 1, 1, false, 1, -2);
         #endif
-
-
     }
 }
 
