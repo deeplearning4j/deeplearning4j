@@ -20,8 +20,6 @@ namespace nd4j {
 
             functions::random::RandomFunction<T>::template execTransform<randomOps::GaussianDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
 
-            z->printIndexedBuffer("random_normal result");
-
             return Status::OK();
         }
 
