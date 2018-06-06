@@ -497,6 +497,11 @@ namespace simdOps {
 		op_def static T op(T d1) {
 			return d1;
 		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return static_cast<T>(119.0f);
+		}
 	};
 
 	template<typename T>
@@ -514,6 +519,11 @@ namespace simdOps {
 
 		op_def static T op(T d1) {
 			return d1;
+		}
+
+		// op for MetaOps
+		op_def static T op(T d1, T *params) {
+			return static_cast<T>(119.0f);
 		}
 	};
 
