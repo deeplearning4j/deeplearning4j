@@ -45,13 +45,18 @@ namespace ops {
     }
 
     CUSTOM_OP_IMPL(reduce_norm1_bp, 2, 1, false, 0, 0) {
+            // L = Sum abs(x_i) for all i = 1 to N
+            // dL/dx_i = 1 if x_i >= 0 and -1 when x_i < 0
+            // out_i = epsilon_i if x_i > 0 and -epsilon_i when x_i < 0
+            // when epsilon is non a scalar, using axes to split output onto epsilon like parts
+            // and use LAMBDA with that formula for it.
 
             auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_norm1_bp: The second param shape should be the same as result shape.");
-            output->assign(epsilon);
+//            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_norm1_bp: The second param shape should be the same as result shape.");
+//            output->assign(epsilon);
 //            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
 //            T keepDimsT = (keepDims?T(1.f):T(0.f));
 #if 0
