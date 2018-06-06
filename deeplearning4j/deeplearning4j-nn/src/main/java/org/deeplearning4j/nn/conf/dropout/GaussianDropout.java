@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
@@ -8,6 +9,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
@@ -28,10 +30,12 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @Data
+@JsonIgnoreProperties({"noise"})
 public class GaussianDropout implements IDropout {
 
     private final double rate;
     private final ISchedule rateSchedule;
+    private INDArray noise;
 
     /**
      * @param rate Rate parameter, see {@link GaussianDropout}
@@ -63,7 +67,7 @@ public class GaussianDropout implements IDropout {
 
         double stdev = Math.sqrt(r / (1.0 - r));
 
-        INDArray noise = Nd4j.createUninitialized(inputActivations.shape(), inputActivations.ordering());
+        noise = workspaceMgr.createUninitialized(ArrayType.INPUT, inputActivations.shape(), inputActivations.ordering());
         Nd4j.getExecutioner().exec(new GaussianDistribution(noise, 1.0, stdev));
 
         return Nd4j.getExecutioner().execAndReturn(new OldMulOp(inputActivations, noise, output));
@@ -71,12 +75,16 @@ public class GaussianDropout implements IDropout {
 
     @Override
     public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
-        throw new RuntimeException("Not yet implemented");
+        //out = in*y, where y ~ N(1, stdev)
+        //dL/dIn = dL/dOut * dOut/dIn = y * dL/dOut
+        Nd4j.getExecutioner().exec(new OldMulOp(gradAtOutput, noise, gradAtInput));
+        noise = null;
+        return gradAtInput;
     }
 
     @Override
     public void clear() {
-        //TODO
+        noise = null;
     }
 
     @Override
