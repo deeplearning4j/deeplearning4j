@@ -3890,10 +3890,21 @@ public class SameDiffTests {
         INDArray arr = Nd4j.create(10, 10, 10);
         SDVariable x = sd.var(arr);
 
-        INDArray expOut1 = arr.get(NDArrayIndex.point(4), NDArrayIndex.point(2));
+        INDArray expOut1 = arr.get(NDArrayIndex.point(4), NDArrayIndex.point(5));
         SDVariable result1 = x.get(SDIndex.point(4), SDIndex.point(5));
-
         assertEquals(expOut1, result1);
+
+        INDArray expOut2 = arr.get(NDArrayIndex.point(4), NDArrayIndex.all());
+        SDVariable result2 = x.get(SDIndex.point(4), SDIndex.all());
+        assertEquals(expOut2, result2);
+
+        INDArray expOut3 = arr.get(NDArrayIndex.interval(3, 8), NDArrayIndex.point(2));
+        SDVariable result3 = x.get(SDIndex.interval(3, 8), SDIndex.point(5));
+        assertEquals(expOut3, result3);
+
+        INDArray expOut4 = arr.get(NDArrayIndex.point(4), NDArrayIndex.interval(2, 2, 9), NDArrayIndex.all());
+        SDVariable result4 = x.get(SDIndex.point(4), SDIndex.interval(2, 2, 9), SDIndex.all());
+        assertEquals(expOut4, result4);
     }
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){
         try {
