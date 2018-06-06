@@ -682,6 +682,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             List<String> inputs = configuration.getVertexInputs().get(layerName);
             String in = inputs.get(0);  //For now: layers should have exactly 1 input
 
+            if(configuration.getNetworkInputs().contains(in)){
+                //TODO When is it safe to NOT allow input modifucation? It's not always safe...
+                // For example dropout + iterating over List<MultiDataSet> that is used for multiple epochs...
+                continue;
+            }
+
             List<String> seen = seenAsInputTo.get(in);
             if(seen.size() == 1){
                 l.allowInputModification(true);
