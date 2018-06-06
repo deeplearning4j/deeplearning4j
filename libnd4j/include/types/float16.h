@@ -9,6 +9,7 @@
 
 #include <cfloat>
 #include <iosfwd>
+#include <iostream>
 
 // support for half precision conversion
 #ifdef __INTEL_COMPILER
@@ -26,7 +27,11 @@ struct ihalf : public __half {
         ihalf() : half() {
             //
         }
-
+/*
+        inline void assign(__half f) {
+            this->__x = ((__half_raw *) &f)->x;
+        }
+*/
         inline unsigned short * getXP() {
            return &this->__x;
         }
@@ -271,7 +276,15 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 
     local_def void assign(float rhs) {
 #ifdef __CUDA_ARCH__
-      *data.getXP() = __float2half_rn(rhs);
+      auto t = __float2half_rn(rhs);
+      auto b = *(data.getXP());
+
+#ifdef CUDA_9
+      data.assign(t);
+#else
+      *(data.getXP()) = t;
+#endif
+
 #else
   #if defined(DEBUG) && defined (CPU_ONLY)
       if (rhs > HLF_MAX || rhs < -HLF_MAX) {
@@ -322,6 +335,11 @@ local_def ihalf cpu_float2ihalf_rn(float f)
     local_def float16 operator++(int i) { assign(*this + (float)i); return *this; }
 
     local_def float16 operator--(int i) { assign(*this - (float)i); return *this; }
+
+    local_def std::ostream& operator<<(std::ostream& os) {
+        os << static_cast<float>(*this);
+        return os;
+    }
 
     // Utility contants
     static const float16 zero;
@@ -441,6 +459,12 @@ local_def ihalf cpu_float2ihalf_rn(float f)
     local_def float16 operator*(const long int& a, const float16& b) { return float16((float)a * (float)b); }
     local_def float16 operator*(const float& a, const float16& b) { return float16((float)a * (float)b); }
     local_def float16 operator*(const double& a, const float16& b) { return float16((float)a * (float)b); }
+
+    local_def std::ostream& operator<<(std::ostream &os, const float16 &f) {
+        os << static_cast<float>(f);
+        return os;
+    }
+
 
   //template <class T>
   //local_def float16 operator+(const float16& a, const T& b) { return float16((float)a + (float)b); }
