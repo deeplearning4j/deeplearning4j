@@ -4,6 +4,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 
+#if 0 // just skip
 namespace nd4j {
 namespace ops {
 #if NOT_EXCLUDED(OP_reduce_dot)
@@ -81,3 +82,4 @@ namespace ops {
 
 }
 }
+#endif
