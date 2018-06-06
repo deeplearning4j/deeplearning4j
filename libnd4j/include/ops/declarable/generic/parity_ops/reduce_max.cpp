@@ -50,8 +50,6 @@ namespace ops {
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_max_bp: The second param shape should be the same as result shape.");
-            output->assign(epsilon);
             const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
             T keepDimsT = (keepDims?T(1.f):T(0.f));
             
@@ -81,7 +79,7 @@ namespace ops {
             }
             else {
                 for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
-                    for (Nd4jLong j = 0; e < tempMax->lengthOf(); j++) {
+                    for (Nd4jLong j = 0; j < tempMax->lengthOf(); j++) {
                         if (nd4j::math::nd4j_abs((*tempMax)(j) - (*input)(e)) < T(1.E-5f))  // if input value equals to max
                             (*output)(e) = (*input)(e);
                     }

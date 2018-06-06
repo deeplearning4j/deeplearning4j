@@ -3583,3 +3583,53 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_1) {
     ASSERT_TRUE(exp.equalsTo(z));
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_1) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps('c', {4}, {1.f, 2.f, 3.f, 4.f});
+    NDArray<float> exp('c', {2, 3, 4});
+    exp(0) = eps(0);
+    exp(1) = eps(1);
+    exp(2) = eps(2);
+    exp(3) = eps(3);
+    NDArrayFactory<float>::linspace(1, x);
+//    x.printIndexedBuffer("Input is");
+//    exp.printIndexedBuffer("Expected ");
+    nd4j::ops::reduce_min_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {0, 1});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_2) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps('c', {1, 1, 4}, {1.f, 2.f, 3.f, 4.f});
+    NDArray<float> exp('c', {2, 3, 4});
+    exp(0) = eps(0);
+    exp(1) = eps(1);
+    exp(2) = eps(2);
+    exp(3) = eps(3);
+    NDArrayFactory<float>::linspace(1, x);
+//    x.printIndexedBuffer("Input is");
+//    exp.printIndexedBuffer("Expected ");
+    nd4j::ops::reduce_min_bp<float> op;
+    auto result = op.execute({&x, &eps}, {1.f}, {0, 1});
+    auto output = result->at(0);    
+    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
