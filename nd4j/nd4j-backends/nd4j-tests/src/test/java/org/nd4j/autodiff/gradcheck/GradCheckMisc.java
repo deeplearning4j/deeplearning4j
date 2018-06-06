@@ -64,7 +64,7 @@ public class GradCheckMisc extends BaseGradCheck {
             INDArray[] orig = new INDArray[shapes.size()];
             for (int j = 0; j < shapes.size(); j++) {
                 orig[j] = Nd4j.rand(shapes.get(j));
-                toConcat[j] = sd.var(String.valueOf(i), orig[j]);
+                toConcat[j] = sd.var("concat-in-" + String.valueOf(j), orig[j]);
             }
 
             SDVariable sdConcat = sd.concat("c", 0, toConcat);
@@ -200,7 +200,7 @@ public class GradCheckMisc extends BaseGradCheck {
 
                 TestCase tc = new TestCase(sd);
                 tc.testName(msg)
-                        .expectedOutput("oun", expOut)
+                        .expectedOutput("out", expOut)
                         .expectedOutput(expand.getVarName(), expExpand);
 
                 String error = OpValidation.validate(tc);

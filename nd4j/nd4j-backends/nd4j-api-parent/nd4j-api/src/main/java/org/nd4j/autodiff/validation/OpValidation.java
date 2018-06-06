@@ -39,8 +39,9 @@ import java.util.*;
 public class OpValidation {
 
     /**
+     * Run test case
      *
-     * @param testCase
+     * @param testCase Test case to run
      * @return NULL if test passes, or error message otherwise
      */
     public static String validate(TestCase testCase){
@@ -80,7 +81,7 @@ public class OpValidation {
                 }
 
                 if(error != null){
-                    return error;
+                    return "Variable " + e.getKey() + " failed: " + error;
                 }
             }
         }
@@ -144,7 +145,7 @@ public class OpValidation {
             }
 
             if(error != null){
-                return error;
+                return "Output " + i + " failed: " + error;
             }
         }
 

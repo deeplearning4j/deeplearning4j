@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 @Slf4j
@@ -81,9 +82,10 @@ public class GradCheckTransforms {
         SDVariable t = sd.cross("cross", sdA, sdB);
         SDVariable loss = sd.mean("loss", t);
 
-        OpValidation.validate(new TestCase(sd)
+        String err = OpValidation.validate(new TestCase(sd)
                         .expectedOutput("cross", expOut)
                         .gradientCheck(true));
+        assertNull(err, err);
     }
 
     @Test
@@ -112,9 +114,10 @@ public class GradCheckTransforms {
         SDVariable t = sd.spaceToDepth("std", sdInput, blockSize, dataFormat);
         SDVariable loss = sd.mean("loss", t);
 
-        OpValidation.validate(new TestCase(sd)
+        String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("std", expOut)
                 .gradientCheck(true));
+        assertNull(err, err);
     }
 
     @Test
@@ -143,9 +146,10 @@ public class GradCheckTransforms {
         SDVariable t = sd.depthToSpace("dts", sdInput, blockSize, dataFormat);
         SDVariable loss = sd.mean("loss", t);
 
-        OpValidation.validate(new TestCase(sd)
+        String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("dts", expOut)
                 .gradientCheck(true));
+        assertNull(err, err);
     }
 
     @Test
@@ -178,9 +182,10 @@ public class GradCheckTransforms {
         SDVariable t = sd.batchToSpace("bts", sdInput, new int[]{2, 2}, new int[][]{{0, 0}, {0, 0}});
         SDVariable loss = sd.mean("loss", t);
 
-        OpValidation.validate(new TestCase(sd)
+        String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("bts", expOut)
                 .gradientCheck(true));
+        assertNull(err, err);
     }
 
     @Test
@@ -213,9 +218,10 @@ public class GradCheckTransforms {
         SDVariable t = sd.spaceToBatch("stb", sdInput, new int[]{2, 2}, new int[][]{{0, 0}, {0, 0}});
         SDVariable loss = sd.mean("loss", t);
 
-        OpValidation.validate(new TestCase(sd)
+        String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("stb", expOut)
                 .gradientCheck(true));
+        assertNull(err, err);
     }
 
     @Test
@@ -248,10 +254,11 @@ public class GradCheckTransforms {
 
         sd.associateArrayWithVariable(ia, in);
 
-        OpValidation.validate(new TestCase(sd)
+        String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("dp0", expOut[0])
                 .expectedOutput("dp1", expOut[1])
                 .gradientCheck(true));
+        assertNull(err, err);
     }
 
     @Test
@@ -287,9 +294,10 @@ public class GradCheckTransforms {
         SDVariable t = sd.dynamicStitch("ds", new SDVariable[]{index1, index2}, new SDVariable[]{in1, in2});
         SDVariable loss = sd.mean("loss", t);
 
-        OpValidation.validate(new TestCase(sd)
+        String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("ds", expOut)
                 .gradientCheck(true));
+        assertNull(err, err);
     }
 
     @Test
@@ -307,9 +315,10 @@ public class GradCheckTransforms {
 
         sd.associateArrayWithVariable(ia, in);
 
-        OpValidation.validate(new TestCase(sd)
+        String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("diag", expOut)
                 .gradientCheck(true));
+        assertNull(err, err);
     }
 
     @Test
@@ -324,9 +333,10 @@ public class GradCheckTransforms {
 
         SDVariable loss = sd.standardDeviation("loss", t, true, 0, 1);
 
-        OpValidation.validate(new TestCase(sd)
+        String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("dp", expOut)
                 .gradientCheck(true));
+        assertNull(err, err);
     }
 
     @Test
@@ -357,9 +367,10 @@ public class GradCheckTransforms {
 
             SDVariable loss = sd.standardDeviation("loss", eye, true);
 
-            OpValidation.validate(new TestCase(sd)
+            String err = OpValidation.validate(new TestCase(sd)
                     .expectedOutput("e", expOut[i])
                     .gradientCheck(true));
+            assertNull(err, err);
         }
 
     }

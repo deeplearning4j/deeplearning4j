@@ -12,6 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 public class ReductionOpValidationTests {
@@ -59,15 +60,16 @@ public class ReductionOpValidationTests {
             INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), 0.5);
             INDArray dLdIn = Nd4j.createUninitialized(3, 4);
 
-            OpValidation.validate(new OpTestCase(
+            String err = OpValidation.validate(new OpTestCase(
                     DynamicCustomOp.builder("sum_bp")
                             .addInputs(preReduceInput, dLdOut)
                             .addOutputs(dLdIn)
                             //First int arg: Keep dimensions. Lack of other (dimension) args: means "full array reduce"
                             .addIntegerArguments(keepDims ? 1 : 0)
                             .build())
-                    .expectedOutput(0, dLdInExpected)
-            );
+                    .expectedOutput(0, dLdInExpected));
+
+            assertNull(err, err);
         }
     }
 
@@ -108,14 +110,15 @@ public class ReductionOpValidationTests {
 
             dLdIn = Nd4j.createUninitialized(3, 4);
 
-            OpValidation.validate(new OpTestCase(
+            String err = OpValidation.validate(new OpTestCase(
                     DynamicCustomOp.builder("sum_bp")
                             .addInputs(preReduceInput, dLdOut_1)
                             .addOutputs(dLdIn)
                             .addIntegerArguments(keepDims ? 1 : 0, 1) //Reduction along dimension 1
                             .build())
-                    .expectedOutput(0, dLdInExpected_1)
-            );
+                    .expectedOutput(0, dLdInExpected_1));
+
+            assertNull(err, err);
         }
     }
 
