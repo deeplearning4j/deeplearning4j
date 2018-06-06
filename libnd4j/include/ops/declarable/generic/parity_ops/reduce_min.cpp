@@ -3,6 +3,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/reduce_minmax.h>
 
 namespace nd4j {
 namespace ops {
@@ -69,25 +70,9 @@ namespace ops {
                 return tmpResult->status();
        
             NDArray<T>* tempMin = tmpResult->at(0); // out
-            REQUIRE_TRUE(tempMin->isSameShape(epsilon), 0, "reduce_min_bp: The second param shape should be the same with reduce_min output.");
-            if (tempMin->isScalar()) {
-                for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
-                    if (nd4j::math::nd4j_abs((*tempMin)(0) - (*input)(e)) < T(1.E-5f)) { // if input value equals to min
-                         (*output)(e) = (*input)(e);
-                    }
-                }
-            }
-            else {
-                for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
-                    for (Nd4jLong j = 0; j < tempMin->lengthOf(); j++) {
-                        if (nd4j::math::nd4j_abs((*tempMin)(j) - (*input)(e)) < T(1.E-5f))  // if input value equals to min
-                            (*output)(e) = (*input)(e);
-                    }
-                }
+            REQUIRE_TRUE(tempMin->isSameShape(epsilon), 0, "reduce_min_bp: The second param shape should be an equal with reduce_min output.");
+            helpers::minMaxReduceFunctor(input, tempMin, output);
 
-            }
-            //tempmin->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
-            
             return ND4J_STATUS_OK;
     }
 #endif
