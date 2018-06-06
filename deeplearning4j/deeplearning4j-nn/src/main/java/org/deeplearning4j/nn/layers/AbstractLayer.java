@@ -309,6 +309,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         }
     }
 
+    protected INDArray backpropDropOutIfPresent(INDArray epsilon){
+        if(layerConf().getIDropout() != null ){
+            layerConf().getIDropout().backprop(epsilon, epsilon, getIterationCount(), getEpochCount());
+        }
+        return epsilon;
+    }
+
+
     @Override
     public Type type() {
         return Type.FEED_FORWARD;
