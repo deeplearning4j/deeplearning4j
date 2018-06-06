@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.ToString;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.AlphaDropOut;
 import org.nd4j.linalg.factory.Nd4j;
@@ -90,7 +91,7 @@ public class AlphaDropout implements IDropout {
     }
 
     @Override
-    public INDArray applyDropout(INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
+    public INDArray applyDropout(INDArray inputActivations, INDArray output, int iteration, int epoch, LayerWorkspaceMgr workspaceMgr) {
         //https://arxiv.org/pdf/1706.02515.pdf pg6
         // "...we propose “alpha dropout”, that randomly sets inputs to α'"
         // "The affine transformation a(xd + α'(1−d))+b allows to determine parameters a and b such that mean and
@@ -109,10 +110,18 @@ public class AlphaDropout implements IDropout {
         }
         lastPValue = pValue;
 
-        INDArray result = inPlace ? inputActivations : inputActivations.dup(inputActivations.ordering());
-        Nd4j.getExecutioner().exec(new AlphaDropOut(result, p, a, alphaPrime, b));
+        Nd4j.getExecutioner().exec(new AlphaDropOut(inputActivations, output, p, a, alphaPrime, b));
+        return output;
+    }
 
-        return result;
+    @Override
+    public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
+        throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
+    public void clear() {
+        //TODO
     }
 
     @Override

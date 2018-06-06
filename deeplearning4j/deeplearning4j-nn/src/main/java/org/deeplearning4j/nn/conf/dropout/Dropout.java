@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
 import org.nd4j.linalg.factory.Nd4j;
@@ -72,7 +73,7 @@ public class Dropout implements IDropout {
 
 
     @Override
-    public INDArray applyDropout(INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
+    public INDArray applyDropout(INDArray inputActivations, INDArray output, int iteration, int epoch, LayerWorkspaceMgr workspaceMgr) {
         double currP;
         if(pSchedule != null){
             currP = pSchedule.valueAt(iteration, epoch);
@@ -80,10 +81,18 @@ public class Dropout implements IDropout {
             currP = p;
         }
 
-        INDArray result = inPlace ? inputActivations : inputActivations.dup(inputActivations.ordering());
-        Nd4j.getExecutioner().exec(new DropOutInverted(result, currP));
+        Nd4j.getExecutioner().exec(new DropOutInverted(inputActivations, output, currP));
+        return output;
+    }
 
-        return result;
+    @Override
+    public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
+        throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
+    public void clear() {
+        //TODO
     }
 
     @Override

@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.dropout;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.val;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
@@ -56,7 +57,7 @@ public class SpatialDropout implements IDropout {
 
 
     @Override
-    public INDArray applyDropout(@NonNull INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
+    public INDArray applyDropout(INDArray inputActivations, INDArray output, int iteration, int epoch, LayerWorkspaceMgr workspaceMgr) {
         Preconditions.checkArgument(inputActivations.rank() == 5 || inputActivations.rank() == 4
                 || inputActivations.rank() == 3, "Cannot apply spatial dropout to activations of rank %s: " +
                 "spatial dropout can only be used for rank 3, 4 or 5 activations (input activations shape: %s)"
@@ -75,15 +76,18 @@ public class SpatialDropout implements IDropout {
 
         Nd4j.getExecutioner().exec(new DropOutInverted(mask, currP));
 
-        INDArray result;
-        if (inPlace) {
-            result = inputActivations;
-        } else {
-            result = Nd4j.createUninitialized(inputActivations.shape(), 'c');
-        }
+        Broadcast.mul(inputActivations, mask, output, 0, 1);
+        return output;
+    }
 
-        Broadcast.mul(inputActivations, mask, result, 0, 1);
-        return result;
+    @Override
+    public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
+        throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
+    public void clear() {
+        //TODO
     }
 
     @Override
