@@ -35,7 +35,7 @@ public class SDIndex {
     }
 
     public Integer interval_strides;
-    public static SDIndex interval(Integer begin, Integer end, Integer strides){
+    public static SDIndex interval(Integer begin, Integer strides, Integer end){
         if(strides == 0){
             throw new ND4JIllegalArgumentException("Invalid index : strides can not be 0.");
         }
