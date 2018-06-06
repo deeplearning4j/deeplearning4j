@@ -662,6 +662,49 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
+        //Mark which layers can safely modify their input in-place. This is a performance optimization for
+        // dropout and similar operations.
+        // Safe when the input is: (a) it's not a graph input, and (b) isn't shared by any other layers/vertices
+
+        Map<String,List<String>> seenAsInputTo = new HashMap<>();
+        for(Map.Entry<String,List<String>> entry : configuration.getVertexInputs().entrySet()){
+            for(String s : entry.getValue() ){
+                if (!seenAsInputTo.containsKey(s)) {
+                    seenAsInputTo.put(s, new ArrayList<String>());
+                }
+                List<String> seen = seenAsInputTo.get(s);
+                seen.add(s);
+            }
+        }
+
+        for(Layer l : layers){
+            String layerName = l.conf().getLayer().getLayerName();
+            List<String> inputs = configuration.getVertexInputs().get(layerName);
+            String in = inputs.get(0);  //For now: layers should have exactly 1 input
+
+            List<String> seen = seenAsInputTo.get(in);
+            if(seen.size() == 1){
+                l.allowInputModification(true);
+            } else {
+                //For the count > 1 case, we can work out if it's the last one in the topological order... at which point,
+                // it should be safe to use
+                int thisIdx = indices.getNameToIdx().get(layerName);
+                int thisTopoPos = ArrayUtils.indexOf(indices.getTopologicalSortOrder(), thisIdx);
+                int maxTopoPosition = -1;
+                for(String s : seen){
+                    int idx = indices.getNameToIdx().get(layerName);
+                    int topoPos = ArrayUtils.indexOf(indices.getTopologicalSortOrder(), idx);
+                    maxTopoPosition = Math.max(maxTopoPosition, topoPos);
+                }
+
+                if(thisTopoPos == maxTopoPosition){
+                    //Last one in the topo sort... all other layers have already consumed this input by the time this layer's
+                    // forward pass is done
+                    l.allowInputModification(true);
+                }   //Otherwise: keep default of false
+            }
+        }
+
         synchronizeIterEpochCounts();
         initCalled = true;
     }

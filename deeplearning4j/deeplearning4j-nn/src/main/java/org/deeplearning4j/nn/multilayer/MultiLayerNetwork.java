@@ -626,6 +626,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         }
 
+        //Mark that input modification is allowed.
+        //TODO When is it safe to NOT skip the very first layer? It's not always safe...
+        // For example dropout + iterating over List<DataSet> that is used for multiple epochs...
+        for( int i=1; i<layers.length; i++ ){
+            layers[i].allowInputModification(true);
+        }
+
         synchronizeIterEpochCounts();
     }
 
@@ -2636,6 +2643,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         for(Layer l : layers){
             l.clearNoiseWeightParams();
         }
+    }
+
+    @Override
+    public void allowInputModification(boolean allow) {
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
