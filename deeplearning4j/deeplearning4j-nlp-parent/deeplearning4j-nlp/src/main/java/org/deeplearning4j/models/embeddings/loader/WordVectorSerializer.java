@@ -157,7 +157,7 @@ public class WordVectorSerializer {
      * @throws IOException
      * @throws FileNotFoundException
      */
-    private static Word2Vec readBinaryModel(File modelFile, boolean linebreaks, boolean normalize)
+    public static Word2Vec readBinaryModel(File modelFile, boolean linebreaks, boolean normalize)
                     throws NumberFormatException, IOException {
         InMemoryLookupTable<VocabWord> lookupTable;
         VocabCache<VocabWord> cache;
@@ -185,6 +185,7 @@ public class WordVectorSerializer {
             lookupTable = (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>().cache(cache)
                             .useHierarchicSoftmax(false).vectorLength(size).build();
 
+            int cnt = 0;
             String word;
             float[] vector = new float[size];
             for (int i = 0; i < words; i++) {
@@ -195,6 +196,9 @@ public class WordVectorSerializer {
                 for (int j = 0; j < size; j++) {
                     vector[j] = readFloat(dis);
                 }
+
+                if (cache.containsWord(word))
+                    throw new ND4JIllegalStateException("Tried to add existing word. Probably time to switch linebreaks mode?");
 
                 syn0.putRow(i, normalize ? Transforms.unitVec(Nd4j.create(vector)) : Nd4j.create(vector));
 
@@ -2359,7 +2363,7 @@ public class WordVectorSerializer {
 
                     Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
 
-                    vec = readBinaryModel(file, true, true);
+                    vec = readBinaryModel(file, true, false);
                     return vec;
                 } catch (Exception ey) {
                     // try to load without linebreaks
@@ -2369,7 +2373,7 @@ public class WordVectorSerializer {
 
                         Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
 
-                        vec = readBinaryModel(file, false, true);
+                        vec = readBinaryModel(file, false, false);
                         return vec;
                     } catch (Exception ez) {
                         throw new RuntimeException(
