@@ -11852,6 +11852,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 // #include <op_boilerplate.h>
 // #include <pointercast.h>
+// #include <array/DataTypeUtils.h>
 // #include <dll.h>
 
 // #ifdef _MSC_VER
@@ -11926,7 +11927,7 @@ public static final long MAX_UINT = MAX_UINT();
 
             public native @Cast("uint64_t") long next64(@Cast("uint64_t") long shiftedSeed);
 
-            public static native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, int k);
+            public static native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, @Cast("uint64_t") long k);
 
             public static native @Cast("uint64_t") long safeShift(@Cast("uint64_t") long x, @Cast("uint64_t") long y);
 
@@ -11954,7 +11955,7 @@ public static final long MAX_UINT = MAX_UINT();
             */
             public native int nextInt();
 
-            public native @Cast("uint64_t") long nextUInt();
+            public native @Cast("uint64_t") long nextUInt64();
 
             /**
              * This method returns random int in range [0..to]
@@ -11970,12 +11971,6 @@ public static final long MAX_UINT = MAX_UINT();
              * @return
              */
             public native int nextInt(int from, int to);
-
-
-            /**
-             * This method returns random T in range of [0..MAX_FLOAT]
-             * @return
-             */
 
 
             /**
@@ -11996,7 +11991,7 @@ public static final long MAX_UINT = MAX_UINT();
              * @return
              */
 
-            public native @Cast("uint64_t") long relativeUInt(@Cast("Nd4jLong") long index);
+            public native @Cast("uint64_t") long relativeUInt64(@Cast("Nd4jLong") long index);
 
             /**
              *  relative methods are made as workaround for lock-free concurrent execution
@@ -12028,17 +12023,6 @@ public static final long MAX_UINT = MAX_UINT();
              * @param index
              * @return
              */
-/*
-            template <typename T>
-            T relativeT(Nd4jLong index);
-
-            template <typename T>
-            T relativeT(Nd4jLong index, T to);
-
-            template <typename T>
-            T relativeT(Nd4jLong index, T from, T to);
-
-            */
 
 /**
  * This method returns random T within [0..to]
