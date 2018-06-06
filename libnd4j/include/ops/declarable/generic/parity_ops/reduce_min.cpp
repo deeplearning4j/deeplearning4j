@@ -45,17 +45,17 @@ namespace ops {
     }
 
     CUSTOM_OP_IMPL(reduce_min_bp, 2, 1, false, 0, 0) {
-
-//            auto input = INPUT_VARIABLE(0);
+      //       dL/dIn  = dL/dOut                   if in_i == out (== min(in))
+      //               = 0                         otherwise
+            auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_min_bp: The second param shape should be the same as result shape.");
             output->assign(epsilon);
-//            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-//            T keepDimsT = (keepDims?T(1.f):T(0.f));
-            /*
-            // at first step we build fwd activation
+            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+            T keepDimsT = (keepDims?T(1.f):T(0.f));
+
             nd4j::ops::reduce_min<T> op;
             std::vector<Nd4jLong> axes;
 
@@ -66,16 +66,30 @@ namespace ops {
             std::vector<T> tVec(1);
             tVec[0] = (keepDims?T(1.0):T(0.0));
             std::vector<NDArray<T>*> inputVec({input});
-            auto tmpResult = op.execute(inputVec, tVec, axes, false); 
+            std::unique_ptr<ResultSet<T>> tmpResult(op.execute(inputVec, tVec, axes, false)); 
             if (tmpResult->status() != ND4J_STATUS_OK)
                 return tmpResult->status();
+       
+            NDArray<T>* tempMin = tmpResult->at(0); // out
+            REQUIRE_TRUE(tempMin->isSameShape(epsilon), 0, "reduce_min_bp: The second param shape should be the same with reduce_min output.");
+            if (tempMin->isScalar()) {
+                for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
+                    if (nd4j::math::nd4j_abs((*tempMin)(0) - (*input)(e)) < T(1.E-5f)) { // if input value equals to min
+                         (*output)(e) = (*input)(e);
+                    }
+                }
+            }
+            else {
+                for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
+                    for (Nd4jLong j = 0; e < tempMin->lengthOf(); j++) {
+                        if (nd4j::math::nd4j_abs((*tempMin)(j) - (*input)(e)) < T(1.E-5f))  // if input value equals to min
+                            (*output)(e) = (*input)(e);
+                    }
+                }
 
-            NDArray<T>* tempmin = tmpResult->at(0);
-
-            tempmin->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
-
-            delete tmpResult;
-            */
+            }
+            //tempmin->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
+            
             return ND4J_STATUS_OK;
     }
 #endif
