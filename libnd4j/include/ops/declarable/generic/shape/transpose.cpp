@@ -63,20 +63,12 @@ namespace ops {
                 x->permutei(arguments);
                 STORE_RESULT(x);
             } else {
-                if (!replace) {			// not-in-place
-                    auto output = OUTPUT_VARIABLE(0);
+                auto input = x->permute(arguments);
 
-                    x->permute(arguments, *output);
+                auto output = OUTPUT_VARIABLE(0);
+                output->assign(input);
 
-                    STORE_RESULT(output);
-                } else {
-                    auto input = x->permute(arguments);
-
-                    auto output = OUTPUT_VARIABLE(0);
-                    output->assign(input);
-
-                    delete input;
-                }
+                delete input;
             }
         }
         return Status::OK();
