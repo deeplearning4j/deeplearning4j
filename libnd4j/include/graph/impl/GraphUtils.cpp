@@ -6,7 +6,8 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cstdio>
-#ifdef __linux__
+
+#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/wait.h>
 //#eldef __APPLE__
@@ -66,7 +67,7 @@ int
 GraphUtils::runPreprocessor(char const* input, char const* output) {
     int status = 0;
 
-#ifdef __GNUC__
+#ifndef _WIN32
     int pipefd[2];
     pipe(pipefd);
     pid_t pid = fork();
