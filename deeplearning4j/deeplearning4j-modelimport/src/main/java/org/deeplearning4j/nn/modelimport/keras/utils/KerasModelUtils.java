@@ -123,8 +123,7 @@ public class KerasModelUtils {
      * @return Keras backend string
      * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    public static String determineKerasBackend(Map<String, Object> modelConfig, KerasModelConfiguration config)
-            throws InvalidKerasConfigurationException {
+    public static String determineKerasBackend(Map<String, Object> modelConfig, KerasModelConfiguration config) {
         String kerasBackend = null;
         if (!modelConfig.containsKey(config.getFieldBackend())) {
             // TODO: H5 files unfortunately do not seem to have this property in keras 1.
@@ -187,7 +186,7 @@ public class KerasModelUtils {
             List<String> layerParamNames;
 
             // there's a bug where if a layer name contains a forward slash, the first fragment must be appended
-            // to the name of the dataset...it appears h5 interprets the forward slash as a data group
+            // to the name of the dataset; it appears h5 interprets the forward slash as a data group
             String[] layerFragments = layerName.split("/");
 
             // Find nested groups when using Tensorflow
