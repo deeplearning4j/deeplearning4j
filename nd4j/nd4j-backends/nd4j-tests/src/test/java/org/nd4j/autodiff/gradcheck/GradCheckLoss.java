@@ -6,16 +6,18 @@ import org.nd4j.autodiff.loss.LossFunctions;
 import org.nd4j.autodiff.loss.LossInfo;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.validation.GradCheckUtil;
+import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import static org.junit.Assert.assertArrayEquals;
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @Slf4j
 public class GradCheckLoss extends BaseGradCheck {
@@ -26,6 +28,8 @@ public class GradCheckLoss extends BaseGradCheck {
     @Test
     public void testLossSimple2d() {
         Nd4j.getRandom().setSeed(12345);
+
+        List<String> failed = new ArrayList<>();
 
         for (String fn : new String[]{"mse", "l1", "l2", "mcxent"}) {
 
@@ -79,18 +83,17 @@ public class GradCheckLoss extends BaseGradCheck {
                 sd.associateArrayWithVariable(inputArr, input);
                 sd.associateArrayWithVariable(labelsArr, labels);
 
-//            System.out.println(sd.asFlatPrint());
+                TestCase tc = new TestCase(sd)
+                        .expectedOutput("out", expOut);
 
-                INDArray out = sd.execAndEndResult();
-
-                assertEquals(msg, expOut, out);
-
-                System.out.println("STARTING GRADIENT CHECK");
-                boolean ok = GradCheckUtil.checkGradients(sd);
-
-                assertTrue(msg, ok);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test
@@ -102,6 +105,7 @@ public class GradCheckLoss extends BaseGradCheck {
 
         int nOut = 4;
         int minibatch = 10;
+        List<String> failed = new ArrayList<>();
 
         for (String weightType : weightTypes) {
 
@@ -183,16 +187,17 @@ public class GradCheckLoss extends BaseGradCheck {
                             sd.associateArrayWithVariable(weightArr, weight);
                         }
 
-                        INDArray out = sd.execAndEndResult();
-                        assertEquals(1, out.length());
-
-                        boolean ok = GradCheckUtil.checkGradients(sd);
-
-                        assertTrue(msg, ok);
+                        TestCase tc = new TestCase(sd);
+                        String error = OpValidation.validate(tc);
+                        if(error != null){
+                            failed.add(name);
+                        }
                     }
                 }
             }
         }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
 
@@ -207,6 +212,8 @@ public class GradCheckLoss extends BaseGradCheck {
         int nOut = 4;
         int minibatch = 10;
         int tsLength = 5;
+
+        List<String> failed = new ArrayList<>();
 
         for (String weightType : weightTypes) {
 
@@ -303,13 +310,17 @@ public class GradCheckLoss extends BaseGradCheck {
                         INDArray out = sd.execAndEndResult();
                         assertEquals(1, out.length());
 
-                        boolean ok = GradCheckUtil.checkGradients(sd);
-
-                        assertTrue(msg, ok);
+                        TestCase tc = new TestCase(sd);
+                        String error = OpValidation.validate(tc);
+                        if(error != null){
+                            failed.add(name);
+                        }
                     }
                 }
             }
         }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test
@@ -326,6 +337,7 @@ public class GradCheckLoss extends BaseGradCheck {
         int depth = 4;
         int h = 5;
         int w = 6;
+        List<String> failed = new ArrayList<>();
 
         for (String weightType : weightTypes) {
 
@@ -434,12 +446,16 @@ public class GradCheckLoss extends BaseGradCheck {
                         INDArray out = sd.execAndEndResult();
                         assertEquals(1, out.length());
 
-                        boolean ok = GradCheckUtil.checkGradients(sd);
+                        TestCase tc = new TestCase(sd);
 
-                        assertTrue(msg, ok);
+                        String error = OpValidation.validate(tc);
+                        if(error != null){
+                            failed.add(name);
+                        }
                     }
                 }
             }
         }
+        assertEquals(failed.toString(), 0, failed.size());
     }
 }

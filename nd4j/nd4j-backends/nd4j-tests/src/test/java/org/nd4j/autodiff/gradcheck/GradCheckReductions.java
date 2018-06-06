@@ -236,6 +236,7 @@ public class GradCheckReductions extends BaseGradCheck {
 
                 SDVariable loss;
                 String name;
+                TestCase tc = new TestCase(sd);
                 switch (i) {
                     case 0:
                         loss = sd.mean("loss", msePerEx, dim);
@@ -315,7 +316,10 @@ public class GradCheckReductions extends BaseGradCheck {
                 sd.associateArrayWithVariable(inputArr, input);
                 sd.associateArrayWithVariable(labelArr, label);
 
-                check(sd, failed, msg);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
@@ -364,6 +368,7 @@ public class GradCheckReductions extends BaseGradCheck {
                 INDArray labelArr = Nd4j.randn(outShape).muli(1000);
                 SDVariable reduced;
                 String name;
+                TestCase tc = new TestCase(sd);
                 switch (i) {
                     case 0:
                         reduced = sd.mean("reduced", second, reduceDim);
@@ -464,7 +469,10 @@ public class GradCheckReductions extends BaseGradCheck {
                 sd.associateArrayWithVariable(inputArr, in);
                 sd.associateArrayWithVariable(labelArr, label);
 
-                check(sd, failed, msg);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
@@ -497,6 +505,7 @@ public class GradCheckReductions extends BaseGradCheck {
 
                 SDVariable reduced;
                 String name;
+                TestCase tc = new TestCase(sd);
                 switch (i) {
                     case 0:
                         reduced = sd.manhattanDistance(in, in2, reduceDims);
@@ -541,8 +550,10 @@ public class GradCheckReductions extends BaseGradCheck {
                 sd.execAndEndResult();
 
 
-                //boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
-                check(sd, failed, msg);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
