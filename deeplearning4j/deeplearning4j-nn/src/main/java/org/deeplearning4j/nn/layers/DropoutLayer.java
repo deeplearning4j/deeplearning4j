@@ -68,6 +68,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
         }
 
         Gradient ret = new DefaultGradient();
+        delta = backpropDropOutIfPresent(delta);
         return new Pair<>(ret, delta);
     }
 
