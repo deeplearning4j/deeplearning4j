@@ -22,7 +22,6 @@ import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.MulBpOp;
@@ -3884,6 +3883,7 @@ public class SameDiffTests {
     }
 
 
+
     @Test
     public void testGet(){
         SameDiff sd  = SameDiff.create();
@@ -3892,11 +3892,11 @@ public class SameDiffTests {
 
         INDArray expOut1 = arr.get(NDArrayIndex.point(4), NDArrayIndex.point(5));
         SDVariable result1 = x.get(SDIndex.point(4), SDIndex.point(5));
-        assertEquals(expOut1, result1);
+        assertEquals(expOut1, result1.eval());
 
         INDArray expOut2 = arr.get(NDArrayIndex.point(4), NDArrayIndex.all());
         SDVariable result2 = x.get(SDIndex.point(4), SDIndex.all());
-        assertEquals(expOut2, result2);
+        assertEquals(expOut2, result2.eval());
 
         INDArray expOut3 = arr.get(NDArrayIndex.interval(3, 8), NDArrayIndex.point(2));
         SDVariable result3 = x.get(SDIndex.interval(3, 8), SDIndex.point(5));
@@ -3904,8 +3904,9 @@ public class SameDiffTests {
 
         INDArray expOut4 = arr.get(NDArrayIndex.point(4), NDArrayIndex.interval(2, 2, 9), NDArrayIndex.all());
         SDVariable result4 = x.get(SDIndex.point(4), SDIndex.interval(2, 2, 9), SDIndex.all());
-        assertEquals(expOut4, result4);
+        assertEquals(expOut4, result4.eval());
     }
+
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){
         try {
             Field f = fromClass.getDeclaredField(fieldName);
