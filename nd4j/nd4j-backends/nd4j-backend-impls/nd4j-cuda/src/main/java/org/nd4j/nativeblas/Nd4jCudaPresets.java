@@ -57,6 +57,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "op_boilerplate.h",
                         "ops/InputType.h",
                         "ops/declarable/OpDescriptor.h",
+                        "ops/declarable/BroadcastableOp.h",
                         "ops/declarable/DeclarableOp.h",
                         "ops/declarable/DeclarableListOp.h",
                         "ops/declarable/DeclarableReductionOp.h",
@@ -119,6 +120,7 @@ public class Nd4jCudaPresets implements InfoMapper {
                 "nd4j::ops::DeclarableReductionOp",
                 "nd4j::ops::DeclarableCustomOp",
                 "nd4j::ops::BooleanOp",
+                "nd4j::ops::BroadcastableOp",
                 "nd4j::ops::LogicOp"};
         for (String t : classTemplates) {
             String s = t.substring(t.lastIndexOf(':') + 1);
