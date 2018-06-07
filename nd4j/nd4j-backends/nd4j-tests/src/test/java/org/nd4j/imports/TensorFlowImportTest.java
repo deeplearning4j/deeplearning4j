@@ -965,6 +965,9 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array.pb.txt").getInputStream());
         assertNotNull(tg);
 
+        val input_matrix = Nd4j.ones(3, 2);
+        tg.associateArrayWithVariable(input_matrix, "input_matrix");
+
         val array = tg.execAndEndResult();
 
         val exp = Nd4j.create(new float[] {1, 1, 2, 2, 3, 3}, new int[]{3, 2});

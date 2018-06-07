@@ -696,6 +696,16 @@ public class SameDiff {
      * @param arr      the array to get the variable for
      * @param variable the variable to associate
      */
+    public void associateArrayWithVariable(INDArray arr, @NonNull String variable) {
+        associateArrayWithVariable(arr, this.getVariable(variable));
+    }
+
+    /**
+     * Associate the array with the given variable.
+     *
+     * @param arr      the array to get the variable for
+     * @param variable the variable to associate
+     */
     public void associateArrayWithVariable(INDArray arr, SDVariable variable) {
         if (variable == null) {
             throw new ND4JIllegalArgumentException("Variable must not be null!");
