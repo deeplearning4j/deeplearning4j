@@ -18,6 +18,7 @@ package org.deeplearning4j.scalnet.layers.convolutional
 
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException
 import org.deeplearning4j.scalnet.layers.core.Node
+import org.deeplearning4j.util.ConvolutionUtils
 
 /**
   * Base class for convolutional layers.
@@ -75,13 +76,10 @@ abstract class Convolution(protected val dimension: Int,
       else if (inputShape.nonEmpty) inputShape.last
       else 0
     if (inputShape.lengthCompare(dimension + 1) == 0) {
-      validateShapes(dimension,
-        inputShape,
-        kernelSize,
-        stride,
-        padding,
-        dilation)
-      List[List[Int]](inputShape.init, kernelSize, padding, stride, dilation)
+      validateShapes(dimension, inputShape, kernelSize, stride, padding, dilation)
+      val effectiveKernel: Array[Int] = ConvolutionUtils.effectiveKernelSize(kernelSize.toArray, dilation.toArray)
+
+      List[List[Int]](inputShape.init, effectiveKernel.toList, padding, stride, dilation)
         .transpose
         .map(x => (x.head - x(1) + 2 * x(2)) / x(3) + 1) :+ nOutChannels
     } else if (nOutChannels > 0) List(nOutChannels)
