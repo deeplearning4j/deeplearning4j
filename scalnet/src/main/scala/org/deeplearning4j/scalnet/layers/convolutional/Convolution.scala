@@ -27,10 +27,11 @@ import org.deeplearning4j.scalnet.layers.core.Node
 abstract class Convolution(protected val kernelSize: List[Int],
                            protected val stride: List[Int],
                            protected val padding: List[Int],
+                           protected val dilation: List[Int],
                            protected val nChannels: Int = 0,
                            protected val nIn: Option[List[Int]] = None,
                            protected val nFilter: Int = 0)
-    extends Node {
+  extends Node {
 
   override def inputShape: List[Int] = nIn.getOrElse(List(nChannels))
 
@@ -72,13 +73,13 @@ abstract class Convolution(protected val kernelSize: List[Int],
       else 0
     if (inputShape.lengthCompare(3) == 0) {
       validateShapes(inputShape.head,
-                     inputShape.tail.head,
-                     kernelSize.head,
-                     kernelSize.tail.head,
-                     stride.head,
-                     stride.tail.head,
-                     padding.head,
-                     padding.tail.head)
+        inputShape.tail.head,
+        kernelSize.head,
+        kernelSize.tail.head,
+        stride.head,
+        stride.tail.head,
+        padding.head,
+        padding.tail.head)
       List[List[Int]](inputShape.init, kernelSize, padding, stride).transpose
         .map(x => (x.head - x(1) + 2 * x(2)) / x(3) + 1) :+ nOutChannels
     } else if (nOutChannels > 0) List(nOutChannels)
