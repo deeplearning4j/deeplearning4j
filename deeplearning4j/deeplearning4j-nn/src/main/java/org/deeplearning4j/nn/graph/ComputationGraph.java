@@ -673,7 +673,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     seenAsInputTo.put(s, new ArrayList<String>());
                 }
                 List<String> seen = seenAsInputTo.get(s);
-                seen.add(s);
+                seen.add(entry.getKey());
             }
         }
 
