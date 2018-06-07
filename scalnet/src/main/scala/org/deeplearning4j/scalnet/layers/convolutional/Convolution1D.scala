@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.scalnet.layers.convolutional
 
-import org.deeplearning4j.nn.conf.layers.{Convolution1DLayer, ConvolutionLayer}
+import org.deeplearning4j.nn.conf.layers.{Convolution1DLayer}
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.scalnet.layers.core.Layer
 import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer}
@@ -28,7 +28,7 @@ import org.nd4j.linalg.activations.Activation
   *
   * @author Max Pumperla
   */
-class Convolution2D(nFilter: Int,
+class Convolution1D(nFilter: Int,
                     kernelSize: List[Int],
                     nChannels: Int = 0,
                     stride: List[Int] = List(1),
@@ -64,3 +64,27 @@ class Convolution2D(nFilter: Int,
 }
 
 
+object Convolution1D {
+  def apply(nFilter: Int,
+            kernelSize: List[Int],
+            nChannels: Int = 0,
+            stride: List[Int] = List(1, 1),
+            padding: List[Int] = List(0, 0),
+            dilation: List[Int] = List(1, 1),
+            nIn: Option[List[Int]] = None,
+            weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
+            activation: Activation = Activation.IDENTITY,
+            regularizer: WeightRegularizer = NoRegularizer(),
+            dropOut: Double = 0.0): Convolution1D =
+    new Convolution1D(nFilter,
+      kernelSize,
+      nChannels,
+      stride,
+      padding,
+      dilation,
+      nIn,
+      weightInit,
+      activation,
+      regularizer,
+      dropOut)
+}
