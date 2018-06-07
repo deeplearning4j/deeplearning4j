@@ -105,6 +105,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         weightNoiseParams.clear();
 
+        epsilonNext = backpropDropOutIfPresent(epsilonNext);
         return new Pair<>(ret, epsilonNext);
     }
 

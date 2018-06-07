@@ -68,6 +68,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
         }
 
         Gradient ret = new DefaultGradient();
+        delta = backpropDropOutIfPresent(delta);
         return new Pair<>(ret, delta);
     }
 
@@ -80,8 +81,14 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
             ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
         } else {
             if(layerConf().getIDropout() != null){
-                ret = layerConf().getIDropout().applyDropout(workspaceMgr.dup(ArrayType.ACTIVATIONS, input, input.ordering()),
-                        getIterationCount(), getEpochCount(), true);
+                INDArray result;
+                if(inputModificationAllowed){
+                    result = input;
+                } else {
+                    result = workspaceMgr.dup(ArrayType.INPUT, input, input.ordering());    //TODO Can we unsafeDup here?
+                }
+
+                ret = layerConf().getIDropout().applyDropout(input, result, getIterationCount(), getEpochCount(), workspaceMgr);
             } else {
                 ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
             }

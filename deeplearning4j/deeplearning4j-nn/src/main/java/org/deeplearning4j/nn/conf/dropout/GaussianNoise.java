@@ -1,7 +1,9 @@
 package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldAddOp;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.ISchedule;
@@ -40,7 +42,7 @@ public class GaussianNoise implements IDropout {
     }
 
     @Override
-    public INDArray applyDropout(INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
+    public INDArray applyDropout(INDArray inputActivations, INDArray output, int iteration, int epoch, LayerWorkspaceMgr workspaceMgr) {
         double currS;
         if(stddevSchedule != null){
             currS = stddevSchedule.valueAt(iteration, epoch);
@@ -48,13 +50,27 @@ public class GaussianNoise implements IDropout {
             currS = stddev;
         }
 
-        INDArray result = inPlace ? inputActivations : inputActivations.dup(inputActivations.ordering());
         INDArray noise = Nd4j.createUninitialized(inputActivations.shape(), inputActivations.ordering());
         Nd4j.getExecutioner().exec(new GaussianDistribution(noise, 0, currS));
 
-        result.addi(noise);
+        Nd4j.getExecutioner().exec(new OldAddOp(inputActivations, noise, output));
+        return output;
+    }
 
-        return result;
+    @Override
+    public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
+        //dL/dIn = dL/dOut * dOut/dIn, with dOut/dIn = 1
+        if(gradAtInput == gradAtOutput){
+            //Same array (in-place result)
+            return gradAtInput;
+        } else {
+            return gradAtInput.assign(gradAtOutput);
+        }
+    }
+
+    @Override
+    public void clear() {
+        //No op
     }
 
     @Override
