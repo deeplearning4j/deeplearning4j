@@ -1108,7 +1108,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
    private static int binArrToInt(int[] arr){
         int x = 0;
         int m = 1;
-        for(int i = arr.length - 1; i >= 0; i++){
+        for(int i = arr.length - 1; i >= 0; i--){
             if(arr[i] == 1){
                 x += m;
             }

@@ -3899,8 +3899,8 @@ public class SameDiffTests {
         assertEquals(expOut2, result2.eval());
 
         INDArray expOut3 = arr.get(NDArrayIndex.interval(3, 8), NDArrayIndex.point(2));
-        SDVariable result3 = x.get(SDIndex.interval(3, 8), SDIndex.point(5));
-        assertEquals(expOut3, result3);
+        SDVariable result3 = x.get(SDIndex.interval(3, 8), SDIndex.point(2));
+        assertEquals(expOut3, result3.eval());
 
         INDArray expOut4 = arr.get(NDArrayIndex.point(4), NDArrayIndex.interval(2, 2, 9), NDArrayIndex.all());
         SDVariable result4 = x.get(SDIndex.point(4), SDIndex.interval(2, 2, 9), SDIndex.all());
