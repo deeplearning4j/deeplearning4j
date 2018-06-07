@@ -33,8 +33,8 @@ class AvgPooling2D(kernelSize: List[Int],
                    override val name: String = "")
   extends Convolution(kernelSize, stride, padding, dilation, 0, nIn)
     with Layer {
-  if (kernelSize.length != 2 || stride.length != 2 || padding.length != 2) {
-    throw new IllegalArgumentException("Kernel, stride, padding lists must all be length 2.")
+  if (kernelSize.length != 2 || stride.length != 2 || padding.length != 2 || dilation.length != 2) {
+    throw new IllegalArgumentException("Kernel, stride, padding and dilation lists must all be length 2.")
   }
 
   override def reshapeInput(nIn: List[Int]): AvgPooling2D =
