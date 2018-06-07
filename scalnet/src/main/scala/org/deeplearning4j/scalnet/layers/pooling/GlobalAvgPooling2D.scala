@@ -46,7 +46,6 @@ class GlobalAvgPooling2D(nIn: Option[List[Int]] = None,
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new GlobalPoolingLayer.Builder()
         .poolingType(PoolingType.AVG)
-        .poolingDimensions()
       .name(name)
       .build()
 }
