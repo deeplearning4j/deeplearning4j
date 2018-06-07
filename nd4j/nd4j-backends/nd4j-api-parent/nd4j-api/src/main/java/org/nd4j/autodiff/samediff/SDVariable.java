@@ -1063,39 +1063,35 @@ public class SDVariable extends DifferentialFunction implements Serializable {
        for(int i=0; i<ndims; i++){
            strides[i] = 1;
            SDIndex index = indices[i];
-           if(index.indexType == SDIndex.IndexType.ALL){
+           SDIndex.IndexType indexType = index.getIndexType();
+           if(indexType == SDIndex.IndexType.ALL){
                begin_mask_arr[i] = 1;
                end_mask_arr[i] = 1;
            }
-           else if(index.indexType == SDIndex.IndexType.POINT){
-               if(index.point_index == null){
-                   begin_mask_arr[i] = 1;
-                   end_mask_arr[i] = 1;
-               }
-               else {
-                   begin[i] = index.point_index;
-                   end[i] = index.point_index + 1;
+           else if(indexType == SDIndex.IndexType.POINT){
+                   int pointIndex = index.getPointIndex();
+                   begin[i] = pointIndex;
+                   end[i] = pointIndex + 1;
                    shrink_axis_mask_arr[i] = 1;
-               }
            }
-           else if(index.indexType == SDIndex.IndexType.INTERVAL){
-               if(index.interval_begin == null){
+           else if(indexType == SDIndex.IndexType.INTERVAL){
+               if(index.getIntervalBegin() == null){
                    begin_mask_arr[i] = 1;
                }
                else{
-                   begin[i] = index.interval_begin;
+                   begin[i] = index.getIntervalBegin();
                }
-               if(index.interval_end == null){
+               if(index.getIntervalEnd() == null){
                    end_mask_arr[i] = 1;
                }
                else{
-                   end[i] = index.interval_end;
+                   end[i] = index.getIntervalEnd();
                }
-               if(index.interval_strides == null){
+               if(index.getIntervalStrides() == null){
                    strides[i] = 1;
                }
                else{
-                   strides[i] = index.interval_strides;
+                   strides[i] = index.getIntervalStrides();
                }
            }
        }

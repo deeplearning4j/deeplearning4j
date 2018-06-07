@@ -1,7 +1,8 @@
 package org.nd4j.autodiff.samediff;
-
+import lombok.Getter;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 
+@Getter
 public class SDIndex {
 
     public enum IndexType{
@@ -10,42 +11,47 @@ public class SDIndex {
       INTERVAL
     }
 
-    public IndexType indexType = IndexType.ALL;
-    
+    private IndexType indexType = IndexType.ALL;
+    private  int pointIndex;
+    private Integer intervalBegin;
+    private Integer intervalEnd;
+    private Integer intervalStrides;
+
+
+
+
     public SDIndex(){}
     
     public static SDIndex all(){
         return new SDIndex();
     }
     
-    public Integer point_index;
-    public static SDIndex point(Integer i){
+
+    public static SDIndex point(int i){
         SDIndex sdIndex = new SDIndex();
         sdIndex.indexType = IndexType.POINT;
-        sdIndex.point_index = i;
+        sdIndex.pointIndex = i;
         return sdIndex;
     }
     
-    public Integer interval_begin;
-    public Integer interval_end;
+
     public static SDIndex interval(Integer begin, Integer end){
         SDIndex sdIndex = new SDIndex();
         sdIndex.indexType = IndexType.INTERVAL;
-        sdIndex.interval_begin = begin;
-        sdIndex.interval_end = end;
+        sdIndex.intervalBegin = begin;
+        sdIndex.intervalEnd = end;
         return sdIndex;
     }
 
-    public Integer interval_strides;
     public static SDIndex interval(Integer begin, Integer strides, Integer end){
         if(strides == 0){
             throw new ND4JIllegalArgumentException("Invalid index : strides can not be 0.");
         }
         SDIndex sdIndex = new SDIndex();
         sdIndex.indexType = IndexType.INTERVAL;
-        sdIndex.interval_begin = begin;
-        sdIndex.interval_end = end;
-        sdIndex.interval_strides = strides;
+        sdIndex.intervalBegin = begin;
+        sdIndex.intervalEnd = end;
+        sdIndex.intervalStrides = strides;
         return sdIndex;
     }
     
