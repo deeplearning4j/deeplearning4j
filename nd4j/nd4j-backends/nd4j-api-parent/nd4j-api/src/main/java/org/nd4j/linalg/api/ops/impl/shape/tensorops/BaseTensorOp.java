@@ -7,6 +7,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.list.compat.TensorList;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -35,7 +36,7 @@ public abstract  class BaseTensorOp extends DynamicCustomOp {
 
     }
 
-
+    public abstract TensorList execute(SameDiff sameDiff);
 
     @Override
     public Op.Type opType() {

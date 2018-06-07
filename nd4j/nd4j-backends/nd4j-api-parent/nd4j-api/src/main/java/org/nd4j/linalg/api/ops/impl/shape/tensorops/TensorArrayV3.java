@@ -4,6 +4,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.list.compat.TensorList;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -38,6 +39,12 @@ public class TensorArrayV3 extends  BaseTensorOp {
 
     }
 
+    @Override
+    public TensorList execute(SameDiff sameDiff) {
+        val list = new TensorList(this.getOwnName());
+
+        return list;
+    }
 
     @Override
     public String toString() {

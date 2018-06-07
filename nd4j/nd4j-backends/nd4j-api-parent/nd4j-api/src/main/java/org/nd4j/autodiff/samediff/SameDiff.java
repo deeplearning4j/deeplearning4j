@@ -47,6 +47,7 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguratio
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -58,6 +59,7 @@ import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.list.compat.TensorList;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ConstantInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
@@ -110,6 +112,8 @@ public class SameDiff {
     //individual index for variable names
     private Map<String, List<DifferentialFunction>> functionsArgsFor;   //Key: SDVariable name. Value: all DifferentialFunctions it is an input to
     private Map<String, List<DifferentialFunction>> functionOutputFor;  //Key: SDVariable name. Value: DifferentialFunctions this variable is an output for (TODO: Why is this a list? Isn't it *always* length 1?)
+
+    private Map<String, TensorList> lists = new HashMap<>();    // Key - node name; Value - TensorList
 
     // this entity holds runtime information for Switch/Merge/NextIteration etc stuff
     private transient ThreadLocal<FlowPath> localFlowPath = new ThreadLocal<FlowPath>();
@@ -324,6 +328,7 @@ public class SameDiff {
 
 
     }
+
 
 
     /**
@@ -6218,7 +6223,7 @@ public class SameDiff {
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof Switch) {
-                if(log.isTraceEnabled())
+                if (log.isTraceEnabled())
                     log.trace("Starting execution of Switch op");
 
                 // switch takes 2 inputs: actual input and boolean scalar. If scalar is false, input is saved as output:0, if scalar is true, input is saved as output:1
@@ -6245,6 +6250,16 @@ public class SameDiff {
                 }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
+            } else if (differentialFunction instanceof BaseTensorOp) {
+                if(log.isTraceEnabled())
+                    log.trace("Starting execution of Tensor op [{}]",  opName);
+
+                // we just pull actual code out of
+                val list = ((BaseTensorOp) differentialFunction).execute(this);
+
+                if (!lists.containsKey(list.getName()))
+                    lists.put(list.getName(), list);
+
             } else if (differentialFunction instanceof If) {
                 if(log.isTraceEnabled())
                     log.trace("Starting execution of If op");
