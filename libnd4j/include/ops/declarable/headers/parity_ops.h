@@ -1061,15 +1061,11 @@ namespace nd4j {
         * output array:
         *    reduced tensor with calculated dots
         *
-        * just reserved
+        */
 
-        #if NOT_EXCLUDED(OP_reduce_dot)
-        DECLARE_CUSTOM_OP(reduce_dot, 1, 1, false, 0, 0);
-        #endif
         #if NOT_EXCLUDED(OP_reduce_dot_bp)
         DECLARE_CUSTOM_OP(reduce_dot_bp, 2, 1, false, 0, 0);
         #endif
-        */
 
        /**
         * This op calculates norm1 of elements along given dimensions

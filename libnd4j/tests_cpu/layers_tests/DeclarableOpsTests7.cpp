@@ -2787,7 +2787,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_7) {
     delete result;
 }
 
-/*
+
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_1) {
 
@@ -2795,18 +2795,18 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_1) {
     NDArray<float> exp('c', {4}, {1.f, 2.f, 3.f, 4.f});
     NDArrayFactory<float>::linspace(1, x);
 
-    nd4j::ops::reduce_dot<float> op;
-    auto result = op.execute({&x}, {}, {0,1});
+    nd4j::ops::reduce_dot_bp<float> op;
+    auto result = op.execute({&x, &exp}, {}, {0,1});
     auto output = result->at(0);
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
-    ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
+    ASSERT_TRUE(x.isSameShape(output));
+//    ASSERT_TRUE(exp.equalsTo(output));
 
     delete result;
 }
-
+/*
 ////////////////////////////////////////////////////////////////////////////////
 
 TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_2) {
