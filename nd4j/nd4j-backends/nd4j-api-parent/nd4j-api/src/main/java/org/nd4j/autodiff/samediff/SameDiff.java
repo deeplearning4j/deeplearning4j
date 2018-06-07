@@ -6264,6 +6264,7 @@ public class SameDiff {
                 if (!lists.containsKey(list.getName()))
                     lists.put(list.getName(), list);
 
+                ops.add(differentialFunction);
             } else if (differentialFunction instanceof If) {
                 if(log.isTraceEnabled())
                     log.trace("Starting execution of If op");
