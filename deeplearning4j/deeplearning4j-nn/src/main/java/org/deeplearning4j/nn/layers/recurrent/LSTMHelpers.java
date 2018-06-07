@@ -665,7 +665,7 @@ public class LSTMHelpers {
                     //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
                     l1BLAS.axpy(4 * hiddenLayerSize, 1.0, deltaifogNext.sum(0), bGradientsOut);
                 } else {
-                    l1BLAS.axpy(hiddenLayerSize, 1.0, deltai.sum(0), bGradientsOut); //Sneaky way to do bGradients_i += deltai.sum(0)
+                    l1BLAS.axpy(hiddenLayerSize, 1.0, deltai.sum(0), bGradientsOut.get(point(0), interval(0, hiddenLayerSize))); //bGradients_i += deltai.sum(0)
                     INDArray ogBiasToAdd = deltaifogNext.get(NDArrayIndex.all(),
                             NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize)).sum(0);
                     INDArray ogBiasGrad = bGradientsOut.get(NDArrayIndex.point(0),
