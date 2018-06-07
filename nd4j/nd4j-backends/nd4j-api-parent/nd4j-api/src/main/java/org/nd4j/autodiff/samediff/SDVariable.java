@@ -1054,9 +1054,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
    public SDVariable get(SDIndex... indices){
        int ndims = indices.length;
-       int[] begin = new int[ndims];
-       int[] end = new int[ndims];
-       int[] strides = new int[ndims];
+       long[] begin = new long[ndims];
+       long[] end = new long[ndims];
+       long[] strides = new long[ndims];
        int[] begin_mask_arr = new int[ndims];
        int[] end_mask_arr = new int[ndims];
        int[] shrink_axis_mask_arr = new int[ndims];
@@ -1069,7 +1069,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                end_mask_arr[i] = 1;
            }
            else if(indexType == SDIndex.IndexType.POINT){
-                   int pointIndex = index.getPointIndex();
+                   long pointIndex = index.getPointIndex();
                    begin[i] = pointIndex;
                    end[i] = pointIndex + 1;
                    shrink_axis_mask_arr[i] = 1;

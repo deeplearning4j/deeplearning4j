@@ -12,10 +12,10 @@ public class SDIndex {
     }
 
     private IndexType indexType = IndexType.ALL;
-    private  int pointIndex;
-    private Integer intervalBegin;
-    private Integer intervalEnd;
-    private Integer intervalStrides;
+    private  long pointIndex;
+    private Long intervalBegin;
+    private Long intervalEnd;
+    private Long intervalStrides;
 
 
 
@@ -27,7 +27,7 @@ public class SDIndex {
     }
     
 
-    public static SDIndex point(int i){
+    public static SDIndex point(long i){
         SDIndex sdIndex = new SDIndex();
         sdIndex.indexType = IndexType.POINT;
         sdIndex.pointIndex = i;
@@ -35,7 +35,7 @@ public class SDIndex {
     }
     
 
-    public static SDIndex interval(Integer begin, Integer end){
+    public static SDIndex interval(Long begin, Long end){
         SDIndex sdIndex = new SDIndex();
         sdIndex.indexType = IndexType.INTERVAL;
         sdIndex.intervalBegin = begin;
@@ -43,7 +43,7 @@ public class SDIndex {
         return sdIndex;
     }
 
-    public static SDIndex interval(Integer begin, Integer strides, Integer end){
+    public static SDIndex interval(Long begin, Long strides, Long end){
         if(strides == 0){
             throw new ND4JIllegalArgumentException("Invalid index : strides can not be 0.");
         }
