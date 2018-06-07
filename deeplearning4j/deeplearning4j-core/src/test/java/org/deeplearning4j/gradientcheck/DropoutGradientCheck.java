@@ -56,33 +56,30 @@ public class DropoutGradientCheck extends BaseDL4JTest {
         int minibatch = 3;
 
         for(boolean cnn : new boolean[]{false, true}) {
-            for (int i = 1; i < 6; i++) {
+            for (int i = 0; i < 5; i++) {
 
                 IDropout dropout;
                 switch (i){
                     case 0:
-                        dropout = null;
-                        break;
-                    case 1:
                         dropout = new Dropout(0.6);
                         break;
-                    case 2:
+                    case 1:
                         dropout = new AlphaDropout(0.6);
                         break;
-                    case 3:
+                    case 2:
                         dropout = new GaussianDropout(0.1);    //0.01 rate -> stdev 0.1; 0.1 rate -> stdev 0.333
                         break;
-                    case 4:
+                    case 3:
                         dropout = new GaussianNoise(0.3);
                         break;
-                    case 5:
+                    case 4:
                         dropout = new SpatialDropout(0.6);
                         break;
                     default:
                         throw new RuntimeException();
                 }
 
-                if(!cnn && i == 5){
+                if(!cnn && i == 4){
                     //Skip spatial dropout for dense layer (not applicable)
                     continue;
                 }
@@ -109,14 +106,14 @@ public class DropoutGradientCheck extends BaseDL4JTest {
 
                 MultiLayerConfiguration conf = builder.build();
                 //Remove spatial dropout from output layer - can't be used for 2d input
-                if(i == 5){
+                if(i == 4){
                    conf.getConf(2).getLayer().setIDropout(null);
                 }
 
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
-                String msg = (cnn ? "CNN" : "Dense") + ": " + (dropout == null ? "No dropout" : dropout.getClass().getSimpleName());
+                String msg = (cnn ? "CNN" : "Dense") + ": " + dropout.getClass().getSimpleName();
 
                 INDArray f;
                 if(cnn){
@@ -137,5 +134,41 @@ public class DropoutGradientCheck extends BaseDL4JTest {
         }
     }
 
+
+    @Test
+    public void testCompGraphMultiInput(){
+        //Validate nets where the one output array is used as the input to multiple layers...
+        Nd4j.getRandom().setSeed(12345);
+        int mb = 3;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.DISTRIBUTION)
+                .dist(new NormalDistribution(0,1))
+                .convolutionMode(ConvolutionMode.Same)
+                .dropOut(new GaussianDropout(0.1))  //0.33 stdev. Gaussian dropout: out = in * N(1,stdev)
+                .activation(Activation.TANH)
+                .updater(new NoOp())
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).build(), "in")
+                .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(5).build(), "0")
+                .addLayer("2", new DenseLayer.Builder().nIn(5).nOut(5).build(), "0")
+                .addLayer("3", new DenseLayer.Builder().nIn(5).nOut(5).build(), "0")
+                .addLayer("out", new OutputLayer.Builder().nIn(15).nOut(5).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunction.MCXENT).build(), "1", "2", "3")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray[] in = new INDArray[]{Nd4j.rand(mb, 5)};
+        INDArray[] l = new INDArray[]{TestUtils.randomOneHot(mb, 5)};
+
+        boolean ok = GradientCheckUtil.checkGradients(cg, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, l, null, null, null, 12345);
+
+        assertTrue(ok);
+    }
 
 }

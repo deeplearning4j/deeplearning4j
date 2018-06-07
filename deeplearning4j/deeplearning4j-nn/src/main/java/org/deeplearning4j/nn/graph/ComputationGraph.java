@@ -698,7 +698,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 int thisTopoPos = ArrayUtils.indexOf(indices.getTopologicalSortOrder(), thisIdx);
                 int maxTopoPosition = -1;
                 for(String s : seen){
-                    int idx = indices.getNameToIdx().get(layerName);
+                    int idx = indices.getNameToIdx().get(s);
                     int topoPos = ArrayUtils.indexOf(indices.getTopologicalSortOrder(), idx);
                     maxTopoPosition = Math.max(maxTopoPosition, topoPos);
                 }
