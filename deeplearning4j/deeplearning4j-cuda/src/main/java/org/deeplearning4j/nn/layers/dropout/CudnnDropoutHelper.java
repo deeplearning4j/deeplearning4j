@@ -78,14 +78,15 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
     public void applyDropout(INDArray input, INDArray resultArray, double dropoutInputRetainProb) {
         float p = (float)(1.0 - dropoutInputRetainProb);    //CuDNN uses p = probability of setting to 0
 
-        checkCudnn(cudnnSetTensorNdDescriptor(cudnnContext.xTensorDesc, dataType, input.rank(),
-                //TODO int cast
-                ArrayUtil.toInts(input.shape()),
-                ArrayUtil.toInts(input.stride())));
-        checkCudnn(cudnnSetTensorNdDescriptor(cudnnContext.yTensorDesc, dataType, resultArray.rank(),
-                //TODO int cast
-                ArrayUtil.toInts(resultArray.shape()),
-                ArrayUtil.toInts(resultArray.stride())));
+        //TODO int cast
+        int[] inShape = adaptForTensorDescr(ArrayUtil.toInts(input.shape()));
+        int[] inStride = adaptForTensorDescr(ArrayUtil.toInts(input.stride()));
+        checkCudnn(cudnnSetTensorNdDescriptor(cudnnContext.xTensorDesc, dataType, inShape.length, inShape, inStride));
+
+        int[] outShape = adaptForTensorDescr(ArrayUtil.toInts(resultArray.shape()));
+        int[] outStride = adaptForTensorDescr(ArrayUtil.toInts(resultArray.stride()));
+        checkCudnn(cudnnSetTensorNdDescriptor(cudnnContext.yTensorDesc, dataType, outShape.length, outShape, outStride));
+
 
         //Reserve space
         SizeTPointer stateSizeBytesPtr = new SizeTPointer();
@@ -94,6 +95,8 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
 
         //Dropout descriptor:
         if(states == null || states.capacity() < stateSizeBytes){
+            if(states != null)
+                states.deallocate();
             //states = "Pointer to user-allocated GPU memory that will hold random number generator states."
             states = new DataCache(stateSizeBytes);
         }
@@ -119,14 +122,13 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
         //dropout descriptor should already be set; don't need to set it again?
         //checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, p, statesPtr, stateSizeBytes, seed));
 
-        checkCudnn(cudnnSetTensorNdDescriptor(cudnnContext.dyTensorDesc, dataType, gradAtOutput.rank(),
-                //TODO int cast
-                ArrayUtil.toInts(gradAtOutput.shape()),
-                ArrayUtil.toInts(gradAtOutput.stride())));
-        checkCudnn(cudnnSetTensorNdDescriptor(cudnnContext.dxTensorDesc, dataType, gradAtInput.rank(),
-                //TODO int cast
-                ArrayUtil.toInts(gradAtInput.shape()),
-                ArrayUtil.toInts(gradAtInput.stride())));
+        int[] gradAtOutShape = adaptForTensorDescr(ArrayUtil.toInts(gradAtOutput.shape()));
+        int[] gradAtOutStride = adaptForTensorDescr(ArrayUtil.toInts(gradAtOutput.stride()));
+        checkCudnn(cudnnSetTensorNdDescriptor(cudnnContext.dyTensorDesc, dataType, gradAtOutShape.length, gradAtOutShape, gradAtOutStride));
+
+        int[] gradAtInShape = adaptForTensorDescr(ArrayUtil.toInts(gradAtInput.shape()));
+        int[] gradAtInStride = adaptForTensorDescr(ArrayUtil.toInts(gradAtInput.stride()));
+        checkCudnn(cudnnSetTensorNdDescriptor(cudnnContext.dxTensorDesc, dataType, gradAtInShape.length, gradAtInShape, gradAtInStride));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(gradAtOutput, gradAtInput);

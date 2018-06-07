@@ -198,4 +198,31 @@ public abstract class BaseCudnnHelper {
         }
         return supported;
     }
+
+
+    /**
+     * From CuDNN documentation -
+     * "Tensors are restricted to having at least 4 dimensions... When working with lower dimensional data, it is
+     * recommended that the user create a 4Dtensor, and set the size along unused dimensions to 1."
+     *
+     * This method implements that - basically appends 1s to the end (shape or stride) to make it length 4,
+     * or leaves it unmodified if the length is already 4 or more.
+     * This method can be used for both shape and strides
+     *
+     * @param shapeOrStrides
+     * @return
+     */
+    protected static int[] adaptForTensorDescr(int[] shapeOrStrides){
+        if(shapeOrStrides.length >= 4)
+            return shapeOrStrides;
+        int[] out = new int[4];
+        int i=0;
+        for(; i<shapeOrStrides.length; i++ ){
+            out[i] = shapeOrStrides[i];
+        }
+        for(; i<4; i++ ){
+            out[i] = 1;
+        }
+        return out;
+    }
 }
