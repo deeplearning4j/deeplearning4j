@@ -43,4 +43,9 @@ class Upsampling2D(size: List[Int],
       .build()
 }
 
-
+object Upsampling2D {
+  def apply(size: List[Int],
+            nChannels: Int = 0,
+            nIn: Option[List[Int]] = None): Upsampling2D =
+    new Upsampling2D(size, nChannels, nIn)
+}
