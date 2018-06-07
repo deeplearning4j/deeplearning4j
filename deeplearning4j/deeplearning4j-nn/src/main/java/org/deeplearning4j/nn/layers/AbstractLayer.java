@@ -48,7 +48,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     protected INDArray input;
     protected INDArray preOutput;
     protected NeuralNetConfiguration conf;
-    protected INDArray dropoutMask;
     protected boolean dropoutApplied = false;
     protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
     protected int index = 0;
@@ -301,7 +300,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
             if(inputModificationAllowed){
                 result = input;
             } else {
-                result = workspaceMgr.dup(ArrayType.INPUT, input, input.ordering());    //TODO Can we unsafeDup here?
+                result = workspaceMgr.createUninitialized(ArrayType.INPUT, input.shape(), input.ordering());
             }
 
             input = layerConf().getIDropout().applyDropout(input, result, getIterationCount(), getEpochCount(), workspaceMgr);
