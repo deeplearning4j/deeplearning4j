@@ -1061,15 +1061,11 @@ namespace nd4j {
         * output array:
         *    reduced tensor with calculated dots
         *
-        * just reserved
+        */
 
-        #if NOT_EXCLUDED(OP_reduce_dot)
-        DECLARE_CUSTOM_OP(reduce_dot, 1, 1, false, 0, 0);
-        #endif
         #if NOT_EXCLUDED(OP_reduce_dot_bp)
         DECLARE_CUSTOM_OP(reduce_dot_bp, 2, 1, false, 0, 0);
         #endif
-        */
 
        /**
         * This op calculates norm1 of elements along given dimensions
@@ -1160,53 +1156,6 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(reduce_norm_max_bp, 2, 1, false, 0, 0);
         #endif
 
-       /**
-        * This op calculates cumulative sum along given dimensions
-        *
-        * input array:
-        *    x: tensor to calculate mean for        
-        *
-        * float arguments:
-        *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
-        *
-        * int arguments:
-        *    list of integers - dimensions to calculate cumulative sum along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
-        *
-        * output array:
-        *    reduced tensor with calculated cumulative sum
-        */
-
-        #if NOT_EXCLUDED(OP_reduce_cumsum)
-        DECLARE_CUSTOM_OP(reduce_cumsum, 1, 1, false, 0, 0);
-        #endif
-
-        #if NOT_EXCLUDED(OP_reduce_cumsum_bp)
-        DECLARE_CUSTOM_OP(reduce_cumsum_bp, 2, 1, false, 0, 0);
-        #endif
-
-       /**
-        * This op calculates cumulative sum along given dimensions
-        *
-        * input array:
-        *    x: tensor to calculate mean for        
-        *
-        * float arguments:
-        *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
-        *
-        * int arguments:
-        *    list of integers - dimensions to calculate cumulative sum along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
-        *
-        * output array:
-        *    reduced tensor with calculated cumulative sum
-        */
-
-        #if NOT_EXCLUDED(OP_reduce_cumprod)
-        DECLARE_CUSTOM_OP(reduce_cumprod, 1, 1, false, 0, 0);
-        #endif
-
-        #if NOT_EXCLUDED(OP_reduce_cumprod_bp)
-        DECLARE_CUSTOM_OP(reduce_cumprod_bp, 2, 1, false, 0, 0);
-        #endif
 
 
 

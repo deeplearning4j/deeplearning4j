@@ -1,38 +1,8 @@
-//
-// Created by george@skymind.io on 6/4/2018.
-//
 
 #include <ops/declarable/CustomOperations.h>
 
-#if 0 // just skip
 namespace nd4j {
 namespace ops {
-#if NOT_EXCLUDED(OP_reduce_dot)
-
-    CUSTOM_OP_IMPL(reduce_dot, 1, 1, false, 0, 0) {
-        NDArray<T>* input = INPUT_VARIABLE(0);
-        NDArray<T>* output = OUTPUT_VARIABLE(0);
-        std::vector<int> axes = *block.getIArguments();
-
-        for(const auto& item : axes)
-            REQUIRE_TRUE(item > -input->shapeInfo()[0] || item <input->shapeInfo()[0], 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
-
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-        input->template reduceAlongDimension<simdOps::Dot<T>>(output, axes, keepDims);
-
-        return ND4J_STATUS_OK;
-    }
-
-    DECLARE_SHAPE_FN(reduce_dot) {    
-
-        const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
-        std::vector<int> dimensions = *block.getIArguments();
-        Nd4jLong* outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
-
-        return SHAPELIST(outShapeInfo);
-    }
-#endif 
 #if NOT_EXCLUDED(OP_reduce_dot_bp)
 
     DECLARE_SHAPE_FN(reduce_dot_bp) {    
@@ -51,12 +21,12 @@ namespace ops {
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_dot_bp: The second param shape should be the same as result shape.");
-            output->assign(epsilon);
+//            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_dot_bp: The second param shape should be the same as result shape.");
+//            output->assign(epsilon);
 //            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
 //            T keepDimsT = (keepDims?T(1.f):T(0.f));
-#if 0
             // at first step we build fwd activation
+/*
             nd4j::ops::reduce_dot<T> op;
             std::vector<Nd4jLong> axes;
 
@@ -75,11 +45,10 @@ namespace ops {
             tempSum->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
 
             delete tmpResult;
-#endif
+*/
             return ND4J_STATUS_OK;
     }
 #endif
 
 }
 }
-#endif

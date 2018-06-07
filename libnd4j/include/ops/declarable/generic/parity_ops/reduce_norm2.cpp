@@ -52,9 +52,9 @@ namespace ops {
 
             REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_norm2_bp: The second param shape should be the same as result shape.");
             output->assign(epsilon);
-//            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-//            T keepDimsT = (keepDims?T(1.f):T(0.f));
-#if 0
+            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+            T keepDimsT = (keepDims?T(1.f):T(0.f));
+
             // at first step we build fwd activation
             nd4j::ops::reduce_norm2<T> op;
             std::vector<Nd4jLong> axes;
@@ -66,15 +66,35 @@ namespace ops {
             std::vector<T> tVec(1);
             tVec[0] = (keepDims?T(1.0):T(0.0));
             std::vector<NDArray<T>*> inputVec({input});
-            auto tmpResult = op.execute(inputVec, tVec, axes, false); 
+            std::unique_ptr<ResultSet<T>> tmpResult(op.execute(inputVec, tVec, axes, false)); 
             if (tmpResult->status() != ND4J_STATUS_OK)
                 return tmpResult->status();
 
-            NDArray<T>* tempSum = tmpResult->at(0);
-            tempSum->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
+            NDArray<T>* tempNorm2 = tmpResult->at(0);
 
-            delete tmpResult;
-#endif
+
+            if (tempNorm2->isScalar()) {
+                auto norm2Backprop = LAMBDA_T(_x, epsilon, tempNorm2) {
+                    return (*epsilon)(0) * _x / (*tempNorm2)(0);
+                };
+                input->applyLambda(norm2Backprop, output);
+            }
+            else {
+                std::vector<int> dimensions; //(input->rankOf() - axes.size());
+                for (Nd4jLong e = 0; e < input->rankOf(); e++) {
+                    if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
+                        dimensions.emplace_back(e);
+                    }
+                }
+                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
+                std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
+                for (int e = 0; e < outList->size(); ++e) {
+                    auto norm2Backprop = LAMBDA_T(_x, epsilon, tempNorm2, e) {
+                        return (*epsilon)(e) * _x / (*tempNorm2)(e);
+                    };
+                    inList->at(e)->applyLambda(norm2Backprop, outList->at(e));
+                }
+            }
             return ND4J_STATUS_OK;
     }
 #endif
