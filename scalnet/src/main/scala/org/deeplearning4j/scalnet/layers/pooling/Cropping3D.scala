@@ -60,6 +60,22 @@ class Cropping3D(cropLeftD: Int,
 }
 
 
+object Cropping3D {
+  def apply(cropLeftD: Int,
+            cropRightD: Int,
+            cropLeftH: Int,
+            cropRightH: Int,
+            cropLeftW: Int,
+            cropRightW: Int,
+            nIn: List[Int],
+            name: String): Cropping3D =
+    new Cropping3D(cropLeftD, cropRightD, cropLeftH, cropRightH, cropLeftW, cropRightW, nIn, name)
+}
+
+
+
+
+
 
 
 
