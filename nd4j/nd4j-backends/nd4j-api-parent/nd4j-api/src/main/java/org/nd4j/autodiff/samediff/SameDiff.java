@@ -6255,8 +6255,8 @@ public class SameDiff {
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof BaseTensorOp) {
-                if(log.isTraceEnabled())
-                    log.trace("Starting execution of Tensor op [{}]",  opName);
+                //if(log.isTraceEnabled())
+                    log.info("Starting execution of Tensor op [{}]",  opName);
 
                 // we just pull actual code out of
                 val list = ((BaseTensorOp) differentialFunction).execute(this);
