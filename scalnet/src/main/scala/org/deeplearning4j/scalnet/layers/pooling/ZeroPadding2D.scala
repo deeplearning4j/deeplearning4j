@@ -56,4 +56,13 @@ class ZeroPadding2D(padLeftH: Int,
       .build()
 }
 
+object ZeroPadding2D {
+  def apply(padLeftH: Int,
+            padRightH: Int,
+            padLeftW: Int,
+            padRightW: Int,
+            nIn: List[Int],
+            name: String): ZeroPadding2D =
+    new ZeroPadding2D(padLeftH, padRightH, padLeftW, padRightW, nIn, name)
+}
 
