@@ -50,5 +50,11 @@ class GlobalAvgPooling3D(nIn: Option[List[Int]] = None,
       .build()
 }
 
+object GlobalAvgPooling3D {
+  def apply(nIn: Option[List[Int]] = None,
+            name: String = null): GlobalAvgPooling3D =
+    new GlobalAvgPooling3D(nIn, name)
+}
+
 
 
