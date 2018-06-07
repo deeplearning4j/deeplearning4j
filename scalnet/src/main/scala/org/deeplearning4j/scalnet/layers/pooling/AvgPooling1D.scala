@@ -16,45 +16,46 @@
 
 package org.deeplearning4j.scalnet.layers.pooling
 
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer
+import org.deeplearning4j.nn.conf.layers.{Subsampling1DLayer, SubsamplingLayer}
 import org.deeplearning4j.scalnet.layers.convolutional.Convolution
 import org.deeplearning4j.scalnet.layers.core.Layer
 
 /**
-  * 2D average pooling layer in neural net architectures.
+  * 1D average pooling layer in neural net architectures.
   *
   * @author Max Pumperla
   */
-class AvgPooling2D(kernelSize: List[Int],
-                   stride: List[Int] = List(1, 1),
-                   padding: List[Int] = List(0, 0),
-                   dilation: List[Int] = List(1, 1),
+class AvgPooling1D(kernelSize: List[Int],
+                   stride: List[Int] = List(1),
+                   padding: List[Int] = List(0),
+                   dilation: List[Int] = List(1),
                    nIn: Option[List[Int]] = None,
                    override val name: String = "")
-  extends Convolution(dimension = 2, kernelSize, stride, padding, dilation, 0, nIn)
+  extends Convolution(dimension = 1, kernelSize, stride, padding, dilation, 0, nIn)
     with Layer {
-  if (kernelSize.length != 2 || stride.length != 2 || padding.length != 2 || dilation.length != 2) {
-    throw new IllegalArgumentException("Kernel, stride, padding and dilation lists must all be length 2.")
+  if (kernelSize.length != 1 || stride.length != 1 || padding.length != 1 || dilation.length != 1) {
+    throw new IllegalArgumentException("Kernel, stride, padding and dilation lists must all be length 1.")
   }
 
-  override def reshapeInput(nIn: List[Int]): AvgPooling2D =
-    new AvgPooling2D(kernelSize, stride, padding, dilation, Some(nIn), name)
+  override def reshapeInput(nIn: List[Int]): AvgPooling1D =
+    new AvgPooling1D(kernelSize, stride, padding, dilation, Some(nIn), name)
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
-    new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG)
-      .kernelSize(kernelSize.head, kernelSize.last)
-      .dilation(dilation.head, dilation.last)
-      .stride(stride.head, stride.last)
+    new Subsampling1DLayer.Builder(SubsamplingLayer.PoolingType.AVG)
+      .kernelSize(kernelSize.head)
+      .stride(stride.head)
       .name(name)
       .build()
 }
 
-object AvgPooling2D {
+object AvgPooling1D {
   def apply(kernelSize: List[Int],
             stride: List[Int] = List(1, 1),
             padding: List[Int] = List(0, 0),
             dilation: List[Int] = List(1, 1),
             nIn: Option[List[Int]] = None,
-            name: String = null): AvgPooling2D =
-    new AvgPooling2D(kernelSize, stride, padding, dilation, nIn, name)
+            name: String = null): AvgPooling1D =
+    new AvgPooling1D(kernelSize, stride, padding, dilation, nIn, name)
 }
+
+
