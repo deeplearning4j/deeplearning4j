@@ -16,16 +16,20 @@
 
 package org.deeplearning4j.scalnet.layers.pooling
 
-import org.deeplearning4j.nn.conf.layers.{ZeroPadding1DLayer}
+import org.deeplearning4j.nn.conf.layers.{ZeroPadding3DLayer, ZeroPaddingLayer}
 import org.deeplearning4j.scalnet.layers.core.{Layer, Node}
 
 /**
-  * 1D zero padding layer
+  * 3D zero padding layer
   *
   * @author Max Pumperla
   */
-class ZeroPadding1D(padLeftH: Int,
+class ZeroPadding3D(padLeftD: Int,
+                    padRightD: Int,
+                    padLeftH: Int,
                     padRightH: Int,
+                    padLeftW: Int,
+                    padRightW: Int,
                     nIn: List[Int],
                     override val name: String = "")
   extends Node with Layer {
@@ -36,32 +40,24 @@ class ZeroPadding1D(padLeftH: Int,
     val nOutChannels: Int =
       if (inputShape.nonEmpty) inputShape.last
       else 0
-    if (inputShape.lengthCompare(2) == 0) {
-      List[Int](inputShape.head + padLeftH + padRightH,
+    if (inputShape.lengthCompare(4) == 0) {
+      List[Int](inputShape.head + padLeftD + padRightD,
+        inputShape(1) + padLeftH + padRightH,
+        inputShape(2) + padLeftW + padRightW,
         nOutChannels)
     } else if (nOutChannels > 0) List(nOutChannels)
     else List()
   }
 
-  override def reshapeInput(nIn: List[Int]): ZeroPadding1D =
-    new ZeroPadding1D(padLeftH, padRightH, nIn, name)
+  override def reshapeInput(nIn: List[Int]): ZeroPadding3D =
+    new ZeroPadding3D(padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW, nIn, name)
 
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
-    new ZeroPadding1DLayer.Builder(padLeftH, padRightH)
+    new ZeroPadding3DLayer.Builder(padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW)
       .name(name)
       .build()
 }
-
-
-object ZeroPadding1D {
-  def apply(padLeftH: Int,
-            padRightH: Int,
-            nIn: List[Int],
-            name: String): ZeroPadding1D =
-    new ZeroPadding1D(padLeftH, padRightH, nIn, name)
-}
-
 
 
 
