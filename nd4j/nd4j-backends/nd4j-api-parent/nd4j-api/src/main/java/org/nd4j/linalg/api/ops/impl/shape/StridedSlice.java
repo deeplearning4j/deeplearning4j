@@ -29,6 +29,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -45,9 +46,9 @@ import java.util.Map;
  */
 @Slf4j
 public class StridedSlice extends DynamicCustomOp {
-    private int[] begin;
-    private int[] end;
-    private int[] strides;
+    private long[] begin;
+    private long[] end;
+    private long[] strides;
     private int beginMask;
     private int endMask;
     private int ellipsisMask;
@@ -60,7 +61,11 @@ public class StridedSlice extends DynamicCustomOp {
         this(sameDiff, in, begin, end, strides, 0, 0, 0, 0, 0);
     }
 
-    public StridedSlice(SameDiff sameDiff, SDVariable in, @NonNull int[] begin, @NonNull int[] end, @NonNull int[] strides,
+    public StridedSlice(SameDiff sameDiff, SDVariable in, long[] begin, long[] end, long[] strides){
+        this(sameDiff, in, begin, end, strides, 0, 0, 0, 0, 0);
+    }
+
+    public StridedSlice(SameDiff sameDiff, SDVariable in, @NonNull long[] begin, @NonNull long[] end, @NonNull long[] strides,
                         int beginMask, int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask){
         super(null, sameDiff, new SDVariable[]{in});
         this.begin = begin;
@@ -73,6 +78,26 @@ public class StridedSlice extends DynamicCustomOp {
         this.shrinkAxisMask = shrinkAxisMask;
 
         //https://github.com/deeplearning4j/libnd4j/blob/master/include/ops/declarable/generic/parity_ops/strided_slice.cpp#L279
+        addArguments();
+    }
+
+    public StridedSlice(SameDiff sameDiff, SDVariable in, @NonNull int[] begin, @NonNull int[] end, @NonNull int[] strides,
+                        int beginMask, int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask){
+        super(null, sameDiff, new SDVariable[]{in});
+        this.begin = ArrayUtil.toLongArray(begin);
+        this.end = ArrayUtil.toLongArray(end);
+        this.strides = ArrayUtil.toLongArray(strides);
+        this.beginMask = beginMask;
+        this.endMask = endMask;
+        this.ellipsisMask = ellipsisMask;
+        this.newAxisMask = newAxisMask;
+        this.shrinkAxisMask = shrinkAxisMask;
+        addArguments();
+        //https://github.com/deeplearning4j/libnd4j/blob/master/include/ops/declarable/generic/parity_ops/strided_slice.cpp#L279
+
+    }
+
+    private void addArguments(){
         addIArgument(beginMask);
         addIArgument(ellipsisMask);
         addIArgument(endMask);

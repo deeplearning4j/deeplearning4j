@@ -4918,6 +4918,14 @@ public class SameDiff {
         return stridedSlice(name, input, begin, end, strides, 0, 0, 0, 0, 0);
     }
 
+    public SDVariable stridedSlice(SDVariable input, long[] begin, long[] end, long[] strides) {
+        return stridedSlice(null, input, begin, end, strides);
+    }
+
+    public SDVariable stridedSlice(String name, SDVariable input, long[] begin, long[] end, long[] strides) {
+        return stridedSlice(name, input, begin, end, strides, 0, 0, 0, 0, 0);
+    }
+
     public SDVariable stridedSlice(SDVariable in, int[] begin, int[] end, int[] strides, int beginMask,
                                    int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
         return stridedSlice(null, in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
