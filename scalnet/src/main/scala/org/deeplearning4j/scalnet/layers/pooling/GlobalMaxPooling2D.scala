@@ -25,7 +25,7 @@ import org.deeplearning4j.scalnet.layers.core.{Layer, Node}
   * @author Max Pumperla
   */
 class GlobalMaxPooling2D(nIn: Option[List[Int]] = None,
-                   override val name: String = null)
+                         override val name: String = null)
   extends Node with Layer {
 
   override def inputShape: List[Int] = nIn.getOrElse(List(0))
@@ -45,7 +45,7 @@ class GlobalMaxPooling2D(nIn: Option[List[Int]] = None,
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new GlobalPoolingLayer.Builder()
-        .poolingType(PoolingType.MAX)
+      .poolingType(PoolingType.MAX)
       .name(name)
       .build()
 }

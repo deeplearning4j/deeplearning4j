@@ -20,11 +20,11 @@ import org.deeplearning4j.nn.conf.layers.{GlobalPoolingLayer, PoolingType}
 import org.deeplearning4j.scalnet.layers.core.{Layer, Node}
 
 /**
-  * 3D global avg pooling layer.
+  * 3D global max pooling layer.
   *
   * @author Max Pumperla
   */
-class GlobalAvgPooling3D(nIn: Option[List[Int]] = None,
+class GlobalMaxPooling3D(nIn: Option[List[Int]] = None,
                          override val name: String = null)
   extends Node with Layer {
 
@@ -40,21 +40,18 @@ class GlobalAvgPooling3D(nIn: Option[List[Int]] = None,
     else List()
   }
 
-  override def reshapeInput(nIn: List[Int]): GlobalAvgPooling3D =
-    new GlobalAvgPooling3D(Some(nIn), name)
+  override def reshapeInput(nIn: List[Int]): GlobalMaxPooling3D =
+    new GlobalMaxPooling3D(Some(nIn), name)
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new GlobalPoolingLayer.Builder()
-      .poolingType(PoolingType.AVG)
+      .poolingType(PoolingType.MAX)
       .name(name)
       .build()
 }
 
-object GlobalAvgPooling3D {
+object GlobalMaxPooling3D {
   def apply(nIn: Option[List[Int]] = None,
-            name: String = null): GlobalAvgPooling3D =
-    new GlobalAvgPooling3D(nIn, name)
+            name: String = null): GlobalMaxPooling3D =
+    new GlobalMaxPooling3D(nIn, name)
 }
-
-
-
