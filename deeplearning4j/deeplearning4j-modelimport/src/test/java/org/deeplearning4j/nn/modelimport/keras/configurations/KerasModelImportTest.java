@@ -74,10 +74,8 @@ public class KerasModelImportTest {
 
         MultiLayerNetwork network = null;
         try {
-            network = new KerasModel().modelBuilder()
-                    .modelJsonFilename((modelResource.getFile().getAbsolutePath()))
-                    .weightsHdf5FilenameNoRoot(weightResource.getFile().getAbsolutePath())
-                    .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
+            network = KerasModelImport.importKerasSequentialModelAndWeights(modelResource.getFile().getAbsolutePath(),
+                    weightResource.getFile().getAbsolutePath(), false);
         } catch (IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
             e.printStackTrace();
         }

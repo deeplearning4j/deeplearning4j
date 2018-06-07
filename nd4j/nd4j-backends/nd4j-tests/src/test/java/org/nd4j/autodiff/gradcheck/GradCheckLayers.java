@@ -3,6 +3,8 @@ package org.nd4j.autodiff.gradcheck;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
@@ -162,7 +164,11 @@ public class GradCheckLayers extends BaseGradCheck {
                 in.setArray(inArr);
                 SDVariable loss = sd.standardDeviation("loss", out, true);
 
-                check(sd, failed, msg);
+                TestCase tc = new TestCase(sd);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
 
             }
         }
@@ -212,7 +218,11 @@ public class GradCheckLayers extends BaseGradCheck {
                 in.setArray(inArr);
                 SDVariable loss = sd.standardDeviation("loss", out, true);
 
-                check(sd, failed, msg);
+                TestCase tc = new TestCase(sd);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
 
             }
         }
@@ -242,7 +252,12 @@ public class GradCheckLayers extends BaseGradCheck {
             SDVariable loss = sd.standardDeviation("loss", im2col, true);
 
             String msg = Arrays.toString(inSizeNCHW);
-            check(sd, failed, msg);
+
+            TestCase tc = new TestCase(sd);
+            String error = OpValidation.validate(tc);
+            if(error != null){
+                failed.add(name);
+            }
         }
 
         assertEquals(failed.toString(), 0, failed.size());

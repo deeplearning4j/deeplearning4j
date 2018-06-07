@@ -1173,6 +1173,27 @@ public class SameDiff {
         addArgsFor(varNames, function);
     }
 
+    /**
+     * Get the differential function (if any) that this variable is the output for
+     * @param variableName Name of the variable
+     * @return The differential function that this variable is an output of, or null if it is not the output of a function
+     */
+    public DifferentialFunction getVariableOutputFunction(String variableName){
+        List<DifferentialFunction> list = functionOutputFor.get(variableName);
+        if(list == null){
+            return null;
+        }
+        return list.get(0);
+    }
+
+    /**
+     * Return a list of differential functions (if any) that this variable is the input argument for
+     * @param variableName Name of the variable
+     * @return The differential functions that this variable is an input argument for, or null if it is not the input to any function
+     */
+    public List<DifferentialFunction> getVariableArgOfFunctions(String variableName){
+        return functionsArgsFor.get(variableName);
+    }
 
 
     /**
