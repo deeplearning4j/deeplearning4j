@@ -208,7 +208,7 @@ namespace nd4j {
         /**
         *   returns _buffer
         */
-        T* getBuffer();        
+        T* getBuffer() const;
         T* buffer();
 
         /**
