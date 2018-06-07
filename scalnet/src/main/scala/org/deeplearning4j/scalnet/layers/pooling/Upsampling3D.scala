@@ -44,4 +44,11 @@ class Upsampling3D(size: List[Int],
       .build()
 }
 
+object Upsampling3D {
+  def apply(size: List[Int],
+            nChannels: Int = 0,
+            nIn: Option[List[Int]] = None): Upsampling3D =
+    new Upsampling3D(size, nChannels, nIn)
+}
+
 
