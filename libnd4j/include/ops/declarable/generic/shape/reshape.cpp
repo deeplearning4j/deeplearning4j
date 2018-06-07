@@ -90,13 +90,16 @@ namespace nd4j {
             if (inputShape->size() == 1) {
                 std::vector<int> *arguments = block.getIArguments();
 
+                int e = 1;
                 char order = (char) (*arguments)[0];
-                if (order != 'c' && order != 'f')
+                if (order != 'c' && order != 'f') {
                     order = shape::order(inp);
+                    e = 0;
+                }
 
                 std::vector<int> shapeNew;
 
-                for (int e = 1; e < (int) arguments->size(); e++)
+                for (; e < (int) arguments->size(); e++)
                     shapeNew.push_back((int) arguments->at(e));
 
                 Nd4jLong *newShape;
