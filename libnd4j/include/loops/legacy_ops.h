@@ -41,7 +41,9 @@
        (20, simdOps::ReverseMod),\
        (21, simdOps::SafeDivide),\
        (22, simdOps::Mod) ,\
-       (23, simdOps::TruncateDiv)
+       (23, simdOps::TruncateDiv), \
+       (24, simdOps::And), \
+       (25, simdOps::Or)
 
 
 
@@ -137,7 +139,7 @@
         (92, simdOps::PowDerivative), \
         (93,simdOps::ATanh), \
         (94,simdOps::Reciprocal), \
-        (95,simdOps::Sqr), \
+        (95,simdOps::Square), \
         (96,simdOps::RELU6)
 
 
@@ -176,7 +178,10 @@
         (22, simdOps::SquaredSubtract),\
         (23, simdOps::SafeDivide), \
         (24, simdOps::AMax), \
-        (25, simdOps::AMin)
+        (25, simdOps::AMin), \
+        (26, simdOps::And), \
+        (27, simdOps::Or)
+
 
 
 
