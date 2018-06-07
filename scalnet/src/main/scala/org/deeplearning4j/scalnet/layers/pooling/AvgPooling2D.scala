@@ -43,6 +43,7 @@ class AvgPooling2D(kernelSize: List[Int],
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG)
       .kernelSize(kernelSize.head, kernelSize.last)
+      .dilation(dilation.head, dilation.last)
       .stride(stride.head, stride.last)
       .name(name)
       .build()

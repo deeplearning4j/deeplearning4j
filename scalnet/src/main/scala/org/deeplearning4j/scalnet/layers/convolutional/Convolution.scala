@@ -35,8 +35,10 @@ abstract class Convolution(protected val kernelSize: List[Int],
 
   override def inputShape: List[Int] = nIn.getOrElse(List(nChannels))
 
-  if (kernelSize.lengthCompare(stride.length) != 0 || kernelSize.lengthCompare(padding.length) != 0) {
-    throw new IllegalArgumentException("Kernel, stride, and padding must all have same shape.")
+  if (kernelSize.lengthCompare(stride.length) != 0
+    || kernelSize.lengthCompare(padding.length) != 0
+    || kernelSize.lengthCompare(dilation.length) != 0) {
+    throw new IllegalArgumentException("Kernel, stride, dilation and padding must all have same shape.")
   }
 
   private def validateShapes(inHeight: Int,
