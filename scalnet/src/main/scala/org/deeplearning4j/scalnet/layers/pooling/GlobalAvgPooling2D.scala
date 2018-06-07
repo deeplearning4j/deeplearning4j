@@ -20,11 +20,11 @@ import org.deeplearning4j.nn.conf.layers.{GlobalPoolingLayer, PoolingType}
 import org.deeplearning4j.scalnet.layers.core.{Layer, Node}
 
 /**
-  * 2D global max pooling layer.
+  * 2D global avg pooling layer.
   *
   * @author Max Pumperla
   */
-class GlobalMaxPooling2D(nIn: Option[List[Int]] = None,
+class GlobalAvgPooling2D(nIn: Option[List[Int]] = None,
                    override val name: String = null)
   extends Node with Layer {
 
@@ -40,19 +40,20 @@ class GlobalMaxPooling2D(nIn: Option[List[Int]] = None,
     else List()
   }
 
-  override def reshapeInput(nIn: List[Int]): GlobalMaxPooling2D =
-    new GlobalMaxPooling2D(Some(nIn), name)
+  override def reshapeInput(nIn: List[Int]): GlobalAvgPooling2D =
+    new GlobalAvgPooling2D(Some(nIn), name)
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new GlobalPoolingLayer.Builder()
-        .poolingType(PoolingType.MAX)
+        .poolingType(PoolingType.AVG)
         .poolingDimensions()
       .name(name)
       .build()
 }
 
-object GlobalMaxPooling2D {
+object GlobalAvgPooling2D {
   def apply(nIn: Option[List[Int]] = None,
-            name: String = null): GlobalMaxPooling2D =
-    new GlobalMaxPooling2D(nIn, name)
+            name: String = null): GlobalAvgPooling2D =
+    new GlobalAvgPooling2D(nIn, name)
 }
+
