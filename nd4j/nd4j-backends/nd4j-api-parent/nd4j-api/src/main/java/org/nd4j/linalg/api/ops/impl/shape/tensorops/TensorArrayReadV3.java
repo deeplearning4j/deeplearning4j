@@ -24,11 +24,7 @@ public class TensorArrayReadV3 extends BaseTensorOp {
     public TensorList execute(SameDiff sameDiff) {
         val list = getList(sameDiff);
 
-        val args = this.args();
-
-        val varIdx = args[1];
-
-        val id = (int) sameDiff.getArrForVarName(varIdx.getVarName()).getDouble(0);
+        val id = getArgumentArray(1).getInt(0);
 
         val array = list.get(id);
 

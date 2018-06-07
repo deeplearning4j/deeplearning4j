@@ -43,6 +43,8 @@ public class TensorArrayV3 extends  BaseTensorOp {
     public TensorList execute(SameDiff sameDiff) {
         val list = new TensorList(this.getOwnName());
 
+        // we might have size here
+
         return list;
     }
 

@@ -5,6 +5,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -38,6 +39,13 @@ public abstract  class BaseTensorOp extends DynamicCustomOp {
     }
 
     public abstract TensorList execute(SameDiff sameDiff);
+
+    protected INDArray getArgumentArray(int index) {
+        val arg = this.arg(index);
+        val array = this.sameDiff.getArrForVarName(arg.getVarName());
+
+        return array;
+    }
 
     protected TensorList getList(SameDiff sameDiff) {
         /**

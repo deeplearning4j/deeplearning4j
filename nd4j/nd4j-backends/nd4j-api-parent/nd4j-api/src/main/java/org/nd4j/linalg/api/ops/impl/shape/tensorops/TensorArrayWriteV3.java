@@ -16,14 +16,8 @@ public class TensorArrayWriteV3 extends BaseTensorOp {
    public TensorList execute(SameDiff sameDiff) {
       val list = getList(sameDiff);
 
-      // we know that arg 0
-      val args = this.args();
-
-      val varIdx = args[1];
-      val varArray = args[2];
-
-      val ids = (int) sameDiff.getArrForVarName(varIdx.getVarName()).getDouble(0);
-      val array = sameDiff.getArrForVarName(varArray.getVarName());
+      val ids =getArgumentArray(1).getInt(0);
+      val array = getArgumentArray(2);
 
       list.put(ids, array);
 

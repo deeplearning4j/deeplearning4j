@@ -992,6 +992,24 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertEquals(exp, array);
     }
 
+
+    @Test
+    public void testTensorArray_119_3() throws Exception {
+        Nd4j.create(1);
+
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array_unstack.pb.txt").getInputStream());
+        assertNotNull(tg);
+
+        //val input_matrix = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        //tg.associateArrayWithVariable(input_matrix, "input_matrix");
+
+        val array = tg.execAndEndResult();
+
+        val exp = Nd4j.create(new float[] {5, 6, 7, 8}, new int[]{4});
+
+        assertEquals(exp, array);
+    }
+
     @Test(expected = ND4JIllegalStateException.class)
     public void testNonFrozenGraph1() throws Exception {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/unfrozen_simple_ae.pb").getInputStream());
