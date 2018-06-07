@@ -49,4 +49,13 @@ class AvgPooling1D(kernelSize: List[Int],
       .build()
 }
 
+object AvgPooling1D {
+  def apply(kernelSize: List[Int],
+            stride: List[Int] = List(1, 1),
+            padding: List[Int] = List(0, 0),
+            dilation: List[Int] = List(1, 1),
+            nIn: Option[List[Int]] = None,
+            name: String = null): AvgPooling1D =
+    new AvgPooling1D(kernelSize, stride, padding, dilation, nIn, name)
+
 
