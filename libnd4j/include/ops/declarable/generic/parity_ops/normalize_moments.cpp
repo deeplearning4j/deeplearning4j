@@ -42,7 +42,7 @@ namespace nd4j {
             std::unique_ptr<NDArray<T>> squareMeans(resMeans->dup('c'));
             std::unique_ptr<NDArray<T>> tempVariances(resVariances->dup('c'));
 
-            resMeans->template applyTransform<simdOps::Sqr<T>>(squareMeans.get(), nullptr);
+            resMeans->template applyTransform<simdOps::Square<T>>(squareMeans.get(), nullptr);
             variances->template applyScalar<simdOps::Divide<T>>((*counts)(0), tempVariances.get(), nullptr);
             tempVariances->template applyPairwiseTransform<simdOps::Subtract<T>>(squareMeans.get(), resVariances, nullptr);
           

@@ -138,6 +138,7 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         Nd4j.getExecutioner().exec(op);
 
         Gradient retGradient = new DefaultGradient();
+        outEpsilon = backpropDropOutIfPresent(outEpsilon);
         return new Pair<>(retGradient, outEpsilon);
     }
 

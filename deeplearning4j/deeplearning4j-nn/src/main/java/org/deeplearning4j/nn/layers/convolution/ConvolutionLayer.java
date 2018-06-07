@@ -227,6 +227,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         weightNoiseParams.clear();
 
+        epsNext = backpropDropOutIfPresent(epsNext);
         return new Pair<>(retGradient, epsNext);
     }
 
