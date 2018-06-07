@@ -36,7 +36,6 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
     private Subsampling1DLayer(Builder builder) {
         super(builder);
-        this.dilation = builder.dilation;
     }
 
     @Override
@@ -99,9 +98,6 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         private static final int DEFAULT_KERNEL = 2;
         private static final int DEFAULT_STRIDE = 1;
         private static final int DEFAULT_PADDING = 0;
-
-        private int[] dilation = new int[]{1};
-
 
         public Builder(PoolingType poolingType, int kernelSize, int stride) {
             this(poolingType, kernelSize, stride, DEFAULT_PADDING);
@@ -188,14 +184,5 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             this.padding[0] = padding;
             return this;
         }
-
-        /**
-         * @param dilation Dilation for kernel
-         */
-        public Subsampling1DLayer.Builder dilation(int... dilation) {
-            this.dilation = dilation;
-            return this;
-        }
-
     }
 }
