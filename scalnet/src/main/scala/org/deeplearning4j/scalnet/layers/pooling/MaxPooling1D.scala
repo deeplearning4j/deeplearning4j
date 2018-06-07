@@ -21,11 +21,11 @@ import org.deeplearning4j.scalnet.layers.convolutional.Convolution
 import org.deeplearning4j.scalnet.layers.core.Layer
 
 /**
-  * 1D average pooling layer in neural net architectures.
+  * 1D max pooling layer in neural net architectures.
   *
   * @author Max Pumperla
   */
-class AvgPooling1D(kernelSize: List[Int],
+class MaxPooling1D(kernelSize: List[Int],
                    stride: List[Int] = List(1),
                    padding: List[Int] = List(0),
                    dilation: List[Int] = List(1),
@@ -37,11 +37,11 @@ class AvgPooling1D(kernelSize: List[Int],
     throw new IllegalArgumentException("Kernel, stride, padding and dilation lists must all be length 1.")
   }
 
-  override def reshapeInput(nIn: List[Int]): AvgPooling1D =
-    new AvgPooling1D(kernelSize, stride, padding, dilation, Some(nIn), name)
+  override def reshapeInput(nIn: List[Int]): MaxPooling1D =
+    new MaxPooling1D(kernelSize, stride, padding, dilation, Some(nIn), name)
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
-    new Subsampling1DLayer.Builder(SubsamplingLayer.PoolingType.AVG)
+    new Subsampling1DLayer.Builder(SubsamplingLayer.PoolingType.MAX)
       .kernelSize(kernelSize.head)
       .dilation(dilation.head)
       .stride(stride.head)
@@ -49,14 +49,15 @@ class AvgPooling1D(kernelSize: List[Int],
       .build()
 }
 
-object AvgPooling1D {
+object MaxPooling1D {
   def apply(kernelSize: List[Int],
             stride: List[Int] = List(1, 1),
             padding: List[Int] = List(0, 0),
             dilation: List[Int] = List(1, 1),
             nIn: Option[List[Int]] = None,
-            name: String = null): AvgPooling1D =
-    new AvgPooling1D(kernelSize, stride, padding, dilation, nIn, name)
+            name: String = null): MaxPooling1D =
+    new MaxPooling1D(kernelSize, stride, padding, dilation, nIn, name)
 }
+
 
 
