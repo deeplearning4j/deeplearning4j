@@ -31,7 +31,7 @@ class MaxPooling2D(kernelSize: List[Int],
                    dilation: List[Int] = List(0, 0),
                    nIn: Option[List[Int]] = None,
                    override val name: String = null)
-  extends Convolution(kernelSize, stride, padding, dilation, 0, nIn)
+  extends Convolution(dimension = 2, kernelSize, stride, padding, dilation, 0, nIn)
     with Layer {
   if (kernelSize.length != 2 || stride.length != 2 || padding.length != 2 || dilation.length != 2) {
     throw new IllegalArgumentException("Kernel, stride, padding and dilation lists must all be length 2.")

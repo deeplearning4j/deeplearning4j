@@ -24,7 +24,8 @@ import org.deeplearning4j.scalnet.layers.core.Node
   *
   * @author David Kale
   */
-abstract class Convolution(protected val kernelSize: List[Int],
+abstract class Convolution(protected val dimension: Int,
+                           protected val kernelSize: List[Int],
                            protected val stride: List[Int],
                            protected val padding: List[Int],
                            protected val dilation: List[Int],

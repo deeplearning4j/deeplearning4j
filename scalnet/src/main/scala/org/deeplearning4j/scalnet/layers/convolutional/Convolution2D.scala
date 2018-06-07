@@ -41,7 +41,7 @@ class Convolution2D(nFilter: Int,
                     val regularizer: WeightRegularizer = NoRegularizer(),
                     val dropOut: Double = 0.0,
                     override val name: String = "")
-  extends Convolution(kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
+  extends Convolution(dimension = 2, kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
     with Layer {
 
   override def reshapeInput(nIn: List[Int]): Convolution2D =
