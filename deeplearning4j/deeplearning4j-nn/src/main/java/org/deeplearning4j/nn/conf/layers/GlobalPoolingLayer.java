@@ -105,6 +105,13 @@ public class GlobalPoolingLayer extends Layer {
                 } else {
                     return InputType.convolutional(1, 1, conv.getChannels());
                 }
+            case CNN3D:
+                InputType.InputTypeConvolutional3D conv3d = (InputType.InputTypeConvolutional3D) inputType;
+                if (collapseDimensions) {
+                    return InputType.feedForward(conv3d.getChannels());
+                } else {
+                    return InputType.convolutional3D(1,1,1, conv3d.getChannels());
+                }
             case CNNFlat:
                 InputType.InputTypeConvolutionalFlat convFlat = (InputType.InputTypeConvolutionalFlat) inputType;
                 if (collapseDimensions) {
@@ -132,6 +139,7 @@ public class GlobalPoolingLayer extends Layer {
                                                 + inputType);
             case RNN:
             case CNN:
+            case CNN3D:
                 //No preprocessor required
                 return null;
             case CNNFlat:
@@ -199,7 +207,8 @@ public class GlobalPoolingLayer extends Layer {
          * Pooling dimensions. Note: most of the time, this doesn't need to be set, and the defaults can be used.
          * Default for RNN data: pooling dimension 2 (time).
          * Default for CNN data: pooling dimensions 2,3 (height and width)
-         *
+         * Default for CNN3D data: pooling dimensions 2,3,4 (depth, height and width)
+
          * @param poolingDimensions Pooling dimensions to use
          */
         public Builder poolingDimensions(int... poolingDimensions) {
