@@ -28,7 +28,7 @@ import org.deeplearning4j.scalnet.layers.core.Layer
 class AvgPooling2D(kernelSize: List[Int],
                    stride: List[Int] = List(1, 1),
                    padding: List[Int] = List(0, 0),
-                   dilation: List[Int] = List(0, 0),
+                   dilation: List[Int] = List(1, 1),
                    nIn: Option[List[Int]] = None,
                    override val name: String = "")
   extends Convolution(dimension = 2, kernelSize, stride, padding, dilation, 0, nIn)
@@ -53,7 +53,7 @@ object AvgPooling2D {
   def apply(kernelSize: List[Int],
             stride: List[Int] = List(1, 1),
             padding: List[Int] = List(0, 0),
-            dilation: List[Int] = List(0, 0),
+            dilation: List[Int] = List(1, 1),
             nIn: Option[List[Int]] = None,
             name: String = null): AvgPooling2D =
     new AvgPooling2D(kernelSize, stride, padding, dilation, nIn, name)

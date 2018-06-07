@@ -28,7 +28,7 @@ import org.deeplearning4j.scalnet.layers.core.Layer
 class AvgPooling1D(kernelSize: List[Int],
                    stride: List[Int] = List(1),
                    padding: List[Int] = List(0),
-                   dilation: List[Int] = List(0),
+                   dilation: List[Int] = List(1),
                    nIn: Option[List[Int]] = None,
                    override val name: String = "")
   extends Convolution(dimension = 1, kernelSize, stride, padding, dilation, 0, nIn)

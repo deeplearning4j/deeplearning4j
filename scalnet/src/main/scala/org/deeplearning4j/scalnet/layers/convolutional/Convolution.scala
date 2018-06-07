@@ -22,7 +22,7 @@ import org.deeplearning4j.scalnet.layers.core.Node
 /**
   * Base class for convolutional layers.
   *
-  * @author David Kale
+  * @author David Kale, Max Pumperla
   */
 abstract class Convolution(protected val dimension: Int,
                            protected val kernelSize: List[Int],
@@ -61,7 +61,7 @@ abstract class Convolution(protected val dimension: Int,
           s"Invalid stride: all $stride elements should be great than 0"
         )
 
-      if (dilation(i) < 0)
+      if (dilation(i) <= 0)
         throw new InvalidInputTypeException(
           s"Invalid stride: all $dilation elements should be great than 0"
         )
