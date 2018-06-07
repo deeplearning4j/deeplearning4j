@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scalnet.layers.pooling
+package org.deeplearning4j.scalnet.layers.convolutional
 
 import org.deeplearning4j.nn.conf.layers.convolutional.{Cropping3D => JCropping3D}
 import org.deeplearning4j.scalnet.layers.core.{Layer, Node}

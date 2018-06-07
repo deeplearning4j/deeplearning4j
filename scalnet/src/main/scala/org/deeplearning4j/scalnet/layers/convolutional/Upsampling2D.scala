@@ -14,41 +14,38 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scalnet.layers.pooling
+package org.deeplearning4j.scalnet.layers.convolutional
 
-import org.deeplearning4j.nn.conf.layers.{Upsampling3D => JUpsampling3D}
+import org.deeplearning4j.nn.conf.layers.{Upsampling2D => JUpsampling2D}
 import org.deeplearning4j.scalnet.layers.core.Layer
-
 /**
-  * 3D upsampling layer
+  * 2D upsampling layer
   *
   * @author Max Pumperla
   */
-class Upsampling3D(size: List[Int],
+class Upsampling2D(size: List[Int],
                    nChannels: Int = 0,
                    nIn: Option[List[Int]] = None,
                    override val name: String = "")
-  extends Upsampling(dimension = 3, size, nChannels, nIn, name) with Layer {
-  if (size.length != 3) {
-    throw new IllegalArgumentException("Size must be length 3.")
+  extends Upsampling(dimension = 2, size, nChannels, nIn, name) with Layer {
+  if (size.length != 2) {
+    throw new IllegalArgumentException("Size must be length 2.")
   }
 
-  override def reshapeInput(nIn: List[Int]): Upsampling3D =
-    new Upsampling3D(size, nChannels, Some(nIn), name)
+  override def reshapeInput(nIn: List[Int]): Upsampling2D =
+    new Upsampling2D(size, nChannels, Some(nIn), name)
 
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
-    new JUpsampling3D.Builder()
+    new JUpsampling2D.Builder()
       .size(size.toArray)
       .name(name)
       .build()
 }
 
-object Upsampling3D {
+object Upsampling2D {
   def apply(size: List[Int],
             nChannels: Int = 0,
-            nIn: Option[List[Int]] = None): Upsampling3D =
-    new Upsampling3D(size, nChannels, nIn)
+            nIn: Option[List[Int]] = None): Upsampling2D =
+    new Upsampling2D(size, nChannels, nIn)
 }
-
-
