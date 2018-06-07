@@ -179,7 +179,7 @@ public class Concat extends DynamicCustomOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[]  {"Concat","ConcatV2"};
+        return new String[]  {"Concat","ConcatV2", "ParallelConcat"};
     }
 
     @Override

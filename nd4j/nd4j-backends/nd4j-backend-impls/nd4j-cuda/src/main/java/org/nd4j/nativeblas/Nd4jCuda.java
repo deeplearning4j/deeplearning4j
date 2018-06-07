@@ -15224,8 +15224,27 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
 // this declaration MUST follow DECLARE_CUSTOM_OP
-// #define DECLARE_SHAPE_FN(NAME)                                              template<typename T>
-//                                                                             nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)
+// #define DECLARE_SHAPE_FN(NAME)                                                  template<typename T>
+//                                                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)
+
+// #define DECLARE_BROADCASTABLE_OP(NAME,TARGS, IARGS)                             template <typename T>
+//                                                                                 class NAME: public nd4j::ops::BroadcastableOp<T> {
+//                                                                                 protected:
+//                                                                                     Nd4jStatus validateAndExecute(Context<T>& block);
+//                                                                                 public:
+//                                                                                     NAME();
+//                                                                                 };
+//                                                                                 REGISTER_H(NAME)
+
+// #define BROADCASTABLE_OP_IMPL(NAME, TARGS, IARGS)                               template <typename T>
+//                                                                                 NAME<T>::NAME(): nd4j::ops::BroadcastableOp<T>(#NAME, TARGS, IARGS) { };
+//                                                                                 template class ND4J_EXPORT NAME<float>;
+//                                                                                 template class ND4J_EXPORT NAME<float16>;
+//                                                                                 template class ND4J_EXPORT NAME<double>;
+//                                                                                 REGISTER_C(NAME)
+//                                                                                 template <typename T>
+//                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
+
 
 // #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
 
@@ -15445,6 +15464,50 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 
 // #endif //LIBND4J_OPDESCRIPTOR_H
+
+
+// Parsed from ops/declarable/BroadcastableOp.h
+
+//
+// Created by raver on 6/6/2018.
+//
+
+// #ifndef LIBND4J_BROADCASTABLEOP_H
+// #define LIBND4J_BROADCASTABLEOP_H
+
+// #include <graph/Context.h>
+// #include "OpDescriptor.h"
+// #include "DeclarableOp.h"
+// #include "DeclarableCustomOp.h"
+        @Name("nd4j::ops::BroadcastableOp<float>") public static class FloatBroadcastableOp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public FloatBroadcastableOp(Pointer p) { super(p); }
+        
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+        }
+        @Name("nd4j::ops::BroadcastableOp<float16>") public static class HalfBroadcastableOp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public HalfBroadcastableOp(Pointer p) { super(p); }
+        
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+        }
+        @Name("nd4j::ops::BroadcastableOp<double>") public static class DoubleBroadcastableOp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public DoubleBroadcastableOp(Pointer p) { super(p); }
+        
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+        }
+    
+
+
+
+// #endif //LIBND4J_BROADCASTABLEOP_H
 
 
 // Parsed from ops/declarable/DeclarableOp.h
