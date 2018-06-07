@@ -43,6 +43,21 @@ namespace nd4j {
 ///////////////////////////////////////////////////////////////////
 // returns the smallest finite value of the given type
 template<>
+FORCEINLINE _CUDA_HD int DataTypeUtils::min<int>() {
+    return 1;
+}
+
+template<>
+FORCEINLINE _CUDA_HD Nd4jLong DataTypeUtils::min<Nd4jLong>() {
+    return 1L;
+}
+
+template<>
+FORCEINLINE _CUDA_HD uint64_t DataTypeUtils::min<uint64_t>() {
+    return 1L;
+}
+
+template<>
 FORCEINLINE _CUDA_HD float DataTypeUtils::min<float>() {         
     return 1.175494e-38;    
 }
@@ -59,6 +74,21 @@ FORCEINLINE _CUDA_HD double DataTypeUtils::min<double>() {
 
 ///////////////////////////////////////////////////////////////////
 // returns the largest finite value of the given type
+template <>
+FORCEINLINE _CUDA_HD int DataTypeUtils::max<int>() {
+    return 2147483647;
+}
+
+template <>
+FORCEINLINE _CUDA_HD Nd4jLong DataTypeUtils::max<Nd4jLong>() {
+    return 9223372036854775807LL;
+}
+
+template <>
+FORCEINLINE _CUDA_HD uint64_t DataTypeUtils::max<uint64_t>() {
+    return 18446744073709551615LLU;
+}
+
 template <>
 FORCEINLINE _CUDA_HD float DataTypeUtils::max<float>() {    
     return 3.402823e+38;
