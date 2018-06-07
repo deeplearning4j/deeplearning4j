@@ -43,8 +43,8 @@ class Convolution1D(nFilter: Int,
   extends Convolution(dimension = 1, kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
     with Layer {
 
-  override def reshapeInput(nIn: List[Int]): Convolution2D =
-    new Convolution2D(nFilter, kernelSize, nChannels, stride, padding, dilation, Some(nIn),
+  override def reshapeInput(nIn: List[Int]): Convolution1D =
+    new Convolution1D(nFilter, kernelSize, nChannels, stride, padding, dilation, Some(nIn),
       weightInit, activation, regularizer, dropOut, name)
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
