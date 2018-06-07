@@ -42,7 +42,7 @@ import static org.junit.Assert.*;
 
 
 @Slf4j
-@Ignore
+//@Ignore
 @RunWith(Parameterized.class)
 public class TensorFlowImportTest extends BaseNd4jTest {
     private static ExecutorConfiguration configuration = ExecutorConfiguration.builder()
@@ -958,6 +958,19 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim_true.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
     }
 
+    @Test
+    public void testTensorArray_119_1() throws Exception {
+        Nd4j.create(1);
+
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array.pb.txt").getInputStream());
+        assertNotNull(tg);
+
+        val array = tg.execAndEndResult();
+
+        val exp = Nd4j.create(new float[] {1, 1, 2, 2, 3, 3}, new int[]{2, 3});
+
+        assertEquals(exp, array);
+    }
 
     @Test(expected = ND4JIllegalStateException.class)
     public void testNonFrozenGraph1() throws Exception {
