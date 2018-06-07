@@ -13,11 +13,9 @@ public class SDIndex {
 
     private IndexType indexType = IndexType.ALL;
     private  long pointIndex;
-    private Long intervalBegin;
-    private Long intervalEnd;
-    private Long intervalStrides;
-
-
+    private Long intervalBegin = null;
+    private Long intervalEnd = null;
+    private Long intervalStrides = 1l;
 
 
     public SDIndex(){}
@@ -33,13 +31,24 @@ public class SDIndex {
         sdIndex.pointIndex = i;
         return sdIndex;
     }
-    
 
     public static SDIndex interval(Long begin, Long end){
         SDIndex sdIndex = new SDIndex();
         sdIndex.indexType = IndexType.INTERVAL;
         sdIndex.intervalBegin = begin;
         sdIndex.intervalEnd = end;
+        return sdIndex;
+    }
+
+    public static SDIndex interval(Integer begin, Integer end){
+        SDIndex sdIndex = new SDIndex();
+        sdIndex.indexType = IndexType.INTERVAL;
+        if(begin != null) {
+            sdIndex.intervalBegin = begin.longValue();
+        }
+        if(end != null){
+            sdIndex.intervalEnd = end.longValue();
+        }
         return sdIndex;
     }
 
@@ -52,6 +61,24 @@ public class SDIndex {
         sdIndex.intervalBegin = begin;
         sdIndex.intervalEnd = end;
         sdIndex.intervalStrides = strides;
+        return sdIndex;
+    }
+
+    public static SDIndex interval(Integer begin, Integer strides, Integer end){
+        if(strides == 0){
+            throw new ND4JIllegalArgumentException("Invalid index : strides can not be 0.");
+        }
+        SDIndex sdIndex = new SDIndex();
+        sdIndex.indexType = IndexType.INTERVAL;
+        if(begin != null) {
+            sdIndex.intervalBegin = begin.longValue();
+        }
+        if(end != null){
+            sdIndex.intervalEnd = end.longValue();
+        }
+        if(strides != null){
+            sdIndex.intervalStrides = strides.longValue();
+        }
         return sdIndex;
     }
     
