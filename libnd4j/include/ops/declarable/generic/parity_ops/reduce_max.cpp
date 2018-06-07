@@ -71,7 +71,7 @@ namespace ops {
 
             NDArray<T>* tempMax = tmpResult->at(0);
             REQUIRE_TRUE(tempMax->isSameShape(epsilon), 0, "reduce_max_bp: The second param shape should be an equal with reduce_max output.");
-            helpers::minMaxReduceFunctor(input, tempMax, output);
+            helpers::minMaxReduceFunctor(input, epsilon, tempMax, output);
             return ND4J_STATUS_OK;
     }
 #endif
