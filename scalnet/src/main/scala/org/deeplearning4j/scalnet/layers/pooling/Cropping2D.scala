@@ -57,4 +57,14 @@ class Cropping2D(cropLeftH: Int,
 }
 
 
+object Cropping2D {
+  def apply(cropLeftH: Int,
+            cropRightH: Int,
+            cropLeftW: Int,
+            cropRightW: Int,
+            nIn: List[Int],
+            name: String): Cropping2D =
+    new Cropping2D(cropLeftH, cropRightH, cropLeftW, cropRightW, nIn, name)
+}
+
 
