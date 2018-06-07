@@ -250,7 +250,7 @@ TEST_F(ParityOpsTests, TestUnstack8) {
     delete result;
 }
 
-TEST_F(ParityOpsTests, TestUnstack8) { 
+TEST_F(ParityOpsTests, TestUnstack9) {
     NDArray<float> input('c', {1, 1});
     NDArray<float> exp('c', {1}, {1});
     NDArrayFactory<float>::linspace(1, input);
