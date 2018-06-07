@@ -65,7 +65,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
             throw new IllegalArgumentException(
                             "Invalid input: expect NDArray with rank 2 (i.e., epsilons from feed forward layer)");
         if (output.ordering() != 'f' || !Shape.hasDefaultStridesForShape(output))
-            output = workspaceMgr.dup(ArrayType.ACTIVATIONS, output, 'f');
+            output = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, output, 'f');
 
         val shape = output.shape();
         INDArray reshaped = output.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
