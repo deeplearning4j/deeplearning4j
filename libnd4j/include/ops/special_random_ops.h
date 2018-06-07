@@ -259,8 +259,8 @@ namespace randomOps {
             __shared__ T two_pi;
 
             __shared__ Nd4jLong zLength;
-            __shared__ int zEWS;
-            __shared__ int yEWS;
+            __shared__ Nd4jLong zEWS;
+            __shared__ Nd4jLong yEWS;
             __shared__ T mean;
             __shared__ T stddev;
             __shared__ int step;
@@ -274,20 +274,20 @@ namespace randomOps {
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-                buffer = (nd4j::random::RandomBuffer *) shmem;
+                buffer = reinterpret_cast<nd4j::random::RandomBuffer *>(shmem);
                 cB = shmem;
                 devBuffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
                 dB = reinterpret_cast<unsigned char *> (state);
 
-                tZ = (T *) (shmem + sizeof(nd4j::random::RandomBuffer));
+                tZ = reinterpret_cast<T *>(shmem + sizeof(nd4j::random::RandomBuffer));
 
                 zLength = shape::length(zShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
                 yEWS = shape::elementWiseStride(yShapeBuffer);
 
 
-                epsilon = (T) 1e-5;
-                two_pi = (T) 2.0 * (T) 3.14159265358979323846;
+                epsilon = static_cast<T>(1e-5);
+                two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
                 mean = extraArguments[0];
                 stddev = extraArguments[1];
@@ -307,11 +307,11 @@ namespace randomOps {
             for (Nd4jLong e = tid; e < zLength; e += step) {
                 // we need to get random values
 
-                tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, (T) 1.0f);
+                tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
 
                 // fix for "next rng value"
                 if (e + 1 >= zLength && e % 2 == 0) {
-                    tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, (T) 1.0f);
+                    tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, static_cast<T>(1.0f));
                 }
 
                 T realMean = y == z ? mean : y[e * yEWS];
@@ -319,9 +319,10 @@ namespace randomOps {
                 __syncthreads();
 
                 if (e % 2 == 0)
-                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean;
+                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x])) * nd4j::math::nd4j_cos<T>(two_pi * tZ[threadIdx.x+1])) * stddev + realMean;
                 else
-                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T>(two_pi * tZ[threadIdx.x])) * stddev + realMean;
+                    z[e *zEWS] =  (nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(tZ[threadIdx.x-1])) * nd4j::math::nd4j_sin<T>(two_pi * tZ[threadIdx.x])) * stddev + realMean;
+
                 __syncthreads();
             }
 
@@ -370,9 +371,9 @@ namespace randomOps {
                         /*
                          * Since box-muller transform expects non-zero u0 value, we'll just use rng with boundaries
                          */
-                        u0 = buffer->relativeT<T>(e, (T) 1e-5f, (T) 1.0f);
-                        u1 = buffer->relativeT<T>((e + 1), (T) 1e-5f, (T) 1.0f);
-                        lnU0 = nd4j::math::nd4j_sqrt<T>((T) -2.0f * nd4j::math::nd4j_log<T>(u0));
+                        u0 = buffer->relativeT<T>(e, static_cast<T>(1e-5f), static_cast<T>(1.0f));
+                        u1 = buffer->relativeT<T>((e + 1), static_cast<T>(1e-5f), static_cast<T>(1.0f));
+                        lnU0 = nd4j::math::nd4j_sqrt<T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T>(u0));
                         z0 = lnU0 * nd4j::math::nd4j_cos<T>(two_pi * u1);
                         z1 = lnU0 * nd4j::math::nd4j_sin<T>(two_pi * u1);
 
