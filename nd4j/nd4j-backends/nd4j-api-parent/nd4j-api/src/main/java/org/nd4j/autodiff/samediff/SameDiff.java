@@ -5257,6 +5257,10 @@ public class SameDiff {
         return ops;
     }
 
+    public TensorList getListByName(@NonNull String name) {
+        return lists.get(name);
+    }
+
 
     /**
      * An interface for representing a conditional statement

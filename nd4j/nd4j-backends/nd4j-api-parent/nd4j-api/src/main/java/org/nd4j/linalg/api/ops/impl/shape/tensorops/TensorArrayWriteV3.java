@@ -1,6 +1,8 @@
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.list.compat.TensorList;
 
 public class TensorArrayWriteV3 extends BaseTensorOp {
 
@@ -9,7 +11,10 @@ public class TensorArrayWriteV3 extends BaseTensorOp {
       return "TensorArrayWriteV3";
    }
 
-
+   @Override
+   public TensorList execute(SameDiff sameDiff) {
+      return null;
+   }
 
    @Override
    public String opName() {

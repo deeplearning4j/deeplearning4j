@@ -5,6 +5,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.list.compat.TensorList;
 
 import java.util.List;
 import java.util.Map;
@@ -32,8 +33,10 @@ public class TensorArrayGatherV3 extends BaseTensorOp {
         return "tensorarraygatherv3";
     }
 
-
-
+    @Override
+    public TensorList execute(SameDiff sameDiff) {
+        return null;
+    }
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
