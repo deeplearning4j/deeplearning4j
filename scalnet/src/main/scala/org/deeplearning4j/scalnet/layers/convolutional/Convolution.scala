@@ -36,37 +36,37 @@ abstract class Convolution(protected val dimension: Int,
 
   override def inputShape: List[Int] = nIn.getOrElse(List(nChannels))
 
-  if (kernelSize.lengthCompare(stride.length) != 0
+  if (kernelSize.lengthCompare(dimension) != 0
+    || kernelSize.lengthCompare(stride.length) != 0
     || kernelSize.lengthCompare(padding.length) != 0
     || kernelSize.lengthCompare(dilation.length) != 0) {
     throw new IllegalArgumentException("Kernel, stride, dilation and padding must all have same shape.")
   }
 
-  private def validateShapes(inHeight: Int,
-                             inWidth: Int,
-                             kernelHeight: Int,
-                             kernelWidth: Int,
-                             strideHeight: Int,
-                             strideWidth: Int,
-                             padHeight: Int,
-                             padWidth: Int): Unit = {
+  private def validateShapes(dimension: Int,
+                             inShape: List[Int],
+                             kernelSize: List[Int],
+                             stride: List[Int],
+                             padding: List[Int],
+                             dilation: List[Int]): Unit = {
 
-    // Check filter > size + padding
-    if (kernelHeight > (inHeight + 2 * padHeight))
-      throw new InvalidInputTypeException(
-        s"Invalid input: activations into layer are h=$inHeight but kernel size is $kernelHeight with padding $padHeight"
-      )
+    for (i <- 0 until dimension) {
+      if (kernelSize(i) > (inShape(i) + 2 * padding(i)))
+        throw new InvalidInputTypeException(
+          s"Invalid input: activations into layer are $inShape but kernel size is $kernelSize with padding $padding"
+        )
 
-    if (kernelWidth > (inWidth + 2 * padWidth))
-      throw new InvalidInputTypeException(
-        s"Invalid input: activations into layer are w=$inWidth but kernel size is $kernelWidth with padding $padWidth"
-      )
+      if (stride(i) <= 0)
+        throw new InvalidInputTypeException(
+          s"Invalid stride: all $stride elements should be great than 0"
+        )
 
-    // Check stride
-    if ((strideHeight <= 0) || (strideWidth <= 0))
-      throw new InvalidInputTypeException(
-        s"Invalid stride: strideHeight is $strideHeight and strideWidth is $strideWidth and both should be great than 0"
-      )
+      if (dilation(i) < 0)
+        throw new InvalidInputTypeException(
+          s"Invalid stride: all $dilation elements should be great than 0"
+        )
+    }
+
   }
 
   override def outputShape: List[Int] = {
@@ -74,16 +74,15 @@ abstract class Convolution(protected val dimension: Int,
       if (nFilter > 0) nFilter
       else if (inputShape.nonEmpty) inputShape.last
       else 0
-    if (inputShape.lengthCompare(3) == 0) {
-      validateShapes(inputShape.head,
-        inputShape.tail.head,
-        kernelSize.head,
-        kernelSize.tail.head,
-        stride.head,
-        stride.tail.head,
-        padding.head,
-        padding.tail.head)
-      List[List[Int]](inputShape.init, kernelSize, padding, stride).transpose
+    if (inputShape.lengthCompare(dimension + 1) == 0) {
+      validateShapes(dimension,
+        inputShape,
+        kernelSize,
+        stride,
+        padding,
+        dilation)
+      List[List[Int]](inputShape.init, kernelSize, padding, stride, dilation)
+        .transpose
         .map(x => (x.head - x(1) + 2 * x(2)) / x(3) + 1) :+ nOutChannels
     } else if (nOutChannels > 0) List(nOutChannels)
     else List()
