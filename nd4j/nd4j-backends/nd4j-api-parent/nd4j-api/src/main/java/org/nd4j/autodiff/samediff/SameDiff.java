@@ -6119,7 +6119,17 @@ public class SameDiff {
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 val array = inputs[0].getArr();
-                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                val name = inputs[0].getVarName();
+
+                if (array != null)
+                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                else {
+                    val rep = name.replaceAll(":.*","");
+                    // this is just tensorlst. lets replicate it
+                    val list = lists.get(rep);
+
+                    lists.put(differentialFunction.getOwnName(), list);
+                }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
@@ -6225,14 +6235,18 @@ public class SameDiff {
                 if (flowPath.wasExecuted(inputs[1].getVarName())) {
                     // propagate second input
                     val array = inputs[1].getArr();
-                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+
+                    if (array != null)
+                        variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
 
                     // nullify executed mark
                     flowPath.markExecuted(inputs[1].getVarName(), false);
                 } else {
                     // propagate first input
                     val array = inputs[0].getArr();
-                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+
+                    if (array != null)
+                        variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
                 }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
@@ -6254,11 +6268,16 @@ public class SameDiff {
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 0);
                     flowPath.markActive(differentialFunction.getOwnName(), true);
                     flowPath.markActive(differentialFunction.getOwnName() + ":1", false);
-                    variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
+
+                    if (input != null)
+                        variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
                 } else {
                     // true step, we'll propagate output:1 here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 1);
-                    variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
+
+                    if (input != null)
+                        variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
+
                     flowPath.markActive(differentialFunction.getOwnName(), false);
                     flowPath.markActive(differentialFunction.getOwnName() + ":1", true);
                 }
