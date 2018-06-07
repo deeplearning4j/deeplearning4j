@@ -321,4 +321,9 @@ public abstract class BaseWrapperLayer implements Layer {
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
         return underlying.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
     }
+
+    @Override
+    public void allowInputModification(boolean allow) {
+        underlying.allowInputModification(allow);
+    }
 }

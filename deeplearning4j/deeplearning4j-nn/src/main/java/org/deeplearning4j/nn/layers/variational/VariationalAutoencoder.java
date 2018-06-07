@@ -891,6 +891,11 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
+    public void allowInputModification(boolean allow) {
+        //No op
+    }
+
+    @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
 

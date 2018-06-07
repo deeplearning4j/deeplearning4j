@@ -103,7 +103,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
                         workspaceMgr);
 
         weightNoiseParams.clear();
-
+        p.setSecond(backpropDropOutIfPresent(p.getSecond()));
         return p;
     }
 

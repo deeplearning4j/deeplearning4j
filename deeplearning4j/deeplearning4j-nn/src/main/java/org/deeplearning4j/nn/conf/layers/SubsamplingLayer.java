@@ -86,6 +86,8 @@ public class SubsamplingLayer extends Layer {
             clone.stride = clone.stride.clone();
         if (clone.padding != null)
             clone.padding = clone.padding.clone();
+        if (clone.dilation != null)
+            clone.dilation = clone.dilation.clone();
         return clone;
     }
 

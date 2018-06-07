@@ -111,6 +111,7 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
                 .build();
         Nd4j.getExecutioner().exec(op);
 
+        outEpsilon = backpropDropOutIfPresent(outEpsilon);
         return new Pair<>(gradient, outEpsilon);
     }
 

@@ -22,7 +22,6 @@ import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.MulBpOp;
@@ -3884,7 +3883,6 @@ public class SameDiffTests {
 
         assertEquals(expOut, out.getArr());
     }
-
 
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){
         try {

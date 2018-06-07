@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.gradcheck;
+package org.nd4j.autodiff.validation;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
@@ -57,120 +57,7 @@ public class GradCheckUtil {
     private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-6;
 
-    private static Map<Class,Integer> countPerClass = new LinkedHashMap<>();
 
-    //Collect coverage information
-    static {
-        initializeCoverage();
-    }
-
-    private static void initializeCoverage(){
-        //Scan classpath to find all DifferentialFunction instances, so tensorflow/onnx mappings can be made
-        //We're assuming here that all instances with such mappings are defined in ND4J
-        //As of 04/2018 all DifferentialFunction classes are defined in org.nd4j.linalg.api.ops - with the exception
-        // of ILossFunction instances, which don't have TF/Onnx import working anyway
-        ImmutableSet<ClassPath.ClassInfo> info;
-        try {
-            //Dependency note: this ClassPath class was added in Guava 14
-            info = com.google.common.reflect.ClassPath.from(DifferentialFunctionClassHolder.class.getClassLoader())
-                    .getTopLevelClassesRecursive("org.nd4j.linalg.api.ops");
-        } catch (IOException e){
-            //Should never happen
-            throw new RuntimeException(e);
-        }
-
-
-        List<Class> l = new ArrayList<>(countPerClass.keySet());
-        int count = 0;
-        for(ClassPath.ClassInfo c : info){
-            //Load method: Loads (but doesn't link or initialize) the class.
-            Class<?> clazz;
-            try{
-                clazz = Class.forName(c.getName());
-            } catch (ClassNotFoundException e){
-                //Should never happen as  this was found on the classpath
-                throw new RuntimeException(e);
-            }
-
-
-            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || !DifferentialFunction.class.isAssignableFrom(clazz))
-                continue;
-
-            if(DifferentialFunction.class.isAssignableFrom(clazz) && !clazz.getSimpleName().contains("Old")){   //Exclude OldSubOp, etc
-                l.add(clazz);
-            }
-        }
-
-
-        Collections.sort(l, new Comparator<Class>() {
-            @Override
-            public int compare(Class o1, Class o2) {
-                return o1.getName().compareTo(o2.getName());
-            }
-        });
-        for(Class c : l){
-            countPerClass.put(c, 0);
-        }
-    }
-
-    public static void logCoverageInformation( boolean logSeen, boolean logUnseen, boolean excludeBackpropOps ){
-        //Set of ops that we can't gradient check
-        Set<Class> excludedFromCoverage = excludedFromGradientCheckCoverage();
-
-        int countSeen = 0;
-        if(logSeen){
-            log.info(" --- Gradient Checks: Classes Seen in Tests ---");
-            for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
-                if(excludedFromCoverage.contains(e.getKey())){
-                    continue;
-                }
-
-                if(e.getValue() > 0 && (!excludeBackpropOps || !isBackpropOp(e.getKey()))){
-                    log.info("GradientCheck: Seen {} instances of op {}", e.getValue(), e.getKey().getName());
-                    countSeen++;
-                }
-            }
-        }
-
-        if(logUnseen){
-            log.info(" --- Gradient Checks: Classes NOT Seen in Tests ---");
-            for(Map.Entry<Class,Integer> e : countPerClass.entrySet()){
-                if(excludedFromCoverage.contains(e.getKey())){
-                    continue;
-                }
-
-                if(e.getValue() == 0 && (!excludeBackpropOps || !isBackpropOp(e.getKey()))){
-                    log.info("GradientCheck: NO instances of op {}", e.getKey().getName());
-                }
-            }
-        }
-
-
-        int total;
-        if(excludeBackpropOps){
-            total = 0;
-            for(Class c : countPerClass.keySet()){
-                if(!isBackpropOp(c)){
-                    total++;
-                }
-            }
-        } else {
-            total = countPerClass.size();
-        }
-
-        double frac = countSeen / (double)total;
-        String fracPc = String.format("%.2f",frac*100.0);
-        log.info("*****************************************************");
-        log.info("Gradient Checks: {} of {} classes checked ({}% coverage - {} backprop ops)", countSeen, total, fracPc,
-                (excludeBackpropOps ? "excluding" : "including"));
-        log.info("({} ops excluded from gradient check coverage information)", excludedFromCoverage.size());
-        log.info("*****************************************************");
-    }
-
-    private static boolean isBackpropOp(Class<?> c){
-        String name = c.getSimpleName();
-        return name.contains("Bp") || name.contains("Derivative") || name.contains("Grad");
-    }
 
 
     /**
@@ -275,6 +162,11 @@ public class GradCheckUtil {
         return totalNFailures == 0;
     }
 
+    public static boolean checkGradients(TestCase t){
+        return checkGradients(t.sameDiff(), t.gradCheckEpsilon(), t.gradCheckMaxRelativeError(), t.gradCheckMinAbsError(),
+                t.gradCheckPrint(), t.gradCheckDefaultExitFirstFailure(), false, t.gradCheckDebugMode(), t.gradCheckSkipVariables());
+    }
+
     public static boolean checkGradients(SameDiff sd){
         return checkGradients(sd, DEFAULT_PRINT, DEFAULT_EXIT_FIRST_FAILURE);
     }
@@ -306,9 +198,6 @@ public class GradCheckUtil {
         if(debugMode){
             sd.enableDebugMode();
         }
-
-        //Collect coverage information:
-        collectCoverageInformation(sd);
 
         //Validation sanity checks:
         if(!skipValidation){
@@ -472,13 +361,6 @@ public class GradCheckUtil {
         return totalNFailures == 0;
     }
 
-    private static void collectCoverageInformation(SameDiff sd){
-        DifferentialFunction[] functions = sd.functions();
-        for(DifferentialFunction df : functions){
-            countPerClass.put(df.getClass(), countPerClass.get(df.getClass()) + 1);
-        }
-    }
-
 
     public static void validateInternalState(SameDiff sd, boolean generateAndCheckGradFn){
 
@@ -582,76 +464,5 @@ public class GradCheckUtil {
         } catch (Exception e){
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Returns a list of classes that are not gradient checkable.
-     * An operation may not be gradient checkable due to, for example:
-     * (a) Having no real-valued arguments<br>
-     * (b) Having random output (dropout, for example)<br>
-     *
-     * Note that hawving non-real-valued output is OK - we still want to test these, as they
-     * should pass back zero gradients!
-     */
-    public static final Set<Class> excludedFromGradientCheckCoverage(){
-        List list = Arrays.asList(
-                //Exclude misc
-                DynamicCustomOp.class,
-                EqualsWithEps.class,
-                ConfusionMatrix.class,
-                Eye.class,
-                OneHot.class,
-                BinaryMinimalRelativeError.class,
-                BinaryMinimalRelativeError.class,
-                Histogram.class,
-                //Exclude manual broadcast ops: SameDiff uses auto broadcasting
-                BroadcastAMax.class,
-                BroadcastAMax.class,
-                BroadcastAddOp.class,
-                BroadcastCopyOp.class,
-                BroadcastDivOp.class,
-                BroadcastEqualTo.class,
-                BroadcastGreaterThan.class,
-                BroadcastGreaterThanOrEqual.class,
-                BroadcastLessThan.class,
-                BroadcastLessThanOrEqual.class,
-                BroadcastMax.class,
-                BroadcastMin.class,
-                BroadcastMulOp.class,
-                BroadcastNotEqual.class,
-                BroadcastRDivOp.class,
-                BroadcastRSubOp.class,
-                BroadcastSubOp.class,
-                //Exclude boolean operations:
-                Any.class,
-                All.class,
-                //Exclude index accumulations (index out, not real-valued)
-                FirstIndex.class,
-                IAMax.class,
-                IAMin.class,
-                LastIndex.class,
-                //Exclude Random ops
-                LegacyDropOut.class,
-                LegacyDropOutInverted.class,
-                RandomStandardNormal.class,
-                DistributionUniform.class,
-                AlphaDropOut.class,
-                BernoulliDistribution.class,
-                BinomialDistribution.class,
-                BinomialDistributionEx.class,
-                Choice.class,
-                DropOut.class,
-                DropOutInverted.class,
-                GaussianDistribution.class,
-                LogNormalDistribution.class,
-                ProbablisticMerge.class,
-                Range.class,
-                TruncatedNormalDistribution.class,
-                UniformDistribution.class,
-                //Other ops we don't intend to be differentiable (only used as part of backprop, etc)
-                Col2Im.class
-        );
-
-        return new HashSet<>(list);
     }
 }

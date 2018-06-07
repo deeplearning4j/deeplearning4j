@@ -1512,8 +1512,27 @@ struct __registratorSynonymDouble_##NAME {\
                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
 // this declaration MUST follow DECLARE_CUSTOM_OP
-#define DECLARE_SHAPE_FN(NAME)                                              template<typename T>\
-                                                                            nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)
+#define DECLARE_SHAPE_FN(NAME)                                                  template<typename T>\
+                                                                                nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)
+
+#define DECLARE_BROADCASTABLE_OP(NAME,TARGS, IARGS)                             template <typename T> \
+                                                                                class NAME: public nd4j::ops::BroadcastableOp<T> { \
+                                                                                protected: \
+                                                                                    Nd4jStatus validateAndExecute(Context<T>& block); \
+                                                                                public:\
+                                                                                    NAME(); \
+                                                                                };\
+                                                                                REGISTER_H(NAME)
+
+#define BROADCASTABLE_OP_IMPL(NAME, TARGS, IARGS)                               template <typename T> \
+                                                                                NAME<T>::NAME(): nd4j::ops::BroadcastableOp<T>(#NAME, TARGS, IARGS) { }; \
+                                                                                template class ND4J_EXPORT NAME<float>; \
+                                                                                template class ND4J_EXPORT NAME<float16>; \
+                                                                                template class ND4J_EXPORT NAME<double>; \
+                                                                                REGISTER_C(NAME) \
+                                                                                template <typename T> \
+                                                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
+
 
 #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
 
