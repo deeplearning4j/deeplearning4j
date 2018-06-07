@@ -18,12 +18,12 @@ import java.util.Map;
  * 1D (temporal) subsampling layer. Currently, we just subclass off the
  * SubsamplingLayer and hard code the "width" dimension to 1. Also, this
  * layer accepts RNN InputTypes instead of CNN InputTypes.
- *
+ * <p>
  * This approach treats a multivariate time series with L timesteps and
  * P variables as an L x 1 x P image (L rows high, 1 column wide, P
  * channels deep). The kernel should be H<L pixels high and W=1 pixels
  * wide.
- *
+ * <p>
  * TODO: We will eventually want to NOT subclass off of SubsamplingLayer.
  *
  * @author dave@skymind.io
@@ -36,14 +36,15 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
     private Subsampling1DLayer(Builder builder) {
         super(builder);
+        this.dilation = builder.dilation;
     }
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams) {
         org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf);
+                new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -56,8 +57,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
-                            + "\"): Expected RNN input, got " + inputType);
+            throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName()
+                    + "\"): Expected RNN input, got " + inputType);
         }
         return inputType;
     }
@@ -71,7 +72,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+                    + "\"): input is null");
         }
 
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
@@ -87,15 +88,20 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             clone.stride = clone.stride.clone();
         if (clone.padding != null)
             clone.padding = clone.padding.clone();
+        if (clone.dilation != null)
+            clone.dilation = clone.dilation.clone();
         return clone;
     }
 
     public static class Builder extends SubsamplingLayer.BaseSubsamplingBuilder<Builder> {
         private static final org.deeplearning4j.nn.conf.layers.PoolingType DEFAULT_POOLING =
-                        org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+                org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
         private static final int DEFAULT_KERNEL = 2;
         private static final int DEFAULT_STRIDE = 1;
         private static final int DEFAULT_PADDING = 0;
+
+        private int[] dilation = new int[]{1};
+
 
         public Builder(PoolingType poolingType, int kernelSize, int stride) {
             this(poolingType, kernelSize, stride, DEFAULT_PADDING);
@@ -134,19 +140,19 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         }
 
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int kernelSize, int stride,
-                        int padding) {
-            super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
+                       int padding) {
+            super(poolingType, new int[]{kernelSize, 1}, new int[]{stride, 1}, new int[]{padding, 0});
         }
 
         public Builder(PoolingType poolingType, int kernelSize, int stride, int padding) {
-            super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
+            super(poolingType, new int[]{kernelSize, 1}, new int[]{stride, 1}, new int[]{padding, 0});
         }
 
         @SuppressWarnings("unchecked")
         public Subsampling1DLayer build() {
             if (poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0)
                 throw new IllegalStateException(
-                                "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+                        "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
             ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
@@ -156,7 +162,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         /**
          * Kernel size
          *
-         * @param kernelSize    kernel size in height and width dimensions
+         * @param kernelSize kernel size in height and width dimensions
          */
         public Subsampling1DLayer.Builder kernelSize(int kernelSize) {
             this.kernelSize[0] = kernelSize;
@@ -166,7 +172,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         /**
          * Stride
          *
-         * @param stride    stride value
+         * @param stride stride value
          */
         public Subsampling1DLayer.Builder stride(int stride) {
             this.stride[0] = stride;
@@ -176,11 +182,20 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         /**
          * Padding
          *
-         * @param padding    padding value
+         * @param padding padding value
          */
         public Subsampling1DLayer.Builder padding(int padding) {
             this.padding[0] = padding;
             return this;
         }
+
+        /**
+         * @param dilation Dilation for kernel
+         */
+        public Subsampling1DLayer.Builder dilation(int... dilation) {
+            this.dilation = dilation;
+            return this;
+        }
+
     }
 }
