@@ -2,10 +2,12 @@ package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -17,6 +19,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -89,6 +92,14 @@ public class DropoutLayerTest extends BaseDL4JTest {
         netSeparate.getLayer(3).setParam("W", Nd4j.eye(4));
         netSeparate.getLayer(3).setParam("b", Nd4j.zeros(4, 1));
 
+        //Disable input modification for this test:
+        for(Layer l : netIntegrated.getLayers()){
+            l.allowInputModification(false);
+        }
+        for(Layer l : netSeparate.getLayers()){
+            l.allowInputModification(false);
+        }
+
         INDArray in = Nd4j.arange(1, 5);
         Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTrainIntegrated = netIntegrated.feedForward(in.dup(), true);
@@ -98,6 +109,14 @@ public class DropoutLayerTest extends BaseDL4JTest {
         List<INDArray> actTestIntegrated = netIntegrated.feedForward(in.dup(), false);
         Nd4j.getRandom().setSeed(12345);
         List<INDArray> actTestSeparate = netSeparate.feedForward(in.dup(), false);
+
+        //Check masks:
+        INDArray maskIntegrated = ((Dropout)netIntegrated.getLayer(0).conf().getLayer().getIDropout()).getMask();
+        INDArray maskSeparate = ((Dropout)netSeparate.getLayer(0).conf().getLayer().getIDropout()).getMask();
+        assertEquals(maskIntegrated, maskSeparate);
+
+
+
 
         assertEquals(actTrainIntegrated.get(1), actTrainSeparate.get(2));
         assertEquals(actTrainIntegrated.get(2), actTrainSeparate.get(4));
@@ -142,6 +161,14 @@ public class DropoutLayerTest extends BaseDL4JTest {
         MultiLayerNetwork netSeparate = new MultiLayerNetwork(confSeparate);
         netSeparate.init();
         netSeparate.fit(next);
+
+        //Disable input modification for this test:
+        for(Layer l : netIntegrated.getLayers()){
+            l.allowInputModification(false);
+        }
+        for(Layer l : netSeparate.getLayers()){
+            l.allowInputModification(false);
+        }
 
         // check parameters
         assertEquals(netIntegrated.getLayer(0).getParam("W"), netSeparate.getLayer(0).getParam("W"));

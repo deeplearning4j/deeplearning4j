@@ -128,6 +128,7 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
 
         weightNoiseParams.clear();
 
+        outEpsilon = backpropDropOutIfPresent(outEpsilon);
         return new Pair<>(retGradient, outEpsilon);
     }
 

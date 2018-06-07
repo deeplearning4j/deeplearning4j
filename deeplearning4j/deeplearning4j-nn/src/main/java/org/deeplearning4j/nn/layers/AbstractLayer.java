@@ -48,13 +48,13 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     protected INDArray input;
     protected INDArray preOutput;
     protected NeuralNetConfiguration conf;
-    protected INDArray dropoutMask;
     protected boolean dropoutApplied = false;
     protected Collection<TrainingListener> trainingListeners = new ArrayList<>();
     protected int index = 0;
     protected INDArray maskArray;
     protected MaskState maskState;
     protected CacheMode cacheMode = CacheMode.NONE;
+    protected boolean inputModificationAllowed = false;
 
     protected int iterationCount;
     protected int epochCount;
@@ -289,15 +289,32 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         input = null;
         maskArray = null;
         maskState = null;
+        if(layerConf().getIDropout() != null){
+            layerConf().getIDropout().clear();
+        }
     }
 
     protected void applyDropOutIfNecessary(boolean training, LayerWorkspaceMgr workspaceMgr){
         if(training && !dropoutApplied && layerConf().getIDropout() != null ){
-            input = layerConf().getIDropout().applyDropout(workspaceMgr.dup(ArrayType.INPUT, input, input.ordering()),
-                    getIterationCount(), getEpochCount(), true);
+            INDArray result;
+            if(inputModificationAllowed){
+                result = input;
+            } else {
+                result = workspaceMgr.createUninitialized(ArrayType.INPUT, input.shape(), input.ordering());
+            }
+
+            input = layerConf().getIDropout().applyDropout(input, result, getIterationCount(), getEpochCount(), workspaceMgr);
             dropoutApplied = true;
         }
     }
+
+    protected INDArray backpropDropOutIfPresent(INDArray epsilon){
+        if(layerConf().getIDropout() != null ){
+            layerConf().getIDropout().backprop(epsilon, epsilon, getIterationCount(), getEpochCount());
+        }
+        return epsilon;
+    }
+
 
     @Override
     public Type type() {
@@ -421,5 +438,10 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
                         + ": layer input field is not set");
             }
         }
+    }
+
+    @Override
+    public void allowInputModification(boolean allow){
+        inputModificationAllowed = allow;
     }
 }
