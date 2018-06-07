@@ -45,3 +45,9 @@ class Upsampling1D(size: List[Int],
 }
 
 
+object Upsampling1D {
+  def apply(size: List[Int],
+            nChannels: Int = 0,
+            nIn: Option[List[Int]] = None): Upsampling1D =
+    new Upsampling1D(size, nChannels, nIn)
+}
