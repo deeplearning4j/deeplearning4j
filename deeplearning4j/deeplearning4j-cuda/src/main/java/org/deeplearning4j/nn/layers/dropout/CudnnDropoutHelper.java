@@ -72,6 +72,7 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
 
     private CudnnDropoutContext cudnnContext = new CudnnDropoutContext();
     private DataCache states;   //"Pointer to user-allocated GPU memory that will hold random number generator states."
+    private SizeTPointer stateSizeBytesPtr;
 
 
     @Override
@@ -89,9 +90,16 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
 
 
         //Reserve space
-        SizeTPointer stateSizeBytesPtr = new SizeTPointer();
+        if(stateSizeBytesPtr == null){
+            stateSizeBytesPtr = new SizeTPointer(1);
+        }
         checkCudnn(cudnnDropoutGetReserveSpaceSize(cudnnContext.xTensorDesc, stateSizeBytesPtr));
-        long stateSizeBytes = stateSizeBytesPtr.get();
+        long stateSizeBytes = stateSizeBytesPtr.get();  //FAILS
+//        long stateSizeBytes = stateSizeBytesPtr.get() + 1000;   //Fails
+//        long stateSizeBytes = stateSizeBytesPtr.get() + 100000;   //Fails
+//        long stateSizeBytes = stateSizeBytesPtr.get() + 1000000;    //Fails
+//        long stateSizeBytes = stateSizeBytesPtr.get() + 10000000;   //Runs !?
+
 
         //Dropout descriptor:
         if(states == null || states.capacity() < stateSizeBytes){
@@ -101,6 +109,7 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
             states = new DataCache(stateSizeBytes);
         }
         long seed = Nd4j.getRandom().nextLong();
+        //Exception here: CUDNN_STATUS_INVALID_VALUE - sizeInBytes is less than the value returned by cudnnDropoutGetStatesSize.
         checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, p, states, stateSizeBytes, seed));
 
         Allocator allocator = AtomicAllocator.getInstance();
