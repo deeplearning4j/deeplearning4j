@@ -79,6 +79,7 @@ abstract class Convolution(protected val dimension: Int,
       validateShapes(dimension, inputShape, kernelSize, stride, padding, dilation)
       val effectiveKernel: Array[Int] = ConvolutionUtils.effectiveKernelSize(kernelSize.toArray, dilation.toArray)
 
+      // TODO: border modes
       List[List[Int]](inputShape.init, effectiveKernel.toList, padding, stride, dilation)
         .transpose
         .map(x => (x.head - x(1) + 2 * x(2)) / x(3) + 1) :+ nOutChannels

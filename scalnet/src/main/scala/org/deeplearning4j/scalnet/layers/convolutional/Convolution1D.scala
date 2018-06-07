@@ -16,55 +16,44 @@
 
 package org.deeplearning4j.scalnet.layers.convolutional
 
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer
+import org.deeplearning4j.nn.conf.layers.{Convolution1DLayer, ConvolutionLayer}
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.scalnet.layers.core.Layer
 import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer}
 import org.nd4j.linalg.activations.Activation
 
 /**
-  * 2D convolution for structured image-like inputs. Input should have
-  * three dimensions: height (number of rows), width (number of columns),
-  * and number of channels. Convolution is over height and width.
+  * 1D convolution for structured image-like inputs. Input should have
+  * two dimensions: height and number of channels. Convolution is over height only.
   *
-  * @author David Kale, Max Pumperla
+  * @author Max Pumperla
   */
 class Convolution2D(nFilter: Int,
                     kernelSize: List[Int],
                     nChannels: Int = 0,
-                    stride: List[Int] = List(1, 1),
-                    padding: List[Int] = List(0, 0),
-                    dilation: List[Int] = List(1, 1),
+                    stride: List[Int] = List(1),
+                    padding: List[Int] = List(0),
+                    dilation: List[Int] = List(1),
                     nIn: Option[List[Int]] = None,
                     val weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
                     val activation: Activation = Activation.IDENTITY,
                     val regularizer: WeightRegularizer = NoRegularizer(),
                     val dropOut: Double = 0.0,
                     override val name: String = "")
-  extends Convolution(dimension = 2, kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
+  extends Convolution(dimension = 1, kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
     with Layer {
 
   override def reshapeInput(nIn: List[Int]): Convolution2D =
-    new Convolution2D(nFilter,
-      kernelSize,
-      nChannels,
-      stride,
-      padding,
-      dilation,
-      Some(nIn),
-      weightInit,
-      activation,
-      regularizer,
-      dropOut,
-      name)
+    new Convolution2D(nFilter, kernelSize, nChannels, stride, padding, dilation, Some(nIn),
+      weightInit, activation, regularizer, dropOut, name)
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
-    new ConvolutionLayer.Builder(kernelSize.head, kernelSize.last)
+    new Convolution1DLayer.Builder(kernelSize.head, kernelSize.last)
       .nIn(inputShape.last)
       .nOut(outputShape.last)
-      .stride(stride.head, stride.last)
-      .padding(padding.head, padding.last)
-      .dilation(dilation.head, dilation.last)
+      .stride(stride.head)
+      .padding(padding.head)
+      .dilation(dilation.head)
       .weightInit(weightInit)
       .activation(activation)
       .l1(regularizer.l1)
@@ -74,27 +63,4 @@ class Convolution2D(nFilter: Int,
       .build()
 }
 
-object Convolution2D {
-  def apply(nFilter: Int,
-            kernelSize: List[Int],
-            nChannels: Int = 0,
-            stride: List[Int] = List(1, 1),
-            padding: List[Int] = List(0, 0),
-            dilation: List[Int] = List(1, 1),
-            nIn: Option[List[Int]] = None,
-            weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
-            activation: Activation = Activation.IDENTITY,
-            regularizer: WeightRegularizer = NoRegularizer(),
-            dropOut: Double = 0.0): Convolution2D =
-    new Convolution2D(nFilter,
-      kernelSize,
-      nChannels,
-      stride,
-      padding,
-      dilation,
-      nIn,
-      weightInit,
-      activation,
-      regularizer,
-      dropOut)
-}
+
