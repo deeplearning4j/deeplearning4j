@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.samediff;
 
+import com.google.common.annotations.VisibleForTesting;
 import lombok.*;
 import onnx.OnnxProto3;
 import org.apache.commons.lang3.builder.Diff;
@@ -1116,6 +1117,5 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         }
         return x;
    }
-
-
+   
 }

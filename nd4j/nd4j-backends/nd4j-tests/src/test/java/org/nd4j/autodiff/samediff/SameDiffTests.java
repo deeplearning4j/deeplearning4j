@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -3883,11 +3884,22 @@ public class SameDiffTests {
     }
 
 
-
+    private static int binArrToInt(int[] arr){
+        int x = 0;
+        int m = 1;
+        for(int i = arr.length - 1; i >= 0; i--){
+            if(arr[i] == 1){
+                x += m;
+            }
+            m *= 2;
+        }
+        return x;
+    }
     @Test
     public void testGet(){
+
         SameDiff sd  = SameDiff.create();
-        INDArray arr = Nd4j.create(10, 10, 10);
+        INDArray arr = Nd4j.create(10, 10);
         SDVariable x = sd.var(arr);
 
         INDArray expOut1 = arr.get(NDArrayIndex.point(4), NDArrayIndex.point(5));
@@ -3898,13 +3910,15 @@ public class SameDiffTests {
         SDVariable result2 = x.get(SDIndex.point(4), SDIndex.all());
         assertEquals(expOut2, result2.eval());
 
-        INDArray expOut3 = arr.get(NDArrayIndex.interval(3, 8), NDArrayIndex.point(2));
-        SDVariable result3 = x.get(SDIndex.interval(3, 8), SDIndex.point(2));
+        INDArray expOut3 = arr.get(NDArrayIndex.interval(3, 8));
+        SDVariable result3 = x.get(SDIndex.interval(3, 8));
+
+        System.out.println(ArrayUtils.toString(expOut3.shape()));
+        System.out.println(ArrayUtils.toString(result3.eval().shape()));
+        assertArrayEquals(expOut3.shape(), result3.eval().shape());
+
         assertEquals(expOut3, result3.eval());
 
-        INDArray expOut4 = arr.get(NDArrayIndex.point(4), NDArrayIndex.interval(2, 2, 9), NDArrayIndex.all());
-        SDVariable result4 = x.get(SDIndex.point(4), SDIndex.interval(2, 2, 9), SDIndex.all());
-        assertEquals(expOut4, result4.eval());
     }
 
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){
