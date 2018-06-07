@@ -2307,7 +2307,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             mgr = LayerWorkspaceMgr.builder()
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
+                    //TODO we can probably optimize this
                     .noWorkspaceFor(ArrayType.ACTIVATIONS)
+                    .noWorkspaceFor(ArrayType.INPUT)
                     .build();
         }
 

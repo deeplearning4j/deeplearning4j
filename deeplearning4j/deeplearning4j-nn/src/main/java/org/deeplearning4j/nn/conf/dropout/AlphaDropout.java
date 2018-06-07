@@ -6,6 +6,7 @@ import lombok.NonNull;
 import lombok.ToString;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.random.impl.AlphaDropOut;
@@ -116,7 +117,7 @@ public class AlphaDropout implements IDropout {
         }
         lastPValue = pValue;
 
-        INDArray mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.shape(), output.ordering());
+        mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.shape(), output.ordering());
         Nd4j.getExecutioner().exec(new BernoulliDistribution(mask, pValue));
 
         //a * (x * d + alphaPrime * (1-d)) + b
@@ -130,6 +131,7 @@ public class AlphaDropout implements IDropout {
 
     @Override
     public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
+        Preconditions.checkState(mask != null, "Cannot perform backprop: Dropout mask array is absent (already cleared?)");
         //dL/dIn = dL/dOut * dOut/dIn
         // dOut/dIn = 0 if dropped (d=0), or a otherwise (d=1)
         mask.muli(a);

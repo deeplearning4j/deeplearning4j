@@ -85,6 +85,7 @@ public class SpatialDropout implements IDropout {
 
     @Override
     public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
+        Preconditions.checkState(mask != null, "Cannot perform backprop: Dropout mask array is absent (already cleared?)");
         //Mask has values 0 or 1/p
         //dL/dIn = dL/dOut * dOut/dIn = dL/dOut * (0 if dropped, or 1/p otherwise)
         Broadcast.mul(gradAtOutput, mask, gradAtInput, 0, 1);

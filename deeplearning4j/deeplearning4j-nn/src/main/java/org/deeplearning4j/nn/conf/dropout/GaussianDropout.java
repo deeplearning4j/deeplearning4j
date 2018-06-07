@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.dropout;
 import lombok.Data;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
@@ -75,6 +76,7 @@ public class GaussianDropout implements IDropout {
 
     @Override
     public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
+        Preconditions.checkState(noise != null, "Cannot perform backprop: GaussianDropout noise array is absent (already cleared?)");
         //out = in*y, where y ~ N(1, stdev)
         //dL/dIn = dL/dOut * dOut/dIn = y * dL/dOut
         Nd4j.getExecutioner().exec(new OldMulOp(gradAtOutput, noise, gradAtInput));
