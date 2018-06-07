@@ -967,7 +967,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         val array = tg.execAndEndResult();
 
-        val exp = Nd4j.create(new float[] {1, 1, 2, 2, 3, 3}, new int[]{2, 3});
+        val exp = Nd4j.create(new float[] {1, 1, 2, 2, 3, 3}, new int[]{3, 2});
 
         assertEquals(exp, array);
     }

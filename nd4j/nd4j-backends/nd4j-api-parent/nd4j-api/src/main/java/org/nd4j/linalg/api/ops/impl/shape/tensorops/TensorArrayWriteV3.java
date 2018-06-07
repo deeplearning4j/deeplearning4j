@@ -20,7 +20,7 @@ public class TensorArrayWriteV3 extends BaseTensorOp {
       val args = this.args();
 
       val varIdx = args[1];
-      val varArray = args[1];
+      val varArray = args[2];
 
       val ids = (int) sameDiff.getArrForVarName(varIdx.getVarName()).getDouble(0);
       val array = sameDiff.getArrForVarName(varArray.getVarName());

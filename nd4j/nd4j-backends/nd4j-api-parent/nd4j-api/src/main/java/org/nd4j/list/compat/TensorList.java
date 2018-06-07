@@ -36,7 +36,7 @@ public class TensorList {
     }
 
     public INDArray stack() {
-        return null;
+        return Nd4j.pile(list);
     }
 
     public int size() {

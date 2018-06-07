@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
+import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -35,7 +36,15 @@ public class TensorArrayGatherV3 extends BaseTensorOp {
 
     @Override
     public TensorList execute(SameDiff sameDiff) {
-        return null;
+       val list = getList(sameDiff);
+
+       val array = list.stack();
+
+       val name = this.getOwnName();
+
+        sameDiff.putArrayForVarName(name, array);
+
+        return list;
     }
 
     @Override
