@@ -71,9 +71,7 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
     }
 
     private CudnnDropoutContext cudnnContext = new CudnnDropoutContext();
-    private Pointer statesPtr;
-    private long stateSizeBytes;
-    private long seed;
+    private DataCache states;   //"Pointer to user-allocated GPU memory that will hold random number generator states."
 
 
     @Override
@@ -90,18 +88,17 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
                 ArrayUtil.toInts(resultArray.stride())));
 
         //Reserve space
-        SizeTPointer stateSizeBytesPtr = new SizeTPointer();        //TODO correct???
-        stateSizeBytes = stateSizeBytesPtr.get();
+        SizeTPointer stateSizeBytesPtr = new SizeTPointer();
         checkCudnn(cudnnDropoutGetReserveSpaceSize(cudnnContext.xTensorDesc, stateSizeBytesPtr));
+        long stateSizeBytes = stateSizeBytesPtr.get();
 
         //Dropout descriptor:
-        if(statesPtr == null || statesPtr.capacity() != stateSizeBytes){
-            //TODO: Is this correct? "Pointer to user-allocated GPU memory that will hold random number generator states."
-            statesPtr = new BytePointer(stateSizeBytes);
+        if(states == null || states.capacity() < stateSizeBytes){
+            //states = "Pointer to user-allocated GPU memory that will hold random number generator states."
+            states = new DataCache(stateSizeBytes);
         }
         long seed = Nd4j.getRandom().nextLong();
-        checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, p, statesPtr, stateSizeBytes, seed));
-
+        checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, p, states, stateSizeBytes, seed));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(input, resultArray);
@@ -110,7 +107,7 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
 
         checkCudnn(cudnnSetStream(cudnnContext, new cuda.CUstream_st(context.getOldStream())));
         checkCudnn(cudnnDropoutForward(cudnnContext, cudnnContext.dropoutDesc, cudnnContext.xTensorDesc, xPtr,
-                cudnnContext.yTensorDesc, yPtr, statesPtr, stateSizeBytes));
+                cudnnContext.yTensorDesc, yPtr, states, stateSizeBytes));
 
         allocator.registerAction(context, input, resultArray);
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
@@ -121,7 +118,6 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
     public void backprop(INDArray gradAtOutput, INDArray gradAtInput) {
         //dropout descriptor should already be set; don't need to set it again?
         //checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, p, statesPtr, stateSizeBytes, seed));
-
 
         checkCudnn(cudnnSetTensorNdDescriptor(cudnnContext.dyTensorDesc, dataType, gradAtOutput.rank(),
                 //TODO int cast
@@ -138,7 +134,7 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
         Pointer dxPtr = allocator.getPointer(gradAtInput, context);
 
         checkCudnn(cudnnDropoutBackward(cudnnContext, cudnnContext.dropoutDesc, cudnnContext.dyTensorDesc, dyPtr,
-                cudnnContext.dxTensorDesc, dxPtr, statesPtr, stateSizeBytes));
+                cudnnContext.dxTensorDesc, dxPtr, states, states.capacity()));
 
         allocator.registerAction(context, gradAtOutput, gradAtInput);
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
