@@ -131,6 +131,14 @@ public class GradientCheckUtil {
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError,
                                          INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
                                          boolean subset, int maxPerParam, Set<String> excludeParams) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input,
+                labels, inputMask, labelMask, subset, maxPerParam, excludeParams, null);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
+                                         boolean subset, int maxPerParam, Set<String> excludeParams, Integer rngSeedResetEachIter) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -176,8 +184,9 @@ public class GradientCheckUtil {
                 }
             }
 
-            if (n.getLayer().getIDropout() != null) {
-                throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
+            if (n.getLayer().getIDropout() != null && rngSeedResetEachIter == null) {
+                throw new IllegalStateException("When gradient checking dropout, rngSeedResetEachIter must be set, or no" +
+                        " dropout should be present during gradient checks - got dropout = "
                                 + n.getLayer().getIDropout() + " for layer " + layerCount);
             }
         }
@@ -192,6 +201,9 @@ public class GradientCheckUtil {
         mln.setInput(input);
         mln.setLabels(labels);
         mln.setLayerMaskArrays(inputMask, labelMask);
+        if(rngSeedResetEachIter != null){
+            Nd4j.getRandom().setSeed(rngSeedResetEachIter);
+        }
         mln.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = mln.gradientAndScore();
 
@@ -259,10 +271,16 @@ public class GradientCheckUtil {
             //(w+epsilon): Do forward pass and score
             double origValue = params.getDouble(i);
             params.putScalar(i, origValue + epsilon);
+            if(rngSeedResetEachIter != null){
+                Nd4j.getRandom().setSeed(rngSeedResetEachIter);
+            }
             double scorePlus = mln.score(ds, true);
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - epsilon);
+            if(rngSeedResetEachIter != null){
+                Nd4j.getRandom().setSeed(rngSeedResetEachIter);
+            }
             double scoreMinus = mln.score(ds, true);
 
             //Reset original param value
@@ -360,6 +378,14 @@ public class GradientCheckUtil {
     public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
                                          INDArray[] labels, INDArray[] fMask, INDArray[] lMask, Set<String> excludeParams) {
+        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs,
+                labels, fMask, lMask, excludeParams, null);
+    }
+
+    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
+                                         INDArray[] labels, INDArray[] fMask, INDArray[] lMask, Set<String> excludeParams,
+                                         Integer rngSeedResetEachIter) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -414,8 +440,9 @@ public class GradientCheckUtil {
                 }
             }
 
-            if (lv.getLayerConf().getLayer().getIDropout() != null) {
-                throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
+            if (lv.getLayerConf().getLayer().getIDropout() != null && rngSeedResetEachIter == null) {
+                throw new IllegalStateException("When gradient checking dropout, rngSeedResetEachIter must be set, or no" +
+                        " dropout should be present during gradient checks - got dropout = "
                         + lv.getLayerConf().getLayer().getIDropout() + " for layer " + layerCount);
             }
         }
@@ -434,6 +461,9 @@ public class GradientCheckUtil {
 
         graph.setLayerMaskArrays(fMask, lMask);
 
+        if(rngSeedResetEachIter != null){
+            Nd4j.getRandom().setSeed(rngSeedResetEachIter);
+        }
         graph.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
 
@@ -474,10 +504,16 @@ public class GradientCheckUtil {
             double origValue = params.getDouble(i);
 
             params.putScalar(i, origValue + epsilon);
+            if(rngSeedResetEachIter != null){
+                Nd4j.getRandom().setSeed(rngSeedResetEachIter);
+            }
             double scorePlus = graph.score(mds, true); //training == true for batch norm, etc (scores and gradients need to be calculated on same thing)
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - epsilon);
+            if(rngSeedResetEachIter != null){
+                Nd4j.getRandom().setSeed(rngSeedResetEachIter);
+            }
             double scoreMinus = graph.score(mds, true);
 
             //Reset original param value
