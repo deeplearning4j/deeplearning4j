@@ -4,13 +4,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.*;
+import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -22,7 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Slf4j
@@ -64,16 +64,21 @@ public class GradCheckMisc extends BaseGradCheck {
             INDArray[] orig = new INDArray[shapes.size()];
             for (int j = 0; j < shapes.size(); j++) {
                 orig[j] = Nd4j.rand(shapes.get(j));
-                toConcat[j] = sd.var(String.valueOf(i), orig[j]);
+                toConcat[j] = sd.var("concat-in-" + String.valueOf(j), orig[j]);
             }
 
-            INDArray exp = Nd4j.concat(concatDim[i], orig);
-
-            SDVariable sdConcat = sd.concat(0, toConcat);
+            SDVariable sdConcat = sd.concat("c", 0, toConcat);
             SDVariable stdev = sd.standardDeviation("out", sdConcat, true);
 
             String msg = "i=" + i + ", concatDim=" + concatDim[i];
-            check(sd, failed, msg);
+            TestCase tc = new TestCase(sd);
+            tc.testName(msg)
+                    .expectedOutput("c", Nd4j.concat(concatDim[i], orig));
+
+            String error = OpValidation.validate(tc);
+            if(error != null){
+                failed.add(name);
+            }
         }
 
         assertEquals(failed.toString(), 0, failed.size());
@@ -97,10 +102,16 @@ public class GradCheckMisc extends BaseGradCheck {
 
                 INDArray out = sd.execAndEndResult();
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
-                assertEquals(expOut, out);
 
                 String msg = "toShape=" + Arrays.toString(toShape) + ", source=" + p.getSecond();
-                check(sd, failed, msg);
+                TestCase tc = new TestCase(sd);
+                tc.testName(msg)
+                        .expectedOutput("out", expOut);
+
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
@@ -131,7 +142,14 @@ public class GradCheckMisc extends BaseGradCheck {
                 assertEquals(msg, expOut, out);
 
 
-                check(sd, failed, msg);
+                TestCase tc = new TestCase(sd);
+                tc.testName(msg)
+                        .expectedOutput("out", expOut);
+
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
@@ -173,15 +191,22 @@ public class GradCheckMisc extends BaseGradCheck {
 
                 INDArray out = sd.execAndEndResult();
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
-                assertEquals(expOut, out);
 
                 assertArrayEquals(expExpandShape, expand.getArr().shape());
                 INDArray expExpand = inArr.dup('c').reshape(expExpandShape);
-                assertEquals(expExpand, expand.getArr());
 
                 String msg = "expandDim=" + i + ", source=" + p.getSecond();
                 log.info("Starting: " + msg);
-                check(sd, failed, msg);
+
+                TestCase tc = new TestCase(sd);
+                tc.testName(msg)
+                        .expectedOutput("out", expOut)
+                        .expectedOutput(expand.getVarName(), expExpand);
+
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
         assertEquals(failed.toString(), 0, failed.size());
@@ -225,14 +250,21 @@ public class GradCheckMisc extends BaseGradCheck {
                 sd.execAndEndResult();
 
                 INDArray squeezed = squeeze.getArr();
-                assertArrayEquals(expShapePostSqueeze, squeezed.shape());
+//                assertArrayEquals(expShapePostSqueeze, squeezed.shape());
 
                 INDArray out = sd.execAndEndResult();
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
                 assertEquals(expOut, out);
 
                 String msg = "squeezeDim=" + i + ", source=" + p.getSecond();
-                check(sd, failed, msg);
+                TestCase tc = new TestCase(sd)
+                        .expectedOutput("out", expOut);
+
+
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
@@ -308,7 +340,12 @@ public class GradCheckMisc extends BaseGradCheck {
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);
 
-                check(sd, failed, msg);
+                TestCase tc = new TestCase(sd);
+
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
@@ -388,7 +425,11 @@ public class GradCheckMisc extends BaseGradCheck {
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);
 
-                check(sd, failed, msg);
+                TestCase tc = new TestCase(sd);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
@@ -480,7 +521,11 @@ public class GradCheckMisc extends BaseGradCheck {
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);
 
-                check(sd, failed, msg);
+                TestCase tc = new TestCase(sd);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
@@ -516,7 +561,12 @@ public class GradCheckMisc extends BaseGradCheck {
 
             String msg = "i=" + i + ": inShape=" + Arrays.toString(os) + ", begin=" + Arrays.toString(b) + ", end=" + Arrays.toString(e);
             log.info("Starting test: " + msg);
-            check(sd, failed, msg);
+
+            TestCase tc = new TestCase(sd);
+            String error = OpValidation.validate(tc);
+            if(error != null){
+                failed.add(name);
+            }
         }
 
         assertEquals(failed.toString(), 0, failed.size());
@@ -597,7 +647,12 @@ public class GradCheckMisc extends BaseGradCheck {
 
             String msg = "i=" + i + ": " + t;
             log.info("Starting test: " + msg);
-            check(sd, failed, msg);
+
+            TestCase tc = new TestCase(sd);
+            String error = OpValidation.validate(tc);
+            if(error != null){
+                failed.add(name);
+            }
         }
         assertEquals(failed.toString(), 0, failed.size());
     }
@@ -651,7 +706,12 @@ public class GradCheckMisc extends BaseGradCheck {
 
             SDVariable loss = sd.sum(scatter);  //.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
             sd.execAndEndResult();
-            check(sd, failed, name);
+
+            TestCase tc = new TestCase(sd);
+            String error = OpValidation.validate(tc);
+            if(error != null){
+                failed.add(name);
+            }
         }
 
         assertEquals(failed.toString(), 0, failed.size());
@@ -683,7 +743,12 @@ public class GradCheckMisc extends BaseGradCheck {
                 SDVariable loss = sd.standardDeviation("loss", gather, true, Integer.MAX_VALUE);
 
                 String msg = "rank=" + rank + ", dim=" + dim;
-                check(sd, failed, msg);
+
+                TestCase tc = new TestCase(sd);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
@@ -725,7 +790,12 @@ public class GradCheckMisc extends BaseGradCheck {
 
                     String msg = merge.opName() + " - numArrays=" + numArrays + ", shape=" + Arrays.toString(shape);
                     SDVariable loss = sd.standardDeviation("loss", merge, true);
-                    check(sd, failed, msg);
+
+                    TestCase tc = new TestCase(sd);
+                    String error = OpValidation.validate(tc);
+                    if(error != null){
+                        failed.add(name);
+                    }
                 }
             }
         }
@@ -783,7 +853,12 @@ public class GradCheckMisc extends BaseGradCheck {
                     }
 
                     String msg = Arrays.toString(shape) + ", axis=" + axis + ", numInputs=" + numInputs;
-                    check(sd, failed, msg);
+
+                    TestCase tc = new TestCase(sd);
+                    String error = OpValidation.validate(tc);
+                    if(error != null){
+                        failed.add(name);
+                    }
                 }
             }
         }
@@ -844,8 +919,11 @@ public class GradCheckMisc extends BaseGradCheck {
                         assertArrayEquals(msg, shape, v.getArr().shape());
                     }
 
-
-                    check(sd, failed, msg);
+                    TestCase tc = new TestCase(sd);
+                    String error = OpValidation.validate(tc);
+                    if(error != null){
+                        failed.add(name);
+                    }
                 }
             }
         }
@@ -911,7 +989,12 @@ public class GradCheckMisc extends BaseGradCheck {
             assertEquals(exp[i], tiled);
 
             String msg = "Shape=" + Arrays.toString(inArr.shape()) + " - tile=" + Arrays.toString(tArg);
-            check(sd, failed, msg);
+
+            TestCase tc = new TestCase(sd);
+            String error = OpValidation.validate(tc);
+            if(error != null){
+                failed.add(name);
+            }
         }
 
         assertEquals(failed.toString(), 0, failed.size());

@@ -146,35 +146,31 @@ public class KerasModelEndToEndTest {
      * IMDB Embedding and LSTM test
      */
     @Test
-    @Ignore // too memory intense
     public void importImdbLstmTfKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false);
     }
 
     @Test
-    @Ignore // too memory intense
     public void importImdbLstmThKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false);
     }
 
     @Test
-    @Ignore // too memory intense
     public void importImdbLstmTfKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false);
     }
 
     @Test
-    @Ignore // too memory intense
     public void importImdbLstmThKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, false, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, false, true, false);
     }
 
     /**

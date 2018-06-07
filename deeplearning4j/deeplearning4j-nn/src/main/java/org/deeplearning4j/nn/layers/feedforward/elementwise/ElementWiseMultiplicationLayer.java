@@ -62,6 +62,7 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
         INDArray epsilonNext = delta.mulRowVector(params.get(ElementWiseParamInitializer.WEIGHT_KEY));
         epsilonNext = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilonNext);
 
+        epsilonNext = backpropDropOutIfPresent(epsilonNext);
         return new Pair<>(ret, epsilonNext);
     }
 
@@ -88,7 +89,7 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
                             + W.shapeInfoToString() + ") " + layerId());
         }
 
-        applyDropOutIfNecessary(training, null);    //TODO
+        applyDropOutIfNecessary(training, workspaceMgr);
 
         INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.shape(), 'c');
 

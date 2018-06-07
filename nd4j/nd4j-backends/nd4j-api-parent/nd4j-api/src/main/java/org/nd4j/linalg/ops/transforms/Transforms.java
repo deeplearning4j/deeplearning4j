@@ -646,7 +646,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sigmoidDerivative(INDArray ndArray, boolean dup) {
-        return exec(dup ? new SigmoidDerivative(ndArray, ndArray.dup()) : new SigmoidDerivative(ndArray));
+        return exec(dup ? new SigmoidDerivative(ndArray, Nd4j.createUninitialized(ndArray.shape(), ndArray.ordering())) : new SigmoidDerivative(ndArray));
     }
 
 
@@ -658,6 +658,25 @@ public class Transforms {
      */
     public static INDArray sqrt(INDArray ndArray) {
         return sqrt(ndArray, true);
+    }
+
+
+    /**
+     * Element-wise tan function. Copies the array
+     *
+     * @param ndArray Input array
+     */
+    public static INDArray tan(INDArray ndArray) {
+        return tan(ndArray, true);
+    }
+
+    /**
+     * Element-wise tan function. Copies the array
+     *
+     * @param ndArray Input array
+     */
+    public static INDArray tan(INDArray ndArray, boolean dup) {
+        return exec(dup ? new Tan(ndArray, Nd4j.createUninitialized(ndArray.shape(), ndArray.ordering())) : new Tan(ndArray));
     }
 
     /**
