@@ -78,14 +78,14 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
 
         INDArray ret;
         if(!training){
-            ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
+            ret = input;
         } else {
             if(layerConf().getIDropout() != null){
                 INDArray result;
                 if(inputModificationAllowed){
                     result = input;
                 } else {
-                    result = workspaceMgr.dup(ArrayType.INPUT, input, input.ordering());    //TODO Can we unsafeDup here?
+                    result = workspaceMgr.createUninitialized(ArrayType.INPUT, input.shape(), input.ordering());
                 }
 
                 ret = layerConf().getIDropout().applyDropout(input, result, getIterationCount(), getEpochCount(), workspaceMgr);
@@ -98,6 +98,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
             ret.muliColumnVector(maskArray);
         }
 
+        ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
         return ret;
     }
 

@@ -673,7 +673,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     seenAsInputTo.put(s, new ArrayList<String>());
                 }
                 List<String> seen = seenAsInputTo.get(s);
-                seen.add(s);
+                seen.add(entry.getKey());
             }
         }
 
@@ -2679,9 +2679,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             setListeners(listeners);
             return;
         } else {
-            this.trainingListeners = new ArrayList<>(this.trainingListeners);   //To avoid immutable list issues
-            Collections.addAll(this.trainingListeners, listeners);
-            setListeners(listeners);
+            List<TrainingListener> newListeners = new ArrayList<>(this.trainingListeners);   //To avoid immutable list issues
+            Collections.addAll(newListeners, listeners);
+            setListeners(newListeners);
         }
 
         if (solver != null) {
