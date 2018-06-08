@@ -75,14 +75,15 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
         
         *gradI = (static_cast<T>(gradO->lengthOf()) / input->lengthOf());
 
-        if(!keepDims) {
-            Nd4jLong* gradOShapeKeepDims = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());
-            gradO = gradO->reshape(gradO->ordering(), ShapeUtils<T>::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
-        }        
+        Nd4jLong* gradOShapeKeepDims = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());
+        const bool isGradOShapeBroadcast = shape::equalsSoft(gradOShapeKeepDims, gradO->getShapeInfo());
+        
+        if(!isGradOShapeBroadcast)
+            gradO = gradO->reshape(gradO->ordering(), ShapeUtils<T>::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]                
 
-        *gradI *= *gradO;                                                   // automatic broadcasting happens during this multiplication
+        *gradI *= *gradO;
 
-        if(!keepDims)
+        if(!isGradOShapeBroadcast)
             delete gradO;
     }
 
