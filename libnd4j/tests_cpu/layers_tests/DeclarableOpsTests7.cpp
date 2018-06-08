@@ -3381,6 +3381,56 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_2) {
+    
+    NDArray<float> input('c', {3, 4},   {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f});    
+    NDArray<float> eps(0.5f);
+    //************************************//
+//    NDArray<float> exp('c', {3, 4}, {0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,0.5f});
+    //************************************//
+    NDArray<float> exp('c', {3, 4}); 
+    
+    nd4j::ops::reduce_prod_bp<float> op;
+    nd4j::ops::reduce_prod<float> op_exp;
+    auto res = op_exp.execute({&input}, {}, {});
+    auto result = op.execute({&input, &eps}, {}, {});
+    exp.assign(res->at(0)->getScalar(0));
+    exp /= input;
+    exp *= eps.getScalar(0);
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);    
+    z->printIndexedBuffer("Result is ");
+    exp.printIndexedBuffer("Expected");
+//    z->printShapeInfo();
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete result;
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_3) {
+    
+    NDArray<float> input('c', {3, 4},   {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f});    
+    NDArray<float> eps('c', {1, 4}, {1.f, 2.f, 3.f, 4.f});
+    //************************************//
+    NDArray<float> exp('c', {3, 4}, {45.f, 120.f, 231.f, 384.f, 9.f, 40.f, 99.f, 192.f, 5.f, 24.f, 63.f, 128.f});
+    
+    nd4j::ops::reduce_prod_bp<float> op;
+    nd4j::ops::reduce_prod<float> op_exp;
+//    auto res = op_exp.execute({&input}, {}, {});
+    auto result = op.execute({&input, &eps}, {1.f}, {0});
+
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);    
+    z->printIndexedBuffer("Result is ");
+    exp.printIndexedBuffer("Expected");
+//    z->printShapeInfo();
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete result;
+//    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_1) {
 
     NDArray<float> x('c', {2, 3, 4});

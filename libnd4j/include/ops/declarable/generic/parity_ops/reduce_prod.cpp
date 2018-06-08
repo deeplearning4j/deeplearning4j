@@ -94,6 +94,10 @@ namespace ops {
             //output->
             for (Nd4jLong e = 0; e < outList->size(); ++e) {
                 //outList->at(e)->assign(epsilon);
+                epsilon->printShapeInfo("GradOut");
+                tempProd->printShapeInfo("ReduceProd");
+                inList->at(e)->printShapeInfo("Input");
+                outList->at(e)->printShapeInfo("Output");
                 epsilon->applyTriplewiseLambda(tempProd, inList->at(e), backpropRoutine, outList->at(e));
             }
         }
