@@ -1580,7 +1580,9 @@ TEST_F(GraphTests, Test_Minifier_1) {
 
     ASSERT_EQ(0, GraphUtils::runPreprocessor(input.c_str(), "libnd4j_mini.hpp"));
     // remove file from filesystem
+#ifdef __linux__
     ASSERT_EQ(0, unlink("libnd4j_mini.hpp"));
+#endif
 }
 
 TEST_F(GraphTests, Test_Minifier_2) {
@@ -1589,15 +1591,18 @@ TEST_F(GraphTests, Test_Minifier_2) {
     // if all ok - return value is 0, if error - non-zero value will be returned
     ASSERT_EQ(0, GraphUtils::runPreprocessor("../include/ops/ops.h", "libnd4j_mini2.hpp"));
     // remove file from filesystem
+#ifdef __linux__
     ASSERT_EQ(0, unlink("libnd4j_mini2.hpp"));
-
+#endif
 }
 
 TEST_F(GraphTests, Test_Minifier_3) {
 
     // run preprocessor to produce single header
     // if all ok - return value is 0, if error - non-zero value will be returned
+#ifdef __linux__
     ASSERT_EQ(0x100, GraphUtils::runPreprocessor("/include/ops/ops.h", "libnd4j_mini3.hpp"));
+#endif
     // remove file from filesystem
     //ASSERT_EQ(0, unlink("libnd4j_mini3.hpp"));
 
