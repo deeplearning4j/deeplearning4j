@@ -39,6 +39,8 @@ public class ValidateCudnnDropout extends BaseDL4JTest {
             //Test repeatability:
             for (int i = 0; i < 10; i++) {
                 Nd4j.getRandom().setSeed(12345);
+                d.setRngStates(null);
+                d.setMask(null);
 
                 INDArray outNew = Nd4j.createUninitialized(shape);
                 d.applyDropout(in, outNew, pRetain);
@@ -50,6 +52,7 @@ public class ValidateCudnnDropout extends BaseDL4JTest {
             INDArray gradAtOut = Nd4j.ones(shape);
             INDArray gradAtInput = Nd4j.createUninitialized(shape);
             d.backprop(gradAtOut, gradAtInput);
+            Nd4j.getExecutioner().commit();
 
             //If dropped: expect 0. Otherwise: expect 1/pRetain, i.e., output for 1s input
             assertEquals(out, gradAtInput);

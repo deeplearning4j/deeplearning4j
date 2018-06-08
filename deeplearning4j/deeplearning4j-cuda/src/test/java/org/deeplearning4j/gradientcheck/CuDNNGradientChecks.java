@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.function.Consumer;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -603,10 +604,26 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
             }
             INDArray l = TestUtils.randomOneHot(minibatch, 10);
 
+            //Consumer function to enforce CuDNN RNG repeatability - otherwise will fail due to randomness (inconsistent
+            // dropout mask between forward passes)
+            Consumer<MultiLayerNetwork> c = new Consumer<MultiLayerNetwork>() {
+                @Override
+                public void accept(MultiLayerNetwork net) {
+                    Nd4j.getRandom().setSeed(12345);
+                    for(Layer l : net.getLayers()){
+                        Dropout d = (Dropout) l.conf().getLayer().getIDropout();
+                        if(d != null){
+                            ((CudnnDropoutHelper)d.getHelper()).setMask(null);
+                            ((CudnnDropoutHelper)d.getHelper()).setRngStates(null);
+                        }
+                    }
+                }
+            };
+
             log.info("*** Starting test: " + msg + " ***");
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l, null, null,
-                    false, -1, null, 12345);    //Last arg: ensures RNG is reset at each iter... otherwise will fail due to randomness!
+                    false, -1, null, c);
 
             assertTrue(msg, gradOK);
             TestUtils.testModelSerialization(mln);

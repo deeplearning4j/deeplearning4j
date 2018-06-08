@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -47,13 +48,14 @@ import org.nd4j.util.OneTimeLogger;
  */
 @Data
 @JsonIgnoreProperties({"mask", "helper"})
+@EqualsAndHashCode(exclude = {"mask", "helper"})
 @Slf4j
 public class Dropout implements IDropout {
 
     private double p;
     private ISchedule pSchedule;
-    private INDArray mask;
-    private DropoutHelper helper;
+    private transient INDArray mask;
+    private transient DropoutHelper helper;
 
     /**
      * @param activationRetainProbability Probability of retaining an activation - see {@link Dropout} javadoc
@@ -82,6 +84,9 @@ public class Dropout implements IDropout {
         initializeHelper();
     }
 
+    /**
+     * Initialize the CuDNN dropout helper, if possible
+     */
     protected void initializeHelper(){
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
