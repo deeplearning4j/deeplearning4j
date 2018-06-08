@@ -121,7 +121,6 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
         if (shape == null || ArrayUtil.prod(shape) != epsilons.length()) {
             INDArray ret = epsilons.reshape('c', epsilons.size(0),inputDepth * inputHeight * inputWidth * numChannels);
             return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, ret);
-
         }
 
         return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilons.reshape('c', shape));

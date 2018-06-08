@@ -94,7 +94,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
             throw new IllegalArgumentException("Invalid input: expected output size(1)=" + shape[1]
                             + " must be equal to " + inputHeight + " x columns " + inputWidth + " x channels "
                             + numChannels + " = " + product + ", received: " + shape[1]);
-        INDArray ret = workspaceMgr.dup(ArrayType.ACTIVATIONS, output2d, 'c');
+        INDArray ret = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, output2d, 'c');
         return ret.reshape('c', output2d.size(0), numChannels, inputHeight, inputWidth);
     }
 

@@ -30,13 +30,13 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPoolingUtils.mapPoolingDimensions;
+import static org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPoolingUtils.mapGlobalPoolingDimensions;
 import static org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPoolingUtils.mapPoolingType;
 
 /**
  * Imports a Keras Pooling layer as a DL4J Subsampling layer.
  *
- * @author dave@skymind.io
+ * @author dave@skymind.io, Max Pumperla
  */
 @Slf4j
 @Data
@@ -68,11 +68,11 @@ public class KerasGlobalPooling extends KerasLayer {
     public KerasGlobalPooling(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        this.dimensions = mapPoolingDimensions(this.className, conf);
+        this.dimensions = mapGlobalPoolingDimensions(this.className, conf);
         GlobalPoolingLayer.Builder builder =
                 new GlobalPoolingLayer.Builder(mapPoolingType(this.className, conf))
                         .poolingDimensions(dimensions)
-                        .collapseDimensions(false) // while true by default in DL4J, it's false in Keras.
+                        .collapseDimensions(true) // keras 2 collapses dimensions
                         .name(this.layerName)
                         .dropOut(this.dropout);
         this.layer = builder.build();

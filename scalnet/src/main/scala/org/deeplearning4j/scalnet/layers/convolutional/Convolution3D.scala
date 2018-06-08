@@ -16,36 +16,38 @@
 
 package org.deeplearning4j.scalnet.layers.convolutional
 
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer
+import org.deeplearning4j.nn.conf.layers.{ Convolution3D => JConvolution3D }
+import org.deeplearning4j.nn.conf.layers.Convolution3D.DataFormat
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.scalnet.layers.core.Layer
 import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer}
 import org.nd4j.linalg.activations.Activation
 
 /**
-  * 2D convolution for structured image-like inputs. Input should have
-  * three dimensions: height (number of rows), width (number of columns),
-  * and number of channels. Convolution is over height and width.
+  * 3D convolution for structured image-like inputs. Input should have
+  * four dimensions: depth, height, width
+  * and number of channels. Convolution is over depth, height and width.
+  * For simplicity we assume NDHWC data format, i.e. channels last.
   *
-  * @author David Kale, Max Pumperla
+  * @author Max Pumperla
   */
-class Convolution2D(nFilter: Int,
+class Convolution3D(nFilter: Int,
                     kernelSize: List[Int],
                     nChannels: Int = 0,
-                    stride: List[Int] = List(1, 1),
-                    padding: List[Int] = List(0, 0),
-                    dilation: List[Int] = List(1, 1),
+                    stride: List[Int] = List(1, 1, 1),
+                    padding: List[Int] = List(0, 0, 0),
+                    dilation: List[Int] = List(1, 1, 1),
                     nIn: Option[List[Int]] = None,
                     val weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
                     val activation: Activation = Activation.IDENTITY,
                     val regularizer: WeightRegularizer = NoRegularizer(),
                     val dropOut: Double = 0.0,
                     override val name: String = "")
-  extends Convolution(dimension = 2, kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
+  extends Convolution(dimension = 3, kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
     with Layer {
 
-  override def reshapeInput(nIn: List[Int]): Convolution2D =
-    new Convolution2D(nFilter,
+  override def reshapeInput(nIn: List[Int]): Convolution3D =
+    new Convolution3D(nFilter,
       kernelSize,
       nChannels,
       stride,
@@ -59,12 +61,13 @@ class Convolution2D(nFilter: Int,
       name)
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
-    new ConvolutionLayer.Builder(kernelSize.head, kernelSize.last)
+    new JConvolution3D.Builder(kernelSize.head, kernelSize(1), kernelSize(2))
       .nIn(inputShape.last)
       .nOut(outputShape.last)
-      .stride(stride.head, stride.last)
-      .padding(padding.head, padding.last)
-      .dilation(dilation.head, dilation.last)
+      .dataFormat(DataFormat.NDHWC)
+      .stride(stride.head, stride(1), stride(2))
+      .padding(padding.head, padding(1), padding(2))
+      .dilation(dilation.head, dilation(1), dilation(2))
       .weightInit(weightInit)
       .activation(activation)
       .l1(regularizer.l1)
@@ -74,19 +77,19 @@ class Convolution2D(nFilter: Int,
       .build()
 }
 
-object Convolution2D {
+object Convolution3D {
   def apply(nFilter: Int,
             kernelSize: List[Int],
             nChannels: Int = 0,
-            stride: List[Int] = List(1, 1),
-            padding: List[Int] = List(0, 0),
-            dilation: List[Int] = List(1, 1),
+            stride: List[Int] = List(1, 1, 1),
+            padding: List[Int] = List(0, 0, 0),
+            dilation: List[Int] = List(1, 1, 1),
             nIn: Option[List[Int]] = None,
             weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
             activation: Activation = Activation.IDENTITY,
             regularizer: WeightRegularizer = NoRegularizer(),
-            dropOut: Double = 0.0): Convolution2D =
-    new Convolution2D(nFilter,
+            dropOut: Double = 0.0): Convolution3D =
+    new Convolution3D(nFilter,
       kernelSize,
       nChannels,
       stride,
@@ -98,3 +101,5 @@ object Convolution2D {
       regularizer,
       dropOut)
 }
+
+
