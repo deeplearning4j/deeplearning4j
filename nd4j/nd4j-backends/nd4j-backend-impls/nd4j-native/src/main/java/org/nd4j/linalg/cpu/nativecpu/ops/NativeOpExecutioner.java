@@ -1824,6 +1824,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
         else{
+            System.out.println("==============not resolved==================");
             int cnt = 0;
             for(val shape : op.getInputShapes()){
                 inputShapes.put(cnt++, Nd4j.createUninitialized(shape)
@@ -1845,7 +1846,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 tArgs.put(cnt++, (float) t);
 
             val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesFloat(null,
-                    hash, inputBuffers, inputShapes, op.numInputArguments(),
+                    hash, inputBuffers, inputShapes, numInputs,
                     tArgs, op.numTArguments(), iArgs, op.numIArguments());
 
             if (ptrptr == null) {
@@ -1869,7 +1870,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 tArgs.put(cnt++, t);
 
             val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesDouble(null,
-                    hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs,
+                    hash, inputBuffers, inputShapes, numInputs, tArgs,
                     op.numTArguments(), iArgs, op.numIArguments());
 
             if (ptrptr == null) {
@@ -1894,7 +1895,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t:  tArgs1)
                 tArgs.put(cnt++, ArrayUtil.toHalf(t));
 
-            val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesHalf(null, hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs, op.numTArguments(), iArgs, op.numIArguments());
+            val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesHalf(null, hash, inputBuffers, inputShapes, numInputs, tArgs, op.numTArguments(), iArgs, op.numIArguments());
 
             if (ptrptr == null) {
                 if (inputsResolved){
