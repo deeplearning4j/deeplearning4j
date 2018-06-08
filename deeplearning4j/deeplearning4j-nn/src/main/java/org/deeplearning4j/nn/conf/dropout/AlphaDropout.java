@@ -4,9 +4,15 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.ToString;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.random.impl.AlphaDropOut;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -32,9 +38,9 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @Data
-@EqualsAndHashCode(exclude = {"lastPValue","alphaPrime","a","b"})
+@EqualsAndHashCode(exclude = {"lastPValue","alphaPrime","a","b", "mask"})
 @ToString(exclude = {"lastPValue","alphaPrime","a","b"})
-@JsonIgnoreProperties({"lastPValue", "alphaPrime", "a", "b"})
+@JsonIgnoreProperties({"lastPValue", "alphaPrime", "a", "b", "mask"})
 public class AlphaDropout implements IDropout {
 
     public static final double DEFAULT_ALPHA =  1.6732632423543772;
@@ -46,10 +52,12 @@ public class AlphaDropout implements IDropout {
     private final double alpha;
     private final double lambda;
 
-    private double lastPValue;
+    private transient double lastPValue;
     private double alphaPrime;
     private double a;
     private double b;
+
+    private transient INDArray mask;
 
     /**
      * @param activationRetainProbability Probability of retaining an activation. See {@link AlphaDropout} javadoc
@@ -90,7 +98,7 @@ public class AlphaDropout implements IDropout {
     }
 
     @Override
-    public INDArray applyDropout(INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
+    public INDArray applyDropout(INDArray inputActivations, INDArray output, int iteration, int epoch, LayerWorkspaceMgr workspaceMgr) {
         //https://arxiv.org/pdf/1706.02515.pdf pg6
         // "...we propose “alpha dropout”, that randomly sets inputs to α'"
         // "The affine transformation a(xd + α'(1−d))+b allows to determine parameters a and b such that mean and
@@ -109,10 +117,32 @@ public class AlphaDropout implements IDropout {
         }
         lastPValue = pValue;
 
-        INDArray result = inPlace ? inputActivations : inputActivations.dup(inputActivations.ordering());
-        Nd4j.getExecutioner().exec(new AlphaDropOut(result, p, a, alphaPrime, b));
+        mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.shape(), output.ordering());
+        Nd4j.getExecutioner().exec(new BernoulliDistribution(mask, pValue));
 
-        return result;
+        //a * (x * d + alphaPrime * (1-d)) + b
+        INDArray aPOneMinusD = Transforms.not(mask).muli(alphaPrime);
+        Nd4j.getExecutioner().exec(new OldMulOp(inputActivations, mask, output));   //out = x * d
+        output.addi(aPOneMinusD).muli(a).addi(b);
+
+        //Nd4j.getExecutioner().exec(new AlphaDropOut(inputActivations, output, p, a, alphaPrime, b));
+        return output;
+    }
+
+    @Override
+    public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
+        Preconditions.checkState(mask != null, "Cannot perform backprop: Dropout mask array is absent (already cleared?)");
+        //dL/dIn = dL/dOut * dOut/dIn
+        // dOut/dIn = 0 if dropped (d=0), or a otherwise (d=1)
+        mask.muli(a);
+        Nd4j.getExecutioner().exec(new OldMulOp(gradAtOutput, mask, gradAtInput));
+        mask = null;
+        return gradAtInput;
+    }
+
+    @Override
+    public void clear() {
+        mask = null;
     }
 
     @Override

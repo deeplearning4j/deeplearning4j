@@ -275,7 +275,7 @@ public class VoidParameterServerStressTest {
     /**
      * This is one of the MOST IMPORTANT tests
      */
-    @Test
+    @Test(timeout = 60000L)
     public void testPerformanceUnicast1() {
         List<String> list = new ArrayList<>();
         for (int t = 0; t < 1; t++) {
@@ -473,7 +473,7 @@ public class VoidParameterServerStressTest {
      *
      * @throws Exception
      */
-    @Test
+    @Test(timeout = 60000L)
     public void testPerformanceUnicast3() throws Exception {
         VoidConfiguration voidConfiguration = VoidConfiguration.builder().unicastPort(49823).numberOfShards(1)
                         .shardAddresses(Arrays.asList("127.0.0.1:49823")).build();
@@ -518,7 +518,7 @@ public class VoidParameterServerStressTest {
      *
      * @throws Exception
      */
-    @Test
+    @Test(timeout = 60000L)
     public void testPerformanceUnicast4() throws Exception {
         VoidConfiguration voidConfiguration = VoidConfiguration.builder().unicastPort(49823).numberOfShards(1)
                         .shardAddresses(Arrays.asList("127.0.0.1:49823")).build();

@@ -47,6 +47,7 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguratio
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -58,6 +59,7 @@ import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.list.compat.TensorList;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ConstantInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
@@ -110,6 +112,8 @@ public class SameDiff {
     //individual index for variable names
     private Map<String, List<DifferentialFunction>> functionsArgsFor;   //Key: SDVariable name. Value: all DifferentialFunctions it is an input to
     private Map<String, List<DifferentialFunction>> functionOutputFor;  //Key: SDVariable name. Value: DifferentialFunctions this variable is an output for (TODO: Why is this a list? Isn't it *always* length 1?)
+
+    private Map<String, TensorList> lists = new HashMap<>();    // Key - node name; Value - TensorList
 
     // this entity holds runtime information for Switch/Merge/NextIteration etc stuff
     private transient ThreadLocal<FlowPath> localFlowPath = new ThreadLocal<FlowPath>();
@@ -324,6 +328,7 @@ public class SameDiff {
 
 
     }
+
 
 
     /**
@@ -683,6 +688,16 @@ public class SameDiff {
      */
     public INDArray getArrForVarName(String varName) {
         return variableNameToArr.get(varName);
+    }
+
+    /**
+     * Associate the array with the given variable.
+     *
+     * @param arr      the array to get the variable for
+     * @param variable the variable to associate
+     */
+    public void associateArrayWithVariable(INDArray arr, @NonNull String variable) {
+        associateArrayWithVariable(arr, this.getVariable(variable));
     }
 
     /**
@@ -1173,6 +1188,27 @@ public class SameDiff {
         addArgsFor(varNames, function);
     }
 
+    /**
+     * Get the differential function (if any) that this variable is the output for
+     * @param variableName Name of the variable
+     * @return The differential function that this variable is an output of, or null if it is not the output of a function
+     */
+    public DifferentialFunction getVariableOutputFunction(String variableName){
+        List<DifferentialFunction> list = functionOutputFor.get(variableName);
+        if(list == null){
+            return null;
+        }
+        return list.get(0);
+    }
+
+    /**
+     * Return a list of differential functions (if any) that this variable is the input argument for
+     * @param variableName Name of the variable
+     * @return The differential functions that this variable is an input argument for, or null if it is not the input to any function
+     */
+    public List<DifferentialFunction> getVariableArgOfFunctions(String variableName){
+        return functionsArgsFor.get(variableName);
+    }
 
 
     /**
@@ -5231,6 +5267,10 @@ public class SameDiff {
         return ops;
     }
 
+    public TensorList getListByName(@NonNull String name) {
+        return lists.get(name);
+    }
+
 
     /**
      * An interface for representing a conditional statement
@@ -6079,7 +6119,10 @@ public class SameDiff {
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 val array = inputs[0].getArr();
-                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                val name = inputs[0].getVarName();
+
+                if (array != null)
+                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
@@ -6185,19 +6228,23 @@ public class SameDiff {
                 if (flowPath.wasExecuted(inputs[1].getVarName())) {
                     // propagate second input
                     val array = inputs[1].getArr();
-                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+
+                    if (array != null)
+                        variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
 
                     // nullify executed mark
                     flowPath.markExecuted(inputs[1].getVarName(), false);
                 } else {
                     // propagate first input
                     val array = inputs[0].getArr();
-                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+
+                    if (array != null)
+                        variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
                 }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof Switch) {
-                if(log.isTraceEnabled())
+                if (log.isTraceEnabled())
                     log.trace("Starting execution of Switch op");
 
                 // switch takes 2 inputs: actual input and boolean scalar. If scalar is false, input is saved as output:0, if scalar is true, input is saved as output:1
@@ -6214,16 +6261,32 @@ public class SameDiff {
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 0);
                     flowPath.markActive(differentialFunction.getOwnName(), true);
                     flowPath.markActive(differentialFunction.getOwnName() + ":1", false);
-                    variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
+
+                    if (input != null)
+                        variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
                 } else {
                     // true step, we'll propagate output:1 here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 1);
-                    variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
+
+                    if (input != null)
+                        variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
+
                     flowPath.markActive(differentialFunction.getOwnName(), false);
                     flowPath.markActive(differentialFunction.getOwnName() + ":1", true);
                 }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
+            } else if (differentialFunction instanceof BaseTensorOp) {
+                //if(log.isTraceEnabled())
+                    log.info("Starting execution of Tensor op [{}]",  opName);
+
+                // we just pull actual code out of
+                val list = ((BaseTensorOp) differentialFunction).execute(this);
+
+                if (!lists.containsKey(list.getName()))
+                    lists.put(list.getName(), list);
+
+                ops.add(differentialFunction);
             } else if (differentialFunction instanceof If) {
                 if(log.isTraceEnabled())
                     log.trace("Starting execution of If op");

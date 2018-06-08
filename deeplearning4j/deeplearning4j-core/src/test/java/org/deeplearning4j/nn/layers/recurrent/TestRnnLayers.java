@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 
 import java.util.Arrays;
@@ -114,10 +115,10 @@ public class TestRnnLayers extends BaseDL4JTest {
             netD2.fit(f.dup(), l);
 
 
-            List<Triple<Integer,Integer,Boolean>> expected = Arrays.asList(
-                    new Triple<>(0, 0, true),
-                    new Triple<>(1, 0, true),
-                    new Triple<>(2, 0, true));
+            List<Pair<Integer,Integer>> expected = Arrays.asList(
+                    new Pair<>(0, 0),
+                    new Pair<>(1, 0),
+                    new Pair<>(2, 0));
 
             assertEquals(s, expected, cd.getAllCalls());
         }

@@ -10,6 +10,7 @@
     <name>nd4j-cuda-platform</name>
 
     <properties>
+        <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
         <cuda.version>9.0</cuda.version>
         <cudnn.version>7.0</cudnn.version>
         <javacpp-presets.cuda.version>1.4.1</javacpp-presets.cuda.version>

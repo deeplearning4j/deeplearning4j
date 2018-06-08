@@ -63,7 +63,7 @@ public class KerasPoolingUtils {
      * @return pooling dimensions as int array
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public static int[] mapPoolingDimensions(String className, KerasLayerConfiguration conf)
+    public static int[] mapGlobalPoolingDimensions(String className, KerasLayerConfiguration conf)
             throws UnsupportedKerasConfigurationException {
         int[] dimensions;
         if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D()) ||
@@ -72,7 +72,10 @@ public class KerasPoolingUtils {
         } else if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D())) {
             dimensions = new int[]{2, 3};
-        } else {
+        } else if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_3D()) ||
+            className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_3D())) {
+        dimensions = new int[]{2, 3, 4};
+    }  else {
             throw new UnsupportedKerasConfigurationException("Unsupported Keras pooling layer " + className);
         }
         return dimensions;
