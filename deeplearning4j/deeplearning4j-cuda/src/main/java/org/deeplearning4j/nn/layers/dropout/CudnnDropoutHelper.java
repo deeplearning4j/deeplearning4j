@@ -93,12 +93,8 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
         if(stateSizeBytesPtr == null){
             stateSizeBytesPtr = new SizeTPointer(1);
         }
-        checkCudnn(cudnnDropoutGetReserveSpaceSize(cudnnContext.xTensorDesc, stateSizeBytesPtr));
-        long stateSizeBytes = stateSizeBytesPtr.get();  //FAILS
-//        long stateSizeBytes = stateSizeBytesPtr.get() + 1000;   //Fails
-//        long stateSizeBytes = stateSizeBytesPtr.get() + 100000;   //Fails
-//        long stateSizeBytes = stateSizeBytesPtr.get() + 1000000;    //Fails
-//        long stateSizeBytes = stateSizeBytesPtr.get() + 10000000;   //Runs !?
+        checkCudnn(cudnnDropoutGetStatesSize(cudnnContext, stateSizeBytesPtr));
+        long stateSizeBytes = stateSizeBytesPtr.get();
 
 
         //Dropout descriptor:
