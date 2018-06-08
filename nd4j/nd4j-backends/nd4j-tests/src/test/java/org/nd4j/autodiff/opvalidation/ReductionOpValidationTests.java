@@ -222,8 +222,8 @@ public class ReductionOpValidationTests {
             long[] reducedShape_1 = (keepDims ? new long[]{3,1} : new long[]{3});
             INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3}, reducedShape_1);
             INDArray dLdInExpected_1 = Nd4j.createUninitialized(preReduceInput.shape());
-            for (int i = 0; i < 3; i++) {
-                dLdInExpected_1.putRow(i, dLdOut_1);
+            for (int i = 0; i < 4; i++) {
+                dLdInExpected_1.putColumn(i, dLdOut_1);
             }
 
             INDArray dLdIn = Nd4j.createUninitialized(3, 4);
