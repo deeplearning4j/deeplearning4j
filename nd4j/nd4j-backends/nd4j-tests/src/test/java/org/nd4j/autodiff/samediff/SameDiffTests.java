@@ -418,14 +418,16 @@ public class SameDiffTests {
     @Test
     public void testReshape() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2);
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(1, 4);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result1 = sameDiff.reshape(x, 2, 2);
         assertArrayEquals(new long[]{2, 2}, result1.eval().shape());
+        assertEquals(arr.reshape(2, 2), result1.eval());
         INDArray arr_shape = Nd4j.create(new double[]{2, 2}, new int[]{2});
         SDVariable shape = sameDiff.var("shape", arr_shape);
         SDVariable result2 = sameDiff.reshape(x, shape);
         assertArrayEquals(new long[]{2, 2}, result2.eval().shape());
+        assertEquals(arr.reshape(2, 2), result2.eval());
 
     }
 
