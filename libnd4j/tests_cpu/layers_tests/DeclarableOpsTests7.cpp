@@ -2453,7 +2453,7 @@ TEST_F(DeclarableOpsTests7, reduceMeanBP_test1) {
     NDArrayFactory<float>::linspace(1, x);
 
     nd4j::ops::reduce_mean_bp<float> op;
-    auto result = op.execute({&x, &gradO}, {}, {0,1});
+    auto result = op.execute({&x, &gradO}, {}, {0, 1});
     auto output = result->at(0);        
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
@@ -2502,6 +2502,27 @@ TEST_F(DeclarableOpsTests7, reduceMeanBP_test3) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, reduceMeanBP_test4) {
+
+    NDArray<float> x('c', {3,4});
+    NDArray<float> gradO('c', {4}, {1.f, 2.f, 3.f, 4.f});
+    NDArray<float> exp('c', {3,4}, {1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f, 1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f, 1.f/3.f, 2.f/3.f, 1.f, 4.f/3.f});
+
+    NDArrayFactory<float>::linspace(1, x);
+            
+    nd4j::ops::reduce_mean_bp<float> op;
+    auto result = op.execute({&x, &gradO}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);
+    output->printIndexedBuffer("Mean by the first dim");
+    exp.printIndexedBuffer("Expected:");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -3553,7 +3574,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_BP_4) {
 
     ASSERT_EQ(Status::OK(), result->status());
     auto z = result->at(0);    
-//    z->printIndexedBuffer("Result is ");
+    z->printIndexedBuffer("Result is ");
 //    z->printShapeInfo();
     ASSERT_TRUE(exp.equalsTo(z));
     delete result;
