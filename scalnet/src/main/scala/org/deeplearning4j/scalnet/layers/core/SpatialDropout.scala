@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scalnet.layers.noise
+package org.deeplearning4j.scalnet.layers.core
 
-import org.deeplearning4j.nn.conf.dropout.{GaussianDropout => JGaussianDropout}
+import org.deeplearning4j.nn.conf.dropout.{SpatialDropout => JSpatialDropout}
 import org.deeplearning4j.nn.conf.layers.DropoutLayer
-import org.deeplearning4j.scalnet.layers.core.Layer
 
 
 /**
-  * GaussianDropout layer
+  * Spatial Dropout layer
   *
   * @author Max Pumperla
   */
-class GaussianDropout(nOut: List[Int],
+class SpatialDropout(nOut: List[Int],
                       nIn: List[Int],
                       rate: Double,
                       override val name: String)
@@ -34,7 +33,7 @@ class GaussianDropout(nOut: List[Int],
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new DropoutLayer.Builder()
-      .dropOut(new JGaussianDropout(rate))
+      .dropOut(new JSpatialDropout(rate))
       .nIn(inputShape.last)
       .nOut(outputShape.last)
       .name(name)
@@ -44,14 +43,14 @@ class GaussianDropout(nOut: List[Int],
 
   override val inputShape: List[Int] = nIn
 
-  override def reshapeInput(newIn: List[Int]): GaussianDropout =
-    new GaussianDropout(nOut, newIn, rate, name)
+  override def reshapeInput(newIn: List[Int]): SpatialDropout =
+    new SpatialDropout(nOut, newIn, rate, name)
 }
 
-object GaussianDropout {
+object SpatialDropout {
   def apply(nOut: Int,
             nIn: Int = 0,
             rate: Double,
-            name: String = ""): GaussianDropout =
-    new GaussianDropout(List(nOut), List(nIn), rate, name)
+            name: String = ""): SpatialDropout =
+    new SpatialDropout(List(nOut), List(nIn), rate, name)
 }

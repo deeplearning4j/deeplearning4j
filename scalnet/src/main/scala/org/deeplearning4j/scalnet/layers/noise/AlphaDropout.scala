@@ -27,9 +27,9 @@ import org.deeplearning4j.scalnet.layers.core.Layer
   * @author Max Pumperla
   */
 class AlphaDropout(nOut: List[Int],
-              nIn: List[Int],
-              rate: Double,
-              override val name: String)
+                   nIn: List[Int],
+                   rate: Double,
+                   override val name: String)
   extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
