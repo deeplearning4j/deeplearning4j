@@ -561,9 +561,11 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         int minibatch = 3;
 
         for (boolean cnn : new boolean[]{false, true}) {
+            Nd4j.getRandom().setSeed(12345);
             IDropout dropout = new Dropout(0.6);
 
             NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
                     .weightInit(WeightInit.DISTRIBUTION)
                     .dist(new NormalDistribution(0, 1))
                     .convolutionMode(ConvolutionMode.Same)
