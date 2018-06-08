@@ -17,7 +17,7 @@
 package org.deeplearning4j.scalnet.layers.convolutional
 
 import org.deeplearning4j.nn.conf.layers.ZeroPadding3DLayer
-import org.deeplearning4j.scalnet.layers.core.{Layer, Node}
+import org.deeplearning4j.scalnet.layers.core.{ Layer, Node }
 
 /**
   * 3D zero padding layer
@@ -32,7 +32,8 @@ class ZeroPadding3D(padLeftD: Int,
                     padRightW: Int,
                     nIn: List[Int],
                     override val name: String = "")
-  extends Node with Layer {
+    extends Node
+    with Layer {
 
   override def inputShape: List[Int] = nIn
 
@@ -42,16 +43,15 @@ class ZeroPadding3D(padLeftD: Int,
       else 0
     if (inputShape.lengthCompare(4) == 0) {
       List[Int](inputShape.head + padLeftD + padRightD,
-        inputShape(1) + padLeftH + padRightH,
-        inputShape(2) + padLeftW + padRightW,
-        nOutChannels)
+                inputShape(1) + padLeftH + padRightH,
+                inputShape(2) + padLeftW + padRightW,
+                nOutChannels)
     } else if (nOutChannels > 0) List(nOutChannels)
     else List()
   }
 
   override def reshapeInput(nIn: List[Int]): ZeroPadding3D =
     new ZeroPadding3D(padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW, nIn, name)
-
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new ZeroPadding3DLayer.Builder(padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW)
@@ -70,5 +70,3 @@ object ZeroPadding3D {
             name: String): ZeroPadding3D =
     new ZeroPadding3D(padLeftD, padRightD, padLeftH, padRightH, padLeftW, padRightW, nIn, name)
 }
-
-
