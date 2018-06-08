@@ -1824,7 +1824,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
         else{
-            System.out.println("==============not resolved==================");
             int cnt = 0;
             for(val shape : op.getInputShapes()){
                 inputShapes.put(cnt++, Nd4j.createUninitialized(shape)
