@@ -10,10 +10,15 @@
 namespace nd4j {
     namespace ops {
         
-        CUSTOM_OP_IMPL(fill, 1, 1, false, 1, 0) {
+        CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
             auto shapeArray = INPUT_VARIABLE(0);
+
+            auto w = block.width();
+            auto t = block.numI();
+
+            REQUIRE_TRUE( w > 1 || t > 0, 0, "Fill: either additional variable should exist, or scalar value should be present");
             
-            T scalar = T_ARG(0);             
+            T scalar = w == 1 ? T_ARG(0) : INPUT_VARIABLE(1)->getScalar(0);
 
             std::vector<Nd4jLong> shape((int) shapeArray->lengthOf());
 
