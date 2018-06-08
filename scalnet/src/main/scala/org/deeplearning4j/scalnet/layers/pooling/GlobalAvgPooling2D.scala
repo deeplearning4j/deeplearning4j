@@ -16,17 +16,15 @@
 
 package org.deeplearning4j.scalnet.layers.pooling
 
-import org.deeplearning4j.nn.conf.layers.{GlobalPoolingLayer, PoolingType}
-import org.deeplearning4j.scalnet.layers.core.{Layer, Node}
+import org.deeplearning4j.nn.conf.layers.{ GlobalPoolingLayer, PoolingType }
+import org.deeplearning4j.scalnet.layers.core.{ Layer, Node }
 
 /**
   * 2D global avg pooling layer.
   *
   * @author Max Pumperla
   */
-class GlobalAvgPooling2D(nIn: Option[List[Int]] = None,
-                         override val name: String = null)
-  extends Node with Layer {
+class GlobalAvgPooling2D(nIn: Option[List[Int]] = None, override val name: String = null) extends Node with Layer {
 
   override def inputShape: List[Int] = nIn.getOrElse(List(0))
 
@@ -51,8 +49,6 @@ class GlobalAvgPooling2D(nIn: Option[List[Int]] = None,
 }
 
 object GlobalAvgPooling2D {
-  def apply(nIn: Option[List[Int]] = None,
-            name: String = null): GlobalAvgPooling2D =
+  def apply(nIn: Option[List[Int]] = None, name: String = null): GlobalAvgPooling2D =
     new GlobalAvgPooling2D(nIn, name)
 }
-

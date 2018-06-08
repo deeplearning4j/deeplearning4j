@@ -16,17 +16,15 @@
 
 package org.deeplearning4j.scalnet.layers.pooling
 
-import org.deeplearning4j.nn.conf.layers.{GlobalPoolingLayer, PoolingType}
-import org.deeplearning4j.scalnet.layers.core.{Layer, Node}
+import org.deeplearning4j.nn.conf.layers.{ GlobalPoolingLayer, PoolingType }
+import org.deeplearning4j.scalnet.layers.core.{ Layer, Node }
 
 /**
   * 3D global max pooling layer.
   *
   * @author Max Pumperla
   */
-class GlobalMaxPooling3D(nIn: Option[List[Int]] = None,
-                         override val name: String = null)
-  extends Node with Layer {
+class GlobalMaxPooling3D(nIn: Option[List[Int]] = None, override val name: String = null) extends Node with Layer {
 
   override def inputShape: List[Int] = nIn.getOrElse(List(0))
 
@@ -51,7 +49,6 @@ class GlobalMaxPooling3D(nIn: Option[List[Int]] = None,
 }
 
 object GlobalMaxPooling3D {
-  def apply(nIn: Option[List[Int]] = None,
-            name: String = null): GlobalMaxPooling3D =
+  def apply(nIn: Option[List[Int]] = None, name: String = null): GlobalMaxPooling3D =
     new GlobalMaxPooling3D(nIn, name)
 }
