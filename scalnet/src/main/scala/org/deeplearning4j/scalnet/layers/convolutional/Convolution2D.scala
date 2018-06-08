@@ -19,7 +19,7 @@ package org.deeplearning4j.scalnet.layers.convolutional
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.scalnet.layers.core.Layer
-import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer}
+import org.deeplearning4j.scalnet.regularizers.{ NoRegularizer, WeightRegularizer }
 import org.nd4j.linalg.activations.Activation
 
 /**
@@ -41,22 +41,22 @@ class Convolution2D(nFilter: Int,
                     val regularizer: WeightRegularizer = NoRegularizer(),
                     val dropOut: Double = 0.0,
                     override val name: String = "")
-  extends Convolution(dimension = 2, kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
+    extends Convolution(dimension = 2, kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
     with Layer {
 
   override def reshapeInput(nIn: List[Int]): Convolution2D =
     new Convolution2D(nFilter,
-      kernelSize,
-      nChannels,
-      stride,
-      padding,
-      dilation,
-      Some(nIn),
-      weightInit,
-      activation,
-      regularizer,
-      dropOut,
-      name)
+                      kernelSize,
+                      nChannels,
+                      stride,
+                      padding,
+                      dilation,
+                      Some(nIn),
+                      weightInit,
+                      activation,
+                      regularizer,
+                      dropOut,
+                      name)
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new ConvolutionLayer.Builder(kernelSize.head, kernelSize.last)
@@ -87,14 +87,14 @@ object Convolution2D {
             regularizer: WeightRegularizer = NoRegularizer(),
             dropOut: Double = 0.0): Convolution2D =
     new Convolution2D(nFilter,
-      kernelSize,
-      nChannels,
-      stride,
-      padding,
-      dilation,
-      nIn,
-      weightInit,
-      activation,
-      regularizer,
-      dropOut)
+                      kernelSize,
+                      nChannels,
+                      stride,
+                      padding,
+                      dilation,
+                      nIn,
+                      weightInit,
+                      activation,
+                      regularizer,
+                      dropOut)
 }

@@ -31,7 +31,7 @@ class AvgPooling3D(kernelSize: List[Int],
                    dilation: List[Int] = List(1, 1, 1),
                    nIn: Option[List[Int]] = None,
                    override val name: String = "")
-  extends Convolution(dimension = 3, kernelSize, stride, padding, dilation, 0, nIn)
+    extends Convolution(dimension = 3, kernelSize, stride, padding, dilation, 0, nIn, 0)
     with Layer {
   if (kernelSize.length != 3 || stride.length != 3 || padding.length != 3 || dilation.length != 3) {
     throw new IllegalArgumentException("Kernel, stride, padding and dilation lists must all be length 3.")
@@ -58,4 +58,3 @@ object AvgPooling3D {
             name: String = null): AvgPooling3D =
     new AvgPooling3D(kernelSize, stride, padding, dilation, nIn, name)
 }
-

@@ -33,14 +33,14 @@ abstract class Convolution(protected val dimension: Int,
                            protected val nChannels: Int = 0,
                            protected val nIn: Option[List[Int]] = None,
                            protected val nFilter: Int = 0)
-  extends Node {
+    extends Node {
 
   override def inputShape: List[Int] = nIn.getOrElse(List(nChannels))
 
   if (kernelSize.lengthCompare(dimension) != 0
-    || kernelSize.lengthCompare(stride.length) != 0
-    || kernelSize.lengthCompare(padding.length) != 0
-    || kernelSize.lengthCompare(dilation.length) != 0) {
+      || kernelSize.lengthCompare(stride.length) != 0
+      || kernelSize.lengthCompare(padding.length) != 0
+      || kernelSize.lengthCompare(dilation.length) != 0) {
     throw new IllegalArgumentException("Kernel, stride, dilation and padding must all have same shape.")
   }
 
@@ -49,8 +49,7 @@ abstract class Convolution(protected val dimension: Int,
                              kernelSize: List[Int],
                              stride: List[Int],
                              padding: List[Int],
-                             dilation: List[Int]): Unit = {
-
+                             dilation: List[Int]): Unit =
     for (i <- 0 until dimension) {
       if (kernelSize(i) > (inShape(i) + 2 * padding(i)))
         throw new InvalidInputTypeException(
@@ -68,8 +67,6 @@ abstract class Convolution(protected val dimension: Int,
         )
     }
 
-  }
-
   override def outputShape: List[Int] = {
     val nOutChannels: Int =
       if (nFilter > 0) nFilter
@@ -80,8 +77,7 @@ abstract class Convolution(protected val dimension: Int,
       val effectiveKernel: Array[Int] = ConvolutionUtils.effectiveKernelSize(kernelSize.toArray, dilation.toArray)
 
       // TODO: border modes
-      List[List[Int]](inputShape.init, effectiveKernel.toList, padding, stride, dilation)
-        .transpose
+      List[List[Int]](inputShape.init, effectiveKernel.toList, padding, stride, dilation).transpose
         .map(x => (x.head - x(1) + 2 * x(2)) / x(3) + 1) :+ nOutChannels
     } else if (nOutChannels > 0) List(nOutChannels)
     else List()
