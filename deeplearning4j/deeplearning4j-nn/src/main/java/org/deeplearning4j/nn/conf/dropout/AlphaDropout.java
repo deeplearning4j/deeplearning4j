@@ -38,7 +38,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @Data
-@EqualsAndHashCode(exclude = {"lastPValue","alphaPrime","a","b"})
+@EqualsAndHashCode(exclude = {"lastPValue","alphaPrime","a","b", "mask"})
 @ToString(exclude = {"lastPValue","alphaPrime","a","b"})
 @JsonIgnoreProperties({"lastPValue", "alphaPrime", "a", "b", "mask"})
 public class AlphaDropout implements IDropout {
@@ -52,12 +52,12 @@ public class AlphaDropout implements IDropout {
     private final double alpha;
     private final double lambda;
 
-    private double lastPValue;
+    private transient double lastPValue;
     private double alphaPrime;
     private double a;
     private double b;
 
-    private INDArray mask;
+    private transient INDArray mask;
 
     /**
      * @param activationRetainProbability Probability of retaining an activation. See {@link AlphaDropout} javadoc
