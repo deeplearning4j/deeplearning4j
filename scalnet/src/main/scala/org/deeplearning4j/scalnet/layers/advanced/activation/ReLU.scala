@@ -18,7 +18,7 @@ package org.deeplearning4j.scalnet.layers.advanced.activation
 
 import org.deeplearning4j.nn.conf.layers.{ActivationLayer => JActivationLayer}
 import org.deeplearning4j.scalnet.layers.core.Layer
-import org.nd4j.linalg.activations.impl.{ActivationReLU}
+import org.nd4j.linalg.activations.impl.ActivationReLU
 
 
 /**
@@ -26,15 +26,14 @@ import org.nd4j.linalg.activations.impl.{ActivationReLU}
   *
   * @author Max Pumperla
   */
-class ReLU(alpha: Double,
-          nOut: Option[List[Int]],
-          nIn: Option[List[Int]],
-          override val name: String = "")
+class ReLU(nOut: Option[List[Int]],
+           nIn: Option[List[Int]],
+           override val name: String = "")
   extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new JActivationLayer.Builder()
-      .activation(new ActivationReLU(alpha))
+      .activation(new ActivationReLU())
       .name(name)
       .build()
 
@@ -42,15 +41,14 @@ class ReLU(alpha: Double,
   override val inputShape: List[Int] = nIn.getOrElse(List(0))
 
   override def reshapeInput(newIn: List[Int]): ReLU =
-    new ReLU(alpha, Some(newIn), Some(newIn), name)
+    new ReLU(Some(newIn), Some(newIn), name)
 }
 
 object ReLU {
-  def apply(alpha: Double,
-            nOut: Int = 0,
+  def apply(nOut: Int = 0,
             nIn: Int = 0,
             name: String = ""): ReLU =
-    new ReLU(alpha, Some(List(nOut)), Some(List(nIn)), name)
+    new ReLU(Some(List(nOut)), Some(List(nIn)), name)
 }
 
 
