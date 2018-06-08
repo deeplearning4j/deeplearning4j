@@ -77,12 +77,8 @@ namespace ops {
             input->applyLambda(backpropRoutine, output);  
         } 
         else { // result 
-            auto backpropRoutine = LAMBDA_TTT(_e, _x, _y) {
-                return _e * _x / _y;
-            };
 
-//                auto axes = *block.getIArguments();
-//                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
+            auto axes = *block.getIArguments();
             std::vector<int> dimensions; //(input->rankOf() - axes.size());
             for (Nd4jLong e = 0; e < input->rankOf(); e++) {
                 if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
@@ -93,12 +89,21 @@ namespace ops {
             std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
             //output->
             for (Nd4jLong e = 0; e < outList->size(); ++e) {
+//                auto backpropRoutine = LAMBDA_T(_x, epsilon, tempProd, e) {
+//                    return (*epsilon)(e) * _x / (*tempProd)(e);
+//                };
+                outList->at(e)->assign(epsilon);
+                outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(tempProd, nullptr);
+                outList->at(e)->template applyPairwiseTransform<simdOps::Divide<T>>(inList->at(e), nullptr);
+//                (*outList->at(e)) *= (*inList->at(e));
+//                (*outList->at(e)) /= (*tempProd)(e);
+                
                 //outList->at(e)->assign(epsilon);
-                epsilon->printShapeInfo("GradOut");
-                tempProd->printShapeInfo("ReduceProd");
-                inList->at(e)->printShapeInfo("Input");
-                outList->at(e)->printShapeInfo("Output");
-                epsilon->applyTriplewiseLambda(tempProd, inList->at(e), backpropRoutine, outList->at(e));
+//                epsilon->printShapeInfo("GradOut");
+//                tempProd->printShapeInfo("ReduceProd");
+//                inList->at(e)->printShapeInfo("Input");
+//                outList->at(e)->printShapeInfo("Output");
+//                inList->at(e)->applyLambda(backpropRoutine, outList->at(e));
             }
         }
         delete tmpResult;
