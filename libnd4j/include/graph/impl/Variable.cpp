@@ -29,7 +29,7 @@ namespace nd4j {
             // FIXME: add support for ArrayList
             if (this->_list != nullptr) {
                 nd4j_printf("ArrayList not supported yet\n", "");
-                throw "ArrayList not supported yet";
+                throw std::runtime_error("ArrayList not supported yet");
             }
 
             return result;
@@ -215,7 +215,7 @@ namespace nd4j {
                 _ndarray = new NDArray<T>((char) shapeInfo.at(shapeInfo.size() - 1), shape);
             } else {
                 nd4j_printf("Either shape or NDArray should be defined in FlatResult variable\n","");
-                throw "Empty variable";
+                throw std::runtime_error("Empty variable");
             }
 
             /*

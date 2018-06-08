@@ -43,7 +43,7 @@ namespace nd4j {
 
             default: {
                 nd4j_printf("Unknown DataType used: [%i]\n", asInt(type));
-                throw "Unknown DataType requested";
+                throw std::runtime_error("Unknown DataType requested");
             }
         }
     }

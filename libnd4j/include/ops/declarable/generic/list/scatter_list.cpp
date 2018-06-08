@@ -16,11 +16,12 @@ namespace nd4j {
             NDArray<T>* indices = nullptr;
 
             bool hasList = false;
+            auto w = block.width();
 
-            if (block.width() == 3){
+            if (w == 4){
                 list = INPUT_LIST(0);
-                array = INPUT_VARIABLE(1);
-                indices = INPUT_VARIABLE(2);
+                indices = INPUT_VARIABLE(1);
+                array = INPUT_VARIABLE(2);
                 hasList = true;
             } else {
                 array = INPUT_VARIABLE(0);
@@ -28,6 +29,9 @@ namespace nd4j {
                 list = new NDArrayList<T>(indices->lengthOf(), false);
                 block.trackList(list);
             }
+
+            array->printShapeInfo("array shape");
+            indices->printShapeInfo("indices shape");
 
             REQUIRE_TRUE(indices->isVector(), 0, "ScatterList: Indices for Scatter should be a vector")
             REQUIRE_TRUE(indices->lengthOf() == array->sizeAt(0), 0, "ScatterList: Indices length should be equal number of TADs along dim0, but got %i instead", indices->lengthOf());
@@ -45,13 +49,12 @@ namespace nd4j {
                     return res;
             }
 
-            if (list == nullptr) {
+            if (!hasList)
                 OVERWRITE_RESULT(list);
-            }
 
             delete tads;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(TensorArrayScatterV3, scatter_list);
         DECLARE_SYN(tensorarrayscatterv3, scatter_list);

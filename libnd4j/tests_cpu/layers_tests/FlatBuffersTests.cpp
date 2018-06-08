@@ -648,8 +648,20 @@ TEST_F(FlatBuffersTest, transpose) {
 TEST_F(FlatBuffersTest, Test_Stitches) {
     nd4j::ops::realdiv<float> op0;
 
-
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/partition_stitch_misc.fb");
+    //graph->printOut();
+
+    auto result = GraphExecutioner<float>::execute(graph);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    delete graph;
+}
+
+TEST_F(FlatBuffersTest, Test_GruDynamicMnist) {
+    nd4j::Environment::getInstance()->setDebug(true);
+    nd4j::Environment::getInstance()->setVerbose(true);
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/gru_dynamic_mnist.fb");
     graph->printOut();
 
     auto result = GraphExecutioner<float>::execute(graph);

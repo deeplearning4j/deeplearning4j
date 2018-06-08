@@ -701,7 +701,7 @@ namespace nd4j {
                         nd4j_printf("Unmapped node: [%i]\n", node->id());
                     }
 
-                    throw "Unable to build graph";
+                    throw std::runtime_error("Unable to build graph");
                 }
             }
 
@@ -932,7 +932,7 @@ namespace nd4j {
                         std::pair<int, int> vp(out->first(), out->second());
                         if (!_variableSpace->hasVariable(vp)) {
                             nd4j_verbose("Non-existent variable requested: %i\n", out);
-                            throw "Non-existent variable requested";
+                            throw std::runtime_error("Non-existent variable requested");
                         }
 
                         // TODO: fix this .first
@@ -1183,7 +1183,7 @@ namespace nd4j {
         Scope<T> *Graph<T>::scopeById(int id) {
             if (_mappedScopes.count(id) == 0) {
                 nd4j_printf("Requested Scope [%i] doesn't exist\n", id);
-                throw "Non-existent Scope was requested";
+                throw std::runtime_error("Non-existent Scope was requested");
             }
 
             return _mappedScopes.at(id);
