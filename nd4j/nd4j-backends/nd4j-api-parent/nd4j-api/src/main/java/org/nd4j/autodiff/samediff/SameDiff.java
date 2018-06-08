@@ -6123,13 +6123,6 @@ public class SameDiff {
 
                 if (array != null)
                     variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
-                else {
-                    val rep = name.replaceAll(":.*","");
-                    // this is just tensorlst. lets replicate it
-                    val list = lists.get(rep);
-
-                    lists.put(differentialFunction.getOwnName(), list);
-                }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
