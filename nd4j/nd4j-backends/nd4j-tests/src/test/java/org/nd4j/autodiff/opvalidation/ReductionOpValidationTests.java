@@ -46,18 +46,18 @@ public class ReductionOpValidationTests {
 
 
     @Test
-    public void testReduceSum(){
+    public void testReduceSumBP() {
         //Full array reduction
 
         //reduce_sum_bp op: has 2 inputs (original pre-reduce input, and gradient at output (epsilon))
         //out = sum_j (in_j) -> dL/dIn = dL/dOut * dOut/dIn = dL/dOut
 
-        for(boolean keepDims : new boolean[]{false, true}) {
+        for (boolean keepDims : new boolean[]{false, true}) {
 
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray dLdOut;
-            if(keepDims){
-                dLdOut = Nd4j.valueArrayOf(new long[]{1,1}, 0.5);
+            if (keepDims) {
+                dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
                 dLdOut = Nd4j.trueScalar(0.5);
             }
@@ -72,15 +72,15 @@ public class ReductionOpValidationTests {
     }
 
     @Test
-    public void testReduceSumAlongDim0(){
+    public void testReduceSumAlongDim0BP() {
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
 
         //Note: when reducing [3,4] along dimension 0 -> 4 TADs of length 3
         //We have one epsilon/gradient for each of the 4 TADs -> dL/dOut length is 4
 
-        for( boolean keepDims : new boolean[]{false, true}) {
-            long[] reducedShape_0 = (keepDims ? new long[]{1,4} : new long[]{4});
+        for (boolean keepDims : new boolean[]{false, true}) {
+            long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = Nd4j.createUninitialized(preReduceInput.shape());
@@ -98,17 +98,17 @@ public class ReductionOpValidationTests {
     }
 
     @Test
-    public void testReduceSumAlongDim1(){
+    public void testReduceSumAlongDim1BP() {
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
 
         //Note: when reducing [3,4] along dimension 1 -> 3 TADs of length 4
         //We have one epsilon/gradient for each of the 3 TADs -> dL/dOut length is 3
 
-        for( boolean keepDims : new boolean[]{false, true}) {
+        for (boolean keepDims : new boolean[]{false, true}) {
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
-            long[] reducedShape_1 = (keepDims ? new long[]{3,1} : new long[]{3});
+            long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
             INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3}, reducedShape_1);
             INDArray dLdInExpected_1 = Nd4j.createUninitialized(preReduceInput.shape());
             for (int i = 0; i < 4; i++) {
@@ -126,7 +126,7 @@ public class ReductionOpValidationTests {
 
 
     @Test
-    public void testMean(){
+    public void testMeanBP() {
 
         //dL/dIn_i = dL/dOut * dOut/dIn_i = dL/dOut * (1/N * sum_j (in_j))
         //         = 1/N * dL/dOut
@@ -137,12 +137,12 @@ public class ReductionOpValidationTests {
         //Full array reduction
         //reduce_mean_bp op: has 2 inputs (original pre-reduce input, and gradient at output (epsilon))
 
-        for(boolean keepDims : new boolean[]{false, true}) {
+        for (boolean keepDims : new boolean[]{false, true}) {
 
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray dLdOut;
-            if(keepDims){
-                dLdOut = Nd4j.valueArrayOf(new long[]{1,1}, 0.5);
+            if (keepDims) {
+                dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
                 dLdOut = Nd4j.trueScalar(0.5);
             }
@@ -157,15 +157,15 @@ public class ReductionOpValidationTests {
     }
 
     @Test
-    public void testMeanAlongDim0(){
+    public void testMeanAlongDim0BP() {
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
 
         //Note: when reducing [3,4] along dimension 0 -> 4 TADs of length 3 -> N=3 -> dL/dIn_i = dL/dOut * 1/3
         //We have one epsilon/gradient for each of the 4 TADs -> dL/dOut length is 4
 
-        for( boolean keepDims : new boolean[]{false, true}) {
-            long[] reducedShape_0 = (keepDims ? new long[]{1,4} : new long[]{4});
+        for (boolean keepDims : new boolean[]{false, true}) {
+            long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = Nd4j.createUninitialized(preReduceInput.shape());
@@ -193,17 +193,17 @@ public class ReductionOpValidationTests {
     }
 
     @Test
-    public void testMeanAlongDim1(){
+    public void testMeanAlongDim1BP() {
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
 
         //Note: when reducing [3,4] along dimension 1 -> 3 TADs of length 4 -> N=4 -> dL/dIn_i = dL/dOut * 1/4
         //We have one epsilon/gradient for each of the 3 TADs -> dL/dOut length is 3
 
-        for( boolean keepDims : new boolean[]{false, true}) {
+        for (boolean keepDims : new boolean[]{false, true}) {
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
-            long[] reducedShape_1 = (keepDims ? new long[]{3,1} : new long[]{3});
+            long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
             INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3}, reducedShape_1);
             INDArray dLdInExpected_1 = Nd4j.createUninitialized(preReduceInput.shape());
             for (int i = 0; i < 4; i++) {
@@ -221,25 +221,25 @@ public class ReductionOpValidationTests {
 
 
     @Test
-    public void testMin(){
+    public void testMinBP() {
         //Full array min reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
         //          = dL/dOut                   if in_i == out (== min(in))
         //          = 0                         otherwise
 
-        for(boolean keepDims : new boolean[]{false, true}) {
+        for (boolean keepDims : new boolean[]{false, true}) {
 
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
-            preReduceInput.putScalar(new int[]{2,2}, -1);   //Minimum value at position [2,2]
+            preReduceInput.putScalar(new int[]{2, 2}, -1);   //Minimum value at position [2,2]
             INDArray dLdOut;
-            if(keepDims){
-                dLdOut = Nd4j.valueArrayOf(new long[]{1,1}, 0.5);
+            if (keepDims) {
+                dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
                 dLdOut = Nd4j.trueScalar(0.5);
             }
             INDArray dLdInExpected = Nd4j.zeros(preReduceInput.shape());
-            dLdInExpected.putScalar(new int[]{2,2}, 0.5);   //Minimum value: position at [2,2]
+            dLdInExpected.putScalar(new int[]{2, 2}, 0.5);   //Minimum value: position at [2,2]
             INDArray dLdIn = Nd4j.createUninitialized(3, 4);
 
 //            String err = OpValidation.validate(new OpTestCase(
@@ -260,27 +260,27 @@ public class ReductionOpValidationTests {
     }
 
     @Test
-    public void testMinAlongDimension(){
+    public void testMinAlongDimensionBP() {
         //Full array min reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
         //          = dL/dOut                   if in_i == out (== min(in))
         //          = 0                         otherwise
 
-        for(boolean keepDims : new boolean[]{false, true}) {
+        for (boolean keepDims : new boolean[]{false, true}) {
 
-            long[] reducedShape_0 = (keepDims ? new long[]{1,4} : new long[]{4});
+            long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
             INDArray preReduceInput = Nd4j.linspace(1, 16, 16).reshape(4, 4);
-            preReduceInput.putScalar(0,0, -1);
-            preReduceInput.putScalar(1,1, -2);
-            preReduceInput.putScalar(2,2, -3);
-            preReduceInput.putScalar(2,2, -4);
+            preReduceInput.putScalar(0, 0, -1);
+            preReduceInput.putScalar(1, 1, -2);
+            preReduceInput.putScalar(2, 2, -3);
+            preReduceInput.putScalar(2, 2, -4);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = Nd4j.create(preReduceInput.shape()); //All 0s except along diagonal
-            dLdInExpected_0.putScalar(0,0,1);
-            dLdInExpected_0.putScalar(1,1,2);
-            dLdInExpected_0.putScalar(2,2,3);
-            dLdInExpected_0.putScalar(3,3,4);
+            dLdInExpected_0.putScalar(0, 0, 1);
+            dLdInExpected_0.putScalar(1, 1, 2);
+            dLdInExpected_0.putScalar(2, 2, 3);
+            dLdInExpected_0.putScalar(3, 3, 4);
 
             INDArray dLdIn = Nd4j.createUninitialized(4, 4);
 
@@ -289,7 +289,7 @@ public class ReductionOpValidationTests {
             assertNull(err, err);
 
 
-            long[] reducedShape_1 = (keepDims ? new long[]{4,1} : new long[]{4});
+            long[] reducedShape_1 = (keepDims ? new long[]{4, 1} : new long[]{4});
             INDArray dLdInExpected_1 = dLdInExpected_0; //Same here, only because the maximums are along the diagonal
 
             INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_1);
@@ -303,25 +303,25 @@ public class ReductionOpValidationTests {
     }
 
     @Test
-    public void testMax(){
+    public void testMaxBP() {
         //Full array max reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
         //          = dL/dOut                   if in_i == out (== max(in))
         //          = 0                         otherwise
 
-        for(boolean keepDims : new boolean[]{false, true}) {
+        for (boolean keepDims : new boolean[]{false, true}) {
 
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
-            preReduceInput.putScalar(new int[]{2,2}, 20);   //Maximum value at position [2,2]
+            preReduceInput.putScalar(new int[]{2, 2}, 20);   //Maximum value at position [2,2]
             INDArray dLdOut;
-            if(keepDims){
-                dLdOut = Nd4j.valueArrayOf(new long[]{1,1}, 0.5);
+            if (keepDims) {
+                dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
                 dLdOut = Nd4j.trueScalar(0.5);
             }
             INDArray dLdInExpected = Nd4j.zeros(preReduceInput.shape());
-            dLdInExpected.putScalar(new int[]{2,2}, 0.5);   //Maximum value: position at [2,2]
+            dLdInExpected.putScalar(new int[]{2, 2}, 0.5);   //Maximum value: position at [2,2]
             INDArray dLdIn = Nd4j.createUninitialized(3, 4);
 
             String err = OpValidation.validate(new OpTestCase(new MaxBp(preReduceInput, dLdOut, dLdIn, keepDims))
@@ -333,27 +333,27 @@ public class ReductionOpValidationTests {
     }
 
     @Test
-    public void testMaxAlongDimension(){
+    public void testMaxAlongDimensionBP() {
         //Full array min reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
         //          = dL/dOut                   if in_i == out (== min(in))
         //          = 0                         otherwise
 
-        for(boolean keepDims : new boolean[]{false, true}) {
+        for (boolean keepDims : new boolean[]{false, true}) {
 
-            long[] reducedShape_0 = (keepDims ? new long[]{1,4} : new long[]{4});
+            long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
             INDArray preReduceInput = Nd4j.linspace(1, 16, 16).reshape(4, 4);
-            preReduceInput.putScalar(0,0, 20);
-            preReduceInput.putScalar(1,1, 21);
-            preReduceInput.putScalar(2,2, 22);
-            preReduceInput.putScalar(2,2, 23);
+            preReduceInput.putScalar(0, 0, 20);
+            preReduceInput.putScalar(1, 1, 21);
+            preReduceInput.putScalar(2, 2, 22);
+            preReduceInput.putScalar(2, 2, 23);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = Nd4j.create(preReduceInput.shape());
-            dLdInExpected_0.putScalar(0,0,1);
-            dLdInExpected_0.putScalar(1,1,2);
-            dLdInExpected_0.putScalar(2,2,3);
-            dLdInExpected_0.putScalar(3,3,4);
+            dLdInExpected_0.putScalar(0, 0, 1);
+            dLdInExpected_0.putScalar(1, 1, 2);
+            dLdInExpected_0.putScalar(2, 2, 3);
+            dLdInExpected_0.putScalar(3, 3, 4);
 
             INDArray dLdIn = Nd4j.createUninitialized(4, 4);
 
@@ -362,7 +362,7 @@ public class ReductionOpValidationTests {
             assertNull(err, err);
 
 
-            long[] reducedShape_1 = (keepDims ? new long[]{4,1} : new long[]{4});
+            long[] reducedShape_1 = (keepDims ? new long[]{4, 1} : new long[]{4});
             INDArray dLdInExpected_1 = dLdInExpected_0; //Same here, only because the maximums are along the diagonal
 
             INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_1);
@@ -376,19 +376,19 @@ public class ReductionOpValidationTests {
     }
 
     @Test
-    public void testProd(){
+    public void testProdBP() {
         //Full array product reduction
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
         //          = dL/dOut * d(prod(in))/dIn_i
         //          = dL/dOut * (prod(in) / in_i)
 
-        for(boolean keepDims : new boolean[]{false, true}) {
+        for (boolean keepDims : new boolean[]{false, true}) {
 
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray dLdOut;
-            if(keepDims){
-                dLdOut = Nd4j.valueArrayOf(new long[]{1,1}, 0.5);
+            if (keepDims) {
+                dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
                 dLdOut = Nd4j.trueScalar(0.5);
             }
@@ -405,18 +405,18 @@ public class ReductionOpValidationTests {
     }
 
     @Test
-    public void testProdAlongDimension(){
+    public void testProdAlongDimensionBP() {
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
         //          = dL/dOut * d(prod(in))/dIn_i
         //          = dL/dOut * (prod(in) / in_i)
 
-        for(boolean keepDims : new boolean[]{false, true}) {
-            long[] reducedShape_0 = (keepDims ? new long[]{1,4} : new long[]{4});
+        for (boolean keepDims : new boolean[]{false, true}) {
+            long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray prod_0 = preReduceInput.prod(0);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
-            INDArray dLdInExpected_0 = Nd4j.create(3,4);
-            for( int i=0; i<3; i++ ){
+            INDArray dLdInExpected_0 = Nd4j.create(3, 4);
+            for (int i = 0; i < 3; i++) {
                 dLdInExpected_0.putRow(i, prod_0);
             }
             dLdInExpected_0.divi(preReduceInput);   //Currently: prod(in)/in_i (along dim 0)
@@ -435,15 +435,15 @@ public class ReductionOpValidationTests {
             assertNull(err);
 
 
-            long[] reducedShape_1 = (keepDims ? new long[]{3,1} : new long[]{3});
+            long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
             INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3}, reducedShape_1);
             INDArray prod_1 = preReduceInput.prod(1);
-            INDArray dLdInExpected_1 = Nd4j.create(3,4);
-            for( int i=0; i<4; i++ ){
+            INDArray dLdInExpected_1 = Nd4j.create(3, 4);
+            for (int i = 0; i < 4; i++) {
                 dLdInExpected_1.putColumn(i, prod_1);
             }
             dLdInExpected_1.divi(preReduceInput);
-            dLdInExpected_1.muliColumnVector(dLdOut_1.reshape(3,1));    //Reshape is a hack around https://github.com/deeplearning4j/deeplearning4j/issues/5530
+            dLdInExpected_1.muliColumnVector(dLdOut_1.reshape(3, 1));    //Reshape is a hack around https://github.com/deeplearning4j/deeplearning4j/issues/5530
             //System.out.println(dLdInExpected_1);
             /*
             [[   24.0000,   12.0000,    8.0000,    6.0000],
@@ -462,14 +462,14 @@ public class ReductionOpValidationTests {
 
     @Ignore
     @Test
-    public void testStdev(){
+    public void testStdevBP() {
         //If out = stdev(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         //dOut/dIn_i = (in_i-mean)/(stdev * (n-1))
         //OR: n instead of n-1, if not bias corrected
 
-        for(boolean biasCorrected : new boolean[]{true, false}){
-            for(boolean keepDims : new boolean[]{false, true}) {
+        for (boolean biasCorrected : new boolean[]{true, false}) {
+            for (boolean keepDims : new boolean[]{false, true}) {
 
                 INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
                 INDArray dLdOut;
@@ -482,7 +482,7 @@ public class ReductionOpValidationTests {
                 double stdev = preReduceInput.stdNumber(biasCorrected).doubleValue();
                 double mean = preReduceInput.meanNumber().doubleValue();
 
-                long divisor = biasCorrected ? (preReduceInput.length()-1) : preReduceInput.length();
+                long divisor = biasCorrected ? (preReduceInput.length() - 1) : preReduceInput.length();
 
                 INDArray dLdInExp = preReduceInput.dup()
                         .subi(mean).divi(stdev * divisor)
@@ -518,16 +518,102 @@ public class ReductionOpValidationTests {
         }
     }
 
+    @Test
+    public void testStdevAlongDimensionBP() {
+        //If out = stdev(in) then:
+        //dL/dIn = dL/dOut * dOut/dIn
+        //dOut/dIn_i = (in_i-mean)/(stdev * (n-1))
+        //OR: n instead of n-1, if not bias corrected
+
+        for (boolean biasCorrected : new boolean[]{false, true}) {
+            for (boolean keepDims : new boolean[]{false, true}) {
+                long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+                long divisor = biasCorrected ? 2 : 3;
+                INDArray mean_0 = preReduceInput.mean(0);
+                INDArray stdev_0 = preReduceInput.std(biasCorrected, 0);
+                INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
+
+                INDArray dLdInExpected_0 = preReduceInput.dup();
+                dLdInExpected_0.subiRowVector(mean_0)
+                        .diviRowVector(stdev_0.mul(divisor));
+//                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
+//                System.out.println(dLdInExpected_0.shapeInfoToString());
+//                System.out.println(Arrays.toString(dLdInExpected_0.data().asFloat()));
+                /*
+                biasCorrected = false, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.4082483, -0.4082483, -0.4082483, -0.4082483, 0.0, 0.0, 0.0, 0.0, 0.4082483, 0.4082483, 0.4082483, 0.4082483]
+                biasCorrected = false, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.4082483, -0.4082483, -0.4082483, -0.4082483, 0.0, 0.0, 0.0, 0.0, 0.4082483, 0.4082483, 0.4082483, 0.4082483]
+                biasCorrected = true, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.5, -0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 0.5]
+                biasCorrected = true, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.5, -0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 0.5]
+                 */
+
+                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+                String err = OpValidation.validate(new OpTestCase(new StandardDeviationBp(preReduceInput, dLdOut_0, dLdIn, biasCorrected, keepDims, 0))
+                        .expectedOutput(0, dLdInExpected_0));
+                assertNull(err);
+
+
+                divisor = biasCorrected ? 3 : 4;
+                long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
+                INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3}, reducedShape_1);
+                INDArray mean_1 = preReduceInput.mean(1);
+                INDArray stdev_1 = preReduceInput.std(biasCorrected, 1);
+                INDArray dLdInExpected_1 = preReduceInput.dup();
+                dLdInExpected_1.subiColumnVector(mean_1)
+                        .diviColumnVector(stdev_1.mul(divisor));
+                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
+                System.out.println(dLdInExpected_1.shapeInfoToString());
+                System.out.println(Arrays.toString(dLdInExpected_1.data().asFloat()));
+                /*
+                biasCorrected = false, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.3354102, -0.1118034, 0.1118034, 0.3354102, -0.3354102, -0.1118034, 0.1118034, 0.3354102, -0.3354102, -0.1118034, 0.1118034, 0.3354102]
+                biasCorrected = false, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.3354102, -0.1118034, 0.1118034, 0.3354102, -0.3354102, -0.1118034, 0.1118034, 0.3354102, -0.3354102, -0.1118034, 0.1118034, 0.3354102]
+                biasCorrected = true, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.38729835, -0.12909944, 0.12909944, 0.38729835, -0.38729835, -0.12909944, 0.12909944, 0.38729835, -0.38729835, -0.12909944, 0.12909944, 0.38729835]
+                biasCorrected = true, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.38729835, -0.12909944, 0.12909944, 0.38729835, -0.38729835, -0.12909944, 0.12909944, 0.38729835, -0.38729835, -0.12909944, 0.12909944, 0.38729835]
+                 */
+
+
+                dLdIn = Nd4j.createUninitialized(3, 4);
+                err = OpValidation.validate(new OpTestCase(new ProdBp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
+                        .expectedOutput(0, dLdInExpected_1));
+                assertNull(err, err);
+            }
+        }
+    }
+
     @Ignore
     @Test
-    public void testVariance(){
+    public void testVarianceBP() {
         //If out = variance(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         //dOut/dIn_i = 2*(in_i-mean)/(n-1)
         //OR: n instead of n-1, if not bias corrected
 
-        for(boolean biasCorrected : new boolean[]{true, false}){
-            for(boolean keepDims : new boolean[]{false, true}) {
+        for (boolean biasCorrected : new boolean[]{true, false}) {
+            for (boolean keepDims : new boolean[]{false, true}) {
 
                 INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
                 INDArray dLdOut;
@@ -540,7 +626,7 @@ public class ReductionOpValidationTests {
                 double var = preReduceInput.var(biasCorrected).getDouble(0);
                 double mean = preReduceInput.meanNumber().doubleValue();
 
-                long divisor = biasCorrected ? (preReduceInput.length()-1) : preReduceInput.length();
+                long divisor = biasCorrected ? (preReduceInput.length() - 1) : preReduceInput.length();
 
                 INDArray dLdInExp = preReduceInput.dup()
                         .subi(mean).muli(2.0 / divisor)
@@ -576,21 +662,114 @@ public class ReductionOpValidationTests {
         }
     }
 
+    @Test
+    public void testVarianceAlongDimensionBP() {
+        //If out = variance(in) then:
+        //dL/dIn = dL/dOut * dOut/dIn
+        //dOut/dIn_i = 2*(in_i-mean)/(n-1)
+        //OR: n instead of n-1, if not bias corrected
+
+        for (boolean biasCorrected : new boolean[]{false, true}) {
+            for (boolean keepDims : new boolean[]{false, true}) {
+                long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+                long divisor = biasCorrected ? 2 : 3;
+                INDArray mean_0 = preReduceInput.mean(0);
+                INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
+
+                INDArray dLdInExpected_0 = preReduceInput.dup();
+                dLdInExpected_0.subiRowVector(mean_0).muli(2.0 / divisor);
+                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
+                System.out.println(dLdInExpected_0.shapeInfoToString());
+                System.out.println(Arrays.toString(dLdInExpected_0.data().asFloat()));
+                /*
+                biasCorrected = false, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-2.6666667, -2.6666667, -2.6666667, -2.6666667, 0.0, 0.0, 0.0, 0.0, 2.6666667, 2.6666667, 2.6666667, 2.6666667]
+                biasCorrected = false, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-2.6666667, -2.6666667, -2.6666667, -2.6666667, 0.0, 0.0, 0.0, 0.0, 2.6666667, 2.6666667, 2.6666667, 2.6666667]
+                biasCorrected = true, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-4.0, -4.0, -4.0, -4.0, 0.0, 0.0, 0.0, 0.0, 4.0, 4.0, 4.0, 4.0]
+                biasCorrected = true, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-4.0, -4.0, -4.0, -4.0, 0.0, 0.0, 0.0, 0.0, 4.0, 4.0, 4.0, 4.0]
+                 */
+
+                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+                String err = OpValidation.validate(new OpTestCase(new StandardDeviationBp(preReduceInput, dLdOut_0, dLdIn, biasCorrected, keepDims, 0))
+                        .expectedOutput(0, dLdInExpected_0));
+                assertNull(err);
+
+
+                divisor = biasCorrected ? 3 : 4;
+                long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
+                INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3}, reducedShape_1);
+                INDArray mean_1 = preReduceInput.mean(1);
+                INDArray dLdInExpected_1 = preReduceInput.dup();
+                dLdInExpected_1.subiColumnVector(mean_1).muli(2.0 / divisor);
+//                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
+//                System.out.println(dLdInExpected_1.shapeInfoToString());
+//                System.out.println(Arrays.toString(dLdInExpected_1.data().asFloat()));
+                /*
+                biasCorrected = false, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.75, -0.25, 0.25, 0.75, -0.75, -0.25, 0.25, 0.75, -0.75, -0.25, 0.25, 0.75]
+                biasCorrected = false, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.75, -0.25, 0.25, 0.75, -0.75, -0.25, 0.25, 0.75, -0.75, -0.25, 0.25, 0.75]
+                biasCorrected = true, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-1.0, -0.33333334, 0.33333334, 1.0, -1.0, -0.33333334, 0.33333334, 1.0, -1.0, -0.33333334, 0.33333334, 1.0]
+                biasCorrected = true, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-1.0, -0.33333334, 0.33333334, 1.0, -1.0, -0.33333334, 0.33333334, 1.0, -1.0, -0.33333334, 0.33333334, 1.0]
+                 */
+
+
+                dLdIn = Nd4j.createUninitialized(3, 4);
+                err = OpValidation.validate(new OpTestCase(new ProdBp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
+                        .expectedOutput(0, dLdInExpected_1));
+                assertNull(err, err);
+            }
+        }
+    }
+
+
     @Ignore
     @Test
-    public void testCumSum(){
+    public void testCumSumBP() {
+        //CumSum is not *technically* a reduction...
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
         //          = dL/dOut * d(in_0 + ... + in_i)/dIn_i
         //          = dL/dOut
 
-        fail();
 
+
+        INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray dLdOut = preReduceInput.dup().addi(100);
+        INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), 0.5);
+        INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+
+        String err = OpValidation.validate(new OpTestCase(new CumSumBp(preReduceInput, dLdOut, dLdIn, keepDims))
+                .expectedOutput(0, dLdInExpected));
+
+        assertNull(err);
     }
 
     @Ignore
     @Test
-    public void testCumProd(){
+    public void testCumProdBP() {
 
         //dL/dIn_i  = dL/dOut * dOut/dIn_i
         //          = dL/dOut * d(in_0 * ... * in_i)/dIn_i

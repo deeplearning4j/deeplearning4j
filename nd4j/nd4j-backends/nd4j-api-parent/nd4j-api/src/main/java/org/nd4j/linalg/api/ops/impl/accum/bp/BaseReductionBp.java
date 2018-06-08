@@ -15,8 +15,8 @@ import java.util.List;
 
 public abstract class BaseReductionBp extends DynamicCustomOp {
 
-    private boolean keepDims;
-    private int[] dimensions;
+    protected boolean keepDims;
+    protected int[] dimensions;
 
     /**
      *
