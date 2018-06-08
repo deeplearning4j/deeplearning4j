@@ -1795,27 +1795,43 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val hash = op.opHash();
 
         val result = new ArrayList<long[]>();
-        if(op.numInputArguments() < 1) {
+        boolean inputsResolved = true;
+        int numInputs = op.numInputArguments();
+        if(numInputs < 1) {
+            if(op.getInputShapes().size() < 1){
             if(log.isTraceEnabled()){
                 log.trace("Could not calculate output shape for op {}: number of input args was 0",
                         op.getClass().getName());
             }
             return Collections.emptyList();
+            }
+            else{
+                inputsResolved = false;
+                numInputs = op.getInputShapes().size();
+            }
         }
 
 
-        val inputBuffers = new PointerPointer<>(op.numInputArguments());
-        val inputShapes = new PointerPointer<>(op.numInputArguments());
-        val inputArgs = op.inputArguments();
-        int cnt= 0;
-        for (val in: inputArgs) {
-            inputBuffers.put(cnt, in.data().addressPointer());
-            inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
-        }
 
+        val inputBuffers = new PointerPointer<>(numInputs);
+        val inputShapes = new PointerPointer<>(numInputs);
+        if(inputsResolved) {
+            val inputArgs = op.inputArguments();
+            int cnt = 0;
+            for (val in : inputArgs) {
+                inputBuffers.put(cnt, in.data().addressPointer());
+                inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
+            }
+        }
+        else{
+            for(val shape : op.getInputShapes()){
+                inputShapes.put(Nd4j.createUninitialized(shape)
+                .shapeInfoDataBuffer().addressPointer());
+            }
+        }
 
         val iArgs = op.numIArguments() > 0 ? new LongPointer(op.numIArguments()) : null;
-        cnt = 0;
+        int cnt = 0;
         val iArgs1 = op.iArgs();
         for (val i: iArgs1)
             iArgs.put(cnt++, i);
@@ -1831,9 +1847,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     hash, inputBuffers, inputShapes, op.numInputArguments(),
                     tArgs, op.numTArguments(), iArgs, op.numIArguments());
 
-            if (ptrptr == null)
+            if (ptrptr == null) {
+                if (inputsResolved){
                 throw new RuntimeException();
-
+                }
+                else{
+                    return Collections.emptyList();
+                }
+            }
             for (int e = 0; e < ptrptr.size(); e++ )
                 result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asLongPointer()));
 
@@ -1850,8 +1871,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs,
                     op.numTArguments(), iArgs, op.numIArguments());
 
-            if (ptrptr == null)
-                throw new RuntimeException();
+            if (ptrptr == null) {
+                if (inputsResolved){
+                    throw new RuntimeException();
+                }
+                else{
+                    return Collections.emptyList();
+                }
+            }
 
             for (int e = 0; e < ptrptr.size(); e++ )
                 result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asLongPointer()));
@@ -1868,8 +1895,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesHalf(null, hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs, op.numTArguments(), iArgs, op.numIArguments());
 
-            if (ptrptr == null)
-                throw new RuntimeException();
+            if (ptrptr == null) {
+                if (inputsResolved){
+                    throw new RuntimeException();
+                }
+                else{
+                    return Collections.emptyList();
+                }
+            }
 
             val numOutputs = getCustomOperations().get(lc).getNumOutputs();
             for (int e = 0; e < ptrptr.size(); e++ )
