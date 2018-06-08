@@ -1994,4 +1994,20 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test2) {
     delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test3) {
 
+    NDArray<float> input('c', {1},  {1., 2., 3.});
+    NDArray<float> paddings('c', {1,2}, {2, 2});
+
+    NDArray<float> exp('c', {9}, {5, 4, 4, 5, 6, 6, 5, 2, 1, 1, 2, 3, 3, 2, 2, 1, 1, 2, 3, 3, 2, 5, 4, 4, 5, 6, 6, 5, 5, 4, 4, 5, 6, 6, 5, 2, 1, 1, 2, 3, 3, 2});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {1});
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
