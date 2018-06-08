@@ -1824,8 +1824,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
         else{
+            int cnt = 0;
             for(val shape : op.getInputShapes()){
-                inputShapes.put(Nd4j.createUninitialized(shape)
+                inputShapes.put(cnt++, Nd4j.createUninitialized(shape)
                 .shapeInfoDataBuffer().addressPointer());
             }
         }
