@@ -19,7 +19,6 @@ package org.deeplearning4j.nn.layers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
@@ -182,21 +181,14 @@ public abstract class BaseCudnnHelper {
                     : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
     protected int dataTypeSize =
                     Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2;
-    protected Pointer alpha = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(1.0)
-                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
-                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(1.0f)});
-    protected Pointer beta = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(0.0)
-                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(0.0f)
-                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(0.0f)});;
+    // both CUDNN_DATA_HALF and CUDNN_DATA_FLOAT need a float value for alpha and beta
+    protected Pointer alpha = dataType == CUDNN_DATA_DOUBLE ? new DoublePointer(1.0) : new FloatPointer(1.0f);
+    protected Pointer beta = dataType == CUDNN_DATA_DOUBLE ? new DoublePointer(0.0) : new FloatPointer(0.0f);
     protected SizeTPointer sizeInBytes = new SizeTPointer(1);
 
     public boolean checkSupported() {
-        boolean supported = true;
-        if (Nd4j.dataType() == DataBuffer.Type.HALF) {
-            supported = false;
-            log.warn("Not supported: DataBuffer.Type.HALF");
-        }
-        return supported;
+        // add general checks here, if any
+        return true;
     }
 
 
