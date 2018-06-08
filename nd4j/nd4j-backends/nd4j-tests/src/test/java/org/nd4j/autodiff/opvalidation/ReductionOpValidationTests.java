@@ -13,6 +13,8 @@ import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -461,15 +463,117 @@ public class ReductionOpValidationTests {
     @Ignore
     @Test
     public void testStdev(){
+        //If out = stdev(in) then:
+        //dL/dIn = dL/dOut * dOut/dIn
+        //dOut/dIn_i = (in_i-mean)/(stdev * (n-1))
+        //OR: n instead of n-1, if not bias corrected
 
-        fail();
+        for(boolean biasCorrected : new boolean[]{true, false}){
+            for(boolean keepDims : new boolean[]{false, true}) {
+
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+                INDArray dLdOut;
+                if (keepDims) {
+                    dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
+                } else {
+                    dLdOut = Nd4j.trueScalar(0.5);
+                }
+
+                double stdev = preReduceInput.stdNumber(biasCorrected).doubleValue();
+                double mean = preReduceInput.meanNumber().doubleValue();
+
+                long divisor = biasCorrected ? (preReduceInput.length()-1) : preReduceInput.length();
+
+                INDArray dLdInExp = preReduceInput.dup()
+                        .subi(mean).divi(stdev * divisor)
+                        .muli(0.5); //* dL/dOut
+//                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
+//                System.out.println(dLdInExp.shapeInfoToString());
+//                System.out.println(Arrays.toString(dLdInExp.data().asFloat()));
+                /*
+                biasCorrected = true, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.069337524, -0.056730703, -0.04412388, -0.031517055, -0.018910235, -0.0063034114, 0.0063034114, 0.018910235, 0.031517055, 0.04412388, 0.056730703, 0.069337524]
+                biasCorrected = true, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.069337524, -0.056730703, -0.04412388, -0.031517055, -0.018910235, -0.0063034114, 0.0063034114, 0.018910235, 0.031517055, 0.04412388, 0.056730703, 0.069337524]
+                biasCorrected = false, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.06638563, -0.05431551, -0.0422454, -0.030175284, -0.01810517, -0.006035057, 0.006035057, 0.01810517, 0.030175284, 0.0422454, 0.05431551, 0.06638563]
+                biasCorrected = false, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.06638563, -0.05431551, -0.0422454, -0.030175284, -0.01810517, -0.006035057, 0.006035057, 0.01810517, 0.030175284, 0.0422454, 0.05431551, 0.06638563]
+                 */
+
+                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+
+                String err = OpValidation.validate(new OpTestCase(new StandardDeviationBp(preReduceInput, dLdOut, dLdIn, biasCorrected, keepDims))
+                        .expectedOutput(0, dLdInExp));
+                assertNull(err);
+            }
+        }
     }
 
     @Ignore
     @Test
     public void testVariance(){
+        //If out = variance(in) then:
+        //dL/dIn = dL/dOut * dOut/dIn
+        //dOut/dIn_i = 2*(in_i-mean)/(n-1)
+        //OR: n instead of n-1, if not bias corrected
 
-        fail();
+        for(boolean biasCorrected : new boolean[]{true, false}){
+            for(boolean keepDims : new boolean[]{false, true}) {
+
+                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+                INDArray dLdOut;
+                if (keepDims) {
+                    dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
+                } else {
+                    dLdOut = Nd4j.trueScalar(0.5);
+                }
+
+                double var = preReduceInput.var(biasCorrected).getDouble(0);
+                double mean = preReduceInput.meanNumber().doubleValue();
+
+                long divisor = biasCorrected ? (preReduceInput.length()-1) : preReduceInput.length();
+
+                INDArray dLdInExp = preReduceInput.dup()
+                        .subi(mean).muli(2.0 / divisor)
+                        .muli(0.5); //* dL/dOut
+//                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
+//                System.out.println(dLdInExp.shapeInfoToString());
+//                System.out.println(Arrays.toString(dLdInExp.data().asFloat()));
+                /*
+                biasCorrected = true, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.5, -0.4090909, -0.3181818, -0.22727273, -0.13636364, -0.045454547, 0.045454547, 0.13636364, 0.22727273, 0.3181818, 0.4090909, 0.5]
+                biasCorrected = true, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.5, -0.4090909, -0.3181818, -0.22727273, -0.13636364, -0.045454547, 0.045454547, 0.13636364, 0.22727273, 0.3181818, 0.4090909, 0.5]
+                biasCorrected = false, keepDims=false
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.45833334, -0.375, -0.29166666, -0.20833333, -0.125, -0.041666668, 0.041666668, 0.125, 0.20833333, 0.29166666, 0.375, 0.45833334]
+                biasCorrected = false, keepDims=true
+                Rank: 2,Offset: 0
+                 Order: c Shape: [3,4],  stride: [4,1]
+                [-0.45833334, -0.375, -0.29166666, -0.20833333, -0.125, -0.041666668, 0.041666668, 0.125, 0.20833333, 0.29166666, 0.375, 0.45833334]
+                 */
+
+                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+
+                String err = OpValidation.validate(new OpTestCase(new VarianceBp(preReduceInput, dLdOut, dLdIn, biasCorrected, keepDims))
+                        .expectedOutput(0, dLdInExp));
+                assertNull(err);
+            }
+        }
     }
 
     @Ignore
@@ -481,6 +585,7 @@ public class ReductionOpValidationTests {
         //          = dL/dOut
 
         fail();
+
     }
 
     @Ignore
