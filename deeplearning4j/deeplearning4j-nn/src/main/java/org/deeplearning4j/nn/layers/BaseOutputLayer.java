@@ -163,6 +163,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
         // So this is instead done in MultiLayerNetwork/CompGraph backprop methods
 
+        epsilonNext = backpropDropOutIfPresent(epsilonNext);
         return new Pair<>(pair.getFirst(), epsilonNext);
     }
 

@@ -500,6 +500,12 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
+    public void allowInputModification(boolean allow) {
+        fwd.allowInputModification(allow);
+        bwd.allowInputModification(true);   //Always allow: always safe due to reverse op
+    }
+
+    @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
         Pair<INDArray,MaskState> ret = fwd.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
         bwd.feedForwardMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT),   //TODO

@@ -170,7 +170,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                     throw new RuntimeException(e);
                 }
             }
+
             if (ret != null) {
+                //Backprop dropout, if present
+                INDArray gradPostDropout = ret.getRight();
+                gradPostDropout = backpropDropOutIfPresent(gradPostDropout);
+                ret.setSecond(gradPostDropout);
                 return ret;
             }
         }
@@ -227,6 +232,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         weightNoiseParams.clear();
 
+        epsNext = backpropDropOutIfPresent(epsNext);
         return new Pair<>(retGradient, epsNext);
     }
 
