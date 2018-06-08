@@ -66,7 +66,8 @@ public class ReductionOpValidationTests {
                             .addInputs(preReduceInput, dLdOut)
                             .addOutputs(dLdIn)
                             //First int arg: Keep dimensions. Lack of other (dimension) args: means "full array reduce"
-                            .addIntegerArguments(keepDims ? 1 : 0)
+                            //.addIntegerArguments(keepDims ? 1 : 0)
+                            .addFloatingPointArguments(keepDims ? 1.0 : 0.0)
                             .build())
                     .expectedOutput(0, dLdInExpected));
 
@@ -97,7 +98,9 @@ public class ReductionOpValidationTests {
                     DynamicCustomOp.builder("reduce_sum_bp")
                             .addInputs(preReduceInput, dLdOut_0)
                             .addOutputs(dLdIn)
-                            .addIntegerArguments(keepDims ? 1 : 0, 0) //Reduction along dimension 0
+                            //.addIntegerArguments(keepDims ? 1 : 0, 0) //Reduction along dimension 0
+                            .addIntegerArguments(0)
+                            .addFloatingPointArguments(keepDims ? 1.0 : 0.0)
                             .build())
                     .expectedOutput(0, dLdInExpected_0)
             );
@@ -130,7 +133,9 @@ public class ReductionOpValidationTests {
                     DynamicCustomOp.builder("reduce_sum_bp")
                             .addInputs(preReduceInput, dLdOut_1)
                             .addOutputs(dLdIn)
-                            .addIntegerArguments(keepDims ? 1 : 0, 1) //Reduction along dimension 1
+//                            .addIntegerArguments(keepDims ? 1 : 0, 1) //Reduction along dimension 1
+                            .addIntegerArguments(1)
+                            .addFloatingPointArguments(keepDims ? 1.0 : 0.0)
                             .build())
                     .expectedOutput(0, dLdInExpected_1));
 
@@ -168,7 +173,8 @@ public class ReductionOpValidationTests {
                             .addInputs(preReduceInput, dLdOut)
                             .addOutputs(dLdIn)
                             //First int arg: Keep dimensions. Lack of other (dimension) args: means "full array reduce"
-                            .addIntegerArguments(keepDims ? 1 : 0)
+                            //.addIntegerArguments(keepDims ? 1 : 0)
+                            .addFloatingPointArguments(keepDims ? 1.0 : 0.0)
                             .build())
                     .expectedOutput(0, dLdInExpected));
 
@@ -199,7 +205,9 @@ public class ReductionOpValidationTests {
                     DynamicCustomOp.builder("reduce_mean_bp")
                             .addInputs(preReduceInput, dLdOut_0)
                             .addOutputs(dLdIn)
-                            .addIntegerArguments(keepDims ? 1 : 0, 0) //Reduction along dimension 0
+//                            .addIntegerArguments(keepDims ? 1 : 0, 0) //Reduction along dimension 0
+                            .addFloatingPointArguments(keepDims ? 1.0 : 0.0)
+                            .addIntegerArguments(0)
                             .build())
                     .expectedOutput(0, dLdInExpected_0)
             );
@@ -232,7 +240,9 @@ public class ReductionOpValidationTests {
                     DynamicCustomOp.builder("reduce_mean_bp")
                             .addInputs(preReduceInput, dLdOut_1)
                             .addOutputs(dLdIn)
-                            .addIntegerArguments(keepDims ? 1 : 0, 1) //Reduction along dimension 1
+//                            .addIntegerArguments(keepDims ? 1 : 0, 1) //Reduction along dimension 1
+                            .addFloatingPointArguments(keepDims ? 1.0 : 0.0)
+                            .addIntegerArguments(1)
                             .build())
                     .expectedOutput(0, dLdInExpected_1));
 
@@ -268,7 +278,8 @@ public class ReductionOpValidationTests {
                             .addInputs(preReduceInput, dLdOut)
                             .addOutputs(dLdIn)
                             //First int arg: Keep dimensions. Lack of other (dimension) args: means "full array reduce"
-                            .addIntegerArguments(keepDims ? 1 : 0)
+//                            .addIntegerArguments(keepDims ? 1 : 0)
+                            .addFloatingPointArguments(keepDims ? 1.0 : 0.0)
                             .build())
                     .expectedOutput(0, dLdInExpected));
 
@@ -303,7 +314,8 @@ public class ReductionOpValidationTests {
                             .addInputs(preReduceInput, dLdOut)
                             .addOutputs(dLdIn)
                             //First int arg: Keep dimensions. Lack of other (dimension) args: means "full array reduce"
-                            .addIntegerArguments(keepDims ? 1 : 0)
+//                            .addIntegerArguments(keepDims ? 1 : 0)
+                            .addFloatingPointArguments(keepDims ? 1.0 : 0.0)
                             .build())
                     .expectedOutput(0, dLdInExpected));
 
@@ -339,7 +351,8 @@ public class ReductionOpValidationTests {
                             .addInputs(preReduceInput, dLdOut)
                             .addOutputs(dLdIn)
                             //First int arg: Keep dimensions. Lack of other (dimension) args: means "full array reduce"
-                            .addIntegerArguments(keepDims ? 1 : 0)
+//                            .addIntegerArguments(keepDims ? 1 : 0)
+                            .addFloatingPointArguments(keepDims ? 1.0 : 0.0)
                             .build())
                     .expectedOutput(0, dLdInExpected));
 
