@@ -16,7 +16,7 @@ template <typename T>
 void softMaxForVector(const NDArray<T>& input, NDArray<T>& output) {
 
     if(!input.isVector() || !output.isVector())
-        throw "ops::helpers::softMaxForVector function: input and output arrays must be vectors !";
+        throw std::runtime_error("ops::helpers::softMaxForVector function: input and output arrays must be vectors !");
 
     T* inBuff  = const_cast<NDArray<T>&>(input).getBuffer();
     T* outBuff = output.getBuffer();
@@ -71,7 +71,7 @@ template <typename T>
 void logSoftMaxForVector(const NDArray<T>& input, NDArray<T>& output) {
 
     if(!input.isVector() || !output.isVector())
-        throw "ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !";
+        throw std::runtime_error("ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !");
 
     T* inBuff  = const_cast<NDArray<T>&>(input).getBuffer();
     T* outBuff = output.getBuffer();

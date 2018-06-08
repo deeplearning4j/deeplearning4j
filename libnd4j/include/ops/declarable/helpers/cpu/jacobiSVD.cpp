@@ -16,10 +16,10 @@ template <typename T>
 JacobiSVD<T>::JacobiSVD(const NDArray<T>& matrix, const bool calcU, const bool calcV, const bool fullUV) {
 
     if(matrix.rankOf() != 2 || matrix.isScalar())
-        throw "ops::helpers::JacobiSVD constructor: input array must be 2D matrix !";
+        throw std::runtime_error("ops::helpers::JacobiSVD constructor: input array must be 2D matrix !");
 
-    _rows = matrix.sizeAt(0);
-    _cols = matrix.sizeAt(1);
+    _rows = static_cast<int>(matrix.sizeAt(0));
+    _cols = static_cast<int>(matrix.sizeAt(1));
     _diagSize = math::nd4j_min<int>(_rows, _cols);    
 
     _calcU = calcU;
@@ -58,7 +58,7 @@ void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray<T>& block
     if(i < j) {
 
         if(j+1 > block.sizeAt(0))
-            throw "ops::helpers::JacobiSVD mulRotationOnLeft: second arguments is out of array row range !";
+            throw std::runtime_error("ops::helpers::JacobiSVD mulRotationOnLeft: second arguments is out of array row range !");
         
         IndicesList indices({NDIndex::interval(i, j+1, j-i), NDIndex::all()});
         NDArray<T>* pTemp = block.subarray(indices);
@@ -69,7 +69,7 @@ void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray<T>& block
     else {
 
         if(j+1 > block.sizeAt(0) || i+1 > block.sizeAt(0))
-            throw "ops::helpers::JacobiSVD mulRotationOnLeft: some or both integer arguments are out of array row range !";
+            throw std::runtime_error("ops::helpers::JacobiSVD mulRotationOnLeft: some or both integer arguments are out of array row range !");
         
         NDArray<T> temp(block.ordering(), {2, block.sizeAt(1)}, block.getWorkspace());
         NDArray<T>* row1 = block.subarray({{i, i+1}, {}});
@@ -96,7 +96,7 @@ void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray<T>& bloc
     if(i < j) {
 
         if(j+1 > block.sizeAt(1))
-            throw "ops::helpers::JacobiSVD mulRotationOnRight: second argument is out of array column range !";
+            throw std::runtime_error("ops::helpers::JacobiSVD mulRotationOnRight: second argument is out of array column range !");
         
         IndicesList indices({NDIndex::all(), NDIndex::interval(i, j+1, j-i)});
         NDArray<T>* pTemp = block.subarray(indices);
@@ -107,7 +107,7 @@ void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray<T>& bloc
     else {
 
         if(j+1 > block.sizeAt(1) || i+1 > block.sizeAt(1))
-            throw "ops::helpers::JacobiSVD mulRotationOnRight: some or both integer arguments are out of array column range !";
+            throw std::runtime_error("ops::helpers::JacobiSVD mulRotationOnRight: some or both integer arguments are out of array column range !");
         
         NDArray<T> temp(block.ordering(), {block.sizeAt(0), 2}, block.getWorkspace());
         NDArray<T>* col1 = block.subarray({{}, {i, i+1}});

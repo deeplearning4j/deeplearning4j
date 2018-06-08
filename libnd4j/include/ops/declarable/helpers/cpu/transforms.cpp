@@ -294,10 +294,10 @@ void invertPermutation(const NDArray<T>& input, NDArray<T>& output) {
         int elem = (int)input(i);
  
         if(!uniqueElems.insert(elem).second)        // this operation forbids us to use #pragma omp
-            throw "helpers::invertPermutation function: input array contains duplicates !";
+            throw std::runtime_error("helpers::invertPermutation function: input array contains duplicates !");
             
         if(elem < 0 || elem > length - 1)
-            throw  "helpers::invertPermutation function: element of input array is out of range (0, length-1) !";
+            throw  std::runtime_error("helpers::invertPermutation function: element of input array is out of range (0, length-1) !");
 
         output(elem) = i;
     }
@@ -341,7 +341,7 @@ void gatherND(NDArray<T>& input, NDArray<T>& indices, NDArray<T>& output) {
         
         for(int j = 0; j < lastIndDim; ++j) {
             if((int)(*idxSubArr)(j) >= input.sizeAt(j))
-                throw "helpers::gatherND function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !";
+                throw std::runtime_error("helpers::gatherND function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
             idx[j] = (*idxSubArr)(j);
         }
                 
@@ -377,7 +377,7 @@ void gather(NDArray<T>* input, const NDArray<T>* indices, NDArray<T>* output, co
 
         for(int i = 0; i < indices->lengthOf(); ++i)
             if((int)(*indices)(i) >= input->sizeAt(axis))
-                throw "helpers::gather function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !";            
+                throw std::runtime_error("helpers::gather function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
     
         // first case: indices consist of only one scalar
         if(indices->isScalar()) {
@@ -423,7 +423,7 @@ void gather(NDArray<T>* input, const NDArray<T>* indices, NDArray<T>* output, co
         
         for(int i = 1; i < numOfIntArgs; ++i)
             if(intArgs[i] >= input->sizeAt(axis))
-                throw "helpers::gather function: some of input indexes is larger than corresponding shape of input array !";
+                throw std::runtime_error("helpers::gather function: some of input indexes is larger than corresponding shape of input array !");
 
         // we only allow scalar/vector case here
         if (numOfIntArgs == 2) {
