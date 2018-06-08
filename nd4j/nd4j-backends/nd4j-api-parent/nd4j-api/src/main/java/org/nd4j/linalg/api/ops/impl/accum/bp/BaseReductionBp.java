@@ -45,16 +45,12 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
         this.keepDims = keepDims;
         this.dimensions = dimensions;
         addArgs();
-        addInputArgument(origInput, gradAtOutput);
-        if(output != null){
-            addOutputArgument(output);
-        }
     }
 
     public BaseReductionBp(){}
 
     protected void addArgs(){
-        addIArgument(keepDims ? 1 : 0);
+        addTArgument(keepDims ? 1 : 0);
         if(dimensions != null && dimensions.length > 0){
             addIArgument(dimensions);
         }
