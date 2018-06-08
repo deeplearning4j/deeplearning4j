@@ -450,7 +450,7 @@ public class SameDiffTests {
         SDVariable x = sameDiff.var("x", shape);
         SDVariable result = sameDiff.shape(x);
         assertArrayEquals(result.eval().toLongVector(), shape);
-}
+    }
     @Test
     public void testGather() {
         SameDiff sameDiff = SameDiff.create();
@@ -478,9 +478,9 @@ public class SameDiffTests {
                     arr1.get(NDArrayIndex.point(idx.getInt(0)),
                             NDArrayIndex.point(idx.getInt(1)),
                             NDArrayIndex.point(idx.getInt(2))));
-            }
-        assertEquals(expected, result.eval());
         }
+        assertEquals(expected, result.eval());
+    }
 
     @Test
     public void testStack() {
@@ -2330,7 +2330,7 @@ public class SameDiffTests {
         sd.exec();
 
         for (int i = 0; i < 4; i++)
-           assert out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getDouble(0) == 1;
+            assert out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getDouble(0) == 1;
 
     }
 
@@ -3627,8 +3627,8 @@ public class SameDiffTests {
         INDArray arr3 = Nd4j.zeros(3, 3);
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
                                                     0, 0, 0,
-                                                    1, 1, 1},
-                                            new long[]{3, 3});
+                                                   1, 1, 1},
+                                           new long[]{3, 3});
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
