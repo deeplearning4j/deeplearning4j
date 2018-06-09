@@ -2925,11 +2925,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return Updater for MultiLayerNetwork
      */
     public synchronized Updater getUpdater() {
-        if (solver == null) {
+        return getUpdater(true);
+    }
+
+    public synchronized Updater getUpdater(boolean initializeIfReq) {
+        if (solver == null && initializeIfReq) {
             solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
             solver.getOptimizer().setUpdater(UpdaterCreator.getUpdater(this));
         }
-        return solver.getOptimizer().getUpdater();
+        if(solver != null) {
+            return solver.getOptimizer().getUpdater();
+        }
+        return null;
     }
 
     /** Set the updater for the MultiLayerNetwork */
