@@ -459,6 +459,11 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         checkCudnn(true, "cudnnGetConvolutionForwardWorkspaceSize", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
 
         if (sizeInBytes.get(0) > workSpace.capacity()) {
+            if(log.isTraceEnabled()){
+                log.trace("CudnnConvolutionHelper preOutput: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
+                        workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), null, 2),
+                        sizeInBytes.get(), StringUtils.TraditionalBinaryPrefix.long2String(sizeInBytes.get(), null, 2));
+            }
             workSpace.deallocate();
             workSpace = new DataCache(sizeInBytes.get(0));
         }
