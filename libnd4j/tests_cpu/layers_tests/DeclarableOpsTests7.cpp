@@ -1968,7 +1968,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test1) {
 
     nd4j::ops::mirror_pad<float> op;
     auto result = op.execute({&input, &paddings}, {}, {1});
-    NDArray<float>* output = result->at(0);
+    NDArray<float>* output = result->at(0);    
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1997,10 +1997,10 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, mirrorPad_test3) {
 
-    NDArray<float> input('c', {1},  {1., 2., 3.});
+    NDArray<float> input('c', {3},  {1., 2., 3.});
     NDArray<float> paddings('c', {1,2}, {2, 2});
 
-    NDArray<float> exp('c', {9}, {5, 4, 4, 5, 6, 6, 5, 2, 1, 1, 2, 3, 3, 2, 2, 1, 1, 2, 3, 3, 2, 5, 4, 4, 5, 6, 6, 5, 5, 4, 4, 5, 6, 6, 5, 2, 1, 1, 2, 3, 3, 2});
+    NDArray<float> exp('c', {7}, {2, 1, 1, 2, 3, 3, 2});
 
     nd4j::ops::mirror_pad<float> op;
     auto result = op.execute({&input, &paddings}, {}, {1});
@@ -2011,3 +2011,244 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test3) {
 
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test4) {
+
+    NDArray<float> input('c', {3},  {1., 2., 3.});
+    NDArray<float> paddings('c', {2}, {2, 3});
+
+    NDArray<float> exp('c', {8}, {2, 1, 1, 2, 3, 3, 2, 1});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {1});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test5) {
+
+    NDArray<float> input('c', {3},  {1., 2., 3.});
+    NDArray<float> paddings('c', {2}, {2, 2});
+
+    NDArray<float> exp('c', {7}, {3, 2, 1, 2, 3, 2, 1});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {0});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test6) {
+
+    NDArray<float> input(1.);
+    NDArray<float> paddings('c', {1,2,1,1}, {1, 1});
+
+    NDArray<float> exp('c', {3}, {1,1,1});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {1});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test7) {
+
+    NDArray<float> input(1.);
+    NDArray<float> paddings('c', {2}, {1, 1});
+
+    NDArray<float> exp('c', {3}, {1,1,1});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {1});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test8) {
+
+    NDArray<float> input('c', {1,3},  {1., 2., 3.});
+    NDArray<float> paddings('c', {2, 2}, {1, 1, 3, 3});
+
+    NDArray<float> exp('c', {3,9}, {3, 2, 1, 1, 2, 3, 3, 2, 1, 3, 2, 1, 1, 2, 3, 3, 2, 1, 3, 2, 1, 1, 2, 3, 3, 2, 1});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {1});
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test9) {
+
+    NDArray<float> input('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
+    NDArray<float> paddings('c', {2, 2}, {2, 2, 3, 3});
+
+    NDArray<float> exp('c', {6, 9}, {6, 5, 4, 4, 5, 6, 6, 5, 4, 3, 2, 1, 1, 2, 3, 3, 2, 1, 3, 2, 1, 1, 2, 3, 3, 2, 1, 6, 5, 4, 4, 5, 6, 6, 5, 4, 6, 5, 4, 4, 5, 6, 6, 5, 4, 3, 2, 1, 1, 2, 3, 3, 2, 1});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {1});
+    NDArray<float>* output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test10) {
+
+    NDArray<float> input('c', {1,3},  {1., 2., 3.});
+    NDArray<float> paddings('c', {2, 2}, {0, 0, 0, 0});
+
+    NDArray<float> exp('c', {1,3}, {1., 2., 3.});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {1});
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test11) {
+
+    NDArray<float> input('c', {1,3},  {1., 2., 3.});
+    NDArray<float> paddings('c', {2, 2}, {0, 0, 0, 0});
+
+    NDArray<float> exp('c', {1,3}, {1., 2., 3.});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {0});
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test12) {
+
+    NDArray<float> input('c', {3},  {1., 2., 3.});
+    NDArray<float> paddings('c', {2,1}, {0, 0});
+
+    NDArray<float> exp('c', {3}, {1., 2., 3.});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {0});
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test13) {
+
+    NDArray<float> input('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
+    NDArray<float> paddings('c', {2, 2}, {0, 0, 0, 0});
+
+    NDArray<float> exp('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {0});
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test14) {
+
+    NDArray<float> input('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
+    NDArray<float> paddings('c', {2, 2}, {1, 0, 0, 1});
+
+    NDArray<float> exp('c', {3, 4},    {4, 5, 6, 5, 1, 2, 3, 2, 4, 5, 6, 5});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {0});
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test15) {
+
+    NDArray<float> input('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
+    NDArray<float> paddings('c', {2, 2}, {1, 1, 0, 0});
+
+    NDArray<float> exp('c', {4, 3},  {1, 2, 3, 1, 2, 3, 4, 5, 6, 4, 5, 6});
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {1});
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, mirrorPad_test16) {
+
+    NDArray<float> input('c', {4,3,2});
+    NDArray<float> paddings('c', {3,2}, {3,3,2,2,1,1});
+
+    NDArray<float> exp('c', {10,7,4},  {24., 23., 24., 23.,22., 21., 22., 21.,20., 19., 20., 19.,22., 21., 22., 21.,24., 23., 24., 23.,22., 21., 22., 21.,20., 19., 20., 19.,18., 17., 18., 17.,16., 15., 16., 15.,14., 13., 14., 13.,16., 15., 16., 15.,18., 17., 18., 17.,16., 15., 16., 15.,14., 13., 14., 13.,
+            12., 11., 12., 11.,10.,  9., 10.,  9., 8.,  7.,  8.,  7.,10.,  9., 10.,  9.,12., 11., 12., 11.,10.,  9., 10.,  9., 8.,  7.,  8.,  7., 6.,  5.,  6.,  5., 4.,  3.,  4.,  3., 2.,  1.,  2.,  1., 4.,  3.,  4.,  3., 6.,  5.,  6.,  5., 4.,  3.,  4.,  3., 2.,  1.,  2.,  1.,
+            12., 11., 12., 11.,10.,  9., 10.,  9., 8.,  7.,  8.,  7.,10.,  9., 10.,  9.,12., 11., 12., 11.,10.,  9., 10.,  9., 8.,  7.,  8.,  7.,18., 17., 18., 17.,16., 15., 16., 15.,14., 13., 14., 13.,16., 15., 16., 15.,18., 17., 18., 17.,16., 15., 16., 15.,14., 13., 14., 13.,
+            24., 23., 24., 23.,22., 21., 22., 21.,20., 19., 20., 19.,22., 21., 22., 21.,24., 23., 24., 23.,22., 21., 22., 21.,20., 19., 20., 19.,18., 17., 18., 17.,16., 15., 16., 15.,14., 13., 14., 13.,16., 15., 16., 15.,18., 17., 18., 17.,16., 15., 16., 15.,14., 13., 14., 13.,
+            12., 11., 12., 11.,10.,  9., 10.,  9., 8.,  7.,  8.,  7.,10.,  9., 10.,  9.,12., 11., 12., 11.,10.,  9., 10.,  9., 8.,  7.,  8.,  7., 6.,  5.,  6.,  5., 4.,  3.,  4.,  3., 2.,  1.,  2.,  1., 4.,  3.,  4.,  3., 6.,  5.,  6.,  5., 4.,  3.,  4.,  3., 2.,  1.,  2.,  1.});
+    NDArrayFactory<float>::linspace(1., input);
+
+    nd4j::ops::mirror_pad<float> op;
+    auto result = op.execute({&input, &paddings}, {}, {0});
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+

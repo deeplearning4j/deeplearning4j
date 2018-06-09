@@ -687,34 +687,55 @@ template<typename T>
 void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const int mode) {
     
     // mode:  0 - REFLECT, else - SYMMETRIC
-    const int rightBorder = (bool)mode ? 0 : 1;
-    const int leftBorder  = (bool)mode ? 1 : 0;
+    const int reflBorder = (bool)mode ? 1 : 0;
+    const int symmBorder = (bool)mode ? 0 : 1;
 
-    const int rank = input.rankOf();
-    std::vector<Nd4jLong> inIdx(rank), outIdx(rank);
+    const int rank        = input.rankOf();
+    const Nd4jLong outLen = output.lengthOf();
+    const Nd4jLong inLen  = input.lengthOf();    
 
-#pragma omp parallel for schedule(guided) firstprivate(inIdx, outIdx)
-    for(int i = 0; i < output.lengthOf(); ++i) {
+    if(rank <= 1) {
 
-        shape::ind2subC(rank, output.shapeOf(), i, outIdx.data());
+        const int leftSide  = static_cast<int>(paddings(static_cast<Nd4jLong>(0)));
+        const int rightSide = static_cast<int>(paddings(static_cast<Nd4jLong>(1)));
 
-        for(int j = 0; j < rank; ++j) {
+#pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        for(int i = 0; i < outLen; ++i) {
             
-            const int leftSide   = static_cast<int>(paddings(j, 0));            
+            for(int j = 0; j < leftSide; ++j)
+                output(j) = input(inLen - leftSide + symmBorder - j);
+            for(int j = 0; j < inLen; ++j)
+                output(j + leftSide) = input(j);
+            for(int j = 0; j < rightSide; ++j)
+                output(leftSide + inLen + j) = input(inLen - 1 - symmBorder - j);
+        }  
+    }
+    else {
 
-            if(outIdx[j] < leftSide) 
-                inIdx[j] = leftSide - outIdx[j] - leftBorder;
+        std::vector<Nd4jLong> inIdx(rank), outIdx(rank);
+#pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(inIdx, outIdx)
+        for(int i = 0; i < outLen; ++i) {
 
-            else if(outIdx[j] >= leftSide && outIdx[j] < leftSide + input.sizeAt(j)) 
-                inIdx[j] = outIdx[j] - leftSide;
+            shape::ind2subC(rank, output.shapeOf(), i, outIdx.data());
 
-            else
-                inIdx[j] = leftSide + input.sizeAt(j) + static_cast<int>(paddings(j, 1)) - outIdx[j] - rightBorder;
+            for(int j = 0; j < rank; ++j) {
+            
+                const int leftSide  = static_cast<int>(paddings(j, 0));
+
+                if(outIdx[j] < leftSide) 
+                    inIdx[j] = leftSide - outIdx[j] - reflBorder;
+
+                else if(outIdx[j] >= leftSide && outIdx[j] < leftSide + input.sizeAt(j)) 
+                    inIdx[j] = outIdx[j] - leftSide;
+
+                else
+                    inIdx[j] = 2 * input.sizeAt(j) + leftSide - outIdx[j] - 1 - symmBorder;                
+            }
+    
+            Nd4jLong outOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), outIdx.data(), rank);
+            Nd4jLong inOffset  = shape::getOffset(0, input.shapeOf(),  input.stridesOf(),  inIdx.data(),  rank);
+            output.buffer()[outOffset] = input.getBuffer()[inOffset];
         }
-        
-        Nd4jLong outOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), outIdx.data(), rank);
-        Nd4jLong inOffset  = shape::getOffset(0, input.shapeOf(),  input.stridesOf(),  inIdx.data(),  rank);
-        output.buffer()[outOffset] = input.getBuffer()[inOffset];
     }
 }
 
