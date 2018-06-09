@@ -46,6 +46,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
+import org.nd4j.util.StringUtils;
 
 import java.util.Arrays;
 
@@ -281,8 +282,14 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
         long sizeInBytes2 = sizeInBytes.get(0);
         if (sizeInBytes1 > workSpace.capacity() || sizeInBytes2 > workSpace.capacity()) {
+            long newSize = Math.max(sizeInBytes1, sizeInBytes2);
+            if(log.isTraceEnabled()){
+                log.trace("CudnnConvolutionHelper: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
+                        workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), null, 2),
+                        newSize, StringUtils.TraditionalBinaryPrefix.long2String(newSize, null, 2));
+            }
             workSpace.deallocate();
-            workSpace = new DataCache(Math.max(sizeInBytes1, sizeInBytes2));
+            workSpace = new DataCache(newSize);
         }
 
         code = cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, TENSOR_FORMAT, dataType, 1, (int) outDepth, 1, 1);
