@@ -119,11 +119,11 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
             if(log.isTraceEnabled()){
                 if(rngStates == null){
                     log.trace("CudnnDropoutHelper: Allocating intial RNG states workspace of size {} ({})", rngStateSizeBytes,
-                            StringUtils.TraditionalBinaryPrefix.long2String(rngStateSizeBytes, null, 2));
+                            StringUtils.TraditionalBinaryPrefix.long2String(rngStateSizeBytes, "B", 2));
                 } else {
                     log.trace("CudnnDropoutHelper: Deallocating RNG states of size {} ({}), allocating new workspace of size {} ({})",
-                            rngStates.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(rngStates.capacity(), null, 2),
-                            rngStateSizeBytes, StringUtils.TraditionalBinaryPrefix.long2String(rngStateSizeBytes, null, 2));
+                            rngStates.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(rngStates.capacity(), "B", 2),
+                            rngStateSizeBytes, StringUtils.TraditionalBinaryPrefix.long2String(rngStateSizeBytes, "B", 2));
                 }
             }
 
@@ -137,11 +137,11 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
             if(log.isTraceEnabled()){
                 if(mask == null){
                     log.trace("CudnnDropoutHelper: Allocating intial mask array of size {} ({})", maskReserveSizeBytes,
-                            StringUtils.TraditionalBinaryPrefix.long2String(maskReserveSizeBytes, null, 2));
+                            StringUtils.TraditionalBinaryPrefix.long2String(maskReserveSizeBytes, "B", 2));
                 } else {
                     log.trace("CudnnDropoutHelper: Deallocating mask array of size {} ({}), allocating new mask array of size {} ({})",
-                            mask.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(mask.capacity(), null, 2),
-                            maskReserveSizeBytes, StringUtils.TraditionalBinaryPrefix.long2String(maskReserveSizeBytes, null, 2));
+                            mask.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(mask.capacity(), "B", 2),
+                            maskReserveSizeBytes, StringUtils.TraditionalBinaryPrefix.long2String(maskReserveSizeBytes, "B", 2));
                 }
             }
 

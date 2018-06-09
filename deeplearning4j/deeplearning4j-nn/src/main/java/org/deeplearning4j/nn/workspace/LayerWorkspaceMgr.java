@@ -1,16 +1,16 @@
 package org.deeplearning4j.nn.workspace;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.workspace.BaseWorkspaceMgr;
 import org.nd4j.linalg.workspace.WorkspaceMgr;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * {@link WorkspaceMgr} for DL4J layers.
@@ -19,6 +19,7 @@ import java.util.Set;
  * @author Alex Black
  */
 public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
+    public static String CUDNN_WORKSPACE_KEY = "CUDNN_WORKSPACE";
 
     private static LayerWorkspaceMgr NO_WS_IMMUTABLE;
     static{
@@ -29,6 +30,9 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
     }
 
     protected Set<String> noLeverageOverride;
+
+    @Setter @Getter
+    protected Map<String,Pointer> helperWorkspacePointers;
 
     private LayerWorkspaceMgr(){
 
@@ -66,8 +70,28 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
         return super.validateArrayLocation(arrayType, array, migrateIfInvalid, exceptionIfDetached);
     }
 
+    public <T extends Pointer> T getHelperWorkspace(String key){
+//        if(helperWorkspacePointers == null){
+//            return null;
+//        }
+        return (T)helperWorkspacePointers.get(key);
+    }
+
+    public void setHelperWorkspace(@NonNull String key, Pointer value){
+//        if(helperWorkspacePointers == null){
+//            helperWorkspacePointers = new HashMap<>();
+//        }
+        helperWorkspacePointers.put(key, value);
+    }
+
     public static Builder builder(){
         return new Builder();
+    }
+
+    public static LayerWorkspaceMgr noWorkspaces(Map<String,Pointer> helperWorkspacePointers){
+        LayerWorkspaceMgr wsm = noWorkspaces();
+        wsm.setHelperWorkspacePointers(helperWorkspacePointers);
+        return wsm;
     }
 
     public static LayerWorkspaceMgr noWorkspaces(){

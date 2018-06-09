@@ -124,7 +124,6 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     }
 
     private CudnnConvolutionContext cudnnContext = new CudnnConvolutionContext();
-    private DataCache workSpace = new DataCache();
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
@@ -286,16 +285,24 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         sizeInBytes);
         checkCudnn(false, "cudnnGetConvolutionBackwardDataWorkspaceSize", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
 
+        DataCache workSpace = workspaceMgr.getHelperWorkspace(LayerWorkspaceMgr.CUDNN_WORKSPACE_KEY);
         long sizeInBytes2 = sizeInBytes.get(0);
-        if (sizeInBytes1 > workSpace.capacity() || sizeInBytes2 > workSpace.capacity()) {
+        if (workSpace == null || sizeInBytes1 > workSpace.capacity() || sizeInBytes2 > workSpace.capacity()) {
             long newSize = Math.max(sizeInBytes1, sizeInBytes2);
             if(log.isTraceEnabled()){
-                log.trace("CudnnConvolutionHelper: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
-                        workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), null, 2),
-                        newSize, StringUtils.TraditionalBinaryPrefix.long2String(newSize, null, 2));
+                if(workSpace == null){
+                    log.trace("CudnnConvolutionHelper backpropGradient: Allocating initial workspace of size {} ({})", newSize,
+                            StringUtils.TraditionalBinaryPrefix.long2String(newSize, "B", 2));
+                } else {
+                    log.trace("CudnnConvolutionHelper backpropGradient: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
+                            workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), "B", 2),
+                            newSize, StringUtils.TraditionalBinaryPrefix.long2String(newSize, "B", 2));
+                }
             }
-            workSpace.deallocate();
+            if(workSpace != null)
+                workSpace.deallocate();
             workSpace = new DataCache(newSize);
+            workspaceMgr.setHelperWorkspace(LayerWorkspaceMgr.CUDNN_WORKSPACE_KEY, workSpace);
         }
 
         code = cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, TENSOR_FORMAT, dataType, 1, (int) outDepth, 1, 1);
@@ -458,14 +465,22 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         sizeInBytes);
         checkCudnn(true, "cudnnGetConvolutionForwardWorkspaceSize", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
 
-        if (sizeInBytes.get(0) > workSpace.capacity()) {
+        DataCache workSpace = workspaceMgr.getHelperWorkspace(LayerWorkspaceMgr.CUDNN_WORKSPACE_KEY);
+        if (workSpace == null || sizeInBytes.get(0) > workSpace.capacity()) {
             if(log.isTraceEnabled()){
-                log.trace("CudnnConvolutionHelper preOutput: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
-                        workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), null, 2),
-                        sizeInBytes.get(), StringUtils.TraditionalBinaryPrefix.long2String(sizeInBytes.get(), null, 2));
+                if(workSpace == null){
+                    log.trace("CudnnConvolutionHelper preOutput: allocating initial workspace of size {} ({})",
+                            sizeInBytes.get(), StringUtils.TraditionalBinaryPrefix.long2String(sizeInBytes.get(), "B", 2));
+                } else {
+                    log.trace("CudnnConvolutionHelper preOutput: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
+                            workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), "B", 2),
+                            sizeInBytes.get(), StringUtils.TraditionalBinaryPrefix.long2String(sizeInBytes.get(), "B", 2));
+                }
             }
-            workSpace.deallocate();
+            if(workSpace != null)
+                workSpace.deallocate();
             workSpace = new DataCache(sizeInBytes.get(0));
+            workspaceMgr.setHelperWorkspace(LayerWorkspaceMgr.CUDNN_WORKSPACE_KEY, workSpace);
         }
         code = cudnnConvolutionForward(cudnnContext, alpha, cudnnContext.srcTensorDesc, srcData,
                         cudnnContext.filterDesc, filterData, cudnnContext.convDesc, algo[0], workSpace,
