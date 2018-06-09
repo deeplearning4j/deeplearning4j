@@ -65,4 +65,13 @@ public abstract class BaseWrapperLayer extends Layer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         return underlying.getMemoryReport(inputType);
     }
+
+    @Override
+    public void setLayerName(String layerName){
+        super.setLayerName(layerName);
+        if(underlying != null){
+            //May be null at some points during JSON deserialization
+            underlying.setLayerName(layerName);
+        }
+    }
 }

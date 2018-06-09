@@ -27,20 +27,21 @@ import org.nd4j.linalg.activations.Activation
   * three dimensions: height (number of rows), width (number of columns),
   * and number of channels. Convolution is over height and width.
   *
-  * @author David Kale
+  * @author David Kale, Max Pumperla
   */
 class Convolution2D(nFilter: Int,
                     kernelSize: List[Int],
                     nChannels: Int = 0,
                     stride: List[Int] = List(1, 1),
                     padding: List[Int] = List(0, 0),
+                    dilation: List[Int] = List(1, 1),
                     nIn: Option[List[Int]] = None,
                     val weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
                     val activation: Activation = Activation.IDENTITY,
                     val regularizer: WeightRegularizer = NoRegularizer(),
                     val dropOut: Double = 0.0,
                     override val name: String = "")
-    extends Convolution(kernelSize, stride, padding, nChannels, nIn, nFilter)
+    extends Convolution(dimension = 2, kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
     with Layer {
 
   override def reshapeInput(nIn: List[Int]): Convolution2D =
@@ -49,6 +50,7 @@ class Convolution2D(nFilter: Int,
                       nChannels,
                       stride,
                       padding,
+                      dilation,
                       Some(nIn),
                       weightInit,
                       activation,
@@ -62,6 +64,7 @@ class Convolution2D(nFilter: Int,
       .nOut(outputShape.last)
       .stride(stride.head, stride.last)
       .padding(padding.head, padding.last)
+      .dilation(dilation.head, dilation.last)
       .weightInit(weightInit)
       .activation(activation)
       .l1(regularizer.l1)
@@ -77,6 +80,7 @@ object Convolution2D {
             nChannels: Int = 0,
             stride: List[Int] = List(1, 1),
             padding: List[Int] = List(0, 0),
+            dilation: List[Int] = List(1, 1),
             nIn: Option[List[Int]] = None,
             weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
             activation: Activation = Activation.IDENTITY,
@@ -87,6 +91,7 @@ object Convolution2D {
                       nChannels,
                       stride,
                       padding,
+                      dilation,
                       nIn,
                       weightInit,
                       activation,

@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.base.Preconditions;
@@ -32,11 +33,12 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  */
 @Data
 @JsonIgnoreProperties({"noise"})
+@EqualsAndHashCode(exclude = {"noise"})
 public class GaussianDropout implements IDropout {
 
     private final double rate;
     private final ISchedule rateSchedule;
-    private INDArray noise;
+    private transient INDArray noise;
 
     /**
      * @param rate Rate parameter, see {@link GaussianDropout}

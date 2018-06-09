@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.val;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -26,11 +27,12 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  */
 @Data
 @JsonIgnoreProperties({"mask"})
+@EqualsAndHashCode(exclude = {"mask"})
 public class SpatialDropout implements IDropout {
 
     private double p;
     private ISchedule pSchedule;
-    private INDArray mask;
+    private transient INDArray mask;
 
     /**
      * @param activationRetainProbability Probability of retaining an activation - see {@link Dropout} javadoc

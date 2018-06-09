@@ -33,10 +33,6 @@ public class LegacyPreprocessorDeserializer extends BaseLegacyDeserializer<Input
         LEGACY_NAMES.put("feedForwardToRnn", FeedForwardToRnnPreProcessor.class.getName());
         LEGACY_NAMES.put("rnnToFeedForward", RnnToFeedForwardPreProcessor.class.getName());
         LEGACY_NAMES.put("rnnToCnn", RnnToCnnPreProcessor.class.getName());
-        LEGACY_NAMES.put("binomialSampling", BinomialSamplingPreProcessor.class.getName());
-        LEGACY_NAMES.put("unitVariance", UnitVarianceProcessor.class.getName());
-        LEGACY_NAMES.put("zeroMeanAndUnitVariance", ZeroMeanAndUnitVariancePreProcessor.class.getName());
-        LEGACY_NAMES.put("zeroMean",ZeroMeanPrePreProcessor.class.getName());
 
         //Keras preprocessors: they defaulted to class simple name
         LEGACY_NAMES.put("KerasFlattenRnnPreprocessor","org.deeplearning4j.nn.modelimport.keras.preprocessors.KerasFlattenRnnPreprocessor");
