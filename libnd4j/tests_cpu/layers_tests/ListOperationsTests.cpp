@@ -227,6 +227,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
 
 TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
     NDArrayList<double> list(0, true);
+    NDArray<double> s(0.0);
 
     NDArray<double> matrix('c', {10, 5});
     auto tads = NDArrayFactory<double>::allTensorsAlongDimension(&matrix, {1});
@@ -242,7 +243,7 @@ TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
         indices.putScalar(e, 9 - e);
 
     nd4j::ops::scatter_list<double> op;
-    auto result = op.execute(&list, {&matrix, &indices}, {}, {});
+    auto result = op.execute(&list, {&indices, &matrix, &s}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -292,7 +293,7 @@ TEST_F(ListOperationsTests, BasicTest_Clone_1) {
 TEST_F(ListOperationsTests, BasicTest_Gather_1) {
     NDArrayList<double> list(0, true);
     for (int e = 0; e < 10; e++) {
-        auto row = new NDArray<double>('c', {1, 3});
+        auto row = new NDArray<double>('c', {3});
         row->assign((double) e);
         list.write(e, row->dup());
 
@@ -465,6 +466,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
 TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
     Graph<float> graph;
 
+    auto scalar = new NDArray<float>(0.0f);
     auto matrix = new NDArray<float>('c', {3, 3});
     auto tads = NDArrayFactory<float>::allTensorsAlongDimension(matrix, {1});
     for (int e = 0; e < tads->size(); e++) {
@@ -486,6 +488,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
     auto variableSpace = graph.getVariableSpace();
     variableSpace->putVariable(-1, matrix);
     variableSpace->putVariable(-2, indices);
+    variableSpace->putVariable(-3, scalar);
 
 
     auto nodeA = new Node<float>(OpType_TRANSFORM, 0, 1, {-1});
@@ -496,7 +499,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
     nodeB->setCustomOp(&opB);
 
     // filling list with matrix
-    auto nodeC = new Node<float>(OpType_CUSTOM, 0, 3, {2, 1, -2});
+    auto nodeC = new Node<float>(OpType_CUSTOM, 0, 3, {2, -2, 1, -3});
     
     nd4j::ops::scatter_list<float> opC;
     nodeC->setCustomOp(&opC);

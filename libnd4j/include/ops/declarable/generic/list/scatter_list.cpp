@@ -24,8 +24,8 @@ namespace nd4j {
                 array = INPUT_VARIABLE(2);
                 hasList = true;
             } else {
-                array = INPUT_VARIABLE(0);
-                indices = INPUT_VARIABLE(1);
+                array = INPUT_VARIABLE(1);
+                indices = INPUT_VARIABLE(2);
                 list = new NDArrayList<T>(indices->lengthOf(), false);
                 block.trackList(list);
             }

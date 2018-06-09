@@ -14,7 +14,7 @@ namespace nd4j {
             auto shapeArray = INPUT_VARIABLE(0);
 
             auto w = block.width();
-            auto t = block.numI();
+            auto t = block.numT();
 
             REQUIRE_TRUE( w > 1 || t > 0, 0, "Fill: either additional variable should exist, or scalar value should be present");
             

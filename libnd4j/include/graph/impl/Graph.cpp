@@ -1307,6 +1307,7 @@ namespace nd4j {
             }
 
             int cnt = 0;
+            /*
             if (_variableSpace != nullptr) {
                 // loop over existing variables
                 for (auto v: *(_variableSpace->handles())) {
@@ -1320,6 +1321,7 @@ namespace nd4j {
                     }
                 }
             }
+            */
 
             // loop over nodes in graph
             for (auto &v: *_mapped) {
