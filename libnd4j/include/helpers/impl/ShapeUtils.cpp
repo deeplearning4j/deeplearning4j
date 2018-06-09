@@ -242,8 +242,11 @@ Nd4jLong* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>&
     template<typename T>
     Nd4jLong* ShapeUtils<T>::evalPermShapeInfo(const int* dimensions, const int rank, const NDArray<T>& arr, nd4j::memory::Workspace* workspace) {
 
-        if (!arr.nonNull() || rank != arr.rankOf())
-            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr or rank is not suitable!");
+        if (!arr.nonNull())
+            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr!");
+
+        if (rank != arr.rankOf())
+            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: rank is not suitable!");
     
         auto shapeInfoLength = shape::shapeInfoLength(rank);
         // allocate memory for new array - shapeInfo
@@ -264,8 +267,11 @@ Nd4jLong* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>&
     template<typename T>
     Nd4jLong* ShapeUtils<T>::evalPermShapeInfo(const Nd4jLong *dimensions, const int rank, const NDArray<T>& arr, nd4j::memory::Workspace* workspace) {
 
-        if (!arr.nonNull() || rank != arr.rankOf())
-            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr or rank is not suitable!");
+        if (!arr.nonNull())
+            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr!");
+
+        if (rank != arr.rankOf())
+            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: rank is not suitable!");
 
         auto shapeInfoLength = shape::shapeInfoLength(rank);
         // allocate memory for new array - shapeInfo
