@@ -253,7 +253,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             log.trace("CudnnConvolutionHelper backward algorithm selection: mode {}, filter algorithm {}, data algorithm {}", mode, fa, da);
         }
 
-        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch,(int)  inDepth, (int) inH, (int) inW}, 'c');
+        INDArray epsNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch,(int)  inDepth, (int) inH, (int) inW}, 'c');
 
         val dstStride = epsNext.stride();
 
