@@ -23,7 +23,7 @@ public class VocabularyWord implements Serializable {
     private String word;
     private int count = 1;
 
-    // these fileds are used for vocab serialization/deserialization only. Usual runtime value is null.
+    // these fields are used for vocab serialization/deserialization only. Usual runtime value is null.
     private double[] syn0;
     private double[] syn1;
     private double[] syn1Neg;

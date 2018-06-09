@@ -247,7 +247,7 @@ public interface VocabCache<T extends SequenceElement> extends Serializable {
     /**
      * Updates counters
      */
-    void updateWordsOccurencies();
+    void updateWordsOccurrences();
 
     /**
      * Removes element with specified label from vocabulary
