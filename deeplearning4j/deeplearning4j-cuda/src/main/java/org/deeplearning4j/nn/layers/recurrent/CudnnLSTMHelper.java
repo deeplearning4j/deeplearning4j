@@ -163,7 +163,6 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
     private TensorArray dxDesc = new TensorArray();
     private TensorArray dyDesc = new TensorArray();
     private DataCache stateSpace = new DataCache();
-//    private DataCache workSpace = new DataCache();
     private DataCache reserveSpace = new DataCache();
     private DataCache weightsSpace = new DataCache();
 

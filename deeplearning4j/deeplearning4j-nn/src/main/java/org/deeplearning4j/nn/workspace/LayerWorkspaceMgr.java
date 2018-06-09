@@ -70,17 +70,28 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
         return super.validateArrayLocation(arrayType, array, migrateIfInvalid, exceptionIfDetached);
     }
 
+    /**
+     * Get the pointer to the helper memory. Usually used for CUDNN workspace memory sharing.
+     * NOTE: Don't use this method unless you are fully aware of how it is used to manage CuDNN memory!
+     * Will (by design) throw a NPE if the underlying map (set from MultiLayerNetwork or ComputationGraph) is not set.
+     *
+     * @param key Key for the helper workspace pointer
+     * @param <T> Pointer type
+     * @return Pointer for that key, or null if none exists
+     */
     public <T extends Pointer> T getHelperWorkspace(String key){
-//        if(helperWorkspacePointers == null){
-//            return null;
-//        }
         return (T)helperWorkspacePointers.get(key);
     }
 
+    /**
+     * Set the pointer to the helper memory. Usually used for CuDNN workspace memory sharing.
+     * NOTE: Don't use this method unless you are fully aware of how it is used to manage CuDNN memory!
+     * Will (by design) throw a NPE if the underlying map (set from MultiLayerNetwork or ComputationGraph) is not set.
+     *
+     * @param key   Key for the helper workspace pointer
+     * @param value Pointer
+     */
     public void setHelperWorkspace(@NonNull String key, Pointer value){
-//        if(helperWorkspacePointers == null){
-//            helperWorkspacePointers = new HashMap<>();
-//        }
         helperWorkspacePointers.put(key, value);
     }
 
@@ -88,6 +99,10 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
         return new Builder();
     }
 
+    /**
+     * @param helperWorkspacePointers Helper pointers - see {@link #getHelperWorkspace(String)} for details
+     * @return Workspace manager
+     */
     public static LayerWorkspaceMgr noWorkspaces(Map<String,Pointer> helperWorkspacePointers){
         LayerWorkspaceMgr wsm = noWorkspaces();
         wsm.setHelperWorkspacePointers(helperWorkspacePointers);
