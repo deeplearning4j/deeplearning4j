@@ -570,7 +570,7 @@ NDArray<T>::NDArray(NDArray<T>&& other) noexcept {
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
-    T* NDArray<T>::getBuffer() {
+    T* NDArray<T>::getBuffer() const {
         return _buffer;
     }
 
