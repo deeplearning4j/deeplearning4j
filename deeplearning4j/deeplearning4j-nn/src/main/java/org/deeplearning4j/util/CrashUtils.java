@@ -4,8 +4,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.util.GraphIndices;
+import org.deeplearning4j.nn.graph.vertex.GraphVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -21,13 +27,16 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputType;
+import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputTypes;
+
 @Slf4j
 public class CrashUtils {
 
     private CrashUtils(){ }
 
 
-    public static void writeMemoryCrashDump(MultiLayerNetwork net, Throwable e){
+    public static void writeMemoryCrashDump(Model net, Throwable e){
         long now = System.currentTimeMillis();
         File f = new File("dl4j-memory-crash-dump-" + now + ".txt");
         StringBuilder sb = new StringBuilder();
@@ -40,7 +49,8 @@ public class CrashUtils {
                 .append(ExceptionUtils.getStackTrace(e));
 
         try{
-            sb.append("\n\n").append(generateMemoryStatus(net));
+            sb.append("\n\n");
+            sb.append(generateMemoryStatus(net));
         } catch (Throwable t){
             sb.append("<Error generating network memory status information section>")
                     .append(ExceptionUtils.getStackTrace(t));
@@ -57,9 +67,19 @@ public class CrashUtils {
     }
 
     private static final String FORMAT = "%-40s%s";
-    public static String generateMemoryStatus(MultiLayerNetwork net){
+    public static String generateMemoryStatus(Model net){
+        MultiLayerNetwork mln = null;
+        ComputationGraph cg = null;
+        boolean isMLN;
+        if(net instanceof MultiLayerNetwork){
+            mln = (MultiLayerNetwork)net;
+            isMLN = true;
+        } else {
+            cg = (ComputationGraph)net;
+            isMLN = false;
+        }
+
         StringBuilder sb = genericMemoryStatus();
-        String format = "%40s%s";
 
         int bytesPerElement;
         switch (Nd4j.dataType()){
@@ -92,19 +112,50 @@ public class CrashUtils {
                     fBytes(ws.getCurrentSize()))).append("\n");
         }
         sb.append(fBytes("Workspaces total size", totalWsSize));
+        Map<String,Pointer> helperWorkspaces;
+        if(isMLN){
+            helperWorkspaces = mln.getHelperWorkspaces();
+        } else {
+            helperWorkspaces = cg.getHelperWorkspaces();
+        }
+        if(helperWorkspaces != null && !helperWorkspaces.isEmpty()){
+            boolean header = false;
+            for(Map.Entry<String,Pointer> e : helperWorkspaces.entrySet()){
+                Pointer p = e.getValue();
+                if(p == null){
+                    continue;
+                }
+                if(!header){
+                    sb.append("Helper Workspaces\n");
+                    header = true;
+                }
+                sb.append("  ").append(fBytes(e.getKey(), p.capacity()));
+            }
+        }
 
         long sumMem = 0;
         long nParams = net.params().length();
         sb.append("\n----- Network Information -----\n")
                 .append(f("Network # Parameters", nParams))
                 .append(fBytes("Parameter Memory", bytesPerElement * nParams));
-        if(net.getFlattenedGradients() == null){
+        INDArray flattenedGradients;
+        if(isMLN){
+            flattenedGradients = mln.getFlattenedGradients();
+        } else {
+            flattenedGradients = cg.getFlattenedGradients();
+        }
+        if(flattenedGradients == null){
             sb.append(f("Parameter Gradients Memory", "<not allocated>"));
         } else {
-            sumMem += (net.getFlattenedGradients().length() * bytesPerElement);
-            sb.append(fBytes("Parameter Gradients Memory", bytesPerElement * net.getFlattenedGradients().length()));
+            sumMem += (flattenedGradients.length() * bytesPerElement);
+            sb.append(fBytes("Parameter Gradients Memory", bytesPerElement * flattenedGradients.length()));
         }
-        MultiLayerUpdater u = (MultiLayerUpdater) net.getUpdater(false);
+        BaseMultiLayerUpdater u;
+        if(isMLN){
+            u = (BaseMultiLayerUpdater)mln.getUpdater(false);
+        } else {
+            u = cg.getUpdater(false);
+        }
         if(u == null){
             sb.append(f("Updater","<not initialized>"));
         } else {
@@ -115,11 +166,17 @@ public class CrashUtils {
             sumMem += stateArrLength * bytesPerElement;
         }
         sb.append(fBytes("Params + Gradient + Updater Memory", sumMem));
-        sb.append(f("Workspace Mode: Training", net.getLayerWiseConfigurations().getTrainingWorkspaceMode()));
-        sb.append(f("Workspace Mode: Inference", net.getLayerWiseConfigurations().getInferenceWorkspaceMode()));
-        appendLayerInformation(sb, net.getLayers());
-
-        appendActivationShapes(net, sb, bytesPerElement);
+        if(isMLN) {
+            sb.append(f("Workspace Mode: Training", mln.getLayerWiseConfigurations().getTrainingWorkspaceMode()));
+            sb.append(f("Workspace Mode: Inference", mln.getLayerWiseConfigurations().getInferenceWorkspaceMode()));
+            appendLayerInformation(sb, mln.getLayers());
+            appendActivationShapes(mln, sb, bytesPerElement);
+        } else {
+            sb.append(f("Workspace Mode: Training", cg.getConfiguration().getTrainingWorkspaceMode()));
+            sb.append(f("Workspace Mode: Inference", cg.getConfiguration().getInferenceWorkspaceMode()));
+            appendLayerInformation(sb, cg.getLayers());
+            appendActivationShapes(cg, sb, bytesPerElement);
+        }
 
         return sb.toString();
     }
@@ -206,24 +263,9 @@ public class CrashUtils {
         if(input == null){
             return;
         }
-        if(input.rank() < 2 || input.rank() > 4){
-            //TODO 3d CNN support
-            return;
-        }
 
         sb.append("\n----- Network Activations: Inferred Activation Shapes -----\n");
-        InputType inputType = null;
-        switch (input.rank()){
-            case 2:
-                inputType = InputType.feedForward(input.size(1));
-                break;
-            case 3:
-                inputType = InputType.recurrent(input.size(1), input.size(2));
-                break;
-            case 4:
-                inputType = InputType.convolutional(input.size(2), input.size(3), input.size(1));
-                break;
-        }
+        InputType inputType = inferInputType(input);
 
         sb.append(f("Current Minibatch Size", input.size(0)));
         sb.append(f("Current Input Shape", Arrays.toString(input.shape())));
@@ -251,7 +293,64 @@ public class CrashUtils {
         //Exclude output layer, include input
         long totalActivationGradMem = totalActivationBytes - last + (ArrayUtil.prodLong(input.shape()) * bytesPerElement);
         sb.append(fBytes("Total Activation Gradient Memory", totalActivationGradMem));
+    }
 
+    private static void appendActivationShapes(ComputationGraph net, StringBuilder sb, int bytesPerElement){
+        INDArray[] input = net.getInputs();
+        if(input == null){
+            return;
+        }
+        for( int i=0; i<input.length; i++ ) {
+            if (input[i] == null) {
+                return;
+            }
+        }
+
+        sb.append("\n----- Network Activations: Inferred Activation Shapes -----\n");
+        InputType[] inputType = inferInputTypes(input);
+
+        sb.append(f("Current Minibatch Size", input[0].size(0)));
+        for( int i=0; i<input.length; i++ ) {
+            sb.append(f("Current Input Shape (Input " + i + ")", Arrays.toString(input[i].shape())));
+        }
+        Map<String,InputType> inputTypes = net.getConfiguration().getLayerActivationTypes(inputType);
+        GraphIndices indices = net.calculateIndices();
+
+        String format = "%-3s %-20s %-20s %-42s %-20s %-12s %-12s";
+        sb.append(String.format(format, "Idx", "Name", "Layer Type", "Activations Type", "Activations Shape",
+                "# Elements", "Memory")).append("\n");
+        org.deeplearning4j.nn.api.Layer[] layers = net.getLayers();
+        long totalActivationBytes = 0;
+        long totalExOutput = 0; //Implicitly includes input already due to input vertices
+        int[] topo = indices.getTopologicalSortOrder();
+        for( int i=0; i<topo.length; i++ ){
+            String layerName = indices.getIdxToName().get(i);
+            GraphVertex gv = net.getVertex(layerName);
+
+            InputType it = inputTypes.get(layerName);
+            long[] shape = it.getShape(true);
+            if(shape[0] <= 0){
+                shape[0] = input[0].size(0);
+            }
+            long numElements = ArrayUtil.prodLong(shape);
+            long bytes = numElements*bytesPerElement;
+            totalActivationBytes += bytes;
+            String className;
+            if(gv instanceof LayerVertex){
+                className = gv.getLayer().getClass().getSimpleName();
+            } else {
+                className = gv.getClass().getSimpleName();
+            }
+
+            sb.append(String.format(format, String.valueOf(i), layerName, className, it,
+                    Arrays.toString(shape), String.valueOf(numElements), fBytes(bytes))).append("\n");
+
+            if(!net.getConfiguration().getNetworkOutputs().contains(layerName)){
+                totalExOutput += bytes;
+            }
+        }
+        sb.append(fBytes("Total Activations Memory", totalActivationBytes));
+        sb.append(fBytes("Total Activation Gradient Memory", totalExOutput));
     }
 
     public static Pair<String,String> inferVersion(){

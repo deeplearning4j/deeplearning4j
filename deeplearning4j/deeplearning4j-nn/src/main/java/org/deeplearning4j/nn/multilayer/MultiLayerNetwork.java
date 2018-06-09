@@ -130,6 +130,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     protected transient Solver solver; //Used to call optimizers during backprop
     //Workspaces for CUDNN. Pass to LayerWorkspaceMgr for re-use in cudnn helpers
+    @Getter
     protected transient Map<String,Pointer> helperWorkspaces = new HashMap<>();
 
 
@@ -732,13 +733,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (to < 1 || to >= layers.length)
             throw new IllegalStateException("Unable to perform activation; TO is out of layer space");
 
-        LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces(helperWorkspaces);   //TODO
+        try {
+            LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces(helperWorkspaces);   //TODO
 
-        INDArray res = input;
-        for (int l = from; l <= to; l++) {
-            res = this.activationFromPrevLayer(l, res, false, mgr);
+            INDArray res = input;
+            for (int l = from; l <= to; l++) {
+                res = this.activationFromPrevLayer(l, res, false, mgr);
+            }
+            return res;
+        } catch (OutOfMemoryError e){
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
         }
-        return res;
     }
 
     /**
@@ -1431,6 +1437,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     @Override
     public void fit(DataSetIterator iterator) {
+        try{
+            fitHelper(iterator);
+        } catch (OutOfMemoryError e){
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
+    }
+
+    private void fitHelper(DataSetIterator iterator){
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         DataSetIterator iter;
         boolean destructable = false;
@@ -1539,7 +1554,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return A pair of gradient arrays: parameter gradients (in Gradient object) and input activation gradients
      */
     public Pair<Gradient,INDArray> calculateGradients(@NonNull INDArray features, @NonNull INDArray label,
-                                                      INDArray fMask, INDArray labelMask){
+                                                      INDArray fMask, INDArray labelMask) {
+        try{
+            return calculateGradientsHelper(features, label, fMask, labelMask);
+        } catch (OutOfMemoryError e){
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
+    }
+
+    private Pair<Gradient,INDArray> calculateGradientsHelper(INDArray features, INDArray label, INDArray fMask,
+                                                             INDArray labelMask){
         setInput(features);
         setLabels(label);
         setLayerMaskArrays(fMask, labelMask);
@@ -2345,6 +2370,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return the score (value of the loss function)
      */
     public double score(DataSet data, boolean training) {
+        try{
+            return scoreHelper(data, training);
+        } catch (OutOfMemoryError e){
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
+    }
+
+    private double scoreHelper(DataSet data, boolean training){
         boolean hasMaskArray = data.hasMaskArrays();
         if (hasMaskArray)
             setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
@@ -2410,6 +2444,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return An INDArray (column vector) of size input.numRows(); the ith entry is the score (loss value) of the ith example
      */
     public INDArray scoreExamples(DataSet data, boolean addRegularizationTerms) {
+        try{
+            return scoreExamplesHelper(data, addRegularizationTerms);
+        } catch (OutOfMemoryError e){
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
+    }
+
+    private INDArray scoreExamplesHelper(DataSet data, boolean addRegularizationTerms){
         INDArray inputLast = outputOfLayerDetached(false, FwdPassType.STANDARD,layers.length-2, data.getFeatures(),
                 data.getFeaturesMaskArray(), data.getLabelsMaskArray());
         setLabels(data.getLabels());
@@ -2897,14 +2940,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer.
      */
     public INDArray rnnTimeStep(INDArray input) {
-        boolean inputIs2d = input.rank() == 2;
-        INDArray out = outputOfLayerDetached(false, FwdPassType.RNN_TIMESTEP, layers.length-1, input, null, null);
-        if (inputIs2d && out.rank() == 3 && layers[layers.length - 1].type() == Type.RECURRENT) {
-            //Return 2d output with shape [miniBatchSize,nOut]
-            // instead of 3d output with shape [miniBatchSize,nOut,1]
-            return out.tensorAlongDimension(0, 1, 0);
+        try {
+            boolean inputIs2d = input.rank() == 2;
+            INDArray out = outputOfLayerDetached(false, FwdPassType.RNN_TIMESTEP, layers.length - 1, input, null, null);
+            if (inputIs2d && out.rank() == 3 && layers[layers.length - 1].type() == Type.RECURRENT) {
+                //Return 2d output with shape [miniBatchSize,nOut]
+                // instead of 3d output with shape [miniBatchSize,nOut,1]
+                return out.tensorAlongDimension(0, 1, 0);
+            }
+            return out;
+        } catch (OutOfMemoryError e){
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
         }
-        return out;
     }
 
     /**Get the state of the RNN layer, as used in rnnTimeStep().
@@ -3113,6 +3161,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param iterator   data to evaluate on
      */
     public <T extends IEvaluation> T[] doEvaluation(DataSetIterator iterator, T... evaluations) {
+        try{
+            return doEvaluationHelper(iterator, evaluations);
+        } catch (OutOfMemoryError e){
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
+    }
+
+    public <T extends IEvaluation> T[] doEvaluationHelper(DataSetIterator iterator, T... evaluations) {
         if (!iterator.hasNext() && iterator.resetSupported()) {
             iterator.reset();
         }
