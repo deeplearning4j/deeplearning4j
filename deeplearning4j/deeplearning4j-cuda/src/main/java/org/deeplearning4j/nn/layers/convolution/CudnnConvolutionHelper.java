@@ -248,6 +248,12 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             checkCudnn(false, "cudnnGetConvolutionBackwardDataAlgorithm", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
         }
 
+        if(log.isTraceEnabled()){
+            BwdFilterAlgo fa = BwdFilterAlgo.values()[algo1[0]];
+            BwdDataAlgo da = BwdDataAlgo.values()[algo2[0]];
+            log.trace("CudnnConvolutionHelper backward algorithm selection: mode {}, filter algorithm {}, data algorithm {}", mode, fa, da);
+        }
+
         INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch,(int)  inDepth, (int) inH, (int) inW}, 'c');
 
         val dstStride = epsNext.stride();
@@ -430,6 +436,11 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                 fwdAlgo = FwdAlgo.IMPLICIT_GEMM;
                 algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
             }
+        }
+
+        if(log.isTraceEnabled()){
+            FwdAlgo a = FwdAlgo.values()[algo[0]];
+            log.trace("CudnnConvolutionHelper forward algorithm selection: mode {}, algorithm {}", mode, a);
         }
 
         Allocator allocator = AtomicAllocator.getInstance();
