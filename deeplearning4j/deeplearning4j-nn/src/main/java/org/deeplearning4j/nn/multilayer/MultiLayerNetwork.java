@@ -54,6 +54,7 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
+import org.deeplearning4j.util.CrashUtils;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.base.Preconditions;
@@ -756,8 +757,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return the list of activations for each layer
      */
     public List<INDArray> feedForward(boolean train) {
-        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length-1,
-                input, mask, null, true);
+        try {
+            return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length-1,
+                    input, mask, null, true);
+        } catch (OutOfMemoryError e) {
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
     }
 
     /**
@@ -772,7 +778,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return Activations from feed-forward
      */
     public List<INDArray> feedForward(boolean train, boolean clearInputs){
-        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length-1, input, mask, null, clearInputs);
+        try{
+            return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length-1, input, mask, null, clearInputs);
+        } catch (OutOfMemoryError e) {
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
     }
 
     /** Compute the activations from the input to the specified layer.<br>
@@ -785,7 +796,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return list of activations.
      */
     public List<INDArray> feedForwardToLayer(int layerNum, INDArray input) {
-        return ffToLayerActivationsDetached(false, FwdPassType.STANDARD, false, layerNum, input, mask, null, true);
+        try{
+            return ffToLayerActivationsDetached(false, FwdPassType.STANDARD, false, layerNum, input, mask, null, true);
+        } catch (OutOfMemoryError e) {
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
     }
 
     /** Compute the activations from the input to the specified layer.<br>
@@ -799,8 +815,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return list of activations.
      */
     public List<INDArray> feedForwardToLayer(int layerNum, INDArray input, boolean train) {
-        int layerVertexIdx = layers[layerNum].getIndex();
-        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layerVertexIdx, input, mask, null, true);
+        try {
+            int layerVertexIdx = layers[layerNum].getIndex();
+            return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layerVertexIdx, input, mask, null, true);
+        } catch (OutOfMemoryError e) {
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
     }
 
     /** Compute the activations from the input to the specified layer, using the currently set input for the network.<br>
@@ -813,7 +834,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return list of activations.
      */
     public List<INDArray> feedForwardToLayer(int layerNum, boolean train) {
-        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layerNum, input, mask, null, true);
+        try {
+            return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layerNum, input, mask, null, true);
+        } catch (OutOfMemoryError e) {
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
     }
 
 
@@ -2022,6 +2048,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param labelsMask The mask array for the labels (used for variable length time series, etc). May be null.
      */
     public void fit(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
+        try{
+            fitHelper(features, labels, featuresMask, labelsMask);
+        } catch (OutOfMemoryError e){
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
+    }
+
+    private void fitHelper(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask){
         if(numParams() == 0){
             //No op: can't fit a network with 0 parameters
             return;
@@ -2133,7 +2168,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, boolean train) {
-        return outputOfLayerDetached(train, FwdPassType.STANDARD,layers.length-1, input, null, null);
+        return output(input, train, null, null);
     }
 
     /** Calculate the output of the network, with masking arrays. The masking arrays are used in situations such
@@ -2141,7 +2176,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * of varying lengths within the same minibatch.
      */
     public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
-        return outputOfLayerDetached(train, FwdPassType.STANDARD, layers.length-1, input, featuresMask, labelsMask);
+        try {
+            return outputOfLayerDetached(train, FwdPassType.STANDARD, layers.length - 1, input, featuresMask, labelsMask);
+        } catch (OutOfMemoryError e) {
+            CrashUtils.writeMemoryCrashDump(this, e);
+            throw e;
+        }
     }
 
     /**
