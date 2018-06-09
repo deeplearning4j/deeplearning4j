@@ -470,13 +470,15 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph, VariableSpace<T>* varia
 
     // saving memory footprint for current run
     if (__variableSpace->workspace() != nullptr) {
-        nd4j::memory::MemoryRegistrator::getInstance()->setGraphMemoryFootprintIfGreater(graph->hashCode(), __variableSpace->workspace()->getAllocatedSize());
+        auto m = __variableSpace->workspace()->getAllocatedSize();
+        auto h = graph->hashCode();
+        nd4j::memory::MemoryRegistrator::getInstance()->setGraphMemoryFootprintIfGreater(h, m);
     }
 
     if (tempFlow)
         delete flowPath;
 
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 /**

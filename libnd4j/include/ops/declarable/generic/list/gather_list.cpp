@@ -25,7 +25,6 @@ namespace nd4j {
 
                 // now we should fill other dimensions 
                 if (e == 0) {
-                    array->printShapeInfo("array[0] shape");
                     for (int d = 0; d < array->rankOf(); d++)
                         shape.emplace_back(array->sizeAt(d));
                 }

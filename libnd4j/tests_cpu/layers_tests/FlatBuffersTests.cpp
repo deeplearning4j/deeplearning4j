@@ -658,8 +658,8 @@ TEST_F(FlatBuffersTest, Test_Stitches) {
 }
 
 TEST_F(FlatBuffersTest, Test_GruDynamicMnist) {
-    nd4j::Environment::getInstance()->setDebug(true);
-    nd4j::Environment::getInstance()->setVerbose(true);
+    nd4j::Environment::getInstance()->setDebug(false);
+    nd4j::Environment::getInstance()->setVerbose(false);
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/gru_dynamic_mnist.fb");
     graph->printOut();

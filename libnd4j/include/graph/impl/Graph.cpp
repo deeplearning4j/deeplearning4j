@@ -1312,9 +1312,11 @@ namespace nd4j {
                 for (auto v: *(_variableSpace->handles())) {
                     if (v->hasNDArray()) {
                         NDArray<T> *arr = v->getNDArray();
-                        auto shape = arr->getShapeAsVector();
-                        auto string = ShapeUtils<T>::shapeAsString(shape);
-                        localStamp += string;
+                        if (arr != nullptr && arr->nonNull()) {
+                            auto shape = arr->getShapeAsVector();
+                            auto string = ShapeUtils<T>::shapeAsString(shape);
+                            localStamp += string;
+                        }
                     }
                 }
             }
