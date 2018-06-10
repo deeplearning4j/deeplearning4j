@@ -1683,18 +1683,18 @@ TEST_F(DeclarableOpsTests7, percentile_test9) {
 
     const int dim0=100;
 
-    NDArray<float> input('c', {dim0}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,
+    NDArray<double> input('c', {dim0}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,
                                                    23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43.,
                                                    41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,
                                                    63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96.,
                                                    82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
 
-    NDArray<float> expected(11.);
+    NDArray<double> expected(11.);
 
-    nd4j::ops::percentile<float> op;
+    nd4j::ops::percentile<double> op;
                                        //q,  interpolation, keepDims
     auto result = op.execute({&input}, {10,  2,             0}, {0});
-    NDArray<float>* output = result->at(0);
+    auto output = result->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1707,18 +1707,18 @@ TEST_F(DeclarableOpsTests7, percentile_test10) {
 
     const int dim0=100;
 
-    NDArray<float> input('c', {dim0}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,
+    NDArray<double> input('c', {dim0}, {6.,   7.,  83., 81., 84., 86.,  87., 85., 88.,  5.,  8., 78.,  79., 77., 80., 10.,  16., 18.,  19., 17., 20., 22.,
                                                    23., 21., 24., 26.,  27., 25., 28., 30.,  31., 29., 32., 38., 11.,  9., 12., 14.,  15., 13., 39., 37., 40., 42.,  43.,
                                                    41., 44., 46.,  47., 45., 48., 50.,  51., 49., 52., 54.,  55., 53., 56., 58.,  59., 57., 60., 98.,  99., 97.,100., 62.,
                                                    63., 61., 64., 66.,  67., 65., 68., 70.,  71., 69., 72., 74.,  75., 73., 76., 2.,   3.,  1.,  4., 94.,  95., 93., 96.,
                                                    82., 90.,  91., 89., 92., 34.,  35., 33., 36.});
 
-    NDArray<float> expected('c', {1}, {11.});
+    NDArray<double> expected('c', {1}, {11.});
 
-    nd4j::ops::percentile<float> op;
+    nd4j::ops::percentile<double> op;
                                        //q,  interpolation, keepDims
     auto result = op.execute({&input}, {10,  2,             1}, {0});
-    NDArray<float>* output = result->at(0);
+    auto output = result->at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1769,8 +1769,8 @@ TEST_F(DeclarableOpsTests7, percentile_test12) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, transpose_test3) {
 
-    NDArray<float> input('c', {5, 3},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});
-    NDArray<float> exp('c', {3, 5},   {1., 4., 7.,10.,13.,2., 5., 8.,11.,14.,3., 6., 9.,12.,15.});
+    NDArray<float> input('c', {5, 3},   {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f});
+    NDArray<float> exp('c', {3, 5},   {1.f, 4.f, 7.f, 10.f, 13.f, 2.f, 5.f, 8.f, 11.f, 14.f, 3.f, 6.f, 9.f, 12.f, 15.f});
 
     nd4j::ops::transpose<float> op;
     auto result = op.execute({&input}, {}, {});
@@ -1785,8 +1785,8 @@ TEST_F(DeclarableOpsTests7, transpose_test3) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, fill_test2) {
 
-    NDArray<float> x('c', {1,2},  {2, 2});
-    NDArray<float> exp('c', {2, 2},{42, 42, 42, 42});
+    NDArray<float> x('c', {1,2},  {2.f, 2.f});
+    NDArray<float> exp('c', {2, 2},{42.f, 42.f, 42.f, 42.f});
     
     nd4j::ops::fill<float> op;
     auto result = op.execute({&x}, {42.f}, {});
@@ -1804,8 +1804,8 @@ TEST_F(DeclarableOpsTests7, fill_test2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, fill_test3) {
 
-    NDArray<float> x('c', {2},  {2, 2});
-    NDArray<float> exp('c', {2, 2},{42, 42, 42, 42});    
+    NDArray<float> x('c', {2},  {2.f, 2.f});
+    NDArray<float> exp('c', {2, 2},{42.f, 42.f, 42.f, 42.f});
         
     nd4j::ops::fill<float> op;
     auto result = op.execute({&x}, {42.f}, {});

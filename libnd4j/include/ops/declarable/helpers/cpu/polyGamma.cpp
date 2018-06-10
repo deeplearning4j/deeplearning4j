@@ -15,7 +15,7 @@ namespace helpers {
 template <typename T>
 static T getFactorial(const int n) {
 	if (n < 0)
-		throw "factorial is not defined for negative number !";
+		throw std::runtime_error("factorial is not defined for negative number !");
 
 	if(n==0 || n==1)
 		return (T)1.;

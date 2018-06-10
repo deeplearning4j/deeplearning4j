@@ -54,6 +54,7 @@ import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.primitives.AtomicBoolean;
@@ -5038,7 +5039,7 @@ public class SameDiff {
                         num_outputs = descriptor.getNumOutputs();
                     }
                     if (num_outputs <= 0) {
-                        throw new ND4JIllegalStateException("Could not determine number of output variables for op "
+                        throw new ND4UnresolvedOutputVariables("Could not determine number of output variables for op "
                                 + function.getOwnName() + " - " + function.getClass().getSimpleName() + ". Ops can override" +
                                 " getNumOutputs() to specify number of outputs if required");
                     }
@@ -6693,11 +6694,21 @@ public class SameDiff {
 
         val inPaired = new ArrayList<Integer>();
 
+        int[] outputIds = null;
+        SDVariable[] outputVertexId = null;
 
-        val outputVertexId = node.outputVariables();
-        val outputIds = new int[outputVertexId.length];
-        for (int i = 0; i < outputIds.length; i++) {
-            outputIds[i] = variables.indexOf(outputVertexId[i]);
+        try {
+            outputVertexId = node.outputVariables();
+            outputIds = new int[outputVertexId.length];
+            for (int i = 0; i < outputIds.length; i++) {
+                outputIds[i] = variables.indexOf(outputVertexId[i]);
+            }
+        } catch (ND4UnresolvedOutputVariables e) {
+
+            outputIds = new int[0];
+            outputVertexId = null;
+        } catch (Exception e) {
+            throw new ND4JIllegalStateException(e);
         }
 
 

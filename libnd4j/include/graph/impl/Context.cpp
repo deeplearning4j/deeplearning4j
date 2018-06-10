@@ -181,7 +181,7 @@ namespace nd4j {
         Variable<T>* Context<T>::getVariable(int idx) {
             if (idx >= this->_inputs.size()) {
                 nd4j_printf("Node %i; Variable [%i] requested, but only %i inputs available\n", this->_nodeId, idx, this->_inputs.size());
-                throw "Bad index";
+                throw std::runtime_error("Bad index");
             }
 
             auto p = this->_inputs[idx];
@@ -204,7 +204,7 @@ namespace nd4j {
         template <typename T>
         Variable<T>* Context<T>::variable(std::initializer_list<int> p) {
             if (p.size() != 2)
-                throw "Variable address should have size of 2";
+                throw std::runtime_error("Variable address should have size of 2");
 
             // FIXME: lol
             std::vector<int> vec(p);
@@ -222,7 +222,7 @@ namespace nd4j {
         Variable<T>* Context<T>::variable(std::pair<int,int>& p) {
             if (!_variableSpace->hasVariable(p)) {
                 nd4j_printf("Node %i; Non-existent variable requested: [%i:%i]\n", this->_nodeId, p.first, p.second);
-                throw "Bad variable";
+                throw std::runtime_error("Bad variable");
             }
 
             return _variableSpace->getVariable(p);

@@ -21,24 +21,34 @@ namespace nd4j {
 
                 if (__variableSpace->hasVariable(inputAddr)) {
                     auto var = __variableSpace->getVariable(inputAddr);
-                    if (!var->hasNDArray())
+                    if (var->hasNDArray()) {
+                        Variable<T> *lvar = nullptr;
+                        if (__variableSpace->hasVariable(node->id(), 0))
+                            lvar = __variableSpace->getVariable(node->id(), 0);
+                        else
+                            lvar = new Variable<T>(nullptr, node->getName()->c_str(), node->id(), 0);
+
+                        auto array = var->getNDArray();
+                        lvar->setNDArray(array);
+                        lvar->markReadOnly(true);
+
+                        break;
+                    } else if (var->hasNDArrayList()) {
+                        Variable<T> *lvar = nullptr;
+                        if (__variableSpace->hasVariable(node->id(), 0))
+                            lvar = __variableSpace->getVariable(node->id(), 0);
+                        else
+                            lvar = new Variable<T>(nullptr, node->getName()->c_str(), node->id(), 0);
+
+                        auto list = var->getNDArrayList();
+                        lvar->setNDArrayList(list);
+                        lvar->markReadOnly(true);
+
+                        break;
+                    } else {
+                        // FIXME: can we really have third case here?
                         continue;
-
-                    Variable<T> *lvar = nullptr;
-                    if (__variableSpace->hasVariable(node->id(), 0))
-                        lvar = __variableSpace->getVariable(node->id(), 0);
-                    else
-                        lvar = new Variable<T>(nullptr, node->getName()->c_str(), node->id(), 0);
-
-//                    if (lvar->hasNDArray())
-//                        delete lvar->getNDArray();
-
-                    auto array = var->getNDArray();
-                    lvar->setNDArray(array);
-                    lvar->markReadOnly(true);
-
-
-                    break;
+                    }
                 }
             }
 
