@@ -61,6 +61,9 @@ namespace helpers {
 	template<typename T>
 	void clipByAveraged(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace);
 
+	template<typename T>
+	void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const int mode);
+
 }
 }
 }

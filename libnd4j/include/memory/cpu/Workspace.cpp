@@ -164,15 +164,14 @@ namespace nd4j {
 
         void* Workspace::allocateBytes(nd4j::memory::MemoryType type, Nd4jLong numBytes) {
             if (type == DEVICE)
-                throw "CPU backend doesn't have device memory";
+                throw std::runtime_error("CPU backend doesn't have device memory");
 
             return this->allocateBytes(numBytes);
         }
 
         Workspace* Workspace::clone() {
             // for clone we take whatever is higher: current allocated size, or allocated size of current loop
-            Workspace* res = new Workspace(nd4j::math::nd4j_max<Nd4jLong >(this->getCurrentSize(), this->_cycleAllocations.load()));
-            return res;
+            return new Workspace(nd4j::math::nd4j_max<Nd4jLong >(this->getCurrentSize(), this->_cycleAllocations.load()));
         }
     }
 }

@@ -15,7 +15,7 @@ NDArray<T> Householder<T>::evalHHmatrix(const NDArray<T>& x) {
 
 	// input validation
 	if(!x.isVector() && !x.isScalar())
-		throw "ops::helpers::Householder::evalHHmatrix method: input array must be vector or scalar!";
+		throw std::runtime_error("ops::helpers::Householder::evalHHmatrix method: input array must be vector or scalar!");
 
 	NDArray<T> w(x.ordering(),  {(int)x.lengthOf(), 1}, x.getWorkspace());							// column-vector
 	NDArray<T> wT(x.ordering(), {1, (int)x.lengthOf()}, x.getWorkspace());							// row-vector (transposed w)	
@@ -56,10 +56,10 @@ void Householder<T>::evalHHmatrixData(const NDArray<T>& x, NDArray<T>& tail, T& 
 
 	// input validation
 	if(!x.isVector() && !x.isScalar())
-		throw "ops::helpers::Householder::evalHHmatrixData method: input array must be vector or scalar!";
+		throw std::runtime_error("ops::helpers::Householder::evalHHmatrixData method: input array must be vector or scalar!");
 
 	if(!x.isScalar() && x.lengthOf() != tail.lengthOf() + 1)
-		throw "ops::helpers::Householder::evalHHmatrixData method: input tail vector must have length less than unity compared to input x vector!";
+		throw std::runtime_error("ops::helpers::Householder::evalHHmatrixData method: input tail vector must have length less than unity compared to input x vector!");
 
 	normX = x.template reduceNumber<simdOps::Norm2<T>>();		
 		

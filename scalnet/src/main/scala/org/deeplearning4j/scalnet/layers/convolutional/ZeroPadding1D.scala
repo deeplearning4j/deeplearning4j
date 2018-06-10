@@ -17,18 +17,16 @@
 package org.deeplearning4j.scalnet.layers.convolutional
 
 import org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer
-import org.deeplearning4j.scalnet.layers.core.{Layer, Node}
+import org.deeplearning4j.scalnet.layers.core.{ Layer, Node }
 
 /**
   * 1D zero padding layer
   *
   * @author Max Pumperla
   */
-class ZeroPadding1D(padLeftH: Int,
-                    padRightH: Int,
-                    nIn: List[Int],
-                    override val name: String = "")
-  extends Node with Layer {
+class ZeroPadding1D(padLeftH: Int, padRightH: Int, nIn: List[Int], override val name: String = "")
+    extends Node
+    with Layer {
 
   override def inputShape: List[Int] = nIn
 
@@ -37,8 +35,7 @@ class ZeroPadding1D(padLeftH: Int,
       if (inputShape.nonEmpty) inputShape.last
       else 0
     if (inputShape.lengthCompare(2) == 0) {
-      List[Int](inputShape.head + padLeftH + padRightH,
-        nOutChannels)
+      List[Int](inputShape.head + padLeftH + padRightH, nOutChannels)
     } else if (nOutChannels > 0) List(nOutChannels)
     else List()
   }
@@ -46,22 +43,13 @@ class ZeroPadding1D(padLeftH: Int,
   override def reshapeInput(nIn: List[Int]): ZeroPadding1D =
     new ZeroPadding1D(padLeftH, padRightH, nIn, name)
 
-
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new ZeroPadding1DLayer.Builder(padLeftH, padRightH)
       .name(name)
       .build()
 }
 
-
 object ZeroPadding1D {
-  def apply(padLeftH: Int,
-            padRightH: Int,
-            nIn: List[Int],
-            name: String): ZeroPadding1D =
+  def apply(padLeftH: Int, padRightH: Int, nIn: List[Int], name: String): ZeroPadding1D =
     new ZeroPadding1D(padLeftH, padRightH, nIn, name)
 }
-
-
-
-

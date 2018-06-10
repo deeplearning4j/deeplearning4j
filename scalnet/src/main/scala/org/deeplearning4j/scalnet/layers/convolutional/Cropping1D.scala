@@ -16,19 +16,17 @@
 
 package org.deeplearning4j.scalnet.layers.convolutional
 
-import org.deeplearning4j.nn.conf.layers.convolutional.{Cropping1D => JCropping1D}
-import org.deeplearning4j.scalnet.layers.core.{Layer, Node}
+import org.deeplearning4j.nn.conf.layers.convolutional.{ Cropping1D => JCropping1D }
+import org.deeplearning4j.scalnet.layers.core.{ Layer, Node }
 
 /**
   * 1D cropping layer
   *
   * @author Max Pumperla
   */
-class Cropping1D(cropLeftH: Int,
-                    cropRightH: Int,
-                    nIn: List[Int],
-                    override val name: String = "")
-  extends Node with Layer {
+class Cropping1D(cropLeftH: Int, cropRightH: Int, nIn: List[Int], override val name: String = "")
+    extends Node
+    with Layer {
 
   override def inputShape: List[Int] = nIn
 
@@ -37,15 +35,13 @@ class Cropping1D(cropLeftH: Int,
       if (inputShape.nonEmpty) inputShape.last
       else 0
     if (inputShape.lengthCompare(2) == 0) {
-      List[Int](inputShape.head - cropLeftH - cropRightH,
-        nOutChannels)
+      List[Int](inputShape.head - cropLeftH - cropRightH, nOutChannels)
     } else if (nOutChannels > 0) List(nOutChannels)
     else List()
   }
 
   override def reshapeInput(nIn: List[Int]): Cropping1D =
     new Cropping1D(cropLeftH, cropRightH, nIn, name)
-
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new JCropping1D.Builder(cropLeftH, cropRightH)
@@ -54,12 +50,6 @@ class Cropping1D(cropLeftH: Int,
 }
 
 object Cropping1D {
-  def apply(cropLeftH: Int,
-            cropRightH: Int,
-            nIn: List[Int],
-            name: String): Cropping1D =
+  def apply(cropLeftH: Int, cropRightH: Int, nIn: List[Int], name: String): Cropping1D =
     new Cropping1D(cropLeftH, cropRightH, nIn, name)
 }
-
-
-

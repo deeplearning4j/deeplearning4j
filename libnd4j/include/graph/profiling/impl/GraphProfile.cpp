@@ -70,7 +70,7 @@ namespace nd4j {
             std::string k = name;
             if (_timers.count(k) == 0) {
                 nd4j_printf("Can't find timer key: [%s]", name);
-                throw "Missing timer key";
+                throw std::runtime_error("Missing timer key");
             }
             auto t0 = _timers[k];
             auto t1 = std::chrono::system_clock::now();
