@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
     NDArray<T> *gradI  = OUTPUT_VARIABLE(0);
 
     const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    const bool biasCorrected = block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;
+    const bool biasCorrected = block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;    
     
     std::vector<int> dimensions = *block.getIArguments();    
 
@@ -70,19 +70,14 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
         REQUIRE_TRUE(item > -input->rankOf() || item < input->rankOf(), 0, "REDUCE_STDEV OP: the input dimension to reduce along must be in range (-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);        
 
     const Nd4jLong N = input->lengthOf() / gradO->lengthOf();
-    const Nd4jLong NminusOne = biasCorrected ? N - 1 : N;           
-    const T factor = static_cast<T>(1) / N;
+    const Nd4jLong NminusOne = biasCorrected ? N - 1 : N;               
 
-    NDArray<T> mean = input->template reduceAlongDims<simdOps::Mean<T>>(dimensions, true);
-    NDArray<T> difference = *input - mean;                                                      // automatic broadcasting happens here
-    NDArray<T> sum = difference.template reduceAlongDims<simdOps::Sum<T>>(dimensions, true);
+    NDArray<T> mean = input->template reduceAlongDims<simdOps::Mean<T>>(dimensions, true);    
+    
+    NDArray<T> variance(mean.getShapeInfo(), true, block.getWorkspace());                    // create empty array with shape matching shape of mean array 
+    input->template varianceAlongDimension<simdOps::SummaryStatsStandardDeviation<T>>(&variance, biasCorrected, dimensions);        
 
-    NDArray<T> varianceRev(mean.getShapeInfo(), true, block.getWorkspace());                    // create empty array with shape matching shape of mean array 
-    input->template varianceAlongDimension<simdOps::SummaryStatsVariance<T>>(&varianceRev, biasCorrected, dimensions);    
-    auto reverseSqrt = LAMBDA_T(elem, NminusOne) {return  1.f / math::nd4j_sqrt(NminusOne * elem); };
-    varianceRev.applyLambda(reverseSqrt);
-
-    gradI->assign( (difference - sum * factor) * varianceRev );                              // automatic broadcasting happens here
+    gradI->assign( (*input - mean) / (variance * static_cast<T>(NminusOne)) );                              // automatic broadcasting happens here        
 
     Nd4jLong* gradOShapeKeepDims = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());
     const bool isGradOShapeBroadcast = shape::equalsSoft(gradOShapeKeepDims, gradO->getShapeInfo());

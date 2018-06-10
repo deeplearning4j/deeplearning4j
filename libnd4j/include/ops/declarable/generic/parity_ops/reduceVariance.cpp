@@ -74,10 +74,8 @@ CUSTOM_OP_IMPL(reduce_variance_bp, 2, 1, false, 0, 0) {
     const T factor2 = static_cast<T>(2) / (N * NminusOne);
     
     NDArray<T> mean = input->template reduceAlongDims<simdOps::Mean<T>>(dimensions, true);
-    NDArray<T> difference = *input - mean;                                                      // automatic broadcasting happens here
-    NDArray<T> sum = difference.template reduceAlongDims<simdOps::Sum<T>>(dimensions, true);
-
-    gradI->assign(difference * factor1 - sum * factor2);                                    // automatic broadcasting happens here
+    
+    gradI->assign( (*input - mean) * (static_cast<T>(2) / NminusOne));                                    // automatic broadcasting happens here
 
     Nd4jLong* gradOShapeKeepDims = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());
     const bool isGradOShapeBroadcast = shape::equalsSoft(gradOShapeKeepDims, gradO->getShapeInfo());
