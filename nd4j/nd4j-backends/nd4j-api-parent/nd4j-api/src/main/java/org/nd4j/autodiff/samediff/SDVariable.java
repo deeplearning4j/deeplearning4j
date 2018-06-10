@@ -62,7 +62,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         this.weightInitScheme = weightInitScheme;
 
         if(weightInitScheme == null) {
-            this.weightInitScheme = new ZeroInitScheme('f');
+            // we want C order as default in ALL cases
+            this.weightInitScheme = new ZeroInitScheme('c');
         }
 
         if(shape == null) {
