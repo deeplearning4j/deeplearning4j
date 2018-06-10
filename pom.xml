@@ -178,7 +178,7 @@
         <javacpp-presets.version>1.4.2-SNAPSHOT</javacpp-presets.version>
         <javacv.version>1.4.2-SNAPSHOT</javacv.version>
         <openblas.version>0.3.0</openblas.version>
-        <mkl.version>2018.1</mkl.version>
+        <mkl.version>2018.3</mkl.version>
         <opencv.version>3.4.1</opencv.version>
         <ffmpeg.version>4.0</ffmpeg.version>
         <leptonica.version>1.76.0</leptonica.version>
