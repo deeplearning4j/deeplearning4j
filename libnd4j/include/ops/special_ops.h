@@ -557,14 +557,14 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 
 
 		static void execSpecial(
-			T *dx,
-			Nd4jLong *xShapeBuffer,
-			T *result,
-			Nd4jLong *resultShapeBuffer,
+			T *imBuff,
+			Nd4jLong *imShapeBuffer,
+			T *colBuff,
+			Nd4jLong *colShapeBuffer,
 			T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 
-			T zeroPadVal = (T) 0.0f;
+			// [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
 
 			int kH = (int)extraParams[0];
 			int kW = (int)extraParams[1];
@@ -575,116 +575,85 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 			int dH = (int)extraParams[6];			//Dilation, height/y dimension
 			int dW = (int)extraParams[7];			//Dilation, width/x dimension
 
-            auto outShape  = shape::shapeOf(resultShapeBuffer);
-            auto outStride = shape::stride(resultShapeBuffer);
-            auto inShape = shape::shapeOf(xShapeBuffer);
-            auto inStride = shape::stride(xShapeBuffer);
+            auto colShape  = shape::shapeOf(colShapeBuffer);
+            auto colStride = shape::stride(colShapeBuffer);
+            auto imShape = shape::shapeOf(imShapeBuffer);
+            auto imStride = shape::stride(imShapeBuffer);
 
-                const int bS = inShape[0];
-                const int iC = inShape[1];
-                const int iH = inShape[2];
-                const int iW = inShape[3];
-                const int oH = outShape[4];
-                const int oW = outShape[5];
-                const Nd4jLong outStride0  = outStride[0];
-                const Nd4jLong outStride1  = outStride[1];
-                const Nd4jLong outStride2  = outStride[2];
-                const Nd4jLong outStride3  = outStride[3];
-                const Nd4jLong outStride4  = outStride[4];
-                const Nd4jLong outStride5  = outStride[5];
-                const Nd4jLong inStride0   = inStride[0];
-                const Nd4jLong inStride1   = inStride[1];
-                const Nd4jLong inStride2   = inStride[2];
-                const Nd4jLong inStride3   = inStride[3];
+            const int bS = imShape[0];
+            const int iC = imShape[1];
+            const int iH = imShape[2];
+            const int iW = imShape[3];
+            const int oH = colShape[4];
+            const int oW = colShape[5];
+            const Nd4jLong colStride0 = colStride[0];
+            const Nd4jLong colStride1 = colStride[1];
+            const Nd4jLong colStride2 = colStride[2];
+            const Nd4jLong colStride3 = colStride[3];
+            const Nd4jLong colStride4 = colStride[4];
+            const Nd4jLong colStride5 = colStride[5];
+            const Nd4jLong imStride0  = imStride[0];
+            const Nd4jLong imStride1  = imStride[1];
+            const Nd4jLong imStride2  = imStride[2];
+            const Nd4jLong imStride3  = imStride[3];
 
-                const T* in0End = dx + inStride1 * iC;
-                const Nd4jLong oHW = oH * oW;
+            T *col, *im;
+            int imRow, imCol;
+            
+            if (shape::order(imShapeBuffer) == 'c' &&  shape::order(colShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
 
-				int inRowStart, inColStart, inRow, inCol;
-                T *in0, *in1;
+#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)
+                for (int b = 0; b < bS; b++) {
+                    for (int c = 0; c < iC; ++c) {        
+                        for (int kRow = 0; kRow < kH; ++kRow) {                        
+                            for (int kCol = 0; kCol < kW; ++kCol) {                            
+                                for (int colH = 0; colH < oH; ++colH) {
+                                    for (int colW = 0; colW < oW; ++colW) {                    
+                                
+                                        imRow = (-pH + kRow * dH) + colH*sH;
+                                        imCol = (-pW + kCol * dW) + colW*sW;
+                                        
+                                        col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
+                                        im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3; 
+                                                    
+                                        if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
+                                            *col = static_cast<T>(0.);
+                                        else 
+                                            *col = *im;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }  
+            }
+            else {
 
-                if (shape::order(xShapeBuffer) == 'c' &&  shape::order(resultShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(xShapeBuffer) && shape::strideDescendingCAscendingF(resultShapeBuffer)) {
-
-#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1, inRowStart, inColStart, inRow, inCol)
-					for (int b = 0; b < bS; b++) {
-						in0 = dx + (b * inStride0);
-						T *output = result + (b * outStride0);
-
-						for (int channel = 0; channel < iC; ++channel, in0 += inStride1) {
-
-							for (int kRow = 0; kRow < kH; kRow++) {
-								inRowStart = -pH + kRow * dH;
-
-								for (int kCol = 0; kCol < kW; kCol++) {
-									inRow = inRowStart;
-									inColStart = -pW + kCol * dW;
-
-									for (int outRow = 0; outRow < oH; ++outRow, inRow += sH) {
-
-										if (!is_a_ge_zero_and_a_lt_b(inRow, iH))
-											for (int outCol = 0; outCol < oW; ++outCol, ++output) {
-												*output = zeroPadVal;
-											}
-										else {
-											inCol = inColStart;
-											in1 = in0 + inRow * inStride2;
-
-											for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, ++output)
-												if (is_a_ge_zero_and_a_lt_b(inCol, iW))
-													*output = *(in1 + inCol * inStride3);
-												else
-													*output = zeroPadVal;
-										}
-									}
-								}
-							}
-						}
-					}
-                } 
-                else {
-					T *out0, *out1, *out2, *out3, *out4;
-#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1, out0, out1, out2, out3, out4, inRowStart, inColStart, inRow, inCol)
-					for (int b = 0; b < bS; b++) {
-						in0 = dx + (b * inStride0);
-						out0  = result + b * outStride0;
-
-						for (int channel = 0; channel < iC; ++channel, in0 += inStride1, out0+=outStride1) {
-							out1 = out0;
-
-							for (int kRow = 0; kRow < kH; kRow++, out1 += outStride2) {
-								out2 = out1;
-								inRowStart = -pH + kRow * dH;
-
-								for (int kCol = 0; kCol < kW; kCol++, out2 += outStride3) {
-									out3 = out2;
-									inRow = inRowStart;
-									inColStart = -pW + kCol * dW;
-
-									for (int outRow = 0; outRow < oH; ++outRow, inRow += sH, out3 += outStride4) {
-										out4 = out3;
-
-										if (!is_a_ge_zero_and_a_lt_b(inRow, iH))
-											for (int outCol = 0; outCol < oW; ++outCol, out4 += outStride5) {
-												*out4 = zeroPadVal;
-											}
-										else {
-											inCol = inColStart;
-											in1 = in0 +  inRow * inStride2;
-
-											for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, out4 += outStride5) {
-												if (is_a_ge_zero_and_a_lt_b(inCol, iW))
-													*out4 = *(in1 + inCol * inStride3);
-												else
-													*out4 = zeroPadVal;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
+#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)    
+                for (int b = 0; b < bS; b++) {
+                    for (int colH = 0; colH < oH; ++colH) {
+                        for (int colW = 0; colW < oW; ++colW) {
+                            for (int c = 0; c < iC; ++c) {
+                                for (int kRow = 0; kRow < kH; ++kRow) {                        
+                                    for (int kCol = 0; kCol < kW; ++kCol) {                            
+                        
+                                        imRow = (-pH + kRow * dH) + colH*sH;
+                                        imCol = (-pW + kCol * dW) + colW*sW;
+                                        
+                                        col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
+                                        im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
+                                                    
+                                        if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
+                                            *col = static_cast<T>(0.);
+                                        else 
+                                            *col = *im;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-
+            }
 		}
 
 		op_def static T op(T d1, T *params) {
@@ -1008,134 +977,106 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 #endif
 
 		static void execSpecial(
-			T *dx,
-			Nd4jLong *xShapeBuffer,
-			T *result,
-			Nd4jLong *resultShapeBuffer,
+			T *colBuff,
+			Nd4jLong *colShapeBuffer,
+			T *imBuff,
+			Nd4jLong *imShapeBuffer,
 			T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-            const Nd4jLong *inShape = shape::shapeOf(xShapeBuffer);
-            const Nd4jLong *inStride = shape::stride(xShapeBuffer);
-            const Nd4jLong *outShape = shape::shapeOf(xShapeBuffer);
-            const Nd4jLong *outStride = shape::stride(resultShapeBuffer);
-			
-			const int kH = inShape[2];
-			const int kW = inShape[3];        
-			const int bS = outShape[0];
-			const int iC = outShape[1];
-			const int oH = inShape[4];                            
-			const int oW = inShape[5];                            
 
-			const int sH = (int)extraParams[0];
-			const int sW = (int)extraParams[1];
+            // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
+
+            auto colShape  = shape::shapeOf(colShapeBuffer);
+            auto colStride = shape::stride(colShapeBuffer);
+            auto imShape = shape::shapeOf(imShapeBuffer);
+            auto imStride = shape::stride(imShapeBuffer);
+
+            const int sH = (int)extraParams[0];
+            const int sW = (int)extraParams[1];
             const int pH = (int)extraParams[2];
-			const int pW = (int)extraParams[3];
+            const int pW = (int)extraParams[3];
             const int iH = (int)extraParams[4];
             const int iW = (int)extraParams[5];
-			const int dH = (int)extraParams[6];		
-            const int dW = (int)extraParams[7];		
+            const int dH = (int)extraParams[6];     
+            const int dW = (int)extraParams[7];     
 
-			const Nd4jLong inStride0  = inStride[0];
-            const Nd4jLong inStride1  = inStride[1];
-            const Nd4jLong inStride2  = inStride[2];
-            const Nd4jLong inStride3  = inStride[3];
-            const Nd4jLong inStride4  = inStride[4];
-            const Nd4jLong inStride5  = inStride[5];
-            const Nd4jLong outStride0 = outStride[0];
-            const Nd4jLong outStride1 = outStride[1];
-            const Nd4jLong outStride2 = outStride[2];
-            const Nd4jLong outStride3 = outStride[3];
+            const int bS = imShape[0];
+            const int iC = imShape[1];
+            const int kH = colShape[2];
+            const int kW = colShape[3];                    
+            const int oH = colShape[4];
+            const int oW = colShape[5];
+            const Nd4jLong colStride0 = colStride[0];
+            const Nd4jLong colStride1 = colStride[1];
+            const Nd4jLong colStride2 = colStride[2];
+            const Nd4jLong colStride3 = colStride[3];
+            const Nd4jLong colStride4 = colStride[4];
+            const Nd4jLong colStride5 = colStride[5];
+            const Nd4jLong imStride0  = imStride[0];
+            const Nd4jLong imStride1  = imStride[1];
+            const Nd4jLong imStride2  = imStride[2];
+            const Nd4jLong imStride3  = imStride[3];
 
-            const T* out0End = result + outStride1 * iC;
-            const Nd4jLong inStepOW = oW * inStride5;
+            T *col, *im;
+            int imRow, imCol;
 
-            int inRowStart, inColStart, inRow, inCol;
-            T *out0, *out1, *out2;
+            if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {
+            
+#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)    
+                for (int b = 0; b < bS; b++) {        
+                    for (int c = 0; c < iC; ++c) {                    
+                        for (int kRow = 0; kRow < kH; ++kRow) {                        
+                            for (int kCol = 0; kCol < kW; ++kCol) {                            
+                                for (int colH = 0; colH < oH; ++colH) {
+                                    for (int colW = 0; colW < oW; ++colW) {                    
 
-            memset(result, 0, shape::length(resultShapeBuffer) * sizeof(T));
+                                        imRow = (-pH + kRow * dH) + colH*sH;
+                                        imCol = (-pW + kCol * dW) + colW*sW;
 
-                if (shape::order(xShapeBuffer) == 'c' &&  shape::order(resultShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(xShapeBuffer) && shape::strideDescendingCAscendingF(resultShapeBuffer)) {
+                                        col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
+                                        im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
 
-#pragma omp parallel for schedule(guided) proc_bind(close) private(out0, out1, out2, inRowStart, inColStart, inRow, inCol)
-                    for (int b = 0; b < bS; b++) {
-                        T *input = dx + (b * inStride0);
-                        out0 = result + (b * outStride0);
-
-                        for (int channel = 0; channel < iC; ++channel, out0 += outStride1) {
-
-                            for (int kRow = 0; kRow < kH; ++kRow) {
-                                inRowStart = -pH + kRow * dH;
-
-                                for (int kCol = 0; kCol < kW; ++kCol) {
-                                    inRow = inRowStart;
-                                    inColStart = -pW + kCol * dW;
-
-                                    for (int outRow = 0; outRow < oH; ++outRow, inRow += sH) {
-
-                                        if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
-                                            input += inStepOW;
-                                        }
-                                        else {
-                                            inCol = inColStart;
-                                            out1 = out0 + inRow * outStride2;
-
-                                            for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, input += inStride5) {
-                                                if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
-                                                    out2 = out1 + inCol * outStride3;
-                                                    *out2 += *input;
-                                                }
-                                            }
-                                        }
+                                        if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(imCol) < static_cast<unsigned>(iW))
+                                            if(imRow == -pH && imCol == -pW)
+                                                *im = *col;
+                                            else
+                                                *im += *col;
                                     }
                                 }
                             }
                         }
                     }
-                } 
-                else {
+                }  
+            }
+            else {
 
-                    T *in0, *in1, *in2, *in3, *in4;
-#pragma omp parallel for schedule(guided) proc_bind(close) private(in0, in1, in2, in3, in4, out0, out1, out2, inRowStart, inColStart, inRow, inCol)
-                    for (int b = 0; b < bS; b++) {
-                        out0 = result + (b * outStride0);
-                        in0 = dx + b * inStride0;
-
-                        for (int channel = 0; channel < iC; ++channel, out0+=outStride1, in0+=inStride1) {
-                            in1 = in0;
-
-                            for (int kRow = 0; kRow < kH; ++kRow, in1+=inStride2) {
-                                in2 = in1;
-                                inRowStart = -pH + kRow * dH;
-
-                                for (int kCol = 0; kCol < kW; ++kCol, in2+=inStride3) {
-                                    in3 = in2;
-                                    inRow = inRowStart;
-                                    inColStart = -pW + kCol * dW;
-
-                                    for (int outRow = 0; outRow < oH; ++outRow, inRow+=sH, in3+=inStride4) {
-                                        in4 = in3;
-
-                                        if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
-                                            in4 += inStepOW;
-                                        }
-                                        else {
-                                            inCol = inColStart;
-                                            out1 = out0 + inRow * outStride2;
-
-                                            for (int outCol = 0; outCol < oW; ++outCol, inCol+=sW, in4+=inStride5) {
-                                                if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
-                                                    out2 = out1 + inCol * outStride3;
-                                                    *out2 += *in4;
-                                                }
-                                            }
-                                        }
+#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)    
+                for (int b = 0; b < bS; b++) {        
+                    for (int colH = 0; colH < oH; ++colH) {
+                        for (int colW = 0; colW < oW; ++colW) {
+                            for (int c = 0; c < iC; ++c) {                        
+                                for (int kRow = 0; kRow < kH; ++kRow) {                        
+                                    for (int kCol = 0; kCol < kW; ++kCol) {                            
+                        
+                                        imRow = (-pH + kRow * dH) + colH*sH;
+                                        imCol = (-pW + kCol * dW) + colW*sW;
+                                        
+                                        col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
+                                        im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
+                                                    
+                                        if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(imCol) < static_cast<unsigned>(iW))
+                                            if(imRow == -pH && imCol == -pW)
+                                                *im = *col;
+                                            else
+                                                *im += *col;
                                     }
                                 }
                             }
-                        }
+                        }                           
                     }
-                }
-		}
+                }  
+            }
+        }
 
 		op_def static T op(T d1, T *params) {
 			return d1;
