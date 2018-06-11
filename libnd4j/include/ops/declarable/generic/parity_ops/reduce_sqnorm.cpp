@@ -50,31 +50,44 @@ namespace ops {
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_sqnorm_bp: The second param shape should be the same as result shape.");
-            output->assign(epsilon);
 //            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
 //            T keepDimsT = (keepDims?T(1.f):T(0.f));
-#if 0
             // at first step we build fwd activation
-            nd4j::ops::reduce_sqnorm<T> op;
-            std::vector<Nd4jLong> axes;
+//            nd4j::ops::reduce_sqnorm<T> op;
+//            std::vector<Nd4jLong> axes;
 
-            if (block.numI() > 0) {
-                for (int e = 0; e < block.numI(); e++)
-                    axes.emplace_back(INT_ARG(e));// = *block.getIArguments();
+//            if (block.numI() > 0) {
+//                for (int e = 0; e < block.numI(); e++)
+//                    axes.emplace_back(INT_ARG(e));// = *block.getIArguments();
+//            }
+//            std::vector<T> tVec(1);
+//            tVec[0] = (keepDims?T(1.0):T(0.0));
+//            std::vector<NDArray<T>*> inputVec({input});
+//            std::unique_ptr<ResultSet<T>> tmpResult(op.execute(inputVec, tVec, axes, false)); 
+//            if (tmpResult->status() != ND4J_STATUS_OK)
+//                return tmpResult->status();
+            
+            if (epsilon->isScalar()) {
+                output->assign(epsilon->getScalar(0) * T(2.f));
+                output->template applyPairwiseTransform<simdOps::Multiply<T>>(input, output, nullptr);
             }
-            std::vector<T> tVec(1);
-            tVec[0] = (keepDims?T(1.0):T(0.0));
-            std::vector<NDArray<T>*> inputVec({input});
-            auto tmpResult = op.execute(inputVec, tVec, axes, false); 
-            if (tmpResult->status() != ND4J_STATUS_OK)
-                return tmpResult->status();
-
-            NDArray<T>* tempSum = tmpResult->at(0);
-            tempSum->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
-
-            delete tmpResult;
-#endif
+            else {
+                auto axes = *block.getIArguments();
+                std::vector<int> dimensions; //(input->rankOf() - axes.size());
+                for (Nd4jLong e = 0; e < input->rankOf(); e++) {
+                    if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
+                        dimensions.emplace_back(e);
+                    }
+                }
+                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
+                std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
+                for (int e = 0; e < outList->size(); ++e) {
+                    inList->at(e)->printIndexedBuffer("Internal");
+                    outList->at(e)->assign(T(2.f));
+                    outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, outList->at(e), nullptr);
+                    outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(inList->at(e), outList->at(e), nullptr);
+                }
+            }
             return ND4J_STATUS_OK;
     }
 #endif
