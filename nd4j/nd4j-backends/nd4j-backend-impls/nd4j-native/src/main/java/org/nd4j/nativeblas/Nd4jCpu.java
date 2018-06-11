@@ -337,7 +337,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_clip_by_global_norm.class,
         float_tri.class,
         float_triu.class,
-        float_triu_bp.class,};
+        float_triu_bp.class,
+        float_mirror_pad.class,};
     Class[] halfOps = {
         half_Switch.class,
         half_While.class,
@@ -666,7 +667,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_clip_by_global_norm.class,
         half_tri.class,
         half_triu.class,
-        half_triu_bp.class,};
+        half_triu_bp.class,
+        half_mirror_pad.class,};
     Class[] doubleOps = {
         double_Switch.class,
         double_While.class,
@@ -995,7 +997,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_clip_by_global_norm.class,
         double_tri.class,
         double_triu.class,
-        double_triu_bp.class,};
+        double_triu_bp.class,
+        double_mirror_pad.class,};
 
 @Name("std::vector<std::vector<int> >") public static class IntVectorVector extends Pointer {
     static { Loader.load(); }
@@ -7020,7 +7023,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *   returns _buffer
         */
-        public native FloatPointer getBuffer();        
+        public native FloatPointer getBuffer();
         public native FloatPointer buffer();
 
         /**
@@ -8145,7 +8148,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *   returns _buffer
         */
-        public native @Cast("float16*") ShortPointer getBuffer();        
+        public native @Cast("float16*") ShortPointer getBuffer();
         public native @Cast("float16*") ShortPointer buffer();
 
         /**
@@ -9270,7 +9273,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *   returns _buffer
         */
-        public native DoublePointer getBuffer();        
+        public native DoublePointer getBuffer();
         public native DoublePointer buffer();
 
         /**
@@ -27170,6 +27173,54 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
+
+//         #if NOT_EXCLUDED(OP_mirror_pad)
+        @Name("nd4j::ops::mirror_pad<float>") public static class float_mirror_pad extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_mirror_pad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_mirror_pad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_mirror_pad position(long position) {
+                return (float_mirror_pad)super.position(position);
+            }
+        
+                                                                                    public float_mirror_pad() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::mirror_pad<float16>") public static class half_mirror_pad extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_mirror_pad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_mirror_pad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_mirror_pad position(long position) {
+                return (half_mirror_pad)super.position(position);
+            }
+        
+                                                                                    public half_mirror_pad() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::mirror_pad<double>") public static class double_mirror_pad extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_mirror_pad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_mirror_pad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_mirror_pad position(long position) {
+                return (double_mirror_pad)super.position(position);
+            }
+        
+                                                                                    public double_mirror_pad() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
 
     
 

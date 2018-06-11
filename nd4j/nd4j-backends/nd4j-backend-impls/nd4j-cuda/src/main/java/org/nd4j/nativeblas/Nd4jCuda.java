@@ -6032,7 +6032,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *   returns _buffer
         */
-        public native FloatPointer getBuffer();        
+        public native FloatPointer getBuffer();
         public native FloatPointer buffer();
 
         /**
@@ -7157,7 +7157,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *   returns _buffer
         */
-        public native @Cast("float16*") ShortPointer getBuffer();        
+        public native @Cast("float16*") ShortPointer getBuffer();
         public native @Cast("float16*") ShortPointer buffer();
 
         /**
@@ -8282,7 +8282,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *   returns _buffer
         */
-        public native DoublePointer getBuffer();        
+        public native DoublePointer getBuffer();
         public native DoublePointer buffer();
 
         /**
