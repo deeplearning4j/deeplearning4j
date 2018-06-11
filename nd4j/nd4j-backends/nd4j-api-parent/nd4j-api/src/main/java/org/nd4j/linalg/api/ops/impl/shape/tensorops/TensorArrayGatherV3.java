@@ -37,14 +37,12 @@ public class TensorArrayGatherV3 extends BaseTensorOp {
     @Override
     public TensorList execute(SameDiff sameDiff) {
        val list = getList(sameDiff);
-
-       val array = list.stack();
-
+       val indices = getArgumentArray(1);
+       val array = list.gather(indices);
        val name = this.getOwnName();
+       sameDiff.putArrayForVarName(name, array);
 
-        sameDiff.putArrayForVarName(name, array);
-
-        return list;
+       return list;
     }
 
     @Override
