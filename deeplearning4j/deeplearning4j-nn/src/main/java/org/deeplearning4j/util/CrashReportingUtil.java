@@ -343,7 +343,7 @@ public class CrashReportingUtil {
         if (nDevices > 0) {
             sb.append(f("Number of GPUs Detected", nDevices));
             //Name CC, Total memory, current memory, free memory
-            String fGpu = "  %-30s %-5s %16 %16 %16";
+            String fGpu = "  %-30s %-5s %16s %16s %16s";
             sb.append(String.format(fGpu, "Name", "CC", "Total Memory", "Used Memory", "Free Memory")).append("\n");
             for (int i = 0; i < nDevices; i++) {
                 try {
