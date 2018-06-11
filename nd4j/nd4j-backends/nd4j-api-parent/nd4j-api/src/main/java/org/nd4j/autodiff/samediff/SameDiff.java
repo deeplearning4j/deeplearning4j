@@ -54,6 +54,7 @@ import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.primitives.AtomicBoolean;
@@ -4933,6 +4934,14 @@ public class SameDiff {
         return stridedSlice(name, input, begin, end, strides, 0, 0, 0, 0, 0);
     }
 
+    public SDVariable stridedSlice(SDVariable input, long[] begin, long[] end, long[] strides) {
+        return stridedSlice(null, input, begin, end, strides);
+    }
+
+    public SDVariable stridedSlice(String name, SDVariable input, long[] begin, long[] end, long[] strides) {
+        return stridedSlice(name, input, begin, end, strides, 0, 0, 0, 0, 0);
+    }
+
     public SDVariable stridedSlice(SDVariable in, int[] begin, int[] end, int[] strides, int beginMask,
                                    int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
         return stridedSlice(null, in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
@@ -4944,6 +4953,16 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable stridedSlice(SDVariable in, long[] begin, long[] end, long[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        return stridedSlice(null, in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
+    }
+
+    public SDVariable stridedSlice(String name, SDVariable in, long[] begin, long[] end, long[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        SDVariable ret = f().stridedSlice(in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
+        return updateVariableNameAndReference(ret, name);
+    }
 
     public SDVariable scatterAdd(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
         SDVariable ret = f().scatterAdd(ref, indices, updates);
@@ -5020,7 +5039,7 @@ public class SameDiff {
                         num_outputs = descriptor.getNumOutputs();
                     }
                     if (num_outputs <= 0) {
-                        throw new ND4JIllegalStateException("Could not determine number of output variables for op "
+                        throw new ND4UnresolvedOutputVariables("Could not determine number of output variables for op "
                                 + function.getOwnName() + " - " + function.getClass().getSimpleName() + ". Ops can override" +
                                 " getNumOutputs() to specify number of outputs if required");
                     }
@@ -6675,11 +6694,21 @@ public class SameDiff {
 
         val inPaired = new ArrayList<Integer>();
 
+        int[] outputIds = null;
+        SDVariable[] outputVertexId = null;
 
-        val outputVertexId = node.outputVariables();
-        val outputIds = new int[outputVertexId.length];
-        for (int i = 0; i < outputIds.length; i++) {
-            outputIds[i] = variables.indexOf(outputVertexId[i]);
+        try {
+            outputVertexId = node.outputVariables();
+            outputIds = new int[outputVertexId.length];
+            for (int i = 0; i < outputIds.length; i++) {
+                outputIds[i] = variables.indexOf(outputVertexId[i]);
+            }
+        } catch (ND4UnresolvedOutputVariables e) {
+
+            outputIds = new int[0];
+            outputVertexId = null;
+        } catch (Exception e) {
+            throw new ND4JIllegalStateException(e);
         }
 
 

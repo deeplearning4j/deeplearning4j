@@ -16,13 +16,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- *This class is used as simplifed VocabCache for vocabulary building routines.
+ * This class is used as simplified VocabCache for vocabulary building routines.
  * As soon as vocab is built, all words will be transferred into VocabCache.
  *
  * @author raver119@gmail.com
  */
 public class VocabularyHolder implements Serializable {
-    private Map<String, VocabularyWord> vocabulary = new ConcurrentHashMap<>();
+    private final Map<String, VocabularyWord> vocabulary = new ConcurrentHashMap<>();
 
     // idxMap marked as transient, since there's no real reason to save this data on serialization
     private transient Map<Integer, VocabularyWord> idxMap = new ConcurrentHashMap<>();
@@ -35,7 +35,7 @@ public class VocabularyHolder implements Serializable {
     // this variable defines how often scavenger will be activated
     private int scavengerThreshold = 2000000;
 
-    private long totalWordOccurencies = 0;
+    private long totalWordOccurrences = 0;
 
     // for scavenger mechanics we need to know the actual number of words being added
     private transient AtomicLong hiddenWordsCounter = new AtomicLong(0);
@@ -58,7 +58,7 @@ public class VocabularyHolder implements Serializable {
      *
      * Basically we just ignore tokens, and transfer VocabularyWords, supposing that it's already truncated by minWordFrequency.
      *
-     * Huffman tree data is ignored and recalculated, due to suspectable flaw in dl4j huffman impl, and it's exsessive memory usage.
+     * Huffman tree data is ignored and recalculated, due to suspectable flaw in dl4j huffman impl, and it's excessive memory usage.
      *
      * This code is required for compatibility between dl4j w2v implementation, and standalone w2v
      * @param cache
@@ -220,7 +220,7 @@ public class VocabularyHolder implements Serializable {
     }
 
     /**
-     * Checks vocabulary for the word existance
+     * Checks vocabulary for the word existence
      *
      * @param word to be looked for
      * @return TRUE of contains, FALSE otherwise
@@ -230,7 +230,7 @@ public class VocabularyHolder implements Serializable {
     }
 
     /**
-     * Increments by one number of occurencies of the word in corpus
+     * Increments by one number of occurrences of the word in corpus
      *
      * @param word whose counter is to be incremented
      */
@@ -507,13 +507,13 @@ public class VocabularyHolder implements Serializable {
     }
 
     public long totalWordsBeyondLimit() {
-        if (totalWordOccurencies == 0) {
+        if (totalWordOccurrences == 0) {
             for (VocabularyWord word : vocabulary.values()) {
-                totalWordOccurencies += word.getCount();
+                totalWordOccurrences += word.getCount();
             }
-            return totalWordOccurencies;
+            return totalWordOccurrences;
         } else
-            return totalWordOccurencies;
+            return totalWordOccurrences;
     }
 
     public static class Builder {

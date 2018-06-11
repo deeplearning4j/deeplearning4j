@@ -95,7 +95,7 @@ namespace nd4j {
                 return _backed->getVariable(id);
 
             nd4j_printf("Unable to get Variable to proxy: [%i]\n", id);
-            throw "Bad arguments";
+            throw std::runtime_error("Bad arguments");
         }
 
         template <typename T>
@@ -107,7 +107,7 @@ namespace nd4j {
                 return _backed->getVariable(id, idx);
 
             nd4j_printf("Unable to get Variable to proxy: [%i:%i]\n", id, idx);
-            throw "Bad arguments";
+            throw std::runtime_error("Bad arguments");
         }
 
         template <typename T>
@@ -119,7 +119,7 @@ namespace nd4j {
                 return _backed->getVariable(pair);
 
             nd4j_printf("Unable to get Variable to proxy: [%i:%i]\n", pair.first, pair.second);
-            throw "Bad arguments";
+            throw std::runtime_error("Bad arguments");
         }
 
         template <typename T>
@@ -131,7 +131,7 @@ namespace nd4j {
                 return _backed->getVariable(symbol);
 
             nd4j_printf("Unable to get Variable to proxy: [%s]\n", symbol->c_str());
-            throw "Bad arguments";
+            throw std::runtime_error("Bad arguments");
         }
 
         template <typename T>

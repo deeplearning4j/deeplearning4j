@@ -52,7 +52,7 @@ namespace nd4j {
         for (auto idx: indices) {
             if (idx >= numTads) {
                 nd4j_printf("Index %i is higher then number of TADs: %i\n", idx, numTads);
-                throw "Bad index";
+                throw std::runtime_error("Bad index");
             }
 
 
@@ -90,7 +90,7 @@ namespace nd4j {
             std::sort (copy.begin(), copy.end());
 
         if(copy.back() >= ndArray->rankOf())
-            throw "NDArrayFactory::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !";
+            throw std::runtime_error("NDArrayFactory::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !");
 
         Nd4jLong tadLength = shape::tadLength(ndArray->getShapeInfo(), copy.data(), copy.size());
         Nd4jLong numTads = ndArray->lengthOf() / tadLength;
@@ -325,7 +325,7 @@ namespace nd4j {
                 if (A->sizeAt(-1) != B->sizeAt(-2)) {
                     nd4j_printf("Number of A \"columns\" should match number of B \"rows\", but got %i/%i instead",
                                 A->sizeAt(-1), B->sizeAt(-2))
-                    throw "Numbers of rows/columns should match";
+                    throw std::runtime_error("Numbers of rows/columns should match");
                 }
 
                 std::vector<Nd4jLong> newShape;
@@ -343,7 +343,7 @@ namespace nd4j {
                     result = new NDArray<T>('c', newShape);
                 else if (!result->isSameShape(newShape)) {
                     nd4j_printf("Bad result shape for MatMul\n", "");
-                    throw "Bad result shape";
+                    throw std::runtime_error("Bad result shape");
                 }
 
 
@@ -387,7 +387,7 @@ namespace nd4j {
                 for (int e = 0; e < A->rankOf() - 2; e++)
                     if (A->sizeAt(e) != B->sizeAt(e)) {
                         nd4j_printf("Dimension [%i] differs for A and B: %i vs %i", e, A->sizeAt(e), B->sizeAt(e));
-                        throw "Outer dimensions for A & B should be equal";
+                        throw std::runtime_error("Outer dimensions for A & B should be equal");
                     } else {
                         newShape.push_back(A->sizeAt(e));
                     }
@@ -398,7 +398,7 @@ namespace nd4j {
                 if (A->sizeAt(-1) != B->sizeAt(-2)) {
                     nd4j_printf("Number of A \"columns\" should match number of B \"rows\", but got %i/%i instead",
                                 A->sizeAt(-1), B->sizeAt(-2))
-                    throw "Numbers of rows/columns should match";
+                    throw std::runtime_error("Numbers of rows/columns should match");
                 }
 
                 newShape.push_back(pRows);
@@ -410,7 +410,7 @@ namespace nd4j {
                     result = new NDArray<T>('c', newShape);
                 else if (!result->isSameShape(newShape)) {
                     nd4j_printf("Bad result shape for MatMul\n", "");
-                    throw "Bad result shape";
+                    throw std::runtime_error("Bad result shape");
                 }
 
                 auto aL = allTensorsAlongDimension(A, {A->rankOf() - 2, A->rankOf() - 1});
@@ -588,7 +588,7 @@ namespace nd4j {
 
             // gemv
             if (A->columns() != B->rows())
-                throw "A columns != B length";
+                throw std::runtime_error("A columns != B length");
 
             if (result == nullptr)
                 result = new NDArray<T>('f', {A->rows(), 1});
@@ -628,7 +628,7 @@ namespace nd4j {
         } else if ((A->isRowVector() && B->isRowVector()) || (A->isColumnVector() && B->isColumnVector())) {
             // dot
             if (A->lengthOf() != B->lengthOf())
-                throw "A length != B length";
+                throw std::runtime_error("A length != B length");
 
             if (result == nullptr)
                 result = new NDArray<T>('c', {1, 1});
@@ -769,17 +769,17 @@ template <typename T>
 NDArray<T>* NDArrayFactory<T>::simpleMMul(const NDArray<T>* a, const NDArray<T>* b, NDArray<T>* c, const T alpha, const T beta) {
     
     if(a->rankOf() != 2 || b->rankOf() != 2)
-        throw "NDArrayFactory::simpleMMul static function: some of input arrays has rank not equal to 2 !";
+        throw std::runtime_error("NDArrayFactory::simpleMMul static function: some of input arrays has rank not equal to 2 !");
 
     if(a->shapeOf()[1] != b->shapeOf()[0])
-        throw "NDArrayFactory::simpleMMul static function: the number of A columns is not equal to number of B rows !";
+        throw std::runtime_error("NDArrayFactory::simpleMMul static function: the number of A columns is not equal to number of B rows !");
 
     NDArray<T>* dot = c;
     if(c == nullptr) 
         c = new NDArray<T>('f', {a->shapeOf()[0], b->shapeOf()[1]}, a->getWorkspace());        
     else {
         if( c->shapeOf()[0] != a->shapeOf()[0] || c->shapeOf()[1] != b->shapeOf()[1])
-            throw "NDArrayFactory::simpleMMul static function: wrong shape of C array !";
+            throw std::runtime_error("NDArrayFactory::simpleMMul static function: wrong shape of C array !");
         if(beta != (T)0. ) {
             dot = new NDArray<T>(c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]},  a->getWorkspace());
             if( beta != (T)1.)
