@@ -227,7 +227,7 @@ namespace simdOps {
 static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 	// input is  [bS, iC, iH, iW]
 	// output is [bS, iC, oH, oW]
-
+        
 	const Nd4jLong kH = (int)extraParams[0];
 	const Nd4jLong kW = (int)extraParams[1];
     const Nd4jLong sH = (int)extraParams[2];
@@ -236,8 +236,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
     const Nd4jLong pW = (int)extraParams[5];    
     const Nd4jLong dH = (int)extraParams[6];
     const Nd4jLong dW = (int)extraParams[7];
-    Nd4jLong poolingMode = (int)extraParams[8];
-    T extraParam0 = extraParams[9];
+    Nd4jLong poolingMode = (int)extraParams[9];
+    T extraParam0 = extraParams[10];
 
     const Nd4jLong kHEff = kH + (kH-1)*(dH-1);
     const Nd4jLong kWEff = kW + (kW-1)*(dW-1);
