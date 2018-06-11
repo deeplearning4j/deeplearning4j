@@ -40,6 +40,10 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
 
@@ -290,5 +294,14 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         }
 
         return activations;
+    }
+
+
+    @Override
+    public Map<String, Long> helperMemoryUse() {
+        Map<String,Long> memUse = new HashMap<>();
+        memUse.put("meanCache", meanCache.capacity());
+        memUse.put("varCache", varCache.capacity());
+        return memUse;
     }
 }

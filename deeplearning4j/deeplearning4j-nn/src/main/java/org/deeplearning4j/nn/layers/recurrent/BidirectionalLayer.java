@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
@@ -10,6 +11,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -21,9 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
@@ -523,5 +523,46 @@ public class BidirectionalLayer implements RecurrentLayer {
         bwd.feedForwardMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT),   //TODO
                 currentMaskState, minibatchSize);
         return ret;
+    }
+
+    @Override
+    public LayerHelper getHelper() {
+        LayerHelper f = fwd.getHelper();
+        LayerHelper b = bwd.getHelper();
+        if(f != null || b != null){
+            return new BidirectionalHelper(f,b);
+        }
+        return null;
+    }
+
+    @AllArgsConstructor
+    private static class BidirectionalHelper implements LayerHelper {
+        private final LayerHelper helperFwd;
+        private final LayerHelper helperBwd;
+
+        @Override
+        public Map<String, Long> helperMemoryUse() {
+            Map<String,Long> fwd = (helperFwd != null ? helperFwd.helperMemoryUse() : null);
+            Map<String,Long> bwd = (helperBwd != null ? helperBwd.helperMemoryUse() : null);
+
+            Set<String> keys = new HashSet<>();
+            if(fwd != null)
+                keys.addAll(fwd.keySet());
+            if(bwd != null)
+                keys.addAll(bwd.keySet());
+
+            Map<String,Long> ret = new HashMap<>();
+            for(String s : keys){
+                long sum = 0;
+                if(fwd != null && fwd.containsKey(s)){
+                    sum += fwd.get(s);
+                }
+                if(bwd != null && bwd.containsKey(s)){
+                    sum += bwd.get(s);
+                }
+                ret.put(s, sum);
+            }
+            return ret;
+        }
     }
 }
