@@ -1,5 +1,7 @@
 package org.deeplearning4j.util;
 
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -42,13 +44,29 @@ import java.util.*;
 import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputType;
 import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputTypes;
 
+/**
+ * A utility for generating crash reports when an out of memory error occurs.
+ *
+ * @author Alex Black
+ */
 @Slf4j
 public class CrashReportingUtil {
 
+    /**
+     * System property that can be used to enable or disable memory crash reporting. Memory crash reporting is
+     * enabled by default.
+     */
     public static final String CRASH_DUMP_ENABLED_PROPERTY = "org.deeplearning4j.crash.reporting.enabled";
+
+    /**
+     * System property that can be use to customize the output directory for memory crash reporting. By default,
+     * the current working directory will be used
+     */
     public static final String CRASH_DUMP_OUTPUT_DIRECTORY_PROPERTY = "org.deeplearning4j.crash.reporting.directory";
 
+    @Getter
     private static boolean crashDumpsEnabled = true;
+    @Getter
     private static File crashDumpRootDirectory;
 
     static {
@@ -76,11 +94,20 @@ public class CrashReportingUtil {
 
     private CrashReportingUtil(){ }
 
-
+    /**
+     * Method that can be used to enable or disable memory crash reporting. Memory crash reporting is enabled by default.
+     */
     public static void crashDumpsEnabled(boolean enabled){
         crashDumpsEnabled = enabled;
     }
 
+    /**
+     * Method that can be use to customize the output directory for memory crash reporting. By default,
+     * the current working directory will be used.
+     *
+     * @param rootDir Root directory to use for crash reporting. If null is passed, the current working directory
+     *                will be used
+     */
     public static void crashDumpOutputDirectory(File rootDir){
         if(rootDir == null){
             String userDir = System.getProperty("user.dir");
@@ -93,8 +120,15 @@ public class CrashReportingUtil {
         crashDumpRootDirectory = rootDir;
     }
 
-
-    public static void writeMemoryCrashDump(Model net, Throwable e){
+    /**
+     * Generate and write the crash dump to the crash dump root directory (by default, the working directory).
+     * Naming convention for crash dump files: "dl4j-memory-crash-dump-<timestamp>_<thread-id>.txt"
+     *
+     *
+     * @param net   Net to generate the crash dump for. May not be null
+     * @param e     Throwable/exception. Stack trace will be included in the network output
+     */
+    public static void writeMemoryCrashDump(@NonNull Model net, @NonNull Throwable e){
         if(!crashDumpsEnabled){
             return;
         }
@@ -139,6 +173,14 @@ public class CrashReportingUtil {
     }
 
     private static final String FORMAT = "%-40s%s";
+
+    /**
+     * Generate memory/system report as a String, for the specified network.
+     * Includes informatioun about the system, memory configuration, network, etc.
+     *
+     * @param net   Net to generate the report for
+     * @return Report as a String
+     */
     public static String generateMemoryStatus(Model net){
         MultiLayerNetwork mln = null;
         ComputationGraph cg = null;
@@ -297,9 +339,7 @@ public class CrashReportingUtil {
                 sb.append(f("Listener " + (lCount++), tl));
             }
         }
-
-
-
+        
         return sb.toString();
     }
 
