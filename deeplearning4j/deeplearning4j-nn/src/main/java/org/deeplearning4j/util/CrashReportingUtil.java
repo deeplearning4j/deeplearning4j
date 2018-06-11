@@ -24,6 +24,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.util.StringUtils;
 import org.nd4j.versioncheck.VersionCheck;
 import org.nd4j.versioncheck.VersionInfo;
@@ -33,6 +35,7 @@ import oshi.software.os.OperatingSystem;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -334,6 +337,32 @@ public class CrashReportingUtil {
         OperatingSystem os = sys.getOperatingSystem();
         String procName = sys.getHardware().getProcessor().getName();
         long totalMem = sys.getHardware().getMemory().getTotal();
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int nDevices = nativeOps.getAvailableDevices();
+        if (nDevices > 0) {
+            sb.append(f("Number of GPUs Detected", nDevices));
+            //Name CC, Total memory, current memory, free memory
+            String fGpu = "  %-30s %-5s %16 %16 %16";
+            sb.append(String.format(fGpu, "Name", "CC", "Total Memory", "Used Memory", "Free Memory")).append("\n");
+            for (int i = 0; i < nDevices; i++) {
+                try {
+                    Class<?> c = Class.forName("org.nd4j.jita.allocator.pointers.CudaPointer");
+                    Constructor<?> constructor = c.getConstructor(long.class);
+                    Pointer p = (Pointer) constructor.newInstance((long) i);
+                    String name = nativeOps.getDeviceName(p);
+                    long total = nativeOps.getDeviceTotalMemory(p);
+                    long free = nativeOps.getDeviceFreeMemory(p);
+                    long current = total - free;
+                    int major = nativeOps.getDeviceMajor(p);
+                    int minor = nativeOps.getDeviceMinor(p);
+
+                    sb.append(String.format(fGpu, name, major + "." + minor, fBytes(total), fBytes(current), fBytes(free))).append("\n");
+                } catch (Exception e) {
+                    sb.append("  Failed to get device info for device ").append(i).append("\n");
+                }
+            }
+        }
 
         sb.append(f("Operating System", os.getManufacturer() + " " + os.getFamily() + " " + os.getVersion().getVersion()));
         sb.append(f("CPU", procName));

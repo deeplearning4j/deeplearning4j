@@ -40,6 +40,11 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
             <artifactId>nd4j-common</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
