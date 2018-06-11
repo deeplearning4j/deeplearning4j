@@ -82,7 +82,6 @@ namespace ops {
                 std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
                 std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
                 for (int e = 0; e < outList->size(); ++e) {
-                    inList->at(e)->printIndexedBuffer("Internal");
                     outList->at(e)->assign(T(2.f));
                     outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, outList->at(e), nullptr);
                     outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(inList->at(e), outList->at(e), nullptr);

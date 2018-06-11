@@ -11,7 +11,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void minMaxReduceFunctor(NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* tempVals, NDArray<T>* output);
+    void minMaxReduceFunctor(NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* tempVals, NDArray<T>* output, bool normalize = false);
 //    void minMaxReduceFunctor(NDArray<T> const* input, NDArray<T> const* gradOut, NDArray<T> const* tempVals, NDArray<T>* output);
 
 }
