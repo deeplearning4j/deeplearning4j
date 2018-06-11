@@ -15,34 +15,60 @@ namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
 // maxpool2d corresponds to poolingMode=0
-        CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
+CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
 
-            NDArray<T>* input  = INPUT_VARIABLE(0);
-            NDArray<T>* output = OUTPUT_VARIABLE(0);
+    NDArray<T>* input = INPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
+    REQUIRE_TRUE(input->rankOf() == 4, 0, "MAXPOOL2D OP: input array should have rank of 4, but got %i instead", input->rankOf());
 
-            int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;           // 0-NHWC, 1-NCHW
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    std::vector<int> argI = *(block.getIArguments());
+    NDArray<T>* output = OUTPUT_VARIABLE(0);
 
-            if (!isNCHW) {
-                input  = input->permute({0, 3, 1, 2});                // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-                output = output->permute({0, 3, 1, 2});               // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
-            }
-        
-            std::vector<int> argI = *(block.getIArguments());
+    const int kH = INT_ARG(0);
+    const int kW = INT_ARG(1);
+    const int sH = INT_ARG(2);
+    const int sW = INT_ARG(3);
+          int pH = INT_ARG(4);
+          int pW = INT_ARG(5);
+    const int dH = INT_ARG(6);
+    const int dW = INT_ARG(7);
+    const bool isSameMode = INT_ARG(8);
 
-            ConvolutionUtils<T>::maxPool2d(input, output, argI, (NDArray<T>*)nullptr);                
+    int oH = 0;
+    int oW = 0;
+
+    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NDHWC, 1-NCDHW    
+
+    const int iH = isNCHW ? input->sizeAt(2) : input->sizeAt(1);
+    const int iW = isNCHW ? input->sizeAt(3) : input->sizeAt(2);
+
+    if (!isNCHW) {
+        input  = input->permute({0, 3, 1, 2});                // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+        output = output->permute({0, 3, 1, 2});               // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    }            
+
+    ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+
+    if (isSameMode)
+        ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);            
+
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; poolingMode; 9 - divisor;            
+    T extraParams[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW, 0.f, 1.f};    
+
+    ConvolutionUtils<T>::pooling2d(*input, *output, extraParams);
             
-            if (!isNCHW) {
-                delete input;
-                delete output;
-            }
+    if (!isNCHW) {
+        delete input;
+        delete output;
+    }
 
-            return Status::OK();
-        }
-        DECLARE_SYN(MaxPool2D, maxpool2d);
-        DECLARE_SYN(MaxPool, maxpool2d);
-        DECLARE_SYN(maxpool, maxpool2d);
+    return Status::OK();
+}
+
+DECLARE_SYN(MaxPool2D, maxpool2d);
+DECLARE_SYN(MaxPool, maxpool2d);
+DECLARE_SYN(maxpool, maxpool2d);
 
         DECLARE_SHAPE_FN(maxpool2d) {
             

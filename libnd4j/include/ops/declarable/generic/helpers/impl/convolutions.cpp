@@ -1826,7 +1826,6 @@ void ConvolutionUtils<T>::maxPool2d(NDArray<T>* input, NDArray<T>* output, const
     std::vector<T> argT = {(T) kH, (T) kW, (T) sH, (T) sW, (T) pH, (T) pW, (T) dH, (T)dW, 0., 1.};
 
     ConvolutionUtils<T>::pooling2d(*input, *output, argT.data());
-
     
     if (indices != nullptr) {
         // for max_pool_with_argmax 
