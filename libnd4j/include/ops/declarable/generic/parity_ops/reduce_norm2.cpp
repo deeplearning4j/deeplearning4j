@@ -50,8 +50,6 @@ namespace ops {
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_norm2_bp: The second param shape should be the same as result shape.");
-            output->assign(epsilon);
             const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
             T keepDimsT = (keepDims?T(1.f):T(0.f));
 
@@ -89,10 +87,8 @@ namespace ops {
                 std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
                 std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
                 for (int e = 0; e < outList->size(); ++e) {
-                    auto norm2Backprop = LAMBDA_T(_x, epsilon, tempNorm2, e) {
-                        return (*epsilon)(e) * _x / (*tempNorm2)(e);
-                    };
-                    inList->at(e)->applyLambda(norm2Backprop, outList->at(e));
+                    epsilon->template applyPairwiseTransform<simdOps::Multiply<T>>(inList->at(e), outList->at(e), nullptr);
+                    outList->at(e)->template applyPairwiseTransform<simdOps::Divide<T>>(tempNorm2, outList->at(e), nullptr);
                 }
             }
             return ND4J_STATUS_OK;
