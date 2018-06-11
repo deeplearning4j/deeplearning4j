@@ -69,6 +69,13 @@
             <version>${threadly.version}</version>
         </dependency>
 
+        <!-- oshi: Used for collecting system information for memory crash dump reporting -->
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>${oshi.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>

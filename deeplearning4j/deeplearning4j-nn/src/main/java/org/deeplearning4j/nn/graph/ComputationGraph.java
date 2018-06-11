@@ -52,7 +52,7 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
-import org.deeplearning4j.util.CrashUtils;
+import org.deeplearning4j.util.CrashReportingUtil;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.base.Preconditions;
@@ -799,7 +799,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         try{
             pretrainHelper(iter);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -849,7 +849,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         try{
             pretrainLayerHelper(layerName, iter);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -1143,7 +1143,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         try{
             fitHelper(inputs, labels, featureMaskArrays, labelMaskArrays);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -1493,7 +1493,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layerTillIndex, null,
                     input, inputMaskArrays, labelMaskArrays, clearInputs);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -1525,7 +1525,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, graphVertexIndexOfLayer,
                 null, inputs, inputMaskArrays, labelMaskArrays, true);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -1579,7 +1579,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, vertices.length - 1,
                     null, input, inputMaskArrays, labelMaskArrays, clearInputs);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -1604,7 +1604,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, vertices.length - 1,
                     null, inputs, inputMaskArrays, labelMaskArrays, true);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -1705,7 +1705,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             clearLayersStates();
             return out;
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -1754,7 +1754,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         try {
             return outputOfLayersDetached(train, FwdPassType.STANDARD, getOutputLayerIndices(), input, null, null, clearInputs, detachedInputs);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -2358,7 +2358,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             calcBackpropGradients(true, configuration.getBackpropType() == BackpropType.TruncatedBPTT, epsilons);
             return gradient;
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -2869,7 +2869,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         try{
             return scoreHelper(dataSet, training);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -2965,7 +2965,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         try{
             return scoreExamplesHelper(dataSet, addRegularizationTerms);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -3329,7 +3329,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         try{
             return rnnTimeStepHelper(inputs);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -3907,7 +3907,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         try{
             return doEvaluationHelper(iterator, evaluations);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }

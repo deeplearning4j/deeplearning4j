@@ -55,7 +55,7 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
-import org.deeplearning4j.util.CrashUtils;
+import org.deeplearning4j.util.CrashReportingUtil;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.base.Preconditions;
@@ -743,7 +743,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             return res;
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -768,7 +768,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length-1,
                     input, mask, null, true);
         } catch (OutOfMemoryError e) {
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -788,7 +788,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try{
             return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length-1, input, mask, null, clearInputs);
         } catch (OutOfMemoryError e) {
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -806,7 +806,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try{
             return ffToLayerActivationsDetached(false, FwdPassType.STANDARD, false, layerNum, input, mask, null, true);
         } catch (OutOfMemoryError e) {
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -826,7 +826,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             int layerVertexIdx = layers[layerNum].getIndex();
             return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layerVertexIdx, input, mask, null, true);
         } catch (OutOfMemoryError e) {
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -844,7 +844,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try {
             return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layerNum, input, mask, null, true);
         } catch (OutOfMemoryError e) {
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -1441,7 +1441,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try{
             fitHelper(iterator);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -1559,7 +1559,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try{
             return calculateGradientsHelper(features, label, fMask, labelMask);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -2077,7 +2077,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try{
             fitHelper(features, labels, featuresMask, labelsMask);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -2205,7 +2205,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try {
             return outputOfLayerDetached(train, FwdPassType.STANDARD, layers.length - 1, input, featuresMask, labelsMask);
         } catch (OutOfMemoryError e) {
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -2374,7 +2374,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try{
             return scoreHelper(data, training);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -2448,7 +2448,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try{
             return scoreExamplesHelper(data, addRegularizationTerms);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -2956,7 +2956,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             return out;
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }
@@ -3170,7 +3170,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try{
             return doEvaluationHelper(iterator, evaluations);
         } catch (OutOfMemoryError e){
-            CrashUtils.writeMemoryCrashDump(this, e);
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
     }

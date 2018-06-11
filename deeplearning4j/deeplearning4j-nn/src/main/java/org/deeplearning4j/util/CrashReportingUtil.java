@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -11,10 +12,12 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.util.GraphIndices;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterBlock;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.BaseOptimizer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -24,6 +27,9 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.util.StringUtils;
 import org.nd4j.versioncheck.VersionCheck;
 import org.nd4j.versioncheck.VersionInfo;
+import oshi.SystemInfo;
+import oshi.hardware.HardwareAbstractionLayer;
+import oshi.software.os.OperatingSystem;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,12 +40,12 @@ import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputType;
 import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputTypes;
 
 @Slf4j
-public class CrashUtils {
+public class CrashReportingUtil {
 
     public static final String CRASH_DUMP_ENABLED_PROPERTY = "org.deeplearning4j.crash.reporting.enabled";
     public static final String CRASH_DUMP_OUTPUT_DIRECTORY_PROPERTY = "org.deeplearning4j.crash.reporting.directory";
 
-    private static boolean crashDumpsEnabled;
+    private static boolean crashDumpsEnabled = true;
     private static File crashDumpRootDirectory;
 
     static {
@@ -65,7 +71,7 @@ public class CrashUtils {
         }
     }
 
-    private CrashUtils(){ }
+    private CrashReportingUtil(){ }
 
 
     public static void crashDumpsEnabled(boolean enabled){
@@ -91,12 +97,18 @@ public class CrashUtils {
         }
 
         long now = System.currentTimeMillis();
-        File f = new File("dl4j-memory-crash-dump-" + now + ".txt");
+        long tid = Thread.currentThread().getId();      //Also add thread ID to avoid name clashes (parallel wrapper, etc)
+        String threadName = Thread.currentThread().getName();
+        crashDumpRootDirectory.mkdirs();
+        File f = new File(crashDumpRootDirectory, "dl4j-memory-crash-dump-" + now + "_" + tid + ".txt");
         StringBuilder sb = new StringBuilder();
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-        sb.append("OOM Exception Encountered\nTimestamp: ")
-                .append(sdf.format(now)).append("\n\n");
+        sb.append("Deeplearning4j OOM Exception Encountered for ").append(net.getClass().getSimpleName()).append("\n")
+                .append(f("Timestamp: ", sdf.format(now)))
+                .append(f("Thread ID", tid))
+                .append(f("Thread Name", threadName))
+                .append("\n\n");
 
         sb.append("Stack Trace:\n")
                 .append(ExceptionUtils.getStackTrace(e));
@@ -116,7 +128,7 @@ public class CrashUtils {
             log.error("Error writing memory crash dump information to disk: {}", f.getAbsolutePath(), e2);
         }
 
-        log.warn(">>> Memory crash dump written to: {}", f.getAbsolutePath());
+        log.error(">>> Out of Memory Exception Detected. Memory crash dump written to: {}", f.getAbsolutePath());
         log.warn("Memory crash dump reporting can be disabled with CrashUtil.crashDumpsEnabled(false) or using system " +
                 "property -D" + CRASH_DUMP_ENABLED_PROPERTY + "=false");
         log.warn("Memory crash dump reporting output location CrashUtil.crashDumpOutputDirectory(File) or using system " +
@@ -153,22 +165,24 @@ public class CrashUtils {
                 bytesPerElement = 0;    //TODO
         }
 
-        sb.append("----- Workspace Information -----\n");
+        sb.append("\n----- Workspace Information -----\n");
         List<MemoryWorkspace> allWs = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
-        sb.append(f("Workspaces: # for current thread", allWs.size()));
+        sb.append(f("Workspaces: # for current thread", (allWs == null ? 0 : allWs.size())));
         //sb.append(f("Workspaces: # for all threads", allWs.size()));      //TODO
-        sb.append("Current thread workspaces:\n");
-        //Name, open, size, currently allocated
-        String wsFormat = "  %-30s%-20s%-20s%-20s";
-        sb.append(String.format(wsFormat, "Name", "State", "Size", "# Cycles")).append("\n");
         long totalWsSize = 0;
-        for(MemoryWorkspace ws : allWs){
-            totalWsSize += ws.getCurrentSize();
-            long numCycles = ws.getGenerationId();
-            sb.append(String.format(wsFormat, ws.getId(),
-                    (ws.isScopeActive() ? "OPEN" : "CLOSED"),
-                    fBytes(ws.getCurrentSize()),
-                    String.valueOf(numCycles))).append("\n");
+        if(allWs != null && allWs.size() > 0) {
+            sb.append("Current thread workspaces:\n");
+            //Name, open, size, currently allocated
+            String wsFormat = "  %-26s%-12s%-30s%-20s";
+            sb.append(String.format(wsFormat, "Name", "State", "Size", "# Cycles")).append("\n");
+            for (MemoryWorkspace ws : allWs) {
+                totalWsSize += ws.getCurrentSize();
+                long numCycles = ws.getGenerationId();
+                sb.append(String.format(wsFormat, ws.getId(),
+                        (ws.isScopeActive() ? "OPEN" : "CLOSED"),
+                        fBytes(ws.getCurrentSize()),
+                        String.valueOf(numCycles))).append("\n");
+            }
         }
         sb.append(fBytes("Workspaces total size", totalWsSize));
         Map<String,Pointer> helperWorkspaces;
@@ -209,6 +223,7 @@ public class CrashUtils {
             sumMem += (flattenedGradients.length() * bytesPerElement);
             sb.append(fBytes("Parameter Gradients Memory", bytesPerElement * flattenedGradients.length()));
         }
+            //Updater info
         BaseMultiLayerUpdater u;
         if(isMLN){
             u = (BaseMultiLayerUpdater)mln.getUpdater(false);
@@ -236,9 +251,11 @@ public class CrashUtils {
             }
         }
         sb.append(fBytes("Params + Gradient + Updater Memory", sumMem));
+            //Iter/epoch
         sb.append(f("Iteration Count", BaseOptimizer.getIterationCount(net)));
         sb.append(f("Epoch Count", BaseOptimizer.getEpochCount(net)));
 
+            //Workspaces, backprop type, layer info, activation info, helper info
         if(isMLN) {
             sb.append(f("Backprop Type", mln.getLayerWiseConfigurations().getBackpropType()));
             if(mln.getLayerWiseConfigurations().getBackpropType() == BackpropType.TruncatedBPTT){
@@ -246,7 +263,8 @@ public class CrashUtils {
             }
             sb.append(f("Workspace Mode: Training", mln.getLayerWiseConfigurations().getTrainingWorkspaceMode()));
             sb.append(f("Workspace Mode: Inference", mln.getLayerWiseConfigurations().getInferenceWorkspaceMode()));
-            appendLayerInformation(sb, mln.getLayers());
+            appendLayerInformation(sb, mln.getLayers(), bytesPerElement);
+            appendHelperInformation(sb, mln.getLayers());
             appendActivationShapes(mln, sb, bytesPerElement);
         } else {
             sb.append(f("Backprop Type", cg.getConfiguration().getBackpropType()));
@@ -255,9 +273,29 @@ public class CrashUtils {
             }
             sb.append(f("Workspace Mode: Training", cg.getConfiguration().getTrainingWorkspaceMode()));
             sb.append(f("Workspace Mode: Inference", cg.getConfiguration().getInferenceWorkspaceMode()));
-            appendLayerInformation(sb, cg.getLayers());
+            appendLayerInformation(sb, cg.getLayers(), bytesPerElement);
+            appendHelperInformation(sb, cg.getLayers());
             appendActivationShapes(cg, sb, bytesPerElement);
         }
+
+        //Listener info:
+        Collection<TrainingListener> listeners;
+        if(isMLN){
+            listeners = mln.getListeners();
+        } else {
+            listeners = cg.getListeners();
+        }
+
+        sb.append("\n----- Network Training Listeners -----\n");
+        sb.append(f("Number of Listeners", (listeners == null ? 0 : listeners.size())));
+        int lCount = 0;
+        if(listeners != null && !listeners.isEmpty()){
+            for(TrainingListener tl : listeners) {
+                sb.append(f("Listener " + (lCount++), tl));
+            }
+        }
+
+
 
         return sb.toString();
     }
@@ -268,6 +306,8 @@ public class CrashUtils {
 
     private static String fBytes(long bytes){
         String s = StringUtils.TraditionalBinaryPrefix.long2String(bytes, "B", 2);
+        String format = "%10s";
+        s = String.format(format, s);
         if(bytes >= 1024){
             s += " (" + bytes + ")";
         }
@@ -289,7 +329,26 @@ public class CrashUtils {
         sb.append(f("Deeplearning4j Version", (pair.getFirst() == null ? "<could not determine>" : pair.getFirst())));
         sb.append(f("Deeplearning4j CUDA", (pair.getSecond() == null ? "<not present>" : pair.getSecond())));
 
-        sb.append("\n----- Memory - System Information -----\n");
+        sb.append("\n----- System Information -----\n");
+        SystemInfo sys = new SystemInfo();
+        OperatingSystem os = sys.getOperatingSystem();
+        String procName = sys.getHardware().getProcessor().getName();
+        long totalMem = sys.getHardware().getMemory().getTotal();
+
+        sb.append(f("Operating System", os.getManufacturer() + " " + os.getFamily() + " " + os.getVersion().getVersion()));
+        sb.append(f("CPU", procName));
+        sb.append(f("CPU Cores - Physical", sys.getHardware().getProcessor().getPhysicalProcessorCount()));
+        sb.append(f("CPU Cores - Logical", sys.getHardware().getProcessor().getLogicalProcessorCount()));
+        sb.append(fBytes("Total System Memory", totalMem));
+
+        sb.append("\n----- ND4J Environment Information -----\n");
+        sb.append(f("Data Type", Nd4j.dataType()));
+        Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
+        for(String s : p.stringPropertyNames()){
+            sb.append(f(s, p.get(s)));
+        }
+
+        sb.append("\n----- Memory Configuration -----\n");
 
         long xmx = Runtime.getRuntime().maxMemory();
         long jvmTotal = Runtime.getRuntime().totalMemory();
@@ -311,17 +370,12 @@ public class CrashUtils {
         }
 
 
-        sb.append("\n----- ND4J Environment Information -----\n");
-        sb.append(f("Data Type", Nd4j.dataType()));
-        Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
-        for(String s : p.stringPropertyNames()){
-            sb.append(f(s, p.get(s)));
-        }
+
 
         return sb;
     }
 
-    private static void appendLayerInformation(StringBuilder sb, org.deeplearning4j.nn.api.Layer[] layers){
+    private static void appendLayerInformation(StringBuilder sb, org.deeplearning4j.nn.api.Layer[] layers, int bytesPerElement){
         Map<String,Integer> layerClasses = new HashMap<>();
         for(org.deeplearning4j.nn.api.Layer l : layers){
             if(!layerClasses.containsKey(l.getClass().getSimpleName())){
@@ -337,6 +391,64 @@ public class CrashUtils {
         for(String s : l){
             sb.append("  ").append(f(s, layerClasses.get(s)));
         }
+        sb.append("Layer Parameter Breakdown\n");
+        String format = "  %-3s %-20s %-20s %-20s %-20s";
+        sb.append(String.format(format, "Idx", "Name", "Layer Type", "Layer # Parameters", "Layer Parameter Memory")).append("\n");
+        for(Layer layer : layers){
+            long numParams = layer.numParams();
+            sb.append(String.format(format, layer.getIndex(), layer.conf().getLayer().getLayerName(),
+                    layer.getClass().getSimpleName(), String.valueOf(numParams), fBytes(numParams * bytesPerElement))).append("\n");
+        }
+
+    }
+
+    private static void appendHelperInformation(StringBuilder sb, org.deeplearning4j.nn.api.Layer[] layers){
+        sb.append("\n----- Layer Helpers - Memory Use -----\n");
+
+        int helperCount = 0;
+        long helperWithMemCount = 0L;
+        long totalHelperMem = 0L;
+
+        //Layer index, layer name, layer class, helper class, total memory, breakdown
+        String format = "%-3s %-20s %-25s %-30s %-12s %s";
+        boolean header = false;
+        for(Layer l : layers){
+            LayerHelper h = l.getHelper();
+            if(h == null)
+                continue;
+
+            helperCount++;
+            Map<String,Long> mem = h.helperMemoryUse();
+            if(mem == null || mem.isEmpty())
+                continue;
+            helperWithMemCount++;
+
+            long layerTotal = 0;
+            for(Long m : mem.values()){
+                layerTotal += m;
+            }
+
+            int idx = l.getIndex();
+            String layerName = l.conf().getLayer().getLayerName();
+            if(layerName == null)
+                layerName = String.valueOf(idx);
+
+
+            if(!header){
+                sb.append(String.format(format, "#", "Layer Name", "Layer Class", "Helper Class", "Total Memory", "Memory Breakdown"))
+                        .append("\n");
+                header = true;
+            }
+
+            sb.append(String.format(format, idx, layerName, l.getClass().getSimpleName(), h.getClass().getSimpleName(),
+                    fBytes(layerTotal), mem.toString())).append("\n");
+
+            totalHelperMem += layerTotal;
+        }
+
+        sb.append(f("Total Helper Count", helperCount));
+        sb.append(f("Helper Count w/ Memory", helperWithMemCount));
+        sb.append(fBytes("Total Helper Persistent Memory Use", totalHelperMem));
     }
 
     private static void appendActivationShapes(MultiLayerNetwork net, StringBuilder sb, int bytesPerElement){
@@ -370,10 +482,12 @@ public class CrashUtils {
             last = bytes;
         }
         sb.append(fBytes("Total Activations Memory", totalActivationBytes));
+        sb.append(fBytes("Total Activations Memory (per ex)", totalActivationBytes / input.size(0)));
 
         //Exclude output layer, include input
         long totalActivationGradMem = totalActivationBytes - last + (ArrayUtil.prodLong(input.shape()) * bytesPerElement);
-        sb.append(fBytes("Total Activation Gradient Memory", totalActivationGradMem));
+        sb.append(fBytes("Total Activation Gradient Mem.", totalActivationGradMem));
+        sb.append(fBytes("Total Activation Gradient Mem. (per ex)", totalActivationGradMem / input.size(0)));
     }
 
     private static void appendActivationShapes(ComputationGraph net, StringBuilder sb, int bytesPerElement){
