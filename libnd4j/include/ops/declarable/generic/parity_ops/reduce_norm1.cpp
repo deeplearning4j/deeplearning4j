@@ -72,10 +72,10 @@ namespace ops {
                 std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
                 std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
                 for (int e = 0; e < outList->size(); ++e) {
-                    auto norm1Backprop = LAMBDA_T(_x, epsilon, e) {
-                        return (_x >= T(0.f) ?(*epsilon)(e):-(*epsilon)(e));
-                    };
-                    inList->at(e)->applyLambda(norm1Backprop, outList->at(e));
+                        auto norm1Backprop = LAMBDA_TT(_x, _e) {
+                            return (_x >= T(0.f) ?_e:-_e);
+                        };
+                        inList->at(e)->applyPairwiseLambda(epsilon, norm1Backprop, outList->at(e));
                 }
             }
 

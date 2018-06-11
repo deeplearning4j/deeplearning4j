@@ -3894,3 +3894,65 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_4) {
     delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_1) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps(5.f);
+    NDArrayFactory<float>::linspace(1, x);
+    NDArray<float> exp('c', {2, 3, 4});
+    x(12) = -2.f;
+    x(20) = -3.f;
+    exp.assign(5.f);
+    exp(12) = -exp(12);
+    exp(20) = -exp(20);
+    nd4j::ops::reduce_norm1_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {});
+    auto output = result->at(0);
+    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_2) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps({1.f, 2.f, 3.f, 4.f});
+    NDArrayFactory<float>::linspace(1, x);
+    NDArray<float> exp('c', {2, 3, 4}, {1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f,1.f, 2.f, 3.f, 4.f,1.f, 2.f, 3.f, 4.f});
+    nd4j::ops::reduce_norm1_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {0,1});
+    auto output = result->at(0);
+    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_3) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps('c', {1, 1, 4}, {1.f, 2.f, 3.f, 4.f});
+    NDArrayFactory<float>::linspace(1, x);
+    NDArray<float> exp('c', {2, 3, 4}, {1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f,1.f, 2.f, 3.f, 4.f,1.f, 2.f, 3.f, 4.f});
+    nd4j::ops::reduce_norm1_bp<float> op;
+    auto result = op.execute({&x, &eps}, {1.f}, {0,1});
+    auto output = result->at(0);
+    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
