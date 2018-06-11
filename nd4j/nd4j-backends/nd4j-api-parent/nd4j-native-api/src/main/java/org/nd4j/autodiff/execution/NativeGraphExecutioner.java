@@ -119,10 +119,9 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                 if (sd.variableMap().get(var.name()) != null) {
                     sd.associateArrayWithVariable(val,sd.getVariable(var.name()));
                 } else {
-    //                log.info("BAD");
-                    //sd.var("",val);
+                    log.warn("Unknown variable received: [{}]", var.name());
 
-                    throw new ND4JIllegalStateException("Unknown variable received as result: ["+ var.name() +"]");
+//                    throw new ND4JIllegalStateException("Unknown variable received as result: ["+ var.name() +"]");
                 }
             }
         }
