@@ -338,12 +338,18 @@ public class CrashReportingUtil {
         String procName = sys.getHardware().getProcessor().getName();
         long totalMem = sys.getHardware().getMemory().getTotal();
 
+        sb.append(f("Operating System", os.getManufacturer() + " " + os.getFamily() + " " + os.getVersion().getVersion()));
+        sb.append(f("CPU", procName));
+        sb.append(f("CPU Cores - Physical", sys.getHardware().getProcessor().getPhysicalProcessorCount()));
+        sb.append(f("CPU Cores - Logical", sys.getHardware().getProcessor().getLogicalProcessorCount()));
+        sb.append(fBytes("Total System Memory", totalMem));
+
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         int nDevices = nativeOps.getAvailableDevices();
         if (nDevices > 0) {
             sb.append(f("Number of GPUs Detected", nDevices));
             //Name CC, Total memory, current memory, free memory
-            String fGpu = "  %-30s %-5s %16s %16s %16s";
+            String fGpu = "  %-30s %-5s %24s %24s %24s";
             sb.append(String.format(fGpu, "Name", "CC", "Total Memory", "Used Memory", "Free Memory")).append("\n");
             for (int i = 0; i < nDevices; i++) {
                 try {
@@ -363,12 +369,6 @@ public class CrashReportingUtil {
                 }
             }
         }
-
-        sb.append(f("Operating System", os.getManufacturer() + " " + os.getFamily() + " " + os.getVersion().getVersion()));
-        sb.append(f("CPU", procName));
-        sb.append(f("CPU Cores - Physical", sys.getHardware().getProcessor().getPhysicalProcessorCount()));
-        sb.append(f("CPU Cores - Logical", sys.getHardware().getProcessor().getLogicalProcessorCount()));
-        sb.append(fBytes("Total System Memory", totalMem));
 
         sb.append("\n----- ND4J Environment Information -----\n");
         sb.append(f("Data Type", Nd4j.dataType()));
