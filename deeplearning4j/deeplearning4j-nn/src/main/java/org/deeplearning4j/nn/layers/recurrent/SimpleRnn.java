@@ -145,6 +145,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         g.gradientForVariable().put(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, rwg);
         g.gradientForVariable().put(SimpleRnnParamInitializer.BIAS_KEY, bg);
 
+        epsOut = backpropDropOutIfPresent(epsOut);
         return new Pair<>(g, epsOut);
     }
 

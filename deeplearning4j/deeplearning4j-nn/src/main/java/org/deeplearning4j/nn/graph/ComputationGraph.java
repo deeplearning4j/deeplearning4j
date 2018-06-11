@@ -22,6 +22,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.eval.*;
@@ -106,6 +107,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     @Setter
     private boolean initDone = false;
     protected boolean clearTbpttState = true;  //Mainly for unit testing (should be enabled otherwise)
+    //Workspaces for CUDNN. Pass to LayerWorkspaceMgr for re-use in cudnn helpers
+    protected transient Map<String,Pointer> helperWorkspaces = new HashMap<>();
 
     /**
      * Workspace for working memory for a single layer: forward pass and backward pass
@@ -662,6 +665,55 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
+        //Mark which layers can safely modify their input in-place. This is a performance optimization for
+        // dropout and similar operations.
+        // Safe when the input is: (a) it's not a graph input, and (b) isn't shared by any other layers/vertices
+
+        Map<String,List<String>> seenAsInputTo = new HashMap<>();
+        for(Map.Entry<String,List<String>> entry : configuration.getVertexInputs().entrySet()){
+            for(String s : entry.getValue() ){
+                if (!seenAsInputTo.containsKey(s)) {
+                    seenAsInputTo.put(s, new ArrayList<String>());
+                }
+                List<String> seen = seenAsInputTo.get(s);
+                seen.add(entry.getKey());
+            }
+        }
+
+        for(Layer l : layers){
+            String layerName = l.conf().getLayer().getLayerName();
+            List<String> inputs = configuration.getVertexInputs().get(layerName);
+            String in = inputs.get(0);  //For now: layers should have exactly 1 input
+
+            if(configuration.getNetworkInputs().contains(in)){
+                //TODO When is it safe to NOT allow input modifucation? It's not always safe...
+                // For example dropout + iterating over List<MultiDataSet> that is used for multiple epochs...
+                continue;
+            }
+
+            List<String> seen = seenAsInputTo.get(in);
+            if(seen.size() == 1){
+                l.allowInputModification(true);
+            } else {
+                //For the count > 1 case, we can work out if it's the last one in the topological order... at which point,
+                // it should be safe to use
+                int thisIdx = indices.getNameToIdx().get(layerName);
+                int thisTopoPos = ArrayUtils.indexOf(indices.getTopologicalSortOrder(), thisIdx);
+                int maxTopoPosition = -1;
+                for(String s : seen){
+                    int idx = indices.getNameToIdx().get(s);
+                    int topoPos = ArrayUtils.indexOf(indices.getTopologicalSortOrder(), idx);
+                    maxTopoPosition = Math.max(maxTopoPosition, topoPos);
+                }
+
+                if(thisTopoPos == maxTopoPosition){
+                    //Last one in the topo sort... all other layers have already consumed this input by the time this layer's
+                    // forward pass is done
+                    l.allowInputModification(true);
+                }   //Otherwise: keep default of false
+            }
+        }
+
         synchronizeIterEpochCounts();
         initCalled = true;
     }
@@ -1098,6 +1150,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
+        workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         if (configuration.isBackprop()) {
             if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
@@ -1310,6 +1363,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
+        workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         boolean tbptt = configuration.getBackpropType() == BackpropType.TruncatedBPTT;
         FwdPassType fwdType = (tbptt ? FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE : FwdPassType.STANDARD);
@@ -1782,6 +1836,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspaceMgr.setNoLeverageOverride(features[0].data().getParentWorkspace().getId());
             }
         }
+        workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         Map<String, INDArray> activations = new HashMap<>();
 
@@ -1926,6 +1981,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspaceMgr.setWorkspace(ArrayType.FF_CACHE, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
             }
         }
+        workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         Map<String, INDArray> activations = new HashMap<>();
         //Do forward pass according to the topological ordering of the network
@@ -2079,7 +2135,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         WorkspaceMode wsm = (train ? configuration.getTrainingWorkspaceMode() : configuration.getInferenceWorkspaceMode());
         boolean noWS = wsm == WorkspaceMode.NONE;
-        LayerWorkspaceMgr allNone = noWS ? LayerWorkspaceMgr.noWorkspaces() : null;
+        LayerWorkspaceMgr allNone = noWS ? LayerWorkspaceMgr.noWorkspaces(helperWorkspaces) : null;
         List<MemoryWorkspace>[] closeAtEndIteraton = (List<MemoryWorkspace>[])new List[topologicalOrder.length];
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         try {
@@ -2121,6 +2177,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         allWorkspaceManagers.add(workspaceMgr);
                     }
                 }
+                workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
                 //Is this one of the layers/vertices that we want the output for?
                 boolean isRequiredOutput = false;
@@ -2332,7 +2389,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
 
         boolean noWS = configuration.getInferenceWorkspaceMode() == WorkspaceMode.NONE;
-        LayerWorkspaceMgr allNone = noWS ? LayerWorkspaceMgr.noWorkspaces() : null;
+        LayerWorkspaceMgr allNone = noWS ? LayerWorkspaceMgr.noWorkspaces(helperWorkspaces) : null;
 
         List<LayerWorkspaceMgr> allWorkspaceManagers = new ArrayList<>();
         List<LayerWorkspaceMgr> freeWorkspaceManagers = new ArrayList<>();  //Basically used as a stack
@@ -2395,6 +2452,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         allWorkspaceManagers.add(workspaceMgr);
                     }
                 }
+                workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
                 if (current.isOutputVertex()) {
                     //Two reasons for a vertex to be an output vertex:
@@ -2630,9 +2688,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             setListeners(listeners);
             return;
         } else {
-            this.trainingListeners = new ArrayList<>(this.trainingListeners);   //To avoid immutable list issues
-            Collections.addAll(this.trainingListeners, listeners);
-            setListeners(listeners);
+            List<TrainingListener> newListeners = new ArrayList<>(this.trainingListeners);   //To avoid immutable list issues
+            Collections.addAll(newListeners, listeners);
+            setListeners(newListeners);
         }
 
         if (solver != null) {
@@ -2760,6 +2818,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
+        mgr.setHelperWorkspacePointers(helperWorkspaces);
 
         boolean hasMaskArrays = dataSet.hasMaskArrays();
         if (hasMaskArrays) {
@@ -2845,6 +2904,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
+        mgr.setHelperWorkspacePointers(helperWorkspaces);
 
         boolean hasMaskArrays = dataSet.hasMaskArrays();
         if (hasMaskArrays) {

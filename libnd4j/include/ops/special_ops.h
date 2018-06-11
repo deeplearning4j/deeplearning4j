@@ -412,13 +412,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		*  normally negative indices are bad, OK here because of other checks on input indices
 		*  Uses unrolled loop specifically for length 4
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -433,13 +427,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		* normally negative indices are bad, OK here because of other checks on input indices
 		* Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -460,12 +448,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 	Im2col {
 	public:
 		static const bool requiresSpecial = true;
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
 
-#endif
-		static int outSize(int size, int k, int s, int p, bool coverAll) {
+		static _CUDA_HD int outSize(int size, int k, int s, int p, bool coverAll) {
 			if (coverAll)
 				return (size + p * 2 - k + s - 1) / s + 1;
 			else
@@ -712,13 +696,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		*  normally negative indices are bad, OK here because of other checks on input indices
 		*  Uses unrolled loop specifically for length 4
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -733,13 +711,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		* normally negative indices are bad, OK here because of other checks on input indices
 		* Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -1174,13 +1146,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		*  normally negative indices are bad, OK here because of other checks on input indices
 		*  Uses unrolled loop specifically for length 4
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe4(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -1193,13 +1159,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 		* normally negative indices are bad, OK here because of other checks on input indices
 		* Uses unrolled loop specifically for length 6, where indices[2] and indices[3] are zero (always are here)
 		*/
-#ifdef __CUDACC__
-		inline __host__ __device__
-#elif defined(__GNUC__)
-
-
-#endif
-		static int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
+		static _CUDA_HD int getOffsetUnsafe6(int baseOffset, int *shape, int *stride, int *indices) {
 			int offset = baseOffset;
 			if (shape[0] != 1) offset += indices[0] * stride[0];
 			if (shape[1] != 1) offset += indices[1] * stride[1];
@@ -1417,11 +1377,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					}
 				} else {
 
-					int xRank = shape::rank(xShapeBuffer);
+					auto xRank = shape::rank(xShapeBuffer);
                     auto xShape = shape::shapeOf(xShapeBuffer);
                     auto xStride = shape::stride(xShapeBuffer);
 
-					int zRank = shape::rank(zShapeBuffer);
+					auto zRank = shape::rank(zShapeBuffer);
 					auto zShape = shape::shapeOf(zShapeBuffer);
                     auto zStride = shape::stride(zShapeBuffer);
 
@@ -1717,8 +1677,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				T max = -FLOAT_MAX_VALUE;
 				T sum = 0;
 
-				int elementWiseStride = shape::elementWiseStride(xShapeBuffer);
-				int length = shape::length(xShapeBuffer);
+				auto elementWiseStride = shape::elementWiseStride(xShapeBuffer);
+                auto length = shape::length(xShapeBuffer);
 				if (elementWiseStride == 1) {
 #pragma omp simd reduction(maxT:max)
 					for (int i = 0; i < length; i++) {
@@ -1854,7 +1814,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				//iterate along rows
 				int dimension[1] = { 0 };
 				int maxDimension[1] = { 1 };
-				int len = shape::length(xShapeBuffer);
+				auto len = shape::length(xShapeBuffer);
 				//compute the row wise maxes
 				std::vector <T> maxResult(shape[0]);
 #pragma omp simd
@@ -1899,7 +1859,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				else {
                     auto zShape = shape::shapeOf(resultShapeBuffer);
                     auto zStride = shape::stride(resultShapeBuffer);
-                    int zRank = shape::rank(resultShapeBuffer);
+                    auto zRank = shape::rank(resultShapeBuffer);
 
                     Nd4jLong zCoord[MAX_RANK];
 
@@ -2157,7 +2117,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				auto xShape = shape::shapeOf(xShapeBuffer);
 				auto xStride = shape::stride(xShapeBuffer);
 				auto resultStride = shape::stride(resultShapeBuffer);
-				int rank = shape::rank(xShapeBuffer);
+				auto rank = shape::rank(xShapeBuffer);
 				T *originalResult = result;
 				if (PrepareTwoRawArrayIter<T>(rank,
 					xShape,
@@ -2239,9 +2199,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 				doAll(dx, xShapeBuffer, result, resultShapeBuffer, extraParams);
 			}
 			else if (shape::isVector(xShapeBuffer)) {
-				int dimensionLength = (int)extraParams[0];
-				int *dimension = new int[dimensionLength];
-				int length = shape::length(xShapeBuffer);
+				auto dimensionLength = (int)extraParams[0];
+				auto dimension = new int[dimensionLength];
+				auto length = shape::length(xShapeBuffer);
 				for (int i = 0; i < dimensionLength; i++) {
 					dimension[i] = (int)extraParams[i + 1];
 				}
@@ -2251,7 +2211,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 					}
 				}
 				else {
-					int eleStride = shape::elementWiseStride(xShapeBuffer);
+					auto eleStride = shape::elementWiseStride(xShapeBuffer);
 					if (eleStride == 1) {
 						int maxIdx = 0;
 						T currMax = dx[0];
@@ -2344,8 +2304,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 
 			}
 			else {
-                int dimensionLength = (int) extraParams[0];
-                int *dimension = new int[dimensionLength];
+                auto dimensionLength = (int) extraParams[0];
+                auto dimension = new int[dimensionLength];
 
 #pragma omp simd
                 for (int i = 0; i < dimensionLength; i++) {

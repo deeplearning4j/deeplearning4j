@@ -396,7 +396,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
 
             if (op.x().tensorAlongDimension(0, dimension).lengthLong() != op.y().tensorAlongDimension(0, dimension).lengthLong())
-                throw new ND4JIllegalStateException("Impossible to issue AllDistances operation: TAD lengths mismatch along given dimension");
+                throw new ND4JIllegalStateException("Impossible to issue AllDistances operation: TAD lengths mismatch along given dimension: " +
+                        "x TAD length = " + op.x().tensorAlongDimension(0, dimension).lengthLong() + ", y TAD length " +
+                        op.y().tensorAlongDimension(0, dimension).lengthLong());
         }
 
 
@@ -625,8 +627,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             validateDataType(Nd4j.dataType(), op);
 
             if (op.x().lengthLong() != op.z().lengthLong())
-                throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: ["
-                        + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "] != ["
+                throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: " +
+                        "x.length()=" + op.x().length() + ", y.length()=" + op.y().length() + " - x shape info = ["
+                        + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "], y shape info = ["
                         + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
 
             if (op.getDimension() != null) {
@@ -745,8 +748,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 boolean zRow = op.z().isRowVector();
 
                 if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
-                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
-
+                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform. " +
+                            "x: length " + op.x().length() + ", shape " + Arrays.toString(op.x().shape()) +
+                            "; y: " + op.y().length() + ", shape " + Arrays.toString(op.y().shape()) +
+                            "; z: " + op.z().length() + ", shape " + Arrays.toString(op.z().shape()));
                 if ((xEWS >= 1 && yEWS >= 1
                         && xEWS == yEWS && !op.isExecSpecial()
                         && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
@@ -791,7 +796,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 boolean zRow = op.z().isRowVector();
 
                 if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
-                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
+                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform. " +
+                            "x: length " + op.x().length() + ", shape " + Arrays.toString(op.x().shape()) +
+                            "; y: " + op.y().length() + ", shape " + Arrays.toString(op.y().shape()) +
+                            "; z: " + op.z().length() + ", shape " + Arrays.toString(op.z().shape()));
 
                 if ((xEWS >= 1 && yEWS >= 1
                         && xEWS == yEWS && !op.isExecSpecial()
@@ -950,7 +958,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             // since we're going to call reduceToScalar, we must ensure equal lengths
             if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                 if (op.x().lengthLong() != op.y().lengthLong())
-                    throw new ND4JIllegalStateException("X and Y operands should have equall lengths. X length: " + op.x().lengthLong() + "; Y length: " + op.y().lengthLong());
+                    throw new ND4JIllegalStateException("X and Y operands should have equal lengths. X length: " + op.x().lengthLong() +
+                            ", X shape: " + Arrays.toString(op.x().shape()) + "; Y length: " + op.y().lengthLong() +
+                            ", Y shape: " + Arrays.toString(op.y().shape()));
             }
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
@@ -1285,7 +1295,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray exec(RandomOp op, Random rng) {
         if (rng.getStateBuffer() == null)
             throw new IllegalStateException(
-                    "You should use one of NativeRandom classes for NativeOperations execution");
+                    "You should use one of NativeRandom classes for NativeOperations execution. Op class: " + op.getClass().getName());
 
         long st = profilingHookIn(op);
 
@@ -1677,7 +1687,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val inputArgs = op.inputArguments();
         for (val in: inputArgs) {
             if(in == null){
-                throw new NullPointerException("Input argument is null");
+                throw new NullPointerException("Input argument is null for op " + op.getClass().getName());
             }
             inputBuffers.put(cnt, in.data().addressPointer());
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
@@ -1686,7 +1696,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val outputArgs = op.outputArguments();
         for(int i = 0; i < outputArgs.length; i++) {
             if(outputArgs[i] == null)
-                throw new ND4JIllegalStateException("Op output arguments must not be null!");
+                throw new ND4JIllegalStateException("Op output arguments must not be null! Op " + op.getClass().getName());
         }
 
 
@@ -1718,7 +1728,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             OpStatus status = OpStatus.byNumber(loop.execCustomOpFloat(null, hash, inputBuffers, inputShapes, op.numInputArguments(), outputBuffers, outputShapes, op.numOutputArguments(), tArgs, op.numTArguments(), iArgs, op.numIArguments(), op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
-                throw new ND4JIllegalStateException("Op execution failed: " + status);
+                throw new ND4JIllegalStateException("Op execution failed: " + status + " - op " + op.getClass().getName());
         }  else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             val tArgs = op.numTArguments() > 0 ? getDoublePointerFrom(tArgsPointer,op.numTArguments()) : null;
             val tArgs1 = op.tArgs();
@@ -1744,7 +1754,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         iArgs, op.numIArguments(),
                         op.isInplaceCall()));
             }catch(Exception e) {
-                log.error("Failed to execute. Please see above message (printed out from c++) for a possible cause of error.");
+                log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
+                                String.valueOf(op.numInputArguments()) + " inputs, " +
+                                String.valueOf(op.numOutputArguments()) + " outputs, "+
+                                String.valueOf(op.numTArguments()) + " targs and " +
+                                String.valueOf(op.numIArguments()) + " iargs. " +
+                "Please see above message (printed out from c++) for a possible cause of error.");
                 throw e;
             }
 
@@ -1759,7 +1774,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             OpStatus status = OpStatus.byNumber(loop.execCustomOpHalf(null, hash, inputBuffers, inputShapes, op.numInputArguments(),
                     outputBuffers, outputShapes, op.numOutputArguments(), tArgs, op.numTArguments(), iArgs, op.numIArguments(), op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
-                throw new ND4JIllegalStateException("Op execution failed: " + status);
+                throw new ND4JIllegalStateException("Op execution failed: " + status + " - op " + op.getClass().getName());
         }
 
         profilingHookOut(op, st);

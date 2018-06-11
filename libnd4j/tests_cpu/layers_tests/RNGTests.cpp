@@ -534,6 +534,24 @@ TEST_F(RNGTests, Test_Reproducibility_8) {
     ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
 }
 
+TEST_F(RNGTests, Test_RandomBuffer_Half_1) {
+    NativeOps ops;
+    Nd4jLong seed = 123;
+
+    std::vector<Nd4jLong> shape = {32, 3, 28, 28};
+    const int bufferSize = 10000;
+    int64_t buffer[bufferSize];
+
+    auto rng = (nd4j::random::RandomBuffer *) ops.initRandom(nullptr, seed, bufferSize, buffer);
+
+    auto r0 = rng->relativeT<float16>(12L);
+    auto r1 = rng->relativeT<float16>(13L);
+
+    ASSERT_NE(r0, r1);
+
+    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
+}
+
 TEST_F(RNGTests, Test_Reproducibility_1) {
     NativeOps ops;
     Nd4jLong seed = 123;
@@ -603,7 +621,7 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
 
                     if (nd4j::math::nd4j_re(x, y) > 0.1) {
                         nd4j_printf("E[%lld] %f != T[%lld] %f\n", (long long) f, (float) x, (long long) f, (float) y);
-                        throw "boom";
+                        throw std::runtime_error("boom");
                     }
                 }
 

@@ -205,6 +205,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         gradient.setGradientFor(R_KEY,gradientViews.get(R_KEY).assign(derivR));
         clearNoiseWeightParams();
 
+        delta = backpropDropOutIfPresent(delta);
         return new Pair<>(gradient, delta);
     }
 

@@ -441,15 +441,17 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph, VariableSpace<T>* varia
                 }
 
                 if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
-                    auto array = __variableSpace->getVariable(node->id())->getNDArray();
-                    auto list = __variableSpace->getVariable(node->id())->hasNDArrayList() ? __variableSpace->getVariable(node->id())->getNDArrayList() : nullptr;
-                    auto shape = ShapeUtils<T>::shapeAsString(array);
 
-                    if (array != nullptr) {
+                    if (__variableSpace->getVariable(node->id())->hasNDArray()) {
+                        auto array = __variableSpace->getVariable(node->id())->getNDArray();
+                        auto shape = ShapeUtils<T>::shapeAsString(array);
                         auto values = array->asIndexedString(16);
                         nd4j_debug("node_%i finished. result shape: %s; first values: %s\n", node->id(), shape.c_str(), values.c_str());
-                    } else if (list != nullptr) {
+                    } else if (__variableSpace->getVariable(node->id())->hasNDArrayList()) {
+                        auto list = __variableSpace->getVariable(node->id())->hasNDArrayList() ? __variableSpace->getVariable(node->id())->getNDArrayList() : nullptr;
                         nd4j_debug("node_% is ListOp, skipping evaluation", node->id());
+                    } else {
+                        nd4j_debug("node_% is Unknown: has no NDArray or NDArrayList", node->id());
                     }
                 }
             }
@@ -468,13 +470,15 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph, VariableSpace<T>* varia
 
     // saving memory footprint for current run
     if (__variableSpace->workspace() != nullptr) {
-        nd4j::memory::MemoryRegistrator::getInstance()->setGraphMemoryFootprintIfGreater(graph->hashCode(), __variableSpace->workspace()->getAllocatedSize());
+        auto m = __variableSpace->workspace()->getAllocatedSize();
+        auto h = graph->hashCode();
+        nd4j::memory::MemoryRegistrator::getInstance()->setGraphMemoryFootprintIfGreater(h, m);
     }
 
     if (tempFlow)
         delete flowPath;
 
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 /**
@@ -808,7 +812,7 @@ uint8_t* readFlatBuffers(const char * filename) {
     long fileLen = getFileSize(filename);
     if (fileLen < 0) {
         nd4j_printf("File [%s] wasn't found. Please check path and permissions\n", filename);
-        throw "File not found";
+        throw std::runtime_error("File not found");
     }
 
     nd4j_debug("File length: %i\n", fileLen);

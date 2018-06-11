@@ -22,8 +22,8 @@
 set -e
 
 VALID_VERSIONS=( 2.10 2.11 )
-SCALA_211_VERSION="2\.11\.8"
-SCALA_210_VERSION="2\.10\.6"
+SCALA_210_VERSION=$(grep -F -m 1 'scala210.version' pom.xml); SCALA_210_VERSION="${SCALA_210_VERSION#*>}"; SCALA_210_VERSION="${SCALA_210_VERSION%<*}";
+SCALA_211_VERSION=$(grep -F -m 1 'scala211.version' pom.xml); SCALA_211_VERSION="${SCALA_211_VERSION#*>}"; SCALA_211_VERSION="${SCALA_211_VERSION%<*}";
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <scala version to be used>
@@ -67,13 +67,21 @@ sed_i() {
 
 export -f sed_i
 
-echo "Updating Scala versions in pom.xml files to Scala $1";
+echo "Updating Scala versions in pom.xml files to Scala $1, from $FROM_VERSION to $TO_VERSION";
 
 BASEDIR=$(dirname $0)
 
 #Artifact ids, ending with "_2.10" or "_2.11". Spark, spark-mllib, kafka, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(artifactId>.*\)'$FROM_BINARY'<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}" \;
+
+#Scala versions, like <scala.version>2.10</scala.version>
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
+  -exec bash -c "sed_i 's/\(scala.version>\)'$FROM_VERSION'<\/scala.version>/\1'$TO_VERSION'<\/scala.version>/g' {}" \;
+
+#Scala binary versions, like <scala.binary.version>2.10</scala.binary.version>
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
+  -exec bash -c "sed_i 's/\(scala.binary.version>\)'${FROM_BINARY#_}'<\/scala.binary.version>/\1'${TO_BINARY#_}'<\/scala.binary.version>/g' {}" \;
 
 #Scala versions, like <artifactId>scala-library</artifactId> <version>2.10.6</version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \

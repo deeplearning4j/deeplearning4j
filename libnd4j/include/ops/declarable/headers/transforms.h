@@ -139,6 +139,10 @@ namespace nd4j {
 
         DECLARE_CUSTOM_OP(triu_bp, 2, 1, false, 0, 0);
 
+        #if NOT_EXCLUDED(OP_mirror_pad)
+        DECLARE_CUSTOM_OP(mirror_pad, 2, 1, false, 0, 1);
+        #endif
+
     }
 }
 

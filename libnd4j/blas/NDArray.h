@@ -208,7 +208,7 @@ namespace nd4j {
         /**
         *   returns _buffer
         */
-        T* getBuffer();        
+        T* getBuffer() const;
         T* buffer();
 
         /**
@@ -340,7 +340,7 @@ namespace nd4j {
         NDArray<T> *sum(const std::vector<int> &dimensions) const;
 
 		/**
-        *  method reduces array by excluding its shape along dimensions present in given dimensions vector, result is stored in new array to be returned
+        *  method reduces array by excluding its shapes along dimensions present in given dimensions vector, result is stored in new array to be returned
         *  dimensions - array of dimensions to reduce along
         *  keepDims - if true then put unities in place of reduced dimensions
         */ 

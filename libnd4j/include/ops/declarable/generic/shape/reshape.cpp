@@ -45,11 +45,12 @@ namespace nd4j {
                         return ND4J_STATUS_OK;
                     }
                 } else {
-                    auto ret = new NDArray<T>(*x);
-                    if (ret->reshapei(order, shapeNew)) {
-                        STORE_RESULT(*ret);
-                        return ND4J_STATUS_OK;
-                    }
+                    auto ret = OUTPUT_VARIABLE(0);
+                    auto xr = x->reshape(order, shapeNew);
+                    ret->assign(xr);
+                    STORE_RESULT(*ret);
+                    delete xr;
+                    return ND4J_STATUS_OK;
                 }
             } else if (block.width() == 2) {
                 auto s = INPUT_VARIABLE(1);
@@ -68,18 +69,15 @@ namespace nd4j {
 
                 if (block.isInplace()) {
                     if (x->reshapei(order, shapeNew)) {
-                        nd4j_printf("OVERWRITE A!!\n","");
-                        OVERWRITE_RESULT(x);
+                        STORE_RESULT(*x);
                         return ND4J_STATUS_OK;
                     }
                 } else {
                     auto ret = OUTPUT_VARIABLE(0);
                     auto xr = x->reshape(order, shapeNew);
                     ret->assign(xr);
-
                     delete xr;
-
-                    return Status::OK();
+                    return ND4J_STATUS_OK;
                 }
             }
 
@@ -92,13 +90,16 @@ namespace nd4j {
             if (inputShape->size() == 1) {
                 std::vector<int> *arguments = block.getIArguments();
 
+                int e = 1;
                 char order = (char) (*arguments)[0];
-                if (order != 'c' && order != 'f')
+                if (order != 'c' && order != 'f') {
                     order = shape::order(inp);
+                    e = 0;
+                }
 
                 std::vector<int> shapeNew;
 
-                for (int e = 1; e < (int) arguments->size(); e++)
+                for (; e < (int) arguments->size(); e++)
                     shapeNew.push_back((int) arguments->at(e));
 
                 Nd4jLong *newShape;
@@ -110,7 +111,7 @@ namespace nd4j {
                 for (int i = 0; i < (int) shapeNew.size(); i++) {
                     if (shapeNew[i] < 0) {
                         if (numberNegativesOnes >= 1)
-                            throw "Only one dimension can be negative ones";
+                            throw std::runtime_error("Only one dimension can be negative ones");
 
                         numberNegativesOnes++;
 
@@ -164,7 +165,7 @@ namespace nd4j {
                 for (int i = 0; i < (int) shapeNew.size(); i++) {
                     if (shapeNew[i] < 0) {
                         if (numberNegativesOnes >= 1)
-                            throw "Only one dimension can be negative ones";
+                            throw std::runtime_error("Only one dimension can be negative ones");
 
                         numberNegativesOnes++;
 

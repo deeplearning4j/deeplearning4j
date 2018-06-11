@@ -46,7 +46,7 @@ namespace nd4j {
             Nd4jStatus status = this->validateNonEmptyInput(block);
             if (status != ND4J_STATUS_OK) {
                 nd4j_printf("Inputs should be not empty for BooleanOps","");
-                throw "Bad inputs";
+                throw std::runtime_error("Bad inputs");
             }
 
             status = this->validateAndExecute(block);
@@ -56,7 +56,7 @@ namespace nd4j {
                 return false;
             else {
                 nd4j_printf("Got error %i during [%s] evaluation: ", (int) status, this->getOpDescriptor()->getOpName()->c_str());
-                throw "Internal error";
+                throw std::runtime_error("Internal error");
             }
         }
 

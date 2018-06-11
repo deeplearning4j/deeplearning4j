@@ -3,7 +3,9 @@ package org.nd4j.parameterserver.distributed.messages.aggregations;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -29,6 +31,9 @@ public class VoidAggregationTest {
     public void tearDown() throws Exception {
 
     }
+
+    @Rule
+    public Timeout globalTimeout = Timeout.seconds(30);
 
     /**
      * In this test we check for aggregation of sample vector.

@@ -51,7 +51,7 @@
 
                   <target>
                     <id>create-shaded-jars</id>
-                    <dir>@rootdir@/nd4j-shade/jackson/</dir>
+                    <dir>@rootdir@/nd4j/nd4j-shade/jackson/</dir>
                     <goals>clean,compile,package</goals>
                     <properties>
                       <skip.custom.lifecycle>true</skip.custom.lifecycle>

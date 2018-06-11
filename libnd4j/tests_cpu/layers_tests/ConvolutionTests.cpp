@@ -625,7 +625,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
     nd4j::ops::ConvolutionUtils<double>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
     if (isSameMode)
-        nd4j::ops::ConvolutionUtils<double>::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+        nd4j::ops::ConvolutionUtils<double>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
     NDArray<double> im2col0('c', {2, channels, kY, kX, oY, oX});
 
@@ -680,7 +680,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_2) {
     nd4j::ops::ConvolutionUtils<double>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
     if (isSameMode)
-        nd4j::ops::ConvolutionUtils<double>::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+        nd4j::ops::ConvolutionUtils<double>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
     NDArray<double> im2col0('c', {2, channels, oY, oX, kY, kX});
     im2col0.permutei({0, 1, 4, 5, 2, 3});
@@ -735,7 +735,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_3) {
     nd4j::ops::ConvolutionUtils<double>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
     if (isSameMode)
-        nd4j::ops::ConvolutionUtils<double>::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+        nd4j::ops::ConvolutionUtils<double>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
     NDArray<double> im2col0('c', {2, channels, oY, oX, kY, kX});
     im2col0.permutei({0, 1, 4, 5, 2, 3});

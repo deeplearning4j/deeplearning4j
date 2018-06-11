@@ -1,11 +1,19 @@
 package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.util.OneTimeLogger;
 
 /**
  * Implements standard (inverted) dropout.<br>
@@ -39,10 +47,15 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @Data
+@JsonIgnoreProperties({"mask", "helper"})
+@EqualsAndHashCode(exclude = {"mask", "helper"})
+@Slf4j
 public class Dropout implements IDropout {
 
     private double p;
     private ISchedule pSchedule;
+    private transient INDArray mask;
+    private transient DropoutHelper helper;
 
     /**
      * @param activationRetainProbability Probability of retaining an activation - see {@link Dropout} javadoc
@@ -68,11 +81,35 @@ public class Dropout implements IDropout {
     protected Dropout(@JsonProperty("p") double activationRetainProbability, @JsonProperty("pSchedule") ISchedule activationRetainProbabilitySchedule) {
         this.p = activationRetainProbability;
         this.pSchedule = activationRetainProbabilitySchedule;
+        initializeHelper();
+    }
+
+    /**
+     * Initialize the CuDNN dropout helper, if possible
+     */
+    protected void initializeHelper(){
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if("CUDA".equalsIgnoreCase(backend)) {
+            try {
+                helper = Class.forName("org.deeplearning4j.nn.layers.dropout.CudnnDropoutHelper")
+                        .asSubclass(DropoutHelper.class).newInstance();
+                log.debug("CudnnDropoutHelper successfully initialized");
+                if (!helper.checkSupported()) {
+                    helper = null;
+                }
+            } catch (Throwable t) {
+                if (!(t instanceof ClassNotFoundException)) {
+                    log.warn("Could not initialize CudnnDropoutHelper", t);
+                }
+                //Unlike other layers, don't warn here about CuDNN not found - if the user has any other layers that can
+                // benefit from them cudnn, they will get a warning from those
+            }
+        }
     }
 
 
     @Override
-    public INDArray applyDropout(INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
+    public INDArray applyDropout(INDArray inputActivations, INDArray output, int iteration, int epoch, LayerWorkspaceMgr workspaceMgr) {
         double currP;
         if(pSchedule != null){
             currP = pSchedule.valueAt(iteration, epoch);
@@ -80,10 +117,35 @@ public class Dropout implements IDropout {
             currP = p;
         }
 
-        INDArray result = inPlace ? inputActivations : inputActivations.dup(inputActivations.ordering());
-        Nd4j.getExecutioner().exec(new DropOutInverted(result, currP));
+        if(helper != null){
+            helper.applyDropout(inputActivations, output, p);
+            return output;
+        }
 
-        return result;
+        mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.shape(), output.ordering()).assign(1.0);
+        Nd4j.getExecutioner().exec(new DropOutInverted(mask, mask, currP));
+        Nd4j.getExecutioner().exec(new OldMulOp(inputActivations, mask, output));
+        return output;
+    }
+
+    @Override
+    public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
+        if(helper != null){
+            helper.backprop(gradAtOutput, gradAtInput);
+            return gradAtInput;
+        }
+
+        Preconditions.checkState(mask != null, "Cannot perform backprop: Dropout mask array is absent (already cleared?)");
+        //dL/dx = dL/dz * dz/dx, with z=0 or x/p
+        //Mask already contains either 0 or 1/p, so just muli
+        Nd4j.getExecutioner().exec(new OldMulOp(gradAtOutput, mask, gradAtInput));
+        mask = null;
+        return gradAtInput;
+    }
+
+    @Override
+    public void clear() {
+        mask = null;
     }
 
     @Override

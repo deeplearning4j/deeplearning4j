@@ -2,6 +2,8 @@ package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.nn.api.Model;
+import org.nd4j.linalg.function.Consumer;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -131,6 +133,34 @@ public class GradientCheckUtil {
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError,
                                          INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
                                          boolean subset, int maxPerParam, Set<String> excludeParams) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input,
+                labels, inputMask, labelMask, subset, maxPerParam, excludeParams, (Consumer<MultiLayerNetwork>)null);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
+                                         boolean subset, int maxPerParam, Set<String> excludeParams, final Integer rngSeedResetEachIter) {
+
+        Consumer<MultiLayerNetwork> c = null;
+        if(rngSeedResetEachIter != null){
+            c = new Consumer<MultiLayerNetwork>() {
+                @Override
+                public void accept(MultiLayerNetwork multiLayerNetwork) {
+                    Nd4j.getRandom().setSeed(rngSeedResetEachIter);
+                }
+            };
+        }
+
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input,
+                labels, inputMask, labelMask, subset, maxPerParam, excludeParams, c);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
+                                         boolean subset, int maxPerParam, Set<String> excludeParams, Consumer<MultiLayerNetwork> callEachIter) {
+
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -176,8 +206,9 @@ public class GradientCheckUtil {
                 }
             }
 
-            if (n.getLayer().getIDropout() != null) {
-                throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
+            if (n.getLayer().getIDropout() != null && callEachIter == null) {
+                throw new IllegalStateException("When gradient checking dropout, need to reset RNG seed each iter, or no" +
+                        " dropout should be present during gradient checks - got dropout = "
                                 + n.getLayer().getIDropout() + " for layer " + layerCount);
             }
         }
@@ -192,6 +223,9 @@ public class GradientCheckUtil {
         mln.setInput(input);
         mln.setLabels(labels);
         mln.setLayerMaskArrays(inputMask, labelMask);
+        if(callEachIter != null){
+            callEachIter.accept(mln);
+        }
         mln.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = mln.gradientAndScore();
 
@@ -259,10 +293,16 @@ public class GradientCheckUtil {
             //(w+epsilon): Do forward pass and score
             double origValue = params.getDouble(i);
             params.putScalar(i, origValue + epsilon);
+            if(callEachIter != null){
+                callEachIter.accept(mln);
+            }
             double scorePlus = mln.score(ds, true);
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - epsilon);
+            if(callEachIter != null){
+                callEachIter.accept(mln);
+            }
             double scoreMinus = mln.score(ds, true);
 
             //Reset original param value
@@ -360,6 +400,32 @@ public class GradientCheckUtil {
     public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
                                          INDArray[] labels, INDArray[] fMask, INDArray[] lMask, Set<String> excludeParams) {
+        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs,
+                labels, fMask, lMask, excludeParams, (Consumer<ComputationGraph>)null);
+    }
+
+    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
+                                         INDArray[] labels, INDArray[] fMask, INDArray[] lMask, Set<String> excludeParams,
+                                         final Integer rngSeedResetEachIter) {
+        Consumer<ComputationGraph> c = null;
+        if(rngSeedResetEachIter != null){
+            c = new Consumer<ComputationGraph>() {
+                @Override
+                public void accept(ComputationGraph computationGraph) {
+                    Nd4j.getRandom().setSeed(rngSeedResetEachIter);
+                }
+            };
+        }
+
+        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs,
+                labels, fMask, lMask, excludeParams, c);
+    }
+
+    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
+                                         INDArray[] labels, INDArray[] fMask, INDArray[] lMask, Set<String> excludeParams,
+                                         Consumer<ComputationGraph> callEachIter) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -414,8 +480,9 @@ public class GradientCheckUtil {
                 }
             }
 
-            if (lv.getLayerConf().getLayer().getIDropout() != null) {
-                throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
+            if (lv.getLayerConf().getLayer().getIDropout() != null && callEachIter == null) {
+                throw new IllegalStateException("When gradient checking dropout, rng seed must be reset each iteration, or no" +
+                        " dropout should be present during gradient checks - got dropout = "
                         + lv.getLayerConf().getLayer().getIDropout() + " for layer " + layerCount);
             }
         }
@@ -434,6 +501,9 @@ public class GradientCheckUtil {
 
         graph.setLayerMaskArrays(fMask, lMask);
 
+        if(callEachIter != null){
+            callEachIter.accept(graph);
+        }
         graph.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
 
@@ -474,10 +544,16 @@ public class GradientCheckUtil {
             double origValue = params.getDouble(i);
 
             params.putScalar(i, origValue + epsilon);
+            if(callEachIter != null){
+                callEachIter.accept(graph);
+            }
             double scorePlus = graph.score(mds, true); //training == true for batch norm, etc (scores and gradients need to be calculated on same thing)
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - epsilon);
+            if(callEachIter != null){
+                callEachIter.accept(graph);
+            }
             double scoreMinus = graph.score(mds, true);
 
             //Reset original param value

@@ -99,8 +99,8 @@ namespace nd4j {
          * 8: same mode: 0 false, 1 true
          */
         #if NOT_EXCLUDED(OP_maxpool2d)
-        DECLARE_CUSTOM_OP(maxpool2d, 1, 1, false, 0, 10);
-        DECLARE_CUSTOM_OP(maxpool2d_bp, 2, 1, false, 0, 10);
+        DECLARE_CUSTOM_OP(maxpool2d, 1, 1, false, 0, 9);
+        DECLARE_CUSTOM_OP(maxpool2d_bp, 2, 1, false, 0, 9);
         #endif
 
         /**
@@ -119,8 +119,8 @@ namespace nd4j {
          * 8: same mode: 0 false, 1 true
          */
         #if NOT_EXCLUDED(OP_avgpool2d)
-        DECLARE_CUSTOM_OP(avgpool2d, 1, 1, false, 0, 10);
-        DECLARE_CUSTOM_OP(avgpool2d_bp, 2, 1, false, 0, 10);
+        DECLARE_CUSTOM_OP(avgpool2d, 1, 1, false, 0, 9);
+        DECLARE_CUSTOM_OP(avgpool2d_bp, 2, 1, false, 0, 9);
         #endif
 
         /**
@@ -145,13 +145,13 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_maxpool3d)
-        DECLARE_CUSTOM_OP(maxpool3d, 1, 2, true, 0, 14); 
-        DECLARE_CUSTOM_OP(maxpool3d_bp, 3, 1, true, 0, 14);
+        DECLARE_CUSTOM_OP(maxpool3d, 1, 2, true, 0, 13); 
+        DECLARE_CUSTOM_OP(maxpool3d_bp, 3, 1, true, 0, 13);
         #endif
 
         #if NOT_EXCLUDED(OP_avgpool3d)
-        DECLARE_CUSTOM_OP(avgpool3d, 1, 1, true, 0, 14);
-        DECLARE_CUSTOM_OP(avgpool3d_bp, 2, 1, true, 0, 14);
+        DECLARE_CUSTOM_OP(avgpool3d, 1, 1, true, 0, 11);
+        DECLARE_CUSTOM_OP(avgpool3d_bp, 2, 1, true, 0, 11);
         #endif
 
         #if NOT_EXCLUDED(OP_fullconv3d)
@@ -275,7 +275,7 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_avgpool3dnew)
-        DECLARE_CUSTOM_OP(avgpool3dnew, 1, 1, false, 0, 13);
+        DECLARE_CUSTOM_OP(avgpool3dnew, 1, 1, false, 0, 10);
         DECLARE_CUSTOM_OP(avgpool3dnew_bp, 2, 1, false, 0, 10);
         #endif
 

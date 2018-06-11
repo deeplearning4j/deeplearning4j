@@ -1,33 +1,26 @@
 package org.nd4j.autodiff.gradcheck;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.api.ops.impl.accum.AMean;
+import org.nd4j.linalg.api.ops.impl.accum.ASum;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -39,37 +32,65 @@ public class GradCheckReductions extends BaseGradCheck {
 
     @Test
     public void testZeroCount() {
-        SameDiff sd = SameDiff.create();
+        List<String> allFailed = new ArrayList<>();
+        for( int i=0; i<2; i++ ) {
+            SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new int[]{2, 2}, new float[] {0, 1, 0, 1});
-        SDVariable input = sd.var("in", new int[]{2, 2});
-        sd.associateArrayWithVariable(ia, input);
+            INDArray ia;
+            if (i == 0) {
+                //Not gradient checkable for 0 and 1 values
+                ia = Nd4j.create(new int[]{2, 2}, new float[]{0, 1, 0, 1});
+            } else {
+                ia = Nd4j.rand(2,2);
+            }
 
-        SDVariable nonZero = sd.countNonZero(input);
-        SDVariable zero = sd.countZero(input);
+            SDVariable input = sd.var("in", new int[]{2, 2});
+            sd.associateArrayWithVariable(ia, input);
 
-        sd.exec();
+            SDVariable nonZero = sd.countNonZero(input);
+            SDVariable zero = sd.countZero(input);
 
-        assertEquals(2, nonZero.getArr().getInt(0));
-        assertEquals(2, zero.getArr().getInt(0));
-
-        assertTrue(GradCheckUtil.checkGradients(sd));
+            String error = OpValidation.validate(new TestCase(sd)
+                    .expectedOutput(nonZero.getVarName(), Nd4j.trueScalar(2.0))
+                    .expectedOutput(zero.getVarName(), Nd4j.trueScalar(2.0))
+                    .gradientCheck(i != 0)
+            );
+            if(error != null)
+                allFailed.add(error);
+        }
+        assertEquals(allFailed.toString(), 0, allFailed.size());
     }
+
 
     @Test
     public void testZeroFraction() {
-        SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new int[]{2, 2}, new float[] {0, 1, 0, 1});
-        SDVariable input = sd.var("in", new int[]{2, 2});
-        sd.associateArrayWithVariable(ia, input);
+        List<String> allFailed = new ArrayList<>();
+        for( int i=0; i<2; i++ ) {
+            SameDiff sd = SameDiff.create();
 
-        SDVariable zeroFraction = sd.zeroFraction(input);
+            INDArray ia;
+            if (i == 0) {
+                //Not gradient checkable for 0 and 1 values
+                ia = Nd4j.create(new int[]{2, 2}, new float[]{0, 1, 0, 1});
+            } else {
+                ia = Nd4j.rand(2,2);
+            }
 
-        sd.exec();
+            SDVariable input = sd.var("in", new int[]{2, 2});
+            sd.associateArrayWithVariable(ia, input);
 
-        assertEquals(0.5, zeroFraction.getArr().getDouble(0), 1e-6);
-        assertTrue(GradCheckUtil.checkGradients(sd));
+            SDVariable zeroFraction = sd.zeroFraction(input);
+
+            String error = OpValidation.validate(new TestCase(sd)
+                    .expectedOutput(zeroFraction.getVarName(), Nd4j.trueScalar(0.5))
+                    .gradientCheck(i != 0)
+            );
+            if(error != null)
+                allFailed.add(error);
+        }
+
+        assertEquals(allFailed.toString(), 0, allFailed.size());
     }
 
     @Test
@@ -86,73 +107,91 @@ public class GradCheckReductions extends BaseGradCheck {
             int nOut = 4;
             int minibatch = 10;
             SDVariable input = sd.var("in", new int[]{-1, nOut});
+            INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
 
             SDVariable loss;
             String name;
+            TestCase tc = new TestCase(sd);
             switch (i) {
                 case 0:
                     loss = sd.mean("loss", input);
                     name = "mean";
+                    tc.expectedOutput("loss", inputArr.mean());
                     break;
                 case 1:
                     loss = sd.sum("loss", input);
                     name = "sum";
+                    tc.expectedOutput("loss", inputArr.sum());
                     break;
                 case 2:
                     loss = sd.standardDeviation("loss", input, true);
                     name = "stdev";
+                    tc.expectedOutput("loss", inputArr.std(true));
                     break;
                 case 3:
                     loss = sd.min("loss", input);
                     name = "min";
+                    tc.expectedOutput("loss", inputArr.min());
                     break;
                 case 4:
                     loss = sd.max("loss", input);
                     name = "max";
+                    tc.expectedOutput("loss", inputArr.max());
                     break;
                 case 5:
                     loss = sd.variance("loss", input, true);
                     name = "variance";
+                    tc.expectedOutput("loss", inputArr.var());
                     break;
                 case 6:
                     loss = sd.prod("loss", input);
+                    tc.expectedOutput("loss", inputArr.prod());
                     name = "prod";
                     break;
                 case 7:
                     loss = sd.norm1("loss", input);
                     name = "norm1";
+                    tc.expectedOutput("loss", inputArr.norm1());
                     break;
                 case 8:
                     loss = sd.norm2("loss", input);
                     name = "norm2";
+                    tc.expectedOutput("loss", inputArr.norm2());
                     break;
                 case 9:
                     loss = sd.normmax("loss", input);
                     name = "normmax";
+                    tc.expectedOutput("loss", inputArr.normmax());
                     break;
                 case 10:
                     loss = sd.countNonZero("loss", input);
                     name = "countNonZero";
+                    tc.expectedOutput("loss", Nd4j.trueScalar(inputArr.length()));
                     break;
                 case 11:
                     loss = sd.countZero("loss", input);
                     name = "countZero";
+                    tc.expectedOutput("loss", Nd4j.trueScalar(0));
                     break;
                 case 12:
                     loss = sd.amax("loss", input);
                     name = "amax";
+                    tc.expectedOutput("loss", inputArr.amax());
                     break;
                 case 13:
                     loss = sd.amin("loss", input);
                     name = "amin";
+                    tc.expectedOutput("loss", inputArr.amin());
                     break;
                 case 14:
                     loss = sd.asum("loss", input);
                     name = "asum";
+                    tc.expectedOutput("loss", Nd4j.getExecutioner().exec(new ASum(inputArr.dup())).z());
                     break;
                 case 15:
                     loss = sd.amean("loss", input);
                     name = "amean";
+                    tc.expectedOutput("loss", Nd4j.getExecutioner().exec(new AMean(inputArr.dup())).z());
                     break;
                 default:
                     throw new RuntimeException();
@@ -162,11 +201,12 @@ public class GradCheckReductions extends BaseGradCheck {
             String msg = "test: " + i + " - " + name;
             log.info("*** Starting test: " + msg);
 
-            INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
             sd.associateArrayWithVariable(inputArr, input);
 
 
-            check(sd, failed, msg);
+            String error = OpValidation.validate(tc);
+            if(error != null)
+                failed.add(error);
         }
 
         assertEquals(failed.toString(), 0, failed.size());
@@ -196,6 +236,7 @@ public class GradCheckReductions extends BaseGradCheck {
 
                 SDVariable loss;
                 String name;
+                TestCase tc = new TestCase(sd);
                 switch (i) {
                     case 0:
                         loss = sd.mean("loss", msePerEx, dim);
@@ -275,7 +316,10 @@ public class GradCheckReductions extends BaseGradCheck {
                 sd.associateArrayWithVariable(inputArr, input);
                 sd.associateArrayWithVariable(labelArr, label);
 
-                check(sd, failed, msg);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
@@ -324,6 +368,7 @@ public class GradCheckReductions extends BaseGradCheck {
                 INDArray labelArr = Nd4j.randn(outShape).muli(1000);
                 SDVariable reduced;
                 String name;
+                TestCase tc = new TestCase(sd);
                 switch (i) {
                     case 0:
                         reduced = sd.mean("reduced", second, reduceDim);
@@ -424,7 +469,10 @@ public class GradCheckReductions extends BaseGradCheck {
                 sd.associateArrayWithVariable(inputArr, in);
                 sd.associateArrayWithVariable(labelArr, label);
 
-                check(sd, failed, msg);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
@@ -457,6 +505,7 @@ public class GradCheckReductions extends BaseGradCheck {
 
                 SDVariable reduced;
                 String name;
+                TestCase tc = new TestCase(sd);
                 switch (i) {
                     case 0:
                         reduced = sd.manhattanDistance(in, in2, reduceDims);
@@ -501,8 +550,10 @@ public class GradCheckReductions extends BaseGradCheck {
                 sd.execAndEndResult();
 
 
-                //boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
-                check(sd, failed, msg);
+                String error = OpValidation.validate(tc);
+                if(error != null){
+                    failed.add(name);
+                }
             }
         }
 
