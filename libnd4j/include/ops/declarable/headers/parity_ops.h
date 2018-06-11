@@ -984,13 +984,13 @@ namespace nd4j {
         * This op calculates min of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate mins for        
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
         *
         * int arguments:
-        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *    list of integers - dimensions to calculate min along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
         *
         * output array:
         *    reduced tensor with calculated mins
@@ -1006,16 +1006,16 @@ namespace nd4j {
         * This op calculates max of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate maxes for        
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
         *
         * int arguments:
-        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *    list of integers - dimensions to calculate max along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
         *
         * output array:
-        *    reduced tensor with calculated maxs
+        *    reduced tensor with calculated maxes
         */
         #if NOT_EXCLUDED(OP_reduce_max)
         DECLARE_CUSTOM_OP(reduce_max, 1, 1, false, 0, 0);
@@ -1025,37 +1025,16 @@ namespace nd4j {
         #endif
 
        /**
-        * This op calculates dot of elements along given dimensions
-        *
-        * input array:
-        *    x: tensor to calculate mean for        
-        *
-        * float arguments:
-        *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
-        *
-        * int arguments:
-        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
-        *
-        * output array:
-        *    reduced tensor with calculated dots
-        *
-        */
-
-        #if NOT_EXCLUDED(OP_reduce_dot_bp)
-        DECLARE_CUSTOM_OP(reduce_dot_bp, 2, 1, false, 0, 0);
-        #endif
-
-       /**
         * This op calculates norm1 of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate norm1 for        
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
         *
         * int arguments:
-        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *    list of integers - dimensions to calculate norm1 along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
         *
         * output array:
         *    reduced tensor with calculated norm
@@ -1068,16 +1047,16 @@ namespace nd4j {
         #endif
 
        /**
-        * This op calculates norm1 of elements along given dimensions
+        * This op calculates norm2 of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate norm2 for        
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
         *
         * int arguments:
-        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *    list of integers - dimensions to calculate norm2 along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
         *
         * output array:
         *    reduced tensor with calculated norm
@@ -1091,16 +1070,16 @@ namespace nd4j {
 
 
        /**
-        * This op calculates norm1 of elements along given dimensions
+        * This op calculates squared norm of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate squared norm for        
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
         *
         * int arguments:
-        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *    list of integers - dimensions to calculate squared norm along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
         *
         * output array:
         *    reduced tensor with calculated norm
@@ -1122,7 +1101,7 @@ namespace nd4j {
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
         *
         * int arguments:
-        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *    list of integers - dimensions to calculate norm max along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
         *
         * output array:
         *    reduced tensor with calculated norm

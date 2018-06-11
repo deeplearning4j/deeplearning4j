@@ -464,7 +464,7 @@ TEST_F(DeclarableOpsTests1, TestRng1) {
     nd4j::random::RandomBuffer *rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);
 
     if (rng == nullptr)
-        throw "RNG initialization failed";
+        throw std::runtime_error("RNG initialization failed");
 
     auto x = new NDArray<float>('c', {5, 3});
     VariableSpace<float>* variableSpace = new VariableSpace<float>();

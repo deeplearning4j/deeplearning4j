@@ -1619,7 +1619,18 @@ public class DifferentialFunctionFactory {
         return new StridedSlice(sameDiff(), input, begin, end, strides).outputVariable();
     }
 
+    public SDVariable stridedSlice(SDVariable input, long[] begin, long[] end, long[] strides) {
+        return new StridedSlice(sameDiff(), input, begin, end, strides).outputVariable();
+    }
+
+
     public SDVariable stridedSlice(SDVariable in, int[] begin, int[] end, int[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        return new StridedSlice(sameDiff(), in, begin, end, strides, beginMask, endMask, ellipsisMask,
+                newAxisMask, shrinkAxisMask).outputVariable();
+    }
+
+    public SDVariable stridedSlice(SDVariable in, long[] begin, long[] end, long[] strides, int beginMask,
                                    int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
         return new StridedSlice(sameDiff(), in, begin, end, strides, beginMask, endMask, ellipsisMask,
                 newAxisMask, shrinkAxisMask).outputVariable();

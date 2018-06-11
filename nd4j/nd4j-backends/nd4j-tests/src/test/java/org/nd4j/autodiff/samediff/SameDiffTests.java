@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -418,14 +419,16 @@ public class SameDiffTests {
     @Test
     public void testReshape() {
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2);
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(1, 4);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result1 = sameDiff.reshape(x, 2, 2);
         assertArrayEquals(new long[]{2, 2}, result1.eval().shape());
+        assertEquals(arr.reshape(2, 2), result1.eval());
         INDArray arr_shape = Nd4j.create(new double[]{2, 2}, new int[]{2});
         SDVariable shape = sameDiff.var("shape", arr_shape);
         SDVariable result2 = sameDiff.reshape(x, shape);
         assertArrayEquals(new long[]{2, 2}, result2.eval().shape());
+        assertEquals(arr.reshape(2, 2), result2.eval());
 
     }
 
@@ -448,7 +451,7 @@ public class SameDiffTests {
         SDVariable x = sameDiff.var("x", shape);
         SDVariable result = sameDiff.shape(x);
         assertArrayEquals(result.eval().toLongVector(), shape);
-}
+    }
     @Test
     public void testGather() {
         SameDiff sameDiff = SameDiff.create();
@@ -476,9 +479,9 @@ public class SameDiffTests {
                     arr1.get(NDArrayIndex.point(idx.getInt(0)),
                             NDArrayIndex.point(idx.getInt(1)),
                             NDArrayIndex.point(idx.getInt(2))));
-            }
-        assertEquals(expected, result.eval());
         }
+        assertEquals(expected, result.eval());
+    }
 
     @Test
     public void testStack() {
@@ -2328,7 +2331,7 @@ public class SameDiffTests {
         sd.exec();
 
         for (int i = 0; i < 4; i++)
-           assert out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getDouble(0) == 1;
+            assert out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getDouble(0) == 1;
 
     }
 
@@ -3625,8 +3628,8 @@ public class SameDiffTests {
         INDArray arr3 = Nd4j.zeros(3, 3);
         INDArray expected = Nd4j.create(new float[]{0, 0, 0,
                                                     0, 0, 0,
-                                                    1, 1, 1},
-                                            new long[]{3, 3});
+                                                   1, 1, 1},
+                                           new long[]{3, 3});
 
         SameDiff sd  = SameDiff.create();
         SDVariable refs = sd.var("refs", arr1);
@@ -3880,6 +3883,44 @@ public class SameDiffTests {
         sd.exec();
 
         assertEquals(expOut, out.getArr());
+    }
+
+
+    private static int binArrToInt(int[] arr){
+        int x = 0;
+        int m = 1;
+        for(int i = arr.length - 1; i >= 0; i--){
+            if(arr[i] == 1){
+                x += m;
+            }
+            m *= 2;
+        }
+        return x;
+    }
+    @Test
+    public void testGet(){
+
+        SameDiff sd  = SameDiff.create();
+        INDArray arr = Nd4j.create(10, 10);
+        SDVariable x = sd.var(arr);
+
+        INDArray expOut1 = arr.get(NDArrayIndex.point(4), NDArrayIndex.point(5));
+        SDVariable result1 = x.get(SDIndex.point(4), SDIndex.point(5));
+        assertEquals(expOut1, result1.eval());
+
+        INDArray expOut2 = arr.get(NDArrayIndex.point(4), NDArrayIndex.all());
+        SDVariable result2 = x.get(SDIndex.point(4), SDIndex.all());
+        assertEquals(expOut2, result2.eval());
+
+        INDArray expOut3 = arr.get(NDArrayIndex.interval(3, 8));
+        SDVariable result3 = x.get(SDIndex.interval(3, 8));
+
+        System.out.println(ArrayUtils.toString(expOut3.shape()));
+        System.out.println(ArrayUtils.toString(result3.eval().shape()));
+        assertArrayEquals(expOut3.shape(), result3.eval().shape());
+
+        assertEquals(expOut3, result3.eval());
+
     }
 
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){

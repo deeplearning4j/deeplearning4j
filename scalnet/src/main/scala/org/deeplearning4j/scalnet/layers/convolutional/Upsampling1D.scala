@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.scalnet.layers.convolutional
 
-import org.deeplearning4j.nn.conf.layers.{Upsampling1D => JUpsampling1D}
+import org.deeplearning4j.nn.conf.layers.{ Upsampling1D => JUpsampling1D }
 import org.deeplearning4j.scalnet.layers.core.Layer
 
 /**
@@ -24,18 +24,15 @@ import org.deeplearning4j.scalnet.layers.core.Layer
   *
   * @author Max Pumperla
   */
-class Upsampling1D(size: List[Int],
-                   nChannels: Int = 0,
-                   nIn: Option[List[Int]] = None,
-                   override val name: String = "")
-  extends Upsampling(dimension = 1, size, nChannels, nIn, name) with Layer {
+class Upsampling1D(size: List[Int], nChannels: Int = 0, nIn: Option[List[Int]] = None, override val name: String = "")
+    extends Upsampling(dimension = 1, size, nChannels, nIn, name)
+    with Layer {
   if (size.length != 1) {
     throw new IllegalArgumentException("Size must be length 1.")
   }
 
   override def reshapeInput(nIn: List[Int]): Upsampling1D =
     new Upsampling1D(size, nChannels, Some(nIn), name)
-
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new JUpsampling1D.Builder()
@@ -44,10 +41,7 @@ class Upsampling1D(size: List[Int],
       .build()
 }
 
-
 object Upsampling1D {
-  def apply(size: List[Int],
-            nChannels: Int = 0,
-            nIn: Option[List[Int]] = None): Upsampling1D =
+  def apply(size: List[Int], nChannels: Int = 0, nIn: Option[List[Int]] = None): Upsampling1D =
     new Upsampling1D(size, nChannels, nIn)
 }

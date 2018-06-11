@@ -61,7 +61,7 @@ namespace nd4j {
         int dLen = shape::shapeInfoLength(shape.at(0));
 
         if (shape.size() != dLen)
-            throw "Bad shape was passed in";
+            throw std::runtime_error("Bad shape was passed in");
 
         auto nShape = new Nd4jLong[dLen];
         std::memcpy(nShape, shape.data(), shape::shapeInfoByteLength(shape.at(0)));
