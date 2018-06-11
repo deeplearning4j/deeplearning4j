@@ -3349,7 +3349,7 @@ void NDArray<T>::setValueInDiagMatrix(const T& value, const int diag, const char
     switch(direction) {
             
         case 'u':                           // fill upper triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided)             
+#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
             for(int i = 0; i < rows; ++i) 
                 for(int j = 0; j < cols; ++j)                                      
                     if (i + diag <= j)
@@ -3357,7 +3357,7 @@ void NDArray<T>::setValueInDiagMatrix(const T& value, const int diag, const char
                 break;
 
         case 'l':                           // fill lower triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided)                         
+#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
             for(int i = 0; i < rows; ++i) 
                 for(int j = 0; j < cols; ++j)                                      
                     if (i + diag >= j)

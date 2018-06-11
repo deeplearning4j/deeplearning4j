@@ -1277,7 +1277,9 @@ void ConvolutionUtils<T>::upsampling2d(const NDArray<T>& input, NDArray<T>& outp
                     
                     indOut[j0] = ih * factorH + fh; indOut[j1] = indOut[j0] + 1; 
                     indOut[j2] = iw * factorW + fw; indOut[j3] = indOut[j2] + 1;                     
-                    output(indOut).assign(input(indIn));
+                    auto i = input(indIn);                    
+                    auto o = output(indOut);
+                    o.assign(i);
                 }
             }
         }
@@ -1313,7 +1315,9 @@ void ConvolutionUtils<T>::upsampling3d(const NDArray<T>& input, NDArray<T>& outp
                             indOut[j0] = id * factorD + fd; indOut[j1] = indOut[j0] + 1; 
                             indOut[j2] = ih * factorH + fh; indOut[j3] = indOut[j2] + 1; 
                             indOut[j4] = iw * factorW + fw; indOut[j5] = indOut[j4] + 1;                     
-                            output(indOut).assign(input(indIn));
+                            auto i = input(indIn);                    
+                            auto o = output(indOut);
+                            o.assign(i);
                         }
                     }
                 }
@@ -1348,10 +1352,12 @@ void ConvolutionUtils<T>::upsampling2dBP(const NDArray<T>& gradO, NDArray<T>& gr
                 for(int fw = 0; fw < factorW; ++fw) {                    
                     indOut[j0] = ih * factorH + fh; indOut[j1] = indOut[j0] + 1; 
                     indOut[j2] = iw * factorW + fw; indOut[j3] = indOut[j2] + 1;                     
-                    if(!fh && !fw)
-                        subGradI.assign(gradO(indOut));
+                    auto o = gradO(indOut);
+                    if(!fh && !fw) {                        
+                        subGradI.assign(o);
+                    }
                     else
-                        subGradI += gradO(indOut);
+                        subGradI += o;
                 }
             }
         }
@@ -1389,10 +1395,11 @@ void ConvolutionUtils<T>::upsampling3dBP(const NDArray<T>& gradO, NDArray<T>& gr
                             indOut[j0] = id * factorD + fd; indOut[j1] = indOut[j0] + 1; 
                             indOut[j2] = ih * factorH + fh; indOut[j3] = indOut[j2] + 1; 
                             indOut[j4] = iw * factorW + fw; indOut[j5] = indOut[j4] + 1;                     
+                            auto o = gradO(indOut);
                             if(!fd && !fh && !fw)
-                                subGradI.assign(gradO(indOut));
+                                subGradI.assign(o);
                             else
-                                subGradI += gradO(indOut);
+                                subGradI += o;
                         }
                     }
                 }
