@@ -5,6 +5,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.util.GraphIndices;
@@ -13,6 +14,8 @@ import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
+import org.deeplearning4j.nn.updater.UpdaterBlock;
+import org.deeplearning4j.optimize.solvers.BaseOptimizer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,10 +36,60 @@ import static org.deeplearning4j.nn.conf.inputs.InputType.inferInputTypes;
 @Slf4j
 public class CrashUtils {
 
+    public static final String CRASH_DUMP_ENABLED_PROPERTY = "org.deeplearning4j.crash.reporting.enabled";
+    public static final String CRASH_DUMP_OUTPUT_DIRECTORY_PROPERTY = "org.deeplearning4j.crash.reporting.directory";
+
+    private static boolean crashDumpsEnabled;
+    private static File crashDumpRootDirectory;
+
+    static {
+        String s = System.getProperty(CRASH_DUMP_ENABLED_PROPERTY);
+        if(s != null && !s.isEmpty()){
+            crashDumpsEnabled = Boolean.parseBoolean(s);
+        }
+
+        s = System.getProperty(CRASH_DUMP_OUTPUT_DIRECTORY_PROPERTY);
+        boolean setDir = false;
+        if(s != null && !s.isEmpty()){
+            try{
+                File f = new File(s);
+                crashDumpOutputDirectory(f);
+                setDir = true;
+                log.debug("Crash dump output directory set to: {}", f.getAbsolutePath());
+            } catch (Exception e){
+                log.warn("Error setting crash dump output directory to value: {}", s, e);
+            }
+        }
+        if(!setDir){
+            crashDumpOutputDirectory(null);
+        }
+    }
+
     private CrashUtils(){ }
 
 
+    public static void crashDumpsEnabled(boolean enabled){
+        crashDumpsEnabled = enabled;
+    }
+
+    public static void crashDumpOutputDirectory(File rootDir){
+        if(rootDir == null){
+            String userDir = System.getProperty("user.dir");
+            if(userDir == null){
+                userDir = "";
+            }
+            crashDumpRootDirectory = new File(userDir);
+            return;
+        }
+        crashDumpRootDirectory = rootDir;
+    }
+
+
     public static void writeMemoryCrashDump(Model net, Throwable e){
+        if(!crashDumpsEnabled){
+            return;
+        }
+
         long now = System.currentTimeMillis();
         File f = new File("dl4j-memory-crash-dump-" + now + ".txt");
         StringBuilder sb = new StringBuilder();
@@ -64,6 +117,10 @@ public class CrashUtils {
         }
 
         log.warn(">>> Memory crash dump written to: {}", f.getAbsolutePath());
+        log.warn("Memory crash dump reporting can be disabled with CrashUtil.crashDumpsEnabled(false) or using system " +
+                "property -D" + CRASH_DUMP_ENABLED_PROPERTY + "=false");
+        log.warn("Memory crash dump reporting output location CrashUtil.crashDumpOutputDirectory(File) or using system " +
+                "property -D" + CRASH_DUMP_OUTPUT_DIRECTORY_PROPERTY + "=<path>");
     }
 
     private static final String FORMAT = "%-40s%s";
@@ -102,14 +159,16 @@ public class CrashUtils {
         //sb.append(f("Workspaces: # for all threads", allWs.size()));      //TODO
         sb.append("Current thread workspaces:\n");
         //Name, open, size, currently allocated
-        String wsFormat = "  %-30s%-20s%-20s";
-        sb.append(String.format(wsFormat, "Name", "State", "Size")).append("\n");
+        String wsFormat = "  %-30s%-20s%-20s%-20s";
+        sb.append(String.format(wsFormat, "Name", "State", "Size", "# Cycles")).append("\n");
         long totalWsSize = 0;
         for(MemoryWorkspace ws : allWs){
             totalWsSize += ws.getCurrentSize();
+            long numCycles = ws.getGenerationId();
             sb.append(String.format(wsFormat, ws.getId(),
                     (ws.isScopeActive() ? "OPEN" : "CLOSED"),
-                    fBytes(ws.getCurrentSize()))).append("\n");
+                    fBytes(ws.getCurrentSize()),
+                    String.valueOf(numCycles))).append("\n");
         }
         sb.append(fBytes("Workspaces total size", totalWsSize));
         Map<String,Pointer> helperWorkspaces;
@@ -156,6 +215,7 @@ public class CrashUtils {
         } else {
             u = cg.getUpdater(false);
         }
+        Set<String> updaterClasses = new HashSet<>();
         if(u == null){
             sb.append(f("Updater","<not initialized>"));
         } else {
@@ -164,14 +224,35 @@ public class CrashUtils {
             sb.append(f("Updater Number of Elements", stateArrLength));
             sb.append(fBytes("Updater Memory", stateArrLength * bytesPerElement));
             sumMem += stateArrLength * bytesPerElement;
+
+            List<UpdaterBlock> blocks = u.getUpdaterBlocks();
+            for(UpdaterBlock ub : blocks){
+                updaterClasses.add(ub.getGradientUpdater().getClass().getName());
+            }
+
+            sb.append("Updater Classes:").append("\n");
+            for(String s : updaterClasses ){
+                sb.append("  ").append(s).append("\n");
+            }
         }
         sb.append(fBytes("Params + Gradient + Updater Memory", sumMem));
+        sb.append(f("Iteration Count", BaseOptimizer.getIterationCount(net)));
+        sb.append(f("Epoch Count", BaseOptimizer.getEpochCount(net)));
+
         if(isMLN) {
+            sb.append(f("Backprop Type", mln.getLayerWiseConfigurations().getBackpropType()));
+            if(mln.getLayerWiseConfigurations().getBackpropType() == BackpropType.TruncatedBPTT){
+                sb.append(f("TBPTT Length", mln.getLayerWiseConfigurations().getTbpttFwdLength() + "/" + mln.getLayerWiseConfigurations().getTbpttBackLength()));
+            }
             sb.append(f("Workspace Mode: Training", mln.getLayerWiseConfigurations().getTrainingWorkspaceMode()));
             sb.append(f("Workspace Mode: Inference", mln.getLayerWiseConfigurations().getInferenceWorkspaceMode()));
             appendLayerInformation(sb, mln.getLayers());
             appendActivationShapes(mln, sb, bytesPerElement);
         } else {
+            sb.append(f("Backprop Type", cg.getConfiguration().getBackpropType()));
+            if(cg.getConfiguration().getBackpropType() == BackpropType.TruncatedBPTT){
+                sb.append(f("TBPTT Length", cg.getConfiguration().getTbpttFwdLength() + "/" + cg.getConfiguration().getTbpttBackLength()));
+            }
             sb.append(f("Workspace Mode: Training", cg.getConfiguration().getTrainingWorkspaceMode()));
             sb.append(f("Workspace Mode: Inference", cg.getConfiguration().getInferenceWorkspaceMode()));
             appendLayerInformation(sb, cg.getLayers());

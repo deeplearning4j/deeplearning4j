@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -236,6 +237,11 @@ public class LocalResponseNormalization
     @Override
     public void clearNoiseWeightParams() {
         //No op
+    }
+
+    @Override
+    public LayerHelper getHelper() {
+        return helper;
     }
 
     @Override
