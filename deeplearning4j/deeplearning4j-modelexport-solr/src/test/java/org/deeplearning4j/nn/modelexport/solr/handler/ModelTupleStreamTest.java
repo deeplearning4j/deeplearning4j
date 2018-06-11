@@ -5,6 +5,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -102,18 +110,18 @@ public class ModelTupleStreamTest {
         inputValuesList = sb.toString();
       }
 
-      final String expressionClause = "model("
-        + " tuple(" + inputValuesList + ")"
-        + ",serializedModelFileName=\"" + serializedModelFileName + "\""
-        + ",inputKeys=\"" + inputKeysList + "\""
-        + ",outputKeys=\"" + outputKeysList + "\""
-        + ")";
-
       final StreamFactory streamFactory = new SolrDefaultStreamFactory()
           .withSolrResourceLoader(solrResourceLoader)
           .withFunctionName("model", ModelTupleStream.class);
 
-      final TupleStream tupleStream = streamFactory.constructStream(expressionClause);
+      final StreamExpression streamExpression = StreamExpressionParser.parse("model("
+        + "tuple(" + inputValuesList + ")"
+        + ",serializedModelFileName=\"" + serializedModelFileName + "\""
+        + ",inputKeys=\"" + inputKeysList + "\""
+        + ",outputKeys=\"" + outputKeysList + "\""
+        + ")");
+
+      final TupleStream tupleStream = streamFactory.constructStream(streamExpression);
       tupleStream.setStreamContext(streamContext);
 
       assertTrue(tupleStream instanceof ModelTupleStream);
@@ -146,6 +154,32 @@ public class ModelTupleStreamTest {
         assertTrue(tuple2.EOF);
       }
       modelTupleStream.close();
+
+      // toExpression test
+      {
+        final StreamExpressionParameter streamExpressionParameter = modelTupleStream.toExpression(streamFactory);
+        assertTrue(streamExpressionParameter instanceof StreamExpression);
+        // tuple(input1=1,input2=2) and tuple(input2=2,input1=1) are equivalent
+        // but StreamExpression equals does not consider them equal.
+        if (inputKeys.length == 1) {
+          assertEquals(streamExpression, (StreamExpression)streamExpressionParameter);
+        }
+      }
+
+      // toExplanation test
+      {
+        final Explanation explanation = modelTupleStream.toExplanation(streamFactory);
+        final Map<String,Object> explanationMap = new TreeMap<String,Object>();
+        explanation.toMap(explanationMap);
+        assertTrue(explanation instanceof StreamExplanation);
+        assertNotNull(explanationMap.remove("children"));
+        assertNotNull(explanationMap.remove("expression"));
+        assertNotNull(explanationMap.remove("expressionNodeId"));
+        assertEquals(ExpressionType.STREAM_DECORATOR, explanationMap.remove("expressionType"));
+        assertEquals("model", explanationMap.remove("functionName"));
+        assertEquals(ModelTupleStream.class.getName(), explanationMap.remove("implementingClass"));
+        assertTrue(explanationMap.toString(), explanationMap.isEmpty());
+      }
     }
 
   }
