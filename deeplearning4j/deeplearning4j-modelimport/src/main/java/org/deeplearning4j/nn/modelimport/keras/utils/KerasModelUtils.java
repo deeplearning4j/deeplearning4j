@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.modelimport.keras.utils;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -57,7 +58,7 @@ public class KerasModelUtils {
      * @return DL4J Model interface
      * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    public static Model copyWeightsToModel(Model model, Map<String, KerasLayer> layers)
+    public static Model copyWeightsToModel(Model model, Map<String, KerasLayer> kerasLayers)
             throws InvalidKerasConfigurationException {
         /* Get list if layers from model. */
         Layer[] layersFromModel;
@@ -67,18 +68,19 @@ public class KerasModelUtils {
             layersFromModel = ((ComputationGraph) model).getLayers();
 
         /* Iterate over layers in model, setting weights when relevant. */
-        Set<String> layerNames = new HashSet<>(layers.keySet());
+        Set<String> layerNames = new HashSet<>(kerasLayers.keySet());
         for (org.deeplearning4j.nn.api.Layer layer : layersFromModel) {
-            String layerName = layer.conf().getLayer().getLayerName();
-            if (!layers.containsKey(layerName))
+            String layerName;
+            layerName = layer.conf().getLayer().getLayerName();
+            if (!kerasLayers.containsKey(layerName))
                 throw new InvalidKerasConfigurationException(
                         "No weights found for layer in model (named " + layerName + ")");
-            layers.get(layerName).copyWeightsToLayer(layer);
+            kerasLayers.get(layerName).copyWeightsToLayer(layer);
             layerNames.remove(layerName);
         }
 
         for (String layerName : layerNames) {
-            if (layers.get(layerName).getNumParams() > 0)
+            if (kerasLayers.get(layerName).getNumParams() > 0)
                 throw new InvalidKerasConfigurationException(
                         "Attemping to copy weights for layer not in model (named " + layerName + ")");
         }
@@ -236,9 +238,9 @@ public class KerasModelUtils {
                         if (layers.get(layerName).getNumParams() > 0) {
                             try {
                                 layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
-                            } catch (Exception e){
+                            } catch (Exception e) {
                                 log.warn("No HDF5 group with weights found for layer with name "
-                                        + layerName  + ", continuing import.");
+                                        + layerName + ", continuing import.");
                                 layerParamNames = Collections.emptyList();
                             }
                         } else {
