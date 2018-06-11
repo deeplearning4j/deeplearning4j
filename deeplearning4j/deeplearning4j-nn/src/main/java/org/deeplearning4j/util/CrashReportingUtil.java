@@ -131,7 +131,7 @@ public class CrashReportingUtil {
         log.error(">>> Out of Memory Exception Detected. Memory crash dump written to: {}", f.getAbsolutePath());
         log.warn("Memory crash dump reporting can be disabled with CrashUtil.crashDumpsEnabled(false) or using system " +
                 "property -D" + CRASH_DUMP_ENABLED_PROPERTY + "=false");
-        log.warn("Memory crash dump reporting output location CrashUtil.crashDumpOutputDirectory(File) or using system " +
+        log.warn("Memory crash dump reporting output location can be set with CrashUtil.crashDumpOutputDirectory(File) or using system " +
                 "property -D" + CRASH_DUMP_OUTPUT_DIRECTORY_PROPERTY + "=<path>");
     }
 
