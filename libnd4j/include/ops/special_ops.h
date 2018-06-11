@@ -224,129 +224,184 @@ namespace simdOps {
 #endif
 
 
-	static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-// 	// input is  [bS, iC, iH, iW]
-// 	// output is [bS, iC, oH, oW]
+static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+	// input is  [bS, iC, iH, iW]
+	// output is [bS, iC, oH, oW]
 
-//         int kH = (int)extraParams[0];
-//         int kW = (int)extraParams[1];
-//         int sH = (int)extraParams[2];
-//         int sW = (int)extraParams[3];
-//         int pH = (int)extraParams[4];
-//         int pW = (int)extraParams[5];
-//         int dH = (int)extraParams[6];           //Dilation, height dimension
-//         int dW = (int)extraParams[7];           //Dilation, width dimension
-//         int poolingMode = (int)extraParams[8];
-//         T extraParam0 = extraParams[9];
+	const Nd4jLong kH = (int)extraParams[0];
+	const Nd4jLong kW = (int)extraParams[1];
+    const Nd4jLong sH = (int)extraParams[2];
+    const Nd4jLong sW = (int)extraParams[3];
+    const Nd4jLong pH = (int)extraParams[4];
+    const Nd4jLong pW = (int)extraParams[5];    
+    const Nd4jLong dH = (int)extraParams[6];
+    const Nd4jLong dW = (int)extraParams[7];
+    Nd4jLong poolingMode = (int)extraParams[8];
+    T extraParam0 = extraParams[9];
 
-//         const int kHEff = kH + (kH-1)*(dH-1);
-//         const int kWEff = kW + (kW-1)*(dW-1);
+    const Nd4jLong kHEff = kH + (kH-1)*(dH-1);
+    const Nd4jLong kWEff = kW + (kW-1)*(dW-1);
 
-//         const int bS = shape::sizeAt(inShapeBuffer, 0);
-//         const int iC = shape::sizeAt(inShapeBuffer, 1);
-//         const int iH = shape::sizeAt(inShapeBuffer, 2);
-//         const int iW = shape::sizeAt(inShapeBuffer, 3);
-//         const int oH = shape::sizeAt(outShapeBuffer, 2);
-//         const int oW = shape::sizeAt(outShapeBuffer, 3);            
-//         const Nd4jLong iStride0 = shape::stride(inShapeBuffer)[0];
-//         const Nd4jLong iStride1 = shape::stride(inShapeBuffer)[1];
-//         const Nd4jLong iStride2 = shape::stride(inShapeBuffer)[2];
-//         const Nd4jLong iStride3 = shape::stride(inShapeBuffer)[3];
-//         const Nd4jLong oStride0 = shape::stride(outShapeBuffer)[0];
-//         const Nd4jLong oStride1 = shape::stride(outShapeBuffer)[1];
-//         const Nd4jLong oStride2 = shape::stride(outShapeBuffer)[2];
-//         const Nd4jLong oStride3 = shape::stride(outShapeBuffer)[3];         
-//         const Nd4jLong iStep2 = dH*iStride2;
-//         const Nd4jLong iStep3 = dW*iStride3;        
-//         const Nd4jLong size01 = bS*iC;
-//         const Nd4jLong size23 = oH*oW;
-//         const int kProd  = kH*kW;
-//         const T iStep2Inv = 1./iStep2; 
-//         const T iStep3Inv = 1./iStep3;
+	const int bS = shape::sizeAt(inShapeBuffer, 0);
+    const int iC = shape::sizeAt(inShapeBuffer, 1);
+    const int iH = shape::sizeAt(inShapeBuffer, 2);
+    const int iW = shape::sizeAt(inShapeBuffer, 3);
+    const int oH = shape::sizeAt(outShapeBuffer, 2);
+    const int oW = shape::sizeAt(outShapeBuffer, 3);            
+    const Nd4jLong iStride0 = shape::stride(inShapeBuffer)[0];
+    const Nd4jLong iStride1 = shape::stride(inShapeBuffer)[1];
+    const Nd4jLong iStride2 = shape::stride(inShapeBuffer)[2];
+    const Nd4jLong iStride3 = shape::stride(inShapeBuffer)[3];
+    const Nd4jLong oStride0 = shape::stride(outShapeBuffer)[0];
+    const Nd4jLong oStride1 = shape::stride(outShapeBuffer)[1];
+    const Nd4jLong oStride2 = shape::stride(outShapeBuffer)[2];
+    const Nd4jLong oStride3 = shape::stride(outShapeBuffer)[3];         
 
-//         const bool weirdStride = shape::order(outShapeBuffer) == 'f' || shape::elementWiseStride(outShapeBuffer) != 1;
+    const Nd4jLong iStep2 = dH*iStride2;
+    const Nd4jLong iStep3 = dW*iStride3;        
+    const int kProd  = kH*kW;
+    const T iStep2Inv = 1./iStep2; 
+    const T iStep3Inv = 1./iStep3;
 
-// #pragma omp parallel for if(size01 > nd4j::Environment::getInstance()->elementwiseThreshold()) collapse(2) schedule(guided)
-//         for(int b = 0; b < bS; ++b) {
-//         	for(int c = 0; c < iC; ++c) {
-                    
-//             	const int oStep01 = b * oStride0 + c * oStride1;                
-//                 T *pOut = out + oStep01;
-//                 T *pIn  = in + b * iStride0 + c * iStride1;
+    Nd4jLong hstart, wstart, hend, wend;
+    T sum, *pIn;
 
-// #pragma omp parallel for if(size23 > nd4j::Environment::getInstance()->elementwiseThreshold()) collapse(2) schedule(guided)
-//                 for(int oh = 0; oh < oH; ++oh) {
-//                 	for(int ow = 0; ow < oW; ++ow) {
-                            
-//                         Nd4jLong hstart = oh * sH - pH;
-//                         Nd4jLong wstart = ow * sW - pW;
-//                         Nd4jLong hend = hstart + kHEff;
-//                         Nd4jLong wend = wstart + kWEff;
-
-//                         if(hstart < 0)
-//                             hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
-//                         if(wstart < 0)
-//                             wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);
-//                         if(hend > iH)
-//                             hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);                            
-//                         if(wend > iW)
-//                             wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);
-
-//                         T sum = poolingMode == 0 ? (T) -MAX_FLOAT : (T) 0;
-
-//                         hstart *= iStride2;
-//                         hend   *= iStride2;
-//                         wstart *= iStride3;
-//                         wend   *= iStride3;
+    if(poolingMode == 0) {        // max 
+#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
                         
-//                         switch(poolingMode) {
+                        pIn  = in  + b * iStride0 + c * iStride1;
+                        
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;                        
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
+                        
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);                            
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);                            
 
-//                         	case 0:	{// max
-// #pragma omp simd reduction(maxT:sum) collapse(2)
-//                             	for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
-//                             		for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
-//                                 		T val = pIn[kh + kw];
-//                                         if (val > sum)
-//                                     		sum = val;
-//                                     }
-// 								break;
-//                             }
-//                             case 1:	{// avg
-// #pragma omp simd reduction(sumT:sum) collapse(2)
-//     	                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
-//                                     for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-//             	                    	sum += pIn[kh + kw];
-                                
-//                 	            if ((int) extraParam0 == 0)         //Exclude padding
-//                     	        	sum /= (Nd4jLong)(nd4j::math::nd4j_ceil<T>((hend-hstart) * iStep2Inv)) * (Nd4jLong)nd4j::math::nd4j_ceil<T>((wend-wstart) * iStep3Inv);   //Accounts for dilation
-//                         	    else if ((int) extraParam0 == 1)    //Include padding
-//                             		sum /= kProd;
-//                             	break;
-//                             }
-//                             case 2: {// pnorm
-// #pragma omp simd reduction(sumT:sum) collapse (2)
-//                                 for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
-//                                     for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-//                                         sum += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
-                                
-//                                 sum = nd4j::math::nd4j_pow<T>(sum, (T) 1. / extraParam0);
-//                                 break;
-//                             }
-//                             default: {
-// 								nd4j_printf("special_ops::pooling2d: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
-//                             	throw "";
-//                             }
-//                         }
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
 
-//                         if (weirdStride)
-//                         	out[oStep01 + oh * oStride2 + ow * oStride3] = sum;
-//                         else                         	
-//                         	*pOut++ = sum;
-//                     }
-//                 }
-//             }
-//         }
+                        sum = -MAX_FLOAT;
+                                                                    
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
+                                T val = pIn[kh + kw];
+                                    if (val > sum)
+                                        sum = val;
+                                    }
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                    }
+                }
+            }
+        }    
     }
+/*************************************************************************/    
+    else if(poolingMode == 1) {      // avg
+#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)        
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
+                        
+                        pIn  = in  + b * iStride0 + c * iStride1;
+
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
+
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);
+
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
+
+                        sum = static_cast<T>(0.);
+                                            
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                sum += pIn[kh + kw];
+                                
+                        if ((int) extraParam0 == 0)         //Exclude padding
+                            sum /= (Nd4jLong)nd4j::math::nd4j_ceil<T>((hend-hstart) * iStep2Inv) * (Nd4jLong)nd4j::math::nd4j_ceil<T>((wend-wstart) * iStep3Inv);   //Accounts for dilation
+                            else if ((int) extraParam0 == 1)    //Include padding
+                                sum /= kProd;
+                    
+                            out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                    }
+                }
+            }
+        }
+    }    
+/*************************************************************************/    
+    else if(poolingMode == 2) {  // pnorm
+#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)    
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
+                        
+                        pIn  = in  + b * iStride0 + c * iStride1;
+
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
+
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);
+
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
+
+                        sum = static_cast<T>(0.);
+                                                                    
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                sum += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                
+                        sum = nd4j::math::nd4j_pow<T>(sum, (T) 1. / extraParam0);
+                                                          
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                    }
+                }
+            }
+        }
+    }
+    else {
+        nd4j_printf("ConvolutionUtils::pooling2d: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
+        throw "";
+	}
+}
 
 		op_def static T op(T d1, T *params) {
 			return d1;
