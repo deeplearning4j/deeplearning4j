@@ -50,7 +50,9 @@ public class Bidirectional extends Layer {
      * by this layer. In the CONCAT case, the output activations size (dimension 1) is 2x larger than the standard RNN's
      * activations array.
      */
-    public enum Mode {ADD, MUL, AVERAGE, CONCAT}
+    public enum Mode {
+        ADD, MUL, AVERAGE, CONCAT
+    }
 
     private Layer fwd;
     private Layer bwd;
@@ -63,20 +65,23 @@ public class Bidirectional extends Layer {
 
     /**
      * Create a Bidirectional wrapper, with the default Mode (CONCAT) for the specified layer
+     *
      * @param layer layer to wrap
      */
-    public Bidirectional(@NonNull Layer layer){
-        this( Mode.CONCAT, layer);
+    public Bidirectional(@NonNull Layer layer) {
+        this(Mode.CONCAT, layer);
     }
 
     /**
      * Create a Bidirectional wrapper for the specified layer
-     * @param mode Mode to use to combine activations. See {@link Mode} for details
+     *
+     * @param mode  Mode to use to combine activations. See {@link Mode} for details
      * @param layer layer to wrap
      */
-    public Bidirectional(@NonNull Mode mode, @NonNull Layer layer){
-        if(!(layer instanceof BaseRecurrentLayer || layer instanceof BaseWrapperLayer)){
-            throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: config must extend BaseRecurrentLayer. " +
+    public Bidirectional(@NonNull Mode mode, @NonNull Layer layer) {
+        if (!(layer instanceof BaseRecurrentLayer || layer instanceof LastTimeStep || layer instanceof BaseWrapperLayer)) {
+            throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: " +
+                    "config must extend BaseRecurrentLayer or LastTimeStep " +
                     "Got class: " + layer.getClass());
         }
         this.fwd = layer;
@@ -94,8 +99,8 @@ public class Bidirectional extends Layer {
         c2.setLayer(bwd);
 
         long n = layerParamsView.length() / 2;
-        INDArray fp = layerParamsView.get(point(0), interval(0,n));
-        INDArray bp = layerParamsView.get(point(0), interval(n, 2*n));
+        INDArray fp = layerParamsView.get(point(0), interval(0, n));
+        INDArray bp = layerParamsView.get(point(0), interval(n, 2 * n));
         org.deeplearning4j.nn.api.layers.RecurrentLayer f
                 = (RecurrentLayer) fwd.instantiate(c1, trainingListeners, layerIndex, fp, initializeParams);
 
@@ -112,7 +117,7 @@ public class Bidirectional extends Layer {
 
     @Override
     public ParamInitializer initializer() {
-        if(initializer == null){
+        if (initializer == null) {
             initializer = new BidirectionalParamInitializer(this);
         }
         return initializer;
@@ -124,7 +129,7 @@ public class Bidirectional extends Layer {
 
         if (fwd instanceof LastTimeStep) {
             InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward) outOrig;
-            if(mode == Mode.CONCAT){
+            if (mode == Mode.CONCAT) {
                 return InputType.feedForward(2 * ff.getSize());
             } else {
                 return ff;
@@ -170,8 +175,8 @@ public class Bidirectional extends Layer {
      * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
      * is not necessarily the case
      *
-     * @param paramName    Parameter name
-     * @return             IUpdater for the parameter
+     * @param paramName Parameter name
+     * @return IUpdater for the parameter
      */
     public IUpdater getUpdaterByParam(String paramName) {
         String sub = paramName.substring(1);
@@ -179,7 +184,7 @@ public class Bidirectional extends Layer {
     }
 
     @Override
-    public void setLayerName(String layerName){
+    public void setLayerName(String layerName) {
         this.layerName = layerName;
         fwd.setLayerName(layerName);
         bwd.setLayerName(layerName);
@@ -204,8 +209,10 @@ public class Bidirectional extends Layer {
         }
 
         public Builder rnnLayer(Layer layer) {
-            if(!(layer instanceof BaseRecurrentLayer || layer instanceof BaseWrapperLayer)){
-                throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: config must extend BaseRecurrentLayer. " +
+            if (!(layer instanceof BaseRecurrentLayer || layer instanceof LastTimeStep
+                    || layer instanceof BaseWrapperLayer)) {
+                throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: " +
+                        "config must extend BaseRecurrentLayer or LastTimeStep " +
                         "Got class: " + layer.getClass());
             }
             this.layer = layer;

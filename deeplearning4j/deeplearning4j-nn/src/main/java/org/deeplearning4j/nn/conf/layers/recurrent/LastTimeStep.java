@@ -25,6 +25,7 @@ public class LastTimeStep extends BaseWrapperLayer {
 
     public LastTimeStep(Layer underlying){
         super(underlying);
+        this.layerName = underlying.getLayerName();
     }
 
     public Layer getUnderlying() {

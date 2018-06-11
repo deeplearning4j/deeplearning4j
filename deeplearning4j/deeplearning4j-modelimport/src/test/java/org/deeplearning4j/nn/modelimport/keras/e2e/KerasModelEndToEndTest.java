@@ -420,6 +420,15 @@ public class KerasModelEndToEndTest {
                 "modelimport/keras/examples/xception/xception_tf_keras_2.h5", inputShape, false);
     }
 
+    /**
+     * Seq2seq model
+     */
+    @Test
+    public void importSeq2Seq() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/seq2seq/full_model_seq2seq_5549.h5");
+
+    }
+
 
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
         return importFunctionalModelH5Test(modelPath, null, false);
