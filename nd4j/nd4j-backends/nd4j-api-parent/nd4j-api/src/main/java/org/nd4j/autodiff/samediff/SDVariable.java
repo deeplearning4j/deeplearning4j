@@ -3,6 +3,7 @@ package org.nd4j.autodiff.samediff;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.*;
 import onnx.OnnxProto3;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
@@ -25,6 +26,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  *
@@ -1107,10 +1109,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                begin_mask, end_mask, 0, 0, shrink_axis);
    }
 
+
    private static int binArrToInt(int[] arr){
         int x = 0;
         int m = 1;
-        for(int i = arr.length - 1; i >= 0; i--){
+        for(int i = 0; i < arr.length; i++){
             if(arr[i] == 1){
                 x += m;
             }
