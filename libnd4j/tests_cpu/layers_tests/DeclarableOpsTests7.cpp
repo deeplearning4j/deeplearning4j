@@ -4033,3 +4033,187 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_4) {
 
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_BP_1) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps('c', {4}, {1.f, 2.f, 3.f, 4.f});
+    NDArray<float> exp('c', {2, 3, 4}, { 2.f,  8.f, 18.f, 32.f, 
+                                        10.f, 24.f, 42.f, 64.f, 
+                                        18.f, 40.f, 66.f, 96.f, 
+                                            26.f, 56.f, 90.f, 128.f, 
+                                            34.f, 72.f, 114.f, 160.f, 
+                                            42.f, 88.f, 138.f, 192.f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::reduce_sqnorm_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {0,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);
+    output->printIndexedBuffer("Result is");
+
+//    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_1) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps('c', {4}, {1.f, 2.f, 3.f, 4.f});
+    NDArray<float> exp('c', {2, 3, 4});
+    NDArrayFactory<float>::linspace(1, x);
+    exp(20) = 1.f;
+    exp(21) = 2.f;
+    exp(22) = 3.f;
+    exp(23) = 4.f;
+
+    nd4j::ops::reduce_norm_max_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {0,1});
+    auto output = result->at(0);
+//    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_2) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps('c', {1,1,4}, {1.f, 2.f, 3.f, 4.f});
+    NDArray<float> exp('c', {2, 3, 4});
+    NDArrayFactory<float>::linspace(1, x);
+    exp(20) = 1.f;
+    exp(21) = 2.f;
+    exp(22) = 3.f;
+    exp(23) = 4.f;
+
+    nd4j::ops::reduce_norm_max_bp<float> op;
+    auto result = op.execute({&x, &eps}, {1.f}, {0,1});
+    auto output = result->at(0);
+//    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_3) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps('c', {3}, {1.f, 2.f, 3.f});
+    NDArray<float> exp('c', {2, 3, 4});
+    NDArrayFactory<float>::linspace(1, x);
+
+    exp(15) = 1.f;
+    exp(19) = 2.f;
+    exp(23) = 3.f;
+
+    nd4j::ops::reduce_norm_max_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {0,2});
+    auto output = result->at(0);
+//    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_4) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps('c', {1, 3, 1}, {1.f, 2.f, 3.f});
+    NDArray<float> exp('c', {2, 3, 4});
+    NDArrayFactory<float>::linspace(1, x);
+    exp(15) = 1.f;
+    exp(19) = 2.f;
+    exp(23) = 3.f;
+    nd4j::ops::reduce_norm_max_bp<float> op;
+    auto result = op.execute({&x, &eps}, {1.f}, {0,2});
+    auto output = result->at(0);
+//    output->printIndexedBuffer("Result is");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_5) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps(1.f);
+    NDArray<float> exp('c', {2, 3, 4});
+    NDArrayFactory<float>::linspace(1, x);
+    exp(23) = 1.f;
+    nd4j::ops::reduce_norm_max_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {});
+    auto output = result->at(0);    
+//    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_6) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps(1.f);
+    NDArray<float> exp('c', {2, 3, 4});
+    NDArrayFactory<float>::linspace(1, x);
+    exp(23) = 1.f;
+    
+    nd4j::ops::reduce_norm_max_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {0, 1, 2});
+    auto output = result->at(0);    
+//    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_7) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> eps('c', {1, 1, 1}, {1.f});
+    NDArray<float> exp('c', {2, 3, 4});
+    NDArrayFactory<float>::linspace(1, x);
+    exp(23) = 1.f;
+    nd4j::ops::reduce_norm_max_bp<float> op;
+    auto result = op.execute({&x, &eps}, {1.f}, {});
+    auto output = result->at(0);    
+//    output->printIndexedBuffer("Result is");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
