@@ -44,7 +44,8 @@ __device__ inline void convertKernelGeneric(void *dx, Nd4jLong N, void *dz) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (Nd4jLong i = tid; i < N; i+= blockDim.x * gridDim.x) {
-        z[i] = static_cast<T>(x[i]);
+        // despite it's stupid, it simplifies conversion to bottom dtypes
+        z[i] = static_cast<T>(static_cast<float>(x[i]));
     }
 };
 
@@ -555,13 +556,13 @@ void convertGeneric(void *dx, Nd4jLong N, void *dz) {
     if (N < 8000) {
 #pragma omp simd
         for (int i = 0; i < N; i++) {
-            z[i] = static_cast<T>(x[i]);
+            z[i] = static_cast<T>(static_cast<float>(x[i]));
         }
     } else {
 
 #pragma omp parallel for
         for (int i = 0; i < N; i++) {
-            z[i] = static_cast<T>(x[i]);
+            z[i] = static_cast<T>(static_cast<float>(x[i]));
         }
     }
 };
