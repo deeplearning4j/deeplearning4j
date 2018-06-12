@@ -1090,9 +1090,30 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+		no_op_exec_special_accumulation
+		no_op_exec_special_accumulation_cuda
+
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_isnan(d1) ? static_cast<T>(1.0f) : static_cast<T>(0.0f);
 		}
+
+        op_def static T startingValue(const T *input) {
+            return static_cast<T>(0.0f);
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+
+        op_def static T postProcess(T reduction, Nd4jLong n, T *extraParams) {
+            return reduction;
+        }
 	};
 
 
@@ -1113,10 +1134,65 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+		no_op_exec_special_accumulation
+		no_op_exec_special_accumulation_cuda
+
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_isinf<T>(d1) ? static_cast<T>(1.0f) : static_cast<T>(0.0f);
 		}
+
+        op_def static T startingValue(const T *input) {
+            return static_cast<T>(0.0f);
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+
+        op_def static T postProcess(T reduction, Nd4jLong n, T *extraParams) {
+            return reduction;
+        }
 	};
+
+
+	template<typename T>
+	class IsInfOrNan{
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		no_op_exec_special_accumulation
+		no_op_exec_special_accumulation_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_isfin<T>(d1) ? static_cast<T>(0.0f) : static_cast<T>(1.0f);
+		}
+
+		op_def static T startingValue(const T *input) {
+			return static_cast<T>(0.0f);
+		}
+
+		op_def static T merge(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+
+		op_def static T update(T old, T opOutput, T *extraParams) {
+			return opOutput + old;
+		}
+
+		op_def static T postProcess(T reduction, Nd4jLong n, T *extraParams) {
+			return reduction;
+		}
+	};
+
+
 
 	template<typename T>
 	class IsFinite {
@@ -1124,9 +1200,29 @@ namespace simdOps {
 		no_op_exec_special
 		no_op_exec_special_cuda
 
+		no_op_exec_special_accumulation
+		no_op_exec_special_accumulation_cuda
+
 		op_def static T op(T d1, T *params) {
 			return nd4j::math::nd4j_isfin<T>(d1) ? static_cast<T>(1.0f) : static_cast<T>(0.0f);
 		}
+
+        op_def static T startingValue(const T *input) {
+            return static_cast<T>(0.0f);
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static T postProcess(T reduction, Nd4jLong n, T *extraParams) {
+            return reduction;
+        }
 	};
 
 
@@ -2399,14 +2495,15 @@ namespace simdOps {
 			return opOutput + old;
 		}
 
-		op_def static T op(T d1, T *extraParams) {
-			return d1 * d1;
-		}
 
 		op_def static T postProcess(T reduction, Nd4jLong n, T *extraParams) {
 			return nd4j::math::nd4j_sqrt<T>(reduction);
 		}
-	};
+
+        op_def static T op(T d1, T *extraParams) {
+            return d1 * d1;
+        }
+    };
 
 	template<typename T>
 	class SquaredNorm {

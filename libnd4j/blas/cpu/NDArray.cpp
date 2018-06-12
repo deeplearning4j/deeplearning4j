@@ -1016,30 +1016,45 @@ template <typename T>
         return true;
     }
 
+    template <typename T>
+    bool NDArray<T>::hasNaNs() {
+        return static_cast<int>(this->template reduceNumber<simdOps::IsNan<T>>()) > 0;
+    }
+
+    template <typename T>
+    bool NDArray<T>::hasInfs() {
+        return static_cast<int>(this->template reduceNumber<simdOps::IsInf<T>>()) > 0;
+    }
+
+    template <typename T>
+    bool NDArray<T>::isFinite() {
+        return static_cast<int>(this->template reduceNumber<simdOps::IsInfOrNan<T>>()) == 0;
+    }
+
 //////////////////////////////////////////////////////////////////////////
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector
     template<typename T>
     template<typename OpName>
     NDArray<T> *NDArray<T>::reduceAlongDimension(const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-        
+
         std::vector<int> copy(dimensions);
-        
+
         auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
-        RELEASE(newShape, _workspace);        
-        
+        RELEASE(newShape, _workspace);
+
         if(rankOf() == copy.size())
-            result->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);        
+            result->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
         else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
-            tad.createOffsets();        
-            
+            tad.createOffsets();
+
             functions::reduce::ReduceFunction<T>::template exec<OpName>(_buffer, _shapeInfo, nullptr, result->_buffer,
                                                                         result->_shapeInfo, copy.data(), copy.size(),
-                                                                        tad.tadOnlyShapeInfo, tad.tadOffsets);       
+                                                                        tad.tadOnlyShapeInfo, tad.tadOffsets);
         }
-        
+
         return result;
     }
 
@@ -1048,25 +1063,25 @@ template <typename T>
     template<typename T>
     template<typename OpName>
     NDArray<T> NDArray<T>::reduceAlongDims(const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-        
+
         std::vector<int> copy(dimensions);
-        
-        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes);
+
+        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
         NDArray<T> result(newShape, _workspace);
-        RELEASE(newShape, _workspace);        
-        
+        RELEASE(newShape, _workspace);
+
         if(rankOf() == copy.size())
-            result._buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);        
+            result._buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
         else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
             tad.createTadOnlyShapeInfo();
-            tad.createOffsets();        
-            
+            tad.createOffsets();
+
             functions::reduce::ReduceFunction<T>::template exec<OpName>(_buffer, _shapeInfo, nullptr, result._buffer,
                                                                         result._shapeInfo, copy.data(), copy.size(),
-                                                                        tad.tadOnlyShapeInfo, tad.tadOffsets);       
+                                                                        tad.tadOnlyShapeInfo, tad.tadOffsets);
         }
-        
+
         return result;
     }
 

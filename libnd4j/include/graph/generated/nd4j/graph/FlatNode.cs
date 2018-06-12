@@ -121,6 +121,7 @@ public struct FlatNode : IFlatbufferObject
     return new Offset<FlatNode>(o);
   }
   public static void FinishFlatNodeBuffer(FlatBufferBuilder builder, Offset<FlatNode> offset) { builder.Finish(offset.Value); }
+  public static void FinishSizePrefixedFlatNodeBuffer(FlatBufferBuilder builder, Offset<FlatNode> offset) { builder.FinishSizePrefixed(offset.Value); }
 };
 
 

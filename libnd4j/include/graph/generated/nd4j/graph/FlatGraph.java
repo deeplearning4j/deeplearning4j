@@ -59,5 +59,6 @@ public final class FlatGraph extends Table {
     return o;
   }
   public static void finishFlatGraphBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset); }
+  public static void finishSizePrefixedFlatGraphBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset); }
 }
 

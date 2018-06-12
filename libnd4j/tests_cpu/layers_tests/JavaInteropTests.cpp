@@ -7,6 +7,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <graph/GraphHolder.h>
+#include <graph/FlatUtils.h>
 #include "testlayers.h"
 
 using namespace nd4j;
@@ -640,4 +641,59 @@ TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
     char *re = reinterpret_cast<char *>(ptr);
     delete[] pl;
     delete[] re;
+}
+
+
+
+TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
+    NativeOps ops;
+
+    auto pl = nd4j::graph::readFlatBuffers("./resources/gru_dynamic_mnist.fb");
+    auto ptr = ops.executeFlatGraphFloat(nullptr, pl);
+
+    // at this point we have FlatResults
+    auto flatResult = GetFlatResult(ptr);
+    auto size = flatResult->variables()->size();
+
+    // we know exact number of outputs in this graph in given mode
+    ASSERT_EQ(184, size);
+
+
+    // now we're rolling through all variables and restore them one by one
+    for (int e = 0; e < size; e++) {
+        auto flatVar = flatResult->variables()->Get(e);
+        auto flatArray = flatVar->ndarray();
+
+        // checking var part first
+        // we just want to ensure we're not experiencing overruns here
+        auto name = flatVar->name()->str();
+
+        // checking array part now
+        auto shape = flatArray->shape();
+        auto rank = shape->Get(0);
+
+        ASSERT_TRUE(shape->size() > 0 && rank >= 0 &&  rank < MAX_RANK);
+
+        // building regular NDArray out of this FlatArray
+        auto ndarray = nd4j::graph::FlatUtils::fromFlatArray<float>(flatArray);
+
+        // rank should match FlatArray
+        ASSERT_EQ(rank, ndarray->rankOf());
+
+        // array shouldn't have any NaN/Inf values
+        ASSERT_TRUE(ndarray->isFinite());
+
+        // array should be assignable
+        ndarray->assign(123.f);
+
+        // and safely removable after
+        delete ndarray;
+    }
+
+
+    auto re = reinterpret_cast<char *>(ptr);
+    delete[] pl;
+    delete[] re;
+
+    // and we should have 0 leaks reported after this line :)
 }

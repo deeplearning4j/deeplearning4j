@@ -119,15 +119,30 @@ inline const nd4j::graph::FlatProperties *GetFlatProperties(const void *buf) {
   return flatbuffers::GetRoot<nd4j::graph::FlatProperties>(buf);
 }
 
+inline const nd4j::graph::FlatProperties *GetSizePrefixedFlatProperties(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatProperties>(buf);
+}
+
 inline bool VerifyFlatPropertiesBuffer(
     flatbuffers::Verifier &verifier) {
   return verifier.VerifyBuffer<nd4j::graph::FlatProperties>(nullptr);
+}
+
+inline bool VerifySizePrefixedFlatPropertiesBuffer(
+    flatbuffers::Verifier &verifier) {
+  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatProperties>(nullptr);
 }
 
 inline void FinishFlatPropertiesBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
     flatbuffers::Offset<nd4j::graph::FlatProperties> root) {
   fbb.Finish(root);
+}
+
+inline void FinishSizePrefixedFlatPropertiesBuffer(
+    flatbuffers::FlatBufferBuilder &fbb,
+    flatbuffers::Offset<nd4j::graph::FlatProperties> root) {
+  fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph

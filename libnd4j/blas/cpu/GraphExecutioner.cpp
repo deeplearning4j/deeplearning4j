@@ -546,8 +546,10 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
 
     // now, we'll prepare output, depending on given outputmode
     auto outputs = nativeGraph->fetchOutputs();
+    auto size = static_cast<int>(outputs->size());
+    int arrays = 0;
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
-    for (int e = 0; e < (int) outputs->size(); e++) {
+    for (int e = 0; e < size; e++) {
         auto var = outputs->at(e);
 
         // FIXME: we want to export multi-output nodes as well
@@ -562,9 +564,9 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
         auto fBuffer = builder.CreateVector(byteVector);
         auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
 
-        nd4j::graph::ByteOrder bo = (nd4j::graph::ByteOrder) BitwiseUtils::asByteOrder();
+        auto bo = static_cast<nd4j::graph::ByteOrder>(BitwiseUtils::asByteOrder());
 
-        auto fArray = CreateFlatArray(builder, fShape, fBuffer, (nd4j::graph::DataType) DataTypeUtils::fromT<T>(), bo);
+        auto fArray = CreateFlatArray(builder, fShape, fBuffer, static_cast<nd4j::graph::DataType>(DataTypeUtils::fromT<T>()), bo);
 
         auto fName = builder.CreateString(*(var->getName()));
         auto id = CreateIntPair(builder, var->id(), var->index());
@@ -572,12 +574,10 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
         auto fv = CreateFlatVariable(builder, id, fName, 0, fArray);
 
         variables_vector.push_back(fv);
-
-        //nd4j_printf("exporting variable [%s]:\n", var->getName()->c_str());
-        //array->printIndexedBuffer(var->getName()->c_str());
+        arrays++;
     }
 
-    nd4j_debug("Returning %i variables back\n", variables_vector.size());
+    nd4j_debug("Returning %i variables back\n", arrays);
 
     auto varTimings = builder.CreateVector(timings_vector);
     auto varVectors = builder.CreateVector(variables_vector);
@@ -590,6 +590,8 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
 
     char* res = new char[builder.GetSize()];
     memcpy(res, builder.GetBufferPointer(), builder.GetSize());
+
+    nd4j_debug("Buffer size: %lld\n", static_cast<Nd4jLong>(builder.GetSize()));
 
     return (Nd4jPointer) res; //builder.GetBufferPointer();
 }

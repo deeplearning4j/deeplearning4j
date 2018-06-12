@@ -125,15 +125,30 @@ inline const nd4j::graph::FlatGraph *GetFlatGraph(const void *buf) {
   return flatbuffers::GetRoot<nd4j::graph::FlatGraph>(buf);
 }
 
+inline const nd4j::graph::FlatGraph *GetSizePrefixedFlatGraph(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatGraph>(buf);
+}
+
 inline bool VerifyFlatGraphBuffer(
     flatbuffers::Verifier &verifier) {
   return verifier.VerifyBuffer<nd4j::graph::FlatGraph>(nullptr);
+}
+
+inline bool VerifySizePrefixedFlatGraphBuffer(
+    flatbuffers::Verifier &verifier) {
+  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatGraph>(nullptr);
 }
 
 inline void FinishFlatGraphBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
     flatbuffers::Offset<nd4j::graph::FlatGraph> root) {
   fbb.Finish(root);
+}
+
+inline void FinishSizePrefixedFlatGraphBuffer(
+    flatbuffers::FlatBufferBuilder &fbb,
+    flatbuffers::Offset<nd4j::graph::FlatGraph> root) {
+  fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph
