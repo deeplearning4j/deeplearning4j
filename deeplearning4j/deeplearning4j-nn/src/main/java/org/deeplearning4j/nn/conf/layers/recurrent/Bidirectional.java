@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -87,6 +88,14 @@ public class Bidirectional extends Layer {
         this.fwd = layer;
         this.bwd = layer.clone();
         this.mode = mode;
+    }
+
+    public long getNOut() {
+        return ((FeedForwardLayer) this.fwd).getNOut();
+    }
+
+    public long getNIn() {
+        return ((FeedForwardLayer) this.fwd).getNIn();
     }
 
     @Override

@@ -41,7 +41,7 @@ public class KerasWeightSettingTests {
                 importConv2D(conv2dPath);
                 log.info("***** Successfully imported " + conv2dPath);
 
-                if (backend.equals("tensorflow")) { // TODO: theano fails
+                if (version == 2 && backend.equals("tensorflow")) { // TODO should work for theano
                     String conv2dReshapePath = "modelimport/keras/weights/conv2d_reshape_"
                             + backend + "_" + version + ".h5";
                     System.out.println(backend + "_" + version);
@@ -84,18 +84,18 @@ public class KerasWeightSettingTests {
                 importSimpleRnn(simpleRnnPath);
                 log.info("***** Successfully imported " + simpleRnnPath);
 
-//                String bidirectionalLstmPath = "modelimport/keras/weights/bidirectional_lstm_" + backend + "_" + version + ".h5";
-//                importBidirectionalLstm(bidirectionalLstmPath);
-//                log.info("***** Successfully imported " + bidirectionalLstmPath);
+                String bidirectionalLstmPath = "modelimport/keras/weights/bidirectional_lstm_" + backend + "_" + version + ".h5";
+                importBidirectionalLstm(bidirectionalLstmPath);
+                log.info("***** Successfully imported " + bidirectionalLstmPath);
 
-                if (backend.equals("tensorflow")) { // TODO: fails for theano
+                if (version == 2 && backend.equals("tensorflow")) {
                     String batchToConv2dPath = "modelimport/keras/weights/batch_to_conv2d_"
                             + backend + "_" + version + ".h5";
                     importBatchNormToConv2D(batchToConv2dPath);
                     log.info("***** Successfully imported " + batchToConv2dPath);
                 }
 
-                if (backend.equals("tensorflow") && version == 2) {
+                if (backend.equals("tensorflow") && version == 2) { // TODO should work for theano
                     String simpleSpaceToBatchPath = "modelimport/keras/weights/space_to_depth_simple_"
                             + backend + "_" + version + ".h5";
                     importSimpleSpaceToDepth(simpleSpaceToBatchPath);
