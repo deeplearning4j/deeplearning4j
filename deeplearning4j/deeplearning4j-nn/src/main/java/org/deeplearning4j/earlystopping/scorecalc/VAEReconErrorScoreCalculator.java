@@ -79,4 +79,9 @@ public class VAEReconErrorScoreCalculator extends BaseScoreCalculator<Model> {
     protected double finalScore(double scoreSum, int minibatchCount, int exampleCount) {
         return evaluation.scoreForMetric(metric);
     }
+
+    @Override
+    public boolean minimizeScore() {
+        return true;    //Minimize reconstruction error
+    }
 }
