@@ -41,6 +41,17 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+
+        CONFIGURABLE_OP_IMPL(cumprod_bp, 2, 1, true, 0, 2) {
+            auto input = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
+
+            const bool exclusive = INT_ARG(0) == 1;
+            const bool reverse = INT_ARG(1) == 1;
+
+            // 
+            return ND4J_STATUS_OK;
+        }
     }
 }
 

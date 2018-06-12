@@ -143,6 +143,14 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(mirror_pad, 2, 1, false, 0, 1);
         #endif
 
+        #if NOT_EXCLUDED(OP_cumsum_bp)
+        DECLARE_CONFIGURABLE_OP(cumsum_bp, 2, 1, true, 0, 2);
+        #endif
+
+        #if NOT_EXCLUDED(OP_cumprod)
+        DECLARE_CONFIGURABLE_OP(cumprod_bp, 2, 1, true, 0, 2);
+        #endif
+
     }
 }
 
