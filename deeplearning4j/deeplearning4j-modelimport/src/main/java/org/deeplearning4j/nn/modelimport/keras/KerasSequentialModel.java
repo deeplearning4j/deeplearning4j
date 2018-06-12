@@ -31,12 +31,15 @@ import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils.importWeights;
 
 /**
  * Build DL4J MultiLayerNetwork model from Keras Sequential
@@ -97,7 +100,10 @@ public class KerasSequentialModel extends KerasModel {
         if (!modelConfig.containsKey(config.getModelFieldConfig()))
             throw new InvalidKerasConfigurationException(
                     "Could not find layer configurations (no " + config.getModelFieldConfig() + " field found)");
-        prepareLayers((List<Object>) modelConfig.get(config.getModelFieldConfig()));
+        Pair<Map<String, KerasLayer>, List<KerasLayer>> layerPair =
+                prepareLayers((List<Object>) modelConfig.get(config.getModelFieldConfig()));
+        this.layers = layerPair.getFirst();
+        this.layersOrdered = layerPair.getSecond();
 
         KerasLayer inputLayer;
         if (this.layersOrdered.get(0) instanceof KerasInput) {
@@ -131,12 +137,10 @@ public class KerasSequentialModel extends KerasModel {
                     " your keras model with `model.save('model_path.h5'. If you store model config and weights" +
                     " separately no training configuration is attached.");
         }
-        /* Infer output types for each layer. */
-        inferOutputTypes(inputShape);
+        this.outputTypes = inferOutputTypes(inputShape);
 
-        /* Store weights in layers. */
         if (weightsArchive != null)
-            KerasModelUtils.importWeights(weightsArchive, weightsRoot, layers, kerasMajorVersion, kerasBackend);
+            importWeights(weightsArchive, weightsRoot, layers, kerasMajorVersion, kerasBackend);
     }
 
     public KerasSequentialModel() {
@@ -155,10 +159,10 @@ public class KerasSequentialModel extends KerasModel {
                     "Keras model class name " + this.className + " incompatible with MultiLayerNetwork");
         if (this.inputLayerNames.size() != 1)
             throw new InvalidKerasConfigurationException(
-                    "MultiLayeNetwork expects only 1 input (found " + this.inputLayerNames.size() + ")");
+                    "MultiLayerNetwork expects only 1 input (found " + this.inputLayerNames.size() + ")");
         if (this.outputLayerNames.size() != 1)
             throw new InvalidKerasConfigurationException(
-                    "MultiLayeNetwork expects only 1 output (found " + this.outputLayerNames.size() + ")");
+                    "MultiLayerNetwork expects only 1 output (found " + this.outputLayerNames.size() + ")");
 
         NeuralNetConfiguration.Builder modelBuilder = new NeuralNetConfiguration.Builder();
         NeuralNetConfiguration.ListBuilder listBuilder = modelBuilder.list();
@@ -187,11 +191,6 @@ public class KerasSequentialModel extends KerasModel {
                         listBuilder.inputPreProcessor(layerIndex, preprocessor);
                 }
                 listBuilder.layer(layerIndex++, layer.getLayer());
-                if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer)) {
-                    // TODO: since this is always true right now, it just clutters the output.
-//                    log.warn("Model cannot be trained: output layer " + layer.getLayerName()
-//                            + " is not an IOutputLayer (no loss function specified)");
-                }
             } else if (layer.getVertex() != null)
                 throw new InvalidKerasConfigurationException("Cannot add vertex to MultiLayerConfiguration (class name "
                         + layer.getClassName() + ", layer name " + layer.getLayerName() + ")");

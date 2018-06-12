@@ -413,11 +413,20 @@ public class KerasModelEndToEndTest {
      * Xception
      */
     @Test
-    @Ignore
     public void importXception() throws Exception {
         int[] inputShape = new int[]{299, 299, 3};
         ComputationGraph graph = importFunctionalModelH5Test(
                 "modelimport/keras/examples/xception/xception_tf_keras_2.h5", inputShape, false);
+    }
+
+    /**
+     * Seq2seq model
+     */
+    @Test
+    @Ignore // does not work yet, needs DL4J enhancements
+    public void importSeq2Seq() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/seq2seq/full_model_seq2seq_5549.h5");
+
     }
 
 

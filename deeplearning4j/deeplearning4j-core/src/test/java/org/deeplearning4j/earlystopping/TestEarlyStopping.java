@@ -10,12 +10,7 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
-import org.deeplearning4j.earlystopping.scorecalc.ClassificationScoreCalculator;
-import org.deeplearning4j.earlystopping.scorecalc.AutoencoderScoreCalculator;
-import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
-import org.deeplearning4j.earlystopping.scorecalc.RegressionScoreCalculator;
-import org.deeplearning4j.earlystopping.scorecalc.VAEReconErrorScoreCalculator;
-import org.deeplearning4j.earlystopping.scorecalc.VAEReconProbScoreCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.*;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
@@ -23,6 +18,7 @@ import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTermina
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.eval.ROCBinary;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -63,45 +59,132 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
     @Test
     public void testEarlyStoppingIris() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
-                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .pretrain(false).backprop(true).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.setListeners(new ScoreIterationListener(1));
 
         DataSetIterator irisIter = new IrisDataSetIterator(150, 150);
-        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
-        EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
-                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
-                                        .iterationTerminationConditions(
-                                                        new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
-                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
-                                        .build();
 
-        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf, net, irisIter);
+        for( int i=0; i<6; i++ ) {
+            Nd4j.getRandom().setSeed(12345);
 
-        EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
-        System.out.println(result);
+            ScoreCalculator sc;
+            boolean min;
+            switch(i){
+                case 0:
+                    sc = new DataSetLossCalculator(irisIter, true);
+                    min = true;
+                    break;
+                case 1:
+                    sc = new ClassificationScoreCalculator(Evaluation.Metric.ACCURACY, irisIter);
+                    min = false;
+                    break;
+                case 2:
+                    sc = new ClassificationScoreCalculator(Evaluation.Metric.F1, irisIter);
+                    min = false;
+                    break;
+                case 3:
+                    sc = new RegressionScoreCalculator(RegressionEvaluation.Metric.MSE, irisIter);
+                    min = true;
+                    break;
+                case 4:
+                    sc = new ROCScoreCalculator(ROCScoreCalculator.ROCType.MULTICLASS, ROCScoreCalculator.Metric.AUC, irisIter);
+                    min = false;
+                    break;
+                case 5:
+                    sc = new ROCScoreCalculator(ROCScoreCalculator.ROCType.MULTICLASS, ROCScoreCalculator.Metric.AUPRC, irisIter);
+                    min = false;
+                    break;
+                case 6:
+                    sc = new ROCScoreCalculator(ROCScoreCalculator.ROCType.BINARY, ROCScoreCalculator.Metric.AUC, irisIter);
+                    min = false;
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
 
-        assertEquals(5, result.getTotalEpochs());
-        assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition, result.getTerminationReason());
-        Map<Integer, Double> scoreVsIter = result.getScoreVsEpoch();
-        assertEquals(5, scoreVsIter.size());
-        String expDetails = esConf.getEpochTerminationConditions().get(0).toString();
-        assertEquals(expDetails, result.getTerminationDetails());
+            String msg = i + " - " + sc.getClass().getSimpleName();
+            log.info("Starting test - {}", msg);
 
-        MultiLayerNetwork out = result.getBestModel();
-        assertNotNull(out);
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .updater(new Sgd(0.5)).weightInit(WeightInit.XAVIER).list()
+                    .layer(new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH).build())
+                    .layer(new OutputLayer.Builder().nIn(4).nOut(3)
+                            .activation(Activation.SOFTMAX)
+                            .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                    .pretrain(false).backprop(true).build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+//            net.setListeners(new ScoreIterationListener(1));
 
-        //Check that best score actually matches (returned model vs. manually calculated score)
-        MultiLayerNetwork bestNetwork = result.getBestModel();
-        irisIter.reset();
-        double score = bestNetwork.score(irisIter.next());
-        assertEquals(result.getBestModelScore(), score, 1e-2);
+            EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+            EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
+                    new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                            .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                            .iterationTerminationConditions(
+                                    new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                            .scoreCalculator(sc).modelSaver(saver)
+                            .build();
+
+            IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf, net, irisIter);
+
+            EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+            System.out.println(result);
+
+            assertEquals(5, result.getTotalEpochs());
+            assertEquals(EarlyStoppingResult.TerminationReason.EpochTerminationCondition, result.getTerminationReason());
+            Map<Integer, Double> scoreVsIter = result.getScoreVsEpoch();
+            assertEquals(5, scoreVsIter.size());
+            String expDetails = esConf.getEpochTerminationConditions().get(0).toString();
+            assertEquals(expDetails, result.getTerminationDetails());
+
+            MultiLayerNetwork out = result.getBestModel();
+            assertNotNull(out);
+
+
+
+            //Validate that it is in fact the best model:
+            int bestEpoch = -1;
+            double bestScore = (min ? Double.MAX_VALUE : -Double.MAX_VALUE);
+            for (int j = 0; j < 5; j++) {
+                double s = scoreVsIter.get(j);
+                if ((min && s < bestScore) || (!min && s > bestScore)) {
+                    bestScore = s;
+                    bestEpoch = j;
+                }
+            }
+            assertEquals(msg, bestEpoch, out.getEpochCount());
+            assertEquals(msg, bestScore, result.getBestModelScore(), 1e-5);
+
+            //Check that best score actually matches (returned model vs. manually calculated score)
+            MultiLayerNetwork bestNetwork = result.getBestModel();
+            irisIter.reset();
+            double score;
+            switch (i){
+                case 0:
+                    score = bestNetwork.score(irisIter.next());
+                    break;
+                case 1:
+                    score = bestNetwork.evaluate(irisIter).accuracy();
+                    break;
+                case 2:
+                    score = bestNetwork.evaluate(irisIter).f1();
+                    break;
+                case 3:
+                    score = bestNetwork.evaluateRegression(irisIter).averageMeanSquaredError();
+                    break;
+                case 4:
+                    score = bestNetwork.evaluateROCMultiClass(irisIter).calculateAverageAUC();
+                    break;
+                case 5:
+                    score = bestNetwork.evaluateROCMultiClass(irisIter).calculateAverageAUCPR();
+                    break;
+                case 6:
+                    score = bestNetwork.doEvaluation(irisIter, new ROCBinary())[0].calculateAverageAuc();
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+            assertEquals(msg, result.getBestModelScore(), score, 1e-2);
+        }
     }
 
     @Test

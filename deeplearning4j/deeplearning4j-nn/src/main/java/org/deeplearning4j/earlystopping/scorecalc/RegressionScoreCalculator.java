@@ -30,4 +30,9 @@ public class RegressionScoreCalculator extends BaseIEvaluationScoreCalculator<Mo
     protected double finalScore(RegressionEvaluation eval) {
         return eval.scoreForMetric(metric);
     }
+
+    @Override
+    public boolean minimizeScore() {
+        return metric.minimize();
+    }
 }

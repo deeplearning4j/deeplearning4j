@@ -135,6 +135,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         setInput(input, workspaceMgr);
         return activateHelper(training, null, null, false, workspaceMgr).fwdPassOutput;
     }
+
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return activateHelper(training, null, null, false, workspaceMgr).fwdPassOutput;
