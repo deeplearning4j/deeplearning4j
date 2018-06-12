@@ -65,7 +65,6 @@ public struct FlatProperties : IFlatbufferObject
     return new Offset<FlatProperties>(o);
   }
   public static void FinishFlatPropertiesBuffer(FlatBufferBuilder builder, Offset<FlatProperties> offset) { builder.Finish(offset.Value); }
-  public static void FinishSizePrefixedFlatPropertiesBuffer(FlatBufferBuilder builder, Offset<FlatProperties> offset) { builder.FinishSizePrefixed(offset.Value); }
 };
 
 

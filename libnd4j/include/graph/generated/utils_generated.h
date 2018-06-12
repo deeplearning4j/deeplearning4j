@@ -38,8 +38,8 @@ enum OpType {
   OpType_MAX = OpType_LOGIC
 };
 
-inline const OpType (&EnumValuesOpType())[16] {
-  static const OpType values[] = {
+inline OpType (&EnumValuesOpType())[16] {
+  static OpType values[] = {
     OpType_TRANSFORM,
     OpType_ACCUMULATION,
     OpType_INDEX_ACCUMULATION,
@@ -70,8 +70,8 @@ enum InputType {
   InputType_MAX = InputType_STRINGULAR_SET
 };
 
-inline const InputType (&EnumValuesInputType())[5] {
-  static const InputType values[] = {
+inline InputType (&EnumValuesInputType())[5] {
+  static InputType values[] = {
     InputType_UNDEFINED,
     InputType_NUMERIC,
     InputType_STRINGULAR,
@@ -81,8 +81,8 @@ inline const InputType (&EnumValuesInputType())[5] {
   return values;
 }
 
-inline const char * const *EnumNamesInputType() {
-  static const char * const names[] = {
+inline const char **EnumNamesInputType() {
+  static const char *names[] = {
     "UNDEFINED",
     "NUMERIC",
     "STRINGULAR",
@@ -109,8 +109,8 @@ enum OpClass {
   OpClass_MAX = OpClass_LOOP
 };
 
-inline const OpClass (&EnumValuesOpClass())[6] {
-  static const OpClass values[] = {
+inline OpClass (&EnumValuesOpClass())[6] {
+  static OpClass values[] = {
     OpClass_TRANSFORM,
     OpClass_REDUCTION,
     OpClass_MULTIPLICATOR,
@@ -121,8 +121,8 @@ inline const OpClass (&EnumValuesOpClass())[6] {
   return values;
 }
 
-inline const char * const *EnumNamesOpClass() {
-  static const char * const names[] = {
+inline const char **EnumNamesOpClass() {
+  static const char *names[] = {
     "TRANSFORM",
     "REDUCTION",
     "MULTIPLICATOR",

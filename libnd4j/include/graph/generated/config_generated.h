@@ -20,8 +20,8 @@ enum ProfilingMode {
   ProfilingMode_MAX = ProfilingMode_ANY_PANIC
 };
 
-inline const ProfilingMode (&EnumValuesProfilingMode())[4] {
-  static const ProfilingMode values[] = {
+inline ProfilingMode (&EnumValuesProfilingMode())[4] {
+  static ProfilingMode values[] = {
     ProfilingMode_NONE,
     ProfilingMode_NAN_PANIC,
     ProfilingMode_INF_PANIC,
@@ -30,8 +30,8 @@ inline const ProfilingMode (&EnumValuesProfilingMode())[4] {
   return values;
 }
 
-inline const char * const *EnumNamesProfilingMode() {
-  static const char * const names[] = {
+inline const char **EnumNamesProfilingMode() {
+  static const char *names[] = {
     "NONE",
     "NAN_PANIC",
     "INF_PANIC",
@@ -54,8 +54,8 @@ enum ExecutionMode {
   ExecutionMode_MAX = ExecutionMode_AUTO
 };
 
-inline const ExecutionMode (&EnumValuesExecutionMode())[3] {
-  static const ExecutionMode values[] = {
+inline ExecutionMode (&EnumValuesExecutionMode())[3] {
+  static ExecutionMode values[] = {
     ExecutionMode_SEQUENTIAL,
     ExecutionMode_STRICT,
     ExecutionMode_AUTO
@@ -63,8 +63,8 @@ inline const ExecutionMode (&EnumValuesExecutionMode())[3] {
   return values;
 }
 
-inline const char * const *EnumNamesExecutionMode() {
-  static const char * const names[] = {
+inline const char **EnumNamesExecutionMode() {
+  static const char *names[] = {
     "SEQUENTIAL",
     "STRICT",
     "AUTO",
@@ -88,8 +88,8 @@ enum OutputMode {
   OutputMode_MAX = OutputMode_OPTIMIZED
 };
 
-inline const OutputMode (&EnumValuesOutputMode())[5] {
-  static const OutputMode values[] = {
+inline OutputMode (&EnumValuesOutputMode())[5] {
+  static OutputMode values[] = {
     OutputMode_IMPLICIT,
     OutputMode_EXPLICIT,
     OutputMode_EXPLICIT_AND_IMPLICIT,
@@ -99,8 +99,8 @@ inline const OutputMode (&EnumValuesOutputMode())[5] {
   return values;
 }
 
-inline const char * const *EnumNamesOutputMode() {
-  static const char * const names[] = {
+inline const char **EnumNamesOutputMode() {
+  static const char *names[] = {
     "IMPLICIT",
     "EXPLICIT",
     "EXPLICIT_AND_IMPLICIT",
@@ -124,8 +124,8 @@ enum Direction {
   Direction_MAX = Direction_BACKWARD_ONLY
 };
 
-inline const Direction (&EnumValuesDirection())[3] {
-  static const Direction values[] = {
+inline Direction (&EnumValuesDirection())[3] {
+  static Direction values[] = {
     Direction_FORWARD_ONLY,
     Direction_FORWARD_AND_BACKWARD,
     Direction_BACKWARD_ONLY
@@ -133,8 +133,8 @@ inline const Direction (&EnumValuesDirection())[3] {
   return values;
 }
 
-inline const char * const *EnumNamesDirection() {
-  static const char * const names[] = {
+inline const char **EnumNamesDirection() {
+  static const char *names[] = {
     "FORWARD_ONLY",
     "FORWARD_AND_BACKWARD",
     "BACKWARD_ONLY",
@@ -262,30 +262,15 @@ inline const nd4j::graph::FlatConfiguration *GetFlatConfiguration(const void *bu
   return flatbuffers::GetRoot<nd4j::graph::FlatConfiguration>(buf);
 }
 
-inline const nd4j::graph::FlatConfiguration *GetSizePrefixedFlatConfiguration(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatConfiguration>(buf);
-}
-
 inline bool VerifyFlatConfigurationBuffer(
     flatbuffers::Verifier &verifier) {
   return verifier.VerifyBuffer<nd4j::graph::FlatConfiguration>(nullptr);
-}
-
-inline bool VerifySizePrefixedFlatConfigurationBuffer(
-    flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatConfiguration>(nullptr);
 }
 
 inline void FinishFlatConfigurationBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
     flatbuffers::Offset<nd4j::graph::FlatConfiguration> root) {
   fbb.Finish(root);
-}
-
-inline void FinishSizePrefixedFlatConfigurationBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatConfiguration> root) {
-  fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph

@@ -54,7 +54,6 @@ public struct FlatVariable : IFlatbufferObject
     return new Offset<FlatVariable>(o);
   }
   public static void FinishFlatVariableBuffer(FlatBufferBuilder builder, Offset<FlatVariable> offset) { builder.Finish(offset.Value); }
-  public static void FinishSizePrefixedFlatVariableBuffer(FlatBufferBuilder builder, Offset<FlatVariable> offset) { builder.FinishSizePrefixed(offset.Value); }
 };
 
 

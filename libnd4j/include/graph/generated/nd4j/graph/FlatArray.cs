@@ -53,7 +53,6 @@ public struct FlatArray : IFlatbufferObject
     return new Offset<FlatArray>(o);
   }
   public static void FinishFlatArrayBuffer(FlatBufferBuilder builder, Offset<FlatArray> offset) { builder.Finish(offset.Value); }
-  public static void FinishSizePrefixedFlatArrayBuffer(FlatBufferBuilder builder, Offset<FlatArray> offset) { builder.FinishSizePrefixed(offset.Value); }
 };
 
 

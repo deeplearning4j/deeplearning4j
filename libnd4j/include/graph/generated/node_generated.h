@@ -258,30 +258,15 @@ inline const nd4j::graph::FlatNode *GetFlatNode(const void *buf) {
   return flatbuffers::GetRoot<nd4j::graph::FlatNode>(buf);
 }
 
-inline const nd4j::graph::FlatNode *GetSizePrefixedFlatNode(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatNode>(buf);
-}
-
 inline bool VerifyFlatNodeBuffer(
     flatbuffers::Verifier &verifier) {
   return verifier.VerifyBuffer<nd4j::graph::FlatNode>(nullptr);
-}
-
-inline bool VerifySizePrefixedFlatNodeBuffer(
-    flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatNode>(nullptr);
 }
 
 inline void FinishFlatNodeBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
     flatbuffers::Offset<nd4j::graph::FlatNode> root) {
   fbb.Finish(root);
-}
-
-inline void FinishSizePrefixedFlatNodeBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatNode> root) {
-  fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph

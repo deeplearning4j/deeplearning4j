@@ -54,6 +54,5 @@ public final class FlatResult extends Table {
     return o;
   }
   public static void finishFlatResultBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset); }
-  public static void finishSizePrefixedFlatResultBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset); }
 }
 

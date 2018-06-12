@@ -61,7 +61,6 @@ public struct FlatConfiguration : IFlatbufferObject
     return new Offset<FlatConfiguration>(o);
   }
   public static void FinishFlatConfigurationBuffer(FlatBufferBuilder builder, Offset<FlatConfiguration> offset) { builder.Finish(offset.Value); }
-  public static void FinishSizePrefixedFlatConfigurationBuffer(FlatBufferBuilder builder, Offset<FlatConfiguration> offset) { builder.FinishSizePrefixed(offset.Value); }
 };
 
 

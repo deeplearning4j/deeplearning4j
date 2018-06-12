@@ -17,11 +17,9 @@ public final class FlatArray extends Table {
   public long shape(int j) { int o = __offset(4); return o != 0 ? bb.getLong(__vector(o) + j * 8) : 0; }
   public int shapeLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(4, 8); }
-  public ByteBuffer shapeInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 4, 8); }
   public byte buffer(int j) { int o = __offset(6); return o != 0 ? bb.get(__vector(o) + j * 1) : 0; }
   public int bufferLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
   public ByteBuffer bufferAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
-  public ByteBuffer bufferInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
   public byte dtype() { int o = __offset(8); return o != 0 ? bb.get(o + bb_pos) : 0; }
   public byte byteOrder() { int o = __offset(10); return o != 0 ? bb.get(o + bb_pos) : 0; }
 
@@ -52,6 +50,5 @@ public final class FlatArray extends Table {
     return o;
   }
   public static void finishFlatArrayBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset); }
-  public static void finishSizePrefixedFlatArrayBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset); }
 }
 
