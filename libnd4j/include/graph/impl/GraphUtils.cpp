@@ -3,11 +3,11 @@
 //
 
 #include <graph/GraphUtils.h>
-#include <unistd.h>
 #include <cstdlib>
 #include <cstdio>
 
 #ifdef __linux__ //_WIN32
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 //#eldef __APPLE__
