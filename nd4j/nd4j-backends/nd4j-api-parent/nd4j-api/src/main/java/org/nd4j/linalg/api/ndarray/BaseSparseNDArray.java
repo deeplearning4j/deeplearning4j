@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
@@ -1924,6 +1925,18 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public boolean equals(Object o) {
         return equalsWithEps(o, Nd4j.EPS_THRESHOLD);
+    }
+
+    @Override
+    public boolean equalShapes(@NonNull INDArray other){
+        if(rank() != other.rank())
+            return false;
+        for( int i=0; i<rank(); i++ ){
+            if(size(i) != other.size(i)){
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

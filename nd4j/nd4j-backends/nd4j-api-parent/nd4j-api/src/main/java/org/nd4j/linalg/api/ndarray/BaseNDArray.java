@@ -5202,6 +5202,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
+    @Override
     public boolean equalShapes(@NonNull INDArray other){
         if(rank() != other.rank())
             return false;
