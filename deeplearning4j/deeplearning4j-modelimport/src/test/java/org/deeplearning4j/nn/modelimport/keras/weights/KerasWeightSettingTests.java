@@ -84,9 +84,16 @@ public class KerasWeightSettingTests {
                 importSimpleRnn(simpleRnnPath);
                 log.info("***** Successfully imported " + simpleRnnPath);
 
-                String bidirectionalLstmPath = "modelimport/keras/weights/bidirectional_lstm_" + backend + "_" + version + ".h5";
+                String bidirectionalLstmPath = "modelimport/keras/weights/bidirectional_lstm_"
+                        + backend + "_" + version + ".h5";
                 importBidirectionalLstm(bidirectionalLstmPath);
                 log.info("***** Successfully imported " + bidirectionalLstmPath);
+
+                String bidirectionalLstmNoSequencesPath =
+                        "modelimport/keras/weights/bidirectional_lstm_no_return_sequences_"
+                                + backend + "_" + version + ".h5";
+                importBidirectionalLstm(bidirectionalLstmNoSequencesPath);
+                log.info("***** Successfully imported " + bidirectionalLstmNoSequencesPath);
 
                 if (version == 2 && backend.equals("tensorflow")) {
                     String batchToConv2dPath = "modelimport/keras/weights/batch_to_conv2d_"
