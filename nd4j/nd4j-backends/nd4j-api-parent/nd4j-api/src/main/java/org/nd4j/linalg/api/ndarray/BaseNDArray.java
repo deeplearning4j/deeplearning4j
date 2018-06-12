@@ -5202,6 +5202,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
+    public boolean equalShapes(@NonNull INDArray other){
+        if(rank() != other.rank())
+            return false;
+        for( int i=0; i<rank(); i++ ){
+            if(size(i) != other.size(i)){
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Compare two matrices. Returns true if and only if other is also a
      * DoubleMatrix which has the same size and the maximal absolute
@@ -5279,7 +5290,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public long size(int dimension) {
         if (isScalar()) {
             if (dimension == 0 || dimension == 1 || dimension < 0)
-                return (int) lengthLong();
+                return length();
             else
                 throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);
         }
