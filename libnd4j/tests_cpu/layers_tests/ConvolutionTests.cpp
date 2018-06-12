@@ -2096,7 +2096,7 @@ TEST_F(ConvolutionTests, vol2col_test2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests, col2im_test1) {
 
-    int bS=2, iH=2,iW=2,  iC=2,oC=2, kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int bS=2, iH=2,iW=2,  iC=2,   kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
     int       oH=2,oW=2;
     
     NDArray<float> image ('c', {bS, iC, iH, iW});

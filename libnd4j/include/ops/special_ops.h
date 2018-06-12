@@ -1017,12 +1017,21 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
             const Nd4jLong imStride2  = imStride[2];
             const Nd4jLong imStride3  = imStride[3];
 
+            // initial zeroing of image content
+            const Nd4jLong imEWS = shape::elementWiseStride(imShapeBuffer);
+            if( imEWS == 1)
+                 memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
+            else 
+#pragma omp parallel for schedule(static) proc_bind(close)
+                for (int i = 0; i < shape::length(imShapeBuffer); i+=imEWS) 
+                    *(imBuff + i) = 0.f;
+
             T *col, *im;
             int imRow, imCol;
 
             if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {
             
-#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)    
+#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)
                 for (int b = 0; b < bS; b++) {        
                     for (int c = 0; c < iC; ++c) {                    
                         for (int kRow = 0; kRow < kH; ++kRow) {                        
@@ -1037,10 +1046,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                                         im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
 
                                         if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(imCol) < static_cast<unsigned>(iW))
-                                            if(imRow == -pH && imCol == -pW)
-                                                *im = *col;
-                                            else
-                                                *im += *col;
+                                            *im += *col;
                                     }
                                 }
                             }
@@ -1050,7 +1056,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
             }
             else {
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)    
+#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)
                 for (int b = 0; b < bS; b++) {        
                     for (int colH = 0; colH < oH; ++colH) {
                         for (int colW = 0; colW < oW; ++colW) {
@@ -1063,12 +1069,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                                         
                                         col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
                                         im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
-                                                    
+
                                         if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(imCol) < static_cast<unsigned>(iW))
-                                            if(imRow == -pH && imCol == -pW)
-                                                *im = *col;
-                                            else
-                                                *im += *col;
+                                            *im += *col;
                                     }
                                 }
                             }

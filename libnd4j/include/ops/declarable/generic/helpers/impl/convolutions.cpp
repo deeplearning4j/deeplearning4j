@@ -1180,6 +1180,16 @@ void ConvolutionUtils<T>::col2vol(NDArray<T>& columns, NDArray<T>& volume, const
     T* volBuff = volume.getBuffer();
     T* colBuff = columns.getBuffer();
 
+    // initial zeroing of volume content
+    const Nd4jLong imEWS = volume.ews();
+    if(imEWS == 1)
+        memset(volBuff, 0, volume.lengthOf() * sizeof(T));
+    else 
+#pragma omp parallel for schedule(static) proc_bind(close)
+        for (int i = 0; i < volume.lengthOf(); i+=imEWS) 
+            *(volBuff + i) = 0.f;
+
+
     T* col, *vol;
     int volDep, volRow, volCol;
 
@@ -1203,10 +1213,7 @@ if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDesce
                                     vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
 
                                     if (static_cast<unsigned>(volDep) < static_cast<unsigned>(iD) && static_cast<unsigned>(volRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(volCol) < static_cast<unsigned>(iW))
-                                        if(volDep == -pD &&  volRow == -pH && volCol == -pW)
-                                            *vol = *col;
-                                        else
-                                            *vol += *col;
+                                        *vol += *col;
                                 }
                             }
                         }
@@ -1236,10 +1243,7 @@ else
                                     vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
                                                     
                                     if (static_cast<unsigned>(volDep) < static_cast<unsigned>(iD) && static_cast<unsigned>(volRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(volCol) < static_cast<unsigned>(iW))
-                                        if(volDep == -pD &&  volRow == -pH && volCol == -pW)
-                                            *vol = *col;
-                                        else
-                                            *vol += *col;
+                                        *vol += *col;
                                 }
                             }
                         }
