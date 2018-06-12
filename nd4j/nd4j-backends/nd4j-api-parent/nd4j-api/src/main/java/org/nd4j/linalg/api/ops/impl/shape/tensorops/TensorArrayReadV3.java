@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
 import lombok.val;
 import onnx.OnnxProto3;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.list.compat.TensorList;
 
@@ -9,6 +10,14 @@ import java.util.Map;
 
 public class TensorArrayReadV3 extends BaseTensorOp {
 
+    public TensorArrayReadV3(String name, SameDiff sameDiff, SDVariable[] args){
+        super(name, sameDiff, args);
+    }
+    public TensorArrayReadV3(SameDiff sameDiff, SDVariable[] args){
+        super(null, sameDiff, args);
+    }
+
+    public TensorArrayReadV3(){}
     @Override
     public String tensorflowName() {
         return "TensorArrayReadV3";

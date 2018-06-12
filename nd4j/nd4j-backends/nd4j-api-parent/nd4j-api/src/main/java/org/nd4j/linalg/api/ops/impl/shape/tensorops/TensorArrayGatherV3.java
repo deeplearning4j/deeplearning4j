@@ -13,6 +13,14 @@ import java.util.Map;
 
 public class TensorArrayGatherV3 extends BaseTensorOp {
 
+    public TensorArrayGatherV3(String name, SameDiff sameDiff, SDVariable[] args){
+        super(name, sameDiff, args);
+    }
+    public TensorArrayGatherV3(SameDiff sameDiff, SDVariable[] args){
+        super(null, sameDiff, args);
+    }
+
+    public TensorArrayGatherV3(){}
    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op name found for " + opName());
