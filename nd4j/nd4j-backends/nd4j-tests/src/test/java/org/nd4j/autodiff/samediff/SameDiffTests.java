@@ -3914,12 +3914,13 @@ public class SameDiffTests {
 
         INDArray expOut3 = arr.get(NDArrayIndex.interval(3, 8));
         SDVariable result3 = x.get(SDIndex.interval(3, 8));
-
-        System.out.println(ArrayUtils.toString(expOut3.shape()));
-        System.out.println(ArrayUtils.toString(result3.eval().shape()));
-        assertArrayEquals(expOut3.shape(), result3.eval().shape());
-
         assertEquals(expOut3, result3.eval());
+
+
+        INDArray expOut4 = arr.get(NDArrayIndex.point(5), NDArrayIndex.interval(3, 8));
+        SDVariable result4 = x.get(SDIndex.point(5), SDIndex.interval(3, 8));
+        assertEquals(expOut4, result4.eval());
+
 
     }
 

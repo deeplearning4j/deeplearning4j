@@ -25,7 +25,6 @@ import java.util.Map;
  * Batch normalization configuration
  */
 @Data
-@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Builder
@@ -47,6 +46,10 @@ public class BatchNormalization extends FeedForwardLayer {
         this.beta = builder.beta;
         this.lockGammaBeta = builder.lockGammaBeta;
         initializeConstraints(builder);
+    }
+
+    public BatchNormalization(){
+        this(new Builder());    //Defaults from builder
     }
 
     @Override
