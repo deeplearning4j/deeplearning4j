@@ -14,6 +14,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
+import static org.deeplearning4j.nn.conf.layers.InputTypeUtil.getOutputTypeCnnLayers;
+
 /**
  * 1D (temporal) convolutional layer. Currently, we just subclass off the
  * ConvolutionLayer and hard code the "width" dimension to 1. Also, this
@@ -64,8 +66,14 @@ public class Convolution1DLayer extends ConvolutionLayer {
                             + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
                             + inputType);
         }
-        
-        return InputType.recurrent(nOut);
+        long inputTsLength = ((InputType.InputTypeRecurrent) inputType).getTimeSeriesLength();
+
+        InputType dummyConv = new InputType.InputTypeConvolutional(inputTsLength, inputTsLength, nOut);
+        InputType.InputTypeConvolutional returnConv = (InputType.InputTypeConvolutional)
+                InputTypeUtil.getOutputTypeCnnLayers(dummyConv, kernelSize, stride, padding, dilation,
+                convolutionMode, nOut, layerIndex, getLayerName(), ConvolutionLayer.class);
+        long outputTsLength = returnConv.getHeight();
+        return InputType.recurrent(nOut, outputTsLength);
     }
 
     @Override
