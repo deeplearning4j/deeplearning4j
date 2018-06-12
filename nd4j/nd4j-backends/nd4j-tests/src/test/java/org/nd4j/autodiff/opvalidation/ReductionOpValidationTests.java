@@ -754,32 +754,63 @@ public class ReductionOpValidationTests {
     public void testCumSumBP() {
         //CumSum is not *technically* a reduction...
 
-        //dL/dIn_i  = dL/dOut * dOut/dIn_i
-        //          = dL/dOut * d(in_0 + ... + in_i)/dIn_i
-        //          = dL/dOut
+        //Standard case, non-reverse, non-exclusive
+        //dL/dIn_i  = sum_j dL/dOut_j * dOut_j/dIn_i
+        //          = sum_j dL/dOut_j * d(in_0 + ... + in_j)/dIn_i
+        //          = reverseCumSum(dL/dOut_j)
+
+        //Reverse case:
+        //dL/dIn_i  = sum_j dL/dOut_j * dOut_j/dIn_i
+        //          = sum_j dL/dOut_j * d(in_N + ... + in_j)/dIn_i
+        //          = cumSum(dL/dOut_j)
+
+        //Exclusive case:
+        //dL/dIn_i  = sum_j dL/dOut_j * dOut_j/dIn_i
+        //          = sum_j dL/dOut_j * d(in_0 + ... + in_{i-1})/dIn_i
+        //          = reverseCumSumExclusive(dL/dOut_j)
+
+        //Reverse exclusive case
+        //dL/dIn_i  = sum_j dL/dOut_j * dOut_j/dIn_i
+        //          = sum_j dL/dOut_j * d(in_N + ... + in_j)/dIn_i
+        //          = cumSumExclusive(dL/dOut_j)
 
 
 
-//        INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
-//        INDArray dLdOut = preReduceInput.dup().addi(100);
-//        INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), 0.5);
-//        INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+//        for(boolean exclusive : new boolean[]{false, true}) {
+//            for(boolean reverse : new boolean[]{false, true}) {
 //
-//        String err = OpValidation.validate(new OpTestCase(new CumSumBp(preReduceInput, dLdOut, dLdIn, keepDims))
-//                .expectedOutput(0, dLdInExpected));
-
-//        assertNull(err);
+//                INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+//                INDArray dLdOut = preReduceInput.dup().addi(100);
+//                INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), 0.5);
+//                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+//
+//                String err = OpValidation.validate(new OpTestCase(new CumSumBp(preReduceInput, dLdOut, dLdIn, keepDims))
+//                        .expectedOutput(0, dLdInExpected));
+//                assertNull(err);
+//            }
+//        }
     }
+
+
 
     @Ignore
     @Test
     public void testCumProdBP() {
 
-        //dL/dIn_i  = dL/dOut * dOut/dIn_i
-        //          = dL/dOut * d(in_0 * ... * in_i)/dIn_i
-        //          = dL/dOut * prod_(j=0..i-1)(in_j)
-        //          = dL/dOut * cumProd(in)/in_i
-        // (note: edge case for i=0 is dL/dOut * 1
+        //Standard case: non-reverse, non-exclusive
+        //dL/dIn_i  = sum_j dL/dOut_j * dOut_j/dIn_i
+        //          = sum_j dL/dOut_j * d(in_0 * ... * in_j)/dIn_i
+        //          = sum_j dL/dOut_j * prod_(k=0..j)(in_j)
+        //          = reverseCumSum( dL/dOut * cumProd(in)/in_i )
+
+        //Reverse case:
+        //dL/dIn_i  = sum_j dL/dOut_j * dOut_j/dIn_i
+        //          = sum_j dL/dOut_j * d(in_N * ... * in_j)/dIn_i
+        //          = sum_j dL/dOut_j * prod_(k=N..j)(in_j)
+        //          = cumSum( dL/dOut * reverseCumProd(in)/in_i )
+
+        //Exclusive case
+
 
         fail();
     }
