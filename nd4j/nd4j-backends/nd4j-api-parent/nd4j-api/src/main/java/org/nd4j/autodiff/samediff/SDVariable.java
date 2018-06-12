@@ -1,7 +1,9 @@
 package org.nd4j.autodiff.samediff;
 
+import com.google.common.annotations.VisibleForTesting;
 import lombok.*;
 import onnx.OnnxProto3;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
@@ -24,6 +26,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  *
@@ -1053,6 +1056,70 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
+   public SDVariable get(SDIndex... indices){
+       int ndims = indices.length;
+       long[] begin = new long[ndims];
+       long[] end = new long[ndims];
+       long[] strides = new long[ndims];
+       int[] begin_mask_arr = new int[ndims];
+       int[] end_mask_arr = new int[ndims];
+       int[] shrink_axis_mask_arr = new int[ndims];
+       for(int i=0; i<ndims; i++){
+           strides[i] = 1;
+           SDIndex index = indices[i];
+           SDIndex.IndexType indexType = index.getIndexType();
+           if(indexType == SDIndex.IndexType.ALL){
+               begin_mask_arr[i] = 1;
+               end_mask_arr[i] = 1;
+           }
+           else if(indexType == SDIndex.IndexType.POINT){
+                   long pointIndex = index.getPointIndex();
+                   begin[i] = pointIndex;
+                   end[i] = pointIndex + 1;
+                   shrink_axis_mask_arr[i] = 1;
+           }
+           else if(indexType == SDIndex.IndexType.INTERVAL){
+               if(index.getIntervalBegin() == null){
+                   begin_mask_arr[i] = 1;
+               }
+               else{
+                   begin[i] = index.getIntervalBegin();
+               }
+               if(index.getIntervalEnd() == null){
+                   end_mask_arr[i] = 1;
+               }
+               else{
+                   end[i] = index.getIntervalEnd();
+               }
+               if(index.getIntervalStrides() == null){
+                   strides[i] = 1;
+               }
+               else{
+                   strides[i] = index.getIntervalStrides();
+               }
+           }
+       }
+
+       // convert binary int[] to int
+        int begin_mask = binArrToInt(begin_mask_arr);
+       int end_mask = binArrToInt(end_mask_arr);
+       int shrink_axis = binArrToInt(shrink_axis_mask_arr);
+
+       return this.sameDiff.stridedSlice(this, begin, end, strides,
+               begin_mask, end_mask, 0, 0, shrink_axis);
+   }
 
 
+   private static int binArrToInt(int[] arr){
+        int x = 0;
+        int m = 1;
+        for(int i = 0; i < arr.length; i++){
+            if(arr[i] == 1){
+                x += m;
+            }
+            m *= 2;
+        }
+        return x;
+   }
+   
 }

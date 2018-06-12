@@ -111,7 +111,7 @@ namespace nd4j {
                 for (int i = 0; i < (int) shapeNew.size(); i++) {
                     if (shapeNew[i] < 0) {
                         if (numberNegativesOnes >= 1)
-                            throw "Only one dimension can be negative ones";
+                            throw std::runtime_error("Only one dimension can be negative ones");
 
                         numberNegativesOnes++;
 
@@ -165,7 +165,7 @@ namespace nd4j {
                 for (int i = 0; i < (int) shapeNew.size(); i++) {
                     if (shapeNew[i] < 0) {
                         if (numberNegativesOnes >= 1)
-                            throw "Only one dimension can be negative ones";
+                            throw std::runtime_error("Only one dimension can be negative ones");
 
                         numberNegativesOnes++;
 

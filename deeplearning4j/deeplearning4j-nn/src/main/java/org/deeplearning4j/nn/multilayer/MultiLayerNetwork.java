@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.*;
@@ -125,6 +126,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     protected int layerIndex; //For Layer.get/setIndex()
 
     protected transient Solver solver; //Used to call optimizers during backprop
+    //Workspaces for CUDNN. Pass to LayerWorkspaceMgr for re-use in cudnn helpers
+    protected transient Map<String,Pointer> helperWorkspaces = new HashMap<>();
 
 
     /**
@@ -350,6 +353,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
+        workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         Layer layer = layers[layerIdx];
         if (!layer.isPretrainLayer())
@@ -370,7 +374,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if (layerWiseConfigurations.getInputPreProcess(layerIdx) != null) {
 
                 // FIXME: int cast
-                outputOfPrevLayer = layerWiseConfigurations.getInputPreProcess(layerIdx).preProcess(outputOfPrevLayer, (int) input.size(0), LayerWorkspaceMgr.noWorkspaces());
+                outputOfPrevLayer = layerWiseConfigurations.getInputPreProcess(layerIdx).preProcess(outputOfPrevLayer, (int) input.size(0),
+                        LayerWorkspaceMgr.noWorkspaces(helperWorkspaces));
             }
 
             layer.fit(outputOfPrevLayer, workspaceMgr);
@@ -378,7 +383,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         // Turn off pretrain after it is complete
         layer.conf().setPretrain(false);
-
     }
 
     @Override
@@ -725,7 +729,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (to < 1 || to >= layers.length)
             throw new IllegalStateException("Unable to perform activation; TO is out of layer space");
 
-        LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces();   //TODO
+        LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces(helperWorkspaces);   //TODO
 
         INDArray res = input;
         for (int l = from; l <= to; l++) {
@@ -874,6 +878,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 workspaceMgr.setScopedOutFor(ArrayType.INPUT);
             }
         }
+        workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         List<INDArray> out = new ArrayList<>();
         out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Should  be unnecessary (and no op), if layer is implemented correctly
@@ -961,6 +966,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerActivationsInWs method requires workspace WS_ALL_LAYERS_ACT to be open");
         }
+        workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         List<INDArray> out = new ArrayList<>();
         out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Probably unnecessary usually
@@ -1062,6 +1068,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
+        mgrEven.setHelperWorkspacePointers(helperWorkspaces);
+        mgrOdd.setHelperWorkspacePointers(helperWorkspaces);
 
         MemoryWorkspace wsActCloseNext = null;
         MemoryWorkspace temp = null;
@@ -1427,6 +1435,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
+        workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         if (layerWiseConfigurations.isBackprop()) {
             update(TaskUtils.buildTask(iter));
@@ -1525,6 +1534,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 mgr.setWorkspace(ArrayType.FF_CACHE, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
             }
         }
+        mgr.setHelperWorkspacePointers(helperWorkspaces);
 
         //Calculate activations (which are stored in each layer, and used in backprop)
         try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
@@ -1624,6 +1634,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         " to be open when workspaces are used");
             }
         }
+        mgrEven.setHelperWorkspacePointers(helperWorkspaces);
+        mgrOdd.setHelperWorkspacePointers(helperWorkspaces);
 
         //calculate and apply the backward gradient for every layer
         /**
@@ -2031,6 +2043,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
+        workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         if (layerWiseConfigurations.isBackprop()) {
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
@@ -2312,6 +2325,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .noWorkspaceFor(ArrayType.INPUT)
                     .build();
         }
+        mgr.setHelperWorkspacePointers(helperWorkspaces);
 
         INDArray inputToOutputLayer = outputOfLayerDetached(training, FwdPassType.STANDARD,layers.length-2, data.getFeatures(),
                 data.getFeaturesMaskArray(), data.getLabelsMaskArray());

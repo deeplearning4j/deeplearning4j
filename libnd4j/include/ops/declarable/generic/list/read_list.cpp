@@ -22,7 +22,7 @@ namespace nd4j {
 
                 result = list->read(index);
             } else if (block.width() > 0) {
-                auto vec = INPUT_VARIABLE(0);
+                auto vec = INPUT_VARIABLE(1);
 
                 REQUIRE_TRUE(vec->isScalar(), 0, "ReadList: index operand should be a scalar");
                 

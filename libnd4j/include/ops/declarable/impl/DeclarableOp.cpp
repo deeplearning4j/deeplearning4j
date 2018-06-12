@@ -105,7 +105,7 @@ namespace nd4j {
                 }
             } else {
                 nd4j_printf("BOOM!\n","");
-                throw "Boom!";
+                throw std::runtime_error("Boom!");
             }
 
             return z;

@@ -53,4 +53,9 @@ public class SparkDataSetLossCalculator implements ScoreCalculator<MultiLayerNet
         return net.calculateScore(data, average);
     }
 
+    @Override
+    public boolean minimizeScore() {
+        return true;    //Minimize loss
+    }
+
 }

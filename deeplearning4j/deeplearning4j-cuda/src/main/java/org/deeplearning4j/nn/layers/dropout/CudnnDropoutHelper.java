@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.dropout;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.deeplearning4j.nn.conf.dropout.DropoutHelper;
 import org.deeplearning4j.nn.layers.BaseCudnnHelper;
@@ -11,6 +12,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.util.StringUtils;
 
 import static org.bytedeco.javacpp.cudnn.*;
 import static org.bytedeco.javacpp.cudnn.cudnnDestroyTensorDescriptor;
@@ -25,6 +27,7 @@ import static org.bytedeco.javacpp.cudnn.cudnnDestroyTensorDescriptor;
  * @author Alex Black
  */
 @Data
+@Slf4j
 public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper {
 
     private static class CudnnDropoutContext extends CudnnContext {
@@ -112,10 +115,18 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
         checkCudnn(cudnnDropoutGetReserveSpaceSize(cudnnContext.xTensorDesc, reserveSizeBytesPtr));
         long maskReserveSizeBytes = reserveSizeBytesPtr.get();
 
-
-
-        //Dropout descriptor:
         if(rngStates == null || rngStates.capacity() < rngStateSizeBytes){
+            if(log.isTraceEnabled()){
+                if(rngStates == null){
+                    log.trace("CudnnDropoutHelper: Allocating intial RNG states workspace of size {} ({})", rngStateSizeBytes,
+                            StringUtils.TraditionalBinaryPrefix.long2String(rngStateSizeBytes, "B", 2));
+                } else {
+                    log.trace("CudnnDropoutHelper: Deallocating RNG states of size {} ({}), allocating new workspace of size {} ({})",
+                            rngStates.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(rngStates.capacity(), "B", 2),
+                            rngStateSizeBytes, StringUtils.TraditionalBinaryPrefix.long2String(rngStateSizeBytes, "B", 2));
+                }
+            }
+
             if(rngStates != null)
                 rngStates.deallocate();
             //states = "Pointer to user-allocated GPU memory that will hold random number generator states."
@@ -123,6 +134,17 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
             initializedDescriptor = false;
         }
         if(mask == null || mask.capacity() < maskReserveSizeBytes){
+            if(log.isTraceEnabled()){
+                if(mask == null){
+                    log.trace("CudnnDropoutHelper: Allocating intial mask array of size {} ({})", maskReserveSizeBytes,
+                            StringUtils.TraditionalBinaryPrefix.long2String(maskReserveSizeBytes, "B", 2));
+                } else {
+                    log.trace("CudnnDropoutHelper: Deallocating mask array of size {} ({}), allocating new mask array of size {} ({})",
+                            mask.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(mask.capacity(), "B", 2),
+                            maskReserveSizeBytes, StringUtils.TraditionalBinaryPrefix.long2String(maskReserveSizeBytes, "B", 2));
+                }
+            }
+
             if(mask != null)
                 mask.deallocate();
             //mask = "Pointer to user-allocated GPU memory used by this function. It is expected
@@ -131,7 +153,11 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
             mask = new DataCache(maskReserveSizeBytes);
         }
 
+        //Dropout descriptor: (re)initialize if required
         if(!initializedDescriptor || p != lastInitializedP) {
+            if(log.isTraceEnabled()){
+                log.trace("CudnnDropoutHelper: (re)initializing dropout descriptor");
+            }
             //NOTE: cudnnSetDropoutDescriptor has some internal computation/initialization, and hence is expensive to
             // call - so we want to call this as infrequently as possible, and cache the result
             long seed = Nd4j.getRandom().nextLong();

@@ -48,7 +48,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
     public Counter<String> docFrequencies = Util.parallelCounter();
     public Map<String, VocabWord> vocabs = new ConcurrentHashMap<>();
     public Map<String, VocabWord> tokens = new ConcurrentHashMap<>();
-    private AtomicLong totalWordOccurrences = new AtomicLong(0);
+    private final AtomicLong totalWordOccurrences = new AtomicLong(0);
     private int numDocs = 0;
 
     public synchronized void setWordFrequencies(Counter<String> cnt) {
@@ -368,7 +368,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
     }
 
     @Override
-    public void updateWordsOccurencies() {
+    public void updateWordsOccurrences() {
         totalWordOccurrences.set(0);
         for (VocabWord word : vocabWords()) {
             totalWordOccurrences.addAndGet((long) word.getElementFrequency());
@@ -377,13 +377,8 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
 
     @Override
     public void removeElement(String label) {
-        if (vocabs.containsKey(label)) {
-            vocabs.remove(label);
-        }
-
-        if (tokens.containsKey(label)) {
-            tokens.remove(label);
-        }
+        vocabs.remove(label);
+        tokens.remove(label);
     }
 
     @Override

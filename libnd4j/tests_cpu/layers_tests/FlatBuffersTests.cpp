@@ -648,12 +648,31 @@ TEST_F(FlatBuffersTest, transpose) {
 TEST_F(FlatBuffersTest, Test_Stitches) {
     nd4j::ops::realdiv<float> op0;
 
-
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/partition_stitch_misc.fb");
-    graph->printOut();
+    //graph->printOut();
 
     auto result = GraphExecutioner<float>::execute(graph);
     ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    delete graph;
+}
+
+TEST_F(FlatBuffersTest, Test_GruDynamicMnist) {
+    nd4j::Environment::getInstance()->setDebug(false);
+    nd4j::Environment::getInstance()->setVerbose(false);
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/gru_dynamic_mnist.fb");
+    //graph->printOut();
+
+    auto timeStart = std::chrono::system_clock::now();
+    auto result = GraphExecutioner<float>::execute(graph);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    auto timeEnd = std::chrono::system_clock::now();
+
+    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+
+    nd4j_printf("GRU time 1 time %lld us\n", outerTime);
 
     delete graph;
 }

@@ -294,7 +294,17 @@ public class KerasLayer {
 
             /* Copy weights. */
             for (String paramName : layer.paramTable().keySet()) {
-                layer.setParam(paramName, this.weights.get(paramName));
+                try {
+                    layer.setParam(paramName, this.weights.get(paramName));
+                } catch (Exception e) {
+                    log.error(e.getMessage());
+                    throw new InvalidKerasConfigurationException(e.getMessage()
+                            + "\nTried to set weights for layer with name " + this.getLayerName()
+                            + ", of " + layer.conf().getLayer().getClass() + ".\n"
+                            + "Failed to set weights for parameter " + paramName + "\n"
+                            + "Expected shape for this parameter: " + layer.getParam(paramName).shapeInfoToString()
+                            + ", \ngot: " + this.weights.get(paramName).shapeInfoToString());
+                }
             }
         }
     }

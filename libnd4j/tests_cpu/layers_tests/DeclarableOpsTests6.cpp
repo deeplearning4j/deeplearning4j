@@ -485,6 +485,31 @@ TEST_F(DeclarableOpsTests6, BinCount_3) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BinCount_4) {
+
+    NDArray<double> x('c', {2, 2, 2}, {
+        1, 2, 0, 1, 2, 2, 1, 2}
+    );
+
+    NDArray<double> weights('c', {2, 2, 2}, {
+        2, 1, 3, 1, 5, 1, 1, 6}
+    );
+
+// ------------------------------------
+
+    NDArray<double> exp({3., 4.,  13., 0.0});
+
+    nd4j::ops::bincount<double> op;
+
+    auto res = op.execute({&x, &weights}, {}, {4, 4});
+
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_1) {
 
     NDArray<double> x( {2., 2., 2.} );

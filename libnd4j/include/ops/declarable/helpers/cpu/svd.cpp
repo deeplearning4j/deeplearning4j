@@ -19,7 +19,7 @@ template <typename T>
 SVD<T>::SVD(const NDArray<T>& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV ) {
 
     if(matrix.rankOf() != 2 || matrix.isScalar())
-        throw "ops::helpers::SVD constructor: input array must be 2D matrix !";
+        throw std::runtime_error("ops::helpers::SVD constructor: input array must be 2D matrix !");
 
     const int rows = matrix.sizeAt(0);
     const int cols = matrix.sizeAt(1);
@@ -66,7 +66,7 @@ template <typename T>
 SVD<T>::SVD(const NDArray<T>& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV, const char t) {
 
     if(matrix.rankOf() != 2 || matrix.isScalar())
-        throw "ops::helpers::SVD constructor: input array must be 2D matrix !";
+        throw std::runtime_error("ops::helpers::SVD constructor: input array must be 2D matrix !");
 
     const int rows = matrix.sizeAt(0);
     const int cols = matrix.sizeAt(1);
@@ -112,7 +112,7 @@ template <typename T>
 void SVD<T>::deflation1(int col1, int shift, int ind, int size) {
 
     if(ind <= 0)
-        throw "ops::helpers::SVD::deflation1 method: input int must satisfy condition ind > 0 !";
+        throw std::runtime_error("ops::helpers::SVD::deflation1 method: input int must satisfy condition ind > 0 !");
 
     int first = col1 + shift;    
     T cos = _m(first, first);
@@ -152,10 +152,10 @@ template <typename T>
 void SVD<T>::deflation2(int col1U , int col1M, int row1W, int col1W, int ind1, int ind2, int size) {
   
     if(ind1 >= ind2)
-        throw "ops::helpers::SVD::deflation2 method: input intes must satisfy condition ind1 < ind2 !";
+        throw std::runtime_error("ops::helpers::SVD::deflation2 method: input intes must satisfy condition ind1 < ind2 !");
 
     if(size <= 0)
-        throw "ops::helpers::SVD::deflation2 method: input size must satisfy condition size > 0 !";
+        throw std::runtime_error("ops::helpers::SVD::deflation2 method: input size must satisfy condition size > 0 !");
 
     T cos = _m(col1M+ind1, col1M);
     T sin = _m(col1M+ind2, col1M);  
@@ -339,7 +339,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
         for(; i > 1; --i) {
             if( ((*diagInterval)(i) - (*diagInterval)(i-1)) < DataTypeUtils::eps<T>()*maxElem ) {
                 if (math::nd4j_abs<T>((*diagInterval)(i) - (*diagInterval)(i-1)) >= epsBig)                     
-                    throw "ops::helpers::SVD::deflation: diagonal elements are not properly sorted !";
+                    throw std::runtime_error("ops::helpers::SVD::deflation: diagonal elements are not properly sorted !");
                 deflation2(col1, col1 + shift, row1W, col1W, i-1, i, len);
             }
         }
@@ -354,12 +354,11 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
 template <typename T>
 T SVD<T>::secularEq(const T diff, const NDArray<T>& col0, const NDArray<T>& diag, const NDArray<T>& permut, const NDArray<T>& diagShifted, const T shift) {
 
-    int len = permut.lengthOf();
+    auto len = permut.lengthOf();
     T res = 1.;
     T item;
     for(int i=0; i<len; ++i) {
-
-        int j = (int)permut(i);    
+        auto j = (int)permut(i);
         item = col0(j) / ((diagShifted(j) - diff) * (diag(j) + shift + diff));
         res += item * col0(j);
     }
@@ -372,8 +371,8 @@ T SVD<T>::secularEq(const T diff, const NDArray<T>& col0, const NDArray<T>& diag
 template <typename T>
 void SVD<T>::calcSingVals(const NDArray<T>& col0, const NDArray<T>& diag, const NDArray<T>& permut, NDArray<T>& singVals, NDArray<T>& shifts, NDArray<T>& mus) {
   
-    int len = col0.lengthOf();
-    int curLen = len;
+    auto len = col0.lengthOf();
+    auto curLen = len;
     
     while(curLen > 1 && col0(curLen-1) == (T)0.) 
         --curLen;
@@ -399,7 +398,7 @@ void SVD<T>::calcSingVals(const NDArray<T>& col0, const NDArray<T>& diag, const 
             while(col0(l) == (T)0.) {
                 ++l; 
                 if(l >= curLen)
-                    throw "ops::helpers::SVD::calcSingVals method: l >= curLen !";
+                    throw std::runtime_error("ops::helpers::SVD::calcSingVals method: l >= curLen !");
             }
         
             right = diag(l);

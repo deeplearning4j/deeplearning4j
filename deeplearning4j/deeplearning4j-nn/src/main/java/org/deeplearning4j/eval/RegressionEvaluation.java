@@ -33,7 +33,19 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
-    public enum Metric { MSE, MAE, RMSE, RSE, PC, R2 }
+    public enum Metric { MSE, MAE, RMSE, RSE, PC, R2;
+
+        /**
+         * @return True if the metric should be minimized, or false if the metric should be maximized.
+         * For example, MSE of 0 is best, but R^2 of 1.0 is best
+         */
+        public boolean minimize(){
+            if(this == R2 || this == PC){
+                return false;
+            }
+            return true;
+        }
+    }
 
     public static final int DEFAULT_PRECISION = 5;
 
