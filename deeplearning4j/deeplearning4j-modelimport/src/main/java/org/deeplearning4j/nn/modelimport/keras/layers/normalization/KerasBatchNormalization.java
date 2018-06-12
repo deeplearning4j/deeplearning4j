@@ -185,7 +185,6 @@ public class KerasBatchNormalization extends KerasLayer {
             INDArray dummyGamma = weights.containsKey(PARAM_NAME_GAMMA)
                     ? Nd4j.onesLike(weights.get(PARAM_NAME_GAMMA))
                     : Nd4j.onesLike(weights.get(PARAM_NAME_BETA));
-            System.out.println(Arrays.toString(dummyGamma.shape()));
             this.weights.put(BatchNormalizationParamInitializer.GAMMA, dummyGamma);
         }
         if (weights.containsKey(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()))

@@ -104,7 +104,7 @@ public class KerasReshape extends KerasLayer {
             val inputShape = new long[]{it.getChannels(), it.getHeight(), it.getWidth()};
             val dimOrder = getDimOrder();
             if (dimOrder == DimOrder.THEANO || dimOrder == DimOrder.NONE && kerasMajorVersion == 1) {
-                if (targetShape.length == 2) { // edge case
+                if (targetShape.length == 2) { // edge caseKeras
                     targetShape = new long[]{targetShape[1], targetShape[0]};
                 } else {
                     targetShape = new long[]{targetShape[1], targetShape[0], targetShape[2]};
