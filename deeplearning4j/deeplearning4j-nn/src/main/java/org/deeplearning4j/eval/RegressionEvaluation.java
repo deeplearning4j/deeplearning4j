@@ -40,7 +40,10 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
          * For example, MSE of 0 is best, but R^2 of 1.0 is best
          */
         public boolean minimize(){
-            return (this != R2);    //Minimize = false for R2, minimize = true for everything else
+            if(this == R2 || this == PC){
+                return false;
+            }
+            return true;
         }
     }
 
