@@ -72,11 +72,6 @@ public class DataSetIteratorSplitter {
             }
 
             @Override
-            public int totalExamples() {
-                return backedIterator.totalExamples();
-            }
-
-            @Override
             public int inputColumns() {
                 return backedIterator.inputColumns();
             }
@@ -109,16 +104,6 @@ public class DataSetIteratorSplitter {
             @Override
             public int batch() {
                 return backedIterator.batch();
-            }
-
-            @Override
-            public int cursor() {
-                return counter.intValue();
-            }
-
-            @Override
-            public int numExamples() {
-                return (int) numTrain;
             }
 
             @Override
@@ -189,11 +174,6 @@ public class DataSetIteratorSplitter {
             }
 
             @Override
-            public int totalExamples() {
-                return backedIterator.totalExamples();
-            }
-
-            @Override
             public int inputColumns() {
                 return backedIterator.inputColumns();
             }
@@ -226,16 +206,6 @@ public class DataSetIteratorSplitter {
             @Override
             public int batch() {
                 return backedIterator.batch();
-            }
-
-            @Override
-            public int cursor() {
-                return counter.intValue();
-            }
-
-            @Override
-            public int numExamples() {
-                return (int) numTest;
             }
 
             @Override

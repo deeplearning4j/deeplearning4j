@@ -42,11 +42,6 @@ public class SimpleVariableGenerator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return numBatches;
-    }
-
-    @Override
     public int inputColumns() {
         return numFeatures;
     }
@@ -74,16 +69,6 @@ public class SimpleVariableGenerator implements DataSetIterator {
     @Override
     public int batch() {
         return batchSize;
-    }
-
-    @Override
-    public int cursor() {
-        return counter.get();
-    }
-
-    @Override
-    public int numExamples() {
-        return numBatches;
     }
 
     @Override

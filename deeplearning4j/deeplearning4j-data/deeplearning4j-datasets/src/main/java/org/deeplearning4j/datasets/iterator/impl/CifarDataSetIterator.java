@@ -148,11 +148,6 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return numExamples;
-    }
-
-    @Override
     public void reset() {
         exampleCount = 0;
         overshot = false;

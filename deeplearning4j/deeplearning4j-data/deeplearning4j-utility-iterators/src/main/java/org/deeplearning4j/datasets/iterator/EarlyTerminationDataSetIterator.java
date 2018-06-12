@@ -42,11 +42,6 @@ public class EarlyTerminationDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return underlyingIterator.totalExamples();
-    }
-
-    @Override
     public int inputColumns() {
         return underlyingIterator.inputColumns();
     }
@@ -75,16 +70,6 @@ public class EarlyTerminationDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return underlyingIterator.batch();
-    }
-
-    @Override
-    public int cursor() {
-        return underlyingIterator.cursor();
-    }
-
-    @Override
-    public int numExamples() {
-        return underlyingIterator.numExamples();
     }
 
     @Override
