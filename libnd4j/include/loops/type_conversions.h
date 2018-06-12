@@ -453,7 +453,7 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jLong N, int *dz, int *
             } else {
                 vals[threadIdx.x] -= static_cast<T>(threshold);
             }
-        } else if (abs >= static_cast<T>(threshold) / static_cast<T>(2.0f) && val < static_cat<T>(0.0f)) {
+        } else if (abs >= static_cast<T>(threshold) / static_cast<T>(2.0f) && val < static_cast<T>(0.0f)) {
             atomicAdd(&counter, 1);
             shmem[threadIdx.x] = 1 << (bitId + 16);
 
