@@ -20,12 +20,12 @@ import static org.deeplearning4j.nn.conf.layers.InputTypeUtil.getOutputTypeCnnLa
  * 1D (temporal) convolutional layer. Currently, we just subclass off the
  * ConvolutionLayer and hard code the "width" dimension to 1. Also, this
  * layer accepts RNN InputTypes instead of CNN InputTypes.
- *
+ * <p>
  * This approach treats a multivariate time series with L timesteps and
  * P variables as an L x 1 x P image (L rows high, 1 column wide, P
  * channels deep). The kernel should be H<L pixels high and W=1 pixels
  * wide.
- *
+ * <p>
  * TODO: We will eventually want to NOT subclass off of ConvolutionLayer.
  *
  * @author dave@skymind.io
@@ -43,13 +43,13 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
-                    Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
-                    boolean initializeParams) {
+                                                       Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams) {
         LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex,
-                        getNIn(), getNOut());
+                getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.Convolution1DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf);
+                new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -63,24 +63,24 @@ public class Convolution1DLayer extends ConvolutionLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer index = " + layerIndex
-                            + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                            + inputType);
+                    + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
+                    + inputType);
         }
         long inputTsLength = ((InputType.InputTypeRecurrent) inputType).getTimeSeriesLength();
-
         InputType dummyConv = new InputType.InputTypeConvolutional(inputTsLength, inputTsLength, nOut);
         InputType.InputTypeConvolutional returnConv = (InputType.InputTypeConvolutional)
                 InputTypeUtil.getOutputTypeCnnLayers(dummyConv, kernelSize, stride, padding, dilation,
-                convolutionMode, nOut, layerIndex, getLayerName(), ConvolutionLayer.class);
+                        convolutionMode, nOut, layerIndex, getLayerName(), ConvolutionLayer.class);
         long outputTsLength = returnConv.getHeight();
         return InputType.recurrent(nOut, outputTsLength);
+
     }
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer name = \"" + getLayerName()
-                            + "\"): expect RNN input type with size > 0. Got: " + inputType);
+                    + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
         if (nIn <= 0 || override) {
@@ -93,7 +93,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Convolution1D layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+                    + "\"): input is null");
         }
 
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
@@ -115,17 +115,18 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         public Builder(int kernelSize, int stride, int padding) {
-            this.kernelSize = new int[] {kernelSize, 1};
-            this.stride = new int[] {stride, 1};
-            this.padding = new int[] {padding, 0};
+            this.kernelSize = new int[]{kernelSize, 1};
+            this.stride = new int[]{stride, 1};
+            this.padding = new int[]{padding, 0};
         }
 
         /**
          * Size of the convolution
+         *
          * @param kernelSize the length of the kernel
          */
         public Builder kernelSize(int kernelSize) {
-            this.kernelSize = new int[] {kernelSize, 1};
+            this.kernelSize = new int[]{kernelSize, 1};
             return this;
         }
 
