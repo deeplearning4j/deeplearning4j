@@ -3,6 +3,7 @@ package org.nd4j.list.compat;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -41,7 +42,10 @@ public class TensorList {
     }
 
     public INDArray gather(INDArray indices) {
-        val idxs = indices.toIntVector();
+        if(indices.length() == 1 && indices.getInt(0) == -1){
+            return stack();
+        }
+        val idxs = indices.reshape(indices.length()).toIntVector();
         ArrayList<INDArray> newList = new ArrayList<>();
         for(val id : idxs){
             newList.add(list.get(id));

@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
 import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
@@ -3922,6 +3923,34 @@ public class SameDiffTests {
         assertEquals(expOut4, result4.eval());
 
 
+    }
+
+    @Test
+    public void testTensorArray1(){
+        SameDiff sd = SameDiff.create();
+        TensorArrayV3 tensorArray = sd.tensorArray();
+        INDArray arr1 = Nd4j.create(new double[]{1,2,3,4}, new int[]{2, 2});
+        SDVariable var1 = sd.var(arr1);
+        INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
+        SDVariable var2 = sd.var(arr2);
+        tensorArray = tensorArray.write(0, var1);
+        tensorArray.write(1, var2);
+        SDVariable result = tensorArray.stack();
+        assertEquals(Nd4j.pile(arr1, arr2), result.eval());
+    }
+
+    @Test
+    public void testTensorArray2(){
+        SameDiff sd = SameDiff.create();
+        TensorArrayV3 tensorArray = sd.tensorArray();
+        INDArray arr1 = Nd4j.create(new double[]{1,2,3,4}, new int[]{2, 2});
+        SDVariable var1 = sd.var(arr1);
+        INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
+        SDVariable var2 = sd.var(arr2);
+        tensorArray = tensorArray.write(0, var1);
+        tensorArray.write(1, var2);
+        SDVariable result = tensorArray.read(0);
+        assertEquals(arr1, result.eval());
     }
 
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){

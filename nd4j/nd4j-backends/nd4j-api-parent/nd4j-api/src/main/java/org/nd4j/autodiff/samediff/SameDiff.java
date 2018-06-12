@@ -48,6 +48,7 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -5290,6 +5291,9 @@ public class SameDiff {
         return lists.get(name);
     }
 
+    public void putListByName(@NonNull String name, TensorList list){
+        lists.put(name, list);
+    }
 
     /**
      * An interface for representing a conditional statement
@@ -5360,6 +5364,10 @@ public class SameDiff {
                 .build();
     }
 
+
+    public TensorArrayV3 tensorArray(){
+        return new TensorArrayV3(this);
+    }
 
     /**
      * A function definition for
