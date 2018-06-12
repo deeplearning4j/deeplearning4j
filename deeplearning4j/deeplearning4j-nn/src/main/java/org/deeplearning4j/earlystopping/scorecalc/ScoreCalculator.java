@@ -22,4 +22,9 @@ public interface ScoreCalculator<T extends Model> extends Serializable {
 
     /** Calculate the score for the given MultiLayerNetwork */
     double calculateScore(T network);
+
+    /**
+     * @return If true: the score should be minimized. If false: the score should be maximized.
+     */
+    boolean minimizeScore();
 }
