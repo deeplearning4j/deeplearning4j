@@ -63,13 +63,6 @@ public interface DataSetIterator extends Iterator<DataSet>, Serializable {
     DataSet next(int num);
 
     /**
-     * Total examples in the iterator
-     *
-     * @return
-     */
-    int totalExamples();
-
-    /**
      * Input columns for the dataset
      *
      * @return
@@ -120,21 +113,6 @@ public interface DataSetIterator extends Iterator<DataSet>, Serializable {
     int batch();
 
     /**
-     * The current cursor if applicable
-     *
-     * @return
-     */
-    int cursor();
-
-    /**
-     * Total number of examples in the dataset
-     *
-     * @return
-     */
-    int numExamples();
-
-
-    /**
      * Set a pre processor
      *
      * @param preProcessor a pre processor to set
@@ -149,7 +127,8 @@ public interface DataSetIterator extends Iterator<DataSet>, Serializable {
     DataSetPreProcessor getPreProcessor();
 
     /**
-     * Get dataset iterator record reader labels
+     * Get dataset iterator class labels, if any.
+     * Note that implementations are not required to implement this, and can simply return null
      */
     List<String> getLabels();
 

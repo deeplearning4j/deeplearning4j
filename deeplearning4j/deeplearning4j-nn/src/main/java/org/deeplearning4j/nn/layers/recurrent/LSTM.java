@@ -146,9 +146,6 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         assertInputSet(false);
         applyDropOutIfNecessary(training, workspaceMgr);
 
-//        if (cacheMode == null)
-//            cacheMode = CacheMode.NONE;
-
         //TODO LSTM cache mode is disabled for now - not passing all tests
         cacheMode = CacheMode.NONE;
 
