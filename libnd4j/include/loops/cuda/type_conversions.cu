@@ -3,6 +3,7 @@
 //
 
 #include <loops/type_conversions.h>
+#include <types/types.h>
 
 namespace nd4j {
     template <typename T>
@@ -16,7 +17,7 @@ namespace nd4j {
     }
 
     template<typename S, typename T>
-    __device__ void convertKernelGeneric(S *dx, Nd4jLong N, T *dz) {
+    __device__ void convertKernelGeneric(S *x, Nd4jLong N, T *z) {
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
         for (Nd4jLong i = tid; i < N; i+= blockDim.x * gridDim.x) {
@@ -512,4 +513,8 @@ namespace nd4j {
     template __global__ void prescan<false, true>(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex);
     template __global__ void prescan<true, false>(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex);
     template __global__ void prescan<true, true>(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex);
+
+    //
+
+    BUILD_DOUBLE_TEMPLATE(template __global__ void convertKernel, (void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES);
 }

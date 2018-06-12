@@ -52,6 +52,11 @@ namespace nd4j {
 
         template <typename T>
         static void convertFromThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+
+
+#ifdef __CUDACC__
+
+#endif
     };
 
     /**
@@ -137,6 +142,9 @@ namespace nd4j {
 
     template <bool storeSum, bool isNP2>
     __global__ void prescan(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex);
+
+    template <typename S, typename T>
+    __global__ void convertKernel(void *dx, Nd4jLong N, void *dz);
 #endif
 }
 
