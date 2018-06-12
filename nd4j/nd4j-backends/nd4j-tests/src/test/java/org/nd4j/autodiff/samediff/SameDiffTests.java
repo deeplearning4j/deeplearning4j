@@ -3943,7 +3943,7 @@ public class SameDiffTests {
     public void testTensorArray2(){
         SameDiff sd = SameDiff.create();
         TensorArrayV3 tensorArray = sd.tensorArray();
-        INDArray arr1 = Nd4j.create(new double[]{1,2,3,4}, new int[]{2, 2});
+        INDArray arr1 = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
         SDVariable var1 = sd.var(arr1);
         INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
         SDVariable var2 = sd.var(arr2);
@@ -3951,6 +3951,20 @@ public class SameDiffTests {
         tensorArray.write(1, var2);
         SDVariable result = tensorArray.read(0);
         assertEquals(arr1, result.eval());
+    }
+    @Test
+    public void testTensorArray3(){
+        SameDiff sd = SameDiff.create();
+        TensorArrayV3 tensorArray = sd.tensorArray();
+        INDArray arr1 = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{ 2, 2});
+        INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
+        INDArray arr3 = Nd4j.pile(arr1, arr2);
+        SDVariable var = sd.var(arr3);
+        tensorArray = tensorArray.unstack(var);
+        SDVariable result1 = tensorArray.read(0);
+        SDVariable result2 = tensorArray.read(1);
+        assertEquals(arr1, result1.eval());
+        assertEquals(arr2, result2.eval());
     }
 
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){
