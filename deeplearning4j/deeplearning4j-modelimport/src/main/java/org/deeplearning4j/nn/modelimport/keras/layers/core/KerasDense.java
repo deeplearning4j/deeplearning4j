@@ -86,7 +86,8 @@ public class KerasDense extends KerasLayer {
         WeightInit weightInit = init.getFirst();
         Distribution distribution = init.getSecond();
 
-        DenseLayer.Builder builder = new DenseLayer.Builder().name(this.layerName).nOut(getNOutFromConfig(layerConfig, conf))
+        DenseLayer.Builder builder = new DenseLayer.Builder().name(this.layerName)
+                .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout).activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
                 .biasInit(0.0)

@@ -25,6 +25,7 @@ public class LastTimeStep extends BaseWrapperLayer {
 
     public LastTimeStep(Layer underlying){
         super(underlying);
+        this.layerName = underlying.getLayerName(); // needed for keras import to match names
     }
 
     public Layer getUnderlying() {
