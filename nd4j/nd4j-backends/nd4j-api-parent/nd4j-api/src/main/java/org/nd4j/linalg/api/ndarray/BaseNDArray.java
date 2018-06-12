@@ -2801,7 +2801,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
        }
 
         //Input validation: require (a) columnVector to actually be a column vector, and (b) this.size(0) to match columnVector.size(0)
-        if (!columnVector.isColumnVector() || this.size(0) != columnVector.size(0) || columnVector.length() <= 1) {
+        //Or, simply require it to be a rank 1 vector
+        if ((!columnVector.isColumnVector() && columnVector.rank() > 1) || this.size(0) != columnVector.size(0) || columnVector.length() <= 1) {
             throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape())
                     + ", column vector shape =" + Arrays.toString(columnVector.shape()) + ")");
         }
