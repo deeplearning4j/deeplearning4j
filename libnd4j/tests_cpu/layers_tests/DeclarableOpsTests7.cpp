@@ -2251,7 +2251,6 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test16) {
     delete result;
 }
 
- 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_1) {
     

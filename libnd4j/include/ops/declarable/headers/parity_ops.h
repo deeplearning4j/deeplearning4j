@@ -1037,7 +1037,7 @@ namespace nd4j {
         *    list of integers - dimensions to calculate norm1 along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
         *
         * output array:
-        *    reduced tensor with calculated norm
+        *    reduced tensor with calculated norm1
         */
         #if NOT_EXCLUDED(OP_reduce_norm1)
         DECLARE_CUSTOM_OP(reduce_norm1, 1, 1, false, 0, 0);
@@ -1059,7 +1059,7 @@ namespace nd4j {
         *    list of integers - dimensions to calculate norm2 along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
         *
         * output array:
-        *    reduced tensor with calculated norm
+        *    reduced tensor with calculated norm2
         */
         #if NOT_EXCLUDED(OP_reduce_norm2)
         DECLARE_CUSTOM_OP(reduce_norm2, 1, 1, false, 0, 0);
@@ -1095,7 +1095,7 @@ namespace nd4j {
         * This op calculates norm max of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate norm max for        
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero

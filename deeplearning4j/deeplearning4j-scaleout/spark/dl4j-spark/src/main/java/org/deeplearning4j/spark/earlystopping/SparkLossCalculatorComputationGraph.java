@@ -57,4 +57,9 @@ public class SparkLossCalculatorComputationGraph implements ScoreCalculator<Comp
         return net.calculateScoreMultiDataSet(data, average);
     }
 
+    @Override
+    public boolean minimizeScore() {
+        return true;    //Minimize loss
+    }
+
 }
