@@ -102,7 +102,7 @@ public class Nd4jCudaPresets implements InfoMapper {
                .put(new Info("std::vector<nd4j::NDArray<float>*>").pointerTypes("FloatNDArrayVector").define())
                .put(new Info("std::vector<nd4j::NDArray<float16>*>").pointerTypes("HalfNDArrayVector").define())
                .put(new Info("std::vector<nd4j::NDArray<double>*>").pointerTypes("DoubleNDArrayVector").define())
-                .put(new Info("nd4j::graph::ResultWrapper").base("ResultWrapperAbstraction").define())
+                .put(new Info("nd4j::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                .put(new Info("nd4j::IndicesList").purify());
 
         String classTemplates[] = {
