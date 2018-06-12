@@ -108,26 +108,62 @@ public class TensorArrayV3 extends  BaseTensorOp {
         return this.sameDiff.var(Nd4j.create(ArrayUtil.toDouble(index)));
     }
 
+
+    //----------- read ops-----------------\\
     public SDVariable read(int index){
         return new TensorArrayReadV3(this.sameDiff, new SDVariable[]{getVar(), intToVar(index)}).outputVariable();
     }
-
-    public TensorArrayV3 write(int index, SDVariable value){
-        return new TensorArrayV3(this,
-                new TensorArrayWriteV3(this.sameDiff,
-                                       new SDVariable[]{getVar(),
-                                       intToVar(index), value}).outputVariables());
-
+    public SDVariable read(SDVariable index){
+        return new TensorArrayReadV3(this.sameDiff, new SDVariable[]{getVar(), index}).outputVariable();
     }
-
+    public SDVariable gather(int... indices){
+        return new TensorArrayGatherV3(this.sameDiff, new SDVariable[]{getVar(), intToVar(indices)}).outputVariable();
+    }
+    public SDVariable gather(SDVariable indices){
+        return new TensorArrayGatherV3(this.sameDiff, new SDVariable[]{getVar(), indices}).outputVariable();
+    }
     public SDVariable stack(){
         return new TensorArrayGatherV3(this.sameDiff, new SDVariable[]{getVar(), intToVar(-1)}).outputVariable();
     }
 
-    public SDVariable gather(int... index){
-        return new TensorArrayGatherV3(this.sameDiff, new SDVariable[]{getVar(), intToVar(index)}).outputVariable();
+    public SDVariable concat(){
+        return new TensorArrayConcatV3(this.sameDiff, new SDVariable[]{getVar()}).outputVariable();
     }
 
+    //----------- write ops-----------------\\
+    public TensorArrayV3 write(int index, SDVariable value){
+        return new TensorArrayV3(this,
+                new TensorArrayWriteV3(this.sameDiff,
+                        new SDVariable[]{getVar(),
+                                intToVar(index), value}).outputVariables());
 
+    }
+    public TensorArrayV3 write(SDVariable index, SDVariable value){
+        return new TensorArrayV3(this,
+                new TensorArrayWriteV3(this.sameDiff,
+                        new SDVariable[]{getVar(),
+                                index, value}).outputVariables());
 
+    }
+    public TensorArrayV3 scatter(SDVariable value, int... indices){
+        return new TensorArrayV3(this,
+                new TensorArrayScatterV3(this.sameDiff,
+                        new SDVariable[]{getVar(),
+                        intToVar(indices),
+                        value}).outputVariables());
+    }
+    public TensorArrayV3 scatter(SDVariable value, SDVariable indices){
+        return new TensorArrayV3(this,
+                new TensorArrayScatterV3(this.sameDiff,
+                        new SDVariable[]{getVar(),
+                                indices,
+                                value}).outputVariables());
+    }
+    public TensorArrayV3 unstack(SDVariable value){
+        return new TensorArrayV3(this,
+                new TensorArrayScatterV3(this.sameDiff,
+                        new SDVariable[]{getVar(),
+                        intToVar(-1),
+                        value}).outputVariables());
+    }
 }
