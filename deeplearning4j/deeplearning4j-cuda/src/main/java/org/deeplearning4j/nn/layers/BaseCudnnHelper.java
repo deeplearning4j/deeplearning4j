@@ -186,6 +186,21 @@ public abstract class BaseCudnnHelper {
     protected Pointer beta = dataType == CUDNN_DATA_DOUBLE ? new DoublePointer(0.0) : new FloatPointer(0.0f);
     protected SizeTPointer sizeInBytes = new SizeTPointer(1);
 
+    public static int toCudnnDataType(DataBuffer.Type type){
+        switch (type){
+            case DOUBLE:
+                return CUDNN_DATA_DOUBLE;
+            case FLOAT:
+                return CUDNN_DATA_FLOAT;
+            case INT:
+                return CUDNN_DATA_INT32;
+            case HALF:
+                return CUDNN_DATA_HALF;
+            default:
+                throw new RuntimeException("Cannot convert type: " + type);
+        }
+    }
+
     public boolean checkSupported() {
         // add general checks here, if any
         return true;
