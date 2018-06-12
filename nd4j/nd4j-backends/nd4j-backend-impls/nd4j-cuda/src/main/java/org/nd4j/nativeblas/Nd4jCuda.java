@@ -381,6 +381,7 @@ bool verbose = false;
 // #include <graph/VariablesSet.h>
 // #include <graph/GraphState.h>
 // #include <graph/execution/LogicExecutor.h>
+// #include <graph/ResultWrapper.h>
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     static { Loader.load(); }
@@ -5369,9 +5370,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 
     // flatbuffers execution
-    public native @Cast("Nd4jPointer") Pointer executeFlatGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
-    public native @Cast("Nd4jPointer") Pointer executeFlatGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
-    public native @Cast("Nd4jPointer") Pointer executeFlatGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native ResultWrapper executeFlatGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native ResultWrapper executeFlatGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native ResultWrapper executeFlatGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
 
     // protobuf execution
     public native @Cast("Nd4jPointer") Pointer executeProtoGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer protoBufferPointer);
@@ -5447,6 +5448,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void deleteGraphStateHalf(@Cast("Nd4jPointer") Pointer state);
     public native void deleteGraphStateFloat(@Cast("Nd4jPointer") Pointer state);
     public native void deleteGraphStateDouble(@Cast("Nd4jPointer") Pointer state);
+
+    public native void deleteResultWrapper(@Cast("Nd4jPointer") Pointer ptr);
 
     // this method executes op that requires scope to be present: if/while/cond/whatever
     public native @Cast("Nd4jStatus") int execCustomOpWithScopeHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongPointer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
@@ -6073,6 +6076,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") LongPointer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") long[] dimensions, int rank);
+
+        public native @Cast("bool") boolean isFinite();
+        public native @Cast("bool") boolean hasNaNs();
+        public native @Cast("bool") boolean hasInfs();
 
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
@@ -7199,6 +7206,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") long[] dimensions, int rank);
 
+        public native @Cast("bool") boolean isFinite();
+        public native @Cast("bool") boolean hasNaNs();
+        public native @Cast("bool") boolean hasInfs();
+
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
         */
@@ -8323,6 +8334,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") LongPointer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") long[] dimensions, int rank);
+
+        public native @Cast("bool") boolean isFinite();
+        public native @Cast("bool") boolean hasNaNs();
+        public native @Cast("bool") boolean hasInfs();
 
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
@@ -10023,6 +10038,37 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 
 // #endif //LIBND4J_VARIABLE_H
+
+
+// Parsed from graph/ResultWrapper.h
+
+//
+// Created by raver119 on 11/06/18.
+//
+
+// #ifndef LIBND4J_RESULTWRAPPER_H
+// #define LIBND4J_RESULTWRAPPER_H
+
+// #include <op_boilerplate.h>
+// #include <pointercast.h>
+// #include <dll.h>
+        @Namespace("nd4j::graph") @NoOffset public static class ResultWrapper extends ResultWrapperAbstraction {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public ResultWrapper(Pointer p) { super(p); }
+        
+            public ResultWrapper(@Cast("Nd4jLong") long size, @Cast("Nd4jPointer") Pointer ptr) { super((Pointer)null); allocate(size, ptr); }
+            private native void allocate(@Cast("Nd4jLong") long size, @Cast("Nd4jPointer") Pointer ptr);
+
+            public native @Cast("Nd4jLong") long size();
+
+            public native @Cast("Nd4jPointer") Pointer pointer();
+        }
+    
+
+
+
+// #endif //LIBND4J_RESULTWRAPPER_H
 
 
 // Parsed from graph/VariablesSet.h

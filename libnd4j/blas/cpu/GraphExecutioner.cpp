@@ -34,6 +34,7 @@
 #include <helpers/ShapeUtils.h>
 #include <Status.h>
 #include <deque>
+#include <graph/ResultWrapper.h>
 
 namespace nd4j{
 namespace graph {
@@ -491,7 +492,7 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph, VariableSpace<T>* varia
  *
  */
 template <typename T>
-Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
+    nd4j::graph::ResultWrapper* GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
     uint8_t *buffer = reinterpret_cast<uint8_t *>(pointer);
 
     nd4j_debug("Trying to restore graph\n", 0);
@@ -593,7 +594,7 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
 
     nd4j_debug("Buffer size: %lld\n", static_cast<Nd4jLong>(builder.GetSize()));
 
-    return (Nd4jPointer) res; //builder.GetBufferPointer();
+    return new ResultWrapper(builder.GetSize(), reinterpret_cast<Nd4jPointer>(res));
 }
 
 

@@ -41,6 +41,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "array/ResultSet.h",
                         "NDArrayFactory.h",
                         "graph/Variable.h",
+                        "graph/ResultWrapper.h",
                         "graph/VariablesSet.h",
                         "graph/FlowPath.h",
                         "graph/Intervals.h",
@@ -101,6 +102,7 @@ public class Nd4jCudaPresets implements InfoMapper {
                .put(new Info("std::vector<nd4j::NDArray<float>*>").pointerTypes("FloatNDArrayVector").define())
                .put(new Info("std::vector<nd4j::NDArray<float16>*>").pointerTypes("HalfNDArrayVector").define())
                .put(new Info("std::vector<nd4j::NDArray<double>*>").pointerTypes("DoubleNDArrayVector").define())
+                .put(new Info("nd4j::graph::ResultWrapper").base("ResultWrapperAbstraction").define())
                .put(new Info("nd4j::IndicesList").purify());
 
         String classTemplates[] = {

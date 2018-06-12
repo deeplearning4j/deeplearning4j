@@ -59,5 +59,6 @@ public final class FlatConfiguration extends Table {
     return o;
   }
   public static void finishFlatConfigurationBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset); }
+  public static void finishSizePrefixedFlatConfigurationBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset); }
 }
 

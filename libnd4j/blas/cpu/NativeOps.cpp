@@ -50,6 +50,7 @@ bool experimentalSupport = false;
 #include <TAD.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <graph/Context.h>
+#include <graph/ResultWrapper.h>
 
 using namespace nd4j;
 
@@ -3097,15 +3098,15 @@ munmap((Nd4jPointer) ptrMap[0], length);
     delete[] ptrMap;
 }
 
-Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+nd4j::graph::ResultWrapper* NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
     return nd4j::graph::GraphExecutioner<float>::executeFlatBuffer(flatBufferPointer);
 }
 
-Nd4jPointer NativeOps::executeFlatGraphHalf(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+nd4j::graph::ResultWrapper* NativeOps::executeFlatGraphHalf(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
     return nd4j::graph::GraphExecutioner<float16>::executeFlatBuffer(flatBufferPointer);
 }
 
-Nd4jPointer NativeOps::executeFlatGraphDouble(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+nd4j::graph::ResultWrapper* NativeOps::executeFlatGraphDouble(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
     return nd4j::graph::GraphExecutioner<double>::executeFlatBuffer(flatBufferPointer);
 }
 
@@ -3570,6 +3571,11 @@ Nd4jStatus NativeOps::execCustomOpWithScopeDouble(Nd4jPointer *extraPointers, Nd
     return execCustomOpWithScope<double>(extraPointers, reinterpret_cast<nd4j::graph::GraphState<double> *>(state), opHash, scopes, numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs);
 }
 
+void NativeOps::deleteResultWrapper(Nd4jPointer ptr) {
+    // just 0 room for compiler s@!t
+    auto p = reinterpret_cast<nd4j::graph::ResultWrapper *>(ptr);
+    delete p;
+}
 
 template void flattenGeneric<float16>(Nd4jPointer*, int, char, float16*, Nd4jLong*, float16*, Nd4jLong*);
 template void flattenGeneric<float>(Nd4jPointer*, int, char, float*, Nd4jLong*, float*, Nd4jLong*);

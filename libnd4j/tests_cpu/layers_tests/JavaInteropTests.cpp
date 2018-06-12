@@ -638,9 +638,8 @@ TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
     Environment::getInstance()->setDebug(false);
     Environment::getInstance()->setVerbose(false);
 
-    char *re = reinterpret_cast<char *>(ptr);
     delete[] pl;
-    delete[] re;
+    delete ptr;
 }
 
 
@@ -652,7 +651,7 @@ TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     auto ptr = ops.executeFlatGraphFloat(nullptr, pl);
 
     // at this point we have FlatResults
-    auto flatResult = GetFlatResult(ptr);
+    auto flatResult = GetFlatResult(ptr->pointer());
     auto size = flatResult->variables()->size();
 
     // we know exact number of outputs in this graph in given mode
@@ -691,9 +690,8 @@ TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     }
 
 
-    auto re = reinterpret_cast<char *>(ptr);
     delete[] pl;
-    delete[] re;
+    delete ptr;
 
     // and we should have 0 leaks reported after this line :)
 }

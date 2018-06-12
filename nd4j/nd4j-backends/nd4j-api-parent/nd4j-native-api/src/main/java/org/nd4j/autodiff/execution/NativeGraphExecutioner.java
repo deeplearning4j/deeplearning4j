@@ -1,6 +1,8 @@
 package org.nd4j.autodiff.execution;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
@@ -19,6 +21,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.ResultWrapperAbstraction;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -87,14 +90,12 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
         log.info("Buffer length: {}", buffer.limit());
 
-        Pointer res  = NativeOpsHolder.getInstance().getDeviceNativeOps().executeFlatGraphFloat(null, bPtr);
+        val res  = NativeOpsHolder.getInstance().getDeviceNativeOps().executeFlatGraphFloat(null, bPtr);
         if (res == null)
             throw new ND4JIllegalStateException("Graph execution failed");
 
-        // FIXME: this is BAD
-        PagedPointer pagedPointer = new PagedPointer(res,1024 * 1024L);
+        PagedPointer pagedPointer = new PagedPointer(res.pointer(),res.size());
         FlatResult fr = FlatResult.getRootAsFlatResult(pagedPointer.asBytePointer().asByteBuffer());
-
 
         log.info("VarMap: {}", sd.variableMap());
 
@@ -110,22 +111,18 @@ public class NativeGraphExecutioner implements GraphExecutioner {
             results[e] = val;
 
             if (var.name() != null && sd.variableMap().containsKey(var.name())) {
-                //log.info("VarName: {}; Exists: {}; NDArrayInfo: {};", var.opName(), sd.variableMap().containsKey(var.opName()), sd.getVertexToArray().containsKey(var.opName()));
-  //              log.info("storing: {}; array: {}", var.name(), val);
                 sd.associateArrayWithVariable(val, sd.variableMap().get(var.name()));
-
             } else {
-                //log.info("Original id: {}; out: {}; out2: {}", original, sd.getVertexIdxToInfo().get(original), graph.getVariableForVertex(original));
                 if (sd.variableMap().get(var.name()) != null) {
                     sd.associateArrayWithVariable(val,sd.getVariable(var.name()));
                 } else {
                     log.warn("Unknown variable received: [{}]", var.name());
-
-//                    throw new ND4JIllegalStateException("Unknown variable received as result: ["+ var.name() +"]");
                 }
             }
         }
 
+        // now we need to release native memory
+        NativeOpsHolder.getInstance().getDeviceNativeOps().deleteResultWrapper(res);
 
         return results;
     }

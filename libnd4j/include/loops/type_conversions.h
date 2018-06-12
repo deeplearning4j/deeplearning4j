@@ -38,13 +38,13 @@ typedef union
 #ifdef __CUDACC__
 template<typename S, typename T>
 __device__ inline void convertKernelGeneric(void *dx, Nd4jLong N, void *dz) {
-    S *x = reinterpret_cast<S *> (dx);
-    T *z = reinterpret_cast<T *> (dz);
+    auto x = reinterpret_cast<S *>(dx);
+    auto z = reinterpret_cast<T *>(dz);
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (Nd4jLong i = tid; i < N; i+= blockDim.x * gridDim.x) {
-        z[i] = (T) ((float) x[i]);
+        z[i] = static_cast<T>(x[i]);
     }
 };
 
@@ -53,13 +53,13 @@ __device__ inline void convertKernelGeneric(void *dx, Nd4jLong N, void *dz) {
  */
 template<typename T>
 __device__ inline void encoderKernelP1Generic(void *dx, Nd4jLong N, void *dz, float threshold) {
-    T *x = reinterpret_cast<T *> (dx);
-    int *z = reinterpret_cast<int *> (dz);
+    auto x = reinterpret_cast<T *> (dx);
+    auto z = reinterpret_cast<int *> (dz);
 
     //basically, for phase One we want do calculation: how many eligible values we have, and which blocks will be holding data
     Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int pass = tid < N && nd4j::math::nd4j_abs<T>(x[tid]) >= (T) threshold ? 1 : 0;
+    int pass = tid < N && nd4j::math::nd4j_abs<T>(x[tid]) >= static_cast<T>(threshold) ? 1 : 0;
     int bp=__syncthreads_count(pass);
 
     if (threadIdx.x == 0) {
@@ -238,7 +238,7 @@ __global__ void prescan(int *g_odata, const int *g_idata, int *g_blockSums, int 
     extern __shared__ int s_data[];
 
     // load data into shared memory
-    loadSharedChunkFromMem<isNP2>((int *) s_data, g_idata, n, (baseIndex == 0) ? __mul24(blockIdx.x, (blockDim.x << 1)):baseIndex, ai, bi, mem_ai, mem_bi, bankOffsetA, bankOffsetB);
+    loadSharedChunkFromMem<isNP2>(reinterpret_cast<int *>(s_data), g_idata, n, (baseIndex == 0) ? __mul24(blockIdx.x, (blockDim.x << 1)):baseIndex, ai, bi, mem_ai, mem_bi, bankOffsetA, bankOffsetB);
 
     // scan the data in each block
     prescanBlock<storeSum>(s_data, blockIndex, g_blockSums);
@@ -298,7 +298,7 @@ __device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jLong N
 
 	if (tid < N) {
 	    T value = x[tid];
-        int pred = nd4j::math::nd4j_abs<T>(value) >= (T) threshold ? 1 : 0;
+        int pred = nd4j::math::nd4j_abs<T>(value) >= static_cast<T>(threshold) ? 1 : 0;
 		int w_i = threadIdx.x/warpSize; //warp index
 		int w_l = tid % warpSize;//thread index within a warp
 		int t_m = INT_MAX >> (warpSize-w_l-1); //thread mask (ERROR IN THE PAPER minus one is required)
@@ -326,8 +326,8 @@ __device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jLong N
 		if(pred){
 		    int idx = t_u + warpTotals[w_i] + bo + 4;
 		    if (idx < limit + 4) {
-			    z[idx]= value > (T) 0.0f ? tid+1 : -(tid + 1);
-			    x[tid] = value > (T) 0.0f ? x[tid] - threshold : x[tid] + threshold;
+			    z[idx]= value > static_cast<T>(0.0f) ? tid+1 : -(tid + 1);
+			    x[tid] = value > static_cast<T>(0.0f) ? x[tid] - threshold : x[tid] + threshold;
 			}
 		}
 	}
@@ -340,8 +340,8 @@ __device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jLong N
 */
 template<typename T>
 __device__ inline void decoderKernelGeneric(void *dx, Nd4jLong N, void *dz) {
-    int *x = reinterpret_cast<int *> (dx);
-    T *z = reinterpret_cast<T *> (dz);
+    auto x = reinterpret_cast<int *> (dx);
+    auto z = reinterpret_cast<T *> (dz);
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     __shared__ float threshold;
@@ -373,8 +373,8 @@ __device__ inline void cudaDecodeBitmapGeneric(void *dx, Nd4jLong N, T *dz) {
     __shared__ int *x;
     if (threadIdx.x == 0){
         extern __shared__ char mem[];
-        shmem = (T*) mem;
-        x = (int *)dx;
+        shmem = reinterpret_cast<T*>(mem);
+        x = reinterpret_cast<int *>(dx);
         fb.i_ = x[2];
         threshold = fb.f_;
     }
@@ -426,8 +426,8 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jLong N, int *dz, int *
     __shared__ T *vals;
     if (threadIdx.x == 0){
         extern __shared__ char mem[];
-        shmem = (int*) mem;
-        vals = (T *) (shmem + blockDim.x);
+        shmem = reinterpret_cast<int*>(mem);
+        vals = reinterpret_cast<T *>(shmem + blockDim.x);
         counter = 0;
     }
     __syncthreads();
@@ -443,20 +443,20 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jLong N, int *dz, int *
         shmem[threadIdx.x] = 0;
         vals[threadIdx.x] = val;
 
-        if (abs >= (T) threshold) {
+        if (abs >= static_cast<T>(threshold)) {
             shmem[threadIdx.x] = 1 << (bitId);
             atomicAdd(&counter, 1);
-            if (val < (T) 0.0f) {
+            if (val < static_cast<T>(0.0f)) {
                 shmem[threadIdx.x] |= 1 << (bitId + 16);
-                vals[threadIdx.x] += (T) threshold;
+                vals[threadIdx.x] += static_cast<T>(threshold);
             } else {
-                vals[threadIdx.x] -= (T) threshold;
+                vals[threadIdx.x] -= static_cast<T>(threshold);
             }
-        } else if (abs >= (T) threshold / (T) 2.0f && val < (T) 0.0f) {
+        } else if (abs >= static_cast<T>(threshold) / static_cast<T>(2.0f) && val < static_cat<T>(0.0f)) {
             atomicAdd(&counter, 1);
             shmem[threadIdx.x] = 1 << (bitId + 16);
 
-            vals[threadIdx.x] += (T) threshold / (T) 2.0f;
+            vals[threadIdx.x] += static_cast<T>(threshold) / static_cast<T>(2.0f);
         }
         __syncthreads();
 
@@ -473,48 +473,6 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jLong N, int *dz, int *
         __syncthreads();
 
         dx[i] = vals[threadIdx.x];
-
-        /*
-        // but only 1 thread in sub-warp writes encoded values
-        if (threadIdx.x % 16 == 0) {
-            int byteId = i / 16 + 4;
-            int byte = 0;
-
-            for (int e = 0; e < 16; e++) {
-                if (i + e >= N)
-                    continue;
-
-                int bitId = (i + e) % 16;
-                if (shmem[threadIdx.x + e + blockDim.x] >= (T) threshold) {
-                    byte |= 1 << (bitId + 1);
-                    atomicAdd(&counter, 1);
-
-                    if (shmem[threadIdx.x + e] < (T) 0.0f) {
-                        byte |= 1 << (bitId + 16 + 1);
-                    }
-
-                    shmem[threadIdx.x + e + blockDim.x] = (T) 0.0f;
-                } else if (shmem[threadIdx.x + e + blockDim.x] >= (T) threshold / (T) 2.0f && shmem[threadIdx.x + e] < (T) 0.0f) {
-                    byte |= 1 << (bitId + 16 + 1);
-                    atomicAdd(&counter, 1);
-                }
-            }
-
-            dz[byteId] = byte;
-        }
-        __syncthreads();
-
-
-
-        if (shmem[threadIdx.x + blockDim.x] == (T) 0.0f && shmem[threadIdx.x] != (T) 0.0f) {
-            if (shmem[threadIdx.x] < (T) 0.0f) {
-                dx[i] = shmem[threadIdx.x] + threshold;
-            } else {
-                dx[i] = shmem[threadIdx.x] - threshold;
-            }
-        }
-        */
-
     }
     __syncthreads();
 
@@ -591,20 +549,19 @@ extern "C" __global__ void decoderKernelHalf(void *dx, Nd4jLong N, void *dz) {
 
 template<typename S, typename T>
 void convertGeneric(void *dx, Nd4jLong N, void *dz) {
-    S *x = reinterpret_cast<S *> (dx);
-    T *z = reinterpret_cast<T *> (dz);
+    auto x = reinterpret_cast<S *>(dx);
+    auto z = reinterpret_cast<T *>(dz);
 
     if (N < 8000) {
-
 #pragma omp simd
         for (int i = 0; i < N; i++) {
-            z[i] = (T) ((float) x[i]);
+            z[i] = static_cast<T>(x[i]);
         }
     } else {
 
 #pragma omp parallel for
         for (int i = 0; i < N; i++) {
-            z[i] = (T) ((float) x[i]);
+            z[i] = static_cast<T>(x[i]);
         }
     }
 };
@@ -617,8 +574,8 @@ void convertToThreshold(void *dx, Nd4jLong N, void *dz) {
     // integer: dec length
     // float: threshold
     FloatBits fb;
-    T *x = (T *) dx;
-    int *z = (int *) dz;
+    auto x = reinterpret_cast<T *>(dx);
+    auto z = reinterpret_cast<int *>(dz);
     int limit = z[0];
     fb.i_ = z[2];
     float threshold = fb.f_;
@@ -639,7 +596,7 @@ void convertToThreshold(void *dx, Nd4jLong N, void *dz) {
             continue;
 
         T cUpd = x[e];
-        if (cUpd >= (T) threshold) {
+        if (cUpd >= static_cast<T>(threshold)) {
             int idx;
 #pragma omp atomic capture
             idx = cnt++;
@@ -651,8 +608,8 @@ void convertToThreshold(void *dx, Nd4jLong N, void *dz) {
             }
 
             z[idx] = e + 1;
-            x[e] -= (T) threshold;
-        } else if (cUpd <= (T) -threshold) {
+            x[e] -= static_cast<T>(threshold);
+        } else if (cUpd <= static_cast<T>(-threshold)) {
             int idx;
 #pragma omp atomic capture
             idx = cnt++;
@@ -664,7 +621,7 @@ void convertToThreshold(void *dx, Nd4jLong N, void *dz) {
             }
 
             z[idx] = -e - 1;
-            x[e] += (T) threshold;
+            x[e] += static_cast<T>(threshold);
         }
     }
 }
@@ -672,8 +629,8 @@ void convertToThreshold(void *dx, Nd4jLong N, void *dz) {
 template <typename T>
 void convertFromThreshold(void *dx, Nd4jLong N, void *dz) {
     FloatBits fb;
-    T *z = (T *) dz;
-    int *x = (int *) dx;
+    auto z = reinterpret_cast<T *>(dz);
+    auto x = reinterpret_cast<int *>(dx);
     int limit = x[0];
     fb.i_ = x[2];
     float threshold = fb.f_;
@@ -694,8 +651,8 @@ void convertFromThreshold(void *dx, Nd4jLong N, void *dz) {
  *     void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);
  */
 void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd4jLong N, int dstType, Nd4jPointer z) {
-    void *dx = reinterpret_cast<void *> (x);
-    void *dz = reinterpret_cast<void *> (z);
+    auto dx = reinterpret_cast<void *>(x);
+    auto dz = reinterpret_cast<void *>(z);
 
     if (srcType == ND4J_FLOAT8) {
         if (dstType == ND4J_FLOAT8) {

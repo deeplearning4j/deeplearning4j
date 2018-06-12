@@ -52,6 +52,7 @@ bool verbose = false;
 #include <graph/VariablesSet.h>
 #include <graph/GraphState.h>
 #include <graph/execution/LogicExecutor.h>
+#include <graph/ResultWrapper.h>
 
 class ND4J_EXPORT NativeOps {
 
@@ -2966,9 +2967,9 @@ public:
 
 
     // flatbuffers execution
-    Nd4jPointer executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
-    Nd4jPointer executeFlatGraphDouble(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
-    Nd4jPointer executeFlatGraphHalf(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
+    nd4j::graph::ResultWrapper* executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
+    nd4j::graph::ResultWrapper* executeFlatGraphDouble(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
+    nd4j::graph::ResultWrapper* executeFlatGraphHalf(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
 
     // protobuf execution
     Nd4jPointer executeProtoGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer protoBufferPointer);
@@ -3019,6 +3020,8 @@ public:
     void deleteGraphStateHalf(Nd4jPointer state);
     void deleteGraphStateFloat(Nd4jPointer state);
     void deleteGraphStateDouble(Nd4jPointer state);
+
+    void deleteResultWrapper(Nd4jPointer ptr);
 
     // this method executes op that requires scope to be present: if/while/cond/whatever
     Nd4jStatus execCustomOpWithScopeHalf(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs);
