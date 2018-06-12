@@ -49,7 +49,7 @@ CONFIGURABLE_OP_IMPL(cumsum_bp, 2, 1, true, 0, 2) {
 //    auto input = INPUT_VARIABLE(0);
     auto gradOut = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
-    
+    output->assign(gradOut);
 //    if (block.getIArguments()->size() == 2 && block.width() == 1) {
 //        output->assign(gradOut);
         // all at once case
