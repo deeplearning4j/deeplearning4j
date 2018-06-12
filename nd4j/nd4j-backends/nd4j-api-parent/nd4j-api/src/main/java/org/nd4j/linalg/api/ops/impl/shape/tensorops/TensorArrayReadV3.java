@@ -37,7 +37,7 @@ public class TensorArrayReadV3 extends BaseTensorOp {
 
         val array = list.get(id);
 
-        sameDiff.putArrayForVarName(this.getOwnName(), array);
+        sameDiff.updateVariable(this.getOwnName(), array);
 
         return list;
     }

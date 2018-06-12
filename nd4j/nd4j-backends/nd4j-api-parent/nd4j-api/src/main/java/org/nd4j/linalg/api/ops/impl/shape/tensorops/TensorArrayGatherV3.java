@@ -48,7 +48,7 @@ public class TensorArrayGatherV3 extends BaseTensorOp {
        val indices = getArgumentArray(1);
        val array = list.gather(indices);
        val name = this.getOwnName();
-       sameDiff.putArrayForVarName(name, array);
+       sameDiff.updateVariable(name, array);
 
        return list;
     }
