@@ -11031,37 +11031,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #endif //LIBND4J_VARIABLE_H
 
 
-// Parsed from graph/ResultWrapper.h
-
-//
-// Created by raver119 on 11/06/18.
-//
-
-// #ifndef LIBND4J_RESULTWRAPPER_H
-// #define LIBND4J_RESULTWRAPPER_H
-
-// #include <op_boilerplate.h>
-// #include <pointercast.h>
-// #include <dll.h>
-        @Namespace("nd4j::graph") @NoOffset public static class ResultWrapper extends ResultWrapperAbstraction {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public ResultWrapper(Pointer p) { super(p); }
-        
-            public ResultWrapper(@Cast("Nd4jLong") long size, @Cast("Nd4jPointer") Pointer ptr) { super((Pointer)null); allocate(size, ptr); }
-            private native void allocate(@Cast("Nd4jLong") long size, @Cast("Nd4jPointer") Pointer ptr);
-
-            public native @Cast("Nd4jLong") long size();
-
-            public native @Cast("Nd4jPointer") Pointer pointer();
-        }
-    
-
-
-
-// #endif //LIBND4J_RESULTWRAPPER_H
-
-
 // Parsed from graph/VariablesSet.h
 
 //
@@ -12805,6 +12774,37 @@ public static final long MAX_UINT = MAX_UINT();
 
 
 // #endif //ND4J_CONTEXT_PROTOTYPE_H
+
+// Parsed from graph/ResultWrapper.h
+
+//
+// Created by raver119 on 11/06/18.
+//
+
+// #ifndef LIBND4J_RESULTWRAPPER_H
+// #define LIBND4J_RESULTWRAPPER_H
+
+// #include <op_boilerplate.h>
+// #include <pointercast.h>
+// #include <dll.h>
+        @Namespace("nd4j::graph") @NoOffset public static class ResultWrapper extends org.nd4j.nativeblas.ResultWrapperAbstraction {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public ResultWrapper(Pointer p) { super(p); }
+        
+            public ResultWrapper(@Cast("Nd4jLong") long size, @Cast("Nd4jPointer") Pointer ptr) { super((Pointer)null); allocate(size, ptr); }
+            private native void allocate(@Cast("Nd4jLong") long size, @Cast("Nd4jPointer") Pointer ptr);
+
+            public native @Cast("Nd4jLong") long size();
+
+            public native @Cast("Nd4jPointer") Pointer pointer();
+        }
+    
+
+
+
+// #endif //LIBND4J_RESULTWRAPPER_H
+
 
 // Parsed from helpers/shape.h
 
