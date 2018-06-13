@@ -12,6 +12,7 @@ import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
@@ -24,15 +25,16 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class TransformOpValidation {
@@ -1055,5 +1057,112 @@ public class TransformOpValidation {
             log.error("All failed transforms: " + allFailed);
             fail(allFailed.size() + " transforms failed");
         }
+    }
+
+    //TODO UPDATE TO OP VALIDATION OR DELETE
+    @Test
+    public void testLogGrad() {
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable input = sameDiff.var("x", Nd4j.linspace(1, 4, 4));
+        SDVariable log = sameDiff.log(input);
+        SDVariable sum = sameDiff.sum(log, Integer.MAX_VALUE);
+        INDArray result = null;
+        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards = sameDiff.execBackwards();
+        System.out.println(execBackwards);
+        //INDArray assertion = Nd4j.create(new double[]{1, 0.5, 0.33, 0.25});
+        // assertTrue(assertion.equalsWithEps(result, 1e-2));
+    }
+
+
+    @Test
+    public void testSigmoidBackwards() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        Map<String, INDArray> inputs = new HashMap<>();
+        inputs.put("x", sumInput);
+        SDVariable input = sameDiff.var("x", inputs.get("x"));
+        SDVariable sigmoid = sameDiff.sigmoid(input);
+        SDVariable sum = sameDiff.sum(sigmoid, Integer.MAX_VALUE);
+        List<DifferentialFunction> backwardsOps = sameDiff.execBackwards().getRight();
+        Op finalOp = (Op) backwardsOps.get(backwardsOps.size() - 1);
+        assertTrue(Nd4j.create(new double[][]{
+                {0.1966, 0.1050},
+                {0.0452, 0.0177}
+        }).equalsWithEps(
+                finalOp.z(), 1e-2));
+        System.out.println(backwardsOps);
+    }
+
+    @Test
+    public void testExpGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        Map<String, INDArray> inputs = new HashMap<>();
+        inputs.put("x", sumInput);
+        sameDiff.defineFunction("expGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                SDVariable input = sameDiff.var("x", inputs.get("x"));
+                SDVariable exp = sameDiff.exp(input);
+                SDVariable sum = sameDiff.sum(exp, Integer.MAX_VALUE);
+                return new SDVariable[]{sum};
+            }
+        }, inputs);
+
+
+        List<DifferentialFunction> ops = sameDiff.getFunction("expGradient").execBackwards().getRight();
+
+        INDArray executions = ops.get(ops.size() - 1).outputVariables()[0].getArr();
+        INDArray assertion = Nd4j.create(new double[][]{
+                {2.7183, 7.3891},
+                {20.0855, 54.5981}
+        });
+        assertArrayEquals(sumInput.shape(), executions.shape());
+        assertEquals(assertion, executions);
+        System.out.println(executions);
+        //assertEquals(Nd4j.ones(2,2),executions);
+    }
+
+
+/*    @Test
+    public void testDepth() {
+        SameDiff sameDiff = SameDiff.create();
+        SDVariable x = sameDiff.one("one",new long[]{2,2});
+        assertEquals(0,x.depth());
+        SDVariable sigmoid = sameDiff.sigmoid("sigmoid",x);
+        assertEquals(1,sigmoid.depth());
+    }*/
+
+
+    @Test
+    public void testTanhGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        Map<String, INDArray> inputs = new HashMap<>();
+        inputs.put("x", sumInput);
+        sameDiff.defineFunction("tanhGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                SDVariable input = sameDiff.var("x", inputs.get("x"));
+                SDVariable tanh = sameDiff.tanh(input);
+                SDVariable sum = sameDiff.sum(tanh, Integer.MAX_VALUE);
+                return new SDVariable[]{tanh};
+            }
+        }, inputs);
+
+        INDArray executions = sameDiff.getFunction("tanhGradient").execBackwardAndEndResult();
+        //[0.41997434161402614,0.07065082485316443,0.009866037165440211,0.0013409506830258655]
+        INDArray assertion = Nd4j.create(new double[][]{
+                {0.41997434161402614, 0.07065082485316443},
+                {0.009866037165440211, 0.0013409506830258655}
+        });
+
+        assertTrue(assertion.equalsWithEps(
+                executions, 1e-3));
+
+        assertArrayEquals(sumInput.shape(), executions.shape());
+        assertEquals(assertion, executions);
+        System.out.println(executions);
+        //assertEquals(Nd4j.ones(2,2),executions);
     }
 }

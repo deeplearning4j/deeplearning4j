@@ -5,24 +5,25 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
+import static org.junit.Assume.assumeNotNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Slf4j
@@ -393,5 +394,173 @@ public class MiscOpValidation extends BaseOpValidation {
         }
 
         assertEquals(failed.toString(), 0, failed.size());
+    }
+
+
+    @Test
+    public void testTensorGradTensorMmul() {
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Nd4j.rand(new long[]{2, 2, 2});
+        INDArray arr2 = Nd4j.rand(new long[]{2, 2, 2});
+        SDVariable x = sameDiff.var("x", arr);
+        SDVariable y = sameDiff.var("y", arr2);
+        SDVariable result = sameDiff.tensorMmul(x, y, new int[][]{{0}, {1}});
+        assertArrayEquals(ArrayUtil.getTensorMmulShape(new long[]{2, 2, 2}, new long[]{2, 2, 2}, new int[][]{{0}, {1}}), result.getShape());
+        assertEquals(32, sameDiff.numElements());
+
+        SDVariable loss = sameDiff.standardDeviation(result, true);
+
+        String err = OpValidation.validate(new TestCase(sameDiff));
+    }
+
+    @Test
+    public void testMulGradient() {
+        INDArray arr1 = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray arr2 = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+
+        INDArray gradAssertion = Nd4j.ones(arr1.shape());
+        INDArray scalar = Nd4j.scalar(1.0);
+        INDArray aGradAssertion = Nd4j.create(new double[][]{
+                {1, 4},
+                {9, 16}
+        });
+
+        INDArray cGradAssertion = Nd4j.create(new double[][]{
+                {1, 2},
+                {3, 4}
+        });
+
+        INDArray wGradAssertion = Nd4j.create(new double[][]{
+                {2, 8},
+                {18, 32}
+        });
+
+        INDArray dGradAssertion = Nd4j.ones(2, 2);
+
+        SameDiff sameDiff = SameDiff.create();
+
+        SDVariable sdVariable = sameDiff.var("a", arr1);
+        SDVariable sdVariable1 = sameDiff.var("w", arr2);
+        SDVariable varMulPre = sdVariable.mul("c", sdVariable1);
+        SDVariable varMul = varMulPre.mul("d", sdVariable1);
+        SDVariable sum = sameDiff.sum("ret", varMul, Integer.MAX_VALUE);
+
+        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> mapListPair = sameDiff.execBackwards();
+
+        SDVariable finalResult = sameDiff.grad(sum.getVarName());
+
+        SDVariable cGrad = sameDiff.grad(varMulPre.getVarName());
+
+        SDVariable mulGradResult = sameDiff.grad(varMul.getVarName());
+        SDVariable aGrad = sameDiff.grad(sdVariable.getVarName());
+        SDVariable wGrad = sameDiff.grad(sdVariable1.getVarName());
+        SDVariable dGrad = sameDiff.grad(varMul.getVarName());
+
+        INDArray scalarGradTest = finalResult.getArr();
+        assertEquals(scalar, scalarGradTest);
+
+
+        INDArray gradTest = mulGradResult.getArr();
+        assertEquals(gradAssertion, gradTest);
+
+        INDArray aGradTest = aGrad.getArr();
+        assertEquals(aGradAssertion, aGradTest);
+
+        INDArray cGradTest = cGrad.getArr();
+        assertEquals(cGradAssertion, cGradTest);
+
+        INDArray wGradTest = wGrad.getArr();
+        assertEquals(wGradAssertion, wGradTest);
+
+        INDArray dGradTest = dGrad.getArr();
+        assertEquals(dGradAssertion, dGradTest);
+    }
+
+
+    @Test
+    public void testMmulGradient() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        Map<String, INDArray> inputs = new HashMap<>();
+        inputs.put("x", sumInput);
+        inputs.put("y", sumInput.dup());
+
+        sameDiff.defineFunction("mmulGradient", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                SDVariable input = sameDiff.var("x", inputs.get("x"));
+                SDVariable input2 = sameDiff.var("y", inputs.get("y"));
+                SDVariable exp = sameDiff.mmul(input, input2);
+                SDVariable sum = sameDiff.sum(exp, Integer.MAX_VALUE);
+                return new SDVariable[]{sum};
+            }
+        }, inputs);
+
+        List<DifferentialFunction> ops = sameDiff.getFunction("mmulGradient").execBackwards().getRight();
+        String print = sameDiff.asFlatPrint();
+
+
+        assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
+        assumeNotNull(sameDiff.getFunction("mmulGradient").grad("x"));
+        assumeNotNull(sameDiff.getFunction("mmulGradient").grad("y"));
+
+        SDVariable gradWrtX = sameDiff.getFunction("mmulGradient").grad("x");
+        SDVariable gradWrtY = sameDiff.getFunction("mmulGradient").grad("y");
+        assumeNotNull(gradWrtX.getArr());
+        assumeNotNull(gradWrtY.getArr());
+
+
+        INDArray xGradAssertion = Nd4j.create(new double[][]{
+                {3, 7},
+                {3, 7}
+        });
+
+        INDArray yGradAssertion = Nd4j.create(new double[][]{
+                {4, 4},
+                {6, 6}
+        });
+
+        assertEquals(xGradAssertion, gradWrtX.getArr());
+        assertEquals(yGradAssertion, gradWrtY.getArr());
+    }
+
+
+    @Test
+    public void testMmulWithTranspose() {
+        //Here: [x,3]^T * [x,4] = [3,4]
+
+        for (int i : new int[]{2, 1}) {
+            System.out.println("i = " + i);
+            INDArray first = Nd4j.linspace(1, 3 * i, 3 * i).reshape('c', i, 3);      //To [1,3] or [2,3]
+            INDArray second = Nd4j.linspace(4, 4 + 4 * i, 4 * i).reshape('c', i, 4);  //To [1,4] or [2,4]
+
+            System.out.println("Shapes: " + Arrays.toString(first.shape()) + "\t" + Arrays.toString(second.shape()));
+
+            SameDiff sd = SameDiff.create();
+            SDVariable f = sd.var("in1", first);
+            SDVariable s = sd.var("in2", second);
+
+            MMulTranspose mt = MMulTranspose.builder()
+                    .transposeA(true)
+                    .transposeB(false)
+                    .transposeResult(false)
+                    .a(first)
+                    .b(second)
+                    .build();
+            SDVariable mmul = sd.f().mmul(f, s, mt);
+            sd.updateVariableNameAndReference(mmul, "mmul");
+
+            INDArray out = sd.execAndEndResult();
+
+            INDArray exp = first.transpose().mmul(second);
+            assertEquals(exp, out);
+
+            SDVariable loss = sd.standardDeviation(mmul, true);
+            String err = OpValidation.validate(new TestCase(sd)
+                    .expected(mmul.getVarName(), exp));
+
+            assertNull(err);
+        }
     }
 }
