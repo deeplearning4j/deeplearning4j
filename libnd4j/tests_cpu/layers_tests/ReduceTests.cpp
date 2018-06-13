@@ -89,8 +89,8 @@ TEST_F(StdTest,MultiDimTest) {
             tad->tadOnlyShapeInfo,
             tad->tadOffsets);
 
-    for(int i = 0; i < shape::length(resultShapeInfo); i++)
-        printf("%f\n",result[i]);
+    // for(int i = 0; i < shape::length(resultShapeInfo); i++)
+        // printf("%f\n",result[i]);
 
     delete[] result;
     delete[] resultShapeInfo;
@@ -127,8 +127,8 @@ TEST_F(ReduceTest,MatrixTest) {
             tad->tadOnlyShapeInfo,
             tad->tadOffsets);
 
-    for(int i = 0; i < shape::length(resultShapeInfo); i++)
-        printf("%f\n",result[i]);
+    // for(int i = 0; i < shape::length(resultShapeInfo); i++)
+    //     printf("%f\n",result[i]);
 
     delete[] resultShapeInfo;
     delete tad;

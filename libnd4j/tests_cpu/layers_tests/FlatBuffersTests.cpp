@@ -672,7 +672,7 @@ TEST_F(FlatBuffersTest, Test_GruDynamicMnist) {
 
     auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
 
-    nd4j_printf("GRU time 1 time %lld us\n", outerTime);
+    // nd4j_printf("GRU time 1 time %lld us\n", outerTime);
 
     delete graph;
 }

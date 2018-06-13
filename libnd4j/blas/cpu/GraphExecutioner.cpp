@@ -494,11 +494,11 @@ template <typename T>
 Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
     uint8_t *buffer = reinterpret_cast<uint8_t *>(pointer);
 
-    nd4j_debug("Trying to restore graph\n", 0);
+    // nd4j_debug("Trying to restore graph\n", 0);
 
     auto restoredGraph = GetFlatGraph(buffer);
 
-    nd4j_debug("Graph restored\n", 0);
+    // nd4j_debug("Graph restored\n", 0);
 
     // converting FlatGraph to internal representation
     auto nativeGraph = new Graph<T>(restoredGraph);
@@ -511,7 +511,7 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
     nativeGraph->getVariableSpace()->setFlowPath(&flowPath);
 
 
-    nd4j_debug("Going to execute graph\n", 0);
+    // nd4j_debug("Going to execute graph\n", 0);
 
     // executing internal representation
     auto status = GraphExecutioner<T>::execute(nativeGraph);
@@ -520,7 +520,7 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
         return nullptr;
     }
 
-    nd4j_debug("Building output...\n", 0);
+    // nd4j_debug("Building output...\n", 0);
 
     flatbuffers::FlatBufferBuilder builder(1024);
 
