@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -exuo pipefail
 
 IS_RELEASE='true'
 
