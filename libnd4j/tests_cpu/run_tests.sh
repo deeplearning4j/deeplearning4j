@@ -12,6 +12,9 @@ fi
 if [[ "$OSTYPE" == "darwin"* ]]; then
     export CC=$(ls -1 /usr/local/bin/gcc-? | head -n 1)
     export CXX=$(ls -1 /usr/local/bin/g++-? | head -n 1)
+elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+    export CC=$(which gcc)
+    export CXX=$(which g++)
 fi
 
 parse_commandline ()

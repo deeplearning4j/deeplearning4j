@@ -13,6 +13,14 @@ import java.util.Map;
 
 public class TensorArrayGatherV3 extends BaseTensorOp {
 
+    public TensorArrayGatherV3(String name, SameDiff sameDiff, SDVariable[] args){
+        super(name, sameDiff, args);
+    }
+    public TensorArrayGatherV3(SameDiff sameDiff, SDVariable[] args){
+        super(null, sameDiff, args);
+    }
+
+    public TensorArrayGatherV3(){}
    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op name found for " + opName());
@@ -37,14 +45,12 @@ public class TensorArrayGatherV3 extends BaseTensorOp {
     @Override
     public TensorList execute(SameDiff sameDiff) {
        val list = getList(sameDiff);
-
-       val array = list.stack();
-
+       val indices = getArgumentArray(1);
+       val array = list.gather(indices);
        val name = this.getOwnName();
+       sameDiff.updateVariable(name, array);
 
-        sameDiff.putArrayForVarName(name, array);
-
-        return list;
+       return list;
     }
 
     @Override

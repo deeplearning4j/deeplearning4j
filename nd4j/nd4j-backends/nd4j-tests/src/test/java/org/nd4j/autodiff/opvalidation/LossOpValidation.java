@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.gradcheck;
+package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
@@ -20,8 +20,8 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 @Slf4j
-public class GradCheckLoss extends BaseGradCheck {
-    public GradCheckLoss(Nd4jBackend backend) {
+public class LossOpValidation extends BaseOpValidation {
+    public LossOpValidation(Nd4jBackend backend) {
         super(backend);
     }
 

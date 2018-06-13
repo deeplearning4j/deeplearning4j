@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.gradcheck;
+package org.nd4j.autodiff.opvalidation;
 
 import org.junit.After;
 import org.junit.Before;
@@ -7,11 +7,11 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-public class BaseGradCheck extends BaseNd4jTest {
+public class BaseOpValidation extends BaseNd4jTest {
 
     private DataBuffer.Type initialType;
 
-    public BaseGradCheck(Nd4jBackend backend) {
+    public BaseOpValidation(Nd4jBackend backend) {
         super(backend);
     }
 

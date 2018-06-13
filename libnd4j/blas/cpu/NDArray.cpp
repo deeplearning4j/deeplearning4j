@@ -2698,7 +2698,7 @@ bool NDArray<T>::isUnitary() {
         if (dimensions.size() > 1)
             std::sort(copy.begin(), copy.end());
 
-        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
+        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
@@ -2809,7 +2809,7 @@ bool NDArray<T>::isUnitary() {
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other->rankOf(), copy);               
 
-        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
+        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);
         // create temporary array of extra parameters if array extraParams is empty (==nullptr)
@@ -2848,7 +2848,7 @@ bool NDArray<T>::isUnitary() {
         if (copy.size() > 1)
             std::sort(copy.begin(), copy.end());
             
-        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
+        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);        
         
@@ -3364,7 +3364,7 @@ void NDArray<T>::setValueInDiagMatrix(const T& value, const int diag, const char
     switch(direction) {
             
         case 'u':                           // fill upper triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided)             
+#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
             for(int i = 0; i < rows; ++i) 
                 for(int j = 0; j < cols; ++j)                                      
                     if (i + diag <= j)
@@ -3372,7 +3372,7 @@ void NDArray<T>::setValueInDiagMatrix(const T& value, const int diag, const char
                 break;
 
         case 'l':                           // fill lower triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided)                         
+#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
             for(int i = 0; i < rows; ++i) 
                 for(int j = 0; j < cols; ++j)                                      
                     if (i + diag >= j)
