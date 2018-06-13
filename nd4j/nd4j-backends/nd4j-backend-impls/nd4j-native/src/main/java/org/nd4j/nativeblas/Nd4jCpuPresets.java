@@ -57,6 +57,7 @@ import java.util.Scanner;
                                               "graph/profiling/NodeProfile.h",
                                               "graph/Context.h",
                                               "graph/ContextPrototype.h",
+                                              "graph/ResultWrapper.h",
                                               "helpers/shape.h",
                                               "array/ShapeList.h",
                                               "op_boilerplate.h",
@@ -155,6 +156,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                .put(new Info("std::vector<nd4j::NDArray<float>*>").pointerTypes("FloatNDArrayVector").define())
                .put(new Info("std::vector<nd4j::NDArray<float16>*>").pointerTypes("HalfNDArrayVector").define())
                .put(new Info("std::vector<nd4j::NDArray<double>*>").pointerTypes("DoubleNDArrayVector").define())
+               .put(new Info("nd4j::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                .put(new Info("nd4j::IndicesList").purify());
 
         String classTemplates[] = {

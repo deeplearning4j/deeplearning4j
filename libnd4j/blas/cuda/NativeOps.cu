@@ -5582,13 +5582,94 @@ void NativeOps::tearHalf(Nd4jPointer *extras, float16 *x, Nd4jLong *xShapeInfo, 
     nd4j::DebugHelper::checkErrorCode(stream, "tearHalf(...) failed");
 }
 
+
+void prescanArrayRecursive(Nd4jPointer *extras, int *z, int *x, int numElements, int level) {
+
+    auto stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+    auto g_scanBlockSums = reinterpret_cast<int **>(&extras[2]);
+
+    int blockSize = 512; // max size of the thread blocks
+    int numBlocks = nd4j::math::nd4j_max<int>(1, static_cast<int>(ceil(static_cast<float>(numElements) / (2.f * blockSize))));
+    int numThreads;
+
+    if (numBlocks > 1)
+        numThreads = blockSize;
+    else if (nd4j::isPowerOfTwo(numElements))
+        numThreads = numElements / 2;
+    else
+        numThreads = nd4j::floorPow2(numElements);
+
+    int numEltsPerBlock = numThreads * 2;
+
+    // if this is a non-power-of-2 array, the last block will be non-full
+    // compute the smallest power of 2 able to compute its scan.
+    int numEltsLastBlock =
+            numElements - (numBlocks-1) * numEltsPerBlock;
+    int numThreadsLastBlock = nd4j::math::nd4j_max<int>(1, numEltsLastBlock / 2);
+    int np2LastBlock = 0;
+    int sharedMemLastBlock = 0;
+
+    if (numEltsLastBlock != numEltsPerBlock) {
+        np2LastBlock = 1;
+
+        if(!isPowerOfTwo(numEltsLastBlock))
+            numThreadsLastBlock = floorPow2(numEltsLastBlock);
+
+        unsigned int extraSpace = (2 * numThreadsLastBlock) / NUM_BANKS;
+        sharedMemLastBlock = sizeof(int) * (2 * numThreadsLastBlock + extraSpace);
+    }
+
+    // padding space is used to avoid shared memory bank conflicts
+    int extraSpace = numEltsPerBlock / NUM_BANKS;
+    int sharedMemSize = sizeof(int) * (numEltsPerBlock + extraSpace);
+
+    // setup execution parameters
+    // if NP2, we process the last block separately
+    dim3 grid(max(1, numBlocks - np2LastBlock), 1, 1);
+    dim3 threads(numThreads, 1, 1);
+    dim3 gridOnes(1, 1, 1);
+    dim3 threadsOnes(numThreadsLastBlock, 1, 1);
+
+    if (sharedMemSize < 2048)
+        sharedMemSize = 2048;
+
+    if (sharedMemLastBlock < 2048)
+        sharedMemLastBlock = 2048;
+
+    // execute the scan
+    if (numBlocks > 1) {
+        nd4j::prescanLauncher<true, false>(grid, threads, sharedMemSize, stream, z, x, g_scanBlockSums[level], numThreads * 2, 0, 0);
+        if (np2LastBlock) {
+            nd4j::prescanLauncher<true, true>(gridOnes, threadsOnes, sharedMemLastBlock, stream, z, x, g_scanBlockSums[level], numEltsLastBlock, numBlocks - 1, numElements - numEltsLastBlock);
+        }
+
+        // After scanning all the sub-blocks, we are mostly done.  But now we
+        // need to take all of the last values of the sub-blocks and scan those.
+        // This will give us a new value that must be sdded to each block to
+        // get the final results.
+        // recursive (CPU) call
+        prescanArrayRecursive(extras, g_scanBlockSums[level], g_scanBlockSums[level], numBlocks, level+1);
+
+        nd4j::uniformAdd<<<grid, threads, 1024, *stream>>>(z, g_scanBlockSums[level], numElements - numEltsLastBlock, 0, 0);
+
+        if (np2LastBlock) {
+            nd4j::uniformAdd<<<1, numThreadsLastBlock, 1024, *stream>>>(z, g_scanBlockSums[level], numEltsLastBlock, numBlocks - 1, numElements - numEltsLastBlock);
+        }
+    } else if (isPowerOfTwo(numElements)) {
+        nd4j::prescanLauncher<false, false>(grid, threads, sharedMemSize, stream, z, x, 0, numThreads * 2, 0, 0);
+    } else {
+        nd4j::prescanLauncher<false, true>(grid, threads, sharedMemSize, stream, z, x, 0, numElements, 0, 0);
+    }
+}
+
+
 void NativeOps::encodeThresholdP1Float(Nd4jPointer *extras, float *dx, Nd4jLong N, int *dz, float threshold) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
     int blockSize = 1024;
     int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    encoderKernelP1Float<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz, threshold);
+    nd4j::encoderKernelP1Float<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz, threshold);
 
     nd4j::DebugHelper::checkErrorCode(stream, "encodeThresholdP1Float(...) failed");
 }
@@ -5600,7 +5681,7 @@ void NativeOps::encodeThresholdP1Double(Nd4jPointer *extras, double *dx, Nd4jLon
     int blockSize = 1024;
     int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    encoderKernelP1Double<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz, threshold);
+    nd4j::encoderKernelP1Double<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz, threshold);
 
     nd4j::DebugHelper::checkErrorCode(stream, "encodeThresholdP1Double(...) failed");
 }
@@ -5633,7 +5714,7 @@ void NativeOps::encodeThresholdP3Float(Nd4jPointer *extraPointers, float *dx, in
     int blockSize = 1024;
     int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    encoderKernelP3Float<<<numBlocks, blockSize , 4096, *stream>>>(dx, offsets, N, dz);
+    nd4j::encoderKernelP3Float<<<numBlocks, blockSize , 4096, *stream>>>(dx, offsets, N, dz);
 
     nd4j::DebugHelper::checkErrorCode(stream, "encodeThresholdP3Float(...) failed");
 }
@@ -5644,7 +5725,7 @@ void NativeOps::encodeThresholdP3Double(Nd4jPointer *extraPointers, double *dx, 
     int blockSize = 1024;
     int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    encoderKernelP3Double<<<numBlocks, blockSize , 4096, *stream>>>(dx, offsets, N, dz);
+    nd4j::encoderKernelP3Double<<<numBlocks, blockSize , 4096, *stream>>>(dx, offsets, N, dz);
 
     nd4j::DebugHelper::checkErrorCode(stream, "encodeThresholdP3Double(...) failed");
 }
@@ -5656,7 +5737,7 @@ void NativeOps::encodeThresholdP3Half(Nd4jPointer *extraPointers, float16 *dx, i
     int blockSize = 1024;
     int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    encoderKernelP3Half<<<numBlocks, blockSize , 4096, *stream>>>(dx, offsets, N, dz);
+    nd4j::encoderKernelP3Half<<<numBlocks, blockSize , 4096, *stream>>>(dx, offsets, N, dz);
 
     nd4j::DebugHelper::checkErrorCode(stream, "encodeThresholdP3Half(...) failed");
 }
@@ -5669,7 +5750,7 @@ void NativeOps::decodeThresholdFloat(Nd4jPointer *extraPointers, void *dx, Nd4jL
     int blockSize = 128;
     int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    decoderKernelFloat<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
+    nd4j::decoderKernelFloat<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
 
     nd4j::DebugHelper::checkErrorCode(stream, "decodeThresholdFloat(...) failed");
 }
@@ -5681,7 +5762,7 @@ void NativeOps::decodeThresholdDouble(Nd4jPointer *extraPointers, void *dx, Nd4j
     int blockSize = 128;
     int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    decoderKernelDouble<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
+    nd4j::decoderKernelDouble<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
 
     nd4j::DebugHelper::checkErrorCode(stream, "decodeThresholdDouble(...) failed");
 }
@@ -5693,7 +5774,7 @@ void NativeOps::decodeThresholdHalf(Nd4jPointer *extraPointers, void *dx, Nd4jLo
     int blockSize = 128;
     int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    decoderKernelHalf<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
+    nd4j::decoderKernelHalf<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
 
     nd4j::DebugHelper::checkErrorCode(stream, "decodeThresholdHalf(...) failed");
 }
@@ -6178,16 +6259,16 @@ Nd4jPointer NativeOps::executeProtoGraphFloat(Nd4jPointer *extraPointers, const 
 	return nullptr;
 }
 
-Nd4jPointer NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+nd4j::graph::ResultWrapper* NativeOps::executeFlatGraphFloat(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
 	return nullptr;
 }
 
-Nd4jPointer NativeOps::executeFlatGraphHalf(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+nd4j::graph::ResultWrapper* NativeOps::executeFlatGraphHalf(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
 	return nullptr;
 }
 
-	
-Nd4jPointer NativeOps::executeFlatGraphDouble(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
+
+nd4j::graph::ResultWrapper* NativeOps::executeFlatGraphDouble(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
 	return nullptr;
 }
 		
@@ -6640,4 +6721,194 @@ Nd4jStatus NativeOps::execCustomOpWithScopeFloat(Nd4jPointer *extraPointers, Nd4
 
 Nd4jStatus NativeOps::execCustomOpWithScopeDouble(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs) {
     return execCustomOpWithScope<double>(extraPointers, reinterpret_cast<nd4j::graph::GraphState<double> *>(state), opHash, scopes, numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs);
+}
+
+void NativeOps::deleteResultWrapper(Nd4jPointer ptr) {
+	// just 0 room for compiler s@!t
+	auto p = reinterpret_cast<nd4j::graph::ResultWrapper *>(ptr);
+	delete p;
+}
+
+
+/*
+ * TypeDef:
+ *     void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);
+ */
+void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd4jLong N, int dstType, Nd4jPointer z) {
+ 	auto dx = reinterpret_cast<void *>(x);
+	auto dz = reinterpret_cast<void *>(z);
+
+    if (srcType == ND4J_FLOAT8) {
+        if (dstType == ND4J_FLOAT8) {
+            // convertKernel<double, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
+
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, double>(extras, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_INT8) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            //convertKernel<nd4j::int8, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
+            // TODO: eventually we might want to add it
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, double>(extras, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_UINT8) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
+            // TODO: still might want to add
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, double>(extras, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_FLOAT16) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<float16, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<float16, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<float16, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<float16, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<float16, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<float16, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
+            // TODO: .... ^^^
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<float16, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<float16, double>(extras, dx, N, dz);
+        } else if (dstType == ND4J_THRESHOLD) {
+            //nd4j::convertToThreshold<float16>(nullptr, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_INT16) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
+            // TODO...
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, double>(extras, dx, N, dz);
+        } else {
+            printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_FLOAT24) {
+
+    } else if (srcType == ND4J_FLOAT32) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<float, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<float, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<float, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<float, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<float, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<float, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
+
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<float, double>(extras, dx, N, dz);
+        } else if (dstType == ND4J_THRESHOLD) {
+            //nd4j::convertToThreshold<float>(nullptr, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_DOUBLE) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<double, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<double, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<double, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<double, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<double, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<double, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
+
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<double, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            //
+        } else if (dstType == ND4J_THRESHOLD) {
+            //nd4j::convertToThreshold<double>(nullptr, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_THRESHOLD) {
+        if (dstType == ND4J_FLOAT16) {
+            //nd4j::convertFromThreshold<float16>(nullptr, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT32) {
+            //nd4j::convertFromThreshold<float>(nullptr, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            //nd4j::convertFromThreshold<double>(nullptr, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else {
+        nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+    }
 }

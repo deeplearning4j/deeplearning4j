@@ -966,6 +966,7 @@ __device__ void shuffleKernelGeneric(T **dX, Nd4jLong **xShapeInfo, T **dZ, Nd4j
         }
 }
 
+
 extern "C" __global__ void shuffleKernelDouble(double **x, Nd4jLong **xShapeInfo, double **z, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
     shuffleKernelGeneric<double>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
@@ -977,6 +978,8 @@ extern "C" __global__ void shuffleKernelFloat(float **x, Nd4jLong **xShapeInfo, 
 extern "C" __global__ void shuffleKernelHalf(float16 **x, Nd4jLong **xShapeInfo, float16 **z, Nd4jLong **zShapeInfo, int N, int *shuffleMap, Nd4jLong **tadOnlyShapeInfo, Nd4jLong **tadOffsets) {
     shuffleKernelGeneric<float16>(x, xShapeInfo, z, zShapeInfo, N, shuffleMap, tadOnlyShapeInfo, tadOffsets);
 }
+
+
 
 
 #endif
