@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.All;
 import org.nd4j.linalg.api.ops.impl.accum.Any;
 import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
+import org.nd4j.linalg.api.ops.impl.accum.NormalizeMoments;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
@@ -449,7 +450,8 @@ public class OpValidation {
                 TruncatedNormalDistribution.class,
                 UniformDistribution.class,
                 //Other ops we don't intend to be differentiable (only used as part of backprop, etc)
-                Col2Im.class
+                Col2Im.class,
+                NormalizeMoments.class  //In principle differentiable. In practice: doesn't make any sense to do so!
         );
 
         return new HashSet<>(list);

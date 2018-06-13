@@ -604,10 +604,34 @@ public class ReductionOpValidation extends BaseOpValidation {
                 .addIntegerArguments(axes)
                 .build());
 
-        tc.expectedOutput(0, input.mean(axes));
-        tc.expectedOutput(1, input.std(axes));
+        tc.expectedOutput(0, input.mean(axes).reshape(4));
+        tc.expectedOutput(1, input.std(axes).reshape(4));
 
         String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testNormalizeMomentsOp(){
+
+        INDArray data = Nd4j.linspace(1, 100, 100).reshape(10,10);
+        INDArray ssSum = data.sum(0);
+        INDArray ssSqSum = data.mul(data).sum(0);
+
+        INDArray meanExp = data.mean(0);
+        INDArray varExp = data.var(true, 0);
+
+        INDArray mean = Nd4j.createUninitialized(meanExp.shape());
+        INDArray var = Nd4j.createUninitialized(varExp.shape());
+
+        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("normalize_moments")
+                .addInputs(data, ssSum, ssSqSum)
+                .addOutputs(mean, var)
+                .build());
+        op.expectedOutput(0, meanExp);
+        op.expectedOutput(1, varExp);
+
+        String err = OpValidation.validate(op);
         assertNull(err);
     }
 }

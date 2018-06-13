@@ -665,6 +665,29 @@ public class ShapeOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testReshape2() {
+        Nd4j.getRandom().setSeed(12345);
+        int[] origShape = new int[]{3, 4, 5};
+
+        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape(origShape);
+
+        for (int[] toShape : new int[][]{{3, 4 * 5}, {3 * 4, 5}, {1, 3 * 4 * 5}, {3 * 4 * 5, 1}}) {
+            INDArray exp = inArr.reshape(toShape);
+
+            INDArray out = Nd4j.create(toShape);
+            Nd4j.getExecutioner().exec(DynamicCustomOp.builder("reshape")
+                    .addInputs(inArr)
+                    .addOutputs(out)
+                    .addIntegerArguments('c')
+                    .addIntegerArguments(toShape)
+                    .build());
+
+            assertEquals(exp, out);
+        }
+    }
+
+
+    @Test
     public void testTranspose() {
         fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         SameDiff sameDiff = SameDiff.create();
@@ -723,6 +746,69 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
+
+    @Test
+    public void testPermute(){
+
+        INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
+        INDArray exp = in.permute(0,1,2);   //No op
+
+        assertEquals(in, exp);
+
+        INDArray out = Nd4j.create(3,4,5);
+        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("permute")
+                .addInputs(in)
+                .addOutputs(out)
+                .addIntegerArguments(0,1,2)
+                .build());
+        op.expectedOutput(0, exp);
+
+        assertNull(OpValidation.validate(op));
+    }
+
+    @Test
+    public void testPermute2(){
+
+        for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
+            INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
+            INDArray exp = in.permute(perm);
+
+            int[] outShape = new int[3];
+            for( int i=0; i<3; i++ ){
+                outShape[i] = (int)in.size(perm[i]);
+            }
+
+            //System.out.println(Arrays.toString(outShape) + " - permute " + Arrays.toString(perm));
+            INDArray out = Nd4j.create(outShape);
+            OpTestCase op = new OpTestCase(DynamicCustomOp.builder("permute")
+                    .addInputs(in)
+                    .addOutputs(out)
+                    .addIntegerArguments(perm)
+                    .build());
+            op.expectedOutput(0, exp);
+
+            assertNull(OpValidation.validate(op));
+        }
+    }
+
+
+    @Test
+    public void testUnstackEdgeCase2(){
+
+        for( int i=0; i<3; i++ ) {
+
+            INDArray arr = Nd4j.rand(new long[]{1, 1, 1});
+
+            List<long[]> shapes = Nd4j.getExecutioner().calculateOutputShape(DynamicCustomOp.builder("unstack")
+                    .addInputs(arr)
+                    .addIntegerArguments(i)
+                    .build()
+            );
+
+            assertEquals(1, shapes.size());
+            assertArrayEquals(new long[]{1, 1}, shapes.get(0));
+        }
+    }
 
 
 
@@ -879,7 +965,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     //TODO UPDATE TO OPVALIDATION
     @Test
-    public void testPermute() {
+    public void testPermuteSimple() {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 6, 6).reshape(2, 3));
         SDVariable x = sameDiff.var("x", arr);
