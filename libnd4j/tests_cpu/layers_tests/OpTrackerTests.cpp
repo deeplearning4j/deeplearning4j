@@ -25,7 +25,7 @@ public:
 TEST_F(OpTrackerTests, Test_Existence_1) {
     nd4j::_loader loader;
 
-    nd4j_printf("Groups: %i; Operations: %i\n", OpTracker::getInstance()->totalGroups(), OpTracker::getInstance()->totalOperations());
+    // nd4j_printf("Groups: %i; Operations: %i\n", OpTracker::getInstance()->totalGroups(), OpTracker::getInstance()->totalOperations());
 
     ASSERT_TRUE(OpTracker::getInstance()->totalGroups() > 0);
     ASSERT_TRUE(OpTracker::getInstance()->totalOperations() > 0);
@@ -37,13 +37,13 @@ TEST_F(OpTrackerTests, Test_Ops_List_1) {
     nd4j::ops::less<float> op;
     auto vec = OpRegistrator::getInstance()->getAllHashes<float>();
 
-    nd4j_printf("Total ops: %lld\n", vec.size());
-    nd4j_printf("Less hash: %lld\n", op.getOpHash());
+    // nd4j_printf("Total ops: %lld\n", vec.size());
+    // nd4j_printf("Less hash: %lld\n", op.getOpHash());
 
     for (const auto &v: vec) {
         if (v == 5484196977525668316L) {
             auto op = OpRegistrator::getInstance()->getOperationFloat(v);
-            nd4j_printf("OpName: %s\n", op->getOpName()->c_str());
+            // nd4j_printf("OpName: %s\n", op->getOpName()->c_str());
         }
     }
 }

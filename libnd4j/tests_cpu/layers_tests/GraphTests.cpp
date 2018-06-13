@@ -1447,7 +1447,7 @@ TEST_F(GraphTests, OpListTest_4) {
     std::vector<OpDescriptor> ops2(ops);
     std::copy(ops.begin(), ops.end(),  std::back_inserter(ops2));
 
-    nd4j_printf("Total ops before %i\n", ops.size());
+    // nd4j_printf("Total ops before %i\n", ops.size());
     ASSERT_TRUE(ops.size() == 6);
     ASSERT_TRUE(ops2.size() == 2 * ops.size());
 
@@ -1465,7 +1465,7 @@ TEST_F(GraphTests, Test_Inplace_Execution_1) {
     NDArray<float> exp('c', {5, 4}, {0.32454616f, -0.06604697f, 0.22593613f, 0.43166467f, -0.18320604f, 0.00102305f, -0.06963076f, 0.25266643f, 0.07568010f, -0.03009197f, 0.07805517f, 0.33180334f, -0.06220427f, 0.07249600f, -0.06726961f, -0.22998397f, -0.06343779f, 0.07384885f, -0.06891008f,  -0.23745790f});
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
-    graph->printOut();
+    // graph->printOut();
     graph->tagInplaceNodes();
 
     ASSERT_FALSE(graph->nodeById(8)->isInplace());

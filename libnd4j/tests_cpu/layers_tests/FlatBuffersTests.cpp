@@ -143,11 +143,11 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_EQ(1, restoredGraph->variables()->size());
     ASSERT_EQ(-1, restoredGraph->variables()->Get(0)->id()->first());
 
-    nd4j_printf("-------------------------\n","");
+    // nd4j_printf("-------------------------\n","");
 
     Graph<float> graph(restoredGraph);
 
-    graph.printOut();
+    // graph.printOut();
 
     ASSERT_EQ(2, graph.totalNodes());
     ASSERT_EQ(1, graph.rootNodes());
