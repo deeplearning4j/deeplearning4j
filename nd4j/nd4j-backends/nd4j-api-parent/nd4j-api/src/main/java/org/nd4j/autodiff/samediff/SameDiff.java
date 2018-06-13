@@ -123,6 +123,7 @@ public class SameDiff {
     // here we save String -> Integer conversion to variables
     private transient Map<String, Integer> reverseMap = null;
 
+
     /**
      * For import, many times we have variables
      * that map to properties. Most common
@@ -1544,11 +1545,11 @@ public class SameDiff {
         String varName = "sd_var_" + String.valueOf(_var_id);
         while(variableMap.containsKey(varName)){
             _var_id++;
-        varName = "sd_var_" + String.valueOf(_var_id);
+            varName = "sd_var_" + String.valueOf(_var_id);
         }
         return varName;
     }
-    
+
     public SDVariable var(int... shape) {
         return var(getNewVarName(), shape);
     }
@@ -6317,7 +6318,7 @@ public class SameDiff {
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof BaseTensorOp) {
                 //if(log.isTraceEnabled())
-                    log.info("Starting execution of Tensor op [{}]",  opName);
+                log.info("Starting execution of Tensor op [{}]",  opName);
 
                 // we just pull actual code out of
                 val list = ((BaseTensorOp) differentialFunction).execute(this);
@@ -6387,6 +6388,7 @@ public class SameDiff {
                     //and possible later processing.
                     //note that we need to update the graph predicate by running the execution
 
+
                     whileOp.getPredicateExecution().exec();
                     if(execBody.outputs == null){
                         // No explicit inputs/outputs provided.
@@ -6400,26 +6402,28 @@ public class SameDiff {
                         }
                     }
                     else{
-                    if (whileOp.getTargetBoolean().getSameDiff().inputs == null){
-                        whileOp.getTargetBoolean().getSameDiff().inputs = new SDVariable[whileOp.getInputVars().length];
-                        for (int e=0; e< whileOp.getInputVars().length; e++){
-                            whileOp.getTargetBoolean().getSameDiff().inputs[i] = whileOp.getTargetBoolean().getSameDiff().variables().get(i);
+                        if (whileOp.getTargetBoolean().getSameDiff().inputs == null){
+                            whileOp.getTargetBoolean().getSameDiff().inputs = new SDVariable[whileOp.getInputVars().length];
+                            for (int e=0; e< whileOp.getInputVars().length; e++){
+                                whileOp.getTargetBoolean().getSameDiff().inputs[i] = whileOp.getTargetBoolean().getSameDiff().variables().get(i);
+                            }
                         }
-                    }
-                    while (whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
-                        //run the body
-                        execBody.exec();
-                        int cnt = 0;
-                        for(val out: execBody.outputs){
-                            execBody.associateArrayWithVariable(out.getArr(), execBody.inputs[cnt]);
-                            whileOp.getTargetBoolean().getSameDiff().associateArrayWithVariable(out.getArr(),
-                                    whileOp.getTargetBoolean().getSameDiff().inputs[cnt++]);
-                        }
-                        //update the predicate
-                        whileOp.getPredicateExecution().exec();
-                        whileOp.incrementLoopCounter();
+                        while (whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                            //run the body
+                            execBody.exec();
+                            val outputs = execBody.outputs;
 
-                    }}
+                            int cnt = 0;
+                            for(val out: execBody.outputs){
+                                execBody.associateArrayWithVariable(out.getArr(), execBody.inputs[cnt]);
+                                whileOp.getTargetBoolean().getSameDiff().associateArrayWithVariable(out.getArr(),
+                                        whileOp.getTargetBoolean().getSameDiff().inputs[cnt++]);
+                            }
+                            //update the predicate
+                            whileOp.getPredicateExecution().exec();
+                            whileOp.incrementLoopCounter();
+
+                        }}
 
                     List<SDVariable> outputs = new ArrayList<>();
                     val outputFuncArgs = new ArrayList<>(execBody.functionInstancesById.values()).get(execBody.functionInstancesById.values().size() - 1).outputVariables();

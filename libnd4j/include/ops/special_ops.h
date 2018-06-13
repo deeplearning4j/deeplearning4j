@@ -224,139 +224,184 @@ namespace simdOps {
 #endif
 
 
-		static void execSpecial(
-				T *dx,
-				Nd4jLong *xShapeBuffer,
-				T *result,
-				Nd4jLong *resultShapeBuffer,
-				T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+	// input is  [bS, iC, iH, iW]
+	// output is [bS, iC, oH, oW]
+        
+	const Nd4jLong kH = (int)extraParams[0];
+	const Nd4jLong kW = (int)extraParams[1];
+    const Nd4jLong sH = (int)extraParams[2];
+    const Nd4jLong sW = (int)extraParams[3];
+    const Nd4jLong pH = (int)extraParams[4];
+    const Nd4jLong pW = (int)extraParams[5];    
+    const Nd4jLong dH = (int)extraParams[6];
+    const Nd4jLong dW = (int)extraParams[7];
+    Nd4jLong poolingMode = (int)extraParams[9];
+    T extraParam0 = extraParams[10];
 
+    const Nd4jLong kHEff = kH + (kH-1)*(dH-1);
+    const Nd4jLong kWEff = kW + (kW-1)*(dW-1);
 
-			int kH = (int)extraParams[0];
-			int kW = (int)extraParams[1];
-			int sH = (int)extraParams[2];
-			int sW = (int)extraParams[3];
-			int pH = (int)extraParams[4];
-			int pW = (int)extraParams[5];
-			int dH = (int)extraParams[6];			//Dilation, height dimension
-			int dW = (int)extraParams[7];			//Dilation, width dimension
-			int poolingMode = (int)extraParams[9];
-			T extraParam0 = extraParams[10];
+	const int bS = shape::sizeAt(inShapeBuffer, 0);
+    const int iC = shape::sizeAt(inShapeBuffer, 1);
+    const int iH = shape::sizeAt(inShapeBuffer, 2);
+    const int iW = shape::sizeAt(inShapeBuffer, 3);
+    const int oH = shape::sizeAt(outShapeBuffer, 2);
+    const int oW = shape::sizeAt(outShapeBuffer, 3);            
+    const Nd4jLong iStride0 = shape::stride(inShapeBuffer)[0];
+    const Nd4jLong iStride1 = shape::stride(inShapeBuffer)[1];
+    const Nd4jLong iStride2 = shape::stride(inShapeBuffer)[2];
+    const Nd4jLong iStride3 = shape::stride(inShapeBuffer)[3];
+    const Nd4jLong oStride0 = shape::stride(outShapeBuffer)[0];
+    const Nd4jLong oStride1 = shape::stride(outShapeBuffer)[1];
+    const Nd4jLong oStride2 = shape::stride(outShapeBuffer)[2];
+    const Nd4jLong oStride3 = shape::stride(outShapeBuffer)[3];         
 
-            const int kHEff = kH + (kH-1)*(dH-1);
-            const int kWEff = kW + (kW-1)*(dW-1);
+    const Nd4jLong iStep2 = dH*iStride2;
+    const Nd4jLong iStep3 = dW*iStride3;        
+    const int kProd  = kH*kW;
+    const T iStep2Inv = 1./iStep2; 
+    const T iStep3Inv = 1./iStep3;
 
-			const int batchSize = (int) shape::sizeAt(xShapeBuffer, 0);
-            const int inChannels = (int) shape::sizeAt(xShapeBuffer, 1);
-            const int outH = (int) shape::sizeAt(resultShapeBuffer, 2);
-            const int outW = (int) shape::sizeAt(resultShapeBuffer, 3);
-            const int inH = (int) shape::sizeAt(xShapeBuffer, 2);
-            const int inW = (int) shape::sizeAt(xShapeBuffer, 3);
+    Nd4jLong hstart, wstart, hend, wend;
+    T sum, *pIn;
 
-            auto strideIn = shape::stride(xShapeBuffer);
-            auto strideOut = shape::stride(resultShapeBuffer);
+    if(poolingMode == 0) {        // max 
+#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
+                        
+                        pIn  = in  + b * iStride0 + c * iStride1;
+                        
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;                        
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
+                        
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);                            
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);                            
 
-            const bool fOrder = shape::order(resultShapeBuffer) == 'f';
-            const Nd4jLong zLength = shape::length(resultShapeBuffer);
-            const int zRank = shape::rank(resultShapeBuffer);
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
 
-            int indices[6];
+                        sum = -MAX_FLOAT;
+                                                                    
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
+                                T val = pIn[kh + kw];
+                                    if (val > sum)
+                                        sum = val;
+                                    }
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                    }
+                }
+            }
+        }    
+    }
+/*************************************************************************/    
+    else if(poolingMode == 1) {      // avg
+#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)        
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
+                        
+                        pIn  = in  + b * iStride0 + c * iStride1;
 
-            int idx = 0;
-#pragma omp parallel for collapse(2) schedule(guided) shared(indices)
-			for(int k = 0; k < inChannels; k++)
-			{
-				for(int p = 0; p < batchSize; p++)
-				{
-					int xx, yy;
-					/* For all output pixels... */
-					const int _b = p * strideOut[0];
-					const int _k = k * strideOut[1];
-					T *ptr_output = result + _b + _k;
-					T *ptr_input = dx + p * strideIn[0] + k * strideIn[1];
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
 
-					for(yy = 0; yy < outH; yy++)
-					{
-						for(xx = 0; xx < outW; xx++)
-						{
-							/* Compute the mean of the input image... */
-							int hstart = yy * sH - pH;
-							int wstart = xx * sW - pW;
-                            int hend = hstart + kHEff;
-                            int wend = wstart + kWEff;
-                            const int hSO = hstart;
-                            const int hEO = hend;
-							if(hstart < 0){
-								int n = (int)nd4j::math::nd4j_ceil<T>((T) -hstart / ((T)dH));
-								hstart += n * dH;
-							}
-							if(wstart < 0){
-								int n = (int)nd4j::math::nd4j_ceil<T>((T) -wstart / ((T)dW));
-								wstart += n * dW;
-							}
-                            if(hend > inH){
-                                int n = (int)nd4j::math::nd4j_ceil<T>((T)(hend-inH)/((T)dH));
-                                hend -= n * dH;
-                            }
-                            if(wend > inW){
-                                int n = (int)nd4j::math::nd4j_ceil<T>((T)(wend-inW)/((T)dW));
-                                wend -= n * dW;
-                            }
-                            int pool_size = (int)(nd4j::math::nd4j_ceil<T>((T) (hend-hstart)/((T)dH))
-                                                  * (int)nd4j::math::nd4j_ceil<T>((T)(wend-wstart)/((T)dW)));	//Accounts for dilation
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);
 
-							T sum = poolingMode == 0 ? (T) -MAX_FLOAT : (T) 0;
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
 
-							// we need this only for avg pooling
-							int divide_factor = 0;
-							if (poolingMode == 1) {
-								if ((int) extraParam0 == 0)         //Exclude padding
-									divide_factor = pool_size;
-								else if ((int) extraParam0 == 1)    //Include padding
-                                    divide_factor = kH * kW;
-							}
+                        sum = static_cast<T>(0.);
+                                            
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                sum += pIn[kh + kw];
+                                
+                        if ((int) extraParam0 == 0)         //Exclude padding
+                            sum /= (Nd4jLong)nd4j::math::nd4j_ceil<T>((hend-hstart) * iStep2Inv) * (Nd4jLong)nd4j::math::nd4j_ceil<T>((wend-wstart) * iStep3Inv);   //Accounts for dilation
+                            else if ((int) extraParam0 == 1)    //Include padding
+                                sum /= kProd;
+                    
+                            out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                    }
+                }
+            }
+        }
+    }    
+/*************************************************************************/    
+    else if(poolingMode == 2) {  // pnorm
+#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)    
+        for(int b = 0; b < bS; ++b) {
+            for(int c = 0; c < iC; ++c) {                                                            
+                for(int oh = 0; oh < oH; ++oh) {
+                    for(int ow = 0; ow < oW; ++ow) {
+                        
+                        pIn  = in  + b * iStride0 + c * iStride1;
 
-							long kx, ky;
+                        hstart = oh * sH - pH;
+                        wstart = ow * sW - pW;
+                        hend = hstart + kHEff;
+                        wend = wstart + kWEff;
 
-							if (poolingMode == 0) {
-#pragma omp simd reduction(maxT:sum) collapse(2)
-								for (ky = hstart; ky < hend; ky += dH) {
-									for (kx = wstart; kx < wend; kx += dW)
-										if (ptr_input[ky * strideIn[2] + kx * strideIn[3]] > sum)
-											sum = ptr_input[ky * strideIn[2] + kx * strideIn[3]];
-								}
-							} else if (poolingMode == 1) {
-#pragma omp simd reduction(sumT:sum) collapse(2)
-								for (ky = hstart; ky < hend; ky += dH) {
-									for (kx = wstart; kx < wend; kx += dW)
-										sum += ptr_input[ky * strideIn[2] + kx * strideIn[3]];
-								}
-							} else if (poolingMode == 2) {
-#pragma omp simd reduction(sumT:sum) collapse (2)
-								for (ky = hstart; ky < hend; ky += dH) {
-									for (kx = wstart; kx < wend; kx += dW)
-										sum += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(ptr_input[ky * strideIn[2] + kx * strideIn[3]]), extraParam0);
-								}
-							}
-							/* Update output */
-							T res = sum;
+                        if(hstart < 0)
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
+                        if(wstart < 0)
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);
+                        if(hend > iH)
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);
+                        if(wend > iW)
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);
 
-							if (poolingMode == 1) {
-                                res /= divide_factor;
-                            } else if (poolingMode == 2)
-								res = nd4j::math::nd4j_pow<T>(res, (T) 1.0f / extraParam0);
+                        hstart *= iStride2;
+                        hend   *= iStride2;
+                        wstart *= iStride3;
+                        wend   *= iStride3;
 
-
-                            if (!fOrder) {
-                                *ptr_output++ = res;
-                            } else {
-								result[_b + _k + yy * strideOut[2] + xx * strideOut[3]] = res;
-                            }
-						}
-					}
-				}
-			}
-		}
+                        sum = static_cast<T>(0.);
+                                                                    
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                sum += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                
+                        sum = nd4j::math::nd4j_pow<T>(sum, (T) 1. / extraParam0);
+                                                          
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                    }
+                }
+            }
+        }
+    }
+    else {
+        nd4j_printf("Special_ops::pooling2d: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
+        throw "";
+	}
+}
 
 		op_def static T op(T d1, T *params) {
 			return d1;
@@ -512,14 +557,14 @@ namespace simdOps {
 
 
 		static void execSpecial(
-			T *dx,
-			Nd4jLong *xShapeBuffer,
-			T *result,
-			Nd4jLong *resultShapeBuffer,
+			T *imBuff,
+			Nd4jLong *imShapeBuffer,
+			T *colBuff,
+			Nd4jLong *colShapeBuffer,
 			T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 
-			T zeroPadVal = (T) 0.0f;
+			// [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
 
 			int kH = (int)extraParams[0];
 			int kW = (int)extraParams[1];
@@ -530,120 +575,85 @@ namespace simdOps {
 			int dH = (int)extraParams[6];			//Dilation, height/y dimension
 			int dW = (int)extraParams[7];			//Dilation, width/x dimension
 
-            auto outShape  = shape::shapeOf(resultShapeBuffer);
-            auto outStride = shape::stride(resultShapeBuffer);
-            auto inShape = shape::shapeOf(xShapeBuffer);
-            auto inStride = shape::stride(xShapeBuffer);
+            auto colShape  = shape::shapeOf(colShapeBuffer);
+            auto colStride = shape::stride(colShapeBuffer);
+            auto imShape = shape::shapeOf(imShapeBuffer);
+            auto imStride = shape::stride(imShapeBuffer);
 
-                const int bS = inShape[0];
-                const int iC = inShape[1];
-                const int iH = inShape[2];
-                const int iW = inShape[3];
-                const int oH = outShape[4];
-                const int oW = outShape[5];
-                const int outStride0  = outStride[0];
-                const int outStride1  = outStride[1];
-                const int outStride2  = outStride[2];
-                const int outStride3  = outStride[3];
-                const int outStride4  = outStride[4];
-                const int outStride5  = outStride[5];
-                const int inStride0   = inStride[0];
-                const int inStride1   = inStride[1];
-                const int inStride2   = inStride[2];
-                const int inStride3   = inStride[3];
+            const int bS = imShape[0];
+            const int iC = imShape[1];
+            const int iH = imShape[2];
+            const int iW = imShape[3];
+            const int oH = colShape[4];
+            const int oW = colShape[5];
+            const Nd4jLong colStride0 = colStride[0];
+            const Nd4jLong colStride1 = colStride[1];
+            const Nd4jLong colStride2 = colStride[2];
+            const Nd4jLong colStride3 = colStride[3];
+            const Nd4jLong colStride4 = colStride[4];
+            const Nd4jLong colStride5 = colStride[5];
+            const Nd4jLong imStride0  = imStride[0];
+            const Nd4jLong imStride1  = imStride[1];
+            const Nd4jLong imStride2  = imStride[2];
+            const Nd4jLong imStride3  = imStride[3];
 
-                const T* in0End = dx + inStride1 * iC;
-                const int kRowEnd = -pH + kH * dH;
-                const int kColEnd = -pW + kW * dW;
-                const int oHW = oH * oW;
-                const int inRowEnd = oH * sH;
-                const int inColEnd = oW * sW;
+            T *col, *im;
+            int imRow, imCol;
+            
+            if (shape::order(imShapeBuffer) == 'c' &&  shape::order(colShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
 
-				int inRowStart, inColStart, inRow, inCol;
-                T *in0, *in1;
+#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)
+                for (int b = 0; b < bS; b++) {
+                    for (int c = 0; c < iC; ++c) {        
+                        for (int kRow = 0; kRow < kH; ++kRow) {                        
+                            for (int kCol = 0; kCol < kW; ++kCol) {                            
+                                for (int colH = 0; colH < oH; ++colH) {
+                                    for (int colW = 0; colW < oW; ++colW) {                    
+                                
+                                        imRow = (-pH + kRow * dH) + colH*sH;
+                                        imCol = (-pW + kCol * dW) + colW*sW;
+                                        
+                                        col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
+                                        im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3; 
+                                                    
+                                        if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
+                                            *col = static_cast<T>(0.);
+                                        else 
+                                            *col = *im;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }  
+            }
+            else {
 
-                if (shape::order(xShapeBuffer) == 'c' &&  shape::order(resultShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(xShapeBuffer) && shape::strideDescendingCAscendingF(resultShapeBuffer)) {
-
-#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1, inRowStart, inColStart, inRow, inCol)
-					for (int b = 0; b < bS; b++) {
-						in0 = dx + (b * inStride0);
-						T *output = result + (b * outStride0);
-
-						for (int channel = 0; channel < iC; ++channel, in0 += inStride1) {
-
-							for (int kRow = 0; kRow < kH; kRow++) {
-								inRowStart = -pH + kRow * dH;
-
-								for (int kCol = 0; kCol < kW; kCol++) {
-									inRow = inRowStart;
-									inColStart = -pW + kCol * dW;
-
-									for (int outRow = 0; outRow < oH; ++outRow, inRow += sH) {
-
-										if (!is_a_ge_zero_and_a_lt_b(inRow, iH))
-											for (int outCol = 0; outCol < oW; ++outCol, ++output) {
-												*output = zeroPadVal;
-											}
-										else {
-											inCol = inColStart;
-											in1 = in0 + inRow * inStride2;
-
-											for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, ++output)
-												if (is_a_ge_zero_and_a_lt_b(inCol, iW))
-													*output = *(in1 + inCol * inStride3);
-												else
-													*output = zeroPadVal;
-										}
-									}
-								}
-							}
-						}
-					}
-                } 
-                else {
-					T *out0, *out1, *out2, *out3, *out4;
-#pragma omp parallel for schedule(static) proc_bind(close) private(in0, in1, out0, out1, out2, out3, out4, inRowStart, inColStart, inRow, inCol)
-					for (int b = 0; b < bS; b++) {
-						in0 = dx + (b * inStride0);
-						out0  = result + b * outStride0;
-
-						for (int channel = 0; channel < iC; ++channel, in0 += inStride1, out0+=outStride1) {
-							out1 = out0;
-
-							for (int kRow = 0; kRow < kH; kRow++, out1 += outStride2) {
-								out2 = out1;
-								inRowStart = -pH + kRow * dH;
-
-								for (int kCol = 0; kCol < kW; kCol++, out2 += outStride3) {
-									out3 = out2;
-									inRow = inRowStart;
-									inColStart = -pW + kCol * dW;
-
-									for (int outRow = 0; outRow < oH; ++outRow, inRow += sH, out3 += outStride4) {
-										out4 = out3;
-
-										if (!is_a_ge_zero_and_a_lt_b(inRow, iH))
-											for (int outCol = 0; outCol < oW; ++outCol, out4 += outStride5) {
-												*out4 = zeroPadVal;
-											}
-										else {
-											inCol = inColStart;
-											in1 = in0 +  inRow * inStride2;
-
-											for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, out4 += outStride5) {
-												if (is_a_ge_zero_and_a_lt_b(inCol, iW))
-													*out4 = *(in1 + inCol * inStride3);
-												else
-													*out4 = zeroPadVal;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
+#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)    
+                for (int b = 0; b < bS; b++) {
+                    for (int colH = 0; colH < oH; ++colH) {
+                        for (int colW = 0; colW < oW; ++colW) {
+                            for (int c = 0; c < iC; ++c) {
+                                for (int kRow = 0; kRow < kH; ++kRow) {                        
+                                    for (int kCol = 0; kCol < kW; ++kCol) {                            
+                        
+                                        imRow = (-pH + kRow * dH) + colH*sH;
+                                        imCol = (-pW + kCol * dW) + colW*sW;
+                                        
+                                        col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
+                                        im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
+                                                    
+                                        if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
+                                            *col = static_cast<T>(0.);
+                                        else 
+                                            *col = *im;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-
+            }
 		}
 
 		op_def static T op(T d1, T *params) {
@@ -967,138 +977,109 @@ namespace simdOps {
 #endif
 
 		static void execSpecial(
-			T *dx,
-			Nd4jLong *xShapeBuffer,
-			T *result,
-			Nd4jLong *resultShapeBuffer,
+			T *colBuff,
+			Nd4jLong *colShapeBuffer,
+			T *imBuff,
+			Nd4jLong *imShapeBuffer,
 			T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-            const Nd4jLong *inShape = shape::shapeOf(xShapeBuffer);
-            const Nd4jLong *inStride = shape::stride(xShapeBuffer);
-            const Nd4jLong *outShape = shape::shapeOf(xShapeBuffer);
-            const Nd4jLong *outStride = shape::stride(resultShapeBuffer);
-			
-			const int kH = inShape[2];
-			const int kW = inShape[3];        
-			const int bS = outShape[0];
-			const int iC = outShape[1];
-			const int oH = inShape[4];                            
-			const int oW = inShape[5];                            
 
-			const int sH = (int)extraParams[0];
-			const int sW = (int)extraParams[1];
+            // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
+
+            auto colShape  = shape::shapeOf(colShapeBuffer);
+            auto colStride = shape::stride(colShapeBuffer);
+            auto imShape = shape::shapeOf(imShapeBuffer);
+            auto imStride = shape::stride(imShapeBuffer);
+
+            const int sH = (int)extraParams[0];
+            const int sW = (int)extraParams[1];
             const int pH = (int)extraParams[2];
-			const int pW = (int)extraParams[3];
+            const int pW = (int)extraParams[3];
             const int iH = (int)extraParams[4];
             const int iW = (int)extraParams[5];
-			const int dH = (int)extraParams[6];		
-            const int dW = (int)extraParams[7];		
+            const int dH = (int)extraParams[6];     
+            const int dW = (int)extraParams[7];     
 
-			const int inStride0  = inStride[0];
-            const int inStride1  = inStride[1];
-            const int inStride2  = inStride[2];
-            const int inStride3  = inStride[3];
-            const int inStride4  = inStride[4];
-            const int inStride5  = inStride[5];
-            const int outStride0 = outStride[0];
-            const int outStride1 = outStride[1];
-            const int outStride2 = outStride[2];
-            const int outStride3 = outStride[3];
+            const int bS = imShape[0];
+            const int iC = imShape[1];
+            const int kH = colShape[2];
+            const int kW = colShape[3];                    
+            const int oH = colShape[4];
+            const int oW = colShape[5];
+            const Nd4jLong colStride0 = colStride[0];
+            const Nd4jLong colStride1 = colStride[1];
+            const Nd4jLong colStride2 = colStride[2];
+            const Nd4jLong colStride3 = colStride[3];
+            const Nd4jLong colStride4 = colStride[4];
+            const Nd4jLong colStride5 = colStride[5];
+            const Nd4jLong imStride0  = imStride[0];
+            const Nd4jLong imStride1  = imStride[1];
+            const Nd4jLong imStride2  = imStride[2];
+            const Nd4jLong imStride3  = imStride[3];
 
-            const T* out0End = result + outStride1 * iC;
-            const int kRowEnd = -pH + kH * dH;
-            const int inStepOW = oW * inStride5;
-            const int kColEnd = -pW + kW * dW;
-            const int inRowEnd = oH * sH;
-            const int inColEnd = oW * sW;
+            // initial zeroing of image content
+            const Nd4jLong imEWS = shape::elementWiseStride(imShapeBuffer);
+            if( imEWS == 1)
+                 memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
+            else 
+#pragma omp parallel for schedule(static) proc_bind(close)
+                for (int i = 0; i < shape::length(imShapeBuffer); i+=imEWS) 
+                    *(imBuff + i) = 0.f;
 
-            int inRowStart, inColStart, inRow, inCol;
-            T *out0, *out1, *out2;
+            T *col, *im;
+            int imRow, imCol;
 
-            memset(result, 0, shape::length(resultShapeBuffer) * sizeof(T));
+            if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {
+            
+#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)
+                for (int b = 0; b < bS; b++) {        
+                    for (int c = 0; c < iC; ++c) {                    
+                        for (int kRow = 0; kRow < kH; ++kRow) {                        
+                            for (int kCol = 0; kCol < kW; ++kCol) {                            
+                                for (int colH = 0; colH < oH; ++colH) {
+                                    for (int colW = 0; colW < oW; ++colW) {                    
 
-                if (shape::order(xShapeBuffer) == 'c' &&  shape::order(resultShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(xShapeBuffer) && shape::strideDescendingCAscendingF(resultShapeBuffer)) {
+                                        imRow = (-pH + kRow * dH) + colH*sH;
+                                        imCol = (-pW + kCol * dW) + colW*sW;
 
-#pragma omp parallel for schedule(guided) proc_bind(close) private(out0, out1, out2, inRowStart, inColStart, inRow, inCol)
-                    for (int b = 0; b < bS; b++) {
-                        T *input = dx + (b * inStride0);
-                        out0 = result + (b * outStride0);
+                                        col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
+                                        im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
 
-                        for (int channel = 0; channel < iC; ++channel, out0 += outStride1) {
-
-                            for (int kRow = 0; kRow < kH; ++kRow) {
-                                inRowStart = -pH + kRow * dH;
-
-                                for (int kCol = 0; kCol < kW; ++kCol) {
-                                    inRow = inRowStart;
-                                    inColStart = -pW + kCol * dW;
-
-                                    for (int outRow = 0; outRow < oH; ++outRow, inRow += sH) {
-
-                                        if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
-                                            input += inStepOW;
-                                        }
-                                        else {
-                                            inCol = inColStart;
-                                            out1 = out0 + inRow * outStride2;
-
-                                            for (int outCol = 0; outCol < oW; ++outCol, inCol += sW, input += inStride5) {
-                                                if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
-                                                    out2 = out1 + inCol * outStride3;
-                                                    *out2 += *input;
-                                                }
-                                            }
-                                        }
+                                        if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(imCol) < static_cast<unsigned>(iW))
+                                            *im += *col;
                                     }
                                 }
                             }
                         }
                     }
-                } 
-                else {
+                }  
+            }
+            else {
 
-                    T *in0, *in1, *in2, *in3, *in4;
-#pragma omp parallel for schedule(guided) proc_bind(close) private(in0, in1, in2, in3, in4, out0, out1, out2, inRowStart, inColStart, inRow, inCol)
-                    for (int b = 0; b < bS; b++) {
-                        out0 = result + (b * outStride0);
-                        in0 = dx + b * inStride0;
+#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)
+                for (int b = 0; b < bS; b++) {        
+                    for (int colH = 0; colH < oH; ++colH) {
+                        for (int colW = 0; colW < oW; ++colW) {
+                            for (int c = 0; c < iC; ++c) {                        
+                                for (int kRow = 0; kRow < kH; ++kRow) {                        
+                                    for (int kCol = 0; kCol < kW; ++kCol) {                            
+                        
+                                        imRow = (-pH + kRow * dH) + colH*sH;
+                                        imCol = (-pW + kCol * dW) + colW*sW;
+                                        
+                                        col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
+                                        im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
 
-                        for (int channel = 0; channel < iC; ++channel, out0+=outStride1, in0+=inStride1) {
-                            in1 = in0;
-
-                            for (int kRow = 0; kRow < kH; ++kRow, in1+=inStride2) {
-                                in2 = in1;
-                                inRowStart = -pH + kRow * dH;
-
-                                for (int kCol = 0; kCol < kW; ++kCol, in2+=inStride3) {
-                                    in3 = in2;
-                                    inRow = inRowStart;
-                                    inColStart = -pW + kCol * dW;
-
-                                    for (int outRow = 0; outRow < oH; ++outRow, inRow+=sH, in3+=inStride4) {
-                                        in4 = in3;
-
-                                        if (!is_a_ge_zero_and_a_lt_b(inRow, iH)) {
-                                            in4 += inStepOW;
-                                        }
-                                        else {
-                                            inCol = inColStart;
-                                            out1 = out0 + inRow * outStride2;
-
-                                            for (int outCol = 0; outCol < oW; ++outCol, inCol+=sW, in4+=inStride5) {
-                                                if (is_a_ge_zero_and_a_lt_b(inCol, iW)) {
-                                                    out2 = out1 + inCol * outStride3;
-                                                    *out2 += *in4;
-                                                }
-                                            }
-                                        }
+                                        if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(imCol) < static_cast<unsigned>(iW))
+                                            *im += *col;
                                     }
                                 }
                             }
-                        }
+                        }                           
                     }
-                }
-		}
+                }  
+            }
+        }
 
 		op_def static T op(T d1, T *params) {
 			return d1;
@@ -1275,10 +1256,10 @@ namespace simdOps {
 
 
 		static void execSpecial(T *dx, Nd4jLong *xShapeBuffer, T *result, Nd4jLong *zShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-			auto xLength = shape::length(xShapeBuffer);
-			auto xEWS = shape::elementWiseStride(xShapeBuffer);
-            auto xOrder = shape::order(xShapeBuffer);
-            auto sLength = xLength - 1;
+			Nd4jLong xLength = shape::length(xShapeBuffer);
+			int xEWS = shape::elementWiseStride(xShapeBuffer);
+            char xOrder = shape::order(xShapeBuffer);
+            Nd4jLong sLength = xLength - 1;
 
 			// two step phase here
 			if (dx == result) {

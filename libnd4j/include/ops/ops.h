@@ -2549,9 +2549,9 @@ namespace simdOps {
 		}
 
 		op_def static T postProcess(T reduction, Nd4jLong n, T *extraParams) {
-			T bias = extraParams[1];
-			return (reduction - (nd4j::math::nd4j_pow<T>(bias, static_cast<T>(2.0f)) / static_cast<T>(n)))
-                / (n - 1);
+			// T bias = extraParams[1];
+			// return (reduction - (nd4j::math::nd4j_pow<T>(bias, static_cast<T>(2.0f)) / static_cast<T>(n))) / (n - 1)
+			return reduction / static_cast<T>(n - 1);
 		}
 	};
 

@@ -759,6 +759,21 @@ public class JCublasNDArray extends BaseNDArray {
         return copy;
     }
 
+    public INDArray convertToHalfs() {
+        if (data.dataType() == DataBuffer.Type.HALF)
+            return this;
+
+        val factory = Nd4j.getNDArrayFactory();
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.HALF);
+
+        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getHostPointer(this.data()),
+                DataBuffer.TypeEx.FLOAT16, AtomicAllocator.getInstance().getHostPointer(buffer), buffer.length());
+
+        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostWrite();
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
+    }
+
 
     @Override
     public INDArray convertToFloats() {

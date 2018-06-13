@@ -92,4 +92,9 @@ public class DataSetLossCalculator extends BaseScoreCalculator<Model> {
             return scoreSum;
         }
     }
+
+    @Override
+    public boolean minimizeScore() {
+        return true;    //Minimize loss
+    }
 }

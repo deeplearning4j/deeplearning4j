@@ -34,13 +34,16 @@ void triu(const NDArray<T>& input, NDArray<T>& output, const int diagonal) {
             output.setValueInDiagMatrix(0., diagonal-1, 'l');    
             break;
 
-        default:            
+        default: 
             ResultSet<T>* inTads  = NDArrayFactory<T>::allTensorsAlongDimension(&input,  {rank-2, rank-1});
             ResultSet<T>* outTads = NDArrayFactory<T>::allTensorsAlongDimension(&output, {rank-2, rank-1});                        
-#pragma omp parallel for if(inTads->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
+
+#pragma omp parallel for schedule(guided) //if(inTads->size() > Environment::getInstance()->elementwiseThreshold())
             for(int i = 0; i < inTads->size(); ++i) {
-                outTads->at(i)->assign(inTads->at(i));
-                outTads->at(i)->setValueInDiagMatrix(0., diagonal-1, 'l');    
+                NDArray<T>* inSubArr = inTads->at(i);
+                NDArray<T>* outSubArr = outTads->at(i);
+                outSubArr->assign(inSubArr);
+                outSubArr->setValueInDiagMatrix(0., diagonal-1, 'l');
             }
             delete inTads;
             delete outTads;

@@ -51,11 +51,6 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     private boolean hasMiniBatchDimension = false;
     private int miniBatchSize;
 
-    public ReshapePreprocessor(int[] inputShape, int[] targetShape) {
-        this.inputShape = ArrayUtil.toLongArray(inputShape);
-        this.targetShape = ArrayUtil.toLongArray(targetShape);
-    }
-
     public ReshapePreprocessor(long[] inputShape, long[] targetShape) {
         this.inputShape = inputShape;
         this.targetShape = targetShape;
@@ -67,18 +62,6 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             prod *= i;
         }
         return prod;
-    }
-
-    private static int[] prependMiniBatchSize(int[] shape, int miniBatchSize) {
-        int shapeLength = shape.length;
-        val miniBatchShape = new int[shapeLength + 1];
-        for (int i = 0; i < miniBatchShape.length; i++) {
-            if (i == 0)
-                miniBatchShape[i] = miniBatchSize;
-            else
-                miniBatchShape[i] = shape[i - 1];
-        }
-        return miniBatchShape;
     }
 
     private static long[] prependMiniBatchSize(long[] shape, long miniBatchSize) {
@@ -146,9 +129,12 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             case 2:
                 return InputType.feedForward(shape[1]);
             case 3:
-                return InputType.recurrent(shape[1]);
+                return InputType.recurrent(shape[2], shape[1]);
             case 4:
-                return InputType.convolutional(shape[2], shape[3], shape[1]);
+                if (inputShape.length == 1)
+                    return InputType.convolutional(shape[1], shape[2], shape[3]);
+                else
+                    return InputType.convolutional(shape[2], shape[3], shape[1]);
             default:
                 throw new UnsupportedOperationException(
                         "Cannot infer input type for reshape array " + Arrays.toString(shape));

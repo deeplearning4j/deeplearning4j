@@ -36,4 +36,10 @@ public class ClassificationScoreCalculator extends BaseIEvaluationScoreCalculato
     protected double finalScore(Evaluation e) {
         return e.scoreForMetric(metric);
     }
+
+    @Override
+    public boolean minimizeScore() {
+        //All classification metrics should be maximized: ACCURACY, F1, PRECISION, RECALL, GMEASURE, MCC
+        return false;
+    }
 }

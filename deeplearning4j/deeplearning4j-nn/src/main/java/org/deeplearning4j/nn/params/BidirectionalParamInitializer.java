@@ -3,7 +3,9 @@ package org.deeplearning4j.nn.params;
 import lombok.val;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -26,7 +28,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
     public static final String BACKWARD_PREFIX = "b";
 
     private final Bidirectional layer;
-    private final BaseRecurrentLayer underlying;
+    private final Layer underlying;
 
     private List<String> paramKeys;
     private List<String> weightKeys;
@@ -50,7 +52,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
     @Override
     public List<String> paramKeys(Layer layer) {
         if(paramKeys == null) {
-            BaseRecurrentLayer u = underlying(layer);
+            Layer u = underlying(layer);
             List<String> orig = u.initializer().paramKeys(u);
             paramKeys = withPrefixes(orig);
         }
@@ -60,7 +62,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
     @Override
     public List<String> weightKeys(Layer layer) {
         if(weightKeys == null) {
-            BaseRecurrentLayer u = underlying(layer);
+            Layer u = underlying(layer);
             List<String> orig = u.initializer().weightKeys(u);
             weightKeys = withPrefixes(orig);
         }
@@ -70,7 +72,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
     @Override
     public List<String> biasKeys(Layer layer) {
         if(biasKeys == null) {
-            BaseRecurrentLayer u = underlying(layer);
+            Layer u = underlying(layer);
             List<String> orig = u.initializer().weightKeys(u);
             biasKeys = withPrefixes(orig);
         }
@@ -164,9 +166,9 @@ public class BidirectionalParamInitializer implements ParamInitializer {
         return out;
     }
 
-    private BaseRecurrentLayer underlying(Layer layer){
+    private Layer underlying(Layer layer){
         Bidirectional b = (Bidirectional)layer;
-        return (BaseRecurrentLayer) b.getFwd();
+        return b.getFwd();
     }
 
     private List<String> withPrefixes(List<String> orig){
