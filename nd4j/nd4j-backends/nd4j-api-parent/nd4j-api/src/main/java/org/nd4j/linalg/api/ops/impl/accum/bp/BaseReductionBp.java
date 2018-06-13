@@ -52,7 +52,10 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
     protected void addArgs(){
         addTArgument(keepDims ? 1 : 0);
         if(dimensions != null && dimensions.length > 0){
-            addIArgument(dimensions);
+            if(dimensions.length != 1 || dimensions[0] != Integer.MAX_VALUE ){
+                //Integer.MAX_VALUE means "full array" but here no dimension args == full array
+                addIArgument(dimensions);
+            }
         }
     }
 

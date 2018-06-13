@@ -997,6 +997,62 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return result;
     }
 
+    public SDVariable sum(int... dimensions){
+        return sum(null, dimensions);
+    }
+
+    public SDVariable sum(String name, int... dimensions){
+        return sameDiff.sum(name, this, dimensions);
+    }
+
+    public SDVariable prod(int... dimensions){
+        return prod(null, dimensions);
+    }
+
+    public SDVariable prod(String name, int... dimensions){
+        return sameDiff.prod(name, this, dimensions);
+    }
+
+    public SDVariable min(int... dimensions){
+        return min(null, dimensions);
+    }
+
+    public SDVariable min(String name, int... dimensions){
+        return sameDiff.min(name, this, dimensions);
+    }
+
+    public SDVariable max(int... dimensions){
+        return max(null, dimensions);
+    }
+
+    public SDVariable max(String name, int... dimensions){
+        return sameDiff.max(name, this, dimensions);
+    }
+
+    public SDVariable norm1(int... dimensions){
+        return norm1(null, dimensions);
+    }
+
+    public SDVariable norm1(String name, int... dimensions){
+        return sameDiff.norm1(name, this, dimensions);
+    }
+
+    public SDVariable norm2(int... dimensions){
+        return norm2(null, dimensions);
+    }
+
+    public SDVariable norm2(String name, int... dimensions){
+        return sameDiff.norm2(name, this, dimensions);
+    }
+
+    public SDVariable normmax(int... dimensions){
+        return normmax(null, dimensions);
+    }
+
+    public SDVariable normmax(String name, int... dimensions){
+        return sameDiff.normmax(name, this, dimensions);
+    }
+
     public SDVariable setArray(INDArray array){
         sameDiff.associateArrayWithVariable(array, this);
         return this;
