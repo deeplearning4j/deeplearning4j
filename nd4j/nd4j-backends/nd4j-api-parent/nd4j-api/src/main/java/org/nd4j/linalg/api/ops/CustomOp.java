@@ -103,4 +103,5 @@ public interface CustomOp {
      */
     void populateInputsAndOutputsFromSameDiff();
 
+    List<long[]> getInputShapes();
 }

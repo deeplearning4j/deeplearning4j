@@ -10,6 +10,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ScatterUpdate implements CustomOp {
@@ -210,5 +211,10 @@ public class ScatterUpdate implements CustomOp {
     @Override
     public void populateInputsAndOutputsFromSameDiff() {
 
+    }
+
+    @Override
+    public List<long[]> getInputShapes(){
+        return Collections.emptyList();
     }
 }

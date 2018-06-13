@@ -769,4 +769,7 @@ public abstract class DifferentialFunction {
 
     public int getNumOutputs(){return -1;}
 
+    public List<long[]> getInputShapes(){
+        return Collections.emptyList();
+    }
 }

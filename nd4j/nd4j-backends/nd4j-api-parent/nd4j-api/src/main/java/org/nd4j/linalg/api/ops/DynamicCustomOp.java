@@ -39,7 +39,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     protected List<INDArray> inputArguments = new ArrayList<>();
     @Builder.Default
     protected List<INDArray> outputArguments = new ArrayList<>();
-
+    @Builder.Default
+    protected  List<long[]> inputShapes = new ArrayList<>();
 
     @Builder.Default
     protected List<Double> tArguments = new ArrayList<>();
@@ -52,6 +53,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     private long hash;
     protected SDVariable[] outputVariables;
     private List<long[]> outputShapes;
+
 
     public DynamicCustomOp() {
         iArguments = new ArrayList<>();
@@ -403,6 +405,35 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public List<long[]> getInputShapes(){
+        if (this.inputShapes.size() == 0) {
+            List<long[]> inputShapes = new ArrayList<>();
+            boolean all_shapes_resolved = true;
+            for(val iv : args()){
+                if (iv.getShape() == null || iv.getShape().length == 0){
+                    all_shapes_resolved = false;
+                    break;
+                }
+                inputShapes.add(iv.getShape());
+            }
+            if (all_shapes_resolved){
+                this.inputShapes = inputShapes;
+                return inputShapes;
+            }
+            else {
+                List<long[]> ret = new ArrayList<>();
+                for (val arg : inputArguments) {
+                    ret.add(arg.shape());
+                }
+                return ret;
+            }
+        }
+        else{
+            return inputShapes;
+        }
+    }
+
+    @Override
     public void addOutputArgument(INDArray... arg) {
         for (int i = 0; i < arg.length; i++) {
             if (arg[i] == null)
@@ -486,7 +517,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         }
 
         //not fully initialized: missing INDArray input args
-        if(descriptor.getNumInputs() >= 0 && numInputArguments() < descriptor.getNumInputs()){
+        if(descriptor.getNumInputs() >= 0 && numInputArguments() < descriptor.getNumInputs() && getInputShapes().size() == 0){
             if(log.isTraceEnabled()){
                 log.trace("Could not calculate output shape for op {}: not fully initialized ({} input (INDArray) args specified, " +
                         "{} required)", getClass().getName(),numInputArguments(), descriptor.getNumInputs());

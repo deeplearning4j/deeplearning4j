@@ -423,7 +423,7 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(1, 4);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result1 = sameDiff.reshape(x, 2, 2);
-        assertArrayEquals(new long[]{2, 2}, result1.eval().shape());
+        assertArrayEquals(new long[]{2, 2}, result1.getShape());
         assertEquals(arr.reshape(2, 2), result1.eval());
         INDArray arr_shape = Nd4j.create(new double[]{2, 2}, new int[]{2});
         SDVariable shape = sameDiff.var("shape", arr_shape);
@@ -3914,6 +3914,7 @@ public class SameDiffTests {
     }
 
 
+
     private static int binArrToInt(int[] arr){
         int x = 0;
         int m = 1;
@@ -4041,6 +4042,7 @@ public class SameDiffTests {
         SDVariable result = ta.stack();
         assertEquals(expOut, result.eval());
     }
+
 
     private static <T> T getObject(String fieldName, Object from, Class<?> fromClass){
         try {
