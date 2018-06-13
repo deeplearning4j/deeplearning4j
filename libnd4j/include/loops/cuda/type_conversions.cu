@@ -516,5 +516,5 @@ namespace nd4j {
 
     //
 
-    BUILD_DOUBLE_TEMPLATE(template __global__ void convertKernel, (void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template __global__ void convertKernel, (void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
 }
