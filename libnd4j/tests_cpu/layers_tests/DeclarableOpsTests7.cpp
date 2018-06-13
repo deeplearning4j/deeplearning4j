@@ -4300,22 +4300,23 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_CumSum_BP_1) {
     NDArray<float> x('c', {3, 4});
 //    NDArray<float> y('c', {3, 4});
 //    NDArray<float>* z; //('c', {4});
-//    NDArray<float> eps('c', {1, 1, 1}, {1.f});
-//    NDArray<float> exp('c', {2, 3, 4});
+    NDArray<float> eps('c', {3, 4});
+    NDArray<float> exp('c', {3, 4}, {12.f, 11.f, 10.f, 9.f, 8.f, 7.f, 
+                                      6.f,  5.f,  4.f, 3.f, 2.f, 1.f});
     NDArrayFactory<float>::linspace(1, x);
-//    y.assign(2.f);
+    eps.assign(1.f);
 
 //    z = x.applyReduce3<simdOps::Dot<float>>(&y, {0}, nullptr);
-    nd4j::ops::cumsum<float> op;
-    auto result = op.execute({&x}, {}, {1,1,0});
+    nd4j::ops::cumsum_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {0,0});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
-    output->printShapeInfo("Result shape is");
+//    output->printIndexedBuffer("Result is");
+//    output->printShapeInfo("Result shape is");
 
-//    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
-//    ASSERT_TRUE(exp.isSameShape(output));
-//    ASSERT_TRUE(exp.equalsTo(output));
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
 
     delete result;
 //    delete z;
@@ -4323,56 +4324,58 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_CumSum_BP_1) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Reduce_CumSum_BP_2) {
-
     NDArray<float> x('c', {3, 4});
 //    NDArray<float> y('c', {3, 4});
 //    NDArray<float>* z; //('c', {4});
-//    NDArray<float> eps('c', {1, 1, 1}, {1.f});
-//    NDArray<float> exp('c', {2, 3, 4});
+    NDArray<float> eps('c', {3, 4});
+    NDArray<float> exp('c', {3, 4}, { 11.f, 10.f, 9.f, 8.f, 7.f, 6.f,  
+                                      5.f,  4.f, 3.f, 2.f, 1.f, 0.f});
     NDArrayFactory<float>::linspace(1, x);
-//    y.assign(2.f);
+//    NDArrayFactory<float>::linspace(1, exp);
+    eps.assign(1.f);
 
 //    z = x.applyReduce3<simdOps::Dot<float>>(&y, {0}, nullptr);
-    nd4j::ops::cumsum<float> op;
-    auto result = op.execute({&x}, {}, {0,0,0,1});
+    nd4j::ops::cumsum_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {1,0});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
-    output->printShapeInfo("Result shape is");
+//    output->printIndexedBuffer("Result is");
+//    output->printShapeInfo("Result shape is");
 
-//    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
-//    ASSERT_TRUE(exp.isSameShape(output));
-//    ASSERT_TRUE(exp.equalsTo(output));
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
 
     delete result;
-//    delete z;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Reduce_CumSum_BP_3) {
-
     NDArray<float> x('c', {3, 4});
 //    NDArray<float> y('c', {3, 4});
 //    NDArray<float>* z; //('c', {4});
-//    NDArray<float> eps('c', {1, 1, 1}, {1.f});
-//    NDArray<float> exp('c', {2, 3, 4});
+    NDArray<float> eps('c', {3, 4});
+    NDArray<float> exp('c', {3, 4});
+                                    
     NDArrayFactory<float>::linspace(1, x);
-//    y.assign(2.f);
+    NDArrayFactory<float>::linspace(0, exp);
+    eps.assign(1.f);
 
 //    z = x.applyReduce3<simdOps::Dot<float>>(&y, {0}, nullptr);
-    nd4j::ops::cumsum<float> op;
-    auto result = op.execute({&x}, {}, {0,0});
+    nd4j::ops::cumsum_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {1,1});
     auto output = result->at(0);    
     output->printIndexedBuffer("Result is");
-    output->printShapeInfo("Result shape is");
+//    output->printShapeInfo("Result shape is");
 
-//    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
 //    ASSERT_TRUE(exp.isSameShape(output));
-//    ASSERT_TRUE(exp.equalsTo(output));
+    ASSERT_TRUE(exp.equalsTo(output));
 
     delete result;
-//    delete z;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
