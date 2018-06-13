@@ -6,9 +6,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.AMean;
 import org.nd4j.linalg.api.ops.impl.accum.ASum;
 import org.nd4j.linalg.factory.Nd4j;
@@ -21,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -558,5 +561,53 @@ public class ReductionOpValidation extends BaseOpValidation {
         }
 
         assertEquals("Failed: " + failed, 0, failed.size());
+    }
+
+    @Test
+    public void testMoments(){
+
+        for( int[] axes : new int[][]{{0}, {1}, {0,1}}) {
+            INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("in", input);
+
+            SDVariable[] moments = sd.moments(in, axes);
+            INDArray expMean = input.mean(axes);
+            INDArray expStdev = input.std(true, axes);
+
+            SDVariable loss = moments[0].add(moments[1]).std(true);
+
+            String msg = Arrays.toString(axes);
+
+            TestCase tc = new TestCase(sd)
+                    .testName(msg)
+                    .expected(moments[0], expMean)
+                    .expected(moments[1], expStdev);
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testMomentsOp(){
+        int[] axes = new int[]{0};
+        INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        INDArray outMean = Nd4j.createUninitialized(new long[]{4});
+        INDArray outStd = Nd4j.createUninitialized(new long[]{4});
+
+        OpTestCase tc = new OpTestCase(DynamicCustomOp.builder("moments")
+                .addOutputs(outMean, outStd)
+                .addInputs(input)
+                .addIntegerArguments(axes)
+                .build());
+
+        tc.expectedOutput(0, input.mean(axes));
+        tc.expectedOutput(1, input.std(axes));
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 }

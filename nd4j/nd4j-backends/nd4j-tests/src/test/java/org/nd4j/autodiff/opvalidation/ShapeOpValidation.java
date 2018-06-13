@@ -7,9 +7,12 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -24,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Slf4j
@@ -86,6 +90,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testReshapeGradient() {
+        fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         int[] origShape = new int[]{3, 4, 5};
 
         List<String> failed = new ArrayList<>();
@@ -661,6 +666,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testTranspose() {
+        fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
         SDVariable x = sameDiff.var("x", arr);
@@ -672,8 +678,24 @@ public class ShapeOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testTransposeOp(){
+
+        INDArray arr = Nd4j.linspace(1,15, 15).reshape(5,3);
+        INDArray out = Nd4j.create(3,5);
+
+        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("transpose")
+                .addInputs(arr)
+                .addOutputs(out)
+                .build());
+        INDArray exp = arr.transpose();
+        op.expectedOutput(0, exp);
+        String err = OpValidation.validate(op);
+        assertNull(err);
+    }
+
+    @Test
     public void testShape() {
-        fail(); //JVM crash
+        fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         SameDiff sameDiff = SameDiff.create();
         val shape = new long[]{2, 3};
         SDVariable x = sameDiff.var("x", shape);
@@ -685,6 +707,23 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         assertNull(err);
     }
+
+    @Test
+    public void testDiagShapeFn() {
+
+        INDArray i = Nd4j.linspace(1, 16, 16).reshape(4,4);
+
+        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("diag_part")
+                .addInputs(i).build());
+
+        INDArray exp = Nd4j.create(new double[]{1,6,11,16}, new long[]{4});
+        op.expectedOutput(0, exp);
+
+        String err = OpValidation.validate(op);
+        assertNull(err);
+    }
+
+
 
 
     @Test
@@ -873,6 +912,5 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray arr2 = Nd4j.concat(0, arr, arr);  // (1, 4), (1, 4) -> (2, 4)
         INDArray expected = Nd4j.concat(1, arr2, arr2);  // (2, 4), (2, 4) -> (2, 8)
         assertEquals(expected, result.eval());
-
     }
 }

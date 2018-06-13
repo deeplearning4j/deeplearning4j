@@ -1005,6 +1005,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.sum(name, this, dimensions);
     }
 
+    public SDVariable mean(int... dimensions){
+        return mean(null, dimensions);
+    }
+
+    public SDVariable mean(String name, int... dimensions){
+        return sameDiff.mean(name, this, dimensions);
+    }
+
+    public SDVariable std(boolean biasCorrected, int... dimensions){
+        return std(null, biasCorrected, dimensions);
+    }
+
+    public SDVariable std(String name, boolean biasCorrected, int... dimensions){
+        return sameDiff.standardDeviation(name, this, biasCorrected, dimensions);
+    }
+
     public SDVariable prod(int... dimensions){
         return prod(null, dimensions);
     }

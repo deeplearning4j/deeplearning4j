@@ -158,6 +158,19 @@ public class ReductionBpOpValidation {
     }
 
     @Test
+    public void testMeanBP_Rank1() {
+        INDArray dLdOut = Nd4j.trueScalar(0.5);
+        INDArray preReduceInput = Nd4j.create(new double[]{2,3,4}, new long[]{3});
+        INDArray dLdInExp = Nd4j.valueArrayOf(new long[]{3}, 0.5/3);
+
+        INDArray dLdIn = Nd4j.createUninitialized(new long[]{3});
+
+        String err = OpValidation.validate(new OpTestCase(new MeanBp(preReduceInput, dLdOut, dLdIn, false))
+                .expectedOutput(0, dLdInExp));
+        assertNull(err);
+    }
+
+    @Test
     public void testMeanAlongDim0BP() {
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
@@ -476,27 +489,6 @@ public class ReductionBpOpValidation {
                 INDArray dLdInExp = preReduceInput.dup()
                         .subi(mean).divi(stdev * divisor)
                         .muli(0.5); //* dL/dOut
-//                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
-//                System.out.println(dLdInExp.shapeInfoToString());
-//                System.out.println(Arrays.toString(dLdInExp.data().asFloat()));
-                /*
-                biasCorrected = true, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.069337524, -0.056730703, -0.04412388, -0.031517055, -0.018910235, -0.0063034114, 0.0063034114, 0.018910235, 0.031517055, 0.04412388, 0.056730703, 0.069337524]
-                biasCorrected = true, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.069337524, -0.056730703, -0.04412388, -0.031517055, -0.018910235, -0.0063034114, 0.0063034114, 0.018910235, 0.031517055, 0.04412388, 0.056730703, 0.069337524]
-                biasCorrected = false, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.06638563, -0.05431551, -0.0422454, -0.030175284, -0.01810517, -0.006035057, 0.006035057, 0.01810517, 0.030175284, 0.0422454, 0.05431551, 0.06638563]
-                biasCorrected = false, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.06638563, -0.05431551, -0.0422454, -0.030175284, -0.01810517, -0.006035057, 0.006035057, 0.01810517, 0.030175284, 0.0422454, 0.05431551, 0.06638563]
-                 */
 
                 INDArray dLdIn = Nd4j.createUninitialized(3, 4);
 
@@ -505,6 +497,28 @@ public class ReductionBpOpValidation {
                 assertNull(err);
             }
         }
+    }
+
+    @Test
+    public void testStdevBP_Rank1() {
+        fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
+        INDArray dLdOut = Nd4j.trueScalar(0.5);
+        INDArray preReduceInput = Nd4j.create(new double[]{2,3,4}, new long[]{3});
+        double stdev = preReduceInput.stdNumber(true).doubleValue();
+        double mean = preReduceInput.meanNumber().doubleValue();
+
+        INDArray dLdInExp = preReduceInput.dup()
+                .subi(mean).divi(stdev * 2)
+                .muli(0.5); //* dL/dOut
+
+        System.out.println(dLdInExp.shapeInfoToString());
+        System.out.println(Arrays.toString(dLdInExp.data().asFloat()));
+
+        INDArray dLdIn = Nd4j.createUninitialized(new long[]{3});
+
+        String err = OpValidation.validate(new OpTestCase(new StandardDeviationBp(preReduceInput, dLdOut, dLdIn, true, false))
+                .expectedOutput(0, dLdInExp));
+        assertNull(err);
     }
 
     @Test
