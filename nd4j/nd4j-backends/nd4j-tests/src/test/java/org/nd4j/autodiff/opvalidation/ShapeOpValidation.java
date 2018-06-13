@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.gradcheck;
+package org.nd4j.autodiff.opvalidation;
 
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +13,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -21,14 +23,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Slf4j
-public class GradCheckMisc extends BaseGradCheck {
-
-    public GradCheckMisc(Nd4jBackend backend) {
+public class ShapeOpValidation extends BaseOpValidation {
+    public ShapeOpValidation(Nd4jBackend backend) {
         super(backend);
     }
 
@@ -271,266 +273,6 @@ public class GradCheckMisc extends BaseGradCheck {
         assertEquals(failed.toString(), 0, failed.size());
     }
 
-    @Test
-    public void testGradientAutoBroadcast1() {
-
-        Nd4j.getRandom().setSeed(12345);
-
-        List<String> failed = new ArrayList<>();
-
-        for (int dim_sz1 : new int[]{0, 1, 2}) {
-
-            int[] in2Shape = {3, 4, 5};
-            in2Shape[dim_sz1] = 1;
-
-            for (int i = 0; i < 8; i++) {
-
-                SameDiff sd = SameDiff.create();
-
-                SDVariable in3 = sd.var("in3", Nd4j.rand(new int[]{3, 4, 5}));
-                SDVariable in2 = sd.var("in2", in2Shape);
-
-                SDVariable bcOp;
-                String name;
-                switch (i) {
-                    case 0:
-                        bcOp = in3.add(in2);
-                        name = "add";
-                        break;
-                    case 1:
-                        bcOp = in3.sub(in2);
-                        name = "sub";
-                        break;
-                    case 2:
-                        bcOp = in3.mul(in2);
-                        name = "mul";
-                        break;
-                    case 3:
-                        bcOp = in3.div(in2);
-                        name = "div";
-                        break;
-                    case 4:
-                        bcOp = in3.rsub(in2);
-                        name = "rsub";
-                        break;
-                    case 5:
-                        bcOp = in3.rdiv(in2);
-                        name = "rdiv";
-                        break;
-                    case 6:
-                        bcOp = sd.f().floorDiv(in3, in2);
-                        name = "floordiv";
-                        break;
-                    case 7:
-                        bcOp = sd.f().floorMod(in3, in2);
-                        name = "floormod";
-                        break;
-                    default:
-                        throw new RuntimeException();
-                }
-
-                SDVariable outVar = sd.sum(bcOp);
-
-                String msg = "(test " + i + ": " + name + ", dimension=" + dim_sz1 + ")";
-                log.info("*** Starting test: " + msg);
-
-                INDArray in3Arr = Nd4j.randn(new int[]{3, 4, 5}).muli(100);
-                INDArray in2Arr = Nd4j.randn(in2Shape).muli(100);
-
-                sd.associateArrayWithVariable(in3Arr, in3);
-                sd.associateArrayWithVariable(in2Arr, in2);
-
-                TestCase tc = new TestCase(sd);
-
-                String error = OpValidation.validate(tc);
-                if(error != null){
-                    failed.add(name);
-                }
-            }
-        }
-
-        assertEquals("Failed: " + failed, 0, failed.size());
-    }
-
-    @Test
-    public void testGradientAutoBroadcast2() {
-
-        Nd4j.getRandom().setSeed(12345);
-
-        List<String> failed = new ArrayList<>();
-
-        for (int[] dim_sz1s : new int[][]{{0, 1}, {0, 2}, {1, 2}, {0, 1, 2}}) {
-
-            int[] otherShape = {3, 4, 5};
-            otherShape[dim_sz1s[0]] = 1;
-            otherShape[dim_sz1s[1]] = 1;
-            if (dim_sz1s.length == 3) {
-                otherShape[dim_sz1s[2]] = 1;
-            }
-
-            for (int i = 0; i < 8; i++) {
-
-                SameDiff sd = SameDiff.create();
-
-                SDVariable in3 = sd.var("in3", new int[]{3, 4, 5});
-                SDVariable in2 = sd.var("inToBc", otherShape);
-
-                String name;
-                SDVariable bcOp;
-                switch (i) {
-                    case 0:
-                        bcOp = in3.add(in2);
-                        name = "add";
-                        break;
-                    case 1:
-                        bcOp = in3.sub(in2);
-                        name = "sub";
-                        break;
-                    case 2:
-                        bcOp = in3.mul(in2);
-                        name = "mul";
-                        break;
-                    case 3:
-                        bcOp = in3.div(in2);
-                        name = "div";
-                        break;
-                    case 4:
-                        bcOp = in3.rsub(in2);
-                        name = "rsub";
-                        break;
-                    case 5:
-                        bcOp = in3.rdiv(in2);
-                        name = "rdiv";
-                        break;
-                    case 6:
-                        bcOp = sd.f().floorDiv(in3, in2);
-                        name = "floordiv";
-                        break;
-                    case 7:
-                        bcOp = sd.f().floorMod(in3, in2);
-                        name = "floormod";
-                        break;
-                    default:
-                        throw new RuntimeException();
-                }
-
-                SDVariable outVar = sd.sum(bcOp);
-
-                String msg = "(test " + i + ": " + name + ", dimensions=" + Arrays.toString(dim_sz1s) + ")";
-                log.info("*** Starting test: " + msg);
-
-                INDArray in3Arr = Nd4j.randn(new int[]{3, 4, 5}).muli(100);
-                INDArray in2Arr = Nd4j.randn(otherShape).muli(100);
-
-                sd.associateArrayWithVariable(in3Arr, in3);
-                sd.associateArrayWithVariable(in2Arr, in2);
-
-                TestCase tc = new TestCase(sd);
-                String error = OpValidation.validate(tc);
-                if(error != null){
-                    failed.add(name);
-                }
-            }
-        }
-
-        assertEquals("Failed: " + failed, 0, failed.size());
-    }
-
-    @Test
-    public void testGradientAutoBroadcast3() {
-        //These tests: output size > input sizes
-
-        fail("TEST CRASHES JVM");
-
-        Nd4j.getRandom().setSeed(12345);
-
-        List<String> failed = new ArrayList<>();
-
-        //Test cases: in1Shape, in2Shape, shapeOf(op(in1,in2))
-        List<Triple<long[], long[], long[]>> testCases = new ArrayList<>();
-        testCases.add(new Triple<>(new long[]{3, 1}, new long[]{1, 4}, new long[]{3, 4}));
-        testCases.add(new Triple<>(new long[]{3, 1}, new long[]{3, 4}, new long[]{3, 4}));
-        testCases.add(new Triple<>(new long[]{3, 4}, new long[]{1, 4}, new long[]{3, 4}));
-        testCases.add(new Triple<>(new long[]{3, 4, 1}, new long[]{1, 1, 5}, new long[]{3, 4, 5}));
-        testCases.add(new Triple<>(new long[]{3, 4, 1}, new long[]{3, 1, 5}, new long[]{3, 4, 5}));
-        testCases.add(new Triple<>(new long[]{3, 1, 5}, new long[]{1, 4, 1}, new long[]{3, 4, 5}));
-        testCases.add(new Triple<>(new long[]{3, 1, 5}, new long[]{1, 4, 5}, new long[]{3, 4, 5}));
-        testCases.add(new Triple<>(new long[]{3, 1, 5}, new long[]{3, 4, 5}, new long[]{3, 4, 5}));
-        testCases.add(new Triple<>(new long[]{3, 1, 1, 1}, new long[]{1, 4, 5, 6}, new long[]{3, 4, 5, 6}));
-        testCases.add(new Triple<>(new long[]{1, 1, 1, 6}, new long[]{3, 4, 5, 6}, new long[]{3, 4, 5, 6}));
-        testCases.add(new Triple<>(new long[]{1, 4, 5, 1}, new long[]{3, 1, 1, 6}, new long[]{3, 4, 5, 6}));
-        testCases.add(new Triple<>(new long[]{1, 6}, new long[]{3, 4, 5, 1}, new long[]{3, 4, 5, 6}));
-
-        for (val p : testCases) {
-
-            for (int i = 0; i < 8; i++) {
-
-                SameDiff sd = SameDiff.create();
-
-                SDVariable in3 = sd.var("in1", p.getFirst());
-                SDVariable in2 = sd.var("in2", p.getSecond());
-
-                String name;
-                SDVariable bcOp;
-                switch (i) {
-                    case 0:
-                        bcOp = in3.add(in2);
-                        name = "add";
-                        break;
-                    case 1:
-                        bcOp = in3.sub(in2);
-                        name = "sub";
-                        break;
-                    case 2:
-                        bcOp = in3.mul(in2);
-                        name = "mul";
-                        break;
-                    case 3:
-                        bcOp = in3.div(in2);
-                        name = "div";
-                        break;
-                    case 4:
-                        bcOp = in3.rsub(in2);
-                        name = "rsub";
-                        break;
-                    case 5:
-                        bcOp = in3.rdiv(in2);
-                        name = "rdiv";
-                        break;
-                    case 6:
-                        bcOp = sd.f().floorDiv(in3, in2);
-                        name = "floordiv";
-                        break;
-                    case 7:
-                        bcOp = sd.f().floorMod(in3, in2);
-                        name = "floormod";
-                        break;
-                    default:
-                        throw new RuntimeException();
-                }
-
-                SDVariable outVar = sd.sum(bcOp);
-
-                String msg = "(test " + i + ": " + name + ", array 1 size =" + Arrays.toString(p.getFirst())
-                        + ", array 2 size = " + Arrays.toString(p.getSecond()) + ")";
-                log.info("*** Starting test: " + msg);
-
-                INDArray in3Arr = Nd4j.randn(p.getFirst()).muli(100);
-                INDArray in2Arr = Nd4j.randn(p.getSecond()).muli(100);
-
-                sd.associateArrayWithVariable(in3Arr, in3);
-                sd.associateArrayWithVariable(in2Arr, in2);
-
-                TestCase tc = new TestCase(sd);
-                String error = OpValidation.validate(tc);
-                if(error != null){
-                    failed.add(name);
-                }
-            }
-        }
-
-        assertEquals("Failed: " + failed, 0, failed.size());
-    }
 
     @Test
     public void testSliceGradient() {
@@ -654,104 +396,6 @@ public class GradCheckMisc extends BaseGradCheck {
                 failed.add(name);
             }
         }
-        assertEquals(failed.toString(), 0, failed.size());
-    }
-
-    @Test
-    public void testScatterOpGradients() {
-
-
-        List<String> failed = new ArrayList<>();
-
-        for (int i = 0; i < 5; i++) {
-            Nd4j.getRandom().setSeed(12345);
-
-            SameDiff sd = SameDiff.create();
-
-            SDVariable in = sd.var("in", new int[]{20, 10});
-            SDVariable indices = sd.var("indices", new long[]{5});
-            SDVariable updates = sd.var("updates", new int[]{5, 10});
-
-
-            in.setArray(Nd4j.rand(20, 10));
-            indices.setArray(Nd4j.create(new double[]{3, 4, 5, 10, 18}));
-            updates.setArray(Nd4j.rand(5, 10).muli(2).subi(1));
-
-            SDVariable scatter;
-            String name;
-            switch (i) {
-                case 0:
-                    scatter = sd.scatterAdd("s", in, indices, updates);
-                    name = "scatterAdd";
-                    break;
-                case 1:
-                    scatter = sd.scatterSub("s", in, indices, updates);
-                    name = "scatterSub";
-                    break;
-                case 2:
-                    scatter = sd.scatterMul("s", in, indices, updates);
-                    name = "scatterMul";
-                    break;
-                case 3:
-                    scatter = sd.scatterDiv("s", in, indices, updates);
-                    name = "scatterDiv";
-                    break;
-                case 4:
-                    scatter = sd.scatterUpdate("s", in, indices, updates);
-                    name = "scatterUpdate";
-                    break;
-                default:
-                    throw new RuntimeException();
-            }
-
-            SDVariable loss = sd.sum(scatter);  //.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
-            sd.execAndEndResult();
-
-            TestCase tc = new TestCase(sd);
-            String error = OpValidation.validate(tc);
-            if(error != null){
-                failed.add(name);
-            }
-        }
-
-        assertEquals(failed.toString(), 0, failed.size());
-    }
-
-    @Test
-    public void testGatherGradient() {
-        Nd4j.getRandom().setSeed(12345);
-
-        List<String> failed = new ArrayList<>();
-
-        for (int rank = 2; rank <= 3; rank++) {
-            for (int dim = 0; dim < rank; dim++) {
-                SameDiff sd = SameDiff.create();
-
-                int[] inShape;
-                if (rank == 2) {
-                    inShape = new int[]{10, 10};
-                } else {
-                    inShape = new int[]{10, 10, 10};
-                }
-
-                SDVariable in = sd.var("in", Nd4j.rand(inShape));
-                SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}));
-
-                SDVariable gather = sd.gather(in, indices, dim);
-                sd.execAndEndResult();  //TODO REMOVE THIS
-
-                SDVariable loss = sd.standardDeviation("loss", gather, true, Integer.MAX_VALUE);
-
-                String msg = "rank=" + rank + ", dim=" + dim;
-
-                TestCase tc = new TestCase(sd);
-                String error = OpValidation.validate(tc);
-                if(error != null){
-                    failed.add(name);
-                }
-            }
-        }
-
         assertEquals(failed.toString(), 0, failed.size());
     }
 
@@ -998,5 +642,239 @@ public class GradCheckMisc extends BaseGradCheck {
         }
 
         assertEquals(failed.toString(), 0, failed.size());
+    }
+
+
+    @Test
+    public void testReshape() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(-5, 6, 12)).reshape(3, 4);
+        SDVariable x = sameDiff.var("x", arr);
+        SDVariable result1 = sameDiff.reshape(x, 4, 3);
+        SDVariable loss = sameDiff.standardDeviation(result1, true);
+
+        INDArray exp = arr.dup('c').reshape('c', 4,3);
+
+        String err = OpValidation.validate(new TestCase(sameDiff)
+                .expectedOutput(result1.getVarName(), exp));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testTranspose() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
+        SDVariable x = sameDiff.var("x", arr);
+        SDVariable result = sameDiff.transpose(x);
+        SDVariable loss = sameDiff.standardDeviation(result, true);
+
+        String err = OpValidation.validate(new TestCase(sameDiff).expectedOutput(result.getVarName(), arr.transpose()));
+        assertNull(err);
+    }
+
+    @Test
+
+    public void testShape() {
+        SameDiff sameDiff = SameDiff.create();
+        val shape = new long[]{2, 3};
+        SDVariable x = sameDiff.var("x", shape);
+        SDVariable result = sameDiff.shape(x);
+        SDVariable loss = sameDiff.standardDeviation(result, true);
+
+        String err = OpValidation.validate(new TestCase(sameDiff)
+                .expected(result, Nd4j.create(new double[]{2,3}, new long[]{2})));
+
+        assertNull(err);
+    }
+
+
+    @Test
+    public void testReverseSequence() {
+        SameDiff sameDiff = SameDiff.create();
+        float[] input_data = new float[]{
+                1, 2, 3,
+                4, 5, 6,
+                7, 8, 9,
+                0, 0, 0,
+                0, 0, 0,
+
+                1, 2, 3,
+                4, 5, 6,
+                0, 0, 0,
+                0, 0, 0,
+                0, 0, 0
+        };
+        float[] expected_output = new float[]{
+                7, 8, 9,
+                4, 5, 6,
+                1, 2, 3,
+                0, 0, 0,
+                0, 0, 0,
+
+                4, 5, 6,
+                1, 2, 3,
+                0, 0, 0,
+                0, 0, 0,
+                0, 0, 0
+        };
+        INDArray arr1 = Nd4j.create(input_data, new long[]{2, 5, 3});
+        INDArray arr2 = Nd4j.create(new float[]{3, 2}).reshape(2);
+        SDVariable x = sameDiff.var("x", arr1);
+        SDVariable seq_lengths = sameDiff.var("seq_lengths", arr2);
+        SDVariable result = sameDiff.reverseSequence(x, seq_lengths, 1, 0);
+        INDArray expected = Nd4j.create(expected_output, new long[]{2, 5, 3});
+        assertArrayEquals(arr1.shape(), result.eval().shape());
+        assertEquals(expected, result.eval());
+
+        SDVariable loss = sameDiff.standardDeviation(result, true);
+        String err = OpValidation.validate(new TestCase(sameDiff)
+                .expected(result.getVarName(), expected)
+                .gradCheckSkipVariables(seq_lengths.getVarName()));
+        assertNull(err);
+    }
+
+    @Test
+    public void testSequenceMask() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Nd4j.create(new float[] {1, 3, 2}).reshape(3);
+        SDVariable lengths = sameDiff.var("lengths", arr);
+
+        // Test with static max len
+        int maxlen = 5;
+        INDArray expected = Nd4j.create(new float[] {1, 0, 0, 0, 0,
+                        1, 1, 1, 0, 0,
+                        1, 1, 0, 0, 0},
+                new long[]{3, 5});
+        SDVariable result1 = sameDiff.sequenceMask(lengths, maxlen);
+        assertArrayEquals(expected.shape(), result1.eval().shape());
+        assertEquals(expected, result1.eval());
+
+        SDVariable loss = sameDiff.standardDeviation(result1, true);
+
+        String err = OpValidation.validate(new TestCase(sameDiff)
+                .expected(result1, expected)
+                .gradCheckSkipVariables(lengths.getVarName()));
+        assertNull(err);
+
+        // Test with dynamic maxlen
+        lengths = sameDiff.var("lengths2", arr); // required because of an internal samediff bug
+        SDVariable maxLen = sameDiff.var("maxLen", Nd4j.create(new float[]{5}).reshape(1));
+        SDVariable result2 = sameDiff.sequenceMask(lengths, maxLen);
+        assertArrayEquals(expected.shape(), result2.eval().shape());
+        assertEquals(expected, result2.eval());
+    }
+
+    //TODO UPDATE TO OPVALIDATION
+    @Test
+    public void testGather() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4}, new long[]{2, 2});
+        SDVariable x = sameDiff.var("x", arr);
+        SDVariable result = sameDiff.gather(x, new int[]{1, 0}, 1);
+        INDArray expected = Nd4j.create(new float[]{2, 1, 4, 3}, new long[]{2, 2});
+        assertEquals(expected, result.eval());
+    }
+
+
+
+    //TODO UPDATE TO OPVALIDATION
+    @Test
+    public void testGatherNd() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 24, 24)).reshape(2, 3, 4);
+        INDArray arr2 = Nd4j.create(new float[]{1, 2, 3, 0, 1, 3, 1, 0, 2}, new long[]{3, 3});
+        SDVariable x = sameDiff.var("x", arr1);
+        SDVariable idxs = sameDiff.var("idxs", arr2);
+        SDVariable result = sameDiff.gatherNd(x, idxs);
+        // build expected output array
+        INDArray expected  = Nd4j.zeros(3);
+        for (int i=0; i<3; i++){
+            INDArray idx = arr2.get(NDArrayIndex.point(i));
+            expected.get(NDArrayIndex.point(i)).assign(
+                    arr1.get(NDArrayIndex.point(idx.getInt(0)),
+                            NDArrayIndex.point(idx.getInt(1)),
+                            NDArrayIndex.point(idx.getInt(2))));
+        }
+        assertEquals(expected, result.eval());
+    }
+
+    //TODO UPDATE TO OPVALIDATION
+    @Test
+    public void testStack2() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 6, 6)).reshape(3, 2);
+        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6)).reshape(3, 2);
+        SDVariable x1 = sameDiff.var("x1", arr1);
+        SDVariable x2 = sameDiff.var("x2", arr2);
+        SDVariable result = sameDiff.stack(1, x1, x2);
+        assertArrayEquals(new long[]{3, 2, 2}, result.eval().shape());
+    }
+
+    //TODO UPDATE TO OPVALIDATION
+    @Test
+    public void testParallelStack() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 6, 6)).reshape(3, 2);
+        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6)).reshape(3, 2);
+        SDVariable x1 = sameDiff.var("x1", arr1);
+        SDVariable x2 = sameDiff.var("x2", arr2);
+        SDVariable result = sameDiff.parallel_stack(new SDVariable[]{x1, x2});
+        assertArrayEquals(new long[]{2, 3, 2}, result.eval().shape());
+        assertEquals(Nd4j.concat(0, arr1, arr2).reshape(2, 3, 2), result.eval());
+    }
+
+    //TODO UPDATE TO OPVALIDATION
+    @Test
+    public void testUnStack2() {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr1 = Nd4j.zeros(3, 2);
+        INDArray arr2 = Nd4j.ones(3, 2);
+        SDVariable x1 = sameDiff.var("x1", arr1);
+        SDVariable x2 = sameDiff.var("x2", arr2);
+        SDVariable stacked = sameDiff.stack(0, x1, x2);
+        SDVariable[] result = sameDiff.unstack(stacked, 0, 2);
+        assertEquals(arr1, result[0].eval());
+        assertEquals(arr2, result[1].eval());
+    }
+
+    //TODO UPDATE TO OPVALIDATION
+    @Test
+    public void testPermute() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 6, 6).reshape(2, 3));
+        SDVariable x = sameDiff.var("x", arr);
+        SDVariable result = sameDiff.permute(x, 1, 0);
+        assertArrayEquals(new long[]{3, 2}, result.getShape());
+
+    }
+
+    //TODO UPDATE TO OPVALIDATION
+    @Test
+    public void testConcat2() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
+        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(4, 8, 4));
+        SDVariable x1 = sameDiff.var("x1", arr1);
+        SDVariable x2 = sameDiff.var("x2", arr2);
+        SDVariable result = sameDiff.concat(0, x1, x2);
+        assertArrayEquals(new long[]{2, 4}, result.eval().shape());
+
+    }
+
+    //TODO UPDATE TO OPVALIDATION
+    @Test
+    public void testTile2() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
+        SDVariable x = sameDiff.var("x", arr);
+        SDVariable result = sameDiff.tile(x, new int[]{2, 2});
+        assertArrayEquals(new long[]{2, 8}, result.eval().shape());
+        INDArray arr2 = Nd4j.concat(0, arr, arr);  // (1, 4), (1, 4) -> (2, 4)
+        INDArray expected = Nd4j.concat(1, arr2, arr2);  // (2, 4), (2, 4) -> (2, 8)
+        assertEquals(expected, result.eval());
+
     }
 }

@@ -9,6 +9,9 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
+import org.nd4j.linalg.api.ops.impl.accum.bp.MeanBp;
+import org.nd4j.linalg.api.ops.impl.accum.bp.StandardDeviationBp;
+import org.nd4j.linalg.api.ops.impl.accum.bp.VarianceBp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -217,15 +220,9 @@ public class DifferentialFunctionFactory {
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable avgPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        Pooling3D maxPooling3D = Pooling3D.builder()
-                .inputs(inputs)
-                .sameDiff(sameDiff())
-                .pooling3DConfig(pooling3DConfig)
-                .type(Pooling3D.Pooling3DType.AVG)
-                .build();
-
-        return maxPooling3D.outputVariable();
+    public SDVariable avgPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
+        pooling3DConfig.setType(Pooling3D.Pooling3DType.AVG);
+        return pooling3d(input, pooling3DConfig);
     }
 
 
@@ -236,16 +233,20 @@ public class DifferentialFunctionFactory {
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable maxPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        Pooling3D maxPooling3D = Pooling3D.builder()
-                .inputs(inputs)
+    public SDVariable maxPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
+        pooling3DConfig.setType(Pooling3D.Pooling3DType.MAX);
+        return pooling3d(input, pooling3DConfig);
+    }
+    public SDVariable pooling3d(SDVariable input, Pooling3DConfig pooling3DConfig){
+        Pooling3D pool3d = Pooling3D.builder()
+                .inputs(new SDVariable[]{input})
                 .sameDiff(sameDiff())
                 .pooling3DConfig(pooling3DConfig)
-                .type(Pooling3D.Pooling3DType.MAX)
+                .type(pooling3DConfig.getType())
                 .build();
-
-        return maxPooling3D.outputVariable();
+        return pool3d.outputVariable();
     }
+
 
     /**
      * Separable Conv2d operation.
@@ -385,6 +386,10 @@ public class DifferentialFunctionFactory {
         return new Mean(sameDiff(), i_x, dimensions).outputVariable();
     }
 
+    public SDVariable meanBp(SDVariable in, SDVariable grad, boolean keepDims, int... dimensions){
+        return new MeanBp(sameDiff(), in, grad, keepDims, dimensions).outputVariable();
+    }
+
 
     public SDVariable std(SDVariable i_x,
                           boolean biasCorrected,
@@ -392,11 +397,19 @@ public class DifferentialFunctionFactory {
         return new StandardDeviation(sameDiff(), i_x, dimensions, biasCorrected).outputVariable();
     }
 
+    public SDVariable stdBp(SDVariable stdInput, SDVariable gradient, boolean biasCorrected, boolean keepDims, int... dimensions){
+        return new StandardDeviationBp(sameDiff(), stdInput, gradient, biasCorrected, keepDims, dimensions).outputVariable();
+    }
+
 
     public SDVariable variance(SDVariable i_x,
                                boolean biasCorrected,
                                int... dimensions) {
         return new Variance(sameDiff(), i_x, dimensions, biasCorrected).outputVariable();
+    }
+
+    public SDVariable varianceBp(SDVariable stdInput, SDVariable gradient, boolean biasCorrected, boolean keepDims, int... dimensions){
+        return new VarianceBp(sameDiff(), stdInput, gradient, biasCorrected, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable countNonZero(SDVariable input, int... dimensions) {

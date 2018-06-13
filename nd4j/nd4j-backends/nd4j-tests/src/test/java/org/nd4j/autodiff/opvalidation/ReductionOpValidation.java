@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.gradcheck;
+package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
@@ -24,9 +24,9 @@ import static org.junit.Assert.assertEquals;
 
 @Slf4j
 @RunWith(Parameterized.class)
-public class GradCheckReductions extends BaseGradCheck {
+public class ReductionOpValidation extends BaseOpValidation {
 
-    public GradCheckReductions(Nd4jBackend backend) {
+    public ReductionOpValidation(Nd4jBackend backend) {
         super(backend);
     }
 
