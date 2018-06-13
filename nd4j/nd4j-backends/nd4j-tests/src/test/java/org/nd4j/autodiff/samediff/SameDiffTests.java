@@ -1073,7 +1073,34 @@ public class SameDiffTests {
 
     }
 
+    @Test(timeout = 10000L)
+    public void testWhileLoop() {
+        SameDiff sameDiff = SameDiff.create();
+        sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
+                return new SDVariable[]{eqResult};
+            }
+        }, new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                SDVariable ret = variableInputs[1].addi(1.0);
+                return new SDVariable[]{variableInputs[0], ret};
+            }
+        }, new SDVariable[]{
+                sameDiff.one("one", new long[]{1, 1}),
+                sameDiff.var("two", new long[]{1, 1}),
 
+        });
+
+        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec = sameDiff.exec();
+        assertFalse(exec.getRight().isEmpty());
+        While function = (While) exec.getRight().get(exec.getRight().size() - 1);
+        assumeNotNull(function.getOutputVars());
+        assertEquals(1, function.getNumLooped());
+        sameDiff.toString();
+    }
     @Test(timeout = 10000L)
     public void testWhileLoop2() {
         SameDiff sameDiff = SameDiff.create();
@@ -3970,34 +3997,6 @@ public class SameDiffTests {
         assertEquals(arr2, result2.eval());
     }
 
-    @Test(timeout = 10000L)
-    public void testWhileLoopx() {
-        SameDiff sameDiff = SameDiff.create();
-        sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
-                return new SDVariable[]{eqResult};
-            }
-        }, new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = variableInputs[1].add(1.0);
-                return new SDVariable[]{variableInputs[0], ret};
-            }
-        }, new SDVariable[]{
-                sameDiff.one("one", new long[]{1, 1}),
-                sameDiff.var("two", new long[]{1, 1}),
-
-        });
-
-        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec = sameDiff.exec();
-        assertFalse(exec.getRight().isEmpty());
-        While function = (While) exec.getRight().get(exec.getRight().size() - 1);
-        assumeNotNull(function.getOutputVars());
-        assertEquals(1, function.getNumLooped());
-        sameDiff.toString();
-    }
     @Test(timeout = 10000L)
     public void testTensorArray4(){
         SameDiff sd = SameDiff.create();
