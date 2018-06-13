@@ -3,14 +3,19 @@ package org.nd4j.autodiff.opvalidation;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.validation.OpTestCase;
+import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.nd4j.linalg.BaseNd4jTest.assertArrayEquals;
 
 public class TestMisc {
@@ -93,6 +98,60 @@ public class TestMisc {
         assertArrayEquals(new long[]{5}, outShape.get(0));
     }
 
+
+    @Test
+    public void testZerosOnesLike(){
+        Nd4j.getRandom().setSeed(12345);
+
+        List<int[]> shapes = Arrays.asList(new int[0], new int[]{3}, new int[]{3,4}, new int[]{3,4,5});
+
+        for(boolean zeros : new boolean[]{/*true,*/ false}) {
+            for (int[] shape : shapes) {
+                SameDiff sd = SameDiff.create();
+                INDArray arr;
+                if(shape.length > 0){
+                    arr = Nd4j.rand(shape);
+                } else {
+                    arr = Nd4j.trueScalar(Nd4j.rand(new int[]{1,1}).getDouble(0));
+                }
+                SDVariable var = sd.var("in", arr);
+                SDVariable xLike;
+                if(zeros) {
+                    xLike = sd.zerosLike(var);
+                } else {
+                    xLike = sd.onesLike(var);
+                }
+
+                SDVariable loss;
+                if (shape.length > 0) {
+                    loss = xLike.std(true);
+                } else {
+                    loss = xLike.mean();
+                }
+
+                String err = OpValidation.validate(new TestCase(sd)
+                        .expected(xLike, (zeros ? Nd4j.zeros(shape) : Nd4j.ones(shape))));
+                assertNull(err);
+            }
+        }
+    }
+
+    @Test
+    public void testZerosLikeOp(){
+
+        INDArray arr = Nd4j.trueScalar(1.0);
+        INDArray out = Nd4j.trueScalar(-1);
+        INDArray exp = Nd4j.trueScalar(0);
+
+        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("zeros_like")
+                .addInputs(arr)
+                .addOutputs(out)
+                .build());
+        op.expectedOutput(0, exp);
+
+        String err = OpValidation.validate(op);
+        assertNull(err);
+    }
 
 
 }
