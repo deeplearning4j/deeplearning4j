@@ -118,6 +118,7 @@ namespace nd4j {
     template <typename S, typename T>
     __global__ void convertKernel(void *dx, Nd4jLong N, void *dz);
 #endif
+
 }
 
 #endif //LIBND4J_TYPE_CONVERSIONS_H
