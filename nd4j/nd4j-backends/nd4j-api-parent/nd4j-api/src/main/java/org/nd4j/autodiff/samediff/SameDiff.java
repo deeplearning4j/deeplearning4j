@@ -1843,8 +1843,8 @@ public class SameDiff {
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable avgPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        return avgPooling3d(null, inputs, pooling3DConfig);
+    public SDVariable avgPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
+        return avgPooling3d(null, input, pooling3DConfig);
     }
 
     /**
@@ -1855,8 +1855,8 @@ public class SameDiff {
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable avgPooling3d(String name, SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        SDVariable ret = f().avgPooling3d(inputs, pooling3DConfig);
+    public SDVariable avgPooling3d(String name, SDVariable input, Pooling3DConfig pooling3DConfig) {
+        SDVariable ret = f().avgPooling3d(input, pooling3DConfig);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -2048,29 +2048,62 @@ public class SameDiff {
     }
 
 
-
+    /**
+     * Conv3d operation.
+     *
+     * @param input        the input activations to conv3d
+     * @param weights      Weights for conv3d
+     * @param conv3DConfig the configuration
+     * @return Conv3d output variable
+     */
+    public SDVariable conv3d(SDVariable input, SDVariable weights, Conv3DConfig conv3DConfig) {
+        return conv3d(null, input, weights, null, conv3DConfig);
+    }
 
     /**
      * Conv3d operation.
      *
-     * @param inputs       the inputs to conv3d
+     * @param input        the input activations to conv3d
+     * @param weights      Weights for conv3d
+     * @param bias         bias for the Conv3d op. May be null if not present/used
      * @param conv3DConfig the configuration
-     * @return
+     * @return Conv3d output variable
      */
-    public SDVariable conv3d(SDVariable[] inputs, Conv3DConfig conv3DConfig) {
-        return conv3d(null, inputs, conv3DConfig);
+    public SDVariable conv3d(SDVariable input, SDVariable weights, SDVariable bias, Conv3DConfig conv3DConfig) {
+        return conv3d(null, input, weights, bias, conv3DConfig);
     }
 
     /**
      * Conv3d operation.
      *
      * @param name         name of the operation in SameDiff
-     * @param inputs       the inputs to conv3d
+     * @param input        the input activations to conv3d
+     * @param weights      Weights for conv3d
      * @param conv3DConfig the configuration
-     * @return
+     * @return Conv3d output variable
      */
-    public SDVariable conv3d(String name, SDVariable[] inputs, Conv3DConfig conv3DConfig) {
-        SDVariable ret = f().conv3d(inputs, conv3DConfig);
+    public SDVariable conv3d(String name, SDVariable input, SDVariable weights, Conv3DConfig conv3DConfig) {
+        return conv3d(null, input, weights, null, conv3DConfig);
+    }
+
+    /**
+     * Conv3d operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param input        the input activations to conv3d
+     * @param weights      Weights for conv3d
+     * @param bias         bias for the Conv3d op. May be null if not present/used
+     * @param conv3DConfig the configuration
+     * @return Conv3d output variable
+     */
+    public SDVariable conv3d(String name, SDVariable input, SDVariable weights, SDVariable bias, Conv3DConfig conv3DConfig) {
+        SDVariable[] args;
+        if (bias == null) {
+            args = new SDVariable[]{input, weights};
+        } else {
+            args = new SDVariable[]{input, weights, bias};
+        }
+        SDVariable ret = f().conv3d(args, conv3DConfig);
         return updateVariableNameAndReference(ret, name);
     }
 

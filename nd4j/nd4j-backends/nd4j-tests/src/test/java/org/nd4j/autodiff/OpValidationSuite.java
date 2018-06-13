@@ -32,12 +32,12 @@ import org.nd4j.linalg.function.Function;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         //Note: these will be run as part of the suite only, and will NOT be run again separately
-        ReductionBpOpValidation.class,
         LayerOpValidation.class,
         LossOpValidation.class,
         MiscOpValidation.class,
         ReductionBpOpValidation.class,
         ReductionOpValidation.class,
+        ShapeOpValidation.class,
         TransformOpValidation.class
 })
 public class OpValidationSuite {
