@@ -99,41 +99,6 @@ public class SameDiffTests {
 
 
     @Test
-    public void testScalarMul() {
-        int d0 = 2;
-        int d1 = 3;
-        int d2 = 4;
-
-        int n = d0 * d1 * d2;
-
-        for (char inOrder : new char[]{'c', 'f'}) {
-            String msg = "Order: " + inOrder + ", Nd4J order: " + Nd4j.order();
-
-            SameDiff sd = SameDiff.create();
-
-            INDArray inArr = Nd4j.linspace(1, n, n).reshape(inOrder, d0, d1, d2);
-            INDArray inMul2Exp = inArr.mul(2);
-
-            SDVariable in = sd.var("in", inArr);
-            SDVariable inMul2 = in.mul(2.0);
-
-            sd.exec();
-
-            System.out.println("*** Expected ***");
-            System.out.println(inMul2Exp.shapeInfoToString());
-            System.out.println(Arrays.toString(inMul2Exp.data().asFloat()));
-
-            System.out.println("*** Actual ***");
-            System.out.println(inMul2.getArr().shapeInfoToString());
-            System.out.println(Arrays.toString(inMul2.getArr().data().asFloat()));
-
-            assertEquals(msg, inArr, in.getArr());
-            assertEquals(msg, inMul2Exp, inMul2.getArr());
-        }
-    }
-
-
-    @Test
     public void testAddArgsAndOutput() {
         SameDiff sameDiff = SameDiff.create();
         val varOne = sameDiff.var("one", Nd4j.ones(2));
@@ -258,27 +223,6 @@ public class SameDiffTests {
         INDArray exp = Nd4j.scalar(1+2+3+4);
         INDArray resultArr = result.getArr();
         assertEquals(exp, resultArr);
-    }
-
-
-    @Test
-    public void testXwPlusB() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray input = Nd4j.create(new long[]{2, 2});
-        INDArray weights = Nd4j.create(new long[]{2, 2});
-        INDArray b = Nd4j.create(new long[]{1, 2});
-
-        SDVariable sdInput = sameDiff.var("input", input);
-        SDVariable sdWeights = sameDiff.var("weights", weights);
-        SDVariable sdBias = sameDiff.var("bias", b);
-
-        SDVariable res = sameDiff.xwPlusB(sdInput, sdWeights, sdBias);
-        sameDiff.exec();
-
-        INDArray out = res.getArr();
-
-        assertArrayEquals(new long[]{2, 2}, res.getShape());
-
     }
 
     @Test

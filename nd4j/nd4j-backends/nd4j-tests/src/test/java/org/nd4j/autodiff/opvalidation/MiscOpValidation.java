@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.gradcheck;
+package org.nd4j.autodiff.opvalidation;
 
 import lombok.Builder;
 import lombok.Data;
@@ -26,9 +26,9 @@ import static org.junit.Assert.fail;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Slf4j
-public class GradCheckMisc extends BaseGradCheck {
+public class MiscOpValidation extends BaseOpValidation {
 
-    public GradCheckMisc(Nd4jBackend backend) {
+    public MiscOpValidation(Nd4jBackend backend) {
         super(backend);
     }
 

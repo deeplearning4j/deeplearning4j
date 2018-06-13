@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.gradcheck;
+package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 @Slf4j
-public class GradCheckTransforms {
+public class TransformOpValidation {
 
     private DataBuffer.Type initialType;
 
@@ -58,6 +58,77 @@ public class GradCheckTransforms {
     public void tearDown() throws Exception {
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
+    }
+
+    @Test
+    public void testScalarOps() {
+        int d0 = 2;
+        int d1 = 3;
+        int d2 = 4;
+
+        int n = d0 * d1 * d2;
+
+        List<String> failed = new ArrayList<>();
+
+        for( int i=0; i<7; i++ ) {
+            for (char inOrder : new char[]{'c', 'f'}) {
+                SameDiff sd = SameDiff.create();
+
+                INDArray inArr = Nd4j.linspace(1, n, n).reshape(inOrder, d0, d1, d2);
+                SDVariable in = sd.var("in", inArr);
+                TestCase tc = new TestCase(sd).gradientCheck(true);
+
+                SDVariable out;
+                String msg;
+                switch (i){
+                    case 0:
+                        out = in.mul(2);
+                        tc.expectedOutput(out.getVarName(), inArr.mul(2));
+                        msg = "mul - " + inOrder;
+                        break;
+                    case 1:
+                        out = in.div(2);
+                        tc.expectedOutput(out.getVarName(), inArr.div(2));
+                        msg = "div - " + inOrder;
+                        break;
+                    case 2:
+                        out = in.add(2);
+                        tc.expectedOutput(out.getVarName(), inArr.add(2));
+                        msg = "add - " + inOrder;
+                        break;
+                    case 3:
+                        out = in.sub(2);
+                        tc.expectedOutput(out.getVarName(), inArr.sub(2));
+                        msg = "sub - " + inOrder;
+                        break;
+                    case 4:
+                        out = in.rdiv(2);
+                        tc.expectedOutput(out.getVarName(), inArr.rdiv(2));
+                        msg = "rdiv - " + inOrder;
+                        break;
+                    case 5:
+                        out = in.rsub(2);
+                        tc.expectedOutput(out.getVarName(), inArr.rsub(2));
+                        msg = "rsub - " + inOrder;
+                        break;
+                    case 6:
+                        out = sd.pow(2);
+                        tc.expectedOutput(out.getVarName(), Transforms.pow(inArr, 2));
+                        msg = "mul - " + inOrder;
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                SDVariable loss = sd.standardDeviation(out, true);
+
+                String err = OpValidation.validate(tc);
+                if(err != null){
+                    failed.add(err);
+                }
+            }
+        }
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test

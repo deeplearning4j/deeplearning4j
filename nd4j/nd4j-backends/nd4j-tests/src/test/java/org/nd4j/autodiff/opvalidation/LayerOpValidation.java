@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.gradcheck;
+package org.nd4j.autodiff.opvalidation;
 
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -22,8 +22,8 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class GradCheckLayers extends BaseGradCheck {
-    public GradCheckLayers(Nd4jBackend backend) {
+public class LayerOpValidation extends BaseOpValidation {
+    public LayerOpValidation(Nd4jBackend backend) {
         super(backend);
     }
 
