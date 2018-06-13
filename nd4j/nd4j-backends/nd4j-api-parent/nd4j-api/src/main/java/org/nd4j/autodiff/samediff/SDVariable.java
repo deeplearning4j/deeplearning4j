@@ -730,14 +730,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     /**
      *
-     * @param sameDiffVariable
+     * @param value
      * @return
      */
-    public SDVariable mul(String varName, double sameDiffVariable) {
+    public SDVariable mul(String varName, double value) {
         val function = sameDiff.f().mul(this
-                , sameDiffVariable);
+                , value);
         return sameDiff.updateVariableNameAndReference(function,varName);
+    }
 
+    public SDVariable pow(double value){
+        return pow(null, value);
+    }
+
+    public SDVariable pow(String varName, double value){
+        SDVariable ret = f().pow(this, value);
+        return sameDiff.updateVariableNameAndReference(ret, varName);
     }
 
     /**

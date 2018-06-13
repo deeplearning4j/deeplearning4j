@@ -4,11 +4,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.nd4j.autodiff.gradcheck.GradCheckLoss;
-import org.nd4j.autodiff.gradcheck.GradCheckMisc;
-import org.nd4j.autodiff.gradcheck.GradCheckReductions;
-import org.nd4j.autodiff.gradcheck.GradCheckTransforms;
-import org.nd4j.autodiff.opvalidation.ReductionOpValidationTests;
+import org.nd4j.autodiff.opvalidation.*;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
@@ -36,11 +32,13 @@ import org.nd4j.linalg.function.Function;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         //Note: these will be run as part of the suite only, and will NOT be run again separately
-        ReductionOpValidationTests.class,
-        GradCheckLoss.class,
-        GradCheckMisc.class,
-        GradCheckReductions.class,
-        GradCheckTransforms.class
+        LayerOpValidation.class,
+        LossOpValidation.class,
+        MiscOpValidation.class,
+        ReductionBpOpValidation.class,
+        ReductionOpValidation.class,
+        ShapeOpValidation.class,
+        TransformOpValidation.class
 })
 public class OpValidationSuite {
 

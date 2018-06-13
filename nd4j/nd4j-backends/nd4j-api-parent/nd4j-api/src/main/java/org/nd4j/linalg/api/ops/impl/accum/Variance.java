@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -148,14 +149,8 @@ public class Variance extends BaseAccumulation {
         //If out = var(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         // with dOut/dIn = (in-mean) * 2/(n-1)
-        val n = f().getReductionLength(this);
-        int origRank = Shape.rankFromShape(arg().getShape());
-        SDVariable broadcastableMean = f().reductionBroadcastableWithOrigShape(origRank, dimensions, f().mean(arg(), dimensions));
-        SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-        SDVariable dOutdIn = arg().sub(broadcastableMean).mul(2.0 / (biasCorrected ? (n - 1) : n));
-
-        SDVariable dLdIn = dOutdIn.mul(broadcastableGrad);
-        return Arrays.asList(dLdIn);
+        //TODO KEEP DIMS SUPPORT
+        return Collections.singletonList(f().varianceBp(arg(), i_v1.get(0), biasCorrected, false, dimensions));
     }
 
     @Override

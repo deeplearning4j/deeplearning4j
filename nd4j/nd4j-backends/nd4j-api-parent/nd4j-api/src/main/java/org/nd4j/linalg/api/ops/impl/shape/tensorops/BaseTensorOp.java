@@ -19,6 +19,14 @@ import java.util.Map;
 
 public abstract  class BaseTensorOp extends DynamicCustomOp {
 
+    public BaseTensorOp(String name, SameDiff sameDiff, SDVariable[] args){
+        super(name, sameDiff, args);
+    }
+    public BaseTensorOp(SameDiff sameDiff, SDVariable[] args){
+        super(null, sameDiff, args);
+    }
+
+    public BaseTensorOp(){}
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {

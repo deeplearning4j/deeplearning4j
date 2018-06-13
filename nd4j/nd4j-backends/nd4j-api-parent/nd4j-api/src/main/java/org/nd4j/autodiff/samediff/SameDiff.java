@@ -48,6 +48,7 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -121,6 +122,7 @@ public class SameDiff {
 
     // here we save String -> Integer conversion to variables
     private transient Map<String, Integer> reverseMap = null;
+
 
     /**
      * For import, many times we have variables
@@ -1543,11 +1545,11 @@ public class SameDiff {
         String varName = "sd_var_" + String.valueOf(_var_id);
         while(variableMap.containsKey(varName)){
             _var_id++;
-        varName = "sd_var_" + String.valueOf(_var_id);
+            varName = "sd_var_" + String.valueOf(_var_id);
         }
         return varName;
     }
-    
+
     public SDVariable var(int... shape) {
         return var(getNewVarName(), shape);
     }
@@ -1837,48 +1839,48 @@ public class SameDiff {
     /**
      * Average pooling 3d operation.
      *
-     * @param inputs       the inputs to average pooling 3d
+     * @param input          the input to average pooling 3d
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable avgPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        return avgPooling3d(null, inputs, pooling3DConfig);
+    public SDVariable avgPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
+        return avgPooling3d(null, input, pooling3DConfig);
     }
 
     /**
      * Average pooling 3d operation.
      *
-     * @param name         name of the operation in SameDiff
-     * @param inputs       the inputs to average pooling 3d
+     * @param name            name of the operation in SameDiff
+     * @param input           the input to average pooling 3d
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable avgPooling3d(String name, SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        SDVariable ret = f().avgPooling3d(inputs, pooling3DConfig);
+    public SDVariable avgPooling3d(String name, SDVariable input, Pooling3DConfig pooling3DConfig) {
+        SDVariable ret = f().avgPooling3d(input, pooling3DConfig);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
      * Max pooling 3d operation.
      *
-     * @param inputs       the inputs to max pooling 3d
+     * @param input           the input to max pooling 3d
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable maxPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        return maxPooling3d(null, inputs, pooling3DConfig);
+    public SDVariable maxPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
+        return maxPooling3d(null, input, pooling3DConfig);
     }
 
     /**
      * Max pooling 3d operation.
      *
-     * @param name         name of the operation in SameDiff
-     * @param inputs       the inputs to max pooling 3d
+     * @param name            name of the operation in SameDiff
+     * @param input           the inputs to max pooling 3d
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable maxPooling3d(String name, SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        SDVariable ret = f().maxPooling3d(inputs, pooling3DConfig);
+    public SDVariable maxPooling3d(String name, SDVariable input, Pooling3DConfig pooling3DConfig) {
+        SDVariable ret = f().maxPooling3d(input, pooling3DConfig);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -2046,29 +2048,62 @@ public class SameDiff {
     }
 
 
-
+    /**
+     * Conv3d operation.
+     *
+     * @param input        the input activations to conv3d
+     * @param weights      Weights for conv3d
+     * @param conv3DConfig the configuration
+     * @return Conv3d output variable
+     */
+    public SDVariable conv3d(SDVariable input, SDVariable weights, Conv3DConfig conv3DConfig) {
+        return conv3d(null, input, weights, null, conv3DConfig);
+    }
 
     /**
      * Conv3d operation.
      *
-     * @param inputs       the inputs to conv3d
+     * @param input        the input activations to conv3d
+     * @param weights      Weights for conv3d
+     * @param bias         bias for the Conv3d op. May be null if not present/used
      * @param conv3DConfig the configuration
-     * @return
+     * @return Conv3d output variable
      */
-    public SDVariable conv3d(SDVariable[] inputs, Conv3DConfig conv3DConfig) {
-        return conv3d(null, inputs, conv3DConfig);
+    public SDVariable conv3d(SDVariable input, SDVariable weights, SDVariable bias, Conv3DConfig conv3DConfig) {
+        return conv3d(null, input, weights, bias, conv3DConfig);
     }
 
     /**
      * Conv3d operation.
      *
      * @param name         name of the operation in SameDiff
-     * @param inputs       the inputs to conv3d
+     * @param input        the input activations to conv3d
+     * @param weights      Weights for conv3d
      * @param conv3DConfig the configuration
-     * @return
+     * @return Conv3d output variable
      */
-    public SDVariable conv3d(String name, SDVariable[] inputs, Conv3DConfig conv3DConfig) {
-        SDVariable ret = f().conv3d(inputs, conv3DConfig);
+    public SDVariable conv3d(String name, SDVariable input, SDVariable weights, Conv3DConfig conv3DConfig) {
+        return conv3d(null, input, weights, null, conv3DConfig);
+    }
+
+    /**
+     * Conv3d operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param input        the input activations to conv3d
+     * @param weights      Weights for conv3d
+     * @param bias         bias for the Conv3d op. May be null if not present/used
+     * @param conv3DConfig the configuration
+     * @return Conv3d output variable
+     */
+    public SDVariable conv3d(String name, SDVariable input, SDVariable weights, SDVariable bias, Conv3DConfig conv3DConfig) {
+        SDVariable[] args;
+        if (bias == null) {
+            args = new SDVariable[]{input, weights};
+        } else {
+            args = new SDVariable[]{input, weights, bias};
+        }
+        SDVariable ret = f().conv3d(args, conv3DConfig);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -5290,6 +5325,9 @@ public class SameDiff {
         return lists.get(name);
     }
 
+    public void putListByName(@NonNull String name, TensorList list){
+        lists.put(name, list);
+    }
 
     /**
      * An interface for representing a conditional statement
@@ -5361,6 +5399,10 @@ public class SameDiff {
     }
 
 
+    public TensorArrayV3 tensorArray(){
+        return new TensorArrayV3(this);
+    }
+
     /**
      * A function definition for
      * samediff
@@ -5402,12 +5444,15 @@ public class SameDiff {
                 ret[i] = sub.var(variables[i]);
             }
 
-            functionDefinition.define(sub, null, ret);
+            sub.inputs = ret;
+            sub.outputs = functionDefinition.define(sub, null, ret);
+
             sameDiffFunctionInstances.put(function, sub);
         }
 
         return sameDiffFunctionInstances.get(function);
     }
+
 
     /**
      * @param function
@@ -5976,6 +6021,15 @@ public class SameDiff {
      *
      * @return
      */
+
+
+    // required for loops
+    private SDVariable[] outputs;
+    private SDVariable[] inputs;
+
+
+
+
     private Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec_cache;
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec() {
 
@@ -6297,7 +6351,7 @@ public class SameDiff {
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof BaseTensorOp) {
                 //if(log.isTraceEnabled())
-                    log.info("Starting execution of Tensor op [{}]",  opName);
+                log.info("Starting execution of Tensor op [{}]",  opName);
 
                 // we just pull actual code out of
                 val list = ((BaseTensorOp) differentialFunction).execute(this);
@@ -6366,15 +6420,43 @@ public class SameDiff {
                     //depending on the block add the proper graph body to this for persistence
                     //and possible later processing.
                     //note that we need to update the graph predicate by running the execution
-                    whileOp.getPredicateExecution().exec();
-                    while (whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
-                        //run the body
-                        execBody.exec();
-                        //update the predicate
-                        whileOp.getPredicateExecution().exec();
-                        whileOp.incrementLoopCounter();
 
+
+                    whileOp.getPredicateExecution().exec();
+                    if(execBody.outputs == null){
+                        // No explicit inputs/outputs provided.
+                        //Op was probably created by tensorflow import.
+                        // Non-inplace ops not supported.
+                        while (whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                            //run the body
+                            execBody.exec();
+                            whileOp.getPredicateExecution().exec();
+                            whileOp.incrementLoopCounter();
+                        }
                     }
+                    else{
+                        if (whileOp.getTargetBoolean().getSameDiff().inputs == null){
+                            whileOp.getTargetBoolean().getSameDiff().inputs = new SDVariable[whileOp.getInputVars().length];
+                            for (int e=0; e< whileOp.getInputVars().length; e++){
+                                whileOp.getTargetBoolean().getSameDiff().inputs[i] = whileOp.getTargetBoolean().getSameDiff().variables().get(i);
+                            }
+                        }
+                        while (whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                            //run the body
+                            execBody.exec();
+                            val outputs = execBody.outputs;
+
+                            int cnt = 0;
+                            for(val out: execBody.outputs){
+                                execBody.associateArrayWithVariable(out.getArr(), execBody.inputs[cnt]);
+                                whileOp.getTargetBoolean().getSameDiff().associateArrayWithVariable(out.getArr(),
+                                        whileOp.getTargetBoolean().getSameDiff().inputs[cnt++]);
+                            }
+                            //update the predicate
+                            whileOp.getPredicateExecution().exec();
+                            whileOp.incrementLoopCounter();
+
+                        }}
 
                     List<SDVariable> outputs = new ArrayList<>();
                     val outputFuncArgs = new ArrayList<>(execBody.functionInstancesById.values()).get(execBody.functionInstancesById.values().size() - 1).outputVariables();
@@ -6505,6 +6587,8 @@ public class SameDiff {
         if(parent != null){
             parent.exec_cache = exec_cache;
         }
+
+
         return ret;
     }
 

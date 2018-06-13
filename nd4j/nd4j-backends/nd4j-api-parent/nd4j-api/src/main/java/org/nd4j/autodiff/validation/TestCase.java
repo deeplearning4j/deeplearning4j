@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.functions.EqualityFn;
 import org.nd4j.autodiff.validation.functions.RelErrorFn;
@@ -89,6 +90,26 @@ public class TestCase {
      */
     public TestCase expectedOutputRelError(@NonNull String name, @NonNull INDArray expected, double maxRelError, double minAbsError) {
         return expected(name, new RelErrorFn(expected, maxRelError, minAbsError));
+    }
+
+    /**
+     * Validate the output (forward pass) for a single variable using INDArray.equals(INDArray)
+     *
+     * @param var    Variable to check
+     * @param output Expected INDArray
+     */
+    public TestCase expected(@NonNull SDVariable var, @NonNull INDArray output) {
+        return expected(var.getVarName(), output);
+    }
+
+    /**
+     * Validate the output (forward pass) for a single variable using INDArray.equals(INDArray)
+     *
+     * @param name   Name of the variable to check
+     * @param output Expected INDArray
+     */
+    public TestCase expected(@NonNull String name, @NonNull INDArray output) {
+        return expectedOutput(name, output);
     }
 
     /**
