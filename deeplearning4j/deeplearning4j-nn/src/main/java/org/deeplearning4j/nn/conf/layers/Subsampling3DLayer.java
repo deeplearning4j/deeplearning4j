@@ -37,6 +37,7 @@ public class Subsampling3DLayer extends Layer {
     protected int[] kernelSize;
     protected int[] stride;
     protected int[] padding;
+    protected int[] dilation;
     protected boolean cudnnAllowFallback = true;
 
     public enum PoolingType {
@@ -63,6 +64,7 @@ public class Subsampling3DLayer extends Layer {
             throw new IllegalArgumentException("Invalid stride, must be length 3");
         this.stride = builder.stride;
         this.padding = builder.padding;
+        this.dilation = builder.dilation;
         this.convolutionMode = builder.convolutionMode;
         this.cudnnAllowFallback = builder.cudnnAllowFallback;
     }
@@ -77,6 +79,8 @@ public class Subsampling3DLayer extends Layer {
             clone.stride = clone.stride.clone();
         if (clone.padding != null)
             clone.padding = clone.padding.clone();
+        if (clone.dilation != null)
+            clone.dilation = clone.dilation.clone();
         return clone;
     }
 
@@ -273,6 +277,7 @@ public class Subsampling3DLayer extends Layer {
         protected int[] kernelSize = new int[]{1, 1, 1};
         protected int[] stride = new int[]{2, 2, 2};
         protected int[] padding = new int[]{0, 0, 0};
+        protected int[] dilation = new int[]{1, 1, 1};
         protected ConvolutionMode convolutionMode = null;
         protected boolean cudnnAllowFallback = true;
 
@@ -343,6 +348,11 @@ public class Subsampling3DLayer extends Layer {
 
         public T poolingType(PoolingType poolingType) {
             this.poolingType = poolingType.toPoolingType();
+            return (T) this;
+        }
+
+        public T dilation(int dDepth, int dHeight, int dWidth){
+            this.dilation = new int[]{dDepth, dHeight, dWidth};
             return (T) this;
         }
 
