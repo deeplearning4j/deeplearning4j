@@ -464,7 +464,7 @@ TEST_F(DeclarableOpsTests1, TestRng1) {
     nd4j::random::RandomBuffer *rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);
 
     if (rng == nullptr)
-        throw "RNG initialization failed";
+        throw std::runtime_error("RNG initialization failed");
 
     auto x = new NDArray<float>('c', {5, 3});
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
@@ -2360,7 +2360,7 @@ TEST_F(DeclarableOpsTests1, AvgPool2dBP) {
     block->fillInputs({-1});
     block->fillInputs({-2});
     std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 1, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode, 9 - extraParam0 (unnecessary for avg mode), 10 - data format
 
     nd4j::ops::avgpool2d_bp<float> bp;
     Nd4jStatus status = bp.execute(block);
@@ -2953,7 +2953,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_bp2) {
     epsilon.setBuffer(epsilonBuff);
     expected.setBuffer(expectedBuff);
     
-    std::initializer_list<Nd4jLong> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    std::initializer_list<Nd4jLong> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 1, 1, 0};   
 
     nd4j::ops::avgpool2d_bp<double> op;
     nd4j::ResultSet<double>*  results = op.execute({&input, &epsilon}, {}, argI);

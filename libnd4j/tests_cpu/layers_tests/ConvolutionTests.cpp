@@ -625,7 +625,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
     nd4j::ops::ConvolutionUtils<double>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
     if (isSameMode)
-        nd4j::ops::ConvolutionUtils<double>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+        nd4j::ops::ConvolutionUtils<double>::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
     NDArray<double> im2col0('c', {2, channels, kY, kX, oY, oX});
 
@@ -680,7 +680,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_2) {
     nd4j::ops::ConvolutionUtils<double>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
     if (isSameMode)
-        nd4j::ops::ConvolutionUtils<double>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+        nd4j::ops::ConvolutionUtils<double>::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
     NDArray<double> im2col0('c', {2, channels, oY, oX, kY, kX});
     im2col0.permutei({0, 1, 4, 5, 2, 3});
@@ -735,7 +735,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_3) {
     nd4j::ops::ConvolutionUtils<double>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
     if (isSameMode)
-        nd4j::ops::ConvolutionUtils<double>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
+        nd4j::ops::ConvolutionUtils<double>::calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
 
     NDArray<double> im2col0('c', {2, channels, oY, oX, kY, kX});
     im2col0.permutei({0, 1, 4, 5, 2, 3});
@@ -2096,7 +2096,7 @@ TEST_F(ConvolutionTests, vol2col_test2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests, col2im_test1) {
 
-    int bS=2, iH=2,iW=2,  iC=2,oC=2, kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int bS=2, iH=2,iW=2,  iC=2,   kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
     int       oH=2,oW=2;
     
     NDArray<float> image ('c', {bS, iC, iH, iW});
@@ -2318,6 +2318,34 @@ TEST_F(ConvolutionTests, upsampling3d_bp_test1) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, maxpool_test6) {
+
+    int bS=1, iH=4,iW=4,  iC=3,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
+    int       oH=3,oW=3;
+    int paddingMode = 0;             // 1-SAME, 0-VALID;
+    int dataFormat  = 0;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, iC, iH, iW}, {0.27620894, 0.21801452, 0.062078513, 7.348895E-4, 0.24149609, 0.4948205, 0.93483436, 0.52035654, 0.30292067, 0.3289706, 0.7977864, 
+                                                     0.03180518, 0.1455722, 0.90352905, 0.9405744, 0.0048329555, 0.44062102, 0.111197524, 0.31742015, 0.1933705, 0.23825112, 0.35076278, 0.7135856, 0.28229436, 0.18310733, 
+                                                     0.9613717, 0.56823575, 0.78289545, 0.62195826, 0.5244586, 0.5040889, 0.025349546, 0.41400263, 0.28420195, 0.8536445, 0.3044107, 0.7997134, 0.45762005, 0.7653578, 
+                                                     0.07198584, 0.5304998, 0.7334402, 0.85019743, 0.031957153, 0.37088063, 0.85722464, 0.06376881, 0.39791203});
+    
+    NDArray<double> expOutput('c', {bS, iC, oH, oW}, {0.4948205, 0.93483436, 0.93483436, 0.4948205, 0.93483436, 0.93483436, 0.90352905, 0.9405744, 0.9405744, 0.44062102, 0.7135856, 
+                                                     0.7135856, 0.9613717, 0.9613717, 0.78289545, 0.9613717, 0.9613717, 0.78289545, 0.7997134, 0.8536445, 0.8536445, 0.7997134, 0.85019743, 0.85019743,
+                                                     0.85722464, 0.85722464, 0.85019743});
+
+    nd4j::ops::maxpool2d<double> op;
+    ResultSet<double>* results = op.execute({&input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));    
+    
+    delete results;
+}
 
 #endif //LIBND4J_CONVOLUTIONTESTS_H
 

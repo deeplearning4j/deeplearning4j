@@ -47,17 +47,21 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguratio
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.list.compat.TensorList;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ConstantInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
@@ -111,11 +115,14 @@ public class SameDiff {
     private Map<String, List<DifferentialFunction>> functionsArgsFor;   //Key: SDVariable name. Value: all DifferentialFunctions it is an input to
     private Map<String, List<DifferentialFunction>> functionOutputFor;  //Key: SDVariable name. Value: DifferentialFunctions this variable is an output for (TODO: Why is this a list? Isn't it *always* length 1?)
 
+    private Map<String, TensorList> lists = new HashMap<>();    // Key - node name; Value - TensorList
+
     // this entity holds runtime information for Switch/Merge/NextIteration etc stuff
     private transient ThreadLocal<FlowPath> localFlowPath = new ThreadLocal<FlowPath>();
 
     // here we save String -> Integer conversion to variables
     private transient Map<String, Integer> reverseMap = null;
+
 
     /**
      * For import, many times we have variables
@@ -324,6 +331,7 @@ public class SameDiff {
 
 
     }
+
 
 
     /**
@@ -683,6 +691,16 @@ public class SameDiff {
      */
     public INDArray getArrForVarName(String varName) {
         return variableNameToArr.get(varName);
+    }
+
+    /**
+     * Associate the array with the given variable.
+     *
+     * @param arr      the array to get the variable for
+     * @param variable the variable to associate
+     */
+    public void associateArrayWithVariable(INDArray arr, @NonNull String variable) {
+        associateArrayWithVariable(arr, this.getVariable(variable));
     }
 
     /**
@@ -1527,11 +1545,11 @@ public class SameDiff {
         String varName = "sd_var_" + String.valueOf(_var_id);
         while(variableMap.containsKey(varName)){
             _var_id++;
-        varName = "sd_var_" + String.valueOf(_var_id);
+            varName = "sd_var_" + String.valueOf(_var_id);
         }
         return varName;
     }
-    
+
     public SDVariable var(int... shape) {
         return var(getNewVarName(), shape);
     }
@@ -4918,6 +4936,14 @@ public class SameDiff {
         return stridedSlice(name, input, begin, end, strides, 0, 0, 0, 0, 0);
     }
 
+    public SDVariable stridedSlice(SDVariable input, long[] begin, long[] end, long[] strides) {
+        return stridedSlice(null, input, begin, end, strides);
+    }
+
+    public SDVariable stridedSlice(String name, SDVariable input, long[] begin, long[] end, long[] strides) {
+        return stridedSlice(name, input, begin, end, strides, 0, 0, 0, 0, 0);
+    }
+
     public SDVariable stridedSlice(SDVariable in, int[] begin, int[] end, int[] strides, int beginMask,
                                    int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
         return stridedSlice(null, in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
@@ -4929,6 +4955,16 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable stridedSlice(SDVariable in, long[] begin, long[] end, long[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        return stridedSlice(null, in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
+    }
+
+    public SDVariable stridedSlice(String name, SDVariable in, long[] begin, long[] end, long[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        SDVariable ret = f().stridedSlice(in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
+        return updateVariableNameAndReference(ret, name);
+    }
 
     public SDVariable scatterAdd(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
         SDVariable ret = f().scatterAdd(ref, indices, updates);
@@ -5005,7 +5041,7 @@ public class SameDiff {
                         num_outputs = descriptor.getNumOutputs();
                     }
                     if (num_outputs <= 0) {
-                        throw new ND4JIllegalStateException("Could not determine number of output variables for op "
+                        throw new ND4UnresolvedOutputVariables("Could not determine number of output variables for op "
                                 + function.getOwnName() + " - " + function.getClass().getSimpleName() + ". Ops can override" +
                                 " getNumOutputs() to specify number of outputs if required");
                     }
@@ -5252,6 +5288,13 @@ public class SameDiff {
         return ops;
     }
 
+    public TensorList getListByName(@NonNull String name) {
+        return lists.get(name);
+    }
+
+    public void putListByName(@NonNull String name, TensorList list){
+        lists.put(name, list);
+    }
 
     /**
      * An interface for representing a conditional statement
@@ -5323,6 +5366,10 @@ public class SameDiff {
     }
 
 
+    public TensorArrayV3 tensorArray(){
+        return new TensorArrayV3(this);
+    }
+
     /**
      * A function definition for
      * samediff
@@ -5364,12 +5411,15 @@ public class SameDiff {
                 ret[i] = sub.var(variables[i]);
             }
 
-            functionDefinition.define(sub, null, ret);
+            sub.inputs = ret;
+            sub.outputs = functionDefinition.define(sub, null, ret);
+
             sameDiffFunctionInstances.put(function, sub);
         }
 
         return sameDiffFunctionInstances.get(function);
     }
+
 
     /**
      * @param function
@@ -5938,6 +5988,15 @@ public class SameDiff {
      *
      * @return
      */
+
+
+    // required for loops
+    private SDVariable[] outputs;
+    private SDVariable[] inputs;
+
+
+
+
     private Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec_cache;
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec() {
 
@@ -6100,7 +6159,10 @@ public class SameDiff {
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 val array = inputs[0].getArr();
-                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                val name = inputs[0].getVarName();
+
+                if (array != null)
+                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
@@ -6206,19 +6268,23 @@ public class SameDiff {
                 if (flowPath.wasExecuted(inputs[1].getVarName())) {
                     // propagate second input
                     val array = inputs[1].getArr();
-                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+
+                    if (array != null)
+                        variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
 
                     // nullify executed mark
                     flowPath.markExecuted(inputs[1].getVarName(), false);
                 } else {
                     // propagate first input
                     val array = inputs[0].getArr();
-                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+
+                    if (array != null)
+                        variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
                 }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
             } else if (differentialFunction instanceof Switch) {
-                if(log.isTraceEnabled())
+                if (log.isTraceEnabled())
                     log.trace("Starting execution of Switch op");
 
                 // switch takes 2 inputs: actual input and boolean scalar. If scalar is false, input is saved as output:0, if scalar is true, input is saved as output:1
@@ -6235,16 +6301,32 @@ public class SameDiff {
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 0);
                     flowPath.markActive(differentialFunction.getOwnName(), true);
                     flowPath.markActive(differentialFunction.getOwnName() + ":1", false);
-                    variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
+
+                    if (input != null)
+                        variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
                 } else {
                     // true step, we'll propagate output:1 here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 1);
-                    variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
+
+                    if (input != null)
+                        variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
+
                     flowPath.markActive(differentialFunction.getOwnName(), false);
                     flowPath.markActive(differentialFunction.getOwnName() + ":1", true);
                 }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
+            } else if (differentialFunction instanceof BaseTensorOp) {
+                //if(log.isTraceEnabled())
+                log.info("Starting execution of Tensor op [{}]",  opName);
+
+                // we just pull actual code out of
+                val list = ((BaseTensorOp) differentialFunction).execute(this);
+
+                if (!lists.containsKey(list.getName()))
+                    lists.put(list.getName(), list);
+
+                ops.add(differentialFunction);
             } else if (differentialFunction instanceof If) {
                 if(log.isTraceEnabled())
                     log.trace("Starting execution of If op");
@@ -6305,15 +6387,43 @@ public class SameDiff {
                     //depending on the block add the proper graph body to this for persistence
                     //and possible later processing.
                     //note that we need to update the graph predicate by running the execution
-                    whileOp.getPredicateExecution().exec();
-                    while (whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
-                        //run the body
-                        execBody.exec();
-                        //update the predicate
-                        whileOp.getPredicateExecution().exec();
-                        whileOp.incrementLoopCounter();
 
+
+                    whileOp.getPredicateExecution().exec();
+                    if(execBody.outputs == null){
+                        // No explicit inputs/outputs provided.
+                        //Op was probably created by tensorflow import.
+                        // Non-inplace ops not supported.
+                        while (whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                            //run the body
+                            execBody.exec();
+                            whileOp.getPredicateExecution().exec();
+                            whileOp.incrementLoopCounter();
+                        }
                     }
+                    else{
+                        if (whileOp.getTargetBoolean().getSameDiff().inputs == null){
+                            whileOp.getTargetBoolean().getSameDiff().inputs = new SDVariable[whileOp.getInputVars().length];
+                            for (int e=0; e< whileOp.getInputVars().length; e++){
+                                whileOp.getTargetBoolean().getSameDiff().inputs[i] = whileOp.getTargetBoolean().getSameDiff().variables().get(i);
+                            }
+                        }
+                        while (whileOp.getTargetBoolean().getArr().sumNumber().doubleValue() > 0) {
+                            //run the body
+                            execBody.exec();
+                            val outputs = execBody.outputs;
+
+                            int cnt = 0;
+                            for(val out: execBody.outputs){
+                                execBody.associateArrayWithVariable(out.getArr(), execBody.inputs[cnt]);
+                                whileOp.getTargetBoolean().getSameDiff().associateArrayWithVariable(out.getArr(),
+                                        whileOp.getTargetBoolean().getSameDiff().inputs[cnt++]);
+                            }
+                            //update the predicate
+                            whileOp.getPredicateExecution().exec();
+                            whileOp.incrementLoopCounter();
+
+                        }}
 
                     List<SDVariable> outputs = new ArrayList<>();
                     val outputFuncArgs = new ArrayList<>(execBody.functionInstancesById.values()).get(execBody.functionInstancesById.values().size() - 1).outputVariables();
@@ -6444,6 +6554,8 @@ public class SameDiff {
         if(parent != null){
             parent.exec_cache = exec_cache;
         }
+
+
         return ret;
     }
 
@@ -6633,11 +6745,21 @@ public class SameDiff {
 
         val inPaired = new ArrayList<Integer>();
 
+        int[] outputIds = null;
+        SDVariable[] outputVertexId = null;
 
-        val outputVertexId = node.outputVariables();
-        val outputIds = new int[outputVertexId.length];
-        for (int i = 0; i < outputIds.length; i++) {
-            outputIds[i] = variables.indexOf(outputVertexId[i]);
+        try {
+            outputVertexId = node.outputVariables();
+            outputIds = new int[outputVertexId.length];
+            for (int i = 0; i < outputIds.length; i++) {
+                outputIds[i] = variables.indexOf(outputVertexId[i]);
+            }
+        } catch (ND4UnresolvedOutputVariables e) {
+
+            outputIds = new int[0];
+            outputVertexId = null;
+        } catch (Exception e) {
+            throw new ND4JIllegalStateException(e);
         }
 
 

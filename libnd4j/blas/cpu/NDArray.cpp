@@ -570,7 +570,7 @@ NDArray<T>::NDArray(NDArray<T>&& other) noexcept {
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
-    T* NDArray<T>::getBuffer() {
+    T* NDArray<T>::getBuffer() const {
         return _buffer;
     }
 
@@ -1051,7 +1051,7 @@ template <typename T>
         
         std::vector<int> copy(dimensions);
         
-        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes);
+        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
         NDArray<T> result(newShape, _workspace);
         RELEASE(newShape, _workspace);        
         
@@ -1079,7 +1079,7 @@ template <typename T>
         std::vector<int> copy(dimensions);
 
         auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes, _workspace);
-        if(!shape::shapeEquals(newShape, target->getShapeInfo())) {
+        if(!shape::shapeEquals(newShape, target->getShapeInfo())) {            
             nd4j_printf("NDArray::reduceAlongDimension method: wrong target shape!\n", "");
             throw std::runtime_error("NDArray::reduceAlongDimension method: wrong target shape!");
         }
@@ -2683,7 +2683,7 @@ bool NDArray<T>::isUnitary() {
         if (dimensions.size() > 1)
             std::sort(copy.begin(), copy.end());
 
-        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
+        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
@@ -2794,7 +2794,7 @@ bool NDArray<T>::isUnitary() {
         shape::checkDimensions(rankOf(), copy);
         shape::checkDimensions(other->rankOf(), copy);               
 
-        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
+        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);
         // create temporary array of extra parameters if array extraParams is empty (==nullptr)
@@ -2833,7 +2833,7 @@ bool NDArray<T>::isUnitary() {
         if (copy.size() > 1)
             std::sort(copy.begin(), copy.end());
             
-        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this);
+        auto newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, false, false, _workspace);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);        
         
@@ -3349,7 +3349,7 @@ void NDArray<T>::setValueInDiagMatrix(const T& value, const int diag, const char
     switch(direction) {
             
         case 'u':                           // fill upper triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided)             
+#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
             for(int i = 0; i < rows; ++i) 
                 for(int j = 0; j < cols; ++j)                                      
                     if (i + diag <= j)
@@ -3357,7 +3357,7 @@ void NDArray<T>::setValueInDiagMatrix(const T& value, const int diag, const char
                 break;
 
         case 'l':                           // fill lower triangular block
-#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided)                         
+#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse (2)
             for(int i = 0; i < rows; ++i) 
                 for(int j = 0; j < cols; ++j)                                      
                     if (i + diag >= j)

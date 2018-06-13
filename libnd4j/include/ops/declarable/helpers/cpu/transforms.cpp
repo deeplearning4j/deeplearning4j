@@ -34,13 +34,16 @@ void triu(const NDArray<T>& input, NDArray<T>& output, const int diagonal) {
             output.setValueInDiagMatrix(0., diagonal-1, 'l');    
             break;
 
-        default:            
+        default: 
             ResultSet<T>* inTads  = NDArrayFactory<T>::allTensorsAlongDimension(&input,  {rank-2, rank-1});
             ResultSet<T>* outTads = NDArrayFactory<T>::allTensorsAlongDimension(&output, {rank-2, rank-1});                        
-#pragma omp parallel for if(inTads->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided)     
+
+#pragma omp parallel for schedule(guided) //if(inTads->size() > Environment::getInstance()->elementwiseThreshold())
             for(int i = 0; i < inTads->size(); ++i) {
-                outTads->at(i)->assign(inTads->at(i));
-                outTads->at(i)->setValueInDiagMatrix(0., diagonal-1, 'l');    
+                NDArray<T>* inSubArr = inTads->at(i);
+                NDArray<T>* outSubArr = outTads->at(i);
+                outSubArr->assign(inSubArr);
+                outSubArr->setValueInDiagMatrix(0., diagonal-1, 'l');
             }
             delete inTads;
             delete outTads;
@@ -294,10 +297,10 @@ void invertPermutation(const NDArray<T>& input, NDArray<T>& output) {
         int elem = (int)input(i);
  
         if(!uniqueElems.insert(elem).second)        // this operation forbids us to use #pragma omp
-            throw "helpers::invertPermutation function: input array contains duplicates !";
+            throw std::runtime_error("helpers::invertPermutation function: input array contains duplicates !");
             
         if(elem < 0 || elem > length - 1)
-            throw  "helpers::invertPermutation function: element of input array is out of range (0, length-1) !";
+            throw  std::runtime_error("helpers::invertPermutation function: element of input array is out of range (0, length-1) !");
 
         output(elem) = i;
     }
@@ -341,7 +344,7 @@ void gatherND(NDArray<T>& input, NDArray<T>& indices, NDArray<T>& output) {
         
         for(int j = 0; j < lastIndDim; ++j) {
             if((int)(*idxSubArr)(j) >= input.sizeAt(j))
-                throw "helpers::gatherND function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !";
+                throw std::runtime_error("helpers::gatherND function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
             idx[j] = (*idxSubArr)(j);
         }
                 
@@ -377,7 +380,7 @@ void gather(NDArray<T>* input, const NDArray<T>* indices, NDArray<T>* output, co
 
         for(int i = 0; i < indices->lengthOf(); ++i)
             if((int)(*indices)(i) >= input->sizeAt(axis))
-                throw "helpers::gather function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !";            
+                throw std::runtime_error("helpers::gather function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
     
         // first case: indices consist of only one scalar
         if(indices->isScalar()) {
@@ -423,7 +426,7 @@ void gather(NDArray<T>* input, const NDArray<T>* indices, NDArray<T>* output, co
         
         for(int i = 1; i < numOfIntArgs; ++i)
             if(intArgs[i] >= input->sizeAt(axis))
-                throw "helpers::gather function: some of input indexes is larger than corresponding shape of input array !";
+                throw std::runtime_error("helpers::gather function: some of input indexes is larger than corresponding shape of input array !");
 
         // we only allow scalar/vector case here
         if (numOfIntArgs == 2) {
@@ -681,6 +684,66 @@ void clipByAveraged(NDArray<T>& input, NDArray<T>& output, const std::vector<int
     }
 }
 
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const int mode) {
+    
+    // mode:  0 - REFLECT, else - SYMMETRIC
+    const int reflBorder = (bool)mode ? 1 : 0;
+    const int symmBorder = (bool)mode ? 0 : 1;
+
+    const int rank        = input.rankOf();
+    const Nd4jLong outLen = output.lengthOf();
+    const Nd4jLong inLen  = input.lengthOf();    
+
+    if(rank <= 1) {
+
+        const int leftSide  = static_cast<int>(paddings(static_cast<Nd4jLong>(0)));
+        const int rightSide = static_cast<int>(paddings(static_cast<Nd4jLong>(1)));
+
+#pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        for(int i = 0; i < outLen; ++i) {
+            
+            for(int j = 0; j < leftSide; ++j)
+                output(j) = input(inLen - leftSide + symmBorder - j);
+            for(int j = 0; j < inLen; ++j)
+                output(j + leftSide) = input(j);
+            for(int j = 0; j < rightSide; ++j)
+                output(leftSide + inLen + j) = input(inLen - 1 - symmBorder - j);
+        }  
+    }
+    else {
+
+        std::vector<Nd4jLong> inIdx(rank), outIdx(rank);
+#pragma omp parallel for if(outLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(inIdx, outIdx)
+        for(int i = 0; i < outLen; ++i) {
+
+            shape::ind2subC(rank, output.shapeOf(), i, outIdx.data());
+
+            for(int j = 0; j < rank; ++j) {
+            
+                const int leftSide  = static_cast<int>(paddings(j, 0));
+
+                if(outIdx[j] < leftSide) 
+                    inIdx[j] = leftSide - outIdx[j] - reflBorder;
+
+                else if(outIdx[j] >= leftSide && outIdx[j] < leftSide + input.sizeAt(j)) 
+                    inIdx[j] = outIdx[j] - leftSide;
+
+                else
+                    inIdx[j] = 2 * input.sizeAt(j) + leftSide - outIdx[j] - 1 - symmBorder;                
+            }
+    
+            Nd4jLong outOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), outIdx.data(), rank);
+            Nd4jLong inOffset  = shape::getOffset(0, input.shapeOf(),  input.stridesOf(),  inIdx.data(),  rank);
+            output.buffer()[outOffset] = input.getBuffer()[inOffset];
+        }
+    }
+}
+
+
+
 template void triu<float>(const NDArray<float>& input, NDArray<float>& output, const int diagonal);
 template void triu<float16>(const NDArray<float16>& input, NDArray<float16>& output, const int diagonal);
 template void triu<double>(const NDArray<double>& input, NDArray<double>& output, const int diagonal);
@@ -744,6 +807,11 @@ template void clipByNorm<double>(NDArray<double>& input, NDArray<double>& output
 template void clipByAveraged<float>(NDArray<float>& input, NDArray<float>& output, const std::vector<int>& dimensions, const float clipNorm, const bool isInplace);
 template void clipByAveraged<float16>(NDArray<float16>& input, NDArray<float16>& output, const std::vector<int>& dimensions, const float16 clipNorm, const bool isInplace);
 template void clipByAveraged<double>(NDArray<double>& input, NDArray<double>& output, const std::vector<int>& dimensions, const double clipNorm, const bool isInplace);
+
+template void mirrorPad<float>(const NDArray<float>& input, const NDArray<float>& paddings, NDArray<float>& output, const int mode);
+template void mirrorPad<float16>(const NDArray<float16>& input, const NDArray<float16>& paddings, NDArray<float16>& output, const int mode);
+template void mirrorPad<double>(const NDArray<double>& input, const NDArray<double>& paddings, NDArray<double>& output, const int mode);
+
 
 }
 }

@@ -151,6 +151,10 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 }
             }
             if (ret != null) {
+                //Backprop dropout, if present
+                INDArray gradPostDropout = ret.getRight();
+                gradPostDropout = backpropDropOutIfPresent(gradPostDropout);
+                ret.setSecond(gradPostDropout);
                 return ret;
             }
         }

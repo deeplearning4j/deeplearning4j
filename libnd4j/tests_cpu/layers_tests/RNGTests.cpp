@@ -621,7 +621,7 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
 
                     if (nd4j::math::nd4j_re(x, y) > 0.1) {
                         nd4j_printf("E[%lld] %f != T[%lld] %f\n", (long long) f, (float) x, (long long) f, (float) y);
-                        throw "boom";
+                        throw std::runtime_error("boom");
                     }
                 }
 

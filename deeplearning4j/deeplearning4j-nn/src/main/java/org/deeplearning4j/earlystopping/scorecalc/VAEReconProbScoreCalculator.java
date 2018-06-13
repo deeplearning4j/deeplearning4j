@@ -107,4 +107,9 @@ public class VAEReconProbScoreCalculator extends BaseScoreCalculator<Model> {
             return scoreSum;
         }
     }
+
+    @Override
+    public boolean minimizeScore() {
+        return false;   //Maximize the reconstruction probability
+    }
 }

@@ -3,6 +3,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/reduce_minmax.h>
 
 namespace nd4j {
 namespace ops {
@@ -27,7 +28,7 @@ namespace ops {
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
         std::vector<int> dimensions = *block.getIArguments();
-        Nd4jLong* outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
+        Nd4jLong* outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
 
         return SHAPELIST(outShapeInfo);
     }
@@ -38,7 +39,7 @@ namespace ops {
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
-        Nd4jLong* outShapeInfo;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims);
+        Nd4jLong* outShapeInfo;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
         COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
         return SHAPELIST(outShapeInfo);
@@ -50,8 +51,6 @@ namespace ops {
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_max_bp: The second param shape should be the same as result shape.");
-            output->assign(epsilon);
             const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
             T keepDimsT = (keepDims?T(1.f):T(0.f));
             
@@ -71,23 +70,8 @@ namespace ops {
                 return tmpResult->status();
 
             NDArray<T>* tempMax = tmpResult->at(0);
-            REQUIRE_TRUE(tempMax->isSameShape(epsilon), 0, "reduce_max_bp: The second param shape should be the same with reduce_max output.");
-            if (tempMax->isScalar()) {
-                for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
-                    if (nd4j::math::nd4j_abs((*tempMax)(0) - (*input)(e)) < T(1.E-5f)) { // if input value equals to max
-                         (*output)(e) = (*input)(e);
-                    }
-                }
-            }
-            else {
-                for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
-                    for (Nd4jLong j = 0; e < tempMax->lengthOf(); j++) {
-                        if (nd4j::math::nd4j_abs((*tempMax)(j) - (*input)(e)) < T(1.E-5f))  // if input value equals to max
-                            (*output)(e) = (*input)(e);
-                    }
-                }
-            }
-
+            REQUIRE_TRUE(tempMax->isSameShape(epsilon), 0, "reduce_max_bp: The second param shape should be an equal with reduce_max output.");
+            helpers::minMaxReduceFunctor(input, epsilon, tempMax, output);
             return ND4J_STATUS_OK;
     }
 #endif

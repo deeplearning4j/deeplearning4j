@@ -5,7 +5,7 @@ from keras.models import Model
 from keras.layers import Input, Dense, Lambda
 import numpy as np
 
-base_path = "../../../../../../../../resources/weights/"
+base_path = "./"
 backend = K.backend()
 version = keras.__version__
 major_version = int(version[0])

@@ -92,7 +92,7 @@ public class KerasPermute extends KerasLayer {
             InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras Reshape layer accepts only one input (received " + inputType.length + ")");
+                    "Keras Permute layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preprocessor = null;
         if (inputType[0] instanceof InputType.InputTypeConvolutional) {
             switch (this.getDimOrder()) {

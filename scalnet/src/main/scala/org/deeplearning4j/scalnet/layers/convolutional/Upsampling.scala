@@ -28,7 +28,7 @@ class Upsampling(protected val dimension: Int,
                  protected val nChannels: Int = 0,
                  protected val nIn: Option[List[Int]] = None,
                  override val name: String = "")
-  extends Node {
+    extends Node {
 
   override def inputShape: List[Int] = nIn.getOrElse(List(nChannels))
 
@@ -37,13 +37,10 @@ class Upsampling(protected val dimension: Int,
       if (inputShape.nonEmpty) inputShape.last
       else 0
     if (inputShape.lengthCompare(dimension + 1) == 0) {
-      List[List[Int]](inputShape.init, size)
-        .transpose
+      List[List[Int]](inputShape.init, size).transpose
         .map(x => x.head * x(1)) :+ nOutChannels
     } else if (nOutChannels > 0) List(nOutChannels)
     else List()
   }
 
 }
-
-

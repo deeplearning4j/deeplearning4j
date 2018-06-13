@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,6 +20,7 @@ import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
 import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
@@ -1071,7 +1073,6 @@ public class SameDiffTests {
 
     }
 
-
     @Test(timeout = 10000L)
     public void testWhileLoop() {
         SameDiff sameDiff = SameDiff.create();
@@ -1085,6 +1086,34 @@ public class SameDiffTests {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable ret = variableInputs[1].addi(1.0);
+                return new SDVariable[]{variableInputs[0], ret};
+            }
+        }, new SDVariable[]{
+                sameDiff.one("one", new long[]{1, 1}),
+                sameDiff.var("two", new long[]{1, 1}),
+
+        });
+
+        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec = sameDiff.exec();
+        assertFalse(exec.getRight().isEmpty());
+        While function = (While) exec.getRight().get(exec.getRight().size() - 1);
+        assumeNotNull(function.getOutputVars());
+        assertEquals(1, function.getNumLooped());
+        sameDiff.toString();
+    }
+    @Test(timeout = 10000L)
+    public void testWhileLoop2() {
+        SameDiff sameDiff = SameDiff.create();
+        sameDiff.whileStatement(new SameDiff.DefaultSameDiffConditional(), new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
+                return new SDVariable[]{eqResult};
+            }
+        }, new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                SDVariable ret = variableInputs[1].add(1.0);
                 return new SDVariable[]{variableInputs[0], ret};
             }
         }, new SDVariable[]{
@@ -3882,6 +3911,136 @@ public class SameDiffTests {
         sd.exec();
 
         assertEquals(expOut, out.getArr());
+    }
+
+
+
+    private static int binArrToInt(int[] arr){
+        int x = 0;
+        int m = 1;
+        for(int i = arr.length - 1; i >= 0; i--){
+            if(arr[i] == 1){
+                x += m;
+            }
+            m *= 2;
+        }
+        return x;
+    }
+    @Test
+    public void testGet(){
+
+        SameDiff sd  = SameDiff.create();
+        INDArray arr = Nd4j.create(10, 10);
+        SDVariable x = sd.var(arr);
+
+        INDArray expOut1 = arr.get(NDArrayIndex.point(4), NDArrayIndex.point(5));
+        SDVariable result1 = x.get(SDIndex.point(4), SDIndex.point(5));
+        assertEquals(expOut1, result1.eval());
+
+        INDArray expOut2 = arr.get(NDArrayIndex.point(4), NDArrayIndex.all());
+        SDVariable result2 = x.get(SDIndex.point(4), SDIndex.all());
+        assertEquals(expOut2, result2.eval());
+
+        INDArray expOut3 = arr.get(NDArrayIndex.interval(3, 8));
+        SDVariable result3 = x.get(SDIndex.interval(3, 8));
+        assertEquals(expOut3, result3.eval());
+
+
+        INDArray expOut4 = arr.get(NDArrayIndex.point(5), NDArrayIndex.interval(3, 8));
+        SDVariable result4 = x.get(SDIndex.point(5), SDIndex.interval(3, 8));
+        assertEquals(expOut4, result4.eval());
+
+
+    }
+
+    @Test
+    public void testTensorArray1(){
+        SameDiff sd = SameDiff.create();
+        TensorArrayV3 tensorArray = sd.tensorArray();
+        INDArray arr1 = Nd4j.create(new double[]{1,2,3,4}, new int[]{2, 2});
+        SDVariable var1 = sd.var(arr1);
+        INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
+        SDVariable var2 = sd.var(arr2);
+        tensorArray = tensorArray.write(0, var1);
+        tensorArray.write(1, var2);
+        SDVariable result = tensorArray.stack();
+        assertEquals(Nd4j.pile(arr1, arr2), result.eval());
+    }
+
+    @Test
+    public void testTensorArray2(){
+        SameDiff sd = SameDiff.create();
+        TensorArrayV3 tensorArray = sd.tensorArray();
+        INDArray arr1 = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
+        SDVariable var1 = sd.var(arr1);
+        INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
+        SDVariable var2 = sd.var(arr2);
+        tensorArray.write(0, var1);
+        tensorArray.write(1, var2);
+        SDVariable result1 = tensorArray.read(0);
+        assertEquals(arr1, result1.eval());
+        SDVariable result2 = tensorArray.read(1);
+        assertEquals(arr2, result2.eval());
+
+    }
+    @Test
+    public void testTensorArray3(){
+        SameDiff sd = SameDiff.create();
+        TensorArrayV3 tensorArray = sd.tensorArray();
+        INDArray arr1 = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{ 2, 2});
+        INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
+        INDArray arr3 = Nd4j.pile(arr1, arr2);
+        SDVariable var = sd.var(arr3);
+        tensorArray = tensorArray.unstack(var);
+        SDVariable result1 = tensorArray.read(0);
+        SDVariable result2 = tensorArray.read(1);
+        assertEquals(arr1, result1.eval());
+        assertEquals(arr2, result2.eval());
+    }
+
+    @Test(timeout = 10000L)
+    public void testTensorArray4(){
+        SameDiff sd = SameDiff.create();
+        TensorArrayV3 ta = sd.tensorArray();
+
+        // while loop
+        val predicate = new SameDiff.DefaultSameDiffConditional();
+        val cond = new SameDiff.SameDiffFunctionDefinition(){
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                SDVariable ret = sameDiff.neq(variableInputs[0], 10);
+                return new SDVariable[]{ret};
+            }
+        };
+        val loop_body = new SameDiff.SameDiffFunctionDefinition(){
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                ta.write(variableInputs[0], variableInputs[1]).outputVariable();
+                SDVariable ret1 = variableInputs[0].addi(1);
+                SDVariable ret2 = variableInputs[1].addi(1);
+                return new SDVariable[]{ret1, ret2};
+            }
+        };
+
+        SDVariable loop_counter = sd.var(Nd4j.create(new double[]{0}));
+
+
+        INDArray arr = Nd4j.create(new double[]{1, 2, 3, 4, 5});
+        SDVariable initial_state = sd.var(arr);
+
+        sd.whileStatement(predicate, cond, loop_body, new SDVariable[]{loop_counter, initial_state});
+
+
+        // build expected output
+        List<INDArray> arr_list = new ArrayList<>();
+        for(int i=0; i<10; i++){
+            arr_list.add(arr.add(i));
+        }
+        INDArray expOut = Nd4j.pile(arr_list);
+
+
+        SDVariable result = ta.stack();
+        assertEquals(expOut, result.eval());
     }
 
 

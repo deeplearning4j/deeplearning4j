@@ -16,10 +16,10 @@
 
 package org.deeplearning4j.scalnet.layers.convolutional
 
-import org.deeplearning4j.nn.conf.layers.{Convolution1DLayer}
+import org.deeplearning4j.nn.conf.layers.{ Convolution1DLayer }
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.scalnet.layers.core.Layer
-import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer}
+import org.deeplearning4j.scalnet.regularizers.{ NoRegularizer, WeightRegularizer }
 import org.nd4j.linalg.activations.Activation
 
 /**
@@ -40,12 +40,22 @@ class Convolution1D(nFilter: Int,
                     val regularizer: WeightRegularizer = NoRegularizer(),
                     val dropOut: Double = 0.0,
                     override val name: String = "")
-  extends Convolution(dimension = 1, kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
+    extends Convolution(dimension = 1, kernelSize, stride, padding, dilation, nChannels, nIn, nFilter)
     with Layer {
 
   override def reshapeInput(nIn: List[Int]): Convolution1D =
-    new Convolution1D(nFilter, kernelSize, nChannels, stride, padding, dilation, Some(nIn),
-      weightInit, activation, regularizer, dropOut, name)
+    new Convolution1D(nFilter,
+                      kernelSize,
+                      nChannels,
+                      stride,
+                      padding,
+                      dilation,
+                      Some(nIn),
+                      weightInit,
+                      activation,
+                      regularizer,
+                      dropOut,
+                      name)
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new Convolution1DLayer.Builder(kernelSize.head, kernelSize.last)
@@ -63,7 +73,6 @@ class Convolution1D(nFilter: Int,
       .build()
 }
 
-
 object Convolution1D {
   def apply(nFilter: Int,
             kernelSize: List[Int],
@@ -77,14 +86,14 @@ object Convolution1D {
             regularizer: WeightRegularizer = NoRegularizer(),
             dropOut: Double = 0.0): Convolution1D =
     new Convolution1D(nFilter,
-      kernelSize,
-      nChannels,
-      stride,
-      padding,
-      dilation,
-      nIn,
-      weightInit,
-      activation,
-      regularizer,
-      dropOut)
+                      kernelSize,
+                      nChannels,
+                      stride,
+                      padding,
+                      dilation,
+                      nIn,
+                      weightInit,
+                      activation,
+                      regularizer,
+                      dropOut)
 }

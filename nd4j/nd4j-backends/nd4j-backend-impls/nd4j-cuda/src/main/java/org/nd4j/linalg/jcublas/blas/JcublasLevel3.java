@@ -62,7 +62,7 @@ public class JcublasLevel3 extends BaseLevel3 {
 
             int arch = CudaEnvironment.getInstance().getCurrentDeviceArchitecture();
 
-            if (CUDA_VERSION >= 8000 && (arch == 53 || arch == 60)) {
+            if ((CUDA_VERSION >= 8000 && (arch == 53 || arch == 60 || arch == 70)) || (CUDA_VERSION >= 8000 &&  CUDA_VERSION < 9020)) {
                 // on these selected archs we run with cublasHgemm
                 __half alphaHalf = new __half();
                 __half betaHalf = new __half();

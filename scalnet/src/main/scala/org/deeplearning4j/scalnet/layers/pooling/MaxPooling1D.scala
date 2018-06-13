@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.scalnet.layers.pooling
 
-import org.deeplearning4j.nn.conf.layers.{Subsampling1DLayer, SubsamplingLayer}
+import org.deeplearning4j.nn.conf.layers.{ Subsampling1DLayer, SubsamplingLayer }
 import org.deeplearning4j.scalnet.layers.convolutional.Convolution
 import org.deeplearning4j.scalnet.layers.core.Layer
 
@@ -31,7 +31,7 @@ class MaxPooling1D(kernelSize: List[Int],
                    dilation: List[Int] = List(1),
                    nIn: Option[List[Int]] = None,
                    override val name: String = "")
-  extends Convolution(dimension = 1, kernelSize, stride, padding, dilation, 0, nIn)
+    extends Convolution(dimension = 1, kernelSize, stride, padding, dilation, 0, nIn, 0)
     with Layer {
   if (kernelSize.length != 1 || stride.length != 1 || padding.length != 1 || dilation.length != 1) {
     throw new IllegalArgumentException("Kernel, stride, padding and dilation lists must all be length 1.")
@@ -57,6 +57,3 @@ object MaxPooling1D {
             name: String = null): MaxPooling1D =
     new MaxPooling1D(kernelSize, stride, padding, dilation, nIn, name)
 }
-
-
-

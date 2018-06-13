@@ -321,7 +321,7 @@ public class VocabConstructor<T extends SequenceElement> {
             for (T element : cache.vocabWords()) {
                 element.setElementFrequency(0);
             }
-            cache.updateWordsOccurencies();
+            cache.updateWordsOccurrences();
         }
 
         if (buildHuffmanTree) {
