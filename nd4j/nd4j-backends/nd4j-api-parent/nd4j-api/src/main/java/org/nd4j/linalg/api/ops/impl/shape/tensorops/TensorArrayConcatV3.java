@@ -8,19 +8,18 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.list.compat.TensorList;
 
-import java.util.List;
 import java.util.Map;
 
-public class TensorArrayGatherV3 extends BaseTensorOp {
+public class TensorArrayConcatV3 extends BaseTensorOp {
 
-    public TensorArrayGatherV3(String name, SameDiff sameDiff, SDVariable[] args){
+    public TensorArrayConcatV3(String name, SameDiff sameDiff, SDVariable[] args){
         super(name, sameDiff, args);
     }
-    public TensorArrayGatherV3(SameDiff sameDiff, SDVariable[] args){
+    public TensorArrayConcatV3(SameDiff sameDiff, SDVariable[] args){
         super(null, sameDiff, args);
     }
 
-    public TensorArrayGatherV3(){}
+    public TensorArrayConcatV3(){}
    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op name found for " + opName());
@@ -28,7 +27,7 @@ public class TensorArrayGatherV3 extends BaseTensorOp {
 
     @Override
     public String tensorflowName() {
-        return "TensorArrayGatherV3";
+        return "TensorArrayConcatV3";
     }
 
 
@@ -39,14 +38,13 @@ public class TensorArrayGatherV3 extends BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarraygatherv3";
+        return "tensorarrayconcatv3";
     }
 
     @Override
     public TensorList execute(SameDiff sameDiff) {
        val list = getList(sameDiff);
-       val indices = getArgumentArray(1);
-       val array = list.gather(indices);
+       val array = list.concat();
        val name = this.getOwnName();
        sameDiff.updateVariable(name, array);
 

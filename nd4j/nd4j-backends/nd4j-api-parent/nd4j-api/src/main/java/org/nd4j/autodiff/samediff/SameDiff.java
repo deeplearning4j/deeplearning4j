@@ -5366,6 +5366,10 @@ public class SameDiff {
     }
 
 
+    public TensorArrayV3 tensorArray(){
+        return new TensorArrayV3(this);
+    }
+
     /**
      * A function definition for
      * samediff
@@ -6383,6 +6387,7 @@ public class SameDiff {
                     //depending on the block add the proper graph body to this for persistence
                     //and possible later processing.
                     //note that we need to update the graph predicate by running the execution
+
 
                     whileOp.getPredicateExecution().exec();
                     if(execBody.outputs == null){

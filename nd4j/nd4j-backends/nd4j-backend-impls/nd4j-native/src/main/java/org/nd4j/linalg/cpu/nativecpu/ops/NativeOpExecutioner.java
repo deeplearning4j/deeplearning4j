@@ -748,8 +748,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 boolean zRow = op.z().isRowVector();
 
                 if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
-                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform. " +
-                            "x: length " + op.x().length() + ", shape " + Arrays.toString(op.x().shape()) +
+                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform " +
+                            op.opName() + ". x: length " + op.x().length() + ", shape " + Arrays.toString(op.x().shape()) +
                             "; y: " + op.y().length() + ", shape " + Arrays.toString(op.y().shape()) +
                             "; z: " + op.z().length() + ", shape " + Arrays.toString(op.z().shape()));
                 if ((xEWS >= 1 && yEWS >= 1
