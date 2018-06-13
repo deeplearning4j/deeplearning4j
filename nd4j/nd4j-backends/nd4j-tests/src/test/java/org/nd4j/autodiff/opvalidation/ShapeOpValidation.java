@@ -23,9 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Slf4j
@@ -674,8 +672,8 @@ public class ShapeOpValidation extends BaseOpValidation {
     }
 
     @Test
-
     public void testShape() {
+        fail(); //JVM crash
         SameDiff sameDiff = SameDiff.create();
         val shape = new long[]{2, 3};
         SDVariable x = sameDiff.var("x", shape);

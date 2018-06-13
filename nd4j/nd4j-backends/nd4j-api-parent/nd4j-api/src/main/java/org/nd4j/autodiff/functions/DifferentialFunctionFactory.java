@@ -9,9 +9,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
-import org.nd4j.linalg.api.ops.impl.accum.bp.MeanBp;
-import org.nd4j.linalg.api.ops.impl.accum.bp.StandardDeviationBp;
-import org.nd4j.linalg.api.ops.impl.accum.bp.VarianceBp;
+import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -376,6 +374,10 @@ public class DifferentialFunctionFactory {
         return new Sum(sameDiff(), i_x, dimensions).outputVariable();
     }
 
+    public SDVariable sumBp(SDVariable i_x, SDVariable grad, boolean keepDims, int... dimensions) {
+        return new SumBp(sameDiff(), i_x, grad, keepDims, dimensions).outputVariable();
+    }
+
 
     public SDVariable prod(SDVariable i_x, int... dimensions) {
         return new Prod(sameDiff(), i_x, dimensions).outputVariable();
@@ -445,9 +447,17 @@ public class DifferentialFunctionFactory {
                 .outputVariable();
     }
 
+    public SDVariable maxBp(SDVariable i_x, SDVariable grad, boolean keepDims, int... dimensions) {
+        return new MaxBp(sameDiff(), i_x, grad, keepDims, dimensions).outputVariable();
+    }
+
 
     public SDVariable min(SDVariable i_x, int... dimensions) {
         return new Min(sameDiff(), i_x, dimensions).outputVariable();
+    }
+
+    public SDVariable minBp(SDVariable i_x, SDVariable grad, boolean keepDims, int... dimensions) {
+        return new MinBp(sameDiff(), i_x, grad, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable min(SDVariable first, SDVariable second) {

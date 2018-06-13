@@ -53,7 +53,7 @@ public class XwPlusB extends DynamicCustomOp {
         SDVariable w = arg(1);
         SDVariable dLdOut = gradient.get(0);
 
-        SDVariable dLdb = dLdOut.sum(1);
+        SDVariable dLdb = dLdOut.sum(0);
         SDVariable dLdIn = sameDiff.mmul(dLdOut, w, MMulTranspose.builder()
                 .transposeB(true)
                 .build());
