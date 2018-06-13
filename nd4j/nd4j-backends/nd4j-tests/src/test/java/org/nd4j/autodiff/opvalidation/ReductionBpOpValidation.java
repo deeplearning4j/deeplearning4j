@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Arrays;
@@ -174,17 +175,6 @@ public class ReductionBpOpValidation {
             }
 
             INDArray dLdIn = Nd4j.createUninitialized(3, 4);
-
-//            String err = OpValidation.validate(new OpTestCase(
-//                    DynamicCustomOp.builder("reduce_mean_bp")
-//                            .addInputs(preReduceInput, dLdOut_0)
-//                            .addOutputs(dLdIn)
-//                            .addFloatingPointArguments(keepDims ? 1.0 : 0.0)
-//                            .addIntegerArguments(0)
-//                            .build())
-//                    .expectedOutput(0, dLdInExpected_0)
-//            );
-
             String err = OpValidation.validate(new OpTestCase(new MeanBp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))
                     .expectedOutput(0, dLdInExpected_0));
 
@@ -810,9 +800,196 @@ public class ReductionBpOpValidation {
         //          = cumSum( dL/dOut * reverseCumProd(in)/in_i )
 
         //Exclusive case
+        //
 
 
         fail();
     }
 
+
+    @Test
+    public void testNorm2Bp(){
+        //dL/dIn = dL/dOut * dOut/dIn
+        //       = dL/dOut * x/|x|_2
+
+        for (boolean keepDims : new boolean[]{false, true}) {
+
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+            double norm2 = preReduceInput.norm2Number().doubleValue();
+
+            INDArray dLdOut;
+            if (keepDims) {
+                dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
+            } else {
+                dLdOut = Nd4j.trueScalar(0.5);
+            }
+            INDArray dLdInExpected = preReduceInput.div(norm2).muli(0.5);
+            INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+
+            String err = OpValidation.validate(new OpTestCase(new Norm2Bp(preReduceInput, dLdOut, dLdIn, keepDims))
+                    .expectedOutput(0, dLdInExpected));
+
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testNorm2AlongDimensionBP() {
+        //dL/dIn = dL/dOut * dOut/dIn
+        //       = dL/dOut * x/|x|_2
+
+        for (boolean keepDims : new boolean[]{false, true}) {
+
+            long[] reducedShape_0 = (keepDims ? new long[]{3, 4} : new long[]{4});
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+            INDArray norm2_0 = preReduceInput.norm2(0);
+            INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
+            INDArray dLdInExpected_0 = preReduceInput.divRowVector(norm2_0).mulRowVector(dLdOut_0);
+
+            INDArray dLdIn = Nd4j.createUninitialized(4, 4);
+
+            String err = OpValidation.validate(new OpTestCase(new MinBp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))
+                    .expectedOutput(0, dLdInExpected_0));
+            assertNull(err, err);
+
+
+            long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
+            INDArray norm2_1 = preReduceInput.norm2(1);
+            INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_1);
+            INDArray dLdInExpected_1 = preReduceInput.divColumnVector(norm2_1).mulColumnVector(dLdOut_1);
+            dLdIn = Nd4j.createUninitialized(3, 4);
+
+            err = OpValidation.validate(new OpTestCase(new Norm2Bp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
+                    .expectedOutput(0, dLdInExpected_1));
+
+            assertNull(err, err);
+        }
+    }
+
+    @Test
+    public void testNorm1Bp(){
+        //dL/dIn = dL/dOut * dOut/dIn
+        //       = dL/dOut * sgn(in)
+
+        for (boolean keepDims : new boolean[]{false, true}) {
+
+            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12).reshape(3, 4);
+
+            INDArray sgn = Transforms.sign(preReduceInput, true);
+
+            INDArray dLdOut;
+            if (keepDims) {
+                dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
+            } else {
+                dLdOut = Nd4j.trueScalar(0.5);
+            }
+            INDArray dLdInExpected = sgn.muli(0.5);
+            INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+
+            String err = OpValidation.validate(new OpTestCase(new Norm1Bp(preReduceInput, dLdOut, dLdIn, keepDims))
+                    .expectedOutput(0, dLdInExpected));
+
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testNorm1AlongDimensionBP() {
+        //dL/dIn = dL/dOut * dOut/dIn
+        //       = dL/dOut * sgn(in)
+
+        for (boolean keepDims : new boolean[]{false, true}) {
+
+            long[] reducedShape_0 = (keepDims ? new long[]{3, 4} : new long[]{4});
+            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12).reshape(3, 4);
+            INDArray sgn = Transforms.sign(preReduceInput, true);
+            INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
+            INDArray dLdInExpected_0 = sgn.mulRowVector(dLdOut_0);
+
+            INDArray dLdIn = Nd4j.createUninitialized(4, 4);
+
+            String err = OpValidation.validate(new OpTestCase(new Norm1Bp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))
+                    .expectedOutput(0, dLdInExpected_0));
+            assertNull(err, err);
+
+
+            long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
+            INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_1);
+            INDArray dLdInExpected_1 = sgn.mulColumnVector(dLdOut_1);
+            dLdIn = Nd4j.createUninitialized(3, 4);
+
+            err = OpValidation.validate(new OpTestCase(new Norm1Bp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
+                    .expectedOutput(0, dLdInExpected_1));
+
+            assertNull(err, err);
+        }
+    }
+
+    @Test
+    public void testNormMaxBp(){
+        //out = max_i (|in_i|)
+        //dL/dIn = dL/dOut * dOut/dIn
+        //       = dL/dOut * (0 if |x_i| is not max; or sgn(x_i) otherwise)
+
+        for (boolean keepDims : new boolean[]{false, true}) {
+
+            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12).reshape(3, 4);
+
+            INDArray sgn = Transforms.sign(preReduceInput, true);
+            INDArray max = Nd4j.create(3,4);
+            max.putScalar(2,3,1.0);
+
+            INDArray dLdOut;
+            if (keepDims) {
+                dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
+            } else {
+                dLdOut = Nd4j.trueScalar(0.5);
+            }
+            INDArray dLdInExpected = sgn.mul(max).mul(0.5);
+            INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+
+            String err = OpValidation.validate(new OpTestCase(new NormMaxBp(preReduceInput, dLdOut, dLdIn, keepDims))
+                    .expectedOutput(0, dLdInExpected));
+
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testNormMaxAlongDimensionBP() {
+        //out = max_i (|in_i|)
+        //dL/dIn = dL/dOut * dOut/dIn
+        //       = dL/dOut * (0 if |x_i| is not max; or sgn(x_i) otherwise)
+
+        for (boolean keepDims : new boolean[]{false, true}) {
+
+            long[] reducedShape_0 = (keepDims ? new long[]{3, 4} : new long[]{4});
+            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12).reshape(3, 4);
+            INDArray sgn = Transforms.sign(preReduceInput, true);
+            INDArray max_0 = Nd4j.create(3,4);
+            max_0.getRow(2).assign(1.0);
+            INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
+            INDArray dLdInExpected_0 = sgn.mul(max_0).mulRowVector(dLdOut_0);
+
+            INDArray dLdIn = Nd4j.createUninitialized(4, 4);
+
+            String err = OpValidation.validate(new OpTestCase(new NormMaxBp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))
+                    .expectedOutput(0, dLdInExpected_0));
+            assertNull(err, err);
+
+
+            long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
+            INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_1);
+            INDArray max_1 = Nd4j.create(3,4);
+            max_1.getColumn(3).assign(1.0);
+            INDArray dLdInExpected_1 = sgn.mul(max_1).mulColumnVector(dLdOut_1);
+            dLdIn = Nd4j.createUninitialized(3, 4);
+
+            err = OpValidation.validate(new OpTestCase(new NormMaxBp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
+                    .expectedOutput(0, dLdInExpected_1));
+
+            assertNull(err, err);
+        }
+    }
 }
