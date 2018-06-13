@@ -6471,6 +6471,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public INDArray convertToHalfs() {
+        if (data.dataType() == DataBuffer.Type.HALF)
+            return this;
+
+        val factory = Nd4j.getNDArrayFactory();
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.HALF);
+
+        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataBuffer.TypeEx.FLOAT16, buffer.addressPointer(), buffer.length());
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
+    }
+
+    @Override
     public INDArray convertToFloats() {
         if (data.dataType() == DataBuffer.Type.FLOAT)
             return this;
