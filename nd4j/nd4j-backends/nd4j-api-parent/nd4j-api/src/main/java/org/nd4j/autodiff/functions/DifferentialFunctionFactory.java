@@ -9,6 +9,9 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
+import org.nd4j.linalg.api.ops.impl.accum.bp.MeanBp;
+import org.nd4j.linalg.api.ops.impl.accum.bp.StandardDeviationBp;
+import org.nd4j.linalg.api.ops.impl.accum.bp.VarianceBp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -383,6 +386,10 @@ public class DifferentialFunctionFactory {
         return new Mean(sameDiff(), i_x, dimensions).outputVariable();
     }
 
+    public SDVariable meanBp(SDVariable in, SDVariable grad, boolean keepDims, int... dimensions){
+        return new MeanBp(sameDiff(), in, grad, keepDims, dimensions).outputVariable();
+    }
+
 
     public SDVariable std(SDVariable i_x,
                           boolean biasCorrected,
@@ -390,11 +397,19 @@ public class DifferentialFunctionFactory {
         return new StandardDeviation(sameDiff(), i_x, dimensions, biasCorrected).outputVariable();
     }
 
+    public SDVariable stdBp(SDVariable stdInput, SDVariable gradient, boolean biasCorrected, boolean keepDims, int... dimensions){
+        return new StandardDeviationBp(sameDiff(), stdInput, gradient, biasCorrected, keepDims, dimensions).outputVariable();
+    }
+
 
     public SDVariable variance(SDVariable i_x,
                                boolean biasCorrected,
                                int... dimensions) {
         return new Variance(sameDiff(), i_x, dimensions, biasCorrected).outputVariable();
+    }
+
+    public SDVariable varianceBp(SDVariable stdInput, SDVariable gradient, boolean biasCorrected, boolean keepDims, int... dimensions){
+        return new VarianceBp(sameDiff(), stdInput, gradient, biasCorrected, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable countNonZero(SDVariable input, int... dimensions) {

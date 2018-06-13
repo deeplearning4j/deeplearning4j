@@ -450,7 +450,6 @@ public class ReductionBpOpValidation {
         }
     }
 
-    @Ignore
     @Test
     public void testStdevBP() {
         //If out = stdev(in) then:
@@ -596,7 +595,6 @@ public class ReductionBpOpValidation {
         }
     }
 
-    @Ignore
     @Test
     public void testVarianceBP() {
         //If out = variance(in) then:
