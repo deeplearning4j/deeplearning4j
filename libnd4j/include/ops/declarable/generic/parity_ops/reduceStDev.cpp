@@ -81,7 +81,7 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
 
     Nd4jLong* gradOShapeKeepDims = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), dimensions, *input, true, false, block.getWorkspace());
     const bool isGradOShapeBroadcast = shape::equalsSoft(gradOShapeKeepDims, gradO->getShapeInfo());
-        
+
     if(!isGradOShapeBroadcast)
         gradO = gradO->reshape(gradO->ordering(), ShapeUtils<T>::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]                
 

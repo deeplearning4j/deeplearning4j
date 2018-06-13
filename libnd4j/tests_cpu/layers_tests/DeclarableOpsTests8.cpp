@@ -2164,7 +2164,6 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test3) {
     delete result;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
 
@@ -2192,3 +2191,21 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
     delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceStDevBP_test4) {
+
+    NDArray<float> x('c', {3}, {2.f, 3.f, 4.f});
+    NDArray<float> gradO(0.5f);    
+    NDArray<float> exp('c', {3}, {-0.25f, 0.f, 0.25f});    
+            
+    nd4j::ops::reduce_stdev_bp<float> op;
+
+    auto result = op.execute({&x, &gradO}, {0,1}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());        
+    auto output = result->at(0);        
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+}
