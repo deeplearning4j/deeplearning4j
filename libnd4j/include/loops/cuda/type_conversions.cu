@@ -17,11 +17,20 @@ namespace nd4j {
     }
 
     template<typename S, typename T>
+    void TypeCast::convertGeneric(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
+        auto stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+        nd4j::convertKernel<S, T><<<256, 1024, 1024, *stream>>>(dx, N, dz);
+    };
+
+
+    template<typename S, typename T>
     __device__ void convertKernelGeneric(S *x, Nd4jLong N, T *z) {
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
         for (Nd4jLong i = tid; i < N; i+= blockDim.x * gridDim.x) {
             // despite it's stupid, it simplifies conversion to bottom dtypes
+            // FIXME: get rid of through-float though
             z[i] = static_cast<T>(static_cast<float>(x[i]));
         }
     };
@@ -501,6 +510,11 @@ namespace nd4j {
         nd4j::decoderKernelGeneric<float16>(dx, N, dz);
     }
 
+    template <bool storeSum, bool isNP2>
+    __host__ void prescanLauncher(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex) {
+        prescan<storeSum, isNP2><<<blocks, threads, shmem, *stream>>>(g_odata, g_idata, g_blockSums, n, blockIndex, baseIndex);
+    };
+
     template <typename S, typename T>
     __global__ void convertKernel(void *dx, Nd4jLong N, void *dz) {
         auto x = reinterpret_cast<S *>(dx);
@@ -509,12 +523,6 @@ namespace nd4j {
         nd4j::convertKernelGeneric(x, N, z);
     }
 
-    template __global__ void prescan<false, false>(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex);
-    template __global__ void prescan<false, true>(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex);
-    template __global__ void prescan<true, false>(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex);
-    template __global__ void prescan<true, true>(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex);
-
-    //
-
-    BUILD_DOUBLE_TEMPLATE(template __global__ void convertKernel, (void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
+    //BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
+    BUILD_DOUBLE_TEMPLATE(template void prescanLauncher, (dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex), (0,1), (0,1))
 }

@@ -5620,13 +5620,15 @@ void prescanArrayRecursive(Nd4jPointer *extras, int *z, int *x, int numElements,
     }
 
     // padding space is used to avoid shared memory bank conflicts
-    unsigned int extraSpace = numEltsPerBlock / NUM_BANKS;
-    unsigned int sharedMemSize = sizeof(int) * (numEltsPerBlock + extraSpace);
+    int extraSpace = numEltsPerBlock / NUM_BANKS;
+    int sharedMemSize = sizeof(int) * (numEltsPerBlock + extraSpace);
 
     // setup execution parameters
     // if NP2, we process the last block separately
     dim3 grid(max(1, numBlocks - np2LastBlock), 1, 1);
     dim3 threads(numThreads, 1, 1);
+    dim3 gridOnes(1, 1, 1);
+    dim3 threadsOnes(numThreadsLastBlock, 1, 1);
 
     if (sharedMemSize < 2048)
         sharedMemSize = 2048;
@@ -5636,9 +5638,9 @@ void prescanArrayRecursive(Nd4jPointer *extras, int *z, int *x, int numElements,
 
     // execute the scan
     if (numBlocks > 1) {
-        nd4j::prescan<true, false><<<grid, threads, sharedMemSize, *stream>>>(z, x, g_scanBlockSums[level], numThreads * 2, 0, 0);
+        nd4j::prescanLauncher<true, false>(grid, threads, sharedMemSize, stream, z, x, g_scanBlockSums[level], numThreads * 2, 0, 0);
         if (np2LastBlock) {
-            nd4j::prescan<true, true><<<1, numThreadsLastBlock, sharedMemLastBlock, *stream>>>(z, x, g_scanBlockSums[level], numEltsLastBlock, numBlocks - 1, numElements - numEltsLastBlock);
+            nd4j::prescanLauncher<true, true>(gridOnes, threadsOnes, sharedMemLastBlock, stream, z, x, g_scanBlockSums[level], numEltsLastBlock, numBlocks - 1, numElements - numEltsLastBlock);
         }
 
         // After scanning all the sub-blocks, we are mostly done.  But now we
@@ -5654,9 +5656,9 @@ void prescanArrayRecursive(Nd4jPointer *extras, int *z, int *x, int numElements,
             nd4j::uniformAdd<<<1, numThreadsLastBlock, 1024, *stream>>>(z, g_scanBlockSums[level], numEltsLastBlock, numBlocks - 1, numElements - numEltsLastBlock);
         }
     } else if (isPowerOfTwo(numElements)) {
-        nd4j::prescan<false, false><<<grid, threads, sharedMemSize, *stream>>>(z, x, 0, numThreads * 2, 0, 0);
+        nd4j::prescanLauncher<false, false>(grid, threads, sharedMemSize, stream, z, x, 0, numThreads * 2, 0, 0);
     } else {
-        nd4j::prescan<false, true><<<grid, threads, sharedMemSize, *stream>>>(z, x, 0, numElements, 0, 0);
+        nd4j::prescanLauncher<false, true>(grid, threads, sharedMemSize, stream, z, x, 0, numElements, 0, 0);
     }
 }
 
@@ -6733,182 +6735,180 @@ void NativeOps::deleteResultWrapper(Nd4jPointer ptr) {
  *     void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);
  */
 void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd4jLong N, int dstType, Nd4jPointer z) {
-    auto stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
-    
-	auto dx = reinterpret_cast<void *>(x);
+ 	auto dx = reinterpret_cast<void *>(x);
 	auto dz = reinterpret_cast<void *>(z);
 
-	if (srcType == ND4J_FLOAT8) {
-		if (dstType == ND4J_FLOAT8) {
-			// convertKernel<double, nd4j::float8>(dx, N, dz);
-		} else if (dstType == ND4J_INT8) {
-			nd4j::convertKernel<nd4j::float8, nd4j::int8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT8) {
-			nd4j::convertKernel<nd4j::float8, nd4j::uint8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT16) {
-			nd4j::convertKernel<nd4j::float8, float16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT16) {
-			nd4j::convertKernel<nd4j::float8, nd4j::int16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT16) {
-			nd4j::convertKernel<nd4j::float8, nd4j::uint16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT24) {
+    if (srcType == ND4J_FLOAT8) {
+        if (dstType == ND4J_FLOAT8) {
+            // convertKernel<double, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
 
-		} else if (dstType == ND4J_FLOAT32) {
-			nd4j::convertKernel<nd4j::float8, float><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_DOUBLE) {
-			nd4j::convertKernel<nd4j::float8, double><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else {
-			nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-		}
-	} else if (srcType == ND4J_INT8) {
-		if (dstType == ND4J_FLOAT8) {
-			nd4j::convertKernel<nd4j::int8, nd4j::float8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT8) {
-			//convertKernel<nd4j::int8, nd4j::int8>(dx, N, dz);
-		} else if (dstType == ND4J_UINT8) {
-			nd4j::convertKernel<nd4j::int8, nd4j::uint8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT16) {
-			nd4j::convertKernel<nd4j::int8, float16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT16) {
-			nd4j::convertKernel<nd4j::int8, nd4j::int16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT16) {
-			nd4j::convertKernel<nd4j::int8, nd4j::uint16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT24) {
-			// TODO: eventually we might want to add it
-		} else if (dstType == ND4J_FLOAT32) {
-			nd4j::convertKernel<nd4j::int8, float><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_DOUBLE) {
-			nd4j::convertKernel<nd4j::int8, double><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else {
-			nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-		}
-	} else if (srcType == ND4J_UINT8) {
-		if (dstType == ND4J_FLOAT8) {
-			nd4j::convertKernel<nd4j::uint8, nd4j::float8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT8) {
-			nd4j::convertKernel<nd4j::uint8, nd4j::int8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT8) {
-			nd4j::convertKernel<nd4j::uint8, nd4j::uint8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT16) {
-			nd4j::convertKernel<nd4j::uint8, float16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT16) {
-			nd4j::convertKernel<nd4j::uint8, nd4j::int16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT16) {
-			nd4j::convertKernel<nd4j::uint8, nd4j::uint16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT24) {
-			// TODO: still might want to add
-		} else if (dstType == ND4J_FLOAT32) {
-			nd4j::convertKernel<nd4j::uint8, float><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_DOUBLE) {
-			nd4j::convertKernel<nd4j::uint8, double><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else {
-			nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-		}
-	} else if (srcType == ND4J_FLOAT16) {
-		if (dstType == ND4J_FLOAT8) {
-			nd4j::convertKernel<float16, nd4j::float8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT8) {
-			nd4j::convertKernel<float16, nd4j::int8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT8) {
-			nd4j::convertKernel<float16, nd4j::uint8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT16) {
-			nd4j::convertKernel<float16, float16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT16) {
-			nd4j::convertKernel<float16, nd4j::int16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT16) {
-			nd4j::convertKernel<float16, nd4j::uint16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT24) {
-			// TODO: .... ^^^
-		} else if (dstType == ND4J_FLOAT32) {
-			nd4j::convertKernel<float16, float><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_DOUBLE) {
-			nd4j::convertKernel<float16, double><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_THRESHOLD) {
-			//nd4j::convertToThreshold<float16>(nullptr, dx, N, dz);
-		} else {
-			nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-		}
-	} else if (srcType == ND4J_INT16) {
-		if (dstType == ND4J_FLOAT8) {
-			nd4j::convertKernel<nd4j::int16, nd4j::float8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT8) {
-			nd4j::convertKernel<nd4j::int16, nd4j::int8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT8) {
-			nd4j::convertKernel<nd4j::int16, nd4j::uint8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT16) {
-			nd4j::convertKernel<nd4j::int16, float16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT16) {
-			nd4j::convertKernel<nd4j::int16, nd4j::int16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT16) {
-			nd4j::convertKernel<nd4j::int16, nd4j::uint16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT24) {
-			// TODO...
-		} else if (dstType == ND4J_FLOAT32) {
-			nd4j::convertKernel<nd4j::int16, float><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_DOUBLE) {
-			nd4j::convertKernel<nd4j::int16, double><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else {
-			printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-		}
-	} else if (srcType == ND4J_FLOAT24) {
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<nd4j::float8, double>(extras, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_INT8) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            //convertKernel<nd4j::int8, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
+            // TODO: eventually we might want to add it
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<nd4j::int8, double>(extras, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_UINT8) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
+            // TODO: still might want to add
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<nd4j::uint8, double>(extras, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_FLOAT16) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<float16, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<float16, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<float16, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<float16, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<float16, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<float16, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
+            // TODO: .... ^^^
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<float16, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<float16, double>(extras, dx, N, dz);
+        } else if (dstType == ND4J_THRESHOLD) {
+            //nd4j::convertToThreshold<float16>(nullptr, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_INT16) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
+            // TODO...
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<nd4j::int16, double>(extras, dx, N, dz);
+        } else {
+            printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_FLOAT24) {
 
-	} else if (srcType == ND4J_FLOAT32) {
-		if (dstType == ND4J_FLOAT8) {
-			nd4j::convertKernel<float, nd4j::float8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT8) {
-			nd4j::convertKernel<float, nd4j::int8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT8) {
-			nd4j::convertKernel<float, nd4j::uint8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT16) {
-			nd4j::convertKernel<float, float16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT16) {
-			nd4j::convertKernel<float, nd4j::int16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT16) {
-			nd4j::convertKernel<float, nd4j::uint16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT24) {
+    } else if (srcType == ND4J_FLOAT32) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<float, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<float, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<float, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<float, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<float, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<float, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
 
-		} else if (dstType == ND4J_DOUBLE) {
-			nd4j::convertKernel<float, double><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_THRESHOLD) {
-			//nd4j::convertToThreshold<float><<<256, 1024, 1024, *stream>>>(nullptr, dx, N, dz);
-		} else {
-			nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-		}
-	} else if (srcType == ND4J_DOUBLE) {
-		if (dstType == ND4J_FLOAT8) {
-			nd4j::convertKernel<double, nd4j::float8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT8) {
-			nd4j::convertKernel<double, nd4j::int8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT8) {
-			nd4j::convertKernel<double, nd4j::uint8><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT16) {
-			nd4j::convertKernel<double, float16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_INT16) {
-			nd4j::convertKernel<double, nd4j::int16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_UINT16) {
-			nd4j::convertKernel<double, nd4j::uint16><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_FLOAT24) {
+        } else if (dstType == ND4J_DOUBLE) {
+            nd4j::TypeCast::convertGeneric<float, double>(extras, dx, N, dz);
+        } else if (dstType == ND4J_THRESHOLD) {
+            //nd4j::convertToThreshold<float>(nullptr, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_DOUBLE) {
+        if (dstType == ND4J_FLOAT8) {
+            nd4j::TypeCast::convertGeneric<double, nd4j::float8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT8) {
+            nd4j::TypeCast::convertGeneric<double, nd4j::int8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT8) {
+            nd4j::TypeCast::convertGeneric<double, nd4j::uint8>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT16) {
+            nd4j::TypeCast::convertGeneric<double, float16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_INT16) {
+            nd4j::TypeCast::convertGeneric<double, nd4j::int16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_UINT16) {
+            nd4j::TypeCast::convertGeneric<double, nd4j::uint16>(extras, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT24) {
 
-		} else if (dstType == ND4J_FLOAT32) {
-			nd4j::convertKernel<double, float><<<256, 1024, 1024, *stream>>>(dx, N, dz);
-		} else if (dstType == ND4J_DOUBLE) {
-			//
-		} else if (dstType == ND4J_THRESHOLD) {
-			//nd4j::convertToThreshold<double>(nullptr, dx, N, dz);
-		} else {
-			nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-		}
-	} else if (srcType == ND4J_THRESHOLD) {
-		if (dstType == ND4J_FLOAT16) {
-			//nd4j::convertFromThreshold<float16>(nullptr, dx, N, dz);
-		} else if (dstType == ND4J_FLOAT32) {
-			//nd4j::convertFromThreshold<float>(nullptr, dx, N, dz);
-		} else if (dstType == ND4J_DOUBLE) {
-			//nd4j::convertFromThreshold<double>(nullptr, dx, N, dz);
-		} else {
-			nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-		}
-	} else {
-		nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-	}
+        } else if (dstType == ND4J_FLOAT32) {
+            nd4j::TypeCast::convertGeneric<double, float>(extras, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            //
+        } else if (dstType == ND4J_THRESHOLD) {
+            //nd4j::convertToThreshold<double>(nullptr, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else if (srcType == ND4J_THRESHOLD) {
+        if (dstType == ND4J_FLOAT16) {
+            //nd4j::convertFromThreshold<float16>(nullptr, dx, N, dz);
+        } else if (dstType == ND4J_FLOAT32) {
+            //nd4j::convertFromThreshold<float>(nullptr, dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            //nd4j::convertFromThreshold<double>(nullptr, dx, N, dz);
+        } else {
+            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
+    } else {
+        nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+    }
 }

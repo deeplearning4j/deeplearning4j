@@ -45,53 +45,21 @@ namespace nd4j {
 
     public:
         template<typename S, typename T>
-        static FORCEINLINE void convertGeneric(void *dx, Nd4jLong N, void *dz);
+        static _CUDA_H void convertGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
         template <typename T>
-        static void convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+        static _CUDA_H void convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
         template <typename T>
-        static void convertFromThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-
-
-#ifdef __CUDACC__
-
-#endif
+        static _CUDA_H void convertFromThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     };
 
-    /**
-     * This is cpu version, so leave it here as inline, to avoid templates instantiation
-     *
-     * @tparam S
-     * @tparam T
-     * @param dx
-     * @param N
-     * @param dz
-     */
-    template<typename S, typename T>
-    void TypeCast::convertGeneric(void *dx, Nd4jLong N, void *dz) {
-        auto x = reinterpret_cast<S *>(dx);
-        auto z = reinterpret_cast<T *>(dz);
 
-        if (N < nd4j::Environment::getInstance()->elementwiseThreshold()) {
-#pragma omp simd
-            for (int i = 0; i < N; i++) {
-                z[i] = static_cast<T>(static_cast<float>(x[i]));
-            }
-        } else {
-
-#pragma omp parallel for
-            for (int i = 0; i < N; i++) {
-                z[i] = static_cast<T>(static_cast<float>(x[i]));
-            }
-        }
-    };
-
-    FORCEINLINE bool isPowerOfTwo(int n) {
+    FORCEINLINE _CUDA_HD bool isPowerOfTwo(int n) {
         return ((n&(n-1))==0) ;
     }
 
-    FORCEINLINE int floorPow2(int n) {
+    FORCEINLINE _CUDA_HD int floorPow2(int n) {
 #ifdef WIN32
         // method 2
     return 1 << static_cast<int>(logb(static_cast<float>(n)));
@@ -142,6 +110,10 @@ namespace nd4j {
 
     template <bool storeSum, bool isNP2>
     __global__ void prescan(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex);
+
+
+    template <bool storeSum, bool isNP2>
+    __host__ void prescanLauncher(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex);
 
     template <typename S, typename T>
     __global__ void convertKernel(void *dx, Nd4jLong N, void *dz);

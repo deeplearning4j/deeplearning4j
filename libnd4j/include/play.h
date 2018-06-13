@@ -108,16 +108,9 @@ DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTy
 
 
 #define LIBND4J_TYPES \
-        float, \
-        float16, \
-        nd4j::float8, \
-        double, \
-        int, \
-        Nd4jLong, \
-        nd4j::int8, \
-        nd4j::uint8, \
-        nd4j::int16, \
-        nd4j::uint16
+        0, \
+        1
+
 
 BUILD_DOUBLE_TEMPLATE(template __global__ void convertKernel, (void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
 

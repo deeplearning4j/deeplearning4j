@@ -2,6 +2,8 @@
 // Created by raver on 6/12/2018.
 //
 
+#include <types/types.h>
+#include <op_boilerplate.h>
 #include <loops/type_conversions.h>
 
 namespace nd4j {
@@ -86,6 +88,35 @@ namespace nd4j {
         }
     }
 
+    /**
+     * This is cpu version, so leave it here as inline, to avoid templates instantiation
+     *
+     * @tparam S
+     * @tparam T
+     * @param dx
+     * @param N
+     * @param dz
+     */
+    template<typename S, typename T>
+    void TypeCast::convertGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
+        auto x = reinterpret_cast<S *>(dx);
+        auto z = reinterpret_cast<T *>(dz);
+
+        if (N < nd4j::Environment::getInstance()->elementwiseThreshold()) {
+#pragma omp simd
+            for (int i = 0; i < N; i++) {
+                // FIXME: get rid of through-float though
+                z[i] = static_cast<T>(static_cast<float>(x[i]));
+            }
+        } else {
+
+#pragma omp parallel for
+            for (int i = 0; i < N; i++) {
+                // FIXME: get rid of through-float though
+                z[i] = static_cast<T>(static_cast<float>(x[i]));
+            }
+        }
+    };
 
 
     template void TypeCast::convertFromThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
@@ -95,4 +126,6 @@ namespace nd4j {
     template void TypeCast::convertToThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     template void TypeCast::convertToThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     template void TypeCast::convertToThreshold<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+
+    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
 }
