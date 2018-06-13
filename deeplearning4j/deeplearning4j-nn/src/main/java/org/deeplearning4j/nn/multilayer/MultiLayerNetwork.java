@@ -39,11 +39,13 @@ import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
+import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -3305,8 +3307,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             if (currentLayer.numParams() > 0) {
                 paramShape = "";
-                in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
-                out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                if (currentLayer instanceof BidirectionalLayer) { // Bidirectional layer is not an FFL
+                    BidirectionalLayer bi = (BidirectionalLayer) currentLayer;
+                    in = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNIn());
+                    out = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNOut());
+                } else {
+                    in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
+                    out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                }
                 Set<String> paraNames = currentLayer.paramTable().keySet();
                 for (String aP : paraNames) {
                     String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());

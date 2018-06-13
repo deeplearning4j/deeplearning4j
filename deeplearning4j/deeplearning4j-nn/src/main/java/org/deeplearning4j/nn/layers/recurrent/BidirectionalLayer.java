@@ -39,8 +39,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 public class BidirectionalLayer implements RecurrentLayer {
 
     private NeuralNetConfiguration conf;
-    private RecurrentLayer fwd;
-    private RecurrentLayer bwd;
+    private Layer fwd;
+    private Layer bwd;
 
     private Bidirectional layerConf;
     private INDArray paramsView;
@@ -52,7 +52,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     private INDArray outFwd;
     private INDArray outBwd;
 
-    public BidirectionalLayer(@NonNull NeuralNetConfiguration conf, @NonNull RecurrentLayer fwd, @NonNull RecurrentLayer bwd) {
+    public BidirectionalLayer(@NonNull NeuralNetConfiguration conf, @NonNull Layer fwd, @NonNull Layer bwd) {
         this.conf = conf;
         this.fwd = fwd;
         this.bwd = bwd;

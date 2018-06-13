@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -79,14 +80,7 @@ public class Mean extends Sum {
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         //If out = mean(in), then dL/dIn = 1/N * dL/dOut  (broadcast to appropriate shape)
         //Note that N differs for "along dimension" vs. "whole array" reduce cases
-        long n = f().getReductionLength(this);
-
-        int rank = Shape.rankFromShape(arg().getShape());
-        SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(rank, dimensions, i_v1.get(0));
-        SDVariable ret = sameDiff.onesLike(arg()).div(n);      //1/N with shape equal to input
-
-        ret = ret.mul(broadcastableGrad);
-        return Arrays.asList(ret);
+        return Collections.singletonList(f().meanBp(arg(), i_v1.get(0), false, dimensions));
     }
 
     @Override

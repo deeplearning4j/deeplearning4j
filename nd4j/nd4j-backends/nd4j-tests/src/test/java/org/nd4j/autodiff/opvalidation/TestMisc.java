@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.gradcheck;
+package org.nd4j.autodiff.opvalidation;
 
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
