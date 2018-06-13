@@ -168,7 +168,7 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
-        int[] dilation = new int[]{1, 1, 1};
+        int[] dilation = layerConf().getDilation();
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
@@ -194,6 +194,7 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 kernel[0], kernel[1], kernel[2],
                 strides[0], strides[1], strides[2],
                 pad[0], pad[1], pad[2],
+                dilation[0], dilation[1], dilation[2],
                 convolutionMode == ConvolutionMode.Same ? 1 : 0,
                 0 // isNCDHW, i.e. channels first by default
         };
