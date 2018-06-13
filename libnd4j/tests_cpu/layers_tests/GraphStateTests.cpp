@@ -15,8 +15,8 @@ using namespace nd4j::graph;
 class GraphStateTests : public testing::Test {
 public:
     GraphStateTests() {
-        Environment::getInstance()->setDebug(true);
-        Environment::getInstance()->setVerbose(true);
+        Environment::getInstance()->setDebug(false);
+        Environment::getInstance()->setVerbose(false);
     };
 
     ~GraphStateTests() {
