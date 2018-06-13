@@ -1839,7 +1839,7 @@ public class SameDiff {
     /**
      * Average pooling 3d operation.
      *
-     * @param inputs       the inputs to average pooling 3d
+     * @param input          the input to average pooling 3d
      * @param pooling3DConfig the configuration
      * @return
      */
@@ -1850,8 +1850,8 @@ public class SameDiff {
     /**
      * Average pooling 3d operation.
      *
-     * @param name         name of the operation in SameDiff
-     * @param inputs       the inputs to average pooling 3d
+     * @param name            name of the operation in SameDiff
+     * @param input           the input to average pooling 3d
      * @param pooling3DConfig the configuration
      * @return
      */
@@ -1863,24 +1863,24 @@ public class SameDiff {
     /**
      * Max pooling 3d operation.
      *
-     * @param inputs       the inputs to max pooling 3d
+     * @param input           the input to max pooling 3d
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable maxPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        return maxPooling3d(null, inputs, pooling3DConfig);
+    public SDVariable maxPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
+        return maxPooling3d(null, input, pooling3DConfig);
     }
 
     /**
      * Max pooling 3d operation.
      *
-     * @param name         name of the operation in SameDiff
-     * @param inputs       the inputs to max pooling 3d
+     * @param name            name of the operation in SameDiff
+     * @param input           the inputs to max pooling 3d
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable maxPooling3d(String name, SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        SDVariable ret = f().maxPooling3d(inputs, pooling3DConfig);
+    public SDVariable maxPooling3d(String name, SDVariable input, Pooling3DConfig pooling3DConfig) {
+        SDVariable ret = f().maxPooling3d(input, pooling3DConfig);
         return updateVariableNameAndReference(ret, name);
     }
 

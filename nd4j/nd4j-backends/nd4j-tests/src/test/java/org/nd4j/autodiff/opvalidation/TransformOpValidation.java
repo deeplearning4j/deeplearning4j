@@ -114,9 +114,9 @@ public class TransformOpValidation {
                         msg = "rsub - " + inOrder;
                         break;
                     case 6:
-                        out = sd.pow(2);
+                        out = sd.pow(in,2);
                         tc.expectedOutput(out.getVarName(), Transforms.pow(inArr, 2));
-                        msg = "mul - " + inOrder;
+                        msg = "pow - " + inOrder;
                         break;
                     default:
                         throw new RuntimeException();

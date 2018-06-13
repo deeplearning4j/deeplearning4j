@@ -2,6 +2,7 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -27,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
+@Slf4j
 public class ShapeOpValidation extends BaseOpValidation {
     public ShapeOpValidation(Nd4jBackend backend) {
         super(backend);

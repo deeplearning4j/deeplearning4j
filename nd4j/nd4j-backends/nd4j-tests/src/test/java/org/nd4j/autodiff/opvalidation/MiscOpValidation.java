@@ -385,10 +385,10 @@ public class MiscOpValidation extends BaseOpValidation {
 
                 String msg = "rank=" + rank + ", dim=" + dim;
 
-                TestCase tc = new TestCase(sd);
+                TestCase tc = new TestCase(sd).testName(msg);
                 String error = OpValidation.validate(tc);
                 if(error != null){
-                    failed.add(name);
+                    failed.add(msg);
                 }
             }
         }

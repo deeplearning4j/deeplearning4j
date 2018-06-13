@@ -1729,10 +1729,6 @@ public class SameDiffTests {
         SDVariable w = sd.var("W", wArr);
         SDVariable b = sd.var("b", bArr);
 
-        //Order: https://github.com/deeplearning4j/libnd4j/blob/6c41ea5528bb1f454e92a9da971de87b93ff521f/include/ops/declarable/generic/convo/conv2d.cpp#L20-L22
-        //in, w, b - bias is optional
-        SDVariable[] vars = new SDVariable[]{in, w, b};
-
         Conv3DConfig conv3DConfig = Conv3DConfig.builder()
                 .kH(kH).kW(kW).kT(kT)
                 .dilationH(1).dilationW(1).dilationT(1)
@@ -1740,7 +1736,7 @@ public class SameDiffTests {
                 .biasUsed(false)
                 .build();
 
-        SDVariable out = sd.conv3d(vars, conv3DConfig);
+        SDVariable out = sd.conv3d(in, w, b, conv3DConfig);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
@@ -2104,9 +2100,6 @@ public class SameDiffTests {
 
         SDVariable in = sd.var("in", inArr);
 
-
-        SDVariable[] vars = new SDVariable[]{in};
-
         Pooling3DConfig pooling3DConfig = Pooling3DConfig.builder()
                 .kH(kH).kW(kW).kT(kD)
                 .pH(0).pH(0).pT(0)
@@ -2115,7 +2108,7 @@ public class SameDiffTests {
                 .ceilingMode(false)
                 .build();
 
-        SDVariable out = sd.avgPooling3d(vars, pooling3DConfig);
+        SDVariable out = sd.avgPooling3d(in, pooling3DConfig);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
@@ -2141,9 +2134,6 @@ public class SameDiffTests {
 
         SDVariable in = sd.var("in", inArr);
 
-
-        SDVariable[] vars = new SDVariable[]{in};
-
         Pooling3DConfig pooling3DConfig = Pooling3DConfig.builder()
                 .kH(kH).kW(kW).kT(kD)
                 .pH(0).pH(0).pT(0)
@@ -2152,7 +2142,7 @@ public class SameDiffTests {
                 .ceilingMode(false)
                 .build();
 
-        SDVariable out = sd.maxPooling3d(vars, pooling3DConfig);
+        SDVariable out = sd.maxPooling3d(in, pooling3DConfig);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
