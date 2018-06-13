@@ -4,9 +4,8 @@ set -euo pipefail
 
 IS_RELEASE='true'
 
-# Set devtoolset to version 3 because of problems with ASan (AddressSanitizer) problems in version 4
 if [ -f /etc/redhat-release ]; then
-    source /opt/rh/devtoolset-3/enable
+    source /opt/rh/devtoolset-7/enable
 fi
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
