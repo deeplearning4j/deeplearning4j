@@ -226,41 +226,6 @@ public class SameDiffTests {
     }
 
     @Test
-    public void testReluLayer() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray input = Nd4j.create(new long[]{2, 2});
-        INDArray weights = Nd4j.create(new long[]{2, 2});
-        INDArray b = Nd4j.create(new long[]{1, 2});
-
-        SDVariable sdInput = sameDiff.var("input", input);
-        SDVariable sdWeights = sameDiff.var("weights", weights);
-        SDVariable sdBias = sameDiff.var("bias", b);
-
-        SDVariable res = sameDiff.reluLayer(sdInput, sdWeights, sdBias);
-        sameDiff.exec();
-
-        INDArray out = res.getArr();
-
-        assertArrayEquals(new long[]{2, 2}, res.getShape());
-
-    }
-
-
-    @Test
-    public void testBiasAdd() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray ia = Nd4j.create(new long[]{2, 2});
-        INDArray b = Nd4j.create(new long[]{1, 2});
-
-        SDVariable input = sameDiff.var("input", ia);
-        SDVariable bias = sameDiff.var("bias", b);
-
-        SDVariable res = sameDiff.biasAdd(input, bias);
-        assertArrayEquals(new long[]{2, 2}, res.getShape());
-
-    }
-
-    @Test
     public void testSoftmaxXentWithLogits() {
 
         SameDiff sameDiff = SameDiff.create();

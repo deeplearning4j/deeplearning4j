@@ -14,18 +14,109 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNorma
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 public class LayerOpValidation extends BaseOpValidation {
     public LayerOpValidation(Nd4jBackend backend) {
         super(backend);
     }
+
+    @Test
+    public void testXwPlusB() {
+        Nd4j.getRandom().setSeed(12345);
+
+        for(boolean rank1Bias : new boolean[]{false, true}) {
+
+            SameDiff sameDiff = SameDiff.create();
+            INDArray input = Nd4j.rand(new long[]{2, 3});
+            INDArray weights = Nd4j.rand(new long[]{3, 4});
+            INDArray b = Nd4j.rand( rank1Bias ? new long[]{4} : new long[]{1, 4});
+
+            SDVariable sdInput = sameDiff.var("input", input);
+            SDVariable sdWeights = sameDiff.var("weights", weights);
+            SDVariable sdBias = sameDiff.var("bias", b);
+
+            SDVariable res = sameDiff.xwPlusB(sdInput, sdWeights, sdBias);
+            SDVariable loss = sameDiff.standardDeviation(res, true);
+
+            INDArray exp = input.mmul(weights).addiRowVector(b);
+
+            TestCase tc = new TestCase(sameDiff)
+                    .gradientCheck(true)
+                    .expectedOutput(res.getVarName(), exp);
+
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testReluLayer() {
+        Nd4j.getRandom().setSeed(12345);
+
+        for(boolean rank1Bias : new boolean[]{false, true}) {
+
+            SameDiff sameDiff = SameDiff.create();
+            INDArray input = Nd4j.rand(new long[]{2, 3});
+            INDArray weights = Nd4j.rand(new long[]{3, 4});
+            INDArray b = Nd4j.rand( rank1Bias ? new long[]{4} : new long[]{1, 4});
+
+            SDVariable sdInput = sameDiff.var("input", input);
+            SDVariable sdWeights = sameDiff.var("weights", weights);
+            SDVariable sdBias = sameDiff.var("bias", b);
+
+            SDVariable res = sameDiff.reluLayer(sdInput, sdWeights, sdBias);
+            SDVariable loss = sameDiff.standardDeviation(res, true);
+
+            INDArray exp = input.mmul(weights).addiRowVector(b);
+            Transforms.relu(exp, false);
+
+            TestCase tc = new TestCase(sameDiff)
+                    .gradientCheck(true)
+                    .expectedOutput(res.getVarName(), exp);
+
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testBiasAdd() {
+        Nd4j.getRandom().setSeed(12345);
+
+        for(boolean rank1Bias : new boolean[]{false, true}) {
+
+            SameDiff sameDiff = SameDiff.create();
+            INDArray input = Nd4j.rand(new long[]{2, 4});
+            INDArray b = Nd4j.rand( rank1Bias ? new long[]{4} : new long[]{1, 4});
+
+            SDVariable sdInput = sameDiff.var("input", input);
+            SDVariable sdBias = sameDiff.var("bias", b);
+
+            SDVariable res = sameDiff.biasAdd(sdInput, sdBias);
+            SDVariable loss = sameDiff.standardDeviation(res, true);
+
+            INDArray exp = input.addiRowVector(b);
+
+            TestCase tc = new TestCase(sameDiff)
+                    .gradientCheck(true)
+                    .expectedOutput(res.getVarName(), exp);
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
+        }
+    }
+
 
     @Test
     public void testLinear(){
@@ -369,5 +460,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         Nd4j.getExecutioner().exec(avg2dDeriv);
     }
+
+
 
 }
