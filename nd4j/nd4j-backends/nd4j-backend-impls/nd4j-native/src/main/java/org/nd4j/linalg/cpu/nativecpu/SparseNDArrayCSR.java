@@ -90,6 +90,11 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     }
 
     @Override
+    public INDArray convertToHalfs() {
+        return null;
+    }
+
+    @Override
     public INDArray convertToFloats() {
         return null;
     }

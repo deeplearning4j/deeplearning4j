@@ -3022,6 +3022,7 @@ public interface INDArray extends Serializable {
      */
     int toFlatArray(FlatBufferBuilder builder);
 
+    INDArray convertToHalfs();
     INDArray convertToFloats();
     INDArray convertToDoubles();
 }

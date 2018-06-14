@@ -137,9 +137,10 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         throw new UnsupportedOperationException();
     }
 
-
-
-
+    @Override
+    public INDArray convertToHalfs() {
+        return null;
+    }
 
 
     /**

@@ -5,7 +5,7 @@
 #ifndef LIBND4J_PLAY_H
 #define LIBND4J_PLAY_H
 
-#include "op_boilerplate.h"
+#include "type_boilerplate.h"
 
 /*
 #define ACTIVATIONS \
@@ -23,6 +23,7 @@
         (1, double) ,\
         (2, float16)
 */
+/*
 #define PAIRWISE_TRANSFORM_OPS \
         (0, simdOps::Add),\
         (1, simdOps::Copy),\
@@ -53,7 +54,7 @@
         (69,simdOps::Atan2)
 
 EXECUTE_NOE((x, y, extras), OPS_A(PAIRWISE_TRANSFORM_OPS))
-
+*/
 //BUILD_CALL_1(template void nd4j::NDArray<float16>::applyTransform, float16, (NDArray<float16>* a, float16* b), TRANSFORM_OPS)
 
 //BUILD_CALL_1(template void nd4j::NDArray<float16>::applyPairwiseTransform, float16, (NDArray<float16>* other, float16* extraParams), PAIRWISE_TRANSFORM_OPS)
@@ -104,4 +105,7 @@ DISPATCH_METAOP(invertedMetaPairwiseShaped_Pairwise_Scalar, PARAMS(opTypeA, opTy
     invertedMetaPairwiseShapedGeneric<float, simdOps::InvertedMetaOp<float, simdOps::Copy<float>, simdOps::Multiply<float>>>(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
  }
  */
+
+
+
 #endif //LIBND4J_PLAY_H
