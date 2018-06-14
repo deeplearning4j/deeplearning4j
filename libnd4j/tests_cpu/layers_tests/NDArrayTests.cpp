@@ -447,7 +447,7 @@ TEST_F(NDArrayTest, TestSumAlongDimension1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestSumAlongDimension2) {
-    /*float *c = new float[4] {1, 2, 3, 4};
+    *float *c = new float[4] {1, 2, 3, 4};
     auto *array = new NDArray<float>(c, cShape);
 
     auto *res = array->sum({1});
@@ -460,7 +460,6 @@ TEST_F(NDArrayTest, TestSumAlongDimension2) {
     delete[] c;
     delete array;
     delete res;
-    */
 }
 
 //////////////////////////////////////////////////////////////////////
