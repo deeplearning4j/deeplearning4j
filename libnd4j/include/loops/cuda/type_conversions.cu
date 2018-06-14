@@ -6,18 +6,8 @@
 #include <types/types.h>
 
 namespace nd4j {
-    template <typename T>
-    void TypeCast::convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
-        nd4j_printf("TypeCast::convertToThreshold: this method shouldn't be ever called\n","");
-    }
-
-    template <typename T>
-    void TypeCast::convertFromThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
-        nd4j_printf("TypeCast::convertFromThreshold: this method shouldn't be ever called\n","");
-    }
-
     template<typename S, typename T>
-    void TypeCast::convertGeneric(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
+    void TypeCast::convertGenericCuda(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
         auto stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
         nd4j::convertKernel<S, T><<<256, 1024, 1024, *stream>>>(dx, N, dz);
@@ -528,7 +518,7 @@ namespace nd4j {
         0, \
         1
 
-    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
+    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGenericCuda, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
     BUILD_DOUBLE_TEMPLATE(template void prescanLauncher, (dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex), LIBND4J_BOOLS, LIBND4J_BOOLS)
 
 #undef LIBND4J_BOOLS

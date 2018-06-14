@@ -52,6 +52,11 @@ namespace nd4j {
 
         template <typename T>
         static _CUDA_H void convertFromThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+
+        #ifdef __CUDACC__
+        template<typename S, typename T>
+        static _CUDA_H void convertGenericCuda(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+        #endif
     };
 
 
