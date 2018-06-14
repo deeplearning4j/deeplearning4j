@@ -102,9 +102,9 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
         nd4j_printf("Cannot retrieve mandatory environment variable 'CXX'. Please set up the variable and try again.", "");
         exit(3);
     }
-
-    std::string pathStr("PATH=/usr/bin:/usr/local/bin:$PATH");
-//    pathStr += cxx_path;
+    char* pathEnv = getenv("PATH");
+    std::string pathStr("PATH=./;");
+    pathStr += pathEnv;
 
     nd4j_printf("%s\n", pathStr.c_str());
     char const* env[] = {// "HOME=/tmp", 
