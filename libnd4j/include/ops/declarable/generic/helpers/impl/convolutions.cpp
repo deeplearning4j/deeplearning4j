@@ -1468,7 +1468,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
     const Nd4jLong pW = (int)extraParams[5];    
     const Nd4jLong dH = (int)extraParams[6];
     const Nd4jLong dW = (int)extraParams[7];
-    Nd4jLong poolingMode = (int)extraParams[8];
+    auto poolingMode = (int)extraParams[8];
     T extraParam0 = extraParams[9];
 
     const Nd4jLong kHEff = kH + (kH-1)*(dH-1);
@@ -1494,6 +1494,8 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
     const Nd4jLong kProd   = kH*kW;
     const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
+
+    nd4j_printf("Internal KH: %i; KW: %i; SH: %i; SW: %i; pH: %i; pW: %i; dH: %i; dW: %i; isSameMode: %i; extraParam: %f;\n", kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, (int) extraParam0);
 
     Nd4jLong hstart, wstart, hend, wend;
     T sum, *pIn;
@@ -1556,29 +1558,29 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
                         wend = wstart + kWEff;
 
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
+                            hstart += dH * static_cast<Nd4jLong>(nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);
+                            wstart += dW * static_cast<Nd4jLong>(nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);
+                            hend -= dH * static_cast<Nd4jLong>(nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);
+                            wend -= dW * static_cast<Nd4jLong>(nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / dW));
 
                         hstart *= iStride2;
                         hend   *= iStride2;
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = static_cast<T>(0.);
+                        sum = static_cast<T>(0.f);
                                             
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                 sum += pIn[kh + kw];
                                 
                         if ((int) extraParam0 == 0)         //Exclude padding
-                            sum /= (Nd4jLong)nd4j::math::nd4j_ceil<T>((hend-hstart) * iStep2Inv) * (Nd4jLong)nd4j::math::nd4j_ceil<T>((wend-wstart) * iStep3Inv);   //Accounts for dilation
-                            else if ((int) extraParam0 == 1)    //Include padding
-                                sum /= kProd;
+                            sum /= static_cast<Nd4jLong>(nd4j::math::nd4j_ceil<T>((hend-hstart) * iStep2Inv) * nd4j::math::nd4j_ceil<T>((wend-wstart) * iStep3Inv));   //Accounts for dilation
+                        else if ((int) extraParam0 == 1)    //Include padding
+                            sum /= kProd;
                     
                             out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                     }
