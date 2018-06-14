@@ -2,8 +2,8 @@
 // Created by george@skymind.io on 6/1/2018.
 //
 
-#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/reduce_product.h>
+#include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
 namespace ops {
@@ -39,18 +39,18 @@ namespace ops {
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
     
-        Nd4jLong* outShapeInfo;// = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0), keepDims, false, block.getWorkspace());
+        Nd4jLong* outShapeInfo;
         COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
         return SHAPELIST(outShapeInfo);
     }
 
     CUSTOM_OP_IMPL(reduce_prod_bp, 2, 1, false, 0, 0) {
-//	dL/dIn_i = dL/dOut * (prod(in) / in_i) <==> epsilon_i * (prod(in) / in_i)
+
         auto input = INPUT_VARIABLE(0);
         auto epsilon = INPUT_VARIABLE(1);
         auto output = OUTPUT_VARIABLE(0);
-//        REQUIRE_TRUE(output->isSameShape(epsilon), 0, "The output and the second param should have the equal shapes.");
+
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
         T keepDimsT = (keepDims?T(1.f):T(0.f));
         // at first step we build fwd activation
@@ -80,7 +80,7 @@ namespace ops {
         else { // result 
 
             auto axes = *block.getIArguments();
-            helpers::reduceProductBP(input, epsilon, tempProd, axes);
+            helpers::reduceProductBP(input, epsilon, tempProd, output, axes);
         }
 
         return ND4J_STATUS_OK;

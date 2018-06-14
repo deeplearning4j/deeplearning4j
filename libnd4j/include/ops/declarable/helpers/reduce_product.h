@@ -11,7 +11,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    void reduceProdBP(NDArray<T>* input, NDArray<T>* epsilon, NDArray<T>* output, std::vector<int> const& axes) {
+    void reduceProductBP(NDArray<T>* input, NDArray<T>* epsilon, NDArray<T>* tempProd, NDArray<T>* output, std::vector<int> const& axes);
 
 }
 }
