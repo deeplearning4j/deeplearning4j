@@ -10,10 +10,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -71,6 +68,7 @@ public class KerasModelBuilder implements Cloneable, Closeable {
      * @throws IOException I/O Exception
      */
     public KerasModelBuilder modelJsonFilename(String modelJsonFilename) throws IOException {
+        checkForExistence(modelJsonFilename);
         this.modelJson = new String(Files.readAllBytes(Paths.get(modelJsonFilename)));
         return this;
     }
@@ -83,6 +81,7 @@ public class KerasModelBuilder implements Cloneable, Closeable {
      * @throws IOException I/O Exception
      */
     public KerasModelBuilder modelYamlFilename(String modelYamlFilename) throws IOException {
+        checkForExistence(modelYamlFilename);
         this.modelJson = new String(Files.readAllBytes(Paths.get(modelYamlFilename)));
         return this;
     }
@@ -187,6 +186,7 @@ public class KerasModelBuilder implements Cloneable, Closeable {
      */
     public KerasModelBuilder modelHdf5Filename(String modelHdf5Filename)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException, IOException {
+        checkForExistence(modelHdf5Filename);
         try {
             this.weightsArchive = this.trainingArchive = new Hdf5Archive(modelHdf5Filename);
             this.weightsRoot = config.getTrainingWeightsRoot();
@@ -209,7 +209,8 @@ public class KerasModelBuilder implements Cloneable, Closeable {
 
             this.modelJson = new ObjectMapper().writeValueAsString(modelMapper);
             if (this.trainingArchive.hasAttribute(config.getTrainingTrainingConfigAttribute()))
-                this.trainingJson = this.trainingArchive.readAttributeAsJson(config.getTrainingTrainingConfigAttribute());
+                this.trainingJson = this.trainingArchive
+                        .readAttributeAsJson(config.getTrainingTrainingConfigAttribute());
         } catch (Throwable t) {
             close();
             throw t;
@@ -224,7 +225,8 @@ public class KerasModelBuilder implements Cloneable, Closeable {
      * @param weightsHdf5Filename File name of weights HDF5
      * @return Model builder
      */
-    public KerasModelBuilder weightsHdf5FilenameNoRoot(String weightsHdf5Filename) {
+    public KerasModelBuilder weightsHdf5FilenameNoRoot(String weightsHdf5Filename) throws IOException {
+        checkForExistence(weightsHdf5Filename);
         this.weightsArchive = new Hdf5Archive(weightsHdf5Filename);
         return this;
     }
@@ -237,7 +239,8 @@ public class KerasModelBuilder implements Cloneable, Closeable {
      * @param weightsHdf5Filename File name of weights HDF5
      * @return Model builder
      */
-    public KerasModelBuilder weightsHdf5Filename(String weightsHdf5Filename) {
+    public KerasModelBuilder weightsHdf5Filename(String weightsHdf5Filename) throws IOException {
+        checkForExistence(weightsHdf5Filename);
         this.weightsArchive = new Hdf5Archive(weightsHdf5Filename);
         this.weightsRoot = config.getTrainingWeightsRoot();
         return this;
@@ -297,5 +300,23 @@ public class KerasModelBuilder implements Cloneable, Closeable {
             weightsArchive.close();
             weightsArchive = null;
         }
+    }
+
+    /**
+     * Check if the file corresponding to model JSON/YAML or HDF5 files actually exists
+     * and throw an explicit exception.
+     *
+     * @param fileName File name to check for existence
+     * @throws FileNotFoundException File not found
+     */
+    private void checkForExistence(String fileName) throws IOException {
+        File file = new File(fileName);
+        if (!file.exists()) {
+            throw new FileNotFoundException("File with name " + fileName + " does not exist.");
+        }
+        if (!file.isFile()) {
+            throw new IOException("Provided string does not correspond to an actual file.");
+        }
+
     }
 }
