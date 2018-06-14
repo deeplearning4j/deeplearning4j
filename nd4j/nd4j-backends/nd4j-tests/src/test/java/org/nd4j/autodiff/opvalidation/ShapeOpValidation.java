@@ -13,6 +13,7 @@ import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.shape.Permute;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,7 +30,9 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertArrayEquals;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 @Slf4j
 public class ShapeOpValidation extends BaseOpValidation {
@@ -253,6 +256,8 @@ public class ShapeOpValidation extends BaseOpValidation {
                         throw new RuntimeException();
                 }
 
+                INDArray exp = inArr.dup('c').reshape('c', expShapePostSqueeze);
+
                 sd.execAndEndResult();
 
                 INDArray squeezed = squeeze.getArr();
@@ -264,10 +269,12 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                 String msg = "squeezeDim=" + i + ", source=" + p.getSecond();
                 TestCase tc = new TestCase(sd)
+                        .testName(msg)
+                        .expected(squeeze.getVarName(), exp)
                         .expectedOutput("out", expOut);
 
 
-                String error = OpValidation.validate(tc);
+                String error = OpValidation.validate(tc, true);
                 if(error != null){
                     failed.add(name);
                 }
@@ -464,7 +471,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                     TestCase tc = new TestCase(sd)
                             .expected(merge, exp)
                             .testName(msg);
-                    String error = OpValidation.validate(tc);
+                    String error = OpValidation.validate(tc, true);
                     if(error != null){
                         failed.add(msg);
                     }
@@ -513,6 +520,26 @@ public class ShapeOpValidation extends BaseOpValidation {
                         in[i] = sd.var(String.valueOf(i), inArr[i]);
                     }
 
+                    INDArray expStack = null;
+                    if(Arrays.equals(new long[]{3,4}, shape)){
+                        if(axis == 0){
+                            INDArray out = Nd4j.create(numInputs, 3, 4);
+                            for( int i=0; i<numInputs; i++ ){
+                                out.get(point(i), all(), all()).assign(inArr[i]);
+                            }
+                        } else if(axis == 1) {
+                            INDArray out = Nd4j.create(3, numInputs, 4);
+                            for( int i=0; i<numInputs; i++ ){
+                                out.get(all(), point(i), all()).assign(inArr[i]);
+                            }
+                        } else {
+                            INDArray out = Nd4j.create(3, 4, numInputs);
+                            for( int i=0; i<numInputs; i++ ){
+                                out.get(all(), all(), point(i)).assign(inArr[i]);
+                            }
+                        }
+                    }
+
                     SDVariable stack = sd.stack(axis, in);
 
                     INDArray out = sd.execAndEndResult();
@@ -527,6 +554,10 @@ public class ShapeOpValidation extends BaseOpValidation {
                     String msg = Arrays.toString(shape) + ", axis=" + axis + ", numInputs=" + numInputs;
 
                     TestCase tc = new TestCase(sd);
+                    if(expStack != null){
+                        tc.expected(stack, expStack);
+                    }
+
                     String error = OpValidation.validate(tc);
                     if(error != null){
                         failed.add(name);
@@ -574,6 +605,24 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                     SDVariable[] unstacked = sd.unstack(var, axis, numInputs);
 
+                    INDArray[] unstackedExp = null;
+                    if(Arrays.equals(new long[]{3,4}, shape)){
+                        unstackedExp = new INDArray[numInputs];
+                        if(axis == 0){
+                            for(int i=0; i<numInputs; i++ ){
+                                unstackedExp[i] = in.get(point(i), all(), all());
+                            }
+                        } else if(axis == 1){
+                            for(int i=0; i<numInputs; i++ ){
+                                unstackedExp[i] = in.get(all(), point(i), all());
+                            }
+                        } else {
+                            for(int i=0; i<numInputs; i++ ){
+                                unstackedExp[i] = in.get(all(), all(), point(i));
+                            }
+                        }
+                    }
+
                     //for gradient check, need to combine to single scalar output...
                     SDVariable merged = sd.mergeAvg(unstacked);
 
@@ -591,8 +640,13 @@ public class ShapeOpValidation extends BaseOpValidation {
                         assertArrayEquals(msg, shape, v.getArr().shape());
                     }
 
-                    TestCase tc = new TestCase(sd);
-                    String error = OpValidation.validate(tc);
+                    TestCase tc = new TestCase(sd).testName(msg);
+                    if (unstackedExp != null) {
+                        for( int i=0; i<numInputs; i++ ){
+                            tc.expected(unstacked[i], unstackedExp[i]);
+                        }
+                    }
+                    String error = OpValidation.validate(tc, true);
                     if(error != null){
                         failed.add(name);
                     }
@@ -781,11 +835,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(in, exp);
 
         INDArray out = Nd4j.create(3,4,5);
-        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("permute")
-                .addInputs(in)
-                .addOutputs(out)
-                .addIntegerArguments(0,1,2)
-                .build());
+        OpTestCase op = new OpTestCase(new Permute(in,out,0,1,2));
         op.expectedOutput(0, exp);
 
         assertNull(OpValidation.validate(op));
@@ -805,11 +855,12 @@ public class ShapeOpValidation extends BaseOpValidation {
 
             //System.out.println(Arrays.toString(outShape) + " - permute " + Arrays.toString(perm));
             INDArray out = Nd4j.create(outShape);
-            OpTestCase op = new OpTestCase(DynamicCustomOp.builder("permute")
-                    .addInputs(in)
-                    .addOutputs(out)
-                    .addIntegerArguments(perm)
-                    .build());
+//            OpTestCase op = new OpTestCase(DynamicCustomOp.builder("permute")
+//                    .addInputs(in)
+//                    .addOutputs(out)
+//                    .addIntegerArguments(perm)
+//                    .build());
+            OpTestCase op = new OpTestCase(new Permute(in, out, perm));
             op.expectedOutput(0, exp);
 
             assertNull(OpValidation.validate(op));
@@ -938,11 +989,11 @@ public class ShapeOpValidation extends BaseOpValidation {
         // build expected output array
         INDArray expected  = Nd4j.zeros(3);
         for (int i=0; i<3; i++){
-            INDArray idx = arr2.get(NDArrayIndex.point(i));
-            expected.get(NDArrayIndex.point(i)).assign(
-                    arr1.get(NDArrayIndex.point(idx.getInt(0)),
-                            NDArrayIndex.point(idx.getInt(1)),
-                            NDArrayIndex.point(idx.getInt(2))));
+            INDArray idx = arr2.get(point(i));
+            expected.get(point(i)).assign(
+                    arr1.get(point(idx.getInt(0)),
+                            point(idx.getInt(1)),
+                            point(idx.getInt(2))));
         }
         assertEquals(expected, result.eval());
     }

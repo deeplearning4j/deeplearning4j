@@ -66,6 +66,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     }
 
+    public DynamicCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, int[] iArguments) {
+        this(opName, inputs, outputs, tArguments, ArrayUtil.toList(iArguments));
+    }
 
     /**
      * Initialize this custom op with all of the

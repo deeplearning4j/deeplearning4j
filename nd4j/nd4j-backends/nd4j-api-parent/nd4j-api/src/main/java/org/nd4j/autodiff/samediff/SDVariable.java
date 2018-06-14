@@ -273,7 +273,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.var(this);
     }
 
-
     /**
      * Negate op
      * @return Negated variable

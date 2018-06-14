@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.bp.StandardDeviationBp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
@@ -28,6 +29,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -693,9 +695,10 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testIndexAccum(){
+        fail(); //JVM crash: https://github.com/deeplearning4j/deeplearning4j/issues/5582
 
         List<String> failed = new ArrayList<>();
-        List<int[]> dims = Arrays.asList(new int[0], new int[]{0}, new int[]{1}, new int[]{0,1});
+        List<int[]> dims = Arrays.asList(new int[]{0}, new int[]{1}, new int[]{0,1}, new int[0]);
 
         INDArray in = Nd4j.rand(3,4);
 

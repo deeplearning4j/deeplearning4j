@@ -15,6 +15,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarRemainder;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
@@ -73,7 +74,7 @@ public class TransformOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-        for( int i=0; i<7; i++ ) {
+        for( int i=0; i<8; i++ ) {
             for (char inOrder : new char[]{'c', 'f'}) {
                 SameDiff sd = SameDiff.create();
 
@@ -119,13 +120,21 @@ public class TransformOpValidation {
                         tc.expectedOutput(out.getVarName(), Transforms.pow(inArr, 2));
                         msg = "pow - " + inOrder;
                         break;
+                    case 7:
+                        inArr.subi(n/2).muli(0.5);
+                        out = sd.scalarFloorMod(in, 2);
+                        tc.expected(out, Nd4j.getExecutioner().execAndReturn(new ScalarRemainder(inArr.dup(), 2.0)));
+                        msg = "scalarRemainer - " + inOrder;
+                        break;
                     default:
                         throw new RuntimeException();
                 }
 
+                tc.testName(msg);
+
                 SDVariable loss = sd.standardDeviation(out, true);
 
-                String err = OpValidation.validate(tc);
+                String err = OpValidation.validate(tc, true);
                 if(err != null){
                     failed.add(err);
                 }
