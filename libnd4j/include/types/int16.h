@@ -6,32 +6,77 @@
 #define LIBND4J_INT16_H
 
 #include <stdint.h>
+#include <op_boilerplate.h>
 
 
 namespace nd4j {
 
-    float cpu_int162float(int16_t data);
-    int16_t cpu_float2int16(float data);
+    float _CUDA_HD FORCEINLINE cpu_int162float(int16_t data);
+    int16_t _CUDA_HD FORCEINLINE cpu_float2int16(float data);
 
     struct int16 {
         int16_t data;
 
-        int16();
-        ~int16() = default;
+        _CUDA_HD FORCEINLINE int16();
+        _CUDA_HD FORCEINLINE ~int16() = default;
 
         template <class T>
-        int16(const T& rhs);
+        _CUDA_HD FORCEINLINE int16(const T& rhs);
 
         template <class T>
-        int16& operator=(const T& rhs);
+        _CUDA_HD FORCEINLINE int16& operator=(const T& rhs);
 
 
-        operator float() const;
+        _CUDA_HD FORCEINLINE operator float() const;
 
-        void assign(double rhs);
+        _CUDA_HD FORCEINLINE void assign(double rhs);
 
-        void assign(float rhs);
+        _CUDA_HD FORCEINLINE void assign(float rhs);
     };
+
+
+    //////////////////////////////
+
+    float cpu_int162float(int16_t data) {
+        return (float) ((int) data);
+    }
+
+    int16_t cpu_float2int16(float data) {
+        auto t = static_cast<int>(data);
+        if (t > 32767 ) t = 32767;
+        if (t < -32768) t = -32768;
+
+        return static_cast<int16_t>(t);
+    }
+
+
+    int16::int16() {
+        data = cpu_float2int16(0.0f);
+    }
+
+    template <class T>
+    int16::int16(const T& rhs) {
+        assign(rhs);
+    }
+
+    template <class T>
+    int16& int16::operator=(const T& rhs) {
+        assign(rhs); return *this;
+    }
+
+
+    int16::operator float() const {
+        return cpu_int162float(data);
+    }
+
+    void int16::assign(double rhs) {
+        assign(static_cast<float>(rhs));
+    }
+
+    void int16::assign(float rhs) {
+        data = cpu_float2int16(rhs);
+    }
+
 }
 
 #endif //LIBND4J_INT16_H

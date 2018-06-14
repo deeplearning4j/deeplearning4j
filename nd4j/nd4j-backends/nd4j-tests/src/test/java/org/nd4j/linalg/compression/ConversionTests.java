@@ -68,6 +68,32 @@ public class ConversionTests extends BaseNd4jTest {
         Nd4j.setDataType(dtype);
     }
 
+    @Test
+    public void testFloatsToHalfs1() {
+        if (!Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+            return;
+
+        val dtype = Nd4j.dataType();
+
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        val arrayX = Nd4j.create(10).assign(1.0);
+
+
+        Nd4j.setDataType(DataBuffer.Type.HALF);
+        val arrayY = Nd4j.create(10).assign(1.0);
+
+
+        val converted = arrayX.convertToHalfs();
+        val exp = Nd4j.create(10).assign(2.0);
+        converted.addi(arrayY);
+
+        assertEquals(exp, converted);
+
+
+
+        Nd4j.setDataType(dtype);
+    }
+
 
     @Override
     public char ordering() {

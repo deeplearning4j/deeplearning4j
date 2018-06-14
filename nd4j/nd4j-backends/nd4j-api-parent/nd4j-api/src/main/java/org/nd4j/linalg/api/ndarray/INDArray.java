@@ -2744,6 +2744,16 @@ public interface INDArray extends Serializable {
     boolean equalsWithEps(Object o, double eps);
 
     /**
+     * This method checks 2 INDArrays for equal shapes.<br>
+     * Shapes are considered equal if:<br>
+     * (a) Both arrays have equal rank, and<br>
+     * (b) size(0)...size(rank()-1) are equal for both arrays
+     * @param other Other
+     * @return True if shap
+     */
+    boolean equalShapes(INDArray other);
+
+    /**
      * Perform efficient (but unsafe) duplication. Don't use this method unless you know exactly what you are doing.
      * Instead, use {@link #dup()}
      *
@@ -3022,6 +3032,7 @@ public interface INDArray extends Serializable {
      */
     int toFlatArray(FlatBufferBuilder builder);
 
+    INDArray convertToHalfs();
     INDArray convertToFloats();
     INDArray convertToDoubles();
 }

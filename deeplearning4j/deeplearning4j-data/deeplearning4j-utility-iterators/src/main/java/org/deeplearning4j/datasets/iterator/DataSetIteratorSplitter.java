@@ -68,17 +68,12 @@ public class DataSetIteratorSplitter {
 
             @Override
             public List<String> getLabels() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public int totalExamples() {
-                throw new UnsupportedOperationException();
+                return backedIterator.getLabels();
             }
 
             @Override
             public int inputColumns() {
-                throw new UnsupportedOperationException();
+                return backedIterator.inputColumns();
             }
 
             @Override
@@ -88,7 +83,7 @@ public class DataSetIteratorSplitter {
 
             @Override
             public int totalOutcomes() {
-                throw new UnsupportedOperationException();
+                return backedIterator.totalOutcomes();
             }
 
             @Override
@@ -108,17 +103,7 @@ public class DataSetIteratorSplitter {
 
             @Override
             public int batch() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public int cursor() {
-                return counter.intValue();
-            }
-
-            @Override
-            public int numExamples() {
-                return (int) numTrain;
+                return backedIterator.batch();
             }
 
             @Override
@@ -185,17 +170,12 @@ public class DataSetIteratorSplitter {
 
             @Override
             public List<String> getLabels() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public int totalExamples() {
-                throw new UnsupportedOperationException();
+                return backedIterator.getLabels();
             }
 
             @Override
             public int inputColumns() {
-                throw new UnsupportedOperationException();
+                return backedIterator.inputColumns();
             }
 
             @Override
@@ -205,7 +185,7 @@ public class DataSetIteratorSplitter {
 
             @Override
             public int totalOutcomes() {
-                throw new UnsupportedOperationException();
+                return backedIterator.totalOutcomes();
             }
 
             @Override
@@ -225,17 +205,7 @@ public class DataSetIteratorSplitter {
 
             @Override
             public int batch() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public int cursor() {
-                return counter.intValue();
-            }
-
-            @Override
-            public int numExamples() {
-                return (int) numTest;
+                return backedIterator.batch();
             }
 
             @Override

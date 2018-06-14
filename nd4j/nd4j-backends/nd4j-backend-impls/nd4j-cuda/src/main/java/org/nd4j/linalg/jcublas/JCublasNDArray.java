@@ -759,6 +759,7 @@ public class JCublasNDArray extends BaseNDArray {
         return copy;
     }
 
+    @Override
     public INDArray convertToHalfs() {
         if (data.dataType() == DataBuffer.Type.HALF)
             return this;
@@ -766,10 +767,10 @@ public class JCublasNDArray extends BaseNDArray {
         val factory = Nd4j.getNDArrayFactory();
         val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.HALF);
 
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getHostPointer(this.data()),
-                DataBuffer.TypeEx.FLOAT16, AtomicAllocator.getInstance().getHostPointer(buffer), buffer.length());
+        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()),
+                DataBuffer.TypeEx.FLOAT16, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
-        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostWrite();
+        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
         return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
     }
@@ -783,7 +784,7 @@ public class JCublasNDArray extends BaseNDArray {
         val factory = Nd4j.getNDArrayFactory();
         val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.FLOAT);
 
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getHostPointer(this.data()), DataBuffer.TypeEx.FLOAT, AtomicAllocator.getInstance().getHostPointer(buffer), buffer.length());
+        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.FLOAT, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostWrite();
 
@@ -798,7 +799,7 @@ public class JCublasNDArray extends BaseNDArray {
         val factory = Nd4j.getNDArrayFactory();
         val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.DOUBLE);
 
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getHostPointer(this.data()), DataBuffer.TypeEx.DOUBLE, AtomicAllocator.getInstance().getHostPointer(buffer), buffer.length());
+        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataBuffer.TypeEx.DOUBLE, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostWrite();
 

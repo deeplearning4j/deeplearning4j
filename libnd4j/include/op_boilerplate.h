@@ -49,6 +49,7 @@
 #ifndef OP_BOILERPLATE_HH
 #define OP_BOILERPLATE_HH
 
+#include <type_boilerplate.h>
 #include <helpers/OpTracker.h>
 
 #ifdef __CUDACC__
@@ -98,18 +99,6 @@
 #define DEBUG_CALL(STREAM)      if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) { throw std::runtime_error(); }; }
 #define DEBUG_KERNEL(STREAM, OP_NUM)       if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) {std::string tFile(__FILE__); std::string tOp = "Kernel OpNum failed: [" + nd4j::StringUtils::valueToString<int>(OP_NUM) + std::string("]; File: ") + tFile + std::string(":") + nd4j::StringUtils::valueToString<int>(__LINE__); throw std::runtime_error(tOp.c_str()); }; }
 
-#define EXTRACT(...) EXTRACT __VA_ARGS__ 
-#define NOTHING_EXTRACT 
-#define PASTE(x, ...) x ## __VA_ARGS__ 
-#define EVALUATING_PASTE(x, ...) PASTE(x, __VA_ARGS__) 
-#define UNPAREN(x) EVALUATING_PASTE(NOTHING_, EXTRACT x) 
-#define EVAL( x ) x
-#define EVAL0(...)  EVAL1(EVAL1(EVAL1(__VA_ARGS__)))
-#define EVAL1(...) EVAL2(EVAL2(EVAL2(__VA_ARGS__)))
-#define EVAL2(...) EVAL3(EVAL3(EVAL3(__VA_ARGS__)))
-#define EVAL3(...) EVAL4(EVAL4(EVAL4(__VA_ARGS__)))
-#define EVAL4(...) EVAL5(EVAL5(EVAL5(__VA_ARGS__)))
-#define EVAL5(...) __VA_ARGS__
 
 #define LAUNCH(A, B, C, D) <<<A, B, C, D>>>
 
@@ -128,7 +117,7 @@
 #define EMPTY()
 #define DEFER(id) id EMPTY()
 #define OBSTRUCT(...) __VA_ARGS__ DEFER(EMPTY)()
-#define EXPAND(...) __VA_ARGS__
+
 
 #define _EXPAND_OP_CALL(FN, SIG, NUM, TYPE) case NUM: { FN<TYPE<T>>SIG; break; };
 #define _EXPAND_RETURNING_OP_CALL(FN, SIG, NUM, TYPE) else if(opNum == NUM){ return FN<TYPE<T>>SIG; }

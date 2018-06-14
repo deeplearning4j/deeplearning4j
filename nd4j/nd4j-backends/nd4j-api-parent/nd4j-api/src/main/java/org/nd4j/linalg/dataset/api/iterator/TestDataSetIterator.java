@@ -73,11 +73,6 @@ public class TestDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return list.size();
-    }
-
-    @Override
     public int inputColumns() {
         // FIXME: int cast
         return (int)list.get(0).getFeatureMatrix().columns();
@@ -107,16 +102,6 @@ public class TestDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return batch;
-    }
-
-    @Override
-    public synchronized int cursor() {
-        return curr;
-    }
-
-    @Override
-    public int numExamples() {
-        return list.size();
     }
 
     @Override

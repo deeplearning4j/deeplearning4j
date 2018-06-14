@@ -50,11 +50,6 @@ public class CachingDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return sourceIterator.totalExamples();
-    }
-
-    @Override
     public int inputColumns() {
         return sourceIterator.inputColumns();
     }
@@ -83,16 +78,6 @@ public class CachingDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return sourceIterator.batch();
-    }
-
-    @Override
-    public int cursor() {
-        return currentIndex;
-    }
-
-    @Override
-    public int numExamples() {
-        return sourceIterator.numExamples();
     }
 
     @Override
