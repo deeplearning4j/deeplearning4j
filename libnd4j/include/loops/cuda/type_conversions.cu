@@ -20,7 +20,7 @@ namespace nd4j {
     void TypeCast::convertGeneric(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
         auto stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 
-        nd4j::convertKernel<S, T><<<256, 1024, 1024, *stream>>>(dx, N, dz);
+        //nd4j::convertKernel<S, T><<<256, 1024, 1024, *stream>>>(dx, N, dz);
     };
 
 
