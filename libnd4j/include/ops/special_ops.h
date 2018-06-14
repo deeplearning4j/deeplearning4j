@@ -989,7 +989,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
             auto colShape  = shape::shapeOf(colShapeBuffer);
             auto colStride = shape::stride(colShapeBuffer);
             auto imShape = shape::shapeOf(imShapeBuffer);
-            auto imStride = shape::stride(imShapeBuffer);
+            auto imStride = shape::stride(imShapeBuffer);            
 
             const int sH = (int)extraParams[0];
             const int sW = (int)extraParams[1];
@@ -1018,13 +1018,14 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
             const Nd4jLong imStride3  = imStride[3];
 
             // initial zeroing of image content
-            const Nd4jLong imEWS = shape::elementWiseStride(imShapeBuffer);
-            if( imEWS == 1)
+            // const Nd4jLong imEWS = nd4j::math::nd4j_abs<Nd4jLong>(shape::elementWiseStride(imShapeBuffer));
+            // if(imEWS == 1)
                  memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
-            else 
-#pragma omp parallel for schedule(static) proc_bind(close)
-                for (int i = 0; i < shape::length(imShapeBuffer); i+=imEWS) 
-                    *(imBuff + i) = 0.f;
+            // else 
+// #pragma omp parallel for schedule(static) proc_bind(close)
+                // for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS) 
+                    // imBuff[i] = 0.f;           
+            
 
             T *col, *im;
             int imRow, imCol;

@@ -1181,14 +1181,7 @@ void ConvolutionUtils<T>::col2vol(NDArray<T>& columns, NDArray<T>& volume, const
     T* colBuff = columns.getBuffer();
 
     // initial zeroing of volume content
-    const Nd4jLong imEWS = volume.ews();
-    if(imEWS == 1)
-        memset(volBuff, 0, volume.lengthOf() * sizeof(T));
-    else 
-#pragma omp parallel for schedule(static) proc_bind(close)
-        for (int i = 0; i < volume.lengthOf(); i+=imEWS) 
-            *(volBuff + i) = 0.f;
-
+    volume.assign(0.f);
 
     T* col, *vol;
     int volDep, volRow, volCol;
