@@ -457,7 +457,7 @@ public class TransformOpValidation {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 72; i++) {
+        for (int i = 0; i < 73; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -847,6 +847,10 @@ public class TransformOpValidation {
                     ia = Nd4j.randn(nOut, nOut);
                     t = sd.diagPart(in);
                     tc.expectedOutput(t.getVarName(), Nd4j.trueVector(new double[]{ia.getDouble(0,0), ia.getDouble(1,1), ia.getDouble(2,2), ia.getDouble(3,3)}));
+                    break;
+                case 72:
+                    t = sd.identity(in);
+                    tc.expected(t, ia.dup());
                     break;
                 default:
                     throw new RuntimeException();

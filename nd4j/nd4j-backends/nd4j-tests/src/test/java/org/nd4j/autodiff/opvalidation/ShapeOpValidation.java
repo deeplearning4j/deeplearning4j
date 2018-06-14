@@ -13,6 +13,7 @@ import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -413,6 +414,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             for (int numArrays : new int[]{3, 1}) {
                 for (long[] shape : new long[][]{{1}, {3, 4}, {3, 4, 5}}) {
 
+
                     SameDiff sd = SameDiff.create();
                     SDVariable[] arr = new SDVariable[numArrays];
 
@@ -420,28 +422,51 @@ public class ShapeOpValidation extends BaseOpValidation {
                         arr[i] = sd.var(String.valueOf(i), Nd4j.rand(shape));
                     }
 
+                    INDArray exp = arr[0].getArr().dup();
                     SDVariable merge;
+                    String name;
                     switch (t) {
                         case 0:
+                            name = "mergeAdd";
                             merge = sd.mergeAdd(arr);
+                            for( int i=1; i<numArrays; i++ ){
+                                exp.addi(arr[i].getArr().dup());
+                            }
                             break;
                         case 1:
+                            name = "mergeMax";
                             merge = sd.mergeMax(arr);
+                            for( int i=1; i<numArrays; i++ ){
+                                exp = Transforms.max(exp, arr[i].getArr(), true);
+                            }
                             break;
                         case 2:
+                            name = "mergeAvg";
                             merge = sd.mergeAvg(arr);
+                            for( int i=1; i<numArrays; i++ ){
+                                exp.addi(arr[i].getArr().dup());
+                            }
+                            exp.divi(numArrays);
                             break;
                         default:
                             throw new RuntimeException();
                     }
 
-                    String msg = merge.opName() + " - numArrays=" + numArrays + ", shape=" + Arrays.toString(shape);
-                    SDVariable loss = sd.standardDeviation("loss", merge, true);
+                    String msg = name + " - numArrays=" + numArrays + ", shape=" + Arrays.toString(shape);
+                    SDVariable loss;
+                    if(shape.length > 1){
+                        loss = sd.standardDeviation("loss", merge, true);
+                    } else {
+                        loss = sd.mean("loss", merge);
+                    }
 
-                    TestCase tc = new TestCase(sd);
+
+                    TestCase tc = new TestCase(sd)
+                            .expected(merge, exp)
+                            .testName(msg);
                     String error = OpValidation.validate(tc);
                     if(error != null){
-                        failed.add(name);
+                        failed.add(msg);
                     }
                 }
             }

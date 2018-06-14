@@ -584,6 +584,10 @@ public class DifferentialFunctionFactory {
     }
 
 
+    public SDVariable identity(SDVariable input){
+        return new Identity(sameDiff(), input).outputVariable();
+    }
+
     public SDVariable invertPermutation(SDVariable input, boolean inPlace) {
         return new InvertPermutation(sameDiff(), input, inPlace).outputVariable();
     }
@@ -1019,7 +1023,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable[] dotBp(SDVariable in1, SDVariable in2, SDVariable grad, boolean keepDims, int... dimensions){
-        return new DotBp(sameDiff(), in1, in2, grad, keepDims, dimensions);
+        return new DotBp(sameDiff(), in1, in2, grad, keepDims, dimensions).outputVariables();
     }
 
     public SDVariable cosineSimilarity(SDVariable iX, SDVariable i_y, int... dimensions) {

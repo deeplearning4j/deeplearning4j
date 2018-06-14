@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -347,10 +348,36 @@ public class MiscOpValidation extends BaseOpValidation {
                     throw new RuntimeException();
             }
 
+            INDArray exp = in.getArr().dup();
+            int[] indicesInt = indices.getArr().dup().data().asInt();
+            for( int j=0; j<indicesInt.length; j++ ){
+                INDArray updateRow = updates.getArr().getRow(j);
+                INDArray destinationRow = exp.getRow(indicesInt[j]);
+                switch (i){
+                    case 0:
+                        destinationRow.addi(updateRow);
+                        break;
+                    case 1:
+                        destinationRow.subi(updateRow);
+                        break;
+                    case 2:
+                        destinationRow.muli(updateRow);
+                        break;
+                    case 3:
+                        destinationRow.divi(updateRow);
+                        break;
+                    case 4:
+                        destinationRow.assign(updateRow);
+                        break;
+                }
+            }
+
             SDVariable loss = sd.sum(scatter);  //.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
             sd.execAndEndResult();
 
             TestCase tc = new TestCase(sd);
+            tc.expected(scatter, exp);
+
             String error = OpValidation.validate(tc);
             if(error != null){
                 failed.add(name);
@@ -380,6 +407,11 @@ public class MiscOpValidation extends BaseOpValidation {
                 SDVariable in = sd.var("in", Nd4j.rand(inShape));
                 SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}));
 
+                INDArray gatherExp = null;
+                if(rank == 2){
+                    gatherExp = Nd4j.pullRows(in.getArr(), dim, new int[]{0,3,7});
+                }
+
                 SDVariable gather = sd.gather(in, indices, dim);
                 sd.execAndEndResult();  //TODO REMOVE THIS
 
@@ -388,6 +420,12 @@ public class MiscOpValidation extends BaseOpValidation {
                 String msg = "rank=" + rank + ", dim=" + dim;
 
                 TestCase tc = new TestCase(sd).testName(msg);
+                tc.testName(msg);
+
+                if (gatherExp != null) {
+                    tc.expected(gather, gatherExp);
+                }
+
                 String error = OpValidation.validate(tc);
                 if(error != null){
                     failed.add(msg);
@@ -798,5 +836,97 @@ public class MiscOpValidation extends BaseOpValidation {
         }
 
         assertEquals(failing.toString(), 0, failing.size());
+    }
+
+    @Test
+    public void testOneHot1(){
+        fail(); //JVM crash
+        List<String> failed = new ArrayList<>();
+
+        //Because it's on the diagonal, should be the same for all axis args...
+        for( int i=-1; i<=0; i++ ) {
+            INDArray indicesArr = Nd4j.trueVector(new double[]{0, 1, 2});
+            int depth = 3;
+
+            SameDiff sd = SameDiff.create();
+            SDVariable indices = sd.var(indicesArr);
+            SDVariable oneHot = sd.oneHot(indices, depth, i, 1.0, 0.0);
+
+            INDArray exp = Nd4j.eye(3);
+
+            String msg = "Axis: " + i;
+            log.info("Test case: " + msg);
+
+            String err = OpValidation.validate(new TestCase(sd)
+                    .testName(msg)
+                    .expected(oneHot, exp));
+
+            if(err != null){
+                failed.add(err);
+            }
+        }
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testOneHotOp(){
+        //https://www.tensorflow.org/api_docs/python/tf/one_hot
+        //https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/parity_ops/onehot.cpp
+
+        for( int axis=-1; axis<=0; axis++ ) {
+            String err = OpValidation.validate(new OpTestCase(DynamicCustomOp.builder("onehot")
+                    .addInputs(Nd4j.trueVector(new double[]{0, 1, 2}))
+                    .addIntegerArguments(3, axis)   //Depth and axis args
+                    .addFloatingPointArguments(1.0, 0.0)    //on/off values
+                    .build())
+                    .expectedOutput(0, Nd4j.eye(3)));
+
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testOneHot3() {
+        //https://www.tensorflow.org/api_docs/python/tf/one_hot
+        //indices = [[0, 2], [1, -1]]
+        INDArray indicesArr = Nd4j.zeros(2, 2);
+        indicesArr.put(0, 1, 2);
+        indicesArr.put(1, 0, 1);
+        indicesArr.put(1, 1, -1);
+        INDArray expectedOut = Nd4j.zeros(new long[]{2, 2, 3});
+        /*
+        # output: [2 x 2 x 3]
+        # [[[1.0, 0.0, 0.0],   # one_hot(0)
+        #   [0.0, 0.0, 1.0]],  # one_hot(2)
+        #  [[0.0, 1.0, 0.0],   # one_hot(1)
+        #   [0.0, 0.0, 0.0]]]  # one_hot(-1)
+        */
+        expectedOut.putScalar(0, 0, 0, 1.0);
+        expectedOut.putScalar(0, 1, 2, 1.0);
+        expectedOut.putScalar(1, 0, 1, 1.0);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable indices = sd.var("indices", new long[]{2, 2});
+
+        int depth = 3;
+        int axis = -1;
+        SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 1.0, 0.0);
+
+        SDVariable loss = oneHot.std(true);
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(oneHot, expectedOut));
+
+        assertNull(err);
+    }
+
+
+
+    @Test
+    public void testLinspace(){
+
+        SameDiff sd = SameDiff.create();
+        sd.lins
+
     }
 }

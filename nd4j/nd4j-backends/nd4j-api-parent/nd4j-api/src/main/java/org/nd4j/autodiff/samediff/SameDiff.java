@@ -2328,6 +2328,15 @@ public class SameDiff {
         return tan(null, iX);
     }
 
+    public SDVariable identity(SDVariable input){
+        return identity(null, input);
+    }
+
+    public SDVariable identity(String name, SDVariable input){
+        SDVariable s = f().identity(input);
+        return updateVariableNameAndReference(s, name);
+    }
+
     public SDVariable invertPermutation(SDVariable input) {
         return invertPermutation(null, input);
     }
