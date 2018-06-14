@@ -128,6 +128,10 @@ public class DifferentialFunctionFactory {
         return new OnesLike(name, sameDiff(), input).outputVariable();
     }
 
+    public SDVariable constant(SDVariable input, long... shape){
+        return new Constant(sameDiff(), input, (shape != null && shape.length > 0 ? null : shape)).outputVariable();
+    }
+
     public SDVariable linspace(double lower, double upper, long count){
         return new Linspace(sameDiff(), lower, upper, count).outputVariable();
     }
@@ -719,13 +723,16 @@ public class DifferentialFunctionFactory {
         return new IsFinite(sameDiff(), ix, null).outputVariable();
     }
 
-
     public SDVariable isInfinite(SDVariable ix) {
         return new IsInf(sameDiff(), ix, null).outputVariable();
     }
 
     public SDVariable isNaN(SDVariable ix) {
         return new IsNaN(sameDiff(), ix, null).outputVariable();
+    }
+
+    public SDVariable isMax(SDVariable ix){
+        return new IsMax(sameDiff(), ix, false).outputVariable();
     }
 
     public SDVariable round(SDVariable ix) {

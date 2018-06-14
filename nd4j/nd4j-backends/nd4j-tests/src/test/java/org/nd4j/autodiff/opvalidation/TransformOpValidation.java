@@ -1081,6 +1081,54 @@ public class TransformOpValidation {
         }
     }
 
+    @Test
+    public void testIsX(){
+        List<String> failed = new ArrayList<>();
+
+        for( int i=0; i<4; i++ ){
+
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("in", 3);
+
+            SDVariable out;
+            INDArray exp;
+            INDArray inArr;
+            switch (i){
+                case 0:
+                    inArr = Nd4j.trueVector(new double[]{10,Double.POSITIVE_INFINITY, 0, Double.NEGATIVE_INFINITY});
+                    exp = Nd4j.trueVector(new double[]{1,0,1,0});
+                    out = sd.isFinite(in);
+                    break;
+                case 1:
+                    inArr = Nd4j.trueVector(new double[]{10,Double.POSITIVE_INFINITY, 0, Double.NEGATIVE_INFINITY});
+                    exp = Nd4j.trueVector(new double[]{0,1,0,1});
+                    out = sd.isInfinite(in);
+                    break;
+                case 2:
+                    inArr = Nd4j.trueVector(new double[]{-3,5,0});
+                    exp = Nd4j.trueVector(new double[]{0,1,0});
+                    out = sd.isMax(in);
+                    break;
+                case 3:
+                    inArr = Nd4j.trueVector(new double[]{0,Double.NaN,10});
+                    exp = Nd4j.trueVector(new double[]{0,1,0});
+                    out = sd.isNaN(in);
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+            TestCase tc = new TestCase(sd)
+                    .expected(out, exp);
+
+            String err = OpValidation.validate(tc, true);
+            if(err != null){
+                failed.add(err);
+            }
+        }
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
     //TODO UPDATE TO OP VALIDATION OR DELETE
     @Test
     public void testLogGrad() {

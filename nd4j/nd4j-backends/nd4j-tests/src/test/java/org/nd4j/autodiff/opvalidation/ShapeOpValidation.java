@@ -146,6 +146,8 @@ public class ShapeOpValidation extends BaseOpValidation {
                 //Using stdev here: mean/sum would backprop the same gradient for each input...
                 SDVariable stdev = sd.standardDeviation("out", permute, true);
 
+                INDArray exp = inArr.permute(perm);
+
                 INDArray out = sd.execAndEndResult();
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
                 assertEquals(msg, expOut, out);
@@ -153,9 +155,10 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                 TestCase tc = new TestCase(sd);
                 tc.testName(msg)
-                        .expectedOutput("out", expOut);
+                        .expected("out", expOut)
+                        .expected(permute, exp);
 
-                String error = OpValidation.validate(tc);
+                String error = OpValidation.validate(tc, true);
                 if(error != null){
                     failed.add(name);
                 }
@@ -867,6 +870,30 @@ public class ShapeOpValidation extends BaseOpValidation {
         }
     }
 
+    @Test
+    public void testConstant(){
+
+        //Case 0: no shape
+        SameDiff sd = SameDiff.create();
+        INDArray ia = Nd4j.trueVector(new double[]{1,2,3});
+        SDVariable in = sd.var(ia);
+        SDVariable constant = sd.constant(in);
+        SDVariable loss = constant.std(true);
+
+        assertNull(OpValidation.validate(new TestCase(sd).expected(constant, ia)));
+
+        //Case 1: shape is provided + scalar
+
+        sd = SameDiff.create();
+        ia = Nd4j.trueScalar(3.0);
+        in = sd.var(ia);
+        constant = sd.constant(in, 3,4,5);
+        INDArray exp = Nd4j.valueArrayOf(new long[]{3,4,5}, 3.0);
+        loss = constant.std(true);
+
+        assertNull(OpValidation.validate(new TestCase(sd).expected(constant, ia)));
+    }
+
 
     @Test
     public void testUnstackEdgeCase2(){
@@ -886,6 +913,21 @@ public class ShapeOpValidation extends BaseOpValidation {
         }
     }
 
+    @Test
+    public void invertPermutation() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1});
+        INDArray expOut = Nd4j.create(new float[] {2, 4, 3, 0, 1});
+
+        SDVariable input = sd.var("in", new int[] {1, 5});
+        sd.associateArrayWithVariable(ia, input);
+        SDVariable out = sd.invertPermutation(input);
+
+        assertNull(OpValidation.validate(new TestCase(sd)
+                .gradientCheck(false)   //Integer indices in/out
+                .expected(out, expOut)));
+    }
 
 
     @Test

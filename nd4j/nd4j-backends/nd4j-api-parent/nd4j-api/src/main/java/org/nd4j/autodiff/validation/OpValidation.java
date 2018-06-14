@@ -20,13 +20,15 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
+import org.nd4j.linalg.api.ops.impl.shape.MergeSum;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
-import org.nd4j.linalg.api.ops.impl.transforms.BinaryMinimalRelativeError;
-import org.nd4j.linalg.api.ops.impl.transforms.Histogram;
-import org.nd4j.linalg.api.ops.impl.transforms.LegacyDropOut;
-import org.nd4j.linalg.api.ops.impl.transforms.LegacyDropOutInverted;
+import org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.impl.*;
@@ -36,6 +38,7 @@ import org.nd4j.linalg.function.Function;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.Set;
 
 /**
  * Main test case runner for validating ops used in SameDiff.<br>
@@ -422,6 +425,8 @@ public class OpValidation {
                 GradientBackwardsMarker.class,
                 DefaultOpConverter.class,
                 EqualsWithEps.class,
+                MergeSum.class, //Redundant; we use MergeAdd in samediff instead
+
                 //These BP ops: we'll test them as part of gradient checks for the corresponding forward pass ops
                 //We don't need separate forward pass tests (as long as  gradient checks pass), and can't gradient check
                 // them separately to the forward ops anyway
@@ -450,7 +455,8 @@ public class OpValidation {
                 SoftSignDerivative.class,
                 TanhDerivative.class,
 
-                BiasAddGrad.class
+                BiasAddGrad.class,
+                ConcatBp.class
         );
 
         return new HashSet<>(list);
@@ -476,6 +482,7 @@ public class OpValidation {
                 BinaryMinimalRelativeError.class,
                 BinaryMinimalRelativeError.class,
                 Histogram.class,
+                InvertPermutation.class,    //Uses integer indices
                 //Exclude manual broadcast ops: SameDiff uses auto broadcasting
                 BroadcastAMax.class,
                 BroadcastAMax.class,

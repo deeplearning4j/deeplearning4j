@@ -1430,6 +1430,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable constant(SDVariable value, long... shape){
+        return constant(null, value, shape);
+    }
+
+    public SDVariable constant(String name, SDVariable value, long... shape){
+        SDVariable ret = f().constant(value, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public SDVariable linspace(double start, double stop, long number){
         return linspace(null, start, stop, number);
     }
@@ -2511,6 +2520,15 @@ public class SameDiff {
      */
     public SDVariable isFinite(SDVariable iX) {
         return isFinite(null, iX);
+    }
+
+    public SDVariable isMax(SDVariable ix){
+        return isMax(null, ix);
+    }
+
+    public SDVariable isMax(String name, SDVariable ix){
+        SDVariable ret = f().isMax(ix);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**

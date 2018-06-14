@@ -3295,23 +3295,6 @@ public class SameDiffTests {
 
     }
 
-    @Test
-    public void invertPermutation() {
-        SameDiff sd = SameDiff.create();
-
-        INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1});
-        INDArray expOut = Nd4j.create(new float[] {2, 4, 3, 0, 1});
-
-        SDVariable input = sd.var("in", new int[] {1, 5});
-        sd.associateArrayWithVariable(ia, input);
-
-        SDVariable out = sd.invertPermutation(input);
-
-        sd.exec();
-
-        assertEquals(expOut, out.getArr());
-    }
-
 
     private static int binArrToInt(int[] arr){
         int x = 0;
