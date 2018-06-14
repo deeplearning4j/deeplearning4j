@@ -3,6 +3,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/reduce_product.h>
 
 namespace nd4j {
 namespace ops {
@@ -63,7 +64,7 @@ namespace ops {
         std::vector<T> tVec(1);
         tVec[0] = (keepDims?T(1.0):T(0.0));
         std::vector<NDArray<T>*> inputVec({input});
-        auto tmpResult = op.execute(inputVec, tVec, axes, false); 
+        std::unique_ptr<ResultSet<T>> tmpResult(op.execute(inputVec, tVec, axes, false)); 
         if (tmpResult->status() != ND4J_STATUS_OK)
             return tmpResult->status();
         auto tempProd = tmpResult->at(0);
@@ -79,34 +80,8 @@ namespace ops {
         else { // result 
 
             auto axes = *block.getIArguments();
-            std::vector<int> dimensions; //(input->rankOf() - axes.size());
-            for (Nd4jLong e = 0; e < input->rankOf(); e++) {
-                if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
-                    dimensions.emplace_back(e);
-                }
-            }
-            std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
-            std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
-            //output->
-            for (Nd4jLong e = 0; e < outList->size(); ++e) {
-//                auto backpropRoutine = LAMBDA_T(_x, epsilon, tempProd, e) {
-//                    return (*epsilon)(e) * _x / (*tempProd)(e);
-//                };
-                outList->at(e)->assign(epsilon);
-                outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(tempProd, nullptr);
-                outList->at(e)->template applyPairwiseTransform<simdOps::Divide<T>>(inList->at(e), nullptr);
-//                (*outList->at(e)) *= (*inList->at(e));
-//                (*outList->at(e)) /= (*tempProd)(e);
-                
-                //outList->at(e)->assign(epsilon);
-//                epsilon->printShapeInfo("GradOut");
-//                tempProd->printShapeInfo("ReduceProd");
-//                inList->at(e)->printShapeInfo("Input");
-//                outList->at(e)->printShapeInfo("Output");
-//                inList->at(e)->applyLambda(backpropRoutine, outList->at(e));
-            }
+            helpers::reduceProductBP(input, epsilon, tempProd, axes);
         }
-        delete tmpResult;
 
         return ND4J_STATUS_OK;
     }

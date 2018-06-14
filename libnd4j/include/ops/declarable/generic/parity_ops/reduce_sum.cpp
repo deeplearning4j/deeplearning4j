@@ -50,13 +50,11 @@ namespace ops {
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-            //REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_sum_bp: The second param shape should be the same as result shape.");
             if (epsilon->isScalar()) {
                 output->assign(epsilon);
             }
             else {
                 auto axes = *block.getIArguments();
-//                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
                 std::vector<int> dimensions; //(input->rankOf() - axes.size());
                 for (Nd4jLong e = 0; e < input->rankOf(); e++) {
                     if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
@@ -64,7 +62,6 @@ namespace ops {
                     }
                 }
                 std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
-                //output->
                 for (Nd4jLong e = 0; e < outList->size(); ++e) {
                     outList->at(e)->assign(epsilon);
                 }
