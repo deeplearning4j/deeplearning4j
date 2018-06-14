@@ -1396,7 +1396,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if (vertexLayer instanceof FrozenLayerWithBackprop) {
                     vertexLayer = ((FrozenLayerWithBackprop) vertexLayer).getInsideLayer();
                 }
-                vertexLayer.setMaskArray((labelMaskArrays == null) ? null : labelMaskArrays[outNum++]);
+                vertexLayer.setMaskArray((labelMaskArrays == null) ? null : labelMaskArrays[outNum]);
 
                 try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
                     score += ((IOutputLayer) vertexLayer).computeScore(l1, l2, true, workspaceMgr);
