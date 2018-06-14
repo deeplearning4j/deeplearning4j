@@ -1353,8 +1353,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         DataBuffer data = null;
         Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpy(pointer);
         int length = nativeOps.lengthForShapeBufferPointer(shapeBufferPointer);
-        shapeBufferPointer.capacity(4 * length);
-        shapeBufferPointer.limit(4 * length);
+        shapeBufferPointer.capacity(8 * length);
+        shapeBufferPointer.limit(8 * length);
         shapeBufferPointer.position(0);
 
 
