@@ -113,7 +113,7 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
 
 // to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}' 
     nd4j_printf("Run: \n\t g++ -E -P -std=c++11 -o %s -I{../include/*, ../blas} %s\n", output, input);
-    int err = execle(cxx, "g++", "-E", "-P", "-std=c++11", "-o", output, 
+    int err = execle(cxx, cxx, "-E", "-P", "-std=c++11", "-o", output, 
         "-I../include",
         "-I../blas",
         "-I../include/ops",
