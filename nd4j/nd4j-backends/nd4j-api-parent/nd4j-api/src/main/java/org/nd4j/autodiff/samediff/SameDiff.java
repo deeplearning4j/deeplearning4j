@@ -2520,6 +2520,15 @@ public class SameDiff {
         return log(null, iX);
     }
 
+    public SDVariable logSumExp(SDVariable input, int... dimensions){
+        return logSumExp(null, input, dimensions);
+    }
+
+    public SDVariable logSumExp(String name, SDVariable input, int... dimensions){
+        SDVariable ret = f().logSumExp(input, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      * @param iX
      * @return
@@ -3075,6 +3084,27 @@ public class SameDiff {
     }
 
     /**
+     * Entropy reduction: -sum(x * log(x))
+     * @param in         Input
+     * @param dimensions Dimensions to reduce on (null for full array)
+     * @return Output variable
+     */
+    public SDVariable entropy(SDVariable in, int... dimensions){
+        return entropy(null, in, dimensions);
+    }
+
+    /**
+     * Entropy reduction: -sum(x * log(x))
+     * @param in         Input
+     * @param dimensions Dimensions to reduce on (null for full array)
+     * @return Output variable
+     */
+    public SDVariable entropy(String name, SDVariable in, int... dimensions){
+        SDVariable ret = f().entropy(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * @param iX
      * @param dimensions
      * @return
@@ -3237,6 +3267,24 @@ public class SameDiff {
 
     public SDVariable argmin(String name, SDVariable in, int... dimensions) {
         SDVariable ret = f().argmin(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable iamax(SDVariable in, int... dimensions) {
+        return iamax(null, in, dimensions);
+    }
+
+    public SDVariable iamax(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().iamax(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable iamin(SDVariable in, int... dimensions) {
+        return iamin(null, in, dimensions);
+    }
+
+    public SDVariable iamin(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().iamin(in, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 

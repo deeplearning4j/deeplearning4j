@@ -1069,6 +1069,23 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.normmax(name, this, dimensions);
     }
 
+    public SDVariable argmax(int... dimensions){
+        return argmax(null, dimensions);
+    }
+
+    public SDVariable argmax(String name, int... dimensions){
+        return sameDiff.argmax(name, this, dimensions);
+    }
+
+    public SDVariable argmin(int... dimensions){
+        return argmin(null, dimensions);
+    }
+
+    public SDVariable argmin(String name, int... dimensions){
+        return sameDiff.argmin(name, this, dimensions);
+    }
+
+
     public SDVariable setArray(INDArray array){
         sameDiff.associateArrayWithVariable(array, this);
         return this;

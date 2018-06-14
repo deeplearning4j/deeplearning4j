@@ -87,8 +87,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.tArguments = tArguments;
         this.iArguments = new ArrayList<>();
 
-        for (val a: iArguments)
-            this.iArguments.add((Long) a.longValue());
+        if(iArguments != null) {
+            for (val a : iArguments)
+                this.iArguments.add((Long) a.longValue());
+        }
     }
 
 

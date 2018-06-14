@@ -15,10 +15,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Any;
 import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
 import org.nd4j.linalg.api.ops.impl.accum.NormalizeMoments;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
-import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
-import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
+import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
 import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
@@ -333,7 +330,7 @@ public class OpValidation {
                     continue;
 
                 int countBackpropSeen = gradCheckCoverageCountPerClass.get(c);
-                int countFwdValidation = fwdPassCoverageCountPerClass.get(c);
+                int countFwdValidation = fwdPassCoverageCountPerClass.get(c) + singleOpTestCountPerClass.get(c);
 
                 if (countBackpropSeen > 0) {
                     countAdequateBwd++;
@@ -365,7 +362,7 @@ public class OpValidation {
                 if(excludedFromAllTestCoverage.contains(c))
                     continue;
                 int countBackpropSeen = gradCheckCoverageCountPerClass.get(c);
-                int countFwdValidation = fwdPassCoverageCountPerClass.get(c);
+                int countFwdValidation = fwdPassCoverageCountPerClass.get(c) + singleOpTestCountPerClass.get(c);
 
                 boolean gradExcluded = excludedFromBackpropCoverage.contains(c);
                 if (countFwdValidation == 0 || (countBackpropSeen == 0 && !gradExcluded)) {
@@ -423,6 +420,7 @@ public class OpValidation {
                 DynamicCustomOp.class,
                 GradientBackwardsMarker.class,
                 DefaultOpConverter.class,
+                EqualsWithEps.class,
                 //These BP ops: we'll test them as part of gradient checks for the corresponding forward pass ops
                 //We don't need separate forward pass tests (as long as  gradient checks pass), and can't gradient check
                 // them separately to the forward ops anyway
@@ -500,6 +498,8 @@ public class OpValidation {
                 FirstIndex.class,
                 IAMax.class,
                 IAMin.class,
+                IMax.class,
+                IMin.class,
                 LastIndex.class,
                 //Exclude Random ops
                 LegacyDropOut.class,

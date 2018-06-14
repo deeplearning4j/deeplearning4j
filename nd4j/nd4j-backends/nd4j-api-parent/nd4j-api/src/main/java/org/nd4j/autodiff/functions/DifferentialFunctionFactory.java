@@ -13,6 +13,8 @@ import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
@@ -420,6 +422,10 @@ public class DifferentialFunctionFactory {
         return new VarianceBp(sameDiff(), stdInput, gradient, biasCorrected, keepDims, dimensions).outputVariable();
     }
 
+    public SDVariable entropy(SDVariable in, int... dimensions){
+        return new Entropy(sameDiff(), in, dimensions).outputVariable();
+    }
+
     public SDVariable countNonZero(SDVariable input, int... dimensions) {
         return new CountNonZero(sameDiff(), input, dimensions).outputVariable();
     }
@@ -493,6 +499,14 @@ public class DifferentialFunctionFactory {
 
     public SDVariable argmin(SDVariable in, int... dimensions) {
         return new IMin(sameDiff(), in, dimensions).outputVariable();
+    }
+
+    public SDVariable iamax(SDVariable in, int... dimensions) {
+        return new IAMax(sameDiff(), in, dimensions).outputVariable();
+    }
+
+    public SDVariable iamin(SDVariable in, int... dimensions) {
+        return new IAMin(sameDiff(), in, dimensions).outputVariable();
     }
 
 
@@ -1220,6 +1234,10 @@ public class DifferentialFunctionFactory {
     public SDVariable logSoftmaxDerivative(SDVariable arg, SDVariable wrt) {
         validateDifferentialFunctionsameDiff(arg);
         return new LogSoftMaxDerivative(sameDiff(), arg, wrt).outputVariable();
+    }
+
+    public SDVariable logSumExp(SDVariable arg, int... dimension){
+        return new LogSumExp(sameDiff(), arg, dimension).outputVariable();
     }
 
 

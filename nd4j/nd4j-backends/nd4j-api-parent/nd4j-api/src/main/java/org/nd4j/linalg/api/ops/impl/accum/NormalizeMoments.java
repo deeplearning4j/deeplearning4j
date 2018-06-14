@@ -5,11 +5,13 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.Map;
 
 @NoArgsConstructor
@@ -25,6 +27,11 @@ public class NormalizeMoments extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[] {counts, means, variances}, false);
         this.shift = shift;
         addArgs();
+    }
+
+    public NormalizeMoments(INDArray counts, INDArray ssSum, INDArray ssSqSum, INDArray outMean, INDArray outVar) {
+        super(null, new INDArray[]{counts, ssSum, ssSqSum}, new INDArray[]{outMean, outVar},
+                Collections.<Double>emptyList(), Collections.<Integer>emptyList());
     }
 
     private void addArgs() {
