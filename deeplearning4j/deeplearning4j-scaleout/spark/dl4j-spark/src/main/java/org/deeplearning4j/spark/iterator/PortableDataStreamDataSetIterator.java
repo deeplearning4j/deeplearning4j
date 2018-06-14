@@ -28,11 +28,6 @@ public class PortableDataStreamDataSetIterator extends BaseDataSetIterator<Porta
     }
 
     @Override
-    public int totalExamples() {
-        throw new UnsupportedOperationException("Total examples unknown for PortableDataStreamDataSetIterator");
-    }
-
-    @Override
     public DataSet next() {
         DataSet ds;
         if (preloadedDataSet != null) {

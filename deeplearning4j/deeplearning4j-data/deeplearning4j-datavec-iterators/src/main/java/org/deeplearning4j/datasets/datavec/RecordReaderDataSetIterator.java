@@ -375,11 +375,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int inputColumns() {
         if (last == null) {
             DataSet next = next();
@@ -428,17 +423,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return batchSize;
-    }
-
-    @Override
-    public int cursor() {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public int numExamples() {
-        throw new UnsupportedOperationException();
     }
 
     @Override

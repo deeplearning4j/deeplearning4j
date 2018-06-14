@@ -67,11 +67,6 @@ public class BaseDatasetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return fetcher.totalExamples();
-    }
-
-    @Override
     public int inputColumns() {
         return fetcher.inputColumns();
     }
@@ -99,16 +94,6 @@ public class BaseDatasetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return batch;
-    }
-
-    @Override
-    public int cursor() {
-        return fetcher.cursor();
-    }
-
-    @Override
-    public int numExamples() {
-        return numExamples;
     }
 
     /**

@@ -44,7 +44,6 @@ public class TestAsyncIterator extends BaseDL4JTest {
 
         assertFalse(async.hasNext());
         async.reset();
-        assertEquals(baseIter.cursor(), 0);
         assertTrue(async.hasNext());
         ((AsyncDataSetIterator) async).shutdown();
 
@@ -60,7 +59,6 @@ public class TestAsyncIterator extends BaseDL4JTest {
         }
         assertFalse(async.hasNext());
         async.reset();
-        assertEquals(baseIter.cursor(), 0);
         assertTrue(async.hasNext());
         ((AsyncDataSetIterator) async).shutdown();
 
@@ -79,7 +77,6 @@ public class TestAsyncIterator extends BaseDL4JTest {
 
         assertFalse(async.hasNext());
         async.reset();
-        assertEquals(baseIter.cursor(), 0);
         assertTrue(async.hasNext());
         ((AsyncDataSetIterator) async).shutdown();
 
@@ -94,7 +91,6 @@ public class TestAsyncIterator extends BaseDL4JTest {
         }
         assertFalse(async.hasNext());
         async.reset();
-        assertEquals(baseIter.cursor(), 0);
         assertTrue(async.hasNext());
         ((AsyncDataSetIterator) async).shutdown();
     }
@@ -180,11 +176,6 @@ public class TestAsyncIterator extends BaseDL4JTest {
         }
 
         @Override
-        public int totalExamples() {
-            return size;
-        }
-
-        @Override
         public int inputColumns() {
             return 1;
         }
@@ -212,16 +203,6 @@ public class TestAsyncIterator extends BaseDL4JTest {
         @Override
         public int batch() {
             return 1;
-        }
-
-        @Override
-        public int cursor() {
-            return cursor;
-        }
-
-        @Override
-        public int numExamples() {
-            return size;
         }
 
         @Override

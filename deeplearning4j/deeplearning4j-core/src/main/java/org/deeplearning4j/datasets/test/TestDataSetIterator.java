@@ -66,11 +66,6 @@ public class TestDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return wrapped.totalExamples();
-    }
-
-    @Override
     public int inputColumns() {
         return wrapped.inputColumns();
     }
@@ -98,16 +93,6 @@ public class TestDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return wrapped.batch();
-    }
-
-    @Override
-    public int cursor() {
-        return wrapped.cursor();
-    }
-
-    @Override
-    public int numExamples() {
-        return wrapped.numExamples();
     }
 
     @Override

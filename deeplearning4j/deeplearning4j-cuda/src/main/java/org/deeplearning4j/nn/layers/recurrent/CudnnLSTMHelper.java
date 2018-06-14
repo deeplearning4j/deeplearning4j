@@ -166,6 +166,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
     private DataCache reserveSpace = new DataCache();
     private DataCache weightsSpace = new DataCache();
 
+    private boolean initializedDropoutDescriptor = false;
+
     private static INDArray toCOrder(INDArray arr) {
         if (arr.isView() || arr.ordering() != 'c' || !Shape.strideDescendingCAscendingF(arr)) {
             arr = arr.dup('c');
@@ -454,8 +456,10 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         }
         stateSpace.limit(stateSize);
 
-        checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, DROPOUT, stateSpace, stateSize,
-                        Nd4j.getRandom().getSeed()));
+        if(!initializedDropoutDescriptor) {
+            checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, DROPOUT, stateSpace, stateSize,
+                    Nd4j.getRandom().getSeed()));
+        }
 
         checkCudnn(cudnnSetRNNDescriptor_v6(cudnnContext, cudnnContext.rnnDesc, (int) hiddenLayerSize, NUM_LAYERS, cudnnContext.dropoutDesc,
                          CUDNN_LINEAR_INPUT, BIDIRECTIONAL ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL, RNN_MODE,

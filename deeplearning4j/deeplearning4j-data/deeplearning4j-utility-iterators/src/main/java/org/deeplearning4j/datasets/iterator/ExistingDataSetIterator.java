@@ -63,11 +63,6 @@ public class ExistingDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return totalExamples;
-    }
-
-    @Override
     public int inputColumns() {
         return numFeatures;
     }
@@ -103,16 +98,6 @@ public class ExistingDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return 0;
-    }
-
-    @Override
-    public int cursor() {
-        return 0;
-    }
-
-    @Override
-    public int numExamples() {
-        return totalExamples;
     }
 
     @Override

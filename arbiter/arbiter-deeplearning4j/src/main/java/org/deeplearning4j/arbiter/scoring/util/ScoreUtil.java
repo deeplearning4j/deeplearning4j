@@ -153,7 +153,7 @@ public class ScoreUtil {
         int totalExamples = 0;
         while (testData.hasNext()) {
             DataSet ds = testData.next();
-            int numExamples = testData.numExamples();
+            int numExamples = ds.numExamples();
 
             sumScore += numExamples * model.score(ds);
             totalExamples += numExamples;

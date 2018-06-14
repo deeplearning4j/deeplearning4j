@@ -28,11 +28,6 @@ public class ViewIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return data.numExamples();
-    }
-
-    @Override
     public int inputColumns() {
         return data.numInputs();
     }
@@ -64,16 +59,6 @@ public class ViewIterator implements DataSetIterator {
     }
 
     @Override
-    public int cursor() {
-        return cursor;
-    }
-
-    @Override
-    public int numExamples() {
-        return data.numExamples();
-    }
-
-    @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
         this.preProcessor = preProcessor;
     }
@@ -90,7 +75,7 @@ public class ViewIterator implements DataSetIterator {
 
     @Override
     public boolean hasNext() {
-        return cursor < numExamples();
+        return cursor < data.numExamples();
     }
 
     @Override
@@ -98,7 +83,7 @@ public class ViewIterator implements DataSetIterator {
 
     @Override
     public DataSet next() {
-        int last = Math.min(numExamples(), cursor() + batch());
+        int last = Math.min(data.numExamples(), cursor + batch());
         DataSet next = (DataSet) data.getRange(cursor, last);
         if (preProcessor != null)
             preProcessor.preProcess(next);

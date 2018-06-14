@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.TimeSeriesUtils;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -461,8 +462,19 @@ public class BidirectionalLayer implements RecurrentLayer {
     public void setInput(INDArray input, LayerWorkspaceMgr layerWorkspaceMgr) {
         this.input = input;
         fwd.setInput(input, layerWorkspaceMgr);
+
         INDArray reversed;
-        reversed = TimeSeriesUtils.reverseTimeSeries(input, layerWorkspaceMgr, ArrayType.INPUT);
+        if(!input.isAttached()){
+            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                reversed = TimeSeriesUtils.reverseTimeSeries(input);
+            }
+        } else {
+            MemoryWorkspace ws = input.data().getParentWorkspace();
+            try(MemoryWorkspace ws2 = ws.notifyScopeBorrowed()){
+                //Put the reversed input into the same workspace as the original input
+                reversed = TimeSeriesUtils.reverseTimeSeries(input);
+            }
+        }
         bwd.setInput(reversed, layerWorkspaceMgr);
     }
 

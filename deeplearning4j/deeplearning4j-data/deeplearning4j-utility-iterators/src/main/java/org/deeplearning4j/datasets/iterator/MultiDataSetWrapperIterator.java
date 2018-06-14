@@ -29,11 +29,6 @@ public class MultiDataSetWrapperIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int inputColumns() {
         throw new UnsupportedOperationException();
     }
@@ -60,16 +55,6 @@ public class MultiDataSetWrapperIterator implements DataSetIterator {
 
     @Override
     public int batch() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int cursor() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int numExamples() {
         throw new UnsupportedOperationException();
     }
 
