@@ -3867,17 +3867,15 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_3) {
     
     nd4j::ops::reduce_prod_bp<float> op;
     nd4j::ops::reduce_prod<float> op_exp;
-//    auto res = op_exp.execute({&input}, {}, {});
     auto result = op.execute({&input, &eps}, {1.f}, {0});
 
     ASSERT_EQ(Status::OK(), result->status());
     auto z = result->at(0);    
-    z->printIndexedBuffer("Result is ");
-    exp.printIndexedBuffer("Expected");
+//    z->printIndexedBuffer("Result is ");
+//    exp.printIndexedBuffer("Expected");
 //    z->printShapeInfo();
     ASSERT_TRUE(exp.equalsTo(z));
     delete result;
-//    delete res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
