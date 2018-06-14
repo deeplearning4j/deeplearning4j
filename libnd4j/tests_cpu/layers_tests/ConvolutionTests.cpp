@@ -1881,7 +1881,7 @@ TEST_F(ConvolutionTests, conv3d_test10) {
     auto s = shapes->at(0);
 
     auto z = result->at(0);
-    z->printShapeInfo("z shape");
+    // z->printShapeInfo("z shape");
 
     ASSERT_TRUE(exp.isSameShape(z));
 

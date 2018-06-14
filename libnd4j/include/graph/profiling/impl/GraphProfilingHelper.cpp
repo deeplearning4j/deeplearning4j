@@ -14,7 +14,7 @@ namespace nd4j {
             auto varSpace = graph->getVariableSpace()->clone();
 
             // printing out graph structure
-            graph->printOut();
+            // graph->printOut();
 
             // warm up
             for (int e = 0; e < 1000; e++) {

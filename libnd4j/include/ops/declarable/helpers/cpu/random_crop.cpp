@@ -27,14 +27,14 @@ namespace helpers {
         Nd4jLong maxIndex = output->argMax();
         Nd4jLong startPos = (*output)(maxIndex);
         int lastDim = input->sizeAt(-1);
-        nd4j_printf("Before processing: %i %i. Output length %i\n", maxIndex, startPos, output->lengthOf());
+        // nd4j_printf("Before processing: %i %i. Output length %i\n", maxIndex, startPos, output->lengthOf());
         int pos = 0;
         int width = startPos + shape->getScalar(last);
         if (width >= lastDim) {
             startPos -= (width - lastDim);
             width = lastDim;
         }
-        nd4j_printf("Start pos %i, width %i, lastDim %i\n", startPos, width, lastDim);
+        // nd4j_printf("Start pos %i, width %i, lastDim %i\n", startPos, width, lastDim);
 
         for (int i = 0; i < input->lengthOf(); i += lastDim) {
             for (int k = startPos; k < width && pos < output->lengthOf(); k++) {

@@ -252,11 +252,11 @@ TEST_F(NDArrayTest, TestPermuteReshape2) {
     int rShape[] = {3, 2, 72, 25, 1800, 25, 1, 0, 1, 99};
 
 
-    array.printShapeInfo("before");
+    // array.printShapeInfo("before");
 
     array.permutei({1, 0, 4, 5, 2, 3});
 
-    array.printShapeInfo("after ");
+    // array.printShapeInfo("after ");
 
     for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
         ASSERT_EQ(pShape[e], array.getShapeInfo()[e]);
@@ -447,7 +447,7 @@ TEST_F(NDArrayTest, TestSumAlongDimension1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestSumAlongDimension2) {
-    float *c = new float[4] {1, 2, 3, 4};
+    *float *c = new float[4] {1, 2, 3, 4};
     auto *array = new NDArray<float>(c, cShape);
 
     auto *res = array->sum({1});
@@ -1532,7 +1532,7 @@ TEST_F(NDArrayTest, TestStdDev3) {
         array(e) = 1.f + (e%2?0.5f:-0.5f);
 
     auto std = array.varianceNumber<simdOps::SummaryStatsStandardDeviation<float>>(true);
-    nd4j_printf("Variance is %f\n", std);
+    // nd4j_printf("Variance is %f\n", std);
     ASSERT_NEAR(std, 0.5f, 1.0e-5f);
 }
 
@@ -1563,7 +1563,7 @@ TEST_F(NDArrayTest, TestStdDev4) {
     auto std = array.varianceNumber<simdOps::SummaryStatsStandardDeviation<float>>(false);
 //    float bY = array.varianceNumber();
     float bY = 0.3333333f;
-    nd4j_printf("Variance is %f, res is %f, internal is %f\n, deviance is %f(%f)\n", std, x, bY, y, nd4j::math::nd4j_sqrt<double>(M2));
+    // nd4j_printf("Variance is %f, res is %f, internal is %f\n, deviance is %f(%f)\n", std, x, bY, y, nd4j::math::nd4j_sqrt<double>(M2));
     ASSERT_NEAR(std, 0.3333333f, 1.0e-5f);
 }
 
@@ -1576,7 +1576,7 @@ TEST_F(NDArrayTest, TestStdDev5) {
     }
     float stdF = array.varianceNumber<simdOps::SummaryStatsStandardDeviation<float>>(false);
     double stdD = arrayD.varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(false);
-    nd4j_printf("Variance is %f(%f)\n", stdF, stdD);
+    // nd4j_printf("Variance is %f(%f)\n", stdF, stdD);
     ASSERT_NEAR(stdD, 0.2, 1.0e-8); // 1/5 = 0.2
     ASSERT_NEAR(stdF, 0.2f, 1.0e-5f); // 1/5 = 0.2
 }

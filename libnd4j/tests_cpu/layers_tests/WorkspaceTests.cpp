@@ -176,11 +176,11 @@ TEST_F(WorkspaceTests, Test_Arrays_1) {
     Workspace ws(65536);
     NDArray<float> x('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9}, &ws);
 
-    x.printIndexedBuffer("x0");
+    // x.printIndexedBuffer("x0");
 
     NDArray<float> y('c', {3, 3}, {-1, -2, -3, -4, -5, -6, -7, -8, -9}, &ws);
 
-    x.printIndexedBuffer("x2");
+    // x.printIndexedBuffer("x2");
 
     NDArray<float> z('c', {3, 3}, {0, 0, 0, 0, 0, 0, 0, 0, 0}, &ws);
 
@@ -189,9 +189,9 @@ TEST_F(WorkspaceTests, Test_Arrays_1) {
     y.assign(&x);
 
 
-    x.printIndexedBuffer("x3");
-    y.printIndexedBuffer("y");
-    z.printIndexedBuffer("z");
+    // x.printIndexedBuffer("x3");
+    // y.printIndexedBuffer("y");
+    // z.printIndexedBuffer("z");
 }
 
 

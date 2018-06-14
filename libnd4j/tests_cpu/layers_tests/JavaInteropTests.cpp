@@ -628,7 +628,7 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
 
 TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
     Environment::getInstance()->setDebug(true);
-    Environment::getInstance()->setVerbose(true);
+    Environment::getInstance()->setVerbose(false);
 
     NativeOps ops;
 
