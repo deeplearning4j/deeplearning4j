@@ -70,7 +70,23 @@ public class OpValidation {
      * @param testCase Test case to run
      * @return NULL if test passes, or error message otherwise
      */
-    public static String validate(TestCase testCase){
+    public static String validate(TestCase testCase) {
+        return validate(testCase, false);
+    }
+
+    public static String validate(TestCase testCase, boolean exceptionsAsErrorMsg) {
+        try{
+            return validateHelper(testCase);
+        } catch (Throwable t){
+            if(exceptionsAsErrorMsg){
+                log.info("Exception encountered - returning as error message",t);
+                return "EXCEPTION: " + t.getMessage();
+            }
+            throw t;
+        }
+    }
+
+    private static String validateHelper(TestCase testCase) {
         testCase.assertConfigValid();
 
         //First: collect coverage information

@@ -13,10 +13,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.AMean;
 import org.nd4j.linalg.api.ops.impl.accum.ASum;
+import org.nd4j.linalg.api.ops.impl.accum.Dot;
+import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -494,7 +497,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
         for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 7; i++) {
 
                 SameDiff sd = SameDiff.create();
                 sd.setLogExecution(false);
@@ -506,6 +509,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 INDArray inArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(100);
                 INDArray in2Arr = Nd4j.randn(inArr.shape()).muli(100);
 
+                INDArray exp;
                 SDVariable reduced;
                 String name;
                 TestCase tc = new TestCase(sd);
@@ -513,28 +517,39 @@ public class ReductionOpValidation extends BaseOpValidation {
                     case 0:
                         reduced = sd.manhattanDistance(in, in2, reduceDims);
                         name = "manhattan";
+                        exp = Nd4j.getExecutioner().exec(new ManhattanDistance(inArr, in2Arr), reduceDims);
                         break;
                     case 1:
                         reduced = sd.euclideanDistance(in, in2, reduceDims);
                         name = "euclidean";
+                        exp = Nd4j.getExecutioner().exec(new EuclideanDistance(inArr, in2Arr), reduceDims);
                         break;
                     case 2:
                         reduced = sd.cosineSimilarity(in, in2, reduceDims);
                         name = "cosine";
+                        exp = Nd4j.getExecutioner().exec(new CosineSimilarity(inArr, in2Arr), reduceDims);
                         break;
                     case 3:
                         reduced = sd.cosineDistance(in, in2, reduceDims);
                         name = "cosinedistance";
+                        exp = Nd4j.getExecutioner().exec(new CosineDistance(inArr, in2Arr), reduceDims);
                         break;
                     case 4:
                         reduced = sd.hammingDistance(in, in2, reduceDims);
                         name = "hamming";
+                        exp = Nd4j.getExecutioner().exec(new HammingDistance(inArr, in2Arr), reduceDims);
                         break;
                     case 5:
                         name = "jaccard";
                         reduced = sd.jaccardDistance(name, in, in2, reduceDims);
                         inArr.divi(100).addi(0.1);
                         in2Arr.divi(100).addi(0.1);
+                        exp = Nd4j.getExecutioner().exec(new JaccardDistance(inArr, in2Arr), reduceDims);
+                        break;
+                    case 6:
+                        name = "dot";
+                        reduced = sd.dot(name, in, in2, reduceDims);
+                        exp = Nd4j.getExecutioner().exec(new Dot(inArr, in2Arr), reduceDims);
                         break;
                     default:
                         throw new RuntimeException();
@@ -550,12 +565,11 @@ public class ReductionOpValidation extends BaseOpValidation {
                 sd.associateArrayWithVariable(inArr, in);
                 sd.associateArrayWithVariable(in2Arr, in2);
 
-                sd.execAndEndResult();
+                tc.expected(reduced, exp);
 
-
-                String error = OpValidation.validate(tc);
+                String error = OpValidation.validate(tc, true);
                 if(error != null){
-                    failed.add(name);
+                    failed.add(msg);
                 }
             }
         }

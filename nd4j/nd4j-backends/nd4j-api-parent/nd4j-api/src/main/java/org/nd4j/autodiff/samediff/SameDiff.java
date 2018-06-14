@@ -3466,6 +3466,15 @@ public class SameDiff {
     }
 
 
+    public SDVariable dot(SDVariable x, SDVariable y, int... dimensions){
+        return dot(null, x, y, dimensions);
+    }
+
+    public SDVariable dot(String name, SDVariable x, SDVariable y, int... dimensions){
+        SDVariable ret = f().dot(x, y, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      * @param iX
      * @param i_y

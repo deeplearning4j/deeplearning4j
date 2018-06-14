@@ -1014,6 +1014,14 @@ public class DifferentialFunctionFactory {
         return new Fill(sameDiff(), shape, value).outputVariable();
     }
 
+    public SDVariable dot(SDVariable x, SDVariable y, int... dimensions){
+        return new Dot(sameDiff(), x, y, dimensions).outputVariable();
+    }
+
+    public SDVariable[] dotBp(SDVariable in1, SDVariable in2, SDVariable grad, boolean keepDims, int... dimensions){
+        return new DotBp(sameDiff(), in1, in2, grad, keepDims, dimensions);
+    }
+
     public SDVariable cosineSimilarity(SDVariable iX, SDVariable i_y, int... dimensions) {
         return new CosineSimilarity(sameDiff(), iX, i_y, dimensions).outputVariable();
     }
