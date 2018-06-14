@@ -714,6 +714,10 @@ public class DifferentialFunctionFactory {
         return new Log(sameDiff(), iX, null).outputVariable();
     }
 
+    public SDVariable log(SDVariable in, double base){
+        return new LogX(sameDiff(), in, base).outputVariable();
+    }
+
     public SDVariable log1p(SDVariable iX) {
         return new Log1p(sameDiff(), iX, null).outputVariable();
     }
@@ -733,6 +737,14 @@ public class DifferentialFunctionFactory {
 
     public SDVariable isMax(SDVariable ix){
         return new IsMax(sameDiff(), ix, false).outputVariable();
+    }
+
+    public SDVariable replaceWhere(SDVariable to, SDVariable from, Condition condition){
+        return new CompareAndReplace(sameDiff(), to, from, condition).outputVariable();
+    }
+
+    public SDVariable replaceWhere(SDVariable to, Number set, Condition condition){
+        return new CompareAndSet(sameDiff(), to, set, condition).outputVariable();
     }
 
     public SDVariable round(SDVariable ix) {

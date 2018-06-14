@@ -2531,12 +2531,39 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable replaceWhere(SDVariable update, SDVariable from, Condition condition){
+        return replaceWhere(null, update, from, condition);
+    }
+
+    public SDVariable replaceWhere(String name, SDVariable update, SDVariable from, Condition condition){
+        SDVariable ret = f().replaceWhere(update, from, condition);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable replaceWhere(SDVariable update, Number value, Condition condition){
+        return replaceWhere(null, update, value, condition);
+    }
+
+    public SDVariable replaceWhere(String name, SDVariable to, Number value, Condition condition){
+        SDVariable ret = f().replaceWhere(to, value, condition);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      * @param iX
      * @return
      */
     public SDVariable log(SDVariable iX) {
         return log(null, iX);
+    }
+
+    public SDVariable log(SDVariable in, double base){
+        return log(null, in, base);
+    }
+
+    public SDVariable log(String name, SDVariable in, double base){
+        SDVariable ret = f().log(in, base);
+        return updateVariableNameAndReference(ret, name);
     }
 
     public SDVariable logSumExp(SDVariable input, int... dimensions){

@@ -454,6 +454,10 @@ public class OpValidation {
                 SoftMaxDerivative.class,
                 SoftSignDerivative.class,
                 TanhDerivative.class,
+                LogSigmoidDerivative.class,
+                SwishDerivative.class,
+                TanDerivative.class,
+                TanhDerivative.class,
 
                 BiasAddGrad.class,
                 ConcatBp.class

@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -466,7 +467,7 @@ public class TransformOpValidation {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 75; i++) {
+        for (int i = 0; i < 77; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -869,6 +870,17 @@ public class TransformOpValidation {
                     t = sd.f().noop(in);
                     tc.expected(t, ia.dup());
                     break;
+                case 75:
+                    ia = Nd4j.rand(ia.shape());
+                    t = sd.log(in, 2);
+                    tc.expected(t, Transforms.log(ia, 2, true));
+                    break;
+                case 76:
+                    ia = Nd4j.rand(ia.shape());
+                    t = sd.log(in, 10);
+                    tc.expected(t, Transforms.log(ia, 10, true));
+                    break;
+
                 default:
                     throw new RuntimeException();
             }
@@ -1127,6 +1139,50 @@ public class TransformOpValidation {
             }
         }
         assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testReplaceWhereScalar(){
+        for(Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}){
+
+            INDArray inArr = Nd4j.rand(3,4);
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("in", inArr);
+            SDVariable where = sd.replaceWhere(in, 10, c);
+
+            INDArray exp = inArr.dup();
+            BooleanIndexing.replaceWhere(exp, 10, c);
+
+            SDVariable loss = where.std(true);
+
+            TestCase tc = new TestCase(sd);
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testReplaceWhereArray(){
+        for(Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}){
+
+            INDArray inArr = Nd4j.rand(3,4);
+            INDArray inArr2 = Nd4j.valueArrayOf(3, 4, 10);
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("in", inArr);
+            SDVariable in2 = sd.var("in2", inArr2);
+            SDVariable where = sd.replaceWhere(in, in2, c);
+
+            INDArray exp = inArr.dup();
+            BooleanIndexing.replaceWhere(exp, inArr2, c);
+
+            SDVariable loss = where.std(true);
+
+            TestCase tc = new TestCase(sd);
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
+        }
     }
 
     //TODO UPDATE TO OP VALIDATION OR DELETE
