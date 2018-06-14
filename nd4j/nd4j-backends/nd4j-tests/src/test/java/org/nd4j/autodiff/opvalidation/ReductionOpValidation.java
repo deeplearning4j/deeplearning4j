@@ -702,7 +702,9 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         INDArray in = Nd4j.rand(3,4);
 
-        for(int[] d : dims){
+//        for(int[] d : dims){
+        for( int t=0; t<4; t++ ){
+            int[] d = dims.get(t);
             for( int i=0; i<4; i++ ){
 
                 int[] dim = d.length == 0 ? null : d;
@@ -733,6 +735,18 @@ public class ReductionOpValidation extends BaseOpValidation {
                         reduce = sd.iamin(s,dim);
                         exp = Nd4j.getExecutioner().exec(new IAMin(in.dup()), dim);
                         name = "iamin";
+                        break;
+                    case 4:
+                        reduce = sd.firstIndex(s, Conditions.greaterThan(0), dim);
+                        exp = in.sum(dim).assign(0);
+                        name = "firstindex";
+                        break;
+                    case 5:
+                        reduce = sd.lastIndex(s, Conditions.greaterThan(0), dim);
+                        if(t == 0) exp = Nd4j.create(new double[]{2,2,2});
+                        else if(t == 1) exp = Nd4j.create(new double[]{3,3,3,3});
+                        else exp = Nd4j.create(new double[]{11});
+                        name = "lastindex";
                         break;
                     default:
                         throw new RuntimeException();

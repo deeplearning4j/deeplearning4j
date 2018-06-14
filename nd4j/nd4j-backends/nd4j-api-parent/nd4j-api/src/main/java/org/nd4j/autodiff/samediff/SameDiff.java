@@ -57,6 +57,7 @@ import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
@@ -3285,6 +3286,24 @@ public class SameDiff {
 
     public SDVariable iamin(String name, SDVariable in, int... dimensions) {
         SDVariable ret = f().iamin(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable firstIndex(SDVariable in, Condition condition, int... dimensions){
+        return firstIndex(null, in, condition, dimensions);
+    }
+
+    public SDVariable firstIndex(String name, SDVariable in, Condition condition, int... dimensions){
+        SDVariable ret = f().firstIndex(in, condition, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable lastIndex(SDVariable in, Condition condition, int... dimensions){
+        return lastIndex(null, in, condition, dimensions);
+    }
+
+    public SDVariable lastIndex(String name, SDVariable in, Condition condition, int... dimensions){
+        SDVariable ret = f().lastIndex(in, condition, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 

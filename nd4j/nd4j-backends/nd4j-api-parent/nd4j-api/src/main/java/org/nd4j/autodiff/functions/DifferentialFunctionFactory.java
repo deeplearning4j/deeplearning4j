@@ -13,10 +13,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
@@ -37,6 +34,7 @@ import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Method;
@@ -507,6 +505,14 @@ public class DifferentialFunctionFactory {
 
     public SDVariable iamin(SDVariable in, int... dimensions) {
         return new IAMin(sameDiff(), in, dimensions).outputVariable();
+    }
+
+    public SDVariable firstIndex(SDVariable in, Condition condition, int... dimensions){
+        return new FirstIndex(sameDiff(), in, condition, dimensions).outputVariable();
+    }
+
+    public SDVariable lastIndex(SDVariable in, Condition condition, int... dimensions){
+        return new LastIndex(sameDiff(), in, condition, dimensions).outputVariable();
     }
 
 

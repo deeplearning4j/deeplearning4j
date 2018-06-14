@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.ops.impl.accum.All;
 import org.nd4j.linalg.api.ops.impl.accum.Any;
 import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
 import org.nd4j.linalg.api.ops.impl.accum.NormalizeMoments;
+import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
@@ -447,7 +448,9 @@ public class OpValidation {
                 SigmoidDerivative.class,
                 SoftMaxDerivative.class,
                 SoftSignDerivative.class,
-                TanhDerivative.class
+                TanhDerivative.class,
+
+                BiasAddGrad.class
         );
 
         return new HashSet<>(list);
@@ -519,9 +522,23 @@ public class OpValidation {
                 Range.class,
                 TruncatedNormalDistribution.class,
                 UniformDistribution.class,
-                //Other ops we don't intend to be differentiable (only used as part of backprop, etc)
+                //Other ops we don't intend to be differentiable (only used as part of backprop, etc).
+                // But we still want a forward/check for these
                 Col2Im.class,
-                NormalizeMoments.class  //In principle differentiable. In practice: doesn't make any sense to do so!
+                NormalizeMoments.class,  //In principle differentiable. In practice: doesn't make any sense to do so!
+                CumProdBp.class,
+                CumSumBp.class,
+                DotBp.class,
+                MaxBp.class,
+                MeanBp.class,
+                MinBp.class,
+                Norm1Bp.class,
+                Norm2Bp.class,
+                NormMaxBp.class,
+                ProdBp.class,
+                StandardDeviationBp.class,
+                SumBp.class,
+                VarianceBp.class
         );
 
         return new HashSet<>(list);
