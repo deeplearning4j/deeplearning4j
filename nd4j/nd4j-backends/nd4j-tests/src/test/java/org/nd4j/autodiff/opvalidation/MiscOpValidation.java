@@ -926,7 +926,12 @@ public class MiscOpValidation extends BaseOpValidation {
     public void testLinspace(){
 
         SameDiff sd = SameDiff.create();
-        sd.lins
+        SDVariable out = sd.linspace(1,10,10);
+        SDVariable loss = out.std(true);
 
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(out, Nd4j.linspace(1,10,10)));
+
+        assertNull(err);
     }
 }

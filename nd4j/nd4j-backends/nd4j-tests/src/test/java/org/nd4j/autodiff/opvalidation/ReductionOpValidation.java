@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.AMean;
 import org.nd4j.linalg.api.ops.impl.accum.ASum;
+import org.nd4j.linalg.api.ops.impl.accum.All;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.factory.Nd4j;
@@ -647,5 +648,34 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         String err = OpValidation.validate(op);
         assertNull(err);
+    }
+
+    @Test
+    public void testAllAny(){
+
+        INDArray allZeros = Nd4j.create(3,4);
+        INDArray allOnes = Nd4j.ones(3,4);
+        INDArray mixed = Nd4j.zeros(3,4);
+        mixed.getRow(1).assign(1.0);
+
+        INDArray[] in = new INDArray[]{allZeros, allOnes, mixed};
+        double[] expAll = new double[]{0,1,0};
+        double[] expAny = new double[]{0,1,1};
+
+        for( int i=0; i<3; i++ ){
+            SameDiff sd = SameDiff.create();
+
+            SDVariable s = sd.var("in", in[i]);
+            SDVariable all = sd.f().all(s);
+            SDVariable any = sd.f().any(s);
+
+            String err = OpValidation.validate(new TestCase(sd)
+                    .gradientCheck(false)
+                    .expected(all, Nd4j.create(new double[]{expAll[i]}))
+                    .expected(any, Nd4j.create(new double[]{expAll[i]})));
+
+            assertNull(err);
+        }
+
     }
 }

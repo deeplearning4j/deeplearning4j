@@ -6,6 +6,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ops.NoOp;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -31,6 +32,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.random.impl.DropOut;
+import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -124,6 +126,10 @@ public class DifferentialFunctionFactory {
     public SDVariable onesLike(String name, SDVariable input) {
         validateDifferentialFunctionsameDiff(input);
         return new OnesLike(name, sameDiff(), input).outputVariable();
+    }
+
+    public SDVariable linspace(double lower, double upper, long count){
+        return new Linspace(sameDiff(), lower, upper, count).outputVariable();
     }
 
     /**
@@ -583,9 +589,20 @@ public class DifferentialFunctionFactory {
         return new Permute(sameDiff(), iX, dimensions).outputVariable();
     }
 
+    public SDVariable noop(SDVariable input){
+        return new NoOp(sameDiff(), input).outputVariable();
+    }
 
     public SDVariable identity(SDVariable input){
         return new Identity(sameDiff(), input).outputVariable();
+    }
+
+    public SDVariable all(SDVariable input, int... dimensions){
+        return new All(sameDiff(), input, dimensions).outputVariable();
+    }
+
+    public SDVariable any(SDVariable input, int... dimensions){
+        return new Any(sameDiff(), input, dimensions).outputVariable();
     }
 
     public SDVariable invertPermutation(SDVariable input, boolean inPlace) {
@@ -635,6 +652,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable tanhDerivative(SDVariable iX, SDVariable wrt) {
         return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(sameDiff(), iX, wrt).outputVariable();
+    }
+
+    public SDVariable step(SDVariable in, double cutoff){
+        return new Step(sameDiff(), in, false, cutoff).outputVariable();
     }
 
 
@@ -738,7 +759,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable square(SDVariable iX) {
-        return new Pow(sameDiff(), iX, false, 2.0).outputVariable();
+        return new Square(sameDiff(), iX, false).outputVariable();
     }
 
 

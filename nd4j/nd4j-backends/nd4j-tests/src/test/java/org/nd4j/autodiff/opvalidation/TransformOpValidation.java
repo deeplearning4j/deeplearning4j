@@ -457,7 +457,7 @@ public class TransformOpValidation {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 73; i++) {
+        for (int i = 0; i < 75; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -850,6 +850,14 @@ public class TransformOpValidation {
                     break;
                 case 72:
                     t = sd.identity(in);
+                    tc.expected(t, ia.dup());
+                    break;
+                case 73:
+                    t = sd.step(in, 1.0);
+                    tc.expected(t, ia.gte(1.0));
+                    break;
+                case 74:
+                    t = sd.f().noop(in);
                     tc.expected(t, ia.dup());
                     break;
                 default:

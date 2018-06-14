@@ -1429,6 +1429,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable linspace(double start, double stop, long number){
+        return linspace(null, start, stop, number);
+    }
+
+    public SDVariable linspace(String name, double start, double stop, long number){
+        SDVariable ret = f().linspace(start, stop, number);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      * Variable initialization
      * with a specified {@link WeightInitScheme}
@@ -2402,6 +2411,15 @@ public class SameDiff {
      */
     public SDVariable tanh(SDVariable iX) {
         return tanh(null, iX);
+    }
+
+    public SDVariable step(SDVariable in, double cutoff){
+        return step(null, in, cutoff);
+    }
+
+    public SDVariable step(String name, SDVariable in, double cutoff){
+        SDVariable ret = f().step(in, cutoff);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -5167,7 +5185,7 @@ public class SameDiff {
 
 
         char ordering = 'c';
-        if (function.args()[0].getArr() != null) {
+        if (function.args() != null && function.args().length > 0 && function.args()[0].getArr() != null) {
             ordering = function.args()[0].getArr().ordering();
         }
 
