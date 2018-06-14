@@ -6742,87 +6742,87 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
         if (dstType == ND4J_FLOAT8) {
             // convertKernel<double, nd4j::float8>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::float8, nd4j::int8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::int8>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::float8, nd4j::uint8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::uint8>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::float8, float16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::float8, float16>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::float8, nd4j::int16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::int16>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::float8, nd4j::uint16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::uint16>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
 
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::float8, float>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::float8, float>(extras, dx, N, dz);
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::float8, double>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::float8, double>(extras, dx, N, dz);
         } else {
             nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
     } else if (srcType == ND4J_INT8) {
         if (dstType == ND4J_FLOAT8) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int8, nd4j::float8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int8, nd4j::float8>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT8) {
             //convertKernel<nd4j::int8, nd4j::int8>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int8, nd4j::uint8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int8, nd4j::uint8>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int8, float16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int8, float16>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int8, nd4j::int16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int8, nd4j::int16>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int8, nd4j::uint16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int8, nd4j::uint16>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO: eventually we might want to add it
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int8, float>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int8, float>(extras, dx, N, dz);
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int8, double>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int8, double>(extras, dx, N, dz);
         } else {
             nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
     } else if (srcType == ND4J_UINT8) {
         if (dstType == ND4J_FLOAT8) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::uint8, nd4j::float8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::uint8, nd4j::float8>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::uint8, nd4j::int8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::uint8, nd4j::int8>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::uint8, nd4j::uint8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::uint8, nd4j::uint8>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::uint8, float16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::uint8, float16>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::uint8, nd4j::int16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::uint8, nd4j::int16>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::uint8, nd4j::uint16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::uint8, nd4j::uint16>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO: still might want to add
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::uint8, float>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::uint8, float>(extras, dx, N, dz);
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::uint8, double>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::uint8, double>(extras, dx, N, dz);
         } else {
             nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
     } else if (srcType == ND4J_FLOAT16) {
         if (dstType == ND4J_FLOAT8) {
-            nd4j::TypeCast::convertGeneticCuda<float16, nd4j::float8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float16, nd4j::float8>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGeneticCuda<float16, nd4j::int8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float16, nd4j::int8>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneticCuda<float16, nd4j::uint8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float16, nd4j::uint8>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneticCuda<float16, float16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float16, float16>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneticCuda<float16, nd4j::int16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float16, nd4j::int16>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneticCuda<float16, nd4j::uint16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float16, nd4j::uint16>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO: .... ^^^
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGeneticCuda<float16, float>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float16, float>(extras, dx, N, dz);
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGeneticCuda<float16, double>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float16, double>(extras, dx, N, dz);
         } else if (dstType == ND4J_THRESHOLD) {
             //nd4j::convertToThreshold<float16>(nullptr, dx, N, dz);
         } else {
@@ -6830,23 +6830,23 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
         }
     } else if (srcType == ND4J_INT16) {
         if (dstType == ND4J_FLOAT8) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int16, nd4j::float8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int16, nd4j::float8>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int16, nd4j::int8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int16, nd4j::int8>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int16, nd4j::uint8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int16, nd4j::uint8>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int16, float16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int16, float16>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int16, nd4j::int16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int16, nd4j::int16>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int16, nd4j::uint16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int16, nd4j::uint16>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
             // TODO...
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int16, float>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int16, float>(extras, dx, N, dz);
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGeneticCuda<nd4j::int16, double>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<nd4j::int16, double>(extras, dx, N, dz);
         } else {
             printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
@@ -6854,21 +6854,21 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
 
     } else if (srcType == ND4J_FLOAT32) {
         if (dstType == ND4J_FLOAT8) {
-            nd4j::TypeCast::convertGeneticCuda<float, nd4j::float8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float, nd4j::float8>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGeneticCuda<float, nd4j::int8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float, nd4j::int8>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneticCuda<float, nd4j::uint8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float, nd4j::uint8>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneticCuda<float, float16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float, float16>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneticCuda<float, nd4j::int16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float, nd4j::int16>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneticCuda<float, nd4j::uint16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float, nd4j::uint16>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
 
         } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGeneticCuda<float, double>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<float, double>(extras, dx, N, dz);
         } else if (dstType == ND4J_THRESHOLD) {
             //nd4j::convertToThreshold<float>(nullptr, dx, N, dz);
         } else {
@@ -6876,21 +6876,21 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
         }
     } else if (srcType == ND4J_DOUBLE) {
         if (dstType == ND4J_FLOAT8) {
-            nd4j::TypeCast::convertGeneticCuda<double, nd4j::float8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<double, nd4j::float8>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGeneticCuda<double, nd4j::int8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<double, nd4j::int8>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGeneticCuda<double, nd4j::uint8>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<double, nd4j::uint8>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGeneticCuda<double, float16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<double, float16>(extras, dx, N, dz);
         } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGeneticCuda<double, nd4j::int16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<double, nd4j::int16>(extras, dx, N, dz);
         } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGeneticCuda<double, nd4j::uint16>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<double, nd4j::uint16>(extras, dx, N, dz);
         } else if (dstType == ND4J_FLOAT24) {
 
         } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGeneticCuda<double, float>(extras, dx, N, dz);
+            nd4j::TypeCast::convertGenericCuda<double, float>(extras, dx, N, dz);
         } else if (dstType == ND4J_DOUBLE) {
             //
         } else if (dstType == ND4J_THRESHOLD) {
