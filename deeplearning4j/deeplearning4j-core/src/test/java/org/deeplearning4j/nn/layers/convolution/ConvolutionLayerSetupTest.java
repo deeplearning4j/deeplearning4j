@@ -2,6 +2,8 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.BaseDL4JTest;
@@ -39,6 +41,9 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 public class ConvolutionLayerSetupTest extends BaseDL4JTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void testConvolutionLayerSetup() {
@@ -125,7 +130,9 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
     @Test
     public void testLRN() throws Exception {
         List<String> labels = new ArrayList<>(Arrays.asList("Zico", "Ziwang_Xu"));
-        String rootDir = new ClassPathResource("lfwtest").getFile().getAbsolutePath();
+        File dir = testDir.newFolder();
+        new ClassPathResource("lfwtest/").copyDirectory(dir);
+        String rootDir = dir.getAbsolutePath();
 
         RecordReader reader = new ImageRecordReader(28, 28, 3);
         reader.initialize(new FileSplit(new File(rootDir)));

@@ -100,11 +100,6 @@ public class IteratorDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public int inputColumns() {
         if (inputColumns != -1)
             return inputColumns;
@@ -138,16 +133,6 @@ public class IteratorDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return batchSize;
-    }
-
-    @Override
-    public int cursor() {
-        return cursor;
-    }
-
-    @Override
-    public int numExamples() {
-        return totalExamples();
     }
 
     @Override

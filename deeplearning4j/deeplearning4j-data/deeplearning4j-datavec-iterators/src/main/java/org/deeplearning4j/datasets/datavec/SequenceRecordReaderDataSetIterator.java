@@ -355,11 +355,6 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public int inputColumns() {
         if (inputColumns != -1)
             return inputColumns;
@@ -407,16 +402,6 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return miniBatchSize;
-    }
-
-    @Override
-    public int cursor() {
-        return cursor;
-    }
-
-    @Override
-    public int numExamples() {
-        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

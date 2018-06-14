@@ -94,11 +94,6 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return totalExamples;
-    }
-
-    @Override
     public int inputColumns() {
         return 0;
     }
@@ -126,16 +121,6 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return batchSize;
-    }
-
-    @Override
-    public int cursor() {
-        return currIdx;
-    }
-
-    @Override
-    public int numExamples() {
-        return totalExamples;
     }
 
     @Override

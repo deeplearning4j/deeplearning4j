@@ -11,6 +11,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
+import java.util.Arrays;
+
 /**
  *  f(x) = alpha * (exp(x) - 1.0); x < 0
  *       = x ; x>= 0
@@ -57,6 +59,7 @@ public class ActivationELU extends BaseActivationFunction {
      */
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
+        assertShape(in, epsilon);
         // no support in ELU native to override alpha
         if (alpha != 1.00) {
             INDArray dLdz = Nd4j.getExecutioner().execAndReturn(new ELUDerivative(in.dup()));

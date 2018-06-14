@@ -49,12 +49,6 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
     public int inputColumns() {
         throw new UnsupportedOperationException();
     }
@@ -81,16 +75,6 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
 
     @Override
     public int batch() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int cursor() {
-        return currIdx;
-    }
-
-    @Override
-    public int numExamples() {
         throw new UnsupportedOperationException();
     }
 
