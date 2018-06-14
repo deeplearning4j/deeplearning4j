@@ -10,7 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class JcusparseNDArrayCSR extends BaseSparseNDArrayCSR {
 
-    public JcusparseNDArrayCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public JcusparseNDArrayCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         super(data, columns, pointerB, pointerE, shape);
     }
 

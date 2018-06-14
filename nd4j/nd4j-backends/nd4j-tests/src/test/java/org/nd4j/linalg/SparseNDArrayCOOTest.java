@@ -35,14 +35,14 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void shouldPutScalar() {
-        INDArray sparse = Nd4j.createSparseCOO(new double[] {1, 2}, new int[][] {{0, 0}, {0, 2}}, new int[] {1, 3});
+        INDArray sparse = Nd4j.createSparseCOO(new double[] {1, 2}, new int[][] {{0, 0}, {0, 2}}, new long[] {1, 3});
         sparse.putScalar(1, 3);
 
     }
 
     @Test
     public void shouldntPutZero() {
-        INDArray sparse = Nd4j.createSparseCOO(new double[] {1, 2}, new int[][] {{0, 0}, {0, 2}}, new int[] {1, 3});
+        INDArray sparse = Nd4j.createSparseCOO(new double[] {1, 2}, new int[][] {{0, 0}, {0, 2}}, new long[] {1, 3});
         int oldNNZ = sparse.nnz();
         sparse.putScalar(1, 0);
         assertArrayEquals(new int[] {0, 2}, sparse.getVectorCoordinates().asInt());
@@ -52,7 +52,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void shouldRemoveZero() {
-        INDArray sparse = Nd4j.createSparseCOO(new double[] {1, 2}, new int[][] {{0, 0}, {0, 2}}, new int[] {1, 3});
+        INDArray sparse = Nd4j.createSparseCOO(new double[] {1, 2}, new int[][] {{0, 0}, {0, 2}}, new long[] {1, 3});
         sparse.putScalar(0, 0);
         assertArrayEquals(new int[] {2}, sparse.getVectorCoordinates().asInt());
     }
@@ -67,7 +67,7 @@ public class SparseNDArrayCOOTest {
         // test with sparse :
         double[] values = {1, 2, 3, 4};
         int[][] indices = {{0, 3}, {1, 2}, {2, 1}, {3, 4}};
-        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[] {5, 5});
+        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new long[] {5, 5});
 
         // subarray in the top right corner
         BaseSparseNDArrayCOO sparseView = (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.interval(0, 2),
@@ -85,7 +85,7 @@ public class SparseNDArrayCOOTest {
 
         double[] values = {1, 2, 3, 4};
         int[][] indices = {{0, 3}, {1, 2}, {2, 1}, {3, 4}};
-        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[] {5, 5});
+        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new long[] {5, 5});
 
         BaseSparseNDArrayCOO sparseView = (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.interval(2, 5),
                         NDArrayIndex.interval(0, 2));
@@ -101,7 +101,7 @@ public class SparseNDArrayCOOTest {
 
         double[] values = {1, 2, 3, 4};
         int[][] indices = {{0, 3}, {1, 2}, {2, 1}, {3, 4}};
-        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[] {5, 5});
+        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new long[] {5, 5});
         BaseSparseNDArrayCOO sparseView = (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.interval(0, 2),
                         NDArrayIndex.interval(2, 5));
         assertEquals(2, sparseView.nnz());
@@ -115,7 +115,7 @@ public class SparseNDArrayCOOTest {
     public void shouldTakeViewInTheMiddle() {
         double[] values = {1, 2, 3, 4};
         int[][] indices = {{0, 3}, {1, 2}, {2, 1}, {3, 4}};
-        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[] {5, 5});
+        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new long[] {5, 5});
         BaseSparseNDArrayCOO sparseView = (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.interval(1, 3),
                         NDArrayIndex.interval(1, 3));
         assertEquals(2, sparseView.nnz());
@@ -129,7 +129,7 @@ public class SparseNDArrayCOOTest {
     public void shouldGetFirstColumn() {
         double[] values = {1, 2, 3, 4};
         int[][] indices = {{0, 3}, {1, 2}, {2, 1}, {3, 4}};
-        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[] {5, 5});
+        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new long[] {5, 5});
         BaseSparseNDArrayCOO sparseView =
                         (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.all(), NDArrayIndex.point(0));
         assertEquals(0, sparseView.nnz());
@@ -141,7 +141,7 @@ public class SparseNDArrayCOOTest {
     public void shouldGetRowInTheMiddle() {
         double[] values = {1, 2, 3, 4};
         int[][] indices = {{0, 3}, {1, 2}, {2, 1}, {3, 4}};
-        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[] {5, 5});
+        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new long[] {5, 5});
         BaseSparseNDArrayCOO sparseView =
                         (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.point(2), NDArrayIndex.all());
         assertEquals(1, sparseView.nnz());
@@ -155,7 +155,7 @@ public class SparseNDArrayCOOTest {
     public void shouldGetScalar() {
         double[] values = {1, 2, 3, 4};
         int[][] indices = {{0, 3}, {1, 2}, {2, 1}, {3, 4}};
-        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[] {5, 5});
+        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new long[] {5, 5});
         BaseSparseNDArrayCOO sparseView =
                         (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.point(2), NDArrayIndex.point(1));
         assertEquals(1, sparseView.nnz());
@@ -166,7 +166,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void shouldTakeView3dimensionArray() {
-        int[] shape = new int[] {2, 2, 2};
+        long[] shape = new long[] {2, 2, 2};
         double[] values = new double[] {2, 1, 4, 3};
         int[][] indices = new int[][] {{0, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}};
 
@@ -183,7 +183,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void shouldTakeViewOfView() {
-        int[] shape = new int[] {2, 2, 2};
+        long[] shape = new long[] {2, 2, 2};
         double[] values = new double[] {2, 1, 4, 3};
         int[][] indices = new int[][] {{0, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}};
 
@@ -199,7 +199,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void shouldTakeViewOfView2() {
-        int[] shape = new int[] {4, 2, 3};
+        long[] shape = new long[] {4, 2, 3};
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
         int[][] indices = new int[][] {{0, 0, 2}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 2}, {2, 0, 1}, {2, 1, 2},
                         {3, 0, 1}, {3, 1, 0}};
@@ -217,7 +217,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void shouldGetWithSpecifiedIndexes() {
-        int[] shape = new int[] {4, 2, 3};
+        long[] shape = new long[] {4, 2, 3};
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
         int[][] indices = new int[][] {{0, 0, 2}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 2}, {2, 0, 1}, {2, 1, 2},
                         {3, 0, 1}, {3, 1, 0}};
@@ -231,7 +231,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void shouldGetWithSpecifiedIndexes2() {
-        int[] shape = new int[] {4, 2, 3};
+        long[] shape = new long[] {4, 2, 3};
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
         int[][] indices = new int[][] {{0, 0, 2}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 2}, {2, 0, 1}, {2, 1, 2},
                         {3, 0, 2}, {3, 1, 0}};
@@ -257,7 +257,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void newAxisWithSparseArray() {
-        int[] shape = new int[] {4, 2, 3};
+        long[] shape = new long[] {4, 2, 3};
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
         int[][] indices = new int[][] {{0, 0, 2}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 2}, {2, 0, 1}, {2, 1, 2},
                         {3, 0, 2}, {3, 1, 0}};
@@ -269,7 +269,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void nestedSparseViewWithNewAxis() {
-        int[] shape = new int[] {4, 2, 3};
+        long[] shape = new long[] {4, 2, 3};
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
         int[][] indices = new int[][] {{0, 0, 2}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 2}, {2, 0, 1}, {2, 1, 2},
                         {3, 0, 2}, {3, 1, 0}};
@@ -335,7 +335,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void shouldTranslateViewIndexesToOriginal() {
-        int[] shape = new int[] {4, 2, 3};
+        long[] shape = new long[] {4, 2, 3};
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
         int[][] indices = new int[][] {{0, 0, 2}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 2}, {2, 0, 1}, {2, 1, 2},
                         {3, 0, 2}, {3, 1, 0}};
@@ -350,7 +350,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void shouldTranslateViewIndexesToOriginal2() {
-        int[] shape = new int[] {4, 2, 3};
+        long[] shape = new long[] {4, 2, 3};
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
         int[][] indices = new int[][] {{0, 0, 2}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 2}, {2, 0, 1}, {2, 1, 2},
                         {3, 0, 2}, {3, 1, 0}};
@@ -363,7 +363,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void shouldTranslateViewIndexesToOriginal3() {
-        int[] shape = new int[] {4, 2, 3, 3};
+        long[] shape = new long[] {4, 2, 3, 3};
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
         int[][] indices = new int[][] {{0, 0, 2, 0}, {0, 1, 1, 1}, {1, 0, 0, 0}, {1, 0, 1, 0}, {1, 1, 2, 1},
                         {2, 0, 1, 0}, {2, 1, 2, 0}, {3, 0, 2, 1}, {3, 1, 0, 1}};
@@ -377,7 +377,7 @@ public class SparseNDArrayCOOTest {
     @Test
     public void shouldTranslateViewWithPrependNewAxis() {
         // TODO FIX get view with a new prepend axis
-        int[] shape = new int[] {4, 2, 3};
+        long[] shape = new long[] {4, 2, 3};
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
         int[][] indices = new int[][] {{0, 0, 2}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 2}, {2, 0, 1}, {2, 1, 2},
                         {3, 0, 2}, {3, 1, 0}};
@@ -397,7 +397,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void shouldSortCOOIndices() {
-        int[] shape = new int[] {4, 3, 3};
+        long[] shape = new long[] {4, 3, 3};
         double[] values = new double[] {1};
         int[][] indices = new int[][] {{0, 0, 0}};
         INDArray original = Nd4j.createSparseCOO(values, indices, shape);
@@ -545,7 +545,7 @@ public class SparseNDArrayCOOTest {
 
     @Test
     public void binarySearch() {
-        int[] shape = new int[] {4, 2, 3};
+        long[] shape = new long[] {4, 2, 3};
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
         int[][] indices = new int[][] {{0, 0, 2}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 2}, {2, 0, 1}, {2, 1, 2},
                         {3, 0, 2}, {3, 1, 0}};
@@ -568,7 +568,7 @@ public class SparseNDArrayCOOTest {
     @Test
     public void tryToFindABugWithHiddenDim(){
 
-        int[] shape = new int[] {1, 4, 2, 3};
+        long[] shape = new long[] {1, 4, 2, 3};
         double[] values = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9};
         int[][] indices = new int[][] {{0, 0, 0, 2}, {0, 0, 1, 1}, {0, 1, 0, 0}, {0, 1, 0, 1}, {0, 1, 1, 2}, {0, 2, 0, 1}, {0, 2, 1, 2},
                 {0, 3, 0, 2}, {0, 3, 1, 0}};

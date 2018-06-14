@@ -42,7 +42,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     protected transient volatile boolean isSorted = false;
 
 
-    public BaseSparseNDArrayCOO(double[] values, int[][] indices, int[] shape) {
+    public BaseSparseNDArrayCOO(double[] values, int[][] indices, long[] shape) {
 
         checkNotNull(values);
         checkNotNull(indices);
@@ -84,7 +84,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     }
 
-    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, int[] shape) {
+    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] shape) {
         checkArgument(values.length() * shape.length == indices.length());
 
         this.values = Nd4j.createBuffer(values, 0, values.length());
@@ -100,7 +100,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     }
 
-    public BaseSparseNDArrayCOO(float[] values, int[][] indices, int[] shape) {
+    public BaseSparseNDArrayCOO(float[] values, int[][] indices, long[] shape) {
         checkArgument(values.length == indices.length);
         checkArgument(values.length == 0 || indices[0].length == shape.length);
 
@@ -116,7 +116,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                         hiddenDimension, rank());
     }
 
-    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape) {
+    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, long[] shape) {
         this.values = Nd4j.createBuffer(values, 0, values.length());
         this.indices = indices;
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
@@ -127,7 +127,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags,
-                    int[] hiddenDimensions, int underlyingRank, int[] shape) {
+                                int[] hiddenDimensions, int underlyingRank, long[] shape) {
         this(values, indices, Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
                         hiddenDimensions, underlyingRank), shape);
     }
@@ -510,7 +510,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             throw new IllegalStateException("Invalid index found of zero length");
 
         // FIXME: LONG
-        int[] shape = LongUtils.toInts(resolution.getShapes());
+        long[] shape = resolution.getShapes();
         int numSpecifiedIndex = 0;
 
         for (int i = 0; i < indexes.length; i++)
@@ -886,7 +886,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public INDArray subArray(ShapeOffsetResolution resolution) {
         long[] offsets = resolution.getOffsets();
-        int[] shape = LongUtils.toInts(resolution.getShapes());
+        long[] shape = resolution.getShapes();
         int[] stride = LongUtils.toInts(resolution.getStrides());
         int[] flags = resolution.getFixed();
         flags = updateFlags(flags, shape);
@@ -987,7 +987,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     * @param viewFlags the Fixed array calculate within the view
     * @param newShape the shape of the view
     * */
-    private int[] updateFlags(int[] viewFlags, int[] newShape) {
+    private int[] updateFlags(int[] viewFlags, long[] newShape) {
         // Check if flags is well-formed
         int count = 0;
         for (int i = 0; i < viewFlags.length; i++) {
@@ -1019,7 +1019,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return extendedFlags;
     }
 
-    private INDArray create(DataBuffer values, DataBuffer indices, DataBuffer sparseInfo, int[] newShape) {
+    private INDArray create(DataBuffer values, DataBuffer indices, DataBuffer sparseInfo, long[] newShape) {
         return Nd4j.createSparseCOO(values, indices, sparseInfo, newShape);
     }
 

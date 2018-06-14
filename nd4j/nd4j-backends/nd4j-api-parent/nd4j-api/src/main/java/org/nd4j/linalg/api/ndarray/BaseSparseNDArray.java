@@ -27,7 +27,6 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.LinAlgExceptions;
 
-import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -326,14 +325,14 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return length;
     }
 
-    protected void init(int[] shape) {
+    protected void init(long[] shape) {
 
         if (shape.length == 1) {
             rows = 1;
-            columns = shape[0];
+            columns = (int) shape[0];
         } else if (this.shape().length == 2) {
-            rows = shape[0];
-            columns = shape[1];
+            rows = (int) shape[0];
+            columns = (int) shape[1];
         }
         rank = shape.length;
 
