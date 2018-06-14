@@ -36,7 +36,7 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
     int oH = 0;
     int oW = 0;
 
-    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NDHWC, 1-NCDHW    
+    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NHWC, 1-NCHW    
 
     const int iH = isNCHW ? input->sizeAt(2) : input->sizeAt(1);
     const int iW = isNCHW ? input->sizeAt(3) : input->sizeAt(2);

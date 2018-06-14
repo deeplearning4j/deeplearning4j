@@ -227,7 +227,7 @@ namespace simdOps {
 static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 	// input is  [bS, iC, iH, iW]
 	// output is [bS, iC, oH, oW]
-        
+
 	const Nd4jLong kH = (int)extraParams[0];
 	const Nd4jLong kW = (int)extraParams[1];
     const Nd4jLong sH = (int)extraParams[2];
@@ -255,7 +255,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
     const Nd4jLong oStride0 = shape::stride(outShapeBuffer)[0];
     const Nd4jLong oStride1 = shape::stride(outShapeBuffer)[1];
     const Nd4jLong oStride2 = shape::stride(outShapeBuffer)[2];
-    const Nd4jLong oStride3 = shape::stride(outShapeBuffer)[3];         
+    const Nd4jLong oStride3 = shape::stride(outShapeBuffer)[3];
 
     const Nd4jLong iStep2 = dH*iStride2;
     const Nd4jLong iStep3 = dW*iStride3;        
@@ -628,7 +628,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                 }  
             }
             else {
-
+ 
 #pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)    
                 for (int b = 0; b < bS; b++) {
                     for (int colH = 0; colH < oH; ++colH) {
@@ -983,7 +983,6 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 			Nd4jLong *imShapeBuffer,
 			T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-
             // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
             auto colShape  = shape::shapeOf(colShapeBuffer);
@@ -1018,13 +1017,13 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
             const Nd4jLong imStride3  = imStride[3];
 
             // initial zeroing of image content
-            // const Nd4jLong imEWS = nd4j::math::nd4j_abs<Nd4jLong>(shape::elementWiseStride(imShapeBuffer));
-            // if(imEWS == 1)
+            const Nd4jLong imEWS = nd4j::math::nd4j_abs<Nd4jLong>(shape::elementWiseStride(imShapeBuffer));
+            if(imEWS == 1)
                  memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
-            // else 
-// #pragma omp parallel for schedule(static) proc_bind(close)
-                // for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS) 
-                    // imBuff[i] = 0.f;           
+            else 
+#pragma omp parallel for schedule(static) proc_bind(close)
+                for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS) 
+                    imBuff[i] = 0.f;           
             
 
             T *col, *im;

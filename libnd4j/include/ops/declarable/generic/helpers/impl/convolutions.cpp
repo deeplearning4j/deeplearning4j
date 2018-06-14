@@ -1572,7 +1572,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
                             sum /= (Nd4jLong)nd4j::math::nd4j_ceil<T>((hend-hstart) * iStep2Inv) * (Nd4jLong)nd4j::math::nd4j_ceil<T>((wend-wstart) * iStep3Inv);   //Accounts for dilation
                             else if ((int) extraParam0 == 1)    //Include padding
                                 sum /= kProd;
-                    
+                
                             out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                     }
                 }
@@ -1627,6 +1627,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
         throw "";
     }
 }
+
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
