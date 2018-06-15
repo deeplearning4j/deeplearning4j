@@ -705,7 +705,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 //        for(int[] d : dims){
         for( int t=0; t<4; t++ ){
             int[] d = dims.get(t);
-            for( int i=0; i<4; i++ ){
+            for( int i=0; i<6; i++ ){
 
                 int[] dim = d.length == 0 ? null : d;
 

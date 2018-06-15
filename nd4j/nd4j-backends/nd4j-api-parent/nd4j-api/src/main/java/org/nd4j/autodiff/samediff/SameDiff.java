@@ -3198,6 +3198,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable scalarSet(SDVariable in, Number set){
+        return scalarSet(null, in, set);
+    }
+
+    public SDVariable scalarSet(String name, SDVariable in, Number set){
+        SDVariable ret = f().scalarSet(in, set);
+        return updateVariableNameAndReference(ret, name);
+    }
+
 
     /**
      * @param iX
@@ -3349,6 +3358,15 @@ public class SameDiff {
 
     public SDVariable lastIndex(String name, SDVariable in, Condition condition, int... dimensions){
         SDVariable ret = f().lastIndex(in, condition, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable matchCondition(SDVariable in, Condition condition){
+        return matchCondition(null, in, condition);
+    }
+
+    public SDVariable matchCondition(String name, SDVariable in, Condition condition){
+        SDVariable ret = f().matchCondition(in, condition);
         return updateVariableNameAndReference(ret, name);
     }
 

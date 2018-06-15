@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarRemainder;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
@@ -75,7 +76,7 @@ public class TransformOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-        for( int i=0; i<8; i++ ) {
+        for( int i=0; i<11; i++ ) {
             for (char inOrder : new char[]{'c', 'f'}) {
                 SameDiff sd = SameDiff.create();
 
@@ -126,6 +127,23 @@ public class TransformOpValidation {
                         out = sd.scalarFloorMod(in, 2);
                         tc.expected(out, Nd4j.getExecutioner().execAndReturn(new ScalarRemainder(inArr.dup(), 2.0)));
                         msg = "scalarRemainer - " + inOrder;
+                        break;
+                    case 8:
+                        inArr.assign(Nd4j.rand(inArr.shape()));
+                        out = sd.scalarMax(in, 0.5);
+                        tc.expected(out, Transforms.max(inArr.dup(), 0.5));
+                        msg = "scalarMax - " + inOrder;
+                        break;
+                    case 9:
+                        inArr.assign(Nd4j.rand(inArr.shape()));
+                        out = sd.scalarMin(in, 0.5);
+                        tc.expected(out, Transforms.min(inArr.dup(), 0.5));
+                        msg = "scalarMin - " + inOrder;
+                        break;
+                    case 10:
+                        out = in.assign(0.5);
+                        tc.expected(out, Nd4j.valueArrayOf(inArr.shape(), 0.5));
+                        msg = "scalarSet - " + inOrder;
                         break;
                     default:
                         throw new RuntimeException();
@@ -880,7 +898,11 @@ public class TransformOpValidation {
                     t = sd.log(in, 10);
                     tc.expected(t, Transforms.log(ia, 10, true));
                     break;
-
+                case 77:
+                    ia = Nd4j.rand(ia.shape());
+                    t = sd.matchCondition(in, Conditions.lessThan(0.5));
+                    INDArray exp = Nd4j.getExecutioner().exec(new MatchCondition(ia.dup(), Conditions.lessThan(0.5))).z();
+                    tc.expected(t, exp);
                 default:
                     throw new RuntimeException();
             }
@@ -1143,6 +1165,7 @@ public class TransformOpValidation {
 
     @Test
     public void testReplaceWhereScalar(){
+        fail(); //JVM crash
         for(Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}){
 
             INDArray inArr = Nd4j.rand(3,4);
@@ -1164,6 +1187,7 @@ public class TransformOpValidation {
 
     @Test
     public void testReplaceWhereArray(){
+        fail(); //JVM crash
         for(Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}){
 
             INDArray inArr = Nd4j.rand(3,4);

@@ -448,6 +448,10 @@ public class DifferentialFunctionFactory {
         return new ScalarMin(sameDiff(), in, num).outputVariable();
     }
 
+    public SDVariable scalarSet(SDVariable in, Number num){
+        return new ScalarSet(sameDiff(), in, num).outputVariable();
+    }
+
     public SDVariable scalarFloorMod(SDVariable in, Number num){
         return new ScalarFMod(sameDiff(), in, num).outputVariable();
     }
@@ -519,6 +523,9 @@ public class DifferentialFunctionFactory {
         return new LastIndex(sameDiff(), in, condition, dimensions).outputVariable();
     }
 
+    public SDVariable matchCondition(SDVariable in, Condition condition){
+        return new MatchCondition(sameDiff(), in, condition).outputVariable();
+    }
 
     public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... dimensions) {
         return new CumSum(sameDiff(), in, exclusive, reverse, dimensions).outputVariable();

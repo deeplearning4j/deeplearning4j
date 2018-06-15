@@ -16,8 +16,10 @@ import org.nd4j.linalg.api.ops.impl.accum.EqualsWithEps;
 import org.nd4j.linalg.api.ops.impl.accum.NormalizeMoments;
 import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
+import org.nd4j.linalg.api.ops.impl.grid.FreeGridOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.*;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarRemainder;
 import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.MergeSum;
@@ -425,7 +427,28 @@ public class OpValidation {
                 GradientBackwardsMarker.class,
                 DefaultOpConverter.class,
                 EqualsWithEps.class,
+                FreeGridOp.class,
                 MergeSum.class, //Redundant; we use MergeAdd in samediff instead
+                ScalarRemainder.class,  //Redundant; SameDiff uses ScalarFMod instead
+
+                //Exclude manual broadcast ops: SameDiff uses auto broadcasting
+                BroadcastAMax.class,
+                BroadcastAMin.class,
+                BroadcastAddOp.class,
+                BroadcastCopyOp.class,
+                BroadcastDivOp.class,
+                BroadcastEqualTo.class,
+                BroadcastGreaterThan.class,
+                BroadcastGreaterThanOrEqual.class,
+                BroadcastLessThan.class,
+                BroadcastLessThanOrEqual.class,
+                BroadcastMax.class,
+                BroadcastMin.class,
+                BroadcastMulOp.class,
+                BroadcastNotEqual.class,
+                BroadcastRDivOp.class,
+                BroadcastRSubOp.class,
+                BroadcastSubOp.class,
 
                 //These BP ops: we'll test them as part of gradient checks for the corresponding forward pass ops
                 //We don't need separate forward pass tests (as long as  gradient checks pass), and can't gradient check
@@ -460,7 +483,18 @@ public class OpValidation {
                 TanhDerivative.class,
 
                 BiasAddGrad.class,
-                ConcatBp.class
+                ConcatBp.class,
+
+                BatchNormDerivative.class,
+                Conv2DDerivative.class,
+                Conv3DDerivative.class,
+                DeConv2DDerivative.class,
+                FullConv3DDerivative.class,
+                LocalResponseNormalizationDerivative.class,
+                Pooling2DDerivative.class,
+                Pooling3DDerivative.class,
+                SConv2DDerivative.class,
+                UpsamplingDerivative.class
         );
 
         return new HashSet<>(list);
@@ -487,24 +521,6 @@ public class OpValidation {
                 BinaryMinimalRelativeError.class,
                 Histogram.class,
                 InvertPermutation.class,    //Uses integer indices
-                //Exclude manual broadcast ops: SameDiff uses auto broadcasting
-                BroadcastAMax.class,
-                BroadcastAMax.class,
-                BroadcastAddOp.class,
-                BroadcastCopyOp.class,
-                BroadcastDivOp.class,
-                BroadcastEqualTo.class,
-                BroadcastGreaterThan.class,
-                BroadcastGreaterThanOrEqual.class,
-                BroadcastLessThan.class,
-                BroadcastLessThanOrEqual.class,
-                BroadcastMax.class,
-                BroadcastMin.class,
-                BroadcastMulOp.class,
-                BroadcastNotEqual.class,
-                BroadcastRDivOp.class,
-                BroadcastRSubOp.class,
-                BroadcastSubOp.class,
                 //Exclude boolean operations:
                 Any.class,
                 All.class,
