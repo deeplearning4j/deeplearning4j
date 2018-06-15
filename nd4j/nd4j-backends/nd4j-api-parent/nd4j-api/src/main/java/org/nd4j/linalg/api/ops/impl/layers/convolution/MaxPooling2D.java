@@ -218,7 +218,7 @@ public class MaxPooling2D extends DynamicCustomOp {
         val strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
-                .propertyNames(new String[]{"sx", "sy"})
+                .propertyNames(new String[]{"sW", "sH"})
                 .build();
 
         val paddingMapping = PropertyMapping.builder()
@@ -228,14 +228,14 @@ public class MaxPooling2D extends DynamicCustomOp {
                 .build();
 
         val kernelMapping = PropertyMapping.builder()
-                .propertyNames(new String[]{"kh", "kw"})
+                .propertyNames(new String[]{"kH", "kW"})
                 .tfInputPosition(1)
                 .onnxAttrName("ksize")
                 .build();
 
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dw", "dh"})
+                .propertyNames(new String[]{"dW", "dH"})
                 .tfAttrName("rates")
                 .build();
 
@@ -246,14 +246,14 @@ public class MaxPooling2D extends DynamicCustomOp {
                 .tfAttrName("data_format")
                 .build();
 
-        map.put("sx", strideMapping);
-        map.put("sy", strideMapping);
-        map.put("kh", kernelMapping);
-        map.put("kw", kernelMapping);
-        map.put("dw", dilationMapping);
-        map.put("dh", dilationMapping);
-        map.put("ph", paddingMapping);
-        map.put("pw", paddingMapping);
+        map.put("sW", strideMapping);
+        map.put("sH", strideMapping);
+        map.put("kH", kernelMapping);
+        map.put("kW", kernelMapping);
+        map.put("dW", dilationMapping);
+        map.put("dH", dilationMapping);
+        map.put("pH", paddingMapping);
+        map.put("pW", paddingMapping);
         map.put("isNHWC", dataFormatMapping);
 
         ret.put(onnxName(), map);

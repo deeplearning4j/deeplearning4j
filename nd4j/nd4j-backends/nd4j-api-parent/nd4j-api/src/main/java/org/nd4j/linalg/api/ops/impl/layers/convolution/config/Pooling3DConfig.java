@@ -28,9 +28,9 @@ public class Pooling3DConfig extends BaseConvolutionConfig {
         ret.put("pT", pT);
         ret.put("pW", pW);
         ret.put("pH", pH);
-        ret.put("dilationT", dilationT);
-        ret.put("dilationW", dilationW);
-        ret.put("dilationH", dilationH);
+        ret.put("dD", dilationT);
+        ret.put("dW", dilationW);
+        ret.put("dH", dilationH);
         ret.put("type", type.toString());
         ret.put("ceilingMode", ceilingMode);
         return ret;

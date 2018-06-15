@@ -116,14 +116,14 @@ public class DeConv2D extends DynamicCustomOp {
                 .build();
 
         val kernelMapping = PropertyMapping.builder()
-                .propertyNames(new String[]{"kh", "kw"})
+                .propertyNames(new String[]{"kH", "kW"})
                 .tfInputPosition(1)
                 .onnxAttrName("kernel_shape")
                 .build();
 
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dw", "dh"})
+                .propertyNames(new String[]{"dW", "dH"})
                 .tfAttrName("rates")
                 .build();
 
@@ -135,18 +135,18 @@ public class DeConv2D extends DynamicCustomOp {
 
         val paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
-                .propertyNames(new String[]{"ph", "pw"})
+                .propertyNames(new String[]{"pH", "pW"})
                 .build();
 
-        map.put("sx", strideMapping);
-        map.put("sy", strideMapping);
-        map.put("kh", kernelMapping);
-        map.put("kw", kernelMapping);
-        map.put("dw", dilationMapping);
-        map.put("dh", dilationMapping);
+        map.put("sW", strideMapping);
+        map.put("sH", strideMapping);
+        map.put("kH", kernelMapping);
+        map.put("kW", kernelMapping);
+        map.put("dW", dilationMapping);
+        map.put("dH", dilationMapping);
         map.put("isSameMode", sameMode);
-        map.put("ph", paddingWidthHeight);
-        map.put("pw", paddingWidthHeight);
+        map.put("pH", paddingWidthHeight);
+        map.put("pW", paddingWidthHeight);
 
         ret.put(onnxName(), map);
         ret.put(tensorflowName(), map);

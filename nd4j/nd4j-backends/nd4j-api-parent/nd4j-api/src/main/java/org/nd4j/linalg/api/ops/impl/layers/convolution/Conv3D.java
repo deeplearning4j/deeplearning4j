@@ -17,7 +17,6 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -73,9 +72,9 @@ public class Conv3D extends DynamicCustomOp {
                 getConfig().getPH(),
                 getConfig().getPW(),
 
-                getConfig().getDilationT(),
-                getConfig().getDilationH(),
-                getConfig().getDilationW(),
+                getConfig().getdD(),
+                getConfig().getdH(),
+                getConfig().getdW(),
 
                 getConfig().isValidMode() ? 0 : 1,
                 getConfig().isNCDHW() ? 0 : 1
@@ -172,7 +171,7 @@ public class Conv3D extends DynamicCustomOp {
 
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dilationT", "dilationH", "dilationW"})
+                .propertyNames(new String[]{"dD", "dH", "dW"})
                 .tfAttrName("rates")
                 .build();
 

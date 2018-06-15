@@ -369,8 +369,8 @@ public class LayerOpValidation extends BaseOpValidation {
 //        Pooling2DConfig conf = Pooling2DConfig.builder()
 //                .isNHWC(false)
 //                .isSameMode(false)
-//                .kh(2).kw(2)
-//                .sx(1).sy(1)
+//                .kH(2).kW(2)
+//                .sW(1).sH(1)
 //                .build();
 
         Pooling2DConfig conf = Pooling2DConfig.builder()

@@ -109,7 +109,7 @@ public class FullConv3D extends DynamicCustomOp {
 
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dilationT","dilationH","dilationW"})
+                .propertyNames(new String[]{"dD","dH","dW"})
                 .tfAttrName("rates")
                 .build();
 

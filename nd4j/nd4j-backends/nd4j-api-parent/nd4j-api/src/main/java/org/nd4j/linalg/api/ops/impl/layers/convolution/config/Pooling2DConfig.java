@@ -30,19 +30,19 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
 
     public Map<String,Object> toProperties() {
         Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("kh",kh);
-        ret.put("kw",kw);
-        ret.put("sy",sy);
-        ret.put("sx",sx);
-        ret.put("ph",ph);
-        ret.put("pw",pw);
+        ret.put("kH",kh);
+        ret.put("kW",kw);
+        ret.put("sH",sy);
+        ret.put("sW",sx);
+        ret.put("pH",ph);
+        ret.put("pW",pw);
         ret.put("virtualHeight",virtualHeight);
         ret.put("virtualWidth",virtualWidth);
         ret.put("extra",extra);
         ret.put("type",type.toString());
         ret.put("isSameMode",isSameMode);
-        ret.put("dh",dh);
-        ret.put("dw",dw);
+        ret.put("dH",dh);
+        ret.put("dW",dw);
         ret.put("isNHWC",isNHWC);
         return ret;
     }
