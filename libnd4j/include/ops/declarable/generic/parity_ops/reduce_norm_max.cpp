@@ -3,6 +3,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/reduce_minmax.h>
 
 namespace nd4j {
 namespace ops {
@@ -49,12 +50,9 @@ namespace ops {
             auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
+            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
 
-            REQUIRE_TRUE(output->isSameShape(epsilon), 0, "reduce_norm_max_bp: The second param shape should be the same as result shape.");
-            output->assign(epsilon);
-//            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-//            T keepDimsT = (keepDims?T(1.f):T(0.f));
-#if 0
+            T keepDimsT = (keepDims?T(1.f):T(0.f));
             // at first step we build fwd activation
             nd4j::ops::reduce_norm_max<T> op;
             std::vector<Nd4jLong> axes;
@@ -63,18 +61,18 @@ namespace ops {
                 for (int e = 0; e < block.numI(); e++)
                     axes.emplace_back(INT_ARG(e));// = *block.getIArguments();
             }
+
             std::vector<T> tVec(1);
             tVec[0] = (keepDims?T(1.0):T(0.0));
             std::vector<NDArray<T>*> inputVec({input});
-            auto tmpResult = op.execute(inputVec, tVec, axes, false); 
+            std::unique_ptr<ResultSet<T>> tmpResult(op.execute(inputVec, tVec, axes, false)); 
             if (tmpResult->status() != ND4J_STATUS_OK)
                 return tmpResult->status();
 
-            NDArray<T>* tempSum = tmpResult->at(0);
-            tempSum->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
+            NDArray<T>* normMax = tmpResult->at(0);
 
-            delete tmpResult;
-#endif
+            helpers::minMaxReduceFunctor(input, epsilon, normMax, output, true);
+
             return ND4J_STATUS_OK;
     }
 #endif

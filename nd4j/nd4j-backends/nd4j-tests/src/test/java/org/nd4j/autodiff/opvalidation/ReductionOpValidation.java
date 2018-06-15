@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
@@ -41,6 +42,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testZeroCount() {
+        OpValidationSuite.ignoreFailing();
         List<String> allFailed = new ArrayList<>();
         for( int i=0; i<2; i++ ) {
             SameDiff sd = SameDiff.create();
@@ -73,6 +75,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testZeroFraction() {
+        OpValidationSuite.ignoreFailing();
 
         List<String> allFailed = new ArrayList<>();
         for( int i=0; i<2; i++ ) {
@@ -104,6 +107,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReductionGradientsSimple() {
+        OpValidationSuite.ignoreFailing();
         //Test reductions: final and only function
         Nd4j.getRandom().setSeed(12345);
 
@@ -239,6 +243,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReductionGradients1() {
+        OpValidationSuite.ignoreFailing();
         //Test reductions: final, but *not* the only function
         Nd4j.getRandom().setSeed(12345);
 
@@ -353,6 +358,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReductionGradients2() {
+        OpValidationSuite.ignoreFailing();
         //Test reductions: NON-final function
         Nd4j.getRandom().setSeed(12345);
 
@@ -507,6 +513,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReduce3() {
+        OpValidationSuite.ignoreFailing();
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -598,6 +605,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testMoments(){
+        OpValidationSuite.ignoreFailing();
 
         for( int[] axes : new int[][]{{0}, {1}, {0,1}}) {
             INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
@@ -625,6 +633,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testMomentsOp(){
+        OpValidationSuite.ignoreFailing();
         int[] axes = new int[]{0};
         INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
@@ -646,6 +655,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testNormalizeMomentsOp(){
+        OpValidationSuite.ignoreFailing();
 
         INDArray data = Nd4j.linspace(1, 100, 100).reshape(10,10);
         INDArray ssSum = data.sum(0);
@@ -695,6 +705,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testIndexAccum(){
+        OpValidationSuite.ignoreFailing();
         fail(); //JVM crash: https://github.com/deeplearning4j/deeplearning4j/issues/5582
 
         List<String> failed = new ArrayList<>();

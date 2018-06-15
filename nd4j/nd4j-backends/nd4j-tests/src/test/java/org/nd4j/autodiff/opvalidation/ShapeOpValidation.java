@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
@@ -53,6 +54,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testConcat() {
+        OpValidationSuite.ignoreFailing();
 
 //        int[] concatDim = new int[]{0,0,0,1,1,1,2,2,2};
         int[] concatDim = new int[]{0, 0, 0};
@@ -94,6 +96,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testReshapeGradient() {
+        OpValidationSuite.ignoreFailing();
         fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         int[] origShape = new int[]{3, 4, 5};
 
@@ -129,6 +132,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testPermuteGradient() {
+        OpValidationSuite.ignoreFailing();
         int[] origShape = new int[]{3, 4, 5};
 
         List<String> failed = new ArrayList<>();
@@ -193,6 +197,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testExpandDimsGradient() {
+        OpValidationSuite.ignoreFailing();
         val origShape = new long[]{3, 4};
 
         List<String> failed = new ArrayList<>();
@@ -313,6 +318,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSliceGradient() {
+        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         //Order here: original shape, begin, size
@@ -391,6 +397,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testStridedSliceGradient() {
+        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         //Order here: original shape, begin, size
@@ -439,6 +446,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testMerge() {
+        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
@@ -510,6 +518,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testStack() {
+        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
@@ -601,6 +610,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testUnStack() {
+        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
@@ -688,6 +698,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testTile() {
+        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         List<int[]> tileArg = Arrays.asList(
@@ -798,6 +809,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testTranspose() {
+        OpValidationSuite.ignoreFailing();
         fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
@@ -827,6 +839,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testShape() {
+        OpValidationSuite.ignoreFailing();
         fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         SameDiff sameDiff = SameDiff.create();
         val shape = new long[]{2, 3};
@@ -842,6 +855,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testDiagShapeFn() {
+        OpValidationSuite.ignoreFailing();
 
         INDArray i = Nd4j.linspace(1, 16, 16).reshape(4,4);
 
@@ -858,6 +872,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testPermute(){
+        OpValidationSuite.ignoreFailing();
 
         INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
         INDArray exp = in.permute(0,1,2);   //No op
@@ -873,6 +888,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testPermute2(){
+        OpValidationSuite.ignoreFailing();
 
         for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
             INDArray in = Nd4j.linspace(1, 60, 60).reshape(3,4,5);
@@ -899,6 +915,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testConstant(){
+        OpValidationSuite.ignoreFailing();
 
         //Case 0: no shape
         SameDiff sd = SameDiff.create();
@@ -924,6 +941,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testUnstackEdgeCase2(){
+        OpValidationSuite.ignoreFailing();
 
         for( int i=0; i<3; i++ ) {
 
@@ -942,6 +960,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void invertPermutation() {
+        OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
         INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1});
@@ -959,6 +978,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testReverseSequence() {
+        OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
         float[] input_data = new float[]{
                 1, 2, 3,
@@ -1004,6 +1024,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSequenceMask() {
+        OpValidationSuite.ignoreFailing();
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.create(new float[] {1, 3, 2}).reshape(3);
         SDVariable lengths = sameDiff.var("lengths", arr);
