@@ -518,7 +518,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
     @Test
     public void testStdevBP_Rank1() {
         OpValidationSuite.ignoreFailing();
-        fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
+        //fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         INDArray dLdOut = Nd4j.trueScalar(0.5);
         INDArray preReduceInput = Nd4j.create(new double[]{2,3,4}, new long[]{3});
         double stdev = preReduceInput.stdNumber(true).doubleValue();

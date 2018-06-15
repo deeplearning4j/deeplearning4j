@@ -406,6 +406,10 @@ public class OpValidation {
         String pcBwd = String.format("%.2f", fracBwdAdequate * 100.0);
         String pc = String.format("%.2f", fracAdequate * 100.0);
 
+        int countTf = DifferentialFunctionClassHolder.getInstance().getCountTotalTfOps();
+        int countTfMapped = DifferentialFunctionClassHolder.getInstance().getCountTotalMappedOps();
+        double tfFrac = countTfMapped / (double)countTf;
+        String fracTfStr = String.format("%.2f", tfFrac);
 
         log.info("*****************************************************");
         log.info("Op Validation:        {} of {} classes with adequate tests ({}% coverage)", countAdequate, totalFwd, pc);
@@ -413,6 +417,7 @@ public class OpValidation {
         log.info("Gradient check tests: {} of {} classes ({}% coverage)", countAdequateBwd, totalBwd, pcBwd);
         log.info("({} ops excluded from gradient check coverage)", excludedFromBackpropCoverage.size());
         log.info("({} ops excluded from fwd+gradient tests)", excludedFromAllTestCoverage.size());
+        log.info("TF mapped ops:        {} of {} ({}%)", countTfMapped, countTf, tfFrac, fracTfStr);
         log.info("*****************************************************");
     }
 

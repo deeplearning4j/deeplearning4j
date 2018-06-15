@@ -12,6 +12,8 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.function.Function;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,6 +74,18 @@ public class RandomOpValidation extends BaseOpValidation {
                             return "Failed: mean = " + mean + ", stdev = " + stdev;
                         };
                         name = "randomNormal";
+                    case 2:
+                        rand = sd.randomBernoulli(0.5, shapeVar);
+                        checkFn = in -> {
+                            double mean = in.meanNumber().doubleValue();
+                            double min = in.minNumber().doubleValue();
+                            double max = in.maxNumber().doubleValue();
+                            int sum0 = Transforms.not(in.dup()).sumNumber().intValue();
+                            int sum1 = in.sumNumber().intValue();
+                            if(Math.abs(mean - 0.5) < 0.1 && min == 0 && max == 1 && (sum0 + sum1) == in.length())
+                                return null;
+                            return "Failed: bernoulli - sum0 = " + sum0 + ", sum1 = " + sum1;
+                        };
                     default:
                         throw new RuntimeException();
                 }
