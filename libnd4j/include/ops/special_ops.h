@@ -344,11 +344,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                                 sum += pIn[kh + kw];
                                 
                         if ((int) extraParam0 == 0)         //Exclude padding
-                            sum /= (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-hstart) / static_cast<T>(iStep2)) * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-wstart) / static_cast<T>(iStep3));   //Accounts for dilation
-                            else if ((int) extraParam0 == 1)    //Include padding
-                                sum /= kProd;
+                            sum /= static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(hend-hstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(wend-wstart) / static_cast<double>(iStep3)));   //Accounts for dilation
+                        else if ((int) extraParam0 == 1)    //Include padding
+                            sum /= kProd;
                     
-                            out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                     }
                 }
             }

@@ -1567,11 +1567,12 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
                                 sum += pIn[kh + kw];
                                 
                         if ((int) extraParam0 == 0)         //Exclude padding
-                            sum /= (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-hstart) / static_cast<T>(iStep2)) * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-wstart) / static_cast<T>(iStep3));   //Accounts for dilation
-                            else if ((int) extraParam0 == 1)    //Include padding
-                                sum /= kProd;
+                            sum /= static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(hend-hstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(wend-wstart) / static_cast<double>(iStep3)));   //Accounts for dilation
+
+                        else if ((int) extraParam0 == 1)    //Include padding
+                            sum /= kProd;
                 
-                            out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                     }
                 }
             }
@@ -1782,7 +1783,7 @@ void ConvolutionUtils<T>::pooling3d(NDArray<T>& input, NDArray<T>& output, const
                                         sum += pIn[kd + kh + kw];
                                 
                             if ((int) extraParam0 == 0)         //Exclude padding
-                                sum /= (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(dend-dstart) / static_cast<T>(iStep2)) * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-hstart) / static_cast<T>(iStep3)) * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-wstart) / static_cast<T>(iStep4));   //Accounts for dilation
+                                sum /= static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(dend-dstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(hend-hstart) / static_cast<double>(iStep3))) * static_cast<double>(nd4j::math::nd4j_ceil<double>(static_cast<double>(wend-wstart) / static_cast<double>(iStep4)));   //Accounts for dilation
                             else if ((int) extraParam0 == 1)    //Include padding
                                 sum /= kProd;
                     
@@ -1981,8 +1982,8 @@ void ConvolutionUtils<T>::pooling2dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
 
                         valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
                                             
-                        if ((int) extraParam0 == 0)         //Exclude padding
-                            valO /= (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-hstart) / static_cast<T>(iStep2)) * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-wstart) / static_cast<T>(iStep3));   //Accounts for dilation
+                        if ((int) extraParam0 == 0)         //Exclude padding                            
+                            valO /= static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(hend-hstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(wend-wstart) / static_cast<double>(iStep3)));   //Accounts for dilation
                         else if ((int) extraParam0 == 1)    //Include padding
                             valO /= kProd;
 
@@ -2209,7 +2210,7 @@ void ConvolutionUtils<T>::pooling3dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
                             valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
                                             
                             if ((int) extraParam0 == 0)         //Exclude padding
-                                valO /= (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(dend-dstart) / static_cast<T>(iStep2)) * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-hstart) / static_cast<T>(iStep3)) * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-wstart) / static_cast<T>(iStep4));   //Accounts for dilation
+                                valO /= static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(dend-dstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(hend-hstart) / static_cast<double>(iStep3))) * static_cast<double>(nd4j::math::nd4j_ceil<double>(static_cast<double>(wend-wstart) / static_cast<double>(iStep4)));   //Accounts for dilation
                             else if ((int) extraParam0 == 1)    //Include padding
                                 valO /= kProd;
 
