@@ -41,6 +41,20 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+
+        CONFIGURABLE_OP_IMPL(cumprod_bp, 2, 1, true, 0, 2) {
+            auto input = INPUT_VARIABLE(0);
+            auto epsilon = INPUT_VARIABLE(1);
+            auto output = OUTPUT_VARIABLE(0);
+
+            const bool exclusive = INT_ARG(0) == 1;
+            const bool reverse = INT_ARG(1) == 1;
+//            output->assign(epsilon);
+            input->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, output, nullptr);
+            output->putScalar(0, epsilon->getScalar(0));
+            // 
+            return ND4J_STATUS_OK;
+        }
     }
 }
 
