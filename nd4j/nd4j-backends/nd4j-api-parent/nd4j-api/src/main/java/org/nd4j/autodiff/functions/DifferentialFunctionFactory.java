@@ -680,9 +680,24 @@ public class DifferentialFunctionFactory {
         return new Tanh(sameDiff(), iX, null).outputVariable();
     }
 
+    public SDVariable tanhRational(SDVariable in){
+        return new RationalTanh(sameDiff(), in, false).outputVariable();
+    }
+
+    public SDVariable tanhRectified(SDVariable in){
+        return new RectifiedTanh(sameDiff(), in, false).outputVariable();
+    }
 
     public SDVariable tanhDerivative(SDVariable iX, SDVariable wrt) {
         return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(sameDiff(), iX, wrt).outputVariable();
+    }
+
+    public SDVariable tanhRationalDerivative(SDVariable in, SDVariable grad){
+        return new RationalTanhDerivative(sameDiff(), in, grad, false).outputVariable();
+    }
+
+    public SDVariable tanhRectifiedDerivative(SDVariable in, SDVariable grad){
+        return new RectifiedTanhDerivative(sameDiff(), in, grad, false).outputVariable();
     }
 
     public SDVariable step(SDVariable in, double cutoff){

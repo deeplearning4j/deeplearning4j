@@ -31,6 +31,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
+import org.nd4j.linalg.api.ops.persistence.RestoreV2;
+import org.nd4j.linalg.api.ops.persistence.SaveV2;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.impl.*;
@@ -430,6 +432,8 @@ public class OpValidation {
                 FreeGridOp.class,
                 MergeSum.class, //Redundant; we use MergeAdd in samediff instead
                 ScalarRemainder.class,  //Redundant; SameDiff uses ScalarFMod instead
+                RestoreV2.class,
+                SaveV2.class,
 
                 //Exclude manual broadcast ops: SameDiff uses auto broadcasting
                 BroadcastAMax.class,

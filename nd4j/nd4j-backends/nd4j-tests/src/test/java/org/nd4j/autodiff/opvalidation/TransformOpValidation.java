@@ -485,7 +485,7 @@ public class TransformOpValidation {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 77; i++) {
+        for (int i = 0; i < 80; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -903,6 +903,16 @@ public class TransformOpValidation {
                     t = sd.matchCondition(in, Conditions.lessThan(0.5));
                     INDArray exp = Nd4j.getExecutioner().exec(new MatchCondition(ia.dup(), Conditions.lessThan(0.5))).z();
                     tc.expected(t, exp);
+                case 78:
+                    ia = Nd4j.rand(ia.shape()).muli(2).subi(1);
+                    t = sd.f().tanhRational(in);
+                    tc.expected(t, Nd4j.getExecutioner().execAndReturn(new RationalTanh(ia.dup())));
+                    break;
+                case 79:
+                    ia = Nd4j.rand(ia.shape()).muli(2).subi(1);
+                    t = sd.f().tanhRectified(in);
+                    tc.expected(t, Nd4j.getExecutioner().execAndReturn(new RectifiedTanh(ia.dup())));
+                    break;
                 default:
                     throw new RuntimeException();
             }
