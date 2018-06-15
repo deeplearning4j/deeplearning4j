@@ -4,7 +4,7 @@
 
 #include <ResultSet.h>
 #include <NDArrayFactory.h>
-#include <ops/declarable/helpers/reduce_product.h>
+#include <ops/declarable/helpers/reduce_norm.h>
 
 namespace nd4j {
 namespace ops {

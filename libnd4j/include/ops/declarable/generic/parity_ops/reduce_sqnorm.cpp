@@ -2,6 +2,7 @@
 // Created by george@skymind.io on 6/4/2018.
 //
 
+#include <ops/declarable/helpers/reduce_norm.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -50,42 +51,13 @@ namespace ops {
             auto epsilon = INPUT_VARIABLE(1);
             auto output = OUTPUT_VARIABLE(0);
 
-//            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-//            T keepDimsT = (keepDims?T(1.f):T(0.f));
-            // at first step we build fwd activation
-//            nd4j::ops::reduce_sqnorm<T> op;
-//            std::vector<Nd4jLong> axes;
-
-//            if (block.numI() > 0) {
-//                for (int e = 0; e < block.numI(); e++)
-//                    axes.emplace_back(INT_ARG(e));// = *block.getIArguments();
-//            }
-//            std::vector<T> tVec(1);
-//            tVec[0] = (keepDims?T(1.0):T(0.0));
-//            std::vector<NDArray<T>*> inputVec({input});
-//            std::unique_ptr<ResultSet<T>> tmpResult(op.execute(inputVec, tVec, axes, false)); 
-//            if (tmpResult->status() != ND4J_STATUS_OK)
-//                return tmpResult->status();
-            
             if (epsilon->isScalar()) {
                 output->assign(epsilon->getScalar(0) * T(2.f));
                 output->template applyPairwiseTransform<simdOps::Multiply<T>>(input, output, nullptr);
             }
             else {
                 auto axes = *block.getIArguments();
-                std::vector<int> dimensions; //(input->rankOf() - axes.size());
-                for (Nd4jLong e = 0; e < input->rankOf(); e++) {
-                    if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
-                        dimensions.emplace_back(e);
-                    }
-                }
-                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
-                std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
-                for (int e = 0; e < outList->size(); ++e) {
-                    outList->at(e)->assign(T(2.f));
-                    outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(epsilon, outList->at(e), nullptr);
-                    outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(inList->at(e), outList->at(e), nullptr);
-                }
+                helpers::reduceSquareNormBP(input, epsilon, (NDArray<T>*)nullptr, output, axes);
             }
             return ND4J_STATUS_OK;
     }

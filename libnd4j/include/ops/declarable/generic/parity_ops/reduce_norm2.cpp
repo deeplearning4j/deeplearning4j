@@ -2,6 +2,7 @@
 // Created by george@skymind.io on 6/4/2018.
 //
 
+#include <ops/declarable/helpers/reduce_norm.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -55,7 +56,7 @@ namespace ops {
 
             // at first step we build fwd activation
             nd4j::ops::reduce_norm2<T> op;
-            std::vector<Nd4jLong> axes;
+            std::vector<Nd4jLong> axes;// = *block.getIArguments();
 
             if (block.numI() > 0) {
                 for (int e = 0; e < block.numI(); e++)
@@ -78,18 +79,8 @@ namespace ops {
                 input->applyLambda(norm2Backprop, output);
             }
             else {
-                std::vector<int> dimensions; //(input->rankOf() - axes.size());
-                for (Nd4jLong e = 0; e < input->rankOf(); e++) {
-                    if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
-                        dimensions.emplace_back(e);
-                    }
-                }
-                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
-                std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
-                for (int e = 0; e < outList->size(); ++e) {
-                    epsilon->template applyPairwiseTransform<simdOps::Multiply<T>>(inList->at(e), outList->at(e), nullptr);
-                    outList->at(e)->template applyPairwiseTransform<simdOps::Divide<T>>(tempNorm2, outList->at(e), nullptr);
-                }
+                std::vector<int> axesList = *block.getIArguments();
+                helpers::reduceNorm2BP(input, epsilon, tempNorm2, output, axesList);
             }
             return ND4J_STATUS_OK;
     }
