@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -144,6 +145,8 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
+        Preconditions.checkState(input.shape().length == 3,
+                "3D input expected to RNN layer expected, got " + input.shape().length);
         applyDropOutIfNecessary(training, workspaceMgr);
 
         //TODO LSTM cache mode is disabled for now - not passing all tests
