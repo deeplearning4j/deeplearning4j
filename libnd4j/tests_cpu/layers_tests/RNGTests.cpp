@@ -486,7 +486,7 @@ TEST_F(RNGTests, Test_Reproducibility_9) {
     
     for (int e = 0; e < length; e++)
         if (arrayE[e] != arrayT[e]) {
-            nd4j_printf("Failed at index[%i]\n", e);
+            // nd4j_printf("Failed at index[%i]\n", e);
             ASSERT_TRUE(false);
         }
 
@@ -524,7 +524,7 @@ TEST_F(RNGTests, Test_Reproducibility_8) {
     
     for (int e = 0; e < length; e++)
         if (arrayE[e] != arrayT[e]) {
-            nd4j_printf("Failed at index[%i]\n", e);
+            // nd4j_printf("Failed at index[%i]\n", e);
             ASSERT_TRUE(false);
         }
 
@@ -576,7 +576,7 @@ TEST_F(RNGTests, Test_Reproducibility_1) {
 
             bool t = arrayE->equalsTo(arrayT);
             if (!t) {
-                nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
+                // nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
                 ASSERT_TRUE(false);
             }
 
@@ -613,14 +613,14 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
 
             bool t = arrayE->equalsTo(arrayT);
             if (!t) {
-                nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
+                // nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
 
                 for (Nd4jLong f = 0; f < arrayE->lengthOf(); f++) {
                     double x = arrayE->getIndexedScalar(f);
                     double y = arrayT->getIndexedScalar(f);
 
                     if (nd4j::math::nd4j_re(x, y) > 0.1) {
-                        nd4j_printf("E[%lld] %f != T[%lld] %f\n", (long long) f, (float) x, (long long) f, (float) y);
+                        // nd4j_printf("E[%lld] %f != T[%lld] %f\n", (long long) f, (float) x, (long long) f, (float) y);
                         throw std::runtime_error("boom");
                     }
                 }

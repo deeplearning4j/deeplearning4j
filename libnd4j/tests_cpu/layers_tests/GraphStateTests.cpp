@@ -15,8 +15,8 @@ using namespace nd4j::graph;
 class GraphStateTests : public testing::Test {
 public:
     GraphStateTests() {
-        Environment::getInstance()->setDebug(true);
-        Environment::getInstance()->setVerbose(true);
+        Environment::getInstance()->setDebug(false);
+        Environment::getInstance()->setVerbose(false);
     };
 
     ~GraphStateTests() {
@@ -191,11 +191,11 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
      */
     ASSERT_NEAR(26.0f, sum, 1e-5);
 
-    nd4j_printf("0 ------------------\n","");
+    // nd4j_printf("0 ------------------\n","");
 
     nativeOps.deleteGraphStateFloat(state);
 
-    nd4j_printf("1 ------------------\n","");
+    // nd4j_printf("1 ------------------\n","");
 }
 
 /**

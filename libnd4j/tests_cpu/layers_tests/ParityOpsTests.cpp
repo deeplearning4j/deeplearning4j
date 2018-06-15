@@ -108,8 +108,8 @@ TEST_F(ParityOpsTests, TestUnstack1) {
 
     ASSERT_EQ(10, result->size());
 
-    result->at(0)->printShapeInfo("rz");
-    tads->at(0)->printShapeInfo("re");
+    // result->at(0)->printShapeInfo("rz");
+    // tads->at(0)->printShapeInfo("re");
 
     for (int e = 0; e < result->size(); e++)
         ASSERT_TRUE(tads->at(e)->equalsTo(result->at(e)));
@@ -484,7 +484,7 @@ TEST_F(ParityOpsTests, Test_Where_1) {
 
     auto z = result->at(0);
 
-    z->printIndexedBuffer("result");
+    // z->printIndexedBuffer("result");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -521,7 +521,7 @@ TEST_F(ParityOpsTests, Test_Where_3) {
 
     auto z = result->at(0);
 
-    z->printShapeInfo("z");
+    // z->printShapeInfo("z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

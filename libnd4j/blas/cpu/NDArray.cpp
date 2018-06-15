@@ -1043,7 +1043,7 @@ template <typename T>
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
-        if(rankOf() == copy.size())
+        if(rankOf() == copy.size() || copy.empty())
             result->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
         else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
@@ -1070,7 +1070,7 @@ template <typename T>
         NDArray<T> result(newShape, _workspace);
         RELEASE(newShape, _workspace);
 
-        if(rankOf() == copy.size())
+        if(rankOf() == copy.size() || copy.empty())
             result._buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, nullptr);
         else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
@@ -1100,7 +1100,7 @@ template <typename T>
         }
         RELEASE(newShape, _workspace);
 
-        if(rankOf() == copy.size())
+        if(rankOf() == copy.size() || copy.empty())
             target->_buffer[0] = functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extras);
         else {
             shape::TAD tad(_shapeInfo, copy.data(), copy.size());
@@ -2852,7 +2852,7 @@ bool NDArray<T>::isUnitary() {
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);        
         
-        if(rankOf() == copy.size())
+        if(rankOf() == copy.size() || copy.empty())
             result->_buffer[0] = functions::summarystats::SummaryStatsReduce<T>::template execScalar<OpName>(biasCorrected, _buffer, _shapeInfo, nullptr);
         else
             functions::summarystats::SummaryStatsReduce<T>::template exec<OpName>(biasCorrected, _buffer, _shapeInfo, nullptr,
@@ -2876,7 +2876,7 @@ bool NDArray<T>::isUnitary() {
         if (copy.size() > 1)
             std::sort(copy.begin(), copy.end());
 
-        if(rankOf() == copy.size())
+        if(rankOf() == copy.size() || copy.empty())
             target->_buffer[0] = functions::summarystats::SummaryStatsReduce<T>::template execScalar<OpName>(biasCorrected, _buffer, _shapeInfo, nullptr);
         else
             functions::summarystats::SummaryStatsReduce<T>::template exec<OpName>(biasCorrected, _buffer, _shapeInfo, nullptr,

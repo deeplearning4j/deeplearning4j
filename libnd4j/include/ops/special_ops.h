@@ -227,7 +227,7 @@ namespace simdOps {
 static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outShapeBuffer, T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 	// input is  [bS, iC, iH, iW]
 	// output is [bS, iC, oH, oW]
-        
+
 	const Nd4jLong kH = (int)extraParams[0];
 	const Nd4jLong kW = (int)extraParams[1];
     const Nd4jLong sH = (int)extraParams[2];
@@ -255,7 +255,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
     const Nd4jLong oStride0 = shape::stride(outShapeBuffer)[0];
     const Nd4jLong oStride1 = shape::stride(outShapeBuffer)[1];
     const Nd4jLong oStride2 = shape::stride(outShapeBuffer)[2];
-    const Nd4jLong oStride3 = shape::stride(outShapeBuffer)[3];         
+    const Nd4jLong oStride3 = shape::stride(outShapeBuffer)[3];
 
     const Nd4jLong iStep2 = dH*iStride2;
     const Nd4jLong iStep3 = dW*iStride3;        
@@ -281,13 +281,13 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                         wend = wstart + kWEff;
                         
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);                            
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));                            
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);                            
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));                            
 
                         hstart *= iStride2;
                         hend   *= iStride2;
@@ -324,13 +324,13 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                         wend = wstart + kWEff;
 
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                         hstart *= iStride2;
                         hend   *= iStride2;
@@ -344,11 +344,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                                 sum += pIn[kh + kw];
                                 
                         if ((int) extraParam0 == 0)         //Exclude padding
-                            sum /= (Nd4jLong)nd4j::math::nd4j_ceil<T>((hend-hstart) * iStep2Inv) * (Nd4jLong)nd4j::math::nd4j_ceil<T>((wend-wstart) * iStep3Inv);   //Accounts for dilation
-                            else if ((int) extraParam0 == 1)    //Include padding
-                                sum /= kProd;
+                            sum /= static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(hend-hstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double>(static_cast<double>(wend-wstart) / static_cast<double>(iStep3)));   //Accounts for dilation
+                        else if ((int) extraParam0 == 1)    //Include padding
+                            sum /= kProd;
                     
-                            out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                        out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                     }
                 }
             }
@@ -370,13 +370,13 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                         wend = wstart + kWEff;
 
                         if(hstart < 0)
-                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-hstart / dH);
+                            hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
-                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)-wstart / dW);
+                            wstart += dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                         if(hend > iH)
-                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(hend-iH) / dH);
+                            hend -= dH * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                         if(wend > iW)
-                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>((T)(wend-iW) / dW);
+                            wend -= dW * (Nd4jLong)nd4j::math::nd4j_ceil<T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                         hstart *= iStride2;
                         hend   *= iStride2;
@@ -573,7 +573,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 			int pH = (int)extraParams[4];
 			int pW = (int)extraParams[5];
 			int dH = (int)extraParams[6];			//Dilation, height/y dimension
-			int dW = (int)extraParams[7];			//Dilation, width/x dimension
+			int dW = (int)extraParams[7];			//Dilation, width/x dimension            
+            T zeroPadVal = extraParams[9];
 
             auto colShape  = shape::shapeOf(colShapeBuffer);
             auto colStride = shape::stride(colShapeBuffer);
@@ -617,7 +618,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                                         im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3; 
                                                     
                                         if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
-                                            *col = static_cast<T>(0.);
+                                            *col = zeroPadVal;
                                         else 
                                             *col = *im;
                                     }
@@ -628,7 +629,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                 }  
             }
             else {
-
+ 
 #pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)    
                 for (int b = 0; b < bS; b++) {
                     for (int colH = 0; colH < oH; ++colH) {
@@ -644,7 +645,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
                                         im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
                                                     
                                         if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
-                                            *col = static_cast<T>(0.);
+                                            *col = zeroPadVal;
                                         else 
                                             *col = *im;
                                     }
@@ -983,13 +984,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
 			Nd4jLong *imShapeBuffer,
 			T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
-
             // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
             auto colShape  = shape::shapeOf(colShapeBuffer);
             auto colStride = shape::stride(colShapeBuffer);
             auto imShape = shape::shapeOf(imShapeBuffer);
-            auto imStride = shape::stride(imShapeBuffer);
+            auto imStride = shape::stride(imShapeBuffer);            
 
             const int sH = (int)extraParams[0];
             const int sW = (int)extraParams[1];
@@ -1018,13 +1018,14 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
             const Nd4jLong imStride3  = imStride[3];
 
             // initial zeroing of image content
-            const Nd4jLong imEWS = shape::elementWiseStride(imShapeBuffer);
-            if( imEWS == 1)
+            const Nd4jLong imEWS = nd4j::math::nd4j_abs<Nd4jLong>(shape::elementWiseStride(imShapeBuffer));
+            if(imEWS == 1)
                  memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
             else 
 #pragma omp parallel for schedule(static) proc_bind(close)
-                for (int i = 0; i < shape::length(imShapeBuffer); i+=imEWS) 
-                    *(imBuff + i) = 0.f;
+                for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS) 
+                    imBuff[i] = 0.f;           
+            
 
             T *col, *im;
             int imRow, imCol;

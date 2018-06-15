@@ -345,7 +345,7 @@ TEST_F(DeclarableOpsTests7, TestRandomCrop_1) {
 
     auto result = op.execute({&x, &shape}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printIndexedBuffer("Output");
+    //result->at(0)->printIndexedBuffer("Output");
 //    ASSERT_TRUE(z.equalsTo(result->at(0)));
 
     delete result;
@@ -359,7 +359,7 @@ TEST_F(DeclarableOpsTests7, TestRandomCrop_2) {
 
     auto result = op.execute({&x, &shape}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printIndexedBuffer("Output");
+    //result->at(0)->printIndexedBuffer("Output");
 //    ASSERT_TRUE(z.equalsTo(result->at(0)));
 
     delete result;
@@ -449,7 +449,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_Prof_1) {
 
     auto timeEnd = std::chrono::system_clock::now();
     auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
-    nd4j_printf("dynamic_stitch: Process with %i iterations was load: %lld us.\n", numOfCases, outerTime / numOfCases);
+    //nd4j_printf("dynamic_stitch: Process with %i iterations was load: %lld us.\n", numOfCases, outerTime / numOfCases);
 
     delete result;
 }
@@ -1332,8 +1332,8 @@ NDArray<double> exp('c', {2, 2, 4, 2}, {
 
     auto result = op.execute({&x}, {}, {38});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printIndexedBuffer("Output 4");
-    exp.printIndexedBuffer("Expect 4");
+    //result->at(0)->printIndexedBuffer("Output 4");
+    //exp.printIndexedBuffer("Expect 4");
 
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
@@ -1361,8 +1361,8 @@ NDArray<double> exp('c', {2, 2, 4, 2}, {
     NDArray<double>* y;
     auto result = op.execute({&x}, {y}, {}, {38}, true);
     ASSERT_EQ(result, Status::OK());
-    x.printIndexedBuffer("Output 4 inplace");
-    exp.printIndexedBuffer("Expect 4 inplace");
+    //x.printIndexedBuffer("Output 4 inplace");
+    //exp.printIndexedBuffer("Expect 4 inplace");
 
     ASSERT_TRUE(exp.equalsTo(&x));
 
@@ -1385,8 +1385,8 @@ NDArray<float> exp('c', {3, 4}, {
     auto result = op.execute({&x}, {}, {2, 1});
     ASSERT_EQ(result->status(), Status::OK());
 
-    result->at(0)->printIndexedBuffer("Output");
-    exp.printIndexedBuffer("Expect");
+    //result->at(0)->printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expect");
 
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
@@ -1408,8 +1408,8 @@ NDArray<float> exp('c', {2, 3, 2}, {
     auto result = op.execute({&x}, {}, {1, 2});
     ASSERT_EQ(result->status(), Status::OK());
 
-    result->at(0)->printIndexedBuffer("Output");
-    exp.printIndexedBuffer("Expect");
+    //result->at(0)->printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expect");
 
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
@@ -1431,8 +1431,8 @@ NDArray<float> exp('c', {2, 3, 2}, {
     auto result = op.execute({&x}, {}, {1, 2, 1, 0});
     ASSERT_EQ(result->status(), Status::OK());
 
-    result->at(0)->printIndexedBuffer("Output");
-    exp.printIndexedBuffer("Expect");
+    //result->at(0)->printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expect");
 
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
@@ -1454,8 +1454,8 @@ NDArray<float> exp('c', {2, 3, 2}, {
     auto result = op.execute({&x}, {y}, {}, {1, 2, 1, 0}, true);
     ASSERT_EQ(result, Status::OK());
 
-    x.printIndexedBuffer("Output");
-    exp.printIndexedBuffer("Expect");
+    //x.printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expect");
 
     ASSERT_TRUE(exp.equalsTo(&x));
 
@@ -1477,8 +1477,8 @@ NDArray<float> exp('c', {2, 3, 3}, {
     auto result = op.execute({&x}, {y}, {}, {1, 1}, true);
     ASSERT_EQ(result, Status::OK());
 
-    x.printIndexedBuffer("Output");
-    exp.printIndexedBuffer("Expect");
+    //x.printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expect");
 
     ASSERT_TRUE(exp.equalsTo(&x));
 

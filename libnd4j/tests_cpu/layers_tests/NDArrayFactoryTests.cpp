@@ -291,7 +291,7 @@ TEST_F(NDArrayFactoryTests, tensordot_test_5) {
     NDArrayFactory<float>::linspace(0.5, b, 0.5);
 
     NDArrayFactory<float>::tensorDot(&a, &b, &c, {1}, {0});
-    c.printIndexedBuffer();
+    // c.printIndexedBuffer();
 
     ASSERT_TRUE(c.isSameShape(expected));
     ASSERT_TRUE(c.equalsTo(expected));
@@ -362,7 +362,7 @@ TEST_F(NDArrayFactoryTests, mmmulHelperAgain) {
 //     // NDArrayFactory<double>::mmulHelper(&y, bottomColumn, &temp, 1., 0.);
 //     NDArrayFactory<double>::mmulHelper(&y, bottomColumn, bottomColumn, 1., 0.);
 //     // bottomColumn->assign(&temp);
-//     x.printBuffer();
+//     //x.printBuffer();
 
 
 //     delete bottomColumn;    
