@@ -344,7 +344,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
 
     auto legacyStart = std::chrono::system_clock::now();
 
-    float extra[] = {(float)kH, (float)kW, (float)sH, (float)sW, (float)pH, (float)pW, (float)dH, (float)dW, 0.};
+    float extra[] = {(float)kH, (float)kW, (float)sH, (float)sW, (float)pH, (float)pW, (float)dH, (float)dW, 0.f, 0.f};
     for (int e = 0; e < iterations; e++) {
         input.template applyTransform<simdOps::Im2col<float>>(&output, extra);
     }
