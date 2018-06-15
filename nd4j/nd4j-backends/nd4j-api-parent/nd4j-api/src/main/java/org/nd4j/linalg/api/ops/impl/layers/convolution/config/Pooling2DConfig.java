@@ -28,9 +28,9 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
     private Pooling2D.Divisor divisor = Pooling2D.Divisor.EXCLUDE_PADDING;
     private boolean isSameMode;
     @Builder.Default
-    private long dh = 1;
+    private long dH = 1;
     @Builder.Default
-    private long dw = 1;
+    private long dW = 1;
     @Builder.Default
     private boolean isNHWC = false;
 
@@ -48,8 +48,8 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
         ret.put("extra", extra);
         ret.put("type", type.toString());
         ret.put("isSameMode", isSameMode);
-        ret.put("dH", dh);
-        ret.put("dW", dw);
+        ret.put("dH", dH);
+        ret.put("dW", dW);
         ret.put("isNHWC", isNHWC);
         return ret;
     }

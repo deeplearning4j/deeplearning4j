@@ -55,14 +55,14 @@ public class Conv2D extends DynamicCustomOp {
     }
 
     protected void addArgs() {
-        addIArgument(config.getkH(),
-                config.getkW(),
-                config.getsH(),
-                config.getsW(),
-                config.getpH(),
-                config.getpW(),
-                config.getdH(),
-                config.getdW(),
+        addIArgument(config.getKH(),
+                config.getKW(),
+                config.getSH(),
+                config.getSW(),
+                config.getPH(),
+                config.getPW(),
+                config.getDH(),
+                config.getDW(),
                 ArrayUtil.fromBoolean(config.isSameMode()),
                 ArrayUtil.fromBoolean(config.isNHWC()));
     }

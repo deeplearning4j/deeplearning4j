@@ -153,8 +153,8 @@ public class LayerOpValidation extends BaseOpValidation {
                         out = sd.conv2d(in, w0, b0, Conv2DConfig.builder()
                                 .isNHWC(false)
                                 .isSameMode(true)
-                                .kh(3).kw(3)
-                                .sx(1).sy(1)
+                                .kH(3).kW(3)
+                                .sH(1).sW(1)
                                 .build());
                         break;
                     case 1:
@@ -167,8 +167,8 @@ public class LayerOpValidation extends BaseOpValidation {
                         out = sd.conv2d(in, w1, b1, Conv2DConfig.builder()
                                 .isNHWC(true)
                                 .isSameMode(false)
-                                .kh(2).kw(4)
-                                .sx(2).sy(2)
+                                .kH(2).kW(4)
+                                .sH(2).sW(2)
                                 .build());
                         break;
                     case 2:
@@ -180,8 +180,8 @@ public class LayerOpValidation extends BaseOpValidation {
                         out = sd.conv2d(in, w2, Conv2DConfig.builder()
                                 .isNHWC(false)
                                 .isSameMode(true)
-                                .kh(1).kw(3)
-                                .sx(1).sy(2)
+                                .kH(1).kW(3)
+                                .sH(1).sW(2)
                                 .build());
                         break;
                     case 3:
@@ -192,8 +192,8 @@ public class LayerOpValidation extends BaseOpValidation {
                         out = sd.avgPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(false)
                                 .isSameMode(true)
-                                .kh(2).kw(2)
-                                .sx(1).sy(1)
+                                .kH(2).kW(2)
+                                .sH(1).sW(1)
                                 .build());
                         break;
                     case 4:
@@ -204,8 +204,8 @@ public class LayerOpValidation extends BaseOpValidation {
                         out = sd.avgPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(true)
                                 .isSameMode(false)
-                                .kh(3).kw(2)
-                                .sx(2).sy(2)
+                                .kH(3).kW(2)
+                                .sH(2).sW(2)
                                 .build());
                         break;
                     case 5:
@@ -216,8 +216,8 @@ public class LayerOpValidation extends BaseOpValidation {
                         out = sd.maxPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(false)
                                 .isSameMode(true)
-                                .kh(2).kw(2)
-                                .sx(1).sy(1)
+                                .kH(2).kW(2)
+                                .sH(1).sW(1)
                                 .build());
                         break;
                     case 6:
@@ -228,8 +228,8 @@ public class LayerOpValidation extends BaseOpValidation {
                         out = sd.maxPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(true)
                                 .isSameMode(false)
-                                .kh(3).kw(2)
-                                .sx(2).sy(2)
+                                .kH(3).kW(2)
+                                .sH(2).sW(2)
                                 .build());
                         break;
                     case 7:
@@ -294,8 +294,8 @@ public class LayerOpValidation extends BaseOpValidation {
                         out = sd.avgPooling2d(in, Pooling2DConfig.builder()
                                 .isNHWC(true)
                                 .isSameMode(false)
-                                .kh(3).kw(2)
-                                .sx(2).sy(2)
+                                .kH(3).kW(2)
+                                .sH(2).sW(2)
                                 .build());
                         break;
                     default:
@@ -333,8 +333,8 @@ public class LayerOpValidation extends BaseOpValidation {
             SameDiff sd = SameDiff.create();
             SDVariable var = sd.var("in", Nd4j.create(inSizeNCHW));
             SDVariable im2col = sd.im2Col(var, Conv2DConfig.builder()
-                    .kh(2).kw(2)
-                    .sx(1).sy(1)
+                    .kH(2).kW(2)
+                    .sH(1).sW(1)
                     .isSameMode(true)
                     .build());
 
@@ -376,8 +376,8 @@ public class LayerOpValidation extends BaseOpValidation {
         Pooling2DConfig conf = Pooling2DConfig.builder()
                 .isNHWC(true)   //***NHWC
                 .isSameMode(false)
-                .kh(3).kw(2)
-                .sx(2).sy(2)
+                .kH(3).kW(2)
+                .sH(2).sW(2)
                 .build();
 
         INDArray input = Nd4j.create(inSize);
@@ -421,8 +421,8 @@ public class LayerOpValidation extends BaseOpValidation {
         Pooling2DConfig conf = Pooling2DConfig.builder()
                 .isNHWC(true)   //***NHWC
                 .isSameMode(false)
-                .kh(3).kw(2)
-                .sx(2).sy(2)
+                .kH(3).kW(2)
+                .sH(2).sW(2)
                 .type(Pooling2D.Pooling2DType.AVG)
                 .build();
 
@@ -499,9 +499,8 @@ public class LayerOpValidation extends BaseOpValidation {
                             out = sd.conv3d(in, w0, b0, Conv3DConfig.builder()
                                     .isNCDHW(ncdhw)
                                     .isValidMode(false)
-                                    .kH(2).kW(2).kT(2)
-                                    //strides
-                                    .dT(1).dH(1).dW(1)
+                                    .kH(2).kW(2).kD(2)
+                                    .sD(1).sH(1).sW(1)
                                     .build());
                             break;
                         case 1:
@@ -516,17 +515,16 @@ public class LayerOpValidation extends BaseOpValidation {
                             out = sd.conv3d(in, w1, Conv3DConfig.builder()
                                     .isNCDHW(ncdhw)
                                     .isValidMode(true)
-                                    .kH(2).kW(2).kT(2)
-                                    //strides
-                                    .dT(1).dH(1).dW(1)
+                                    .kH(2).kW(2).kD(2)
+                                    .sD(1).sH(1).sW(1)
                                     .build());
                             break;
                         case 2:
                             //pooling3d - average, same
                             msg = "2 - pooling 3d, average, same";
                             out = sd.avgPooling3d(in, Pooling3DConfig.builder()
-                                    .kH(2).kW(2).kT(2)
-                                    .sH(1).sW(1).sT(1)
+                                    .kH(2).kW(2).kD(2)
+                                    .sH(1).sW(1).sD(1)
                                     .ceilingMode(false)
                                     .build());
                             break;
@@ -534,8 +532,8 @@ public class LayerOpValidation extends BaseOpValidation {
                             //pooling 3d - max, no same
                             msg = "3 - pooling 3d, max, no same";
                             out = sd.avgPooling3d(in, Pooling3DConfig.builder()
-                                    .kH(2).kW(2).kT(2)
-                                    .sH(1).sW(1).sT(1)
+                                    .kH(2).kW(2).kD(2)
+                                    .sH(1).sW(1).sD(1)
                                     .ceilingMode(true)
                                     .build());
                             break;

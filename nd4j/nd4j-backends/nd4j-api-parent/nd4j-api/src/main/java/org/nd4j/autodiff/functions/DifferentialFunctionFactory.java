@@ -139,13 +139,13 @@ public class DifferentialFunctionFactory {
     /**
      * Local response normalization operation.
      *
-     * @param inputs    the inputs to lrn
+     * @param input    the inputs to lrn
      * @param lrnConfig the configuration
      * @return
      */
-    public SDVariable localResponseNormalization(SDVariable inputs, LocalResponseNormalizationConfig lrnConfig) {
+    public SDVariable localResponseNormalization(SDVariable input, LocalResponseNormalizationConfig lrnConfig) {
         LocalResponseNormalization lrn = LocalResponseNormalization.builder()
-                .inputFunctions(new SDVariable[]{inputs})
+                .inputFunctions(new SDVariable[]{input})
                 .sameDiff(sameDiff())
                 .config(lrnConfig)
                 .build();
@@ -156,13 +156,14 @@ public class DifferentialFunctionFactory {
     /**
      * Conv1d operation.
      *
-     * @param inputs       the inputs to conv1d
+     * @param input       the inputs to conv1d
+     * @param weights     conv1d weights
      * @param conv1DConfig the configuration
      * @return
      */
-    public SDVariable conv1d(SDVariable[] inputs, Conv1DConfig conv1DConfig) {
+    public SDVariable conv1d(SDVariable input, SDVariable weights, Conv1DConfig conv1DConfig) {
         Conv1D conv1D = Conv1D.builder()
-                .inputFunctions(inputs)
+                .inputFunctions(new SDVariable[] {input, weights})
                 .sameDiff(sameDiff())
                 .config(conv1DConfig)
                 .build();
@@ -190,7 +191,7 @@ public class DifferentialFunctionFactory {
     /**
      * Average pooling 2d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling2DConfig the configuration
      * @return
      */
@@ -207,7 +208,7 @@ public class DifferentialFunctionFactory {
     /**
      * Max pooling 2d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling2DConfig the configuration
      * @return
      */
@@ -224,7 +225,7 @@ public class DifferentialFunctionFactory {
     /**
      * Avg pooling 3d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling3DConfig the configuration
      * @return
      */
@@ -237,7 +238,7 @@ public class DifferentialFunctionFactory {
     /**
      * Max pooling 3d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling3DConfig the configuration
      * @return
      */
@@ -275,7 +276,7 @@ public class DifferentialFunctionFactory {
 
 
     /**
-     * Depthwise Conv2d operation. This is just separable convolution with
+     * Depth-wise Conv2d operation. This is just separable convolution with
      * only the depth-wise weights specified.
      *
      * @param inputs            the inputs to conv2d

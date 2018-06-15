@@ -73,14 +73,14 @@ public class MaxPooling2D extends DynamicCustomOp {
     }
 
     private void addArgs() {
-        addIArgument(config.getkH(),
-                config.getkW(),
-                config.getsH(),
-                config.getsX(),
-                config.getpH(),
-                config.getpW(),
-                config.getDh(),
-                config.getDw(),
+        addIArgument(config.getKH(),
+                config.getKW(),
+                config.getSH(),
+                config.getSW(),
+                config.getPH(),
+                config.getPW(),
+                config.getDH(),
+                config.getDW(),
                 ArrayUtil.fromBoolean(config.isSameMode()),
                 (int) config.getExtra(),
                 ArrayUtil.fromBoolean(config.isNHWC())
@@ -122,14 +122,14 @@ public class MaxPooling2D extends DynamicCustomOp {
         val aKernels = nodeDef.getAttrOrThrow("ksize");
         val tfKernels = aKernels.getList().getIList();
 
-        int sY = 0;
-        int sX = 0;
+        int sH = 0;
+        int sW = 0;
 
-        int ph = 0;
-        int pw = 0;
+        int pH = 0;
+        int pW = 0;
 
-        int kY = 0;
-        int kX = 0;
+        int kH = 0;
+        int kW = 0;
 
         val aPadding = nodeDef.getAttrOrThrow("padding");
         val padding = aPadding.getList().getIList();
@@ -146,42 +146,42 @@ public class MaxPooling2D extends DynamicCustomOp {
         }
 
         if (data_format.equalsIgnoreCase("nhwc")) {
-            sY = tfStrides.get(1).intValue();
-            sX = tfStrides.get(2).intValue();
+            sH = tfStrides.get(1).intValue();
+            sW = tfStrides.get(2).intValue();
 
-            kY = tfKernels.get(1).intValue();
-            kX = tfKernels.get(2).intValue();
+            kH = tfKernels.get(1).intValue();
+            kW = tfKernels.get(2).intValue();
 
-            ph = padding.size() > 0 ? padding.get(1).intValue() : 0;
-            pw = padding.size() > 0 ? padding.get(2).intValue() : 0;
+            pH = padding.size() > 0 ? padding.get(1).intValue() : 0;
+            pW = padding.size() > 0 ? padding.get(2).intValue() : 0;
         } else {
-            sY = tfStrides.get(2).intValue();
-            sX = tfStrides.get(3).intValue();
+            sH = tfStrides.get(2).intValue();
+            sW = tfStrides.get(3).intValue();
 
-            kY = tfKernels.get(2).intValue();
-            kX = tfKernels.get(3).intValue();
+            kH = tfKernels.get(2).intValue();
+            kW = tfKernels.get(3).intValue();
 
-            ph = padding.size() > 0 ? padding.get(2).intValue() : 0;
-            pw = padding.size() > 0 ? padding.get(3).intValue() : 0;
+            pH = padding.size() > 0 ? padding.get(2).intValue() : 0;
+            pW = padding.size() > 0 ? padding.get(3).intValue() : 0;
         }
 
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
-                .sy(sY)
-                .sx(sX)
+                .sH(sH)
+                .sW(sW)
                 .type(Pooling2D.Pooling2DType.MAX)
                 .isSameMode(isSameMode)
-                .kh(kY)
-                .kw(kX)
-                .ph(ph)
-                .pw(pw)
-                .virtualWidth(1)
+                .kH(kH)
+                .kW(kW)
+                .pH(pH)
+                .pW(pW)
                 .virtualHeight(1)
+                .virtualWidth(1)
                 .isNHWC(data_format.equalsIgnoreCase("nhwc"))
                 .extra(1.0) // averaging only for non-padded values
                 .build();
         this.config = pooling2DConfig;
         addArgs();
-        log.debug("Pooling: k: [{},{}]; s: [{}, {}], padding: {}", kY, kX, sY, sX, aPadding);
+        log.debug("Pooling: k: [{},{}]; s: [{}, {}], padding: {}", kH, kW, sH, sW, aPadding);
 
 
     }
@@ -195,16 +195,16 @@ public class MaxPooling2D extends DynamicCustomOp {
         val strides = attributesForNode.get("strides").getIntsList();
 
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
-                .sy(strides.get(0).intValue())
-                .sx(strides.size() < 2 ? strides.get(0).intValue() : strides.get(1).intValue())
+                .sH(strides.get(0).intValue())
+                .sW(strides.size() < 2 ? strides.get(0).intValue() : strides.get(1).intValue())
                 .type(Pooling2D.Pooling2DType.MAX)
                 .isSameMode(isSameNode)
-                .kh(kernelShape.get(0).intValue())
-                .kw(kernelShape.size() < 2 ? kernelShape.get(0).intValue() : kernelShape.get(1).intValue())
-                .ph(padding.get(0).intValue())
-                .pw(padding.size() < 2 ? padding.get(0).intValue() : padding.get(1).intValue())
-                .virtualWidth(1)
+                .kH(kernelShape.get(0).intValue())
+                .kW(kernelShape.size() < 2 ? kernelShape.get(0).intValue() : kernelShape.get(1).intValue())
+                .pH(padding.get(0).intValue())
+                .pW(padding.size() < 2 ? padding.get(0).intValue() : padding.get(1).intValue())
                 .virtualHeight(1)
+                .virtualWidth(1)
                 .build();
         this.config = pooling2DConfig;
         addArgs();
@@ -224,7 +224,7 @@ public class MaxPooling2D extends DynamicCustomOp {
         val paddingMapping = PropertyMapping.builder()
                 .onnxAttrName("padding")
                 .tfAttrName("padding")
-                .propertyNames(new String[]{"px", "py"})
+                .propertyNames(new String[]{"pH", "pW"})
                 .build();
 
         val kernelMapping = PropertyMapping.builder()

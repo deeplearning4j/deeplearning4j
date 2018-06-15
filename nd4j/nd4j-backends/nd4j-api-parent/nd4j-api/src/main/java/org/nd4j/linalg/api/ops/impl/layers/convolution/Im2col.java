@@ -42,14 +42,14 @@ public class Im2col extends DynamicCustomOp {
     public Im2col() {}
 
     protected void addArgs() {
-        addIArgument(conv2DConfig.getkH());
-        addIArgument(conv2DConfig.getkW());
-        addIArgument(conv2DConfig.getsH());
-        addIArgument(conv2DConfig.getsW());
-        addIArgument(conv2DConfig.getpH());
-        addIArgument(conv2DConfig.getpW());
-        addIArgument(conv2DConfig.getdH());
-        addIArgument(conv2DConfig.getdW());
+        addIArgument(conv2DConfig.getKH());
+        addIArgument(conv2DConfig.getKW());
+        addIArgument(conv2DConfig.getSH());
+        addIArgument(conv2DConfig.getSW());
+        addIArgument(conv2DConfig.getPH());
+        addIArgument(conv2DConfig.getPW());
+        addIArgument(conv2DConfig.getDH());
+        addIArgument(conv2DConfig.getDW());
         addIArgument(ArrayUtil.fromBoolean(conv2DConfig.isSameMode()));
 
     }

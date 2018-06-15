@@ -60,21 +60,21 @@ public class Conv3D extends DynamicCustomOp {
         addIArgument(
                 // TODO: support bias terms
 //                ArrayUtil.fromBoolean(getConfig().isBiasUsed()),
-                getConfig().getKT(),
+                getConfig().getKD(),
                 getConfig().getKH(),
                 getConfig().getKW(),
 
-                getConfig().getDT(),
-                getConfig().getDH(),
-                getConfig().getDW(),
+                getConfig().getSD(),
+                getConfig().getSH(),
+                getConfig().getSW(),
 
-                getConfig().getPT(),
+                getConfig().getPD(),
                 getConfig().getPH(),
                 getConfig().getPW(),
 
-                getConfig().getdD(),
-                getConfig().getdH(),
-                getConfig().getdW(),
+                getConfig().getDD(),
+                getConfig().getDH(),
+                getConfig().getDW(),
 
                 getConfig().isValidMode() ? 0 : 1,
                 getConfig().isNCDHW() ? 0 : 1
@@ -116,15 +116,15 @@ public class Conv3D extends DynamicCustomOp {
         Map<String, AttributeAdapter> tfAdapters = new LinkedHashMap<>();
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
-        tfAdapters.put("kT", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 0, 2, fields.get("dataFormat")));
+        tfAdapters.put("kD", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 0, 2, fields.get("dataFormat")));
         tfAdapters.put("kH", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 1, 3, fields.get("dataFormat")));
         tfAdapters.put("kW", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 2, 4, fields.get("dataFormat")));
 
-        tfAdapters.put("dT", new IntArrayIntIndexAdpater(1));
-        tfAdapters.put("dH", new IntArrayIntIndexAdpater(2));
-        tfAdapters.put("dW", new IntArrayIntIndexAdpater(3));
+        tfAdapters.put("sD", new IntArrayIntIndexAdpater(1));
+        tfAdapters.put("sH", new IntArrayIntIndexAdpater(2));
+        tfAdapters.put("sW", new IntArrayIntIndexAdpater(3));
 
-        tfAdapters.put("pT", new IntArrayIntIndexAdpater(1));
+        tfAdapters.put("pD", new IntArrayIntIndexAdpater(1));
         tfAdapters.put("pH", new IntArrayIntIndexAdpater(2));
         tfAdapters.put("pW", new IntArrayIntIndexAdpater(3));
 
@@ -158,7 +158,7 @@ public class Conv3D extends DynamicCustomOp {
 
 
         val kernelMapping = PropertyMapping.builder()
-                .propertyNames(new String[]{"kT", "kW", "kH"})
+                .propertyNames(new String[]{"kD", "kW", "kH"})
                 .tfInputPosition(1)
                 .onnxAttrName("kernel_shape")
                 .build();
@@ -166,7 +166,7 @@ public class Conv3D extends DynamicCustomOp {
         val strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
-                .propertyNames(new String[]{"dT", "dW", "dH"})
+                .propertyNames(new String[]{"sD", "sW", "sH"})
                 .build();
 
         val dilationMapping = PropertyMapping.builder()
@@ -183,7 +183,7 @@ public class Conv3D extends DynamicCustomOp {
 
         val paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
-                .propertyNames(new String[]{"pT", "pW", "pH"})
+                .propertyNames(new String[]{"pD", "pW", "pH"})
                 .build();
 
         val dataFormat = PropertyMapping.builder()
@@ -194,7 +194,7 @@ public class Conv3D extends DynamicCustomOp {
 
 
         val outputPadding = PropertyMapping.builder()
-                .propertyNames(new String[]{"aT", "aH", "aW"})
+                .propertyNames(new String[]{"aD", "aH", "aW"})
                 .build();
 
 

@@ -263,7 +263,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                         cudnnContext.dcxDesc, null, //dcx: Gradient at initial cell state
                         workSpace, workSpace.limit(), reserveSpace, reserveSpace.limit()));
 
-        // cudnnRNNBackwardWeights adds to the data in dw.
+        // cudnnRNNBackwardWeights adds to the data in dW.
         checkCuda(cudaMemsetAsync(weightsSpace, 0, weightsSpace.limit(), stream));
 
         checkCudnn(cudnnRNNBackwardWeights(cudnnContext, cudnnContext.rnnDesc, (int) timeSeriesLength, xDesc, xData, //Input data
