@@ -41,19 +41,10 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
     const int iH = static_cast<int>(isNCHW ? input->sizeAt(2) : input->sizeAt(1));
     const int iW = static_cast<int>(isNCHW ? input->sizeAt(3) : input->sizeAt(2));
 
-    nd4j_printf("OP KH: %i; KW: %i; SH: %i; SW: %i; pH: %i; pW: %i; dH: %i; dW: %i; isSameMode: %i; extraParam: %i; isNCHW: %i;\n", kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, extraParam0, isNCHW);
-
     if (!isNCHW) {
-        nd4j_printf("Permuting!\n","");
         input  = input->permute({0, 3, 1, 2});                // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
         output = output->permute({0, 3, 1, 2});               // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
     }
-
-    input->printIndexedBuffer("II", 150);
-    input->printBuffer("IR", 150);
-
-    input->printShapeInfo("IS");
-    output->printShapeInfo("OS");
 
     ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
@@ -63,9 +54,6 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;    
     T extraParams[] = {static_cast<T>(kH), static_cast<T>(kW), static_cast<T>(sH), static_cast<T>(sW), static_cast<T>(pH), static_cast<T>(pW), static_cast<T>(dH), static_cast<T>(dW), static_cast<T>(1.f), static_cast<T>(extraParam0)};
     ConvolutionUtils<T>::pooling2d(*input, *output, extraParams);
-
-    output->printIndexedBuffer("OI", 30);
-    output->printBuffer("OR", 30);
 
     if (!isNCHW) {
         delete input;
