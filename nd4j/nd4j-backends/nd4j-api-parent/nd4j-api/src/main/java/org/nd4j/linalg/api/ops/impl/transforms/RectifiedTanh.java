@@ -30,6 +30,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -43,14 +44,6 @@ import java.util.Map;
 public class RectifiedTanh extends BaseTransformOp {
     public RectifiedTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
-    }
-
-    public RectifiedTanh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public RectifiedTanh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
     }
 
     public RectifiedTanh() {}
@@ -108,6 +101,6 @@ public class RectifiedTanh extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.singletonList(f().tanhRectifiedDerivative(arg(), f1.get(0)));
     }
 }

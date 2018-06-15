@@ -11,9 +11,12 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarRemainder;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
@@ -23,6 +26,7 @@ import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -72,7 +76,7 @@ public class TransformOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-        for( int i=0; i<7; i++ ) {
+        for( int i=0; i<11; i++ ) {
             for (char inOrder : new char[]{'c', 'f'}) {
                 SameDiff sd = SameDiff.create();
 
@@ -118,13 +122,38 @@ public class TransformOpValidation {
                         tc.expectedOutput(out.getVarName(), Transforms.pow(inArr, 2));
                         msg = "pow - " + inOrder;
                         break;
+                    case 7:
+                        inArr.subi(n/2).muli(0.5);
+                        out = sd.scalarFloorMod(in, 2);
+                        tc.expected(out, Nd4j.getExecutioner().execAndReturn(new ScalarRemainder(inArr.dup(), 2.0)));
+                        msg = "scalarRemainer - " + inOrder;
+                        break;
+                    case 8:
+                        inArr.assign(Nd4j.rand(inArr.shape()));
+                        out = sd.scalarMax(in, 0.5);
+                        tc.expected(out, Transforms.max(inArr.dup(), 0.5));
+                        msg = "scalarMax - " + inOrder;
+                        break;
+                    case 9:
+                        inArr.assign(Nd4j.rand(inArr.shape()));
+                        out = sd.scalarMin(in, 0.5);
+                        tc.expected(out, Transforms.min(inArr.dup(), 0.5));
+                        msg = "scalarMin - " + inOrder;
+                        break;
+                    case 10:
+                        out = in.assign(0.5);
+                        tc.expected(out, Nd4j.valueArrayOf(inArr.shape(), 0.5));
+                        msg = "scalarSet - " + inOrder;
+                        break;
                     default:
                         throw new RuntimeException();
                 }
 
+                tc.testName(msg);
+
                 SDVariable loss = sd.standardDeviation(out, true);
 
-                String err = OpValidation.validate(tc);
+                String err = OpValidation.validate(tc, true);
                 if(err != null){
                     failed.add(err);
                 }
@@ -456,7 +485,7 @@ public class TransformOpValidation {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 72; i++) {
+        for (int i = 0; i < 80; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -847,6 +876,43 @@ public class TransformOpValidation {
                     t = sd.diagPart(in);
                     tc.expectedOutput(t.getVarName(), Nd4j.trueVector(new double[]{ia.getDouble(0,0), ia.getDouble(1,1), ia.getDouble(2,2), ia.getDouble(3,3)}));
                     break;
+                case 72:
+                    t = sd.identity(in);
+                    tc.expected(t, ia.dup());
+                    break;
+                case 73:
+                    t = sd.step(in, 1.0);
+                    tc.expected(t, ia.gte(1.0));
+                    break;
+                case 74:
+                    t = sd.f().noop(in);
+                    tc.expected(t, ia.dup());
+                    break;
+                case 75:
+                    ia = Nd4j.rand(ia.shape());
+                    t = sd.log(in, 2);
+                    tc.expected(t, Transforms.log(ia, 2, true));
+                    break;
+                case 76:
+                    ia = Nd4j.rand(ia.shape());
+                    t = sd.log(in, 10);
+                    tc.expected(t, Transforms.log(ia, 10, true));
+                    break;
+                case 77:
+                    ia = Nd4j.rand(ia.shape());
+                    t = sd.matchCondition(in, Conditions.lessThan(0.5));
+                    INDArray exp = Nd4j.getExecutioner().exec(new MatchCondition(ia.dup(), Conditions.lessThan(0.5))).z();
+                    tc.expected(t, exp);
+                case 78:
+                    ia = Nd4j.rand(ia.shape()).muli(2).subi(1);
+                    t = sd.f().tanhRational(in);
+                    tc.expected(t, Nd4j.getExecutioner().execAndReturn(new RationalTanh(ia.dup())));
+                    break;
+                case 79:
+                    ia = Nd4j.rand(ia.shape()).muli(2).subi(1);
+                    t = sd.f().tanhRectified(in);
+                    tc.expected(t, Nd4j.getExecutioner().execAndReturn(new RectifiedTanh(ia.dup())));
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -869,7 +935,7 @@ public class TransformOpValidation {
             sd.associateArrayWithVariable(ia, in);
 
             tc.testName(name);
-            String error = OpValidation.validate(tc);
+            String error = OpValidation.validate(tc, true);
             if(error != null){
                 allFailed.add(name);
             }
@@ -885,6 +951,7 @@ public class TransformOpValidation {
             fail(allFailed.size() + " transforms failed");
         }
     }
+
 
     @Test
     public void testPairwiseTransforms() {
@@ -1047,7 +1114,7 @@ public class TransformOpValidation {
             sd.associateArrayWithVariable(ib, in2);
 
             tc.testName(name);
-            String error = OpValidation.validate(tc);
+            String error = OpValidation.validate(tc, true);
             if(error != null){
                 allFailed.add(name);
             }
@@ -1056,6 +1123,100 @@ public class TransformOpValidation {
         if (allFailed.size() > 0) {
             log.error("All failed transforms: " + allFailed);
             fail(allFailed.size() + " transforms failed");
+        }
+    }
+
+    @Test
+    public void testIsX(){
+        List<String> failed = new ArrayList<>();
+
+        for( int i=0; i<4; i++ ){
+
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("in", 3);
+
+            SDVariable out;
+            INDArray exp;
+            INDArray inArr;
+            switch (i){
+                case 0:
+                    inArr = Nd4j.trueVector(new double[]{10,Double.POSITIVE_INFINITY, 0, Double.NEGATIVE_INFINITY});
+                    exp = Nd4j.trueVector(new double[]{1,0,1,0});
+                    out = sd.isFinite(in);
+                    break;
+                case 1:
+                    inArr = Nd4j.trueVector(new double[]{10,Double.POSITIVE_INFINITY, 0, Double.NEGATIVE_INFINITY});
+                    exp = Nd4j.trueVector(new double[]{0,1,0,1});
+                    out = sd.isInfinite(in);
+                    break;
+                case 2:
+                    inArr = Nd4j.trueVector(new double[]{-3,5,0});
+                    exp = Nd4j.trueVector(new double[]{0,1,0});
+                    out = sd.isMax(in);
+                    break;
+                case 3:
+                    inArr = Nd4j.trueVector(new double[]{0,Double.NaN,10});
+                    exp = Nd4j.trueVector(new double[]{0,1,0});
+                    out = sd.isNaN(in);
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+            TestCase tc = new TestCase(sd)
+                    .expected(out, exp);
+
+            String err = OpValidation.validate(tc, true);
+            if(err != null){
+                failed.add(err);
+            }
+        }
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testReplaceWhereScalar(){
+        fail(); //JVM crash
+        for(Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}){
+
+            INDArray inArr = Nd4j.rand(3,4);
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("in", inArr);
+            SDVariable where = sd.replaceWhere(in, 10, c);
+
+            INDArray exp = inArr.dup();
+            BooleanIndexing.replaceWhere(exp, 10, c);
+
+            SDVariable loss = where.std(true);
+
+            TestCase tc = new TestCase(sd);
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testReplaceWhereArray(){
+        fail(); //JVM crash
+        for(Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}){
+
+            INDArray inArr = Nd4j.rand(3,4);
+            INDArray inArr2 = Nd4j.valueArrayOf(3, 4, 10);
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("in", inArr);
+            SDVariable in2 = sd.var("in2", inArr2);
+            SDVariable where = sd.replaceWhere(in, in2, c);
+
+            INDArray exp = inArr.dup();
+            BooleanIndexing.replaceWhere(exp, inArr2, c);
+
+            SDVariable loss = where.std(true);
+
+            TestCase tc = new TestCase(sd);
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
         }
     }
 

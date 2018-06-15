@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,58 +46,10 @@ public class CompareAndSet extends BaseTransformOp {
     private double eps;
     private int mode;
 
-    public CompareAndSet(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v1, i_v2);
+    public CompareAndSet(SameDiff sameDiff, SDVariable to, Number set, Condition condition) {
+        super(sameDiff, to, false);
         this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndSet(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndSet(SameDiff sameDiff, double compare, double set, double eps, int mode) {
-        super(sameDiff);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndSet(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndSet(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v, inPlace);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndSet(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndSet(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v, extraArgs);
-        this.compare = compare;
-        this.set = set;
+        this.set = set.doubleValue();
         this.eps = eps;
         this.mode = mode;
     }
@@ -272,7 +225,7 @@ public class CompareAndSet extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 }
 

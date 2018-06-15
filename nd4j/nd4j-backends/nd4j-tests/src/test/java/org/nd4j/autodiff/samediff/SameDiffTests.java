@@ -2434,33 +2434,7 @@ public class SameDiffTests {
         assertEquals(Nd4j.ones(4, 5), out2);
     }
 
-    @Test
-    public void testOneHot() {
-        //indices = [[0, 2], [1, -1]]
-        INDArray indicesArr = Nd4j.zeros(2, 2);
-        indicesArr.put(0, 1, 2);
-        indicesArr.put(1, 0, 1);
-        indicesArr.put(1, 1, -1);
-        INDArray expectedOut = Nd4j.zeros(new long[]{2, 2, 3});
-        /*
-        # output: [2 x 2 x 3]
-        # [[[1.0, 0.0, 0.0],   # one_hot(0)
-        #   [0.0, 0.0, 1.0]],  # one_hot(2)
-        #  [[0.0, 1.0, 0.0],   # one_hot(1)
-        #   [0.0, 0.0, 0.0]]]  # one_hot(-1)
-        */
-        expectedOut.putScalar(0, 0, 0, 1.0);
-        expectedOut.putScalar(0, 1, 2, 1.0);
-        expectedOut.putScalar(1, 0, 1, 1.0);
 
-        SameDiff sd = SameDiff.create();
-        SDVariable indices = sd.var("indices", new long[]{2, 2});
-        sd.associateArrayWithVariable(indicesArr, indices);
-        INDArray out1 = sd.execAndEndResult();
-        log.info(out1.toString());
-        assertEquals(expectedOut, out1);
-
-    }
 
     @Test
     public void testOnesLikeBackprop() {
@@ -3319,23 +3293,6 @@ public class SameDiffTests {
         assertEquals(expInfinite, infinite.getArr());
         assertEquals(expNaN, isnan.getArr());
 
-    }
-
-    @Test
-    public void invertPermutation() {
-        SameDiff sd = SameDiff.create();
-
-        INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1});
-        INDArray expOut = Nd4j.create(new float[] {2, 4, 3, 0, 1});
-
-        SDVariable input = sd.var("in", new int[] {1, 5});
-        sd.associateArrayWithVariable(ia, input);
-
-        SDVariable out = sd.invertPermutation(input);
-
-        sd.exec();
-
-        assertEquals(expOut, out.getArr());
     }
 
 

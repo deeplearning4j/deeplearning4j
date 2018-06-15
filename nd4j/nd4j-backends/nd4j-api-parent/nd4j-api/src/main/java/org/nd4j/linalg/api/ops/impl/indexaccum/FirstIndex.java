@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -44,20 +45,13 @@ public class FirstIndex extends BaseIndexAccumulation {
     protected double eps;
     protected int mode;
 
-    public FirstIndex(SameDiff sameDiff, SDVariable i_v, int[] dimensions, Condition condition, double compare, double eps, int mode) {
+    public FirstIndex(SameDiff sameDiff, SDVariable i_v, Condition condition, int... dimensions) {
         super(sameDiff, i_v, dimensions);
         this.condition = condition;
-        this.compare = compare;
+        this.compare = condition.getValue();
+        this.mode = condition.condtionNum();
         this.eps = eps;
-        this.mode = mode;
-    }
-
-    public FirstIndex(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, Condition condition, double compare, double eps, int mode) {
-        super(sameDiff, i_v, i_v2, dimensions);
-        this.condition = condition;
-        this.compare = compare;
-        this.eps = eps;
-        this.mode = mode;
+        this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
 
     public FirstIndex() {}
@@ -69,13 +63,10 @@ public class FirstIndex extends BaseIndexAccumulation {
 
     public FirstIndex(INDArray x, @NonNull Condition condition, double eps) {
         super(x);
-
         this.condition = condition;
         this.compare = condition.getValue();
         this.mode = condition.condtionNum();
         this.eps = eps;
-
-
         this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
 
@@ -113,7 +104,7 @@ public class FirstIndex extends BaseIndexAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
     @Override

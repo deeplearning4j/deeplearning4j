@@ -5108,7 +5108,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isRowVector() && r == 0)
             return this;
         else if (isRowVector() && r > 0)
-            throw new IllegalArgumentException("Illegal index for row");
+            throw new IllegalArgumentException("Illegal index for row: requested row " + r + " but this.size(0)=" + this.size(0));
         INDArray result = get(NDArrayIndex.point(r), NDArrayIndex.all());
 
         // FIXME: this is bad

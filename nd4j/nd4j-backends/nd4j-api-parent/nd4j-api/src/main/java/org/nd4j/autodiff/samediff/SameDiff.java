@@ -57,6 +57,7 @@ import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
@@ -1429,6 +1430,24 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable constant(SDVariable value, long... shape){
+        return constant(null, value, shape);
+    }
+
+    public SDVariable constant(String name, SDVariable value, long... shape){
+        SDVariable ret = f().constant(value, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable linspace(double start, double stop, long number){
+        return linspace(null, start, stop, number);
+    }
+
+    public SDVariable linspace(String name, double start, double stop, long number){
+        SDVariable ret = f().linspace(start, stop, number);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      * Variable initialization
      * with a specified {@link WeightInitScheme}
@@ -2328,6 +2347,15 @@ public class SameDiff {
         return tan(null, iX);
     }
 
+    public SDVariable identity(SDVariable input){
+        return identity(null, input);
+    }
+
+    public SDVariable identity(String name, SDVariable input){
+        SDVariable s = f().identity(input);
+        return updateVariableNameAndReference(s, name);
+    }
+
     public SDVariable invertPermutation(SDVariable input) {
         return invertPermutation(null, input);
     }
@@ -2393,6 +2421,15 @@ public class SameDiff {
      */
     public SDVariable tanh(SDVariable iX) {
         return tanh(null, iX);
+    }
+
+    public SDVariable step(SDVariable in, double cutoff){
+        return step(null, in, cutoff);
+    }
+
+    public SDVariable step(String name, SDVariable in, double cutoff){
+        SDVariable ret = f().step(in, cutoff);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -2485,12 +2522,57 @@ public class SameDiff {
         return isFinite(null, iX);
     }
 
+    public SDVariable isMax(SDVariable ix){
+        return isMax(null, ix);
+    }
+
+    public SDVariable isMax(String name, SDVariable ix){
+        SDVariable ret = f().isMax(ix);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable replaceWhere(SDVariable update, SDVariable from, Condition condition){
+        return replaceWhere(null, update, from, condition);
+    }
+
+    public SDVariable replaceWhere(String name, SDVariable update, SDVariable from, Condition condition){
+        SDVariable ret = f().replaceWhere(update, from, condition);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable replaceWhere(SDVariable update, Number value, Condition condition){
+        return replaceWhere(null, update, value, condition);
+    }
+
+    public SDVariable replaceWhere(String name, SDVariable to, Number value, Condition condition){
+        SDVariable ret = f().replaceWhere(to, value, condition);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      * @param iX
      * @return
      */
     public SDVariable log(SDVariable iX) {
         return log(null, iX);
+    }
+
+    public SDVariable log(SDVariable in, double base){
+        return log(null, in, base);
+    }
+
+    public SDVariable log(String name, SDVariable in, double base){
+        SDVariable ret = f().log(in, base);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable logSumExp(SDVariable input, int... dimensions){
+        return logSumExp(null, input, dimensions);
+    }
+
+    public SDVariable logSumExp(String name, SDVariable input, int... dimensions){
+        SDVariable ret = f().logSumExp(input, dimensions);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -3048,6 +3130,27 @@ public class SameDiff {
     }
 
     /**
+     * Entropy reduction: -sum(x * log(x))
+     * @param in         Input
+     * @param dimensions Dimensions to reduce on (null for full array)
+     * @return Output variable
+     */
+    public SDVariable entropy(SDVariable in, int... dimensions){
+        return entropy(null, in, dimensions);
+    }
+
+    /**
+     * Entropy reduction: -sum(x * log(x))
+     * @param in         Input
+     * @param dimensions Dimensions to reduce on (null for full array)
+     * @return Output variable
+     */
+    public SDVariable entropy(String name, SDVariable in, int... dimensions){
+        SDVariable ret = f().entropy(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * @param iX
      * @param dimensions
      * @return
@@ -3092,6 +3195,15 @@ public class SameDiff {
 
     public SDVariable scalarFloorMod(String name, SDVariable in, Number value){
         SDVariable ret = f().scalarFloorMod(in, value);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable scalarSet(SDVariable in, Number set){
+        return scalarSet(null, in, set);
+    }
+
+    public SDVariable scalarSet(String name, SDVariable in, Number set){
+        SDVariable ret = f().scalarSet(in, set);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -3210,6 +3322,51 @@ public class SameDiff {
 
     public SDVariable argmin(String name, SDVariable in, int... dimensions) {
         SDVariable ret = f().argmin(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable iamax(SDVariable in, int... dimensions) {
+        return iamax(null, in, dimensions);
+    }
+
+    public SDVariable iamax(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().iamax(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable iamin(SDVariable in, int... dimensions) {
+        return iamin(null, in, dimensions);
+    }
+
+    public SDVariable iamin(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().iamin(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable firstIndex(SDVariable in, Condition condition, int... dimensions){
+        return firstIndex(null, in, condition, dimensions);
+    }
+
+    public SDVariable firstIndex(String name, SDVariable in, Condition condition, int... dimensions){
+        SDVariable ret = f().firstIndex(in, condition, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable lastIndex(SDVariable in, Condition condition, int... dimensions){
+        return lastIndex(null, in, condition, dimensions);
+    }
+
+    public SDVariable lastIndex(String name, SDVariable in, Condition condition, int... dimensions){
+        SDVariable ret = f().lastIndex(in, condition, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable matchCondition(SDVariable in, Condition condition){
+        return matchCondition(null, in, condition);
+    }
+
+    public SDVariable matchCondition(String name, SDVariable in, Condition condition){
+        SDVariable ret = f().matchCondition(in, condition);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -3465,6 +3622,15 @@ public class SameDiff {
         return tensorMmul(null, x, y, dimensions);
     }
 
+
+    public SDVariable dot(SDVariable x, SDVariable y, int... dimensions){
+        return dot(null, x, y, dimensions);
+    }
+
+    public SDVariable dot(String name, SDVariable x, SDVariable y, int... dimensions){
+        SDVariable ret = f().dot(x, y, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
 
     /**
      * @param iX
@@ -5149,7 +5315,7 @@ public class SameDiff {
 
 
         char ordering = 'c';
-        if (function.args()[0].getArr() != null) {
+        if (function.args() != null && function.args().length > 0 && function.args()[0].getArr() != null) {
             ordering = function.args()[0].getArr().ordering();
         }
 

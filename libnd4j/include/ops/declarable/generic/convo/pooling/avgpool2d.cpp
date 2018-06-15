@@ -19,32 +19,32 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
     REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
 
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-    std::vector<int> argI = *(block.getIArguments());
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    auto argI = *(block.getIArguments());
+    auto output = OUTPUT_VARIABLE(0);
 
-    const int kH = INT_ARG(0);
-    const int kW = INT_ARG(1);
-    const int sH = INT_ARG(2);
-    const int sW = INT_ARG(3);
+    const auto kH = INT_ARG(0);
+    const auto kW = INT_ARG(1);
+    const auto sH = INT_ARG(2);
+    const auto sW = INT_ARG(3);
           int pH = INT_ARG(4);
           int pW = INT_ARG(5);
-    const int dH = INT_ARG(6);
-    const int dW = INT_ARG(7);
-    const bool isSameMode = INT_ARG(8);
-    const int extraParam0 = INT_ARG(9);
+    const auto dH = INT_ARG(6);
+    const auto dW = INT_ARG(7);
+    const auto isSameMode = static_cast<bool>(INT_ARG(8));
+    const auto extraParam0 = INT_ARG(9);
 
     int oH = 0;
     int oW = 0;
 
     int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NDHWC, 1-NCDHW    
 
-    const int iH = isNCHW ? input->sizeAt(2) : input->sizeAt(1);
-    const int iW = isNCHW ? input->sizeAt(3) : input->sizeAt(2);
+    const int iH = static_cast<int>(isNCHW ? input->sizeAt(2) : input->sizeAt(1));
+    const int iW = static_cast<int>(isNCHW ? input->sizeAt(3) : input->sizeAt(2));
 
     if (!isNCHW) {
         input  = input->permute({0, 3, 1, 2});                // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
         output = output->permute({0, 3, 1, 2});               // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
-    }            
+    }
 
     ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
@@ -52,8 +52,8 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
         ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);            
             
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;    
-    T extraParams[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW, 1, (T)extraParam0};
-    ConvolutionUtils<T>::pooling2d(*input, *output, extraParams); 
+    T extraParams[] = {static_cast<T>(kH), static_cast<T>(kW), static_cast<T>(sH), static_cast<T>(sW), static_cast<T>(pH), static_cast<T>(pW), static_cast<T>(dH), static_cast<T>(dW), static_cast<T>(1.f), static_cast<T>(extraParam0)};
+    ConvolutionUtils<T>::pooling2d(*input, *output, extraParams);
 
     if (!isNCHW) {
         delete input;
