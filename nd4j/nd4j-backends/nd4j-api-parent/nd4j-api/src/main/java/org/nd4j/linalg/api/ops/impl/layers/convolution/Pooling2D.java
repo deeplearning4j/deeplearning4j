@@ -85,12 +85,12 @@ public class Pooling2D extends DynamicCustomOp {
     }
 
     private void addArgs() {
-        addIArgument(config.getKh());
-        addIArgument(config.getKw());
-        addIArgument(config.getSy());
-        addIArgument(config.getSx());
-        addIArgument(config.getPh());
-        addIArgument(config.getPw());
+        addIArgument(config.getkH());
+        addIArgument(config.getkW());
+        addIArgument(config.getsH());
+        addIArgument(config.getsX());
+        addIArgument(config.getpH());
+        addIArgument(config.getpW());
         addIArgument(config.getDh());
         addIArgument(config.getDw());
         addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));

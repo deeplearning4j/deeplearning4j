@@ -87,9 +87,9 @@ public class Pooling3D extends DynamicCustomOp {
         addIArgument(config.getPT());
         addIArgument(config.getPW());
         addIArgument(config.getPH());
-        addIArgument(config.getDilationT());
-        addIArgument(config.getDilationW());
-        addIArgument(config.getDilationH());
+        addIArgument(config.getdD());
+        addIArgument(config.getdW());
+        addIArgument(config.getdH());
 
     }
 
