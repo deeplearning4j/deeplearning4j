@@ -219,10 +219,12 @@ namespace nd4j {
         void nd4j::ops::DeclarableOp<T>::storeResult(nd4j::graph::Context<T> &ctx, int outputNumber, NDArray<T>& array) {
 
             if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
-                T mean = array.meanNumber();
+                //T mean = array.meanNumber();
                 //if (mean == (T) 0.0f || (mean < (T) 1e-5f && mean > (T) -1e-5f))
                 //    nd4j_debug("node_%i:%i result has 0.0 as mean\n", block.getNodeId(), outputNumber);
-                nd4j_debug("node_%i:%i result length: [%i]; mean [%f]\n", ctx.nodeId(), outputNumber, (int) array.lengthOf(), (float) mean);
+                auto shape = ShapeUtils<T>::shapeAsString(&array);
+                auto first = array.asString(32);
+                nd4j_debug("node_%i:%i result shape: %s; first values [%s]\n", ctx.nodeId(), outputNumber, shape.c_str(), first.c_str());
             }
 
             ctx.pushNDArrayToVariableSpace(ctx.nodeId(), outputNumber, &array, !ctx.isInplace());

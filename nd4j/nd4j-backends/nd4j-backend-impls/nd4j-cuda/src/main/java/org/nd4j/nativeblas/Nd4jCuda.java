@@ -6530,14 +6530,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
 
@@ -7659,14 +7659,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
 
@@ -8788,14 +8788,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
 
