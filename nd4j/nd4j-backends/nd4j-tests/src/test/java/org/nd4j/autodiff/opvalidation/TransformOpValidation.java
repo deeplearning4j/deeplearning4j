@@ -925,7 +925,7 @@ public class TransformOpValidation {
             sd.associateArrayWithVariable(ia, in);
 
             tc.testName(name);
-            String error = OpValidation.validate(tc);
+            String error = OpValidation.validate(tc, true);
             if(error != null){
                 allFailed.add(name);
             }
@@ -941,6 +941,7 @@ public class TransformOpValidation {
             fail(allFailed.size() + " transforms failed");
         }
     }
+
 
     @Test
     public void testPairwiseTransforms() {
@@ -1103,7 +1104,7 @@ public class TransformOpValidation {
             sd.associateArrayWithVariable(ib, in2);
 
             tc.testName(name);
-            String error = OpValidation.validate(tc);
+            String error = OpValidation.validate(tc, true);
             if(error != null){
                 allFailed.add(name);
             }

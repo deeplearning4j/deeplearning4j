@@ -40,6 +40,7 @@ public class LogX extends BaseTransformOp {
     public LogX(SameDiff sameDiff, SDVariable i_v, double base) {
         super(sameDiff, i_v, new Object[] {base});
         this.base = base;
+        this.extraArgs = new Object[] {base};
     }
 
     public LogX() {}

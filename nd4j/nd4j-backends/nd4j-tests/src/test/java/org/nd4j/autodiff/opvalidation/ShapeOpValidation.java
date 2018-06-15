@@ -147,10 +147,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 SDVariable stdev = sd.standardDeviation("out", permute, true);
 
                 INDArray exp = inArr.permute(perm);
-
-                INDArray out = sd.execAndEndResult();
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
-                assertEquals(msg, expOut, out);
 
 
                 TestCase tc = new TestCase(sd);
@@ -160,12 +157,38 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                 String error = OpValidation.validate(tc, true);
                 if(error != null){
-                    failed.add(name);
+                    failed.add(msg);
                 }
             }
         }
 
         assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testRank(){
+
+        List<long[]> inShape = Arrays.asList(null, new long[]{1}, new long[]{6}, new long[]{3,4}, new long[]{3,4,5});
+
+        for( long[] shape : inShape){
+
+            SameDiff sd = SameDiff.create();
+            SDVariable var;
+            if(shape == null){
+                var = sd.var("in", Nd4j.trueScalar(1));
+            } else {
+                var = sd.var("in", Nd4j.create(shape));
+            }
+
+            SDVariable rank = sd.rank(var);
+
+            INDArray expRank = Nd4j.trueScalar(shape == null ? 0 : shape.length);
+            String msg = "Rank " + (shape == null ? 0 : shape.length);
+            String err = OpValidation.validate(new TestCase(sd)
+                    .expected(rank, expRank));
+
+            assertNull(err);
+        }
     }
 
     @Test
@@ -530,16 +553,19 @@ public class ShapeOpValidation extends BaseOpValidation {
                             for( int i=0; i<numInputs; i++ ){
                                 out.get(point(i), all(), all()).assign(inArr[i]);
                             }
+                            expStack = out;
                         } else if(axis == 1) {
                             INDArray out = Nd4j.create(3, numInputs, 4);
                             for( int i=0; i<numInputs; i++ ){
                                 out.get(all(), point(i), all()).assign(inArr[i]);
                             }
+                            expStack = out;
                         } else {
                             INDArray out = Nd4j.create(3, 4, numInputs);
                             for( int i=0; i<numInputs; i++ ){
                                 out.get(all(), all(), point(i)).assign(inArr[i]);
                             }
+                            expStack = out;
                         }
                     }
 
@@ -720,6 +746,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             String msg = "Shape=" + Arrays.toString(inArr.shape()) + " - tile=" + Arrays.toString(tArg);
 
             TestCase tc = new TestCase(sd);
+            tc.expected(tile, exp[i]);
             String error = OpValidation.validate(tc);
             if(error != null){
                 failed.add(name);

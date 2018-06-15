@@ -474,13 +474,17 @@ public class OpValidation {
                 Relu6Derivative.class,
                 SELUDerivative.class,
                 SigmoidDerivative.class,
+                org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative.class,
                 SoftMaxDerivative.class,
+                org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative.class,
                 SoftSignDerivative.class,
                 TanhDerivative.class,
                 LogSigmoidDerivative.class,
                 SwishDerivative.class,
                 TanDerivative.class,
                 TanhDerivative.class,
+                org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative.class,
+                PowDerivative.class,
 
                 BiasAddGrad.class,
                 ConcatBp.class,
@@ -521,6 +525,8 @@ public class OpValidation {
                 BinaryMinimalRelativeError.class,
                 Histogram.class,
                 InvertPermutation.class,    //Uses integer indices
+                ConfusionMatrix.class,      //Integer indices
+                Linspace.class,             //No input array
                 //Exclude boolean operations:
                 Any.class,
                 All.class,
