@@ -10,6 +10,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
 
+import static org.junit.Assume.assumeFalse;
+
 /**
  * Op validation test suite.
  * Should include all classes using the {@link OpValidation} test framework, so test coverage can be calculated and reported.
@@ -41,6 +43,20 @@ import org.nd4j.linalg.function.Function;
         TransformOpValidation.class
 })
 public class OpValidationSuite {
+
+    /*
+    Change this variable from false to true to ignore any tests that call OpValidationSuite.ignoreFailing()
+
+    The idea: failing SameDiff tests are disabled by default, but can be re-enabled.
+    This is so we can prevent regressions on already passing tests
+     */
+    public static final boolean IGNORE_FAILING = true;
+
+    public static void ignoreFailing(){
+        //If IGNORE_FAILING
+        assumeFalse(IGNORE_FAILING);
+    }
+
 
     private static DataBuffer.Type initialType;
 
