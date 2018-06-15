@@ -30,6 +30,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Arrays;
 
 import static junit.framework.TestCase.assertTrue;
@@ -45,6 +47,16 @@ import static junit.framework.TestCase.assertTrue;
 public class Keras2ModelConfigurationTest {
 
     ClassLoader classLoader = getClass().getClassLoader();
+
+    @Test(expected = FileNotFoundException.class)
+    public void fileNotFoundTest() throws Exception {
+        runModelConfigTest("modelimport/keras/foo/bar.json");
+    }
+
+    @Test(expected = IOException.class)
+    public void notAFileTest() throws Exception {
+        runModelConfigTest("modelimport/keras/");
+    }
 
     @Test
     public void yolo9000ConfigTest() throws Exception {

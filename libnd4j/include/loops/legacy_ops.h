@@ -224,7 +224,11 @@
         (23, simdOps::NormFrobenius), \
         (24, simdOps::NormP), \
         (25, simdOps::SquaredNorm), \
-        (26, simdOps::CountZero)
+        (26, simdOps::CountZero), \
+        (27, simdOps::IsFinite), \
+        (28, simdOps::IsInfOrNan), \
+        (29, simdOps::IsNan), \
+        (30, simdOps::IsInf)
 
 
 

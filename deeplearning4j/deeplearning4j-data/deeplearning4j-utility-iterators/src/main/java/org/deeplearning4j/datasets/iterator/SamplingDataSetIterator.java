@@ -74,11 +74,6 @@ public class SamplingDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return totalNumberSamples * batchSize;
-    }
-
-    @Override
     public int inputColumns() {
         return sampleFrom.numInputs();
     }
@@ -106,16 +101,6 @@ public class SamplingDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return batchSize;
-    }
-
-    @Override
-    public int cursor() {
-        return numTimesSampled;
-    }
-
-    @Override
-    public int numExamples() {
-        return sampleFrom.numExamples();
     }
 
     @Override

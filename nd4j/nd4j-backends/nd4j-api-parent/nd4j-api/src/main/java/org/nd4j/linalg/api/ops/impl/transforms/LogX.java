@@ -26,6 +26,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,19 +37,10 @@ import java.util.List;
 public class LogX extends BaseTransformOp {
     private double base;
 
-    public LogX(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double base) {
-        super(sameDiff, i_v, inPlace);
+    public LogX(SameDiff sameDiff, SDVariable i_v, double base) {
+        super(sameDiff, i_v, new Object[] {base});
         this.base = base;
-    }
-
-    public LogX(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double base) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.base = base;
-    }
-
-    public LogX(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double base) {
-        super(sameDiff, i_v, extraArgs);
-        this.base = base;
+        this.extraArgs = new Object[] {base};
     }
 
     public LogX() {}
@@ -89,7 +81,10 @@ public class LogX extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        //dlog_b(x)/dx = 1/(x*log_e(b))
+
+        double logb = Math.log(base);
+        return Collections.singletonList(f1.get(0).div(arg().mul(logb)));
     }
 
     @Override

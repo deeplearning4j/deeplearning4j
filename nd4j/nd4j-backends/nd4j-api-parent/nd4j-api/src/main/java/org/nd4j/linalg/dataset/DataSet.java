@@ -632,16 +632,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public DataSet get(int i) {
-        if (i > numExamples() || i < 0)
-            throw new IllegalArgumentException("invalid example number");
+        if (i >= numExamples() || i < 0)
+            throw new IllegalArgumentException("invalid example number: must be 0 to " + (numExamples()-1) + ", got " + i);
         if (i == 0 && numExamples() == 1)
             return this;
-        if (getFeatureMatrix().rank() == 4) {
-            //ensure rank is preserved
-            INDArray slice = getFeatureMatrix().slice(i);
-            return new DataSet(slice.reshape(ArrayUtil.combine(new long[] {1}, slice.shape())), getLabels().slice(i));
-        }
-        return new DataSet(getFeatures().slice(i), getLabels().slice(i));
+        return new DataSet(getHelper(features,i), getHelper(labels, i), getHelper(featuresMask,i), getHelper(labelsMask,i));
     }
 
     /**
@@ -652,7 +647,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public DataSet get(int[] i) {
-        return new DataSet(getFeatures().getRows(i), getLabels().getRows(i));
+        List<DataSet> list = new ArrayList<>();
+        for(int ex : i){
+            list.add(get(ex));
+        }
+        return DataSet.merge(list);
     }
 
     /**
@@ -786,43 +785,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
         // Preserving the dimension of the dataset - essentially a minibatch size of 1
         for (int i = 0; i < numExamples(); i++) {
-            switch (rank) {
-                case 2:
-                    featuresHere = getFeatures().get(interval(i, i, true), all());
-                    featureMaskHere = featuresMask != null ? featuresMask.get(interval(i, i, true), all()) : null;
-                    break;
-                case 3:
-                    featuresHere = getFeatures().get(interval(i, i, true), all(), all());
-                    featureMaskHere = featuresMask != null ? featuresMask.get(interval(i, i, true), all()) : null;
-                    break;
-                case 4:
-                    featuresHere = getFeatures().get(interval(i, i, true), all(), all(), all());
-                    featureMaskHere = featuresMask != null ? featuresMask.get(interval(i, i, true), all()) : null;
-                    break;
-                default:
-                    throw new IllegalStateException(
-                                    "Cannot convert to list: feature set rank must be in range 2 to 4 inclusive. First example labels shape: "
-                                                    + Arrays.toString(getFeatures().shape()));
-            }
-            switch (labelsRank) {
-                case 2:
-                    labelsHere = getLabels().get(interval(i, i, true), all());
-                    labelMaskHere = labelsMask != null ? labelsMask.get(interval(i, i, true), all()) : null;
-                    break;
-                case 3:
-                    labelsHere = getLabels().get(interval(i, i, true), all(), all());
-                    labelMaskHere = labelsMask != null ? labelsMask.get(interval(i, i, true), all()) : null;
-                    break;
-                case 4:
-                    labelsHere = getLabels().get(interval(i, i, true), all(), all(), all());
-                    labelMaskHere = labelsMask != null ? labelsMask.get(interval(i, i, true), all()) : null;
-                    break;
-                default:
-                    throw new IllegalStateException(
-                                    "Cannot convert to list: feature set rank must be in range 2 to 4 inclusive. First example labels shape: "
-                                                    + Arrays.toString(getFeatures().shape()));
-
-            }
+            featuresHere = getHelper(getFeatures(), i);
+            featureMaskHere = getHelper(featuresMask, i);
+            labelsHere = getHelper(labels, i);
+            labelMaskHere = getHelper(labelsMask, i);
 
             DataSet ds = new DataSet(featuresHere, labelsHere, featureMaskHere, labelMaskHere);
             if (exampleMetaData != null && exampleMetaData.size() > i) {
@@ -831,6 +797,26 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             list.add(ds);
         }
         return list;
+    }
+
+    private INDArray getHelper(INDArray from, int i){
+        if(from == null){
+            return null;
+        }
+        switch (from.rank()) {
+            case 2:
+                return from.get(interval(i, i, true), all());
+            case 3:
+                return from.get(interval(i, i, true), all(), all());
+            case 4:
+                return from.get(interval(i, i, true), all(), all(), all());
+            case 5:
+                return from.get(interval(i, i, true), all(), all(), all(), all());
+            default:
+                throw new IllegalStateException(
+                        "Cannot convert to list: feature set rank must be in range 2 to 5 inclusive. Got shape: "
+                                + Arrays.toString(from.shape()));
+        }
     }
 
     /**
@@ -1123,22 +1109,24 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public DataSet sample(int numSamples, org.nd4j.linalg.api.rng.Random rng, boolean withReplacement) {
-        INDArray examples = Nd4j.create(numSamples, getFeatures().columns());
-        INDArray outcomes = Nd4j.create(numSamples, numOutcomes());
         Set<Integer> added = new HashSet<>();
-        for (int i = 0; i < numSamples; i++) {
+        List<DataSet> toMerge = new ArrayList<>();
+        boolean terminate = false;
+        for (int i = 0; i < numSamples && !terminate; i++) {
             int picked = rng.nextInt(numExamples());
-            if (!withReplacement)
-                while (added.contains(picked))
+            if (!withReplacement) {
+                while (added.contains(picked)) {
                     picked = rng.nextInt(numExamples());
-
-
-            examples.putRow(i, get(picked).getFeatures());
-            outcomes.putRow(i, get(picked).getLabels());
-
+                    if(added.size() == numExamples()){
+                        terminate = true;
+                        break;
+                    }
+                }
+            }
+            added.add(picked);
+            toMerge.add(get(picked));
         }
-        return new DataSet(examples, outcomes);
-
+        return DataSet.merge(toMerge);
     }
 
     @Override

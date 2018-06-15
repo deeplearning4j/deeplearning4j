@@ -2801,7 +2801,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
        }
 
         //Input validation: require (a) columnVector to actually be a column vector, and (b) this.size(0) to match columnVector.size(0)
-        if (!columnVector.isColumnVector() || this.size(0) != columnVector.size(0) || columnVector.length() <= 1) {
+        //Or, simply require it to be a rank 1 vector
+        if ((!columnVector.isColumnVector() && columnVector.rank() > 1) || this.size(0) != columnVector.size(0) || columnVector.length() <= 1) {
             throw new IllegalStateException("Mismatched shapes (shape = " + Arrays.toString(shape())
                     + ", column vector shape =" + Arrays.toString(columnVector.shape()) + ")");
         }
@@ -5107,7 +5108,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isRowVector() && r == 0)
             return this;
         else if (isRowVector() && r > 0)
-            throw new IllegalArgumentException("Illegal index for row");
+            throw new IllegalArgumentException("Illegal index for row: requested row " + r + " but this.size(0)=" + this.size(0));
         INDArray result = get(NDArrayIndex.point(r), NDArrayIndex.all());
 
         // FIXME: this is bad
@@ -5202,6 +5203,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
+    @Override
+    public boolean equalShapes(@NonNull INDArray other){
+        if(rank() != other.rank())
+            return false;
+        for( int i=0; i<rank(); i++ ){
+            if(size(i) != other.size(i)){
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Compare two matrices. Returns true if and only if other is also a
      * DoubleMatrix which has the same size and the maximal absolute
@@ -5279,7 +5292,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public long size(int dimension) {
         if (isScalar()) {
             if (dimension == 0 || dimension == 1 || dimension < 0)
-                return (int) lengthLong();
+                return length();
             else
                 throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);
         }
@@ -6468,6 +6481,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public int underlyingRank() {
         throw new UnsupportedOperationException("Not a sparse ndarray");
 
+    }
+
+    @Override
+    public INDArray convertToHalfs() {
+        if (data.dataType() == DataBuffer.Type.HALF)
+            return this;
+
+        val factory = Nd4j.getNDArrayFactory();
+        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataBuffer.Type.HALF);
+
+        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataBuffer.TypeEx.FLOAT16, buffer.addressPointer(), buffer.length());
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
     }
 
     @Override

@@ -114,21 +114,6 @@ public class VirtualDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int cursor() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int numExamples() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int totalExamples() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int inputColumns() {
         throw new UnsupportedOperationException();
     }

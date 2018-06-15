@@ -73,11 +73,6 @@ public class ListDataSetIterator<T extends DataSet> implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return list.size();
-    }
-
-    @Override
     public int inputColumns() {
         return list.get(0).getFeatureMatrix().columns();
     }
@@ -106,16 +101,6 @@ public class ListDataSetIterator<T extends DataSet> implements DataSetIterator {
     @Override
     public int batch() {
         return batch;
-    }
-
-    @Override
-    public synchronized int cursor() {
-        return curr;
-    }
-
-    @Override
-    public int numExamples() {
-        return list.size();
     }
 
     @Override

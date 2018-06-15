@@ -169,9 +169,9 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     nd4j::graph::GraphExecutioner<float>::execute(&graph);
 
-    auto result = (uint8_t *)nd4j::graph::GraphExecutioner<float>::executeFlatBuffer((Nd4jPointer) buf);
+    auto resultWrapper = nd4j::graph::GraphExecutioner<float>::executeFlatBuffer((Nd4jPointer) buf);
 
-    auto flatResults = GetFlatResult(result);
+    auto flatResults = GetFlatResult(resultWrapper->pointer());
 
     ASSERT_EQ(1, flatResults->variables()->size());
     ASSERT_TRUE(flatResults->variables()->Get(0)->name() != nullptr);
@@ -187,7 +187,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     delete array;
     delete var0;
-    delete[] result;
+    delete resultWrapper;
 }
 
 TEST_F(FlatBuffersTest, ExecutionTest1) {

@@ -65,6 +65,11 @@ public class JcusparseNDArrayCSR extends BaseSparseNDArrayCSR {
     }
 
     @Override
+    public INDArray convertToHalfs() {
+        return null;
+    }
+
+    @Override
     public INDArray convertToFloats() {
         return null;
     }

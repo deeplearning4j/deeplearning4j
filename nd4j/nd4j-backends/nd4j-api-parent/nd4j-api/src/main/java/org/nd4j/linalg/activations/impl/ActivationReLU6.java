@@ -25,6 +25,7 @@ public class ActivationReLU6 extends BaseActivationFunction {
 
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
+        assertShape(in, epsilon);
         INDArray dLdz = Nd4j.getExecutioner().execAndReturn(new Step(in));
         dLdz.muli(epsilon);
         return new Pair<>(dLdz, null);

@@ -61,6 +61,6 @@ public class ConfusionMatrix extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v){
-        throw new UnsupportedOperationException();
+        return Arrays.asList(sameDiff.zerosLike(arg(0)), sameDiff.zerosLike(arg(1)));
     }
 }

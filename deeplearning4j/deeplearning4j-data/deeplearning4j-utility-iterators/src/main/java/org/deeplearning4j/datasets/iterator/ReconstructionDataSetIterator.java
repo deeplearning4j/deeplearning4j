@@ -57,16 +57,6 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     }
 
     /**
-     * Total examples in the iterator
-     *
-     * @return
-     */
-    @Override
-    public int totalExamples() {
-        return iter.totalExamples();
-    }
-
-    /**
      * Input columns for the dataset
      *
      * @return
@@ -112,26 +102,6 @@ public class ReconstructionDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return iter.batch();
-    }
-
-    /**
-     * The current cursor if applicable
-     *
-     * @return
-     */
-    @Override
-    public int cursor() {
-        return iter.cursor();
-    }
-
-    /**
-     * Total number of examples in the dataset
-     *
-     * @return
-     */
-    @Override
-    public int numExamples() {
-        return iter.numExamples();
     }
 
     @Override

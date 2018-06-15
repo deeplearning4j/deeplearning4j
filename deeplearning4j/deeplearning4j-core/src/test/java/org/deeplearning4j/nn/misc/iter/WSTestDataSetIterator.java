@@ -41,11 +41,6 @@ public class WSTestDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return 32;
-    }
-
-    @Override
     public int inputColumns() {
         return 1;
     }
@@ -73,16 +68,6 @@ public class WSTestDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return 0;
-    }
-
-    @Override
-    public int cursor() {
-        return cursor;
-    }
-
-    @Override
-    public int numExamples() {
-        return Integer.MAX_VALUE;
     }
 
     @Override

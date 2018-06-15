@@ -158,6 +158,19 @@ public class ReductionBpOpValidation {
     }
 
     @Test
+    public void testMeanBP_Rank1() {
+        INDArray dLdOut = Nd4j.trueScalar(0.5);
+        INDArray preReduceInput = Nd4j.create(new double[]{2,3,4}, new long[]{3});
+        INDArray dLdInExp = Nd4j.valueArrayOf(new long[]{3}, 0.5/3);
+
+        INDArray dLdIn = Nd4j.createUninitialized(new long[]{3});
+
+        String err = OpValidation.validate(new OpTestCase(new MeanBp(preReduceInput, dLdOut, dLdIn, false))
+                .expectedOutput(0, dLdInExp));
+        assertNull(err);
+    }
+
+    @Test
     public void testMeanAlongDim0BP() {
         //Reduction along dimension
         //Inputs/outputs as before - but note that the output is no longer a scalar
@@ -476,27 +489,6 @@ public class ReductionBpOpValidation {
                 INDArray dLdInExp = preReduceInput.dup()
                         .subi(mean).divi(stdev * divisor)
                         .muli(0.5); //* dL/dOut
-//                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
-//                System.out.println(dLdInExp.shapeInfoToString());
-//                System.out.println(Arrays.toString(dLdInExp.data().asFloat()));
-                /*
-                biasCorrected = true, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.069337524, -0.056730703, -0.04412388, -0.031517055, -0.018910235, -0.0063034114, 0.0063034114, 0.018910235, 0.031517055, 0.04412388, 0.056730703, 0.069337524]
-                biasCorrected = true, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.069337524, -0.056730703, -0.04412388, -0.031517055, -0.018910235, -0.0063034114, 0.0063034114, 0.018910235, 0.031517055, 0.04412388, 0.056730703, 0.069337524]
-                biasCorrected = false, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.06638563, -0.05431551, -0.0422454, -0.030175284, -0.01810517, -0.006035057, 0.006035057, 0.01810517, 0.030175284, 0.0422454, 0.05431551, 0.06638563]
-                biasCorrected = false, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.06638563, -0.05431551, -0.0422454, -0.030175284, -0.01810517, -0.006035057, 0.006035057, 0.01810517, 0.030175284, 0.0422454, 0.05431551, 0.06638563]
-                 */
 
                 INDArray dLdIn = Nd4j.createUninitialized(3, 4);
 
@@ -505,6 +497,28 @@ public class ReductionBpOpValidation {
                 assertNull(err);
             }
         }
+    }
+
+    @Test
+    public void testStdevBP_Rank1() {
+        fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
+        INDArray dLdOut = Nd4j.trueScalar(0.5);
+        INDArray preReduceInput = Nd4j.create(new double[]{2,3,4}, new long[]{3});
+        double stdev = preReduceInput.stdNumber(true).doubleValue();
+        double mean = preReduceInput.meanNumber().doubleValue();
+
+        INDArray dLdInExp = preReduceInput.dup()
+                .subi(mean).divi(stdev * 2)
+                .muli(0.5); //* dL/dOut
+
+        System.out.println(dLdInExp.shapeInfoToString());
+        System.out.println(Arrays.toString(dLdInExp.data().asFloat()));
+
+        INDArray dLdIn = Nd4j.createUninitialized(new long[]{3});
+
+        String err = OpValidation.validate(new OpTestCase(new StandardDeviationBp(preReduceInput, dLdOut, dLdIn, true, false))
+                .expectedOutput(0, dLdInExp));
+        assertNull(err);
     }
 
     @Test
@@ -527,27 +541,6 @@ public class ReductionBpOpValidation {
                 dLdInExpected_0.subiRowVector(mean_0)
                         .diviRowVector(stdev_0.mul(divisor))
                         .muliRowVector(dLdOut_0);
-//                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
-//                System.out.println(dLdInExpected_0.shapeInfoToString());
-//                System.out.println(Arrays.toString(dLdInExpected_0.data().asFloat()));
-                /*
-                biasCorrected = false, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.4082483, -0.8164966, -1.2247449, -1.6329932, 0.0, 0.0, 0.0, 0.0, 0.4082483, 0.8164966, 1.2247449, 1.6329932]
-                biasCorrected = false, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.4082483, -0.8164966, -1.2247449, -1.6329932, 0.0, 0.0, 0.0, 0.0, 0.4082483, 0.8164966, 1.2247449, 1.6329932]
-                biasCorrected = true, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.5, -1.0, -1.5, -2.0, 0.0, 0.0, 0.0, 0.0, 0.5, 1.0, 1.5, 2.0]
-                biasCorrected = true, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.5, -1.0, -1.5, -2.0, 0.0, 0.0, 0.0, 0.0, 0.5, 1.0, 1.5, 2.0]
-                 */
 
                 INDArray dLdIn = Nd4j.createUninitialized(3, 4);
                 String err = OpValidation.validate(new OpTestCase(new StandardDeviationBp(preReduceInput, dLdOut_0, dLdIn, biasCorrected, keepDims, 0))
@@ -564,28 +557,6 @@ public class ReductionBpOpValidation {
                 dLdInExpected_1.subiColumnVector(mean_1)
                         .diviColumnVector(stdev_1.mul(divisor))
                         .muliColumnVector(dLdOut_1.reshape(3,1));
-//                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
-//                System.out.println(dLdInExpected_1.shapeInfoToString());
-//                System.out.println(Arrays.toString(dLdInExpected_1.data().asFloat()));
-                /*
-                biasCorrected = false, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.3354102, -0.1118034, 0.1118034, 0.3354102, -0.6708204, -0.2236068, 0.2236068, 0.6708204, -1.0062306, -0.3354102, 0.3354102, 1.0062306]
-                biasCorrected = false, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.3354102, -0.1118034, 0.1118034, 0.3354102, -0.6708204, -0.2236068, 0.2236068, 0.6708204, -1.0062306, -0.3354102, 0.3354102, 1.0062306]
-                biasCorrected = true, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.38729835, -0.12909944, 0.12909944, 0.38729835, -0.7745967, -0.2581989, 0.2581989, 0.7745967, -1.161895, -0.38729835, 0.38729835, 1.161895]
-                biasCorrected = true, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.38729835, -0.12909944, 0.12909944, 0.38729835, -0.7745967, -0.2581989, 0.2581989, 0.7745967, -1.161895, -0.38729835, 0.38729835, 1.161895]
-                 */
-
 
                 dLdIn = Nd4j.createUninitialized(3, 4);
                 err = OpValidation.validate(new OpTestCase(new ProdBp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
@@ -621,27 +592,6 @@ public class ReductionBpOpValidation {
                 INDArray dLdInExp = preReduceInput.dup()
                         .subi(mean).muli(2.0 / divisor)
                         .muli(0.5); //* dL/dOut
-//                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
-//                System.out.println(dLdInExp.shapeInfoToString());
-//                System.out.println(Arrays.toString(dLdInExp.data().asFloat()));
-                /*
-                biasCorrected = true, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.5, -0.4090909, -0.3181818, -0.22727273, -0.13636364, -0.045454547, 0.045454547, 0.13636364, 0.22727273, 0.3181818, 0.4090909, 0.5]
-                biasCorrected = true, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.5, -0.4090909, -0.3181818, -0.22727273, -0.13636364, -0.045454547, 0.045454547, 0.13636364, 0.22727273, 0.3181818, 0.4090909, 0.5]
-                biasCorrected = false, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.45833334, -0.375, -0.29166666, -0.20833333, -0.125, -0.041666668, 0.041666668, 0.125, 0.20833333, 0.29166666, 0.375, 0.45833334]
-                biasCorrected = false, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.45833334, -0.375, -0.29166666, -0.20833333, -0.125, -0.041666668, 0.041666668, 0.125, 0.20833333, 0.29166666, 0.375, 0.45833334]
-                 */
 
                 INDArray dLdIn = Nd4j.createUninitialized(3, 4);
 
@@ -670,33 +620,11 @@ public class ReductionBpOpValidation {
                 INDArray dLdInExpected_0 = preReduceInput.dup();
                 dLdInExpected_0.subiRowVector(mean_0).muli(2.0 / divisor)
                         .muliRowVector(dLdOut_0);
-//                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
-//                System.out.println(dLdInExpected_0.shapeInfoToString());
-//                System.out.println(Arrays.toString(dLdInExpected_0.data().asFloat()));
-                /*
-                biasCorrected = false, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-2.6666667, -5.3333335, -8.0, -10.666667, 0.0, 0.0, 0.0, 0.0, 2.6666667, 5.3333335, 8.0, 10.666667]
-                biasCorrected = false, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-2.6666667, -5.3333335, -8.0, -10.666667, 0.0, 0.0, 0.0, 0.0, 2.6666667, 5.3333335, 8.0, 10.666667]
-                biasCorrected = true, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-4.0, -8.0, -12.0, -16.0, 0.0, 0.0, 0.0, 0.0, 4.0, 8.0, 12.0, 16.0]
-                biasCorrected = true, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-4.0, -8.0, -12.0, -16.0, 0.0, 0.0, 0.0, 0.0, 4.0, 8.0, 12.0, 16.0]
-                 */
 
-//                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
-//                String err = OpValidation.validate(new OpTestCase(new StandardDeviationBp(preReduceInput, dLdOut_0, dLdIn, biasCorrected, keepDims, 0))
-//                        .expectedOutput(0, dLdInExpected_0));
-//                assertNull(err);
-
+                INDArray dLdIn = Nd4j.createUninitialized(3, 4);
+                String err = OpValidation.validate(new OpTestCase(new VarianceBp(preReduceInput, dLdOut_0, dLdIn, biasCorrected, keepDims, 0))
+                        .expectedOutput(0, dLdInExpected_0));
+                assertNull(err);
 
                 divisor = biasCorrected ? 3 : 4;
                 long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
@@ -705,33 +633,12 @@ public class ReductionBpOpValidation {
                 INDArray dLdInExpected_1 = preReduceInput.dup();
                 dLdInExpected_1.subiColumnVector(mean_1).muli(2.0 / divisor)
                         .muliColumnVector(dLdOut_1.reshape(3,1));
-//                System.out.println("biasCorrected = " + biasCorrected + ", keepDims=" + keepDims);
-//                System.out.println(dLdInExpected_1.shapeInfoToString());
-//                System.out.println(Arrays.toString(dLdInExpected_1.data().asFloat()));
-                /*
-                biasCorrected = false, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.75, -0.25, 0.25, 0.75, -1.5, -0.5, 0.5, 1.5, -2.25, -0.75, 0.75, 2.25]
-                biasCorrected = false, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-0.75, -0.25, 0.25, 0.75, -1.5, -0.5, 0.5, 1.5, -2.25, -0.75, 0.75, 2.25]
-                biasCorrected = true, keepDims=false
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-1.0, -0.33333334, 0.33333334, 1.0, -2.0, -0.6666667, 0.6666667, 2.0, -3.0, -1.0, 1.0, 3.0]
-                biasCorrected = true, keepDims=true
-                Rank: 2,Offset: 0
-                 Order: c Shape: [3,4],  stride: [4,1]
-                [-1.0, -0.33333334, 0.33333334, 1.0, -2.0, -0.6666667, 0.6666667, 2.0, -3.0, -1.0, 1.0, 3.0]
-                 */
 
 
-//                dLdIn = Nd4j.createUninitialized(3, 4);
-//                err = OpValidation.validate(new OpTestCase(new ProdBp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
-//                        .expectedOutput(0, dLdInExpected_1));
-//                assertNull(err, err);
+                dLdIn = Nd4j.createUninitialized(3, 4);
+                err = OpValidation.validate(new OpTestCase(new VarianceBp(preReduceInput, dLdOut_1, dLdIn, biasCorrected, keepDims, 1))
+                        .expectedOutput(0, dLdInExpected_1));
+                assertNull(err);
             }
         }
     }

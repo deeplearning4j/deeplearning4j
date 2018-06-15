@@ -62,7 +62,7 @@ public class ActivationRReLU extends BaseActivationFunction {
 
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
-
+        assertShape(in, epsilon);
         INDArray dLdz = Nd4j.ones(in.shape());
         BooleanIndexing.replaceWhere(dLdz, alpha, Conditions.lessThanOrEqual(0.0));
         dLdz.muli(epsilon);

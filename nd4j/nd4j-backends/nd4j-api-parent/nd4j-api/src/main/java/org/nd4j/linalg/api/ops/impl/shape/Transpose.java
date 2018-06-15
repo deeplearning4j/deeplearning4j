@@ -46,7 +46,10 @@ public class Transpose extends DynamicCustomOp {
 
     public Transpose(SameDiff sameDiff, SDVariable i_v) {
         super(null, sameDiff, new SDVariable[]{i_v});
+    }
 
+    public Transpose(INDArray input, INDArray result){
+        super(null, new INDArray[]{input}, result == null ? null : new INDArray[]{result}, null, (List<Integer>) null);
     }
 
     public Transpose() {

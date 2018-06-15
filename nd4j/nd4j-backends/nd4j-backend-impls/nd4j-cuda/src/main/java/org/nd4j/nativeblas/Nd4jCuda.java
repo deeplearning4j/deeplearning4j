@@ -381,6 +381,7 @@ bool verbose = false;
 // #include <graph/VariablesSet.h>
 // #include <graph/GraphState.h>
 // #include <graph/execution/LogicExecutor.h>
+// #include <graph/ResultWrapper.h>
 
 public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     static { Loader.load(); }
@@ -5369,9 +5370,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
 
     // flatbuffers execution
-    public native @Cast("Nd4jPointer") Pointer executeFlatGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
-    public native @Cast("Nd4jPointer") Pointer executeFlatGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
-    public native @Cast("Nd4jPointer") Pointer executeFlatGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native ResultWrapper executeFlatGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native ResultWrapper executeFlatGraphDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
+    public native ResultWrapper executeFlatGraphHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer flatBufferPointer);
 
     // protobuf execution
     public native @Cast("Nd4jPointer") Pointer executeProtoGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer protoBufferPointer);
@@ -5447,6 +5448,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void deleteGraphStateHalf(@Cast("Nd4jPointer") Pointer state);
     public native void deleteGraphStateFloat(@Cast("Nd4jPointer") Pointer state);
     public native void deleteGraphStateDouble(@Cast("Nd4jPointer") Pointer state);
+
+    public native void deleteResultWrapper(@Cast("Nd4jPointer") Pointer ptr);
 
     // this method executes op that requires scope to be present: if/while/cond/whatever
     public native @Cast("Nd4jStatus") int execCustomOpWithScopeHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongPointer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
@@ -6032,7 +6035,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *   returns _buffer
         */
-        public native FloatPointer getBuffer();        
+        public native FloatPointer getBuffer();
         public native FloatPointer buffer();
 
         /**
@@ -6073,6 +6076,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") LongPointer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") long[] dimensions, int rank);
+
+        public native @Cast("bool") boolean isFinite();
+        public native @Cast("bool") boolean hasNaNs();
+        public native @Cast("bool") boolean hasInfs();
 
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
@@ -7157,7 +7164,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *   returns _buffer
         */
-        public native @Cast("float16*") ShortPointer getBuffer();        
+        public native @Cast("float16*") ShortPointer getBuffer();
         public native @Cast("float16*") ShortPointer buffer();
 
         /**
@@ -7198,6 +7205,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") LongPointer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") long[] dimensions, int rank);
+
+        public native @Cast("bool") boolean isFinite();
+        public native @Cast("bool") boolean hasNaNs();
+        public native @Cast("bool") boolean hasInfs();
 
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
@@ -8282,7 +8293,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *   returns _buffer
         */
-        public native DoublePointer getBuffer();        
+        public native DoublePointer getBuffer();
         public native DoublePointer buffer();
 
         /**
@@ -8323,6 +8334,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") LongPointer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") LongBuffer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Cast("const Nd4jLong*") long[] dimensions, int rank);
+
+        public native @Cast("bool") boolean isFinite();
+        public native @Cast("bool") boolean hasNaNs();
+        public native @Cast("bool") boolean hasInfs();
 
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
@@ -11769,6 +11784,37 @@ public static final long MAX_UINT = MAX_UINT();
 
 // #endif //ND4J_CONTEXT_PROTOTYPE_H
 
+// Parsed from graph/ResultWrapper.h
+
+//
+// Created by raver119 on 11/06/18.
+//
+
+// #ifndef LIBND4J_RESULTWRAPPER_H
+// #define LIBND4J_RESULTWRAPPER_H
+
+// #include <op_boilerplate.h>
+// #include <pointercast.h>
+// #include <dll.h>
+        @Namespace("nd4j::graph") @NoOffset public static class ResultWrapper extends org.nd4j.nativeblas.ResultWrapperAbstraction {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public ResultWrapper(Pointer p) { super(p); }
+        
+            public ResultWrapper(@Cast("Nd4jLong") long size, @Cast("Nd4jPointer") Pointer ptr) { super((Pointer)null); allocate(size, ptr); }
+            private native void allocate(@Cast("Nd4jLong") long size, @Cast("Nd4jPointer") Pointer ptr);
+
+            public native @Cast("Nd4jLong") long size();
+
+            public native @Cast("Nd4jPointer") Pointer pointer();
+        }
+    
+
+
+
+// #endif //LIBND4J_RESULTWRAPPER_H
+
+
 // Parsed from helpers/shape.h
 
 /*
@@ -13802,6 +13848,7 @@ public static final int PREALLOC_SIZE = 33554432;
 // #ifndef OP_BOILERPLATE_HH
 // #define OP_BOILERPLATE_HH
 
+// #include <type_boilerplate.h>
 // #include <helpers/OpTracker.h>
 
 // #ifdef __CUDACC__
@@ -13838,18 +13885,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define DEBUG_CALL(STREAM)      if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) { throw std::runtime_error(); }; }
 // #define DEBUG_KERNEL(STREAM, OP_NUM)       if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) {std::string tFile(__FILE__); std::string tOp = "Kernel OpNum failed: [" + nd4j::StringUtils::valueToString<int>(OP_NUM) + std::string("]; File: ") + tFile + std::string(":") + nd4j::StringUtils::valueToString<int>(__LINE__); throw std::runtime_error(tOp.c_str()); }; }
 
-// #define EXTRACT(...) EXTRACT __VA_ARGS__ 
-// #define NOTHING_EXTRACT 
-// #define PASTE(x, ...) x ## __VA_ARGS__ 
-// #define EVALUATING_PASTE(x, ...) PASTE(x, __VA_ARGS__) 
-// #define UNPAREN(x) EVALUATING_PASTE(NOTHING_, EXTRACT x) 
-// #define EVAL( x ) x
-// #define EVAL0(...)  EVAL1(EVAL1(EVAL1(__VA_ARGS__)))
-// #define EVAL1(...) EVAL2(EVAL2(EVAL2(__VA_ARGS__)))
-// #define EVAL2(...) EVAL3(EVAL3(EVAL3(__VA_ARGS__)))
-// #define EVAL3(...) EVAL4(EVAL4(EVAL4(__VA_ARGS__)))
-// #define EVAL4(...) EVAL5(EVAL5(EVAL5(__VA_ARGS__)))
-// #define EVAL5(...) __VA_ARGS__
 
 // #define LAUNCH(A, B, C, D) <<<A, B, C, D>>>
 
@@ -13868,7 +13903,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define EMPTY()
 // #define DEFER(id) id EMPTY()
 // #define OBSTRUCT(...) __VA_ARGS__ DEFER(EMPTY)()
-// #define EXPAND(...) __VA_ARGS__
+
 
 // #define _EXPAND_OP_CALL(FN, SIG, NUM, TYPE) case NUM: { FN<TYPE<T>>SIG; break; };
 // #define _EXPAND_RETURNING_OP_CALL(FN, SIG, NUM, TYPE) else if(opNum == NUM){ return FN<TYPE<T>>SIG; }

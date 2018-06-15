@@ -206,13 +206,6 @@ public class Word2VecDataSetIterator implements DataSetIterator {
         return ret;
     }
 
-
-    @Override
-    public int totalExamples() {
-        throw new UnsupportedOperationException();
-
-    }
-
     @Override
     public int inputColumns() {
         return vec.lookupTable().layerSize() * vec.getWindow();
@@ -242,16 +235,6 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return batch;
-    }
-
-    @Override
-    public int cursor() {
-        return 0;
-    }
-
-    @Override
-    public int numExamples() {
-        return 0;
     }
 
     @Override

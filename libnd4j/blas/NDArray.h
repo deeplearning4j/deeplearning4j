@@ -243,6 +243,10 @@ namespace nd4j {
         bool permutei(const std::vector<Nd4jLong>& dimensions);
         bool permutei(const Nd4jLong* dimensions, const int rank);
 
+        bool isFinite();
+        bool hasNaNs();
+        bool hasInfs();
+
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
         */
