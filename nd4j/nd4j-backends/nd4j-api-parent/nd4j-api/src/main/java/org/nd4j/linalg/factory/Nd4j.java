@@ -60,6 +60,7 @@ import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.controlflow.Select;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.transforms.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
@@ -694,6 +695,21 @@ public class Nd4j {
             return Nd4j.getExecutioner().exec(imax, Integer.MAX_VALUE);
         } else {
             return Nd4j.getExecutioner().exec(imax, dimension);
+        }
+    }
+
+    /**
+     *
+     * @param arr
+     * @param dimension
+     * @return
+     */
+    public static INDArray argMin(INDArray arr, int... dimension) {
+        IMin imin = new IMin(arr);
+        if(dimension == null || dimension.length == 0){
+            return Nd4j.getExecutioner().exec(imin, Integer.MAX_VALUE);
+        } else {
+            return Nd4j.getExecutioner().exec(imin, dimension);
         }
     }
 

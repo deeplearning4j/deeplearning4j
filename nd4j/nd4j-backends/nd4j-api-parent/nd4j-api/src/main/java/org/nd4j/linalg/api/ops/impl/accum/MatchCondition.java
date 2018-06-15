@@ -42,18 +42,13 @@ public class MatchCondition extends BaseAccumulation {
     private double eps;
     private int mode;
 
-    public MatchCondition(SameDiff sameDiff, SDVariable i_v, int[] dimensions, double compare, double eps, int mode) {
-        super(sameDiff, i_v, dimensions);
-        this.compare = compare;
-        this.eps = eps;
-        this.mode = mode;
-    }
+    public MatchCondition(SameDiff sameDiff, SDVariable in, Condition condition) {
+        super(sameDiff, in, null);
+        this.compare = condition.getValue();
+        this.mode = condition.condtionNum();
+        this.eps = Nd4j.EPS_THRESHOLD;
 
-    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double compare, double eps, int mode) {
-        super(sameDiff, i_v, i_v2, dimensions);
-        this.compare = compare;
-        this.eps = eps;
-        this.mode = mode;
+        this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
 
     public MatchCondition() {}

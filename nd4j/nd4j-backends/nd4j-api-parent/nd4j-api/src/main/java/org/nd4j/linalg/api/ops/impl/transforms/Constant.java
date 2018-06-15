@@ -8,6 +8,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,21 +29,16 @@ public class Constant extends BaseTransformOp {
         this.xVertexId = i_v.getVarName();
         this.inPlace = inPlace;
         this.sameDiff = sameDiff;
-
-
     }
 
-    public Constant(SameDiff sameDiff,
-                    SDVariable i_v,
-                    long[] shape) {
+    public Constant(SameDiff sameDiff, SDVariable i_v, long[] shape) {
         this(sameDiff, i_v, shape, false);
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-
-        return Arrays.asList(sameDiff.zero("grad-" + UUID.randomUUID().toString(), i_v.get(0).getShape()));
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
 

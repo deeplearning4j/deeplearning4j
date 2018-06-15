@@ -31,6 +31,6 @@ public class StandardDeviationBp extends BaseReductionBp {
 
     @Override
     public String opName() {
-        return "reduce_standard_deviation_bp";
+        return "reduce_stdev_bp";
     }
 }

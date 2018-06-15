@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,20 +45,13 @@ public class LastIndex extends BaseIndexAccumulation {
     protected double eps;
     protected int mode;
 
-    public LastIndex(SameDiff sameDiff, SDVariable i_v, int[] dimensions, Condition condition, double compare, double eps, int mode) {
+    public LastIndex(SameDiff sameDiff, SDVariable i_v, Condition condition, int... dimensions) {
         super(sameDiff, i_v, dimensions);
         this.condition = condition;
-        this.compare = compare;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public LastIndex(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, Condition condition, double compare, double eps, int mode) {
-        super(sameDiff, i_v, i_v2, dimensions);
-        this.condition = condition;
-        this.compare = compare;
-        this.eps = eps;
-        this.mode = mode;
+        this.compare = condition.getValue();
+        this.mode = condition.condtionNum();
+        this.eps = Nd4j.EPS_THRESHOLD;
+        this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
 
     public LastIndex() {}
@@ -69,13 +63,10 @@ public class LastIndex extends BaseIndexAccumulation {
 
     public LastIndex(INDArray x, @NonNull Condition condition, double eps) {
         super(x,null,null,x.length());
-
         this.condition = condition;
         this.compare = condition.getValue();
         this.mode = condition.condtionNum();
         this.eps = eps;
-
-
         this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
 
@@ -114,7 +105,7 @@ public class LastIndex extends BaseIndexAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
     @Override

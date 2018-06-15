@@ -7,15 +7,21 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class NoOp extends DynamicCustomOp {
 
+    public NoOp(){ }
+
+    public NoOp(SameDiff sd, SDVariable in){
+        super("noop", sd, new SDVariable[]{in});
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.singletonList(f1.get(0));
     }
 
 
@@ -48,5 +54,18 @@ public class NoOp extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "NoOp";
+    }
+
+    @Override
+    public int getNumOutputs(){
+        return 1;
+    }
+
+    @Override
+    public List<long[]> calculateOutputShape(){
+        if(inputArguments != null && !inputArguments.isEmpty()){
+            return Collections.singletonList(inputArguments.get(0).shape());
+        }
+        return Collections.emptyList();
     }
 }

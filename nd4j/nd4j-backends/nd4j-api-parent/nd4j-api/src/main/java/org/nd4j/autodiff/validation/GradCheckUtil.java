@@ -415,7 +415,8 @@ public class GradCheckUtil {
             for(String s : varNames){
                 if(seen.containsKey(s)){
                     throw new IllegalStateException("Already saw variable \"" + s + "\" as output for op \"" + seen.get(s)
-                            + "\": expected variables to be present as an output only once");
+                            + "\": expected variables to be present as an output only once; also seen as output for op \"" +
+                            e.getKey() + "\"");
                 }
                 seen.put(s, e.getKey());
             }

@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,60 +44,12 @@ public class CompareAndReplace extends BaseTransformOp {
     private double eps;
     private int mode;
 
-    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v1, i_v2);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndReplace(SameDiff sameDiff, double compare, double set, double eps, int mode) {
-        super(sameDiff);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v1, i_v2, extraArgs);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v, inPlace);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public CompareAndReplace(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double compare, double set, double eps, int mode) {
-        super(sameDiff, i_v, extraArgs);
-        this.compare = compare;
-        this.set = set;
-        this.eps = eps;
-        this.mode = mode;
+    public CompareAndReplace(SameDiff sameDiff, SDVariable to, SDVariable from, Condition condition) {
+        super(sameDiff, to, from, false);
+        this.compare = condition.getValue();
+        this.set = 0;
+        this.mode = condition.condtionNum();
+        this.eps = condition.epsThreshold();
     }
 
     public CompareAndReplace() {
@@ -183,7 +136,7 @@ public class CompareAndReplace extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 }
 

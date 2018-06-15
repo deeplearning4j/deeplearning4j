@@ -4,14 +4,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -345,10 +349,36 @@ public class MiscOpValidation extends BaseOpValidation {
                     throw new RuntimeException();
             }
 
+            INDArray exp = in.getArr().dup();
+            int[] indicesInt = indices.getArr().dup().data().asInt();
+            for( int j=0; j<indicesInt.length; j++ ){
+                INDArray updateRow = updates.getArr().getRow(j);
+                INDArray destinationRow = exp.getRow(indicesInt[j]);
+                switch (i){
+                    case 0:
+                        destinationRow.addi(updateRow);
+                        break;
+                    case 1:
+                        destinationRow.subi(updateRow);
+                        break;
+                    case 2:
+                        destinationRow.muli(updateRow);
+                        break;
+                    case 3:
+                        destinationRow.divi(updateRow);
+                        break;
+                    case 4:
+                        destinationRow.assign(updateRow);
+                        break;
+                }
+            }
+
             SDVariable loss = sd.sum(scatter);  //.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
             sd.execAndEndResult();
 
             TestCase tc = new TestCase(sd);
+            tc.expected(scatter, exp);
+
             String error = OpValidation.validate(tc);
             if(error != null){
                 failed.add(name);
@@ -378,6 +408,11 @@ public class MiscOpValidation extends BaseOpValidation {
                 SDVariable in = sd.var("in", Nd4j.rand(inShape));
                 SDVariable indices = sd.var("indices", Nd4j.create(new double[]{0, 3, 7}));
 
+                INDArray gatherExp = null;
+                if(rank == 2){
+                    gatherExp = Nd4j.pullRows(in.getArr(), dim, new int[]{0,3,7});
+                }
+
                 SDVariable gather = sd.gather(in, indices, dim);
                 sd.execAndEndResult();  //TODO REMOVE THIS
 
@@ -386,6 +421,12 @@ public class MiscOpValidation extends BaseOpValidation {
                 String msg = "rank=" + rank + ", dim=" + dim;
 
                 TestCase tc = new TestCase(sd).testName(msg);
+                tc.testName(msg);
+
+                if (gatherExp != null) {
+                    tc.expected(gather, gatherExp);
+                }
+
                 String error = OpValidation.validate(tc);
                 if(error != null){
                     failed.add(msg);
@@ -562,5 +603,511 @@ public class MiscOpValidation extends BaseOpValidation {
 
             assertNull(err);
         }
+    }
+
+    @Test
+    public void testFillOp(){
+
+        INDArray ia = Nd4j.create(new double[]{2,2});
+        double value = 42;
+        INDArray out = Nd4j.create(2,2);
+        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("fill")
+                .addInputs(ia)
+                .addFloatingPointArguments(value)
+                .addOutputs(out)
+                .build());
+        INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42);
+
+        op.expectedOutput(0, expOut);
+        String err = OpValidation.validate(op);
+        assertNull(err);
+    }
+
+    @Test
+    public void testClipByNorm(){
+        //Expected: if array.norm2(1) is less than 1.0, not modified
+        //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.rand(3,5);
+        INDArray norm2_1 = arr.norm2(1);
+        arr.diviColumnVector(norm2_1);
+
+        norm2_1 = arr.norm2(1);
+        assertEquals(Nd4j.ones(3), norm2_1);
+
+        INDArray scale = Nd4j.create(new double[]{1.1, 1.0, 0.9}, new int[]{3,1});
+        arr.muliColumnVector(scale);
+        norm2_1 = arr.norm2(1);
+
+        INDArray out = Nd4j.createUninitialized(arr.shape());
+
+        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("clipbynorm")
+                .addInputs(arr)
+                .addOutputs(out)
+                .addFloatingPointArguments(1.0)
+                .build());
+
+        INDArray expNorm2 = Nd4j.create(new double[]{1.0, 1.0, norm2_1.getDouble(2)}, new int[]{3,1});
+
+        INDArray expOut = arr.divColumnVector(norm2_1).muliColumnVector(expNorm2);
+        op.expectedOutput(0, expOut);
+
+        System.out.println("Input");
+        System.out.println(arr.shapeInfoToString());
+        System.out.println(Arrays.toString(arr.data().asFloat()));
+
+        System.out.println("Expected");
+        System.out.println(expOut.shapeInfoToString());
+        System.out.println(Arrays.toString(expOut.data().asFloat()));
+
+        String err = OpValidation.validate(op);
+        assertNull(err);
+    }
+
+    @Test
+    public void testClipByNorm0(){
+        //Expected: if array.norm2(1) is less than 1.0, not modified
+        //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.rand(5,4);
+        INDArray norm2_0 = arr.norm2(0);
+        arr.diviRowVector(norm2_0);
+
+        INDArray initNorm2 = Nd4j.create(new double[]{2.2, 2.1, 2.0, 1.9}, new int[]{1,4});     //Initial norm2s along dimension 0
+        arr.muliRowVector(initNorm2);
+        norm2_0 = arr.norm2(0);
+
+        assertEquals(initNorm2, norm2_0);
+
+        INDArray out = Nd4j.create(arr.shape());
+
+        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("clipbynorm")
+                .addInputs(arr)
+                .addOutputs(out)
+                .addFloatingPointArguments(2.0)     //Clip to norm2 of 2.0
+                .addIntegerArguments(0)             //along dimension 0
+                .build());
+
+        INDArray norm2_0b = out.norm2(0);
+        INDArray exp = Nd4j.create(new double[]{2.0, 2.0, 2.0, 1.9}, new int[]{1, 4});  //Post clip norm2s along dimension 0
+
+
+
+        assertEquals(exp, norm2_0b);
+    }
+
+    @Test
+    public void testCumSum(){
+
+        List<String> failing = new ArrayList<>();
+        for(char order : new char[]{'c','f'}) {
+
+            Nd4j.getRandom().setSeed(12345);
+            INDArray arr = Nd4j.linspace(1, 15, 15).reshape(3, 5).dup(order);
+//            System.out.println(arr);
+
+            INDArray expFF = Nd4j.create(new double[][]{
+                    {1, 3, 6, 10, 15},
+                    {6, 13, 21, 30, 40},
+                    {11, 23, 36, 50, 65}
+            });
+
+            INDArray expTF = Nd4j.create(new double[][]{
+                    {0, 1, 3, 6, 10},
+                    {0, 6, 13, 21, 30},
+                    {0, 11, 23, 36, 50}
+            });
+
+            INDArray expFT = Nd4j.create(new double[][]{
+                    {15, 14, 12, 9, 5},
+                    {40, 34, 27, 19, 10},
+                    {65, 54, 42, 29, 15}
+            });
+
+            INDArray expTT = Nd4j.create(new double[][]{
+                    {14, 12, 9, 5, 0},
+                    {34, 27, 19, 10, 0},
+                    {54, 42, 29, 15, 0}
+            });
+
+            INDArray axisArg = Nd4j.scalar(1);  //Along dim 1
+
+            for (boolean exclusive : new boolean[]{false, true}) {
+                for (boolean reverse : new boolean[]{false, true}) {
+
+                    String msg = order + ", exclusive=" + exclusive + ", reverse=" + reverse;
+
+                    INDArray out = Nd4j.create(3, 5);
+                    OpTestCase op = new OpTestCase(DynamicCustomOp.builder("cumsum")
+                            .addInputs(expFF, axisArg)
+                            .addOutputs(out)
+                            .addIntegerArguments(exclusive ? 1 : 0, reverse ? 1 : 0)
+                            .build());
+
+                    if(!exclusive && !reverse){
+                        op.expectedOutput(0, expFF);
+                    } else if(exclusive && !reverse){
+                        op.expectedOutput(0, expTF);
+                    } else if(!exclusive && reverse){
+                        op.expectedOutput(0, expFT);
+                    } else {
+                        op.expectedOutput(0, expTT);
+                    }
+
+                    String err = OpValidation.validate(op);
+                    if(err != null){
+//                        System.out.println(err);
+                        failing.add(msg);
+                    }
+                }
+            }
+        }
+
+        assertEquals(failing.toString(), 0, failing.size());
+    }
+
+
+    @Test
+    public void testCumProd(){
+
+        List<String> failing = new ArrayList<>();
+
+        for(char order : new char[]{'c','f'}) {
+
+            Nd4j.getRandom().setSeed(12345);
+            INDArray arr = Nd4j.linspace(1, 15, 15).reshape(3, 5).dup(order);
+//            System.out.println(arr);
+
+            INDArray expFF = Nd4j.create(new double[][]{
+                    {1, 2, 6, 24, 120},
+                    {6, 42, 336, 3024, 30240},
+                    {11, 132, 1716, 24024, 360360}
+            });
+
+            INDArray expTF = Nd4j.create(new double[][]{
+                    {1, 1, 2, 6, 24},
+                    {1, 6, 42, 336, 3024},
+                    {1, 11, 132, 1716, 24024}
+            });
+
+            INDArray expFT = Nd4j.create(new double[][]{
+                    {120, 120, 60, 20, 5},
+                    {30240, 5040, 720, 90, 10},
+                    {360360, 32760, 2730, 210, 15}
+            });
+
+            INDArray expTT = Nd4j.create(new double[][]{
+                    {120, 60, 20, 5, 1},
+                    {5040, 720, 90, 10, 1},
+                    {32760, 2730, 210, 15, 1}
+            });
+
+            INDArray axisArg = Nd4j.scalar(1);  //Along dim 1
+
+            for (boolean exclusive : new boolean[]{false, true}) {
+                for (boolean reverse : new boolean[]{false, true}) {
+
+                    INDArray out = Nd4j.create(3, 5);
+                    OpTestCase op = new OpTestCase(DynamicCustomOp.builder("cumprod")
+                            .addInputs(expFF, axisArg)
+                            .addOutputs(out)
+                            .addIntegerArguments(exclusive ? 1 : 0, reverse ? 1 : 0)
+                            .build());
+                    String msg = order + ", exclusive=" + exclusive + ", reverse=" + reverse;
+
+                    if(!exclusive && !reverse){
+                        op.expectedOutput(0, expFF);
+                    } else if(exclusive && !reverse){
+                        op.expectedOutput(0, expTF);
+                    } else if(!exclusive && reverse){
+                        op.expectedOutput(0, expFT);
+                    } else {
+                        op.expectedOutput(0, expTT);
+                    }
+
+                    String err = OpValidation.validate(op);
+                    if(err != null){
+//                        System.out.println(err);
+                        failing.add(msg);
+                    }
+                }
+            }
+        }
+
+        assertEquals(failing.toString(), 0, failing.size());
+    }
+
+    @Test
+    public void testOneHot1(){
+        fail(); //JVM crash
+        List<String> failed = new ArrayList<>();
+
+        //Because it's on the diagonal, should be the same for all axis args...
+        for( int i=-1; i<=0; i++ ) {
+            INDArray indicesArr = Nd4j.trueVector(new double[]{0, 1, 2});
+            int depth = 3;
+
+            SameDiff sd = SameDiff.create();
+            SDVariable indices = sd.var(indicesArr);
+            SDVariable oneHot = sd.oneHot(indices, depth, i, 1.0, 0.0);
+
+            INDArray exp = Nd4j.eye(3);
+
+            String msg = "Axis: " + i;
+            log.info("Test case: " + msg);
+
+            String err = OpValidation.validate(new TestCase(sd)
+                    .testName(msg)
+                    .expected(oneHot, exp));
+
+            if(err != null){
+                failed.add(err);
+            }
+        }
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testOneHotOp(){
+        //https://www.tensorflow.org/api_docs/python/tf/one_hot
+        //https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/parity_ops/onehot.cpp
+
+        for( int axis=-1; axis<=0; axis++ ) {
+            String err = OpValidation.validate(new OpTestCase(DynamicCustomOp.builder("onehot")
+                    .addInputs(Nd4j.trueVector(new double[]{0, 1, 2}))
+                    .addIntegerArguments(3, axis)   //Depth and axis args
+                    .addFloatingPointArguments(1.0, 0.0)    //on/off values
+                    .build())
+                    .expectedOutput(0, Nd4j.eye(3)));
+
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testOneHot3() {
+        //https://www.tensorflow.org/api_docs/python/tf/one_hot
+        //indices = [[0, 2], [1, -1]]
+        INDArray indicesArr = Nd4j.zeros(2, 2);
+        indicesArr.put(0, 1, 2);
+        indicesArr.put(1, 0, 1);
+        indicesArr.put(1, 1, -1);
+        INDArray expectedOut = Nd4j.zeros(new long[]{2, 2, 3});
+        /*
+        # output: [2 x 2 x 3]
+        # [[[1.0, 0.0, 0.0],   # one_hot(0)
+        #   [0.0, 0.0, 1.0]],  # one_hot(2)
+        #  [[0.0, 1.0, 0.0],   # one_hot(1)
+        #   [0.0, 0.0, 0.0]]]  # one_hot(-1)
+        */
+        expectedOut.putScalar(0, 0, 0, 1.0);
+        expectedOut.putScalar(0, 1, 2, 1.0);
+        expectedOut.putScalar(1, 0, 1, 1.0);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable indices = sd.var("indices", new long[]{2, 2});
+
+        int depth = 3;
+        int axis = -1;
+        SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 1.0, 0.0);
+
+        SDVariable loss = oneHot.std(true);
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(oneHot, expectedOut));
+
+        assertNull(err);
+    }
+
+
+
+    @Test
+    public void testLinspace(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable out = sd.linspace(1,10,10);
+        SDVariable loss = out.std(true);
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(out, Nd4j.linspace(1,10,10)));
+
+        assertNull(err);
+    }
+
+
+    @Test
+    public void testShapeFn() {
+
+        INDArray in = Nd4j.create(new long[]{1, 2});
+
+        List<long[]> shapes = Nd4j.getExecutioner().calculateOutputShape(DynamicCustomOp.builder("shape")
+                .addInputs(in)
+                .build());
+
+        assertEquals(1, shapes.size());
+
+        assertArrayEquals(new long[]{2}, shapes.get(0));
+
+    }
+
+    @Test
+    public void testShapeFn2() {
+
+        INDArray i = Nd4j.create(1,3);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable var = sd.var("in", i);
+        SDVariable shape = sd.shape(var);
+        SDVariable sum = sd.sum(shape);
+
+        sd.execAndEndResult();
+        sd.execBackwards();
+    }
+
+
+    @Test
+    public void testMergeRank1(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable var = sd.var("in", Nd4j.create(new long[]{1}).assign(5));
+
+        SDVariable merged = sd.mergeAvg(var);
+        SDVariable sum = sd.sum(merged);
+
+        sd.execAndEndResult();
+        sd.execBackwards();
+
+        INDArray out = merged.getArr();
+        assertEquals(1, out.rank());
+
+        INDArray inGrad = var.getGradient().getArr();
+        assertEquals(1, inGrad.rank());         //Fails here, getting rank 2
+    }
+
+    @Test
+    public void testDiagPart() {
+
+        INDArray i = Nd4j.create(5,5);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable var = sd.var("in", i);
+        SDVariable diag = sd.diagPart(var);
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(1, out.rank());
+
+    }
+
+    @Test
+    public void testDiagShapeFn() {
+
+        INDArray i = Nd4j.create(5,5);
+
+        CustomOp op = DynamicCustomOp.builder("diag_part")
+                .addInputs(i).build();
+
+        List<long[]> outShape = Nd4j.getExecutioner().calculateOutputShape(op);
+
+        assertEquals(1, outShape.size());
+        assertArrayEquals(new long[]{5}, outShape.get(0));
+    }
+
+
+    @Test
+    public void testZerosOnesLike(){
+        fail(); //JVM crash
+
+        Nd4j.getRandom().setSeed(12345);
+
+        List<int[]> shapes = Arrays.asList(new int[0], new int[]{3}, new int[]{3,4}, new int[]{3,4,5});
+        List<String> failed = new ArrayList<>();
+
+        for(boolean zeros : new boolean[]{/*true,*/ false}) {
+            for (int[] shape : shapes) {
+                SameDiff sd = SameDiff.create();
+                INDArray arr;
+                if(shape.length > 0){
+                    arr = Nd4j.rand(shape);
+                } else {
+                    arr = Nd4j.trueScalar(Nd4j.rand(new int[]{1,1}).getDouble(0));
+                }
+                SDVariable var = sd.var("in", arr);
+                SDVariable xLike;
+                if(zeros) {
+                    xLike = sd.zerosLike(var);
+                } else {
+                    xLike = sd.onesLike(var);
+                }
+
+                SDVariable loss;
+                if (shape.length > 0) {
+                    loss = xLike.std(true);
+                } else {
+                    loss = xLike.mean();
+                }
+
+                String err = OpValidation.validate(new TestCase(sd)
+                        .expected(xLike, (zeros ? Nd4j.zeros(shape) : Nd4j.ones(shape))), true);
+                if(err != null){
+                    failed.add(err);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testZerosLikeOp(){
+
+        INDArray arr = Nd4j.trueScalar(1.0);
+        INDArray out = Nd4j.trueScalar(-1);
+        INDArray exp = Nd4j.trueScalar(0);
+
+        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("zeros_like")
+                .addInputs(arr)
+                .addOutputs(out)
+                .build());
+        op.expectedOutput(0, exp);
+
+        String err = OpValidation.validate(op);
+        assertNull(err);
+    }
+
+
+    @Test
+    public void testConfusionMatrix(){
+
+        for(boolean withMax : new boolean[]{true, false}){
+
+            SameDiff sd = SameDiff.create();
+
+            SDVariable labels = sd.var("labels", Nd4j.trueVector(new double[]{1, 2, 4}));
+            SDVariable predictions = sd.var("predictions", Nd4j.trueVector(new double[]{2, 2, 4}));
+
+            INDArray exp = Nd4j.create(new double[][]{
+                    {0, 0, 0, 0, 0},
+                    {0, 0, 1, 0, 0},
+                    {0, 0, 1, 0, 0},
+                    {0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 1}});
+
+            SDVariable confMatrix;
+            if(withMax){
+                confMatrix = sd.confusionMatrix(labels, predictions, 5);
+            } else {
+                confMatrix = sd.confusionMatrix(labels, predictions);
+            }
+
+            SDVariable loss = confMatrix.std(true);
+
+
+            String err = OpValidation.validate(new TestCase(sd)
+                    .gradientCheck(false)   //Not gradient checkable
+                    .expected(confMatrix, exp));
+
+            assertNull(err);
+        }
+
     }
 }

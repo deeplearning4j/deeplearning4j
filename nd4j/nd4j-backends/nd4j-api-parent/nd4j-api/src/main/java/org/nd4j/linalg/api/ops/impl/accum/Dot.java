@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -31,11 +32,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Dot extends BaseAccumulation {
-    public Dot(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
-    }
 
-    public Dot(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public Dot(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -67,12 +65,6 @@ public class Dot extends BaseAccumulation {
         return "dot";
     }
 
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
-
     @Override
     public String onnxName() {
         return "matmul";
@@ -86,5 +78,11 @@ public class Dot extends BaseAccumulation {
     @Override
     public Type getOpType() {
         return Type.REDUCE3;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        //TODO KEEP DIMS
+        return Arrays.asList(f().dotBp(arg(0), arg(1), f1.get(0), false, dimensions));
     }
 }

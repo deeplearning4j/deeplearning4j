@@ -273,6 +273,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.var(this);
     }
 
+    public SDVariable assign(Number value){
+        return sameDiff.scalarSet(this, value);
+    }
 
     /**
      * Negate op
@@ -996,6 +999,95 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         result.setVarName(varName);
         return result;
     }
+
+    public SDVariable sum(int... dimensions){
+        return sum(null, dimensions);
+    }
+
+    public SDVariable sum(String name, int... dimensions){
+        return sameDiff.sum(name, this, dimensions);
+    }
+
+    public SDVariable mean(int... dimensions){
+        return mean(null, dimensions);
+    }
+
+    public SDVariable mean(String name, int... dimensions){
+        return sameDiff.mean(name, this, dimensions);
+    }
+
+    public SDVariable std(boolean biasCorrected, int... dimensions){
+        return std(null, biasCorrected, dimensions);
+    }
+
+    public SDVariable std(String name, boolean biasCorrected, int... dimensions){
+        return sameDiff.standardDeviation(name, this, biasCorrected, dimensions);
+    }
+
+    public SDVariable prod(int... dimensions){
+        return prod(null, dimensions);
+    }
+
+    public SDVariable prod(String name, int... dimensions){
+        return sameDiff.prod(name, this, dimensions);
+    }
+
+    public SDVariable min(int... dimensions){
+        return min(null, dimensions);
+    }
+
+    public SDVariable min(String name, int... dimensions){
+        return sameDiff.min(name, this, dimensions);
+    }
+
+    public SDVariable max(int... dimensions){
+        return max(null, dimensions);
+    }
+
+    public SDVariable max(String name, int... dimensions){
+        return sameDiff.max(name, this, dimensions);
+    }
+
+    public SDVariable norm1(int... dimensions){
+        return norm1(null, dimensions);
+    }
+
+    public SDVariable norm1(String name, int... dimensions){
+        return sameDiff.norm1(name, this, dimensions);
+    }
+
+    public SDVariable norm2(int... dimensions){
+        return norm2(null, dimensions);
+    }
+
+    public SDVariable norm2(String name, int... dimensions){
+        return sameDiff.norm2(name, this, dimensions);
+    }
+
+    public SDVariable normmax(int... dimensions){
+        return normmax(null, dimensions);
+    }
+
+    public SDVariable normmax(String name, int... dimensions){
+        return sameDiff.normmax(name, this, dimensions);
+    }
+
+    public SDVariable argmax(int... dimensions){
+        return argmax(null, dimensions);
+    }
+
+    public SDVariable argmax(String name, int... dimensions){
+        return sameDiff.argmax(name, this, dimensions);
+    }
+
+    public SDVariable argmin(int... dimensions){
+        return argmin(null, dimensions);
+    }
+
+    public SDVariable argmin(String name, int... dimensions){
+        return sameDiff.argmin(name, this, dimensions);
+    }
+
 
     public SDVariable setArray(INDArray array){
         sameDiff.associateArrayWithVariable(array, this);

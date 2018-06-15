@@ -20,8 +20,10 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,6 +34,11 @@ import java.util.UUID;
  */
 public class Identity extends BaseDynamicTransformOp {
 
+    public Identity(SameDiff sd, SDVariable input){
+        super(sd, new SDVariable[]{input}, false);
+    }
+
+    public Identity(){ }
 
     @Override
     public String opName() {
@@ -55,8 +62,8 @@ public class Identity extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-
-        return Arrays.asList(sameDiff.one("grad-" + UUID.randomUUID().toString(), i_v.get(0).getShape()));
+        //TODO can we skip the identity here?
+        return Collections.singletonList(sameDiff.identity(i_v.get(0)));
     }
 
 }

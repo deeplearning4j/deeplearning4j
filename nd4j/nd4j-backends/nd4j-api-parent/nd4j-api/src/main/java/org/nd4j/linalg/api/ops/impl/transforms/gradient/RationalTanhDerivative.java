@@ -36,16 +36,8 @@ import java.util.List;
  * @author AlexDBlack
  */
 public class RationalTanhDerivative extends BaseTransformOp {
-    public RationalTanhDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
-
-    public RationalTanhDerivative(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public RationalTanhDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+    public RationalTanhDerivative(SameDiff sameDiff, SDVariable in, SDVariable grad, boolean inPlace) {
+        super(sameDiff, in, grad, inPlace);
     }
 
     public RationalTanhDerivative() {}
