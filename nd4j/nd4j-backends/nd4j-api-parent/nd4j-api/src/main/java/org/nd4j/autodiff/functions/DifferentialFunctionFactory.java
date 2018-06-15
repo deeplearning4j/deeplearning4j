@@ -30,8 +30,12 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
+import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
+import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.api.ops.random.impl.Linspace;
+import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -135,6 +139,19 @@ public class DifferentialFunctionFactory {
     public SDVariable linspace(double lower, double upper, long count){
         return new Linspace(sameDiff(), lower, upper, count).outputVariable();
     }
+
+    public SDVariable randomUniform(double min, double max, SDVariable shape){
+        return new DistributionUniform(sameDiff(), shape, min, max).outputVariable();
+    }
+
+    public SDVariable randomNormal(double mean, double std, SDVariable shape){
+        return new RandomNormal(sameDiff(), shape, mean, std).outputVariable();
+    }
+
+    public SDVariable randomBernoulli(double p, SDVariable shape){
+        return new RandomBernoulli(sameDiff(), shape, p).outputVariable();
+    }
+
 
     /**
      * Local response normalization operation.

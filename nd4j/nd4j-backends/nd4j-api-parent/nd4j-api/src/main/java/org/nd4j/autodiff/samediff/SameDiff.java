@@ -1814,6 +1814,34 @@ public class SameDiff {
         return getFunction("grad").getGradForVariable(var.getVarName());
     }
 
+    public SDVariable randomUniform(double min, double max, SDVariable shape){
+        return randomUniform(null, min, max, shape);
+    }
+
+    public SDVariable randomUniform(String name, double min, double max, SDVariable shape){
+        SDVariable ret = f().randomUniform(min, max, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable randomNormal(double mean, double stddev, SDVariable shape){
+        return randomNormal(null, mean, stddev, shape);
+    }
+
+    public SDVariable randomNormal(String name, double mean, double stddev, SDVariable shape){
+        SDVariable ret = f().randomNormal(mean, stddev, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable randomBernoulli(double p, SDVariable shape){
+        return randomBernoulli(null, p, shape);
+    }
+
+    public SDVariable randomBernoulli(String name, double p, SDVariable shape){
+        SDVariable ret = f().randomBernoulli(p, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
     /**
      * Average pooling 2d operation.
      *

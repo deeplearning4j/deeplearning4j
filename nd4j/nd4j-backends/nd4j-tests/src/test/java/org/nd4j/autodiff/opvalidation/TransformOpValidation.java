@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -42,9 +43,13 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class TransformOpValidation {
+public class TransformOpValidation extends BaseOpValidation {
 
     private DataBuffer.Type initialType;
+
+    public TransformOpValidation(Nd4jBackend backend) {
+        super(backend);
+    }
 
     @Before
     public void before() throws Exception {

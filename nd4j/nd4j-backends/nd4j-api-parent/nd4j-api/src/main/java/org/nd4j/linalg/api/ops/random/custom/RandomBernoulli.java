@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -19,39 +20,23 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class DistributionUniform extends DynamicCustomOp {
-    private double min = 0.0;
-    private double max = 1.0;
+public class RandomBernoulli extends DynamicCustomOp {
+    private double p = 0.0;
 
-    public DistributionUniform() {
+    public RandomBernoulli() {
         //
     }
 
-    public DistributionUniform(SameDiff sd, SDVariable shape, double min, double max){
+    public RandomBernoulli(SameDiff sd, SDVariable shape, double p){
         super(null, sd, new SDVariable[]{shape});
-        Preconditions.checkState(min <= max, "Minimum (%s) must be <= max (%s)", min, max);
-        addTArgument(min, max);
-    }
-
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-        addArgs();
-    }
-
-    protected void addArgs() {
-        addTArgument(min, max);
+        Preconditions.checkState(p >= 0 && p <= 1.0, "Probability must be between 0 and 1 - got %s", p);
+        this.p = p;
+        addTArgument(p);
     }
 
     @Override
     public String opName() {
-        return "randomuniform";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "RandomUniform";
+        return "random_bernoulli";
     }
 
     @Override
