@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.SimpleRnnParamInitializer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -161,6 +162,9 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     private Pair<INDArray,INDArray> activateHelper(INDArray prevStepOut, boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr){
         assertInputSet(false);
+        Preconditions.checkState(input.shape().length == 3,
+                "3D input expected to RNN layer expected, got " + input.shape().length);
+
         applyDropOutIfNecessary(training, workspaceMgr);
         val m = input.size(0);
         val tsLength = input.size(2);
