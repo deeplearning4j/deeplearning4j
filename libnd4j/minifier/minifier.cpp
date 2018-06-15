@@ -122,23 +122,7 @@ main(int argc, char *argv[]) {
     nd4j_printf("\n","");
 
     std::string output(opt.outputName());
-/*
-    std::string cmdLine("./buildnativeoperations.sh ");
 
-    if (!name_arg.empty()) {
-        cmdline += name_arg;
-    }
-    if (!build_arg.empty()) {
-        cmdline += ' ';
-        cmdline += build_arg;
-    }
-    if (!arch_arg.empty()) {
-        cmdline += ' ';
-        cmdline += arch_arg;
-    }
-//    cmdline+ opts_arg;
-    nd4j_printf("\n============>%s\n", cmdLine.c_str());
-*/
     std::string input("../include/ops/declarable/CustomOperations.h");
 
     if (0 == GraphUtils::runPreprocessor(input.c_str(), output.c_str())) {
