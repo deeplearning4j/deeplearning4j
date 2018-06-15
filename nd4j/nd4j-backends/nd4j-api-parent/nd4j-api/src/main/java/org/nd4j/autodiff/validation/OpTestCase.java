@@ -26,7 +26,7 @@ import java.util.Map;
 public class OpTestCase {
 
     private final DynamicCustomOp op;
-    private Map<Integer, Function<INDArray, String>> testFns = new HashMap<>();
+    private Map<Integer, Function<INDArray, String>> testFns = new LinkedHashMap<>();
     private Map<Integer, long[]> expShapes = new HashMap<>();
 
     public OpTestCase(@NonNull DynamicCustomOp op) {

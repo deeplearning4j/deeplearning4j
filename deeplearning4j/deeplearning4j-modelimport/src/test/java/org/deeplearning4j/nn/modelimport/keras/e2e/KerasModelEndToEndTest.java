@@ -56,6 +56,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -86,6 +87,12 @@ public class KerasModelEndToEndTest {
 
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();
+
+    @Test(expected = FileNotFoundException.class)
+    public void fileNotFoundEndToEnd() throws Exception {
+        String modelPath = "modelimport/keras/examples/foo/bar.h5";
+        importEndModelTest(modelPath, null, true, true, false);
+    }
 
     /**
      * MNIST MLP tests

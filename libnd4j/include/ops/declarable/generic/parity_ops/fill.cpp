@@ -27,7 +27,9 @@ namespace nd4j {
 
             auto result = NDArrayFactory<T>::valueOf(shape, scalar, 'c');
 
-            OVERWRITE_RESULT(result);            
+            OUTPUT_VARIABLE(0)->assign(result);
+            STORE_RESULT(result);
+
 
             return ND4J_STATUS_OK;
         };
@@ -36,7 +38,6 @@ namespace nd4j {
         DECLARE_SHAPE_FN(fill) {
 
             auto shapeArray = INPUT_VARIABLE(0);
-
             const int len = shapeArray->lengthOf();
             Nd4jLong *newShape = nullptr;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), Nd4jLong);            

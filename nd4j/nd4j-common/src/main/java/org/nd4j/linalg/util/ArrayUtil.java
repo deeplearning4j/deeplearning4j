@@ -820,6 +820,16 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static List<Integer> toList(int... ints){
+        if(ints == null){
+            return null;
+        }
+        List<Integer> ret = new ArrayList<>();
+        for (int anInt : ints) {
+            ret.add(anInt);
+        }
+        return ret;
+    }
 
     public static int[] toArray(List<Integer> list) {
         int[] ret = new int[list.size()];

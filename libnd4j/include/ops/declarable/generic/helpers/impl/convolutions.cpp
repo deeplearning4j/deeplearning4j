@@ -1485,8 +1485,6 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
     const Nd4jLong iStep2   = dH*iStride2;
     const Nd4jLong iStep3   = dW*iStride3;    
     const Nd4jLong kProd   = kH*kW;
-    const T iStep2Inv = 1./iStep2;
-    const T iStep3Inv = 1./iStep3;
 
     Nd4jLong hstart, wstart, hend, wend;
     T sum, *pIn;
@@ -1562,7 +1560,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = static_cast<T>(0.);
+                        sum = static_cast<T>(0.f);
                                             
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
@@ -1608,13 +1606,13 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
                         wstart *= iStride3;
                         wend   *= iStride3;
 
-                        sum = static_cast<T>(0.);
+                        sum = static_cast<T>(0.f);
                                                                     
                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                 sum += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
                                 
-                        sum = nd4j::math::nd4j_pow<T>(sum, (T) 1. / extraParam0);
+                        sum = nd4j::math::nd4j_pow<T>(sum, static_cast<T>((T)1.f) / extraParam0);
                                                           
                         out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                     }
@@ -1627,7 +1625,6 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
         throw "";
     }
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -2242,7 +2239,7 @@ void ConvolutionUtils<T>::pooling3dBP(NDArray<T>& input, NDArray<T>& gradO, NDAr
                             hstart = oh * sH - pH;
                             wstart = ow * sW - pW;
                             dend = dstart + kDEff;
-                            hend = hstart + kHEff;
+                            hend = hstart + kHEff; 
                             wend = wstart + kWEff;
 
                             if(dstart < 0)
