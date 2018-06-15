@@ -13,7 +13,7 @@ namespace helpers {
 template <typename T>
 void _im2col(nd4j::graph::LaunchContext& context, T *col, T *im, Nd4jLong *colShape, Nd4jLong *imShape, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, T zeroPadVal) {
        
-    T extraParams[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW};
+    T extraParams[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW, (T)isSameMode, zeroPadVal};
 
     functions::transform::Transform<T>::template exec<simdOps::Im2col<T>>(im, imShape, col, colShape, extraParams, nullptr, nullptr);    
 }

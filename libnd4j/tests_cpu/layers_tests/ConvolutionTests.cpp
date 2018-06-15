@@ -2347,5 +2347,6 @@ TEST_F(ConvolutionTests, maxpool_test6) {
     delete results;
 }
 
+
 #endif //LIBND4J_CONVOLUTIONTESTS_H
 
