@@ -6,24 +6,79 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.TestDropout;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.Triple;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestRnnLayers extends BaseDL4JTest {
+
+    @Test
+    public void testTimeStepIs3Dimensional() {
+
+        int nIn = 12;
+        int nOut = 3;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new NoOp())
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(new SimpleRnn.Builder().nIn(nIn).nOut(3).build())
+                .layer(new LSTM.Builder().nIn(3).nOut(5).build())
+                .layer(new RnnOutputLayer.Builder().nOut(nOut).build())
+                .build();
+
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        org.deeplearning4j.nn.layers.recurrent.SimpleRnn simpleRnn =
+                (org.deeplearning4j.nn.layers.recurrent.SimpleRnn) net.getLayer(0);
+
+        INDArray rnnInput3d = Nd4j.create(10, 12, 1);
+        INDArray simpleOut = simpleRnn.rnnTimeStep(rnnInput3d, LayerWorkspaceMgr.noWorkspaces());
+        assertTrue(Arrays.equals(simpleOut.shape(), new long[] {10, 3, 1}));
+
+        INDArray rnnInput2d = Nd4j.create(10, 12);
+        try {
+            simpleRnn.rnnTimeStep(rnnInput2d, LayerWorkspaceMgr.noWorkspaces());
+        } catch (IllegalStateException e) {
+            assertTrue(e.getMessage().equals("3D input expected to RNN layer expected, got 2"));
+        }
+
+        org.deeplearning4j.nn.layers.recurrent.LSTM lstm =
+                (org.deeplearning4j.nn.layers.recurrent.LSTM) net.getLayer(1);
+
+        INDArray lstmInput3d = Nd4j.create(10, 3, 1);
+        INDArray lstmOut = lstm.rnnTimeStep(lstmInput3d, LayerWorkspaceMgr.noWorkspaces());
+        assertTrue(Arrays.equals(lstmOut.shape(), new long[] {10, 5, 1}));
+
+        INDArray lstmInput2d = Nd4j.create(10, 3);
+        try {
+            lstm.rnnTimeStep(lstmInput2d, LayerWorkspaceMgr.noWorkspaces());
+        } catch (IllegalStateException e) {
+            assertTrue(e.getMessage().equals("3D input expected to RNN layer expected, got 2"));
+        }
+
+
+    }
 
     @Test
     public void testDropoutRecurrentLayers(){
