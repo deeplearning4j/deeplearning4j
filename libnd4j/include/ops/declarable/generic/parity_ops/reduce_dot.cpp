@@ -1,7 +1,7 @@
 //
 // Created by george@skymind.io on 6/1/2018.
 //
-
+#include <ops/declarable/helpers/reduce_dot.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -35,20 +35,7 @@ namespace ops {
             }
             else {
                 auto axes = *block.getIArguments();
-//                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
-                std::vector<int> dimensions; //(input->rankOf() - axes.size());
-                for (Nd4jLong e = 0; e < inputX->rankOf(); e++) {
-                    if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
-                        dimensions.emplace_back(e);
-                    }
-                }
-                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
-                std::unique_ptr<ResultSet<T>> yList(NDArrayFactory<T>::allTensorsAlongDimension(inputY, dimensions));
-                //output->
-                for (Nd4jLong e = 0; e < outList->size(); ++e) {
-                    outList->at(e)->assign(epsilon);
-                    outList->at(e)->template applyPairwiseTransform<simdOps::Multiply<T>>(yList->at(e), outList->at(e), nullptr);
-                }
+                helpers::reduceDotBP(inputX, inputY, epsilon, output, axes);
             }
 
             return ND4J_STATUS_OK;
