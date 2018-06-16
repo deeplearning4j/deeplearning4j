@@ -3239,18 +3239,22 @@ public class SameDiff {
      * @param dimensions
      * @return
      */
-    public SDVariable sum(SDVariable iX,
-                          int... dimensions) {
+    public SDVariable sum(SDVariable iX, int... dimensions) {
         return sum(null, iX, dimensions);
     }
+
+    public SDVariable sum(SDVariable iX, boolean keepDims, int... dimensions) {
+        return sum(null, iX, keepDims, dimensions);
+    }
+
+
 
     /**
      * @param iX
      * @param dimensions
      * @return
      */
-    public SDVariable prod(SDVariable iX,
-                           int... dimensions) {
+    public SDVariable prod(SDVariable iX, int... dimensions) {
         return prod(null, iX, dimensions);
     }
 
@@ -4556,18 +4560,12 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
-
-    /**
-     * @param iX
-     * @return
-     */
-    public SDVariable mean(String name, SDVariable iX) {
-        SDVariable result = functionFactory.mean(iX);
-        return updateVariableNameAndReference(result, name);
+    public SDVariable mean(String name, SDVariable iX, int... dimension) {
+        return mean(name, iX, false, dimension);
     }
 
-    public SDVariable mean(String name, SDVariable iX, int... dimension) {
-        SDVariable result = functionFactory.mean(iX, dimension);
+    public SDVariable mean(String name, SDVariable iX, boolean keepDims, int... dimension) {
+        SDVariable result = functionFactory.mean(iX, keepDims, dimension);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -4580,9 +4578,17 @@ public class SameDiff {
     public SDVariable standardDeviation(String name, SDVariable iX,
                                         boolean biasCorrected,
                                         int... dimensions) {
+        return standardDeviation(name, iX, biasCorrected, false, dimensions);
+    }
+
+    public SDVariable standardDeviation(String name, SDVariable iX,
+                                        boolean biasCorrected,
+                                        boolean keepDims,
+                                        int... dimensions) {
         SDVariable result = functionFactory.std(
                 iX,
                 biasCorrected,
+                keepDims,
                 dimensions);
         return updateVariableNameAndReference(result, name);
     }
@@ -4593,12 +4599,26 @@ public class SameDiff {
      * @param dimensions
      * @return
      */
-    public SDVariable variance(String name, SDVariable iX,
-                               boolean biasCorrected,
-                               int... dimensions) {
-        SDVariable result = functionFactory.variance(iX,
-                biasCorrected,
-                dimensions);
+    public SDVariable variance(String name, SDVariable iX, boolean biasCorrected, int... dimensions) {
+        return variance(name, iX, biasCorrected, false, dimensions);
+    }
+
+    public SDVariable variance(String name, SDVariable iX, boolean biasCorrected, boolean keepDims, int... dimensions) {
+        SDVariable result = functionFactory.variance(iX, biasCorrected, keepDims, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @param iX
+     * @param dimensions
+     * @return
+     */
+    public SDVariable sum(String name, SDVariable iX, int... dimensions) {
+        return sum(name, iX, false, dimensions);
+    }
+
+    public SDVariable sum(String name, SDVariable iX, boolean keepDims, int... dimensions) {
+        SDVariable result = functionFactory.sum(iX, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
 
     }
@@ -4608,21 +4628,12 @@ public class SameDiff {
      * @param dimensions
      * @return
      */
-    public SDVariable sum(String name, SDVariable iX,
-                          int... dimensions) {
-        SDVariable result = functionFactory.sum(iX, dimensions);
-        return updateVariableNameAndReference(result, name);
-
+    public SDVariable prod(String name, SDVariable iX, int... dimensions) {
+        return prod(name, iX, false, dimensions);
     }
 
-    /**
-     * @param iX
-     * @param dimensions
-     * @return
-     */
-    public SDVariable prod(String name, SDVariable iX,
-                           int... dimensions) {
-        SDVariable result = functionFactory.prod(iX, dimensions);
+    public SDVariable prod(String name, SDVariable iX, boolean keepDims, int... dimensions) {
+        SDVariable result = functionFactory.prod(iX, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
 
     }
@@ -4634,7 +4645,11 @@ public class SameDiff {
      * @return
      */
     public SDVariable max(String name, SDVariable iX, int... dimensions) {
-        SDVariable result = functionFactory.max(iX, dimensions);
+        return max(name, iX, false, dimensions);
+    }
+
+    public SDVariable max(String name, SDVariable iX, boolean keepDims, int... dimensions) {
+        SDVariable result = functionFactory.max(iX, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
 
     }
@@ -4645,25 +4660,40 @@ public class SameDiff {
      * @param dimensions
      * @return
      */
-    public SDVariable min(String name, SDVariable iX,
-                          int... dimensions) {
-        SDVariable result = functionFactory.min(iX, dimensions);
+    public SDVariable min(String name, SDVariable iX, int... dimensions) {
+        return min(name, iX, false, dimensions);
+    }
+
+    public SDVariable min(String name, SDVariable iX, boolean keepDims, int... dimensions) {
+        SDVariable result = functionFactory.min(iX, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
 
     }
 
     public SDVariable norm1(String name, SDVariable ix, int... dimensions) {
-        SDVariable result = f().norm1(ix, dimensions);
+        return norm1(name, ix, false, dimensions);
+    }
+
+    public SDVariable norm1(String name, SDVariable ix, boolean keepDims, int... dimensions) {
+        SDVariable result = f().norm1(ix, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     public SDVariable norm2(String name, SDVariable ix, int... dimensions) {
-        SDVariable result = f().norm2(ix, dimensions);
+        return norm2(name, ix, false, dimensions);
+    }
+
+    public SDVariable norm2(String name, SDVariable ix, boolean keepDims, int... dimensions) {
+        SDVariable result = f().norm2(ix, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     public SDVariable normmax(String name, SDVariable ix, int... dimensions) {
-        SDVariable result = f().normmax(ix, dimensions);
+        return normmax(name, ix, false, dimensions);
+    }
+
+    public SDVariable normmax(String name, SDVariable ix, boolean keepDims, int... dimensions) {
+        SDVariable result = f().normmax(ix, keepDims, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 

@@ -121,8 +121,7 @@ public class JaccardDistance extends BaseAccumulation {
         SDVariable jSim = outputVariables()[0].rsub(1.0);   //jaccard similarity = 1 - jaccard distance
         SDVariable min = f().min(larg(), rarg());
         SDVariable max = f().max(larg(), rarg());
-        SDVariable sumMax = f().sum(max, dimensions);
-        SDVariable broadcastableSumMax = f().reductionBroadcastableWithOrigShape(rank, dimensions, sumMax);
+        SDVariable sumMax = f().sum(max, true, dimensions);
         SDVariable broadcastableJSim = f().reductionBroadcastableWithOrigShape(rank, dimensions, jSim);
 
         SDVariable xIsMin = f().eq(min, larg());
@@ -130,8 +129,8 @@ public class JaccardDistance extends BaseAccumulation {
         SDVariable yIsMin = f().eq(min, rarg());
         SDVariable yIsMax = f().eq(max, rarg());
 
-        SDVariable dldx = xIsMax.mul(broadcastableJSim).sub(xIsMin).div(broadcastableSumMax);
-        SDVariable dldy = yIsMax.mul(broadcastableJSim).sub(yIsMin).div(broadcastableSumMax);
+        SDVariable dldx = xIsMax.mul(broadcastableJSim).sub(xIsMin).div(sumMax);
+        SDVariable dldy = yIsMax.mul(broadcastableJSim).sub(yIsMin).div(sumMax);
 
         return Arrays.asList(dldx.mul(f1.get(0)), dldy.mul(f1.get(0)));
     }
