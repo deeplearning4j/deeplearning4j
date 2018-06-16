@@ -44,7 +44,7 @@ TEST_F(PlaygroundTests, LambdaTest_1) {
 
     auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
 
-    nd4j_printf("Lambda 1 time %lld us\n", outerTime / numIterations);
+    // nd4j_printf("Lambda 1 time %lld us\n", outerTime / numIterations);
 }
 
 
@@ -70,7 +70,7 @@ TEST_F(PlaygroundTests, LambdaTest_2) {
 
     auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
 
-    nd4j_printf("Broadcast time %lld us\n", outerTime / numIterations);
+    // nd4j_printf("Broadcast time %lld us\n", outerTime / numIterations);
 }
 
 
@@ -98,7 +98,7 @@ TEST_F(PlaygroundTests, NoCacheTest_1) {
 
     auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
 
-    nd4j_printf("Non-cached time %lld us\n", outerTime / numIterations);
+    // nd4j_printf("Non-cached time %lld us\n", outerTime / numIterations);
 
     for (auto v: pool)
         delete v;
@@ -133,7 +133,7 @@ TEST_F(PlaygroundTests, NoCacheTest_2) {
 
     auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
 
-    nd4j_printf("Non-cached PWT time %lld us\n", outerTime / numIterations);
+    // nd4j_printf("Non-cached PWT time %lld us\n", outerTime / numIterations);
 
     for (auto v: pool1)
         delete v;
@@ -167,7 +167,7 @@ TEST_F(PlaygroundTests, ReductionTest_1) {
     auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeEnd - timeStart).count();
     auto outerTimeMs = std::chrono::duration_cast<std::chrono::milliseconds> (timeEnd - timeStart).count();
 
-    nd4j_printf("Non-cached reduction time avg: %lld ns; Total time: %lld ms;\n", outerTime / 100000, outerTimeMs);
+    // nd4j_printf("Non-cached reduction time avg: %lld ns; Total time: %lld ms;\n", outerTime / 100000, outerTimeMs);
 
     for (auto v: pool1)
         delete v;
@@ -206,7 +206,7 @@ TEST_F(PlaygroundTests, ScalarTest_1) {
     auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeEnd - timeStart).count();
     auto outerTimeMs = std::chrono::duration_cast<std::chrono::milliseconds> (timeEnd - timeStart).count();
 
-    nd4j_printf("Cached scalar time avg: %lld ns; Total time: %lld ms;\n", outerTime / 100000L, outerTimeMs);
+    // nd4j_printf("Cached scalar time avg: %lld ns; Total time: %lld ms;\n", outerTime / 100000L, outerTimeMs);
 
     for (auto v: pool1)
         delete v;
@@ -245,7 +245,7 @@ TEST_F(PlaygroundTests, ScalarTest_2) {
     auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeEnd - timeStart).count();
     auto outerTimeMs = std::chrono::duration_cast<std::chrono::milliseconds> (timeEnd - timeStart).count();
 
-    nd4j_printf("Cached manual scalar time avg: %lld ns; Total time: %lld ms;\n", outerTime / 100000, outerTimeMs);
+    // nd4j_printf("Cached manual scalar time avg: %lld ns; Total time: %lld ms;\n", outerTime / 100000, outerTimeMs);
 
     for (auto v: pool1)
         delete v;
@@ -290,7 +290,7 @@ TEST_F(PlaygroundTests, Test_Profile_1) {
     nodeC->setPreparationTime(129);
     nodeC->setExecutionTime(12983);
 
-    prof.printOut();
+    // prof.printOut();
 }
 
 
@@ -299,7 +299,7 @@ TEST_F(PlaygroundTests, Test_Profile_2) {
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
 
     auto profile = GraphProfilingHelper<float>::profile(graph, 2);
-    profile->printOut();
+    // profile->printOut();
 
     delete graph;
     delete profile;
@@ -329,7 +329,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     auto timeEnd = std::chrono::system_clock::now();
     auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
 
-    outputPermuted.printShapeInfo("permuted shape");
+    // outputPermuted.printShapeInfo("permuted shape");
 
     auto permStart = std::chrono::system_clock::now();
 
@@ -344,7 +344,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
 
     auto legacyStart = std::chrono::system_clock::now();
 
-    float extra[] = {(float)kH, (float)kW, (float)sH, (float)sW, (float)pH, (float)pW, (float)dH, (float)dW, 0.};
+    float extra[] = {(float)kH, (float)kW, (float)sH, (float)sW, (float)pH, (float)pW, (float)dH, (float)dW, 0.f, 0.f};
     for (int e = 0; e < iterations; e++) {
         input.template applyTransform<simdOps::Im2col<float>>(&output, extra);
     }
@@ -395,12 +395,12 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     auto javaPermEnd = std::chrono::system_clock::now();
     auto javaPermTime = std::chrono::duration_cast<std::chrono::microseconds> (javaPermEnd - javaPermStart).count();
 
-    nd4j_printf("New time: %lld us;\n", outerTime / iterations);
-    nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);
-    nd4j_printf("Legacy time: %lld us;\n", legacyTime / iterations);
-    nd4j_printf("Legacy Permuted time: %lld us;\n", legacyPermTime / iterations);
-    nd4j_printf("Java time: %lld us;\n", javaTime / iterations);
-    nd4j_printf("Java Permuted time: %lld us;\n", javaPermTime / iterations);
+    // nd4j_printf("New time: %lld us;\n", outerTime / iterations);
+    // nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);
+    // nd4j_printf("Legacy time: %lld us;\n", legacyTime / iterations);
+    // nd4j_printf("Legacy Permuted time: %lld us;\n", legacyPermTime / iterations);
+    // nd4j_printf("Java time: %lld us;\n", javaTime / iterations);
+    // nd4j_printf("Java Permuted time: %lld us;\n", javaPermTime / iterations);
 }
 
 TEST_F(PlaygroundTests, Test_Im2Col_2) {
@@ -466,8 +466,8 @@ TEST_F(PlaygroundTests, Test_Col2Im_1) {
     auto permEnd = std::chrono::system_clock::now();
     auto permTime = std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count();
 
-    nd4j_printf("C-order  time: %lld us;\n", outerTime / iterations);
-    nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);    
+    // nd4j_printf("C-order  time: %lld us;\n", outerTime / iterations);
+    // nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);    
 }
 
 TEST_F(PlaygroundTests, Test_Im2Col_3) {
@@ -512,8 +512,8 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
     auto permEnd = std::chrono::system_clock::now();
     auto permTime = std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count();
 
-    nd4j_printf("C-order  time: %lld us;\n", outerTime / iterations);
-    nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);    
+    // nd4j_printf("C-order  time: %lld us;\n", outerTime / iterations);
+    // nd4j_printf("Permuted time: %lld us;\n", permTime / iterations);    
 }
 
 
@@ -527,7 +527,7 @@ TEST_F(PlaygroundTests, ndarray_tile_test1) {
     NDArray<float> tiled = x.tile({2,2,2});
     auto timeEnd = std::chrono::system_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
-    nd4j_printf("c-order time: %d;\n", time);
+    // nd4j_printf("c-order time: %d;\n", time);
     
     ASSERT_TRUE(tiled.isSameShape(&exp)); 
 }
@@ -543,7 +543,7 @@ TEST_F(PlaygroundTests, ndarray_tile_test2) {
     NDArray<float> tiled = x.tile({2,2,2});
     auto timeEnd = std::chrono::system_clock::now();
     auto time = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
-    nd4j_printf("f-order time: %d;\n", time);
+    // nd4j_printf("f-order time: %d;\n", time);
     
     ASSERT_TRUE(tiled.isSameShape(&exp)); 
 }

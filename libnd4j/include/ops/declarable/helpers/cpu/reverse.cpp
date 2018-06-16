@@ -180,7 +180,7 @@ void reverseSequence(const NDArray<T>* input, const NDArray<T>* seqLengths, NDAr
         ResultSet<T>* inSubArrsSet  = NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions);
         ResultSet<T>* outSubArrsSet = NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions);
 
-#pragma omp parallel for schedule(guided)  //if(inSubArrsSet->size() > Environment::getInstance()->elementwiseThreshold()) 
+// #pragma omp parallel for schedule(guided)  if(inSubArrsSet->size() > Environment::getInstance()->elementwiseThreshold()) 
         for(int i = 0; i < inSubArrsSet->size(); ++i) {
 
             int numOfElemsToReverse = (*seqLengths)(i);

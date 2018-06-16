@@ -1933,7 +1933,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -1977,7 +1977,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test2) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -2021,7 +2021,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test3) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -2065,7 +2065,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test4) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -2109,7 +2109,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test5) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -2180,7 +2180,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_test2) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -2223,7 +2223,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_test3) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -3462,7 +3462,7 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
 
     auto array = result->at(0);
 
-    array->printShapeInfo("z");
+    // array->printShapeInfo("z");
 
     ASSERT_TRUE(exp.isSameShape(array));
     ASSERT_TRUE(exp.equalsTo(array));

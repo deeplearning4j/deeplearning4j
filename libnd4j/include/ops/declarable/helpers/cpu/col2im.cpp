@@ -12,7 +12,7 @@ namespace helpers {
 template <typename T>
 void _col2im(nd4j::graph::LaunchContext& context, T *imBuff, T *colBuff, Nd4jLong *imShapeBuffer, Nd4jLong *colShapeBuffer, int sH, int sW, int pH, int pW, int iH, int iW, int dH, int dW) {
 
-    T extraParams[] = {(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW};     
+    T extraParams[] = {(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW};         
     functions::transform::Transform<T>::template exec<simdOps::Col2Im<T>>(colBuff, colShapeBuffer, imBuff, imShapeBuffer, extraParams, nullptr, nullptr);    
 }
 

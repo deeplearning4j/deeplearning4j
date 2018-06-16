@@ -6676,7 +6676,7 @@ Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphS
         // we should check scope existence in GraphState/Graph
         int scopeId = (int) scopes[e];
         if (!state->hasScope(scopeId)) {
-            nd4j_printf("execCustomOpWithScope: referenced scope [%i] doesn't exist\n", scopeId);
+            // nd4j_printf("execCustomOpWithScope: referenced scope [%i] doesn't exist\n", scopeId);
             return Status::THROW();
         }
         node.pickInput(scopeId, 0);

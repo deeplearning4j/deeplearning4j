@@ -138,7 +138,7 @@ TEST_F(TadTests, TadEdgeCase_2) {
 
     auto tad = array.tensorAlongDimension(0, {1});
 
-    tad->printShapeInfo("TAD shape");
+    // tad->printShapeInfo("TAD shape"); 
     ASSERT_EQ(3, tad->lengthOf());
 
     delete tad;

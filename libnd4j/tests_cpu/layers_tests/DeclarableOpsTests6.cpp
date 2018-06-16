@@ -95,8 +95,8 @@ TEST_F(DeclarableOpsTests6, Test_gatherNd_Edge_1) {
 
     auto z = result->at(0);
 
-    z->printIndexedBuffer();
-    z->printShapeInfo("z shape");
+    //z->printIndexedBuffer();
+    //z->printShapeInfo("z shape");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -260,8 +260,8 @@ TEST_F(DeclarableOpsTests6, TestDropout_1) {
     auto ress = op.execute({&x, &shape}, {0.2f}, {113});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-    ress->at(0)->printIndexedBuffer("Result is ");
-    x.printIndexedBuffer("Input is");
+    //ress->at(0)->printIndexedBuffer("Result is ");
+    //x.printIndexedBuffer("Input is");
 
     delete ress;
 }
@@ -277,8 +277,8 @@ TEST_F(DeclarableOpsTests6, TestDropout_2) {
     auto ress = op.execute({&x}, {0.4f}, {113});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-    x.printIndexedBuffer("Input is");
-    ress->at(0)->printIndexedBuffer("Result is ");
+    //x.printIndexedBuffer("Input is");
+    //ress->at(0)->printIndexedBuffer("Result is ");
 
     delete ress;
 }
@@ -617,9 +617,9 @@ TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_1) {
 
     auto z = result->at(0);
     auto norm = result->at(1);
-    z->printIndexedBuffer("Output");
-    exp.printIndexedBuffer("Expected");
-    norm->printIndexedBuffer("Norm");
+    //z->printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expected");
+    //norm->printIndexedBuffer("Norm");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -689,9 +689,9 @@ TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_3) {
 
     auto z = result->at(0);
     auto y = result->at(1);
-    z->printIndexedBuffer("Output 1");
-    y->printIndexedBuffer("Output 2");
-    result->at(2)->printIndexedBuffer("Global norm is");
+    //z->printIndexedBuffer("Output 1");
+    //y->printIndexedBuffer("Output 2");
+    //result->at(2)->printIndexedBuffer("Global norm is");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.isSameShape(y));
@@ -714,8 +714,8 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -735,8 +735,8 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_2) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -897,8 +897,8 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_4) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -925,9 +925,9 @@ TEST_F(DeclarableOpsTests6, ReluLayer_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printShapeInfo("Output shape");
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+    // z->printShapeInfo("Output shape");
+    // z->printIndexedBuffer("Output ");
+    // exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

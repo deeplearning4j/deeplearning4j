@@ -140,7 +140,7 @@ namespace functions {
             char resultOrdering = shape::order(resultShapeInfo);
             int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
-            nd4j_logger("Launching scalar: xOrder: %i; zOrder: %i; xEWS: %i\n", xOrdering, resultOrdering, xElementWiseStride);
+            // nd4j_logger("Launching scalar: xOrder: %i; zOrder: %i; xEWS: %i\n", xOrdering, resultOrdering, xElementWiseStride);
 
             if (xElementWiseStride == 1 && shape::elementWiseStride(resultShapeInfo) == 1 && xOrdering == resultOrdering) {
                 transform<OpType>(x, 1, result, 1, scalar, extraParams, shape::length(xShapeInfo));
