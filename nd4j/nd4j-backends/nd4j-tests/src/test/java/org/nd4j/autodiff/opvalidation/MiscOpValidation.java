@@ -212,8 +212,6 @@ public class MiscOpValidation extends BaseOpValidation {
         OpValidationSuite.ignoreFailing();
         //These tests: output size > input sizes
 
-        fail("TEST CRASHES JVM");
-
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
@@ -1040,9 +1038,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testZerosOnesLike(){
-        OpValidationSuite.ignoreFailing();
-        fail(); //JVM crash
-
         Nd4j.getRandom().setSeed(12345);
 
         List<int[]> shapes = Arrays.asList(new int[0], new int[]{3}, new int[]{3,4}, new int[]{3,4,5});

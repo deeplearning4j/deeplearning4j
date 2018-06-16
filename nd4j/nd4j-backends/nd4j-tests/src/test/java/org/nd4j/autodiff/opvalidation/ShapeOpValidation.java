@@ -90,8 +90,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testReshapeGradient() {
-        OpValidationSuite.ignoreFailing();
-        fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         int[] origShape = new int[]{3, 4, 5};
 
         List<String> failed = new ArrayList<>();
@@ -803,8 +801,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testTranspose() {
-        OpValidationSuite.ignoreFailing();
-        fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
         SDVariable x = sameDiff.var("x", arr);
@@ -833,8 +829,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testShape() {
-        OpValidationSuite.ignoreFailing();
-        fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         SameDiff sameDiff = SameDiff.create();
         val shape = new long[]{2, 3};
         SDVariable x = sameDiff.var("x", shape);

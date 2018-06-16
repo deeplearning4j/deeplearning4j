@@ -706,7 +706,6 @@ public class ReductionOpValidation extends BaseOpValidation {
     @Test
     public void testIndexAccum(){
         OpValidationSuite.ignoreFailing();
-        fail(); //JVM crash: https://github.com/deeplearning4j/deeplearning4j/issues/5582
 
         List<String> failed = new ArrayList<>();
         List<int[]> dims = Arrays.asList(new int[]{0}, new int[]{1}, new int[]{0,1}, new int[0]);
