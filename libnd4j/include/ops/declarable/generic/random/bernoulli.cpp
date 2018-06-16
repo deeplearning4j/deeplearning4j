@@ -9,7 +9,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(random_bernoulli, 1, 1, true, 0, 1) {
+        CUSTOM_OP_IMPL(random_bernoulli, 1, 1, true, 1, 0) {
             auto rng = block.getRNG();
 
             if (rng == nullptr)
@@ -18,7 +18,7 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
-            auto f = (T) INT_ARG(0);
+            T f = T_ARG(0);
 
             functions::random::RandomFunction<T>::template execTransform<randomOps::BernoulliDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), &f);
 

@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
+import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.api.ops.random.impl.Linspace;
@@ -150,6 +151,16 @@ public class DifferentialFunctionFactory {
 
     public SDVariable randomBernoulli(double p, SDVariable shape){
         return new RandomBernoulli(sameDiff(), shape, p).outputVariable();
+    }
+
+    /**
+     * Exponential distribution: P(x) = lambda * exp(-lambda * x)
+     *
+     * @param lambda Must be > 0
+     * @param shape  Shape of the output
+     */
+    public SDVariable randomExponential(double lambda, SDVariable shape) {
+        return new RandomExponential(sameDiff(), shape, lambda).outputVariable();
     }
 
 

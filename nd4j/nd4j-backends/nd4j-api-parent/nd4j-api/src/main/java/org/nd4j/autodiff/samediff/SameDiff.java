@@ -1841,6 +1841,28 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * Exponential distribution: P(x) = lambda * exp(-lambda * x)
+     *
+     * @param lambda Must be > 0
+     * @param shape  Shape of the output
+     */
+    public SDVariable randomExponential(double lambda, SDVariable shape) {
+        return randomExponential(null, lambda, shape);
+    }
+
+    /**
+     * Exponential distribution: P(x) = lambda * exp(-lambda * x)
+     *
+     * @param name   Name of the output variable
+     * @param lambda Must be > 0
+     * @param shape  Shape of the output
+     */
+    public SDVariable randomExponential(String name, double lambda, SDVariable shape) {
+        SDVariable ret = f().randomExponential(lambda, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
 
     /**
      * Average pooling 2d operation.

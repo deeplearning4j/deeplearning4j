@@ -9,8 +9,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 /**
- * This op is a wrapper for RandomNormal Op
- * @author raver119@gmail.com
+ * Random normal distribution
+ *
+ * @author Alex Black
  */
 public class RandomNormal extends DynamicCustomOp {
 
@@ -27,7 +28,6 @@ public class RandomNormal extends DynamicCustomOp {
         this.stdev = stdev;
 
         addTArgument(mean, stdev);
-        throw new UnsupportedOperationException("Disabled pending TF import fix (duplicate names)");
     }
 
     @Override
