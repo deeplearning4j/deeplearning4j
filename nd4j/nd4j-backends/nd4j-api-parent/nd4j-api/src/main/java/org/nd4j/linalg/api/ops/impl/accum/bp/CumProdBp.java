@@ -16,16 +16,18 @@ public class CumProdBp extends BaseReductionBp {
     private boolean exclusive;
     private boolean reverse;
 
-    public CumProdBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean exclusive, boolean reverse, int... dimensions) {
-        super(sameDiff, origInput, gradAtOutput, false, dimensions);
+    public CumProdBp(SameDiff sameDiff, SDVariable origInput, SDVariable axis, SDVariable gradAtOutput, boolean exclusive, boolean reverse) {
+        super(sameDiff, origInput, gradAtOutput, false);
         this.exclusive = exclusive;
         this.reverse = reverse;
+        addArgs();
     }
 
-    public CumProdBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean exclusive, boolean reverse, int... dimensions){
-        super(origInput, gradAtOutput, output, false, dimensions);
+    public CumProdBp(INDArray origInput, INDArray axis, INDArray gradAtOutput, INDArray output, boolean exclusive, boolean reverse){
+        super(origInput, gradAtOutput, output, false);
         this.exclusive = exclusive;
         this.reverse = reverse;
+        addArgs();
     }
 
     public CumProdBp(){}

@@ -3458,21 +3458,21 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
-    public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... dimensions) {
-        return cumsum(null, in, exclusive, reverse, dimensions);
+    public SDVariable cumsum(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
+        return cumsum(null, in, axis, exclusive, reverse);
     }
 
-    public SDVariable cumsum(String name, SDVariable in, boolean exclusive, boolean reverse, int... dimensions) {
-        SDVariable ret = f().cumsum(in, exclusive, reverse, dimensions);
+    public SDVariable cumsum(String name, SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
+        SDVariable ret = f().cumsum(in, axis, exclusive, reverse);
         return updateVariableNameAndReference(ret, name);
     }
 
-    public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... dimensions) {
-        return cumprod(null, in, exclusive, reverse, dimensions);
+    public SDVariable cumprod(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
+        return cumprod(null, in, axis, exclusive, reverse);
     }
 
-    public SDVariable cumprod(String name, SDVariable in, boolean exclusive, boolean reverse, int... dimensions) {
-        SDVariable ret = f().cumprod(in, exclusive, reverse, dimensions);
+    public SDVariable cumprod(String name, SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
+        SDVariable ret = f().cumprod(in, axis, exclusive, reverse);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -3490,13 +3490,11 @@ public class SameDiff {
      * @param shape
      * @return
      */
-    public SDVariable reshape(SDVariable iX,
-                              int... shape) {
+    public SDVariable reshape(SDVariable iX, int... shape) {
         return reshape(null, iX, shape);
     }
 
-    public SDVariable reshape(SDVariable iX,
-                              SDVariable shape) {
+    public SDVariable reshape(SDVariable iX, SDVariable shape) {
         return reshape(null, iX, shape);
     }
 

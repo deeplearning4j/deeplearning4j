@@ -17,6 +17,11 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.accum.CumProd;
+import org.nd4j.linalg.api.ops.impl.accum.CumSum;
+import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
+import org.nd4j.linalg.api.ops.impl.transforms.Fill;
+import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -617,14 +622,10 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testFillOp(){
 
-        INDArray ia = Nd4j.create(new double[]{2,2});
+        INDArray ia = Nd4j.trueVector(new double[]{2,2});
         double value = 42;
         INDArray out = Nd4j.create(2,2);
-        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("fill")
-                .addInputs(ia)
-                .addFloatingPointArguments(value)
-                .addOutputs(out)
-                .build());
+        OpTestCase op = new OpTestCase(new Fill(ia, out, value));
         INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42);
 
         op.expectedOutput(0, expOut);
@@ -653,24 +654,22 @@ public class MiscOpValidation extends BaseOpValidation {
 
         INDArray out = Nd4j.createUninitialized(arr.shape());
 
-        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("clipbynorm")
-                .addInputs(arr)
-                .addOutputs(out)
-                .addFloatingPointArguments(1.0)
-                .build());
-
         INDArray expNorm2 = Nd4j.create(new double[]{1.0, 1.0, norm2_1.getDouble(2)}, new int[]{3,1});
 
         INDArray expOut = arr.divColumnVector(norm2_1).muliColumnVector(expNorm2);
-        op.expectedOutput(0, expOut);
 
-        System.out.println("Input");
-        System.out.println(arr.shapeInfoToString());
-        System.out.println(Arrays.toString(arr.data().asFloat()));
 
-        System.out.println("Expected");
-        System.out.println(expOut.shapeInfoToString());
-        System.out.println(Arrays.toString(expOut.data().asFloat()));
+        OpTestCase op = new OpTestCase(
+                new ClipByNorm(arr, out, 1.0))
+                .expectedOutput(0, expOut);
+
+//        System.out.println("Input");
+//        System.out.println(arr.shapeInfoToString());
+//        System.out.println(Arrays.toString(arr.data().asFloat()));
+//
+//        System.out.println("Expected");
+//        System.out.println(expOut.shapeInfoToString());
+//        System.out.println(Arrays.toString(expOut.data().asFloat()));
 
         String err = OpValidation.validate(op);
         assertNull(err);
@@ -695,19 +694,14 @@ public class MiscOpValidation extends BaseOpValidation {
 
         INDArray out = Nd4j.create(arr.shape());
 
-        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("clipbynorm")
-                .addInputs(arr)
-                .addOutputs(out)
-                .addFloatingPointArguments(2.0)     //Clip to norm2 of 2.0
-                .addIntegerArguments(0)             //along dimension 0
-                .build());
-
         INDArray norm2_0b = out.norm2(0);
         INDArray exp = Nd4j.create(new double[]{2.0, 2.0, 2.0, 1.9}, new int[]{1, 4});  //Post clip norm2s along dimension 0
 
+        OpTestCase op = new OpTestCase(//Clip to norm2 of 2.0, along dimension 0
+                new ClipByNorm(arr, out, 2.0, 0))
+                .expectedOutput(0, exp);
 
-
-        assertEquals(exp, norm2_0b);
+        assertNull(OpValidation.validate(op));
     }
 
     @Test
@@ -753,11 +747,7 @@ public class MiscOpValidation extends BaseOpValidation {
                     String msg = order + ", exclusive=" + exclusive + ", reverse=" + reverse;
 
                     INDArray out = Nd4j.create(3, 5);
-                    OpTestCase op = new OpTestCase(DynamicCustomOp.builder("cumsum")
-                            .addInputs(expFF, axisArg)
-                            .addOutputs(out)
-                            .addIntegerArguments(exclusive ? 1 : 0, reverse ? 1 : 0)
-                            .build());
+                    OpTestCase op = new OpTestCase(new CumSum(arr, axisArg, out, exclusive, reverse));
 
                     if(!exclusive && !reverse){
                         op.expectedOutput(0, expFF);
@@ -824,11 +814,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 for (boolean reverse : new boolean[]{false, true}) {
 
                     INDArray out = Nd4j.create(3, 5);
-                    OpTestCase op = new OpTestCase(DynamicCustomOp.builder("cumprod")
-                            .addInputs(expFF, axisArg)
-                            .addOutputs(out)
-                            .addIntegerArguments(exclusive ? 1 : 0, reverse ? 1 : 0)
-                            .build());
+                    OpTestCase op = new OpTestCase(new CumProd(arr, axisArg, out, exclusive, reverse));
                     String msg = order + ", exclusive=" + exclusive + ", reverse=" + reverse;
 
                     if(!exclusive && !reverse){
@@ -1026,8 +1012,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
         INDArray i = Nd4j.create(5,5);
 
-        CustomOp op = DynamicCustomOp.builder("diag_part")
-                .addInputs(i).build();
+        CustomOp op = new DiagPart(i, null);
 
         List<long[]> outShape = Nd4j.getExecutioner().calculateOutputShape(op);
 

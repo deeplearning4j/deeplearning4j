@@ -11,10 +11,7 @@ import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
-import org.nd4j.linalg.api.ops.impl.accum.bp.StandardDeviationBp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
@@ -30,7 +27,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 
 @Slf4j
 @RunWith(Parameterized.class)
@@ -647,11 +643,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         INDArray outMean = Nd4j.createUninitialized(new long[]{4});
         INDArray outStd = Nd4j.createUninitialized(new long[]{4});
 
-        OpTestCase tc = new OpTestCase(DynamicCustomOp.builder("moments")
-                .addOutputs(outMean, outStd)
-                .addInputs(input)
-                .addIntegerArguments(axes)
-                .build());
+        OpTestCase tc = new OpTestCase(new Moments(input, outMean, outStd, axes));
 
         tc.expectedOutput(0, input.mean(axes).reshape(4));
         tc.expectedOutput(1, input.std(axes).reshape(4));
