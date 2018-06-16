@@ -438,7 +438,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable std(SDVariable i_x, boolean biasCorrected, boolean keepDims, int... dimensions) {
-        return new ReduceStandardDeviation(sameDiff(), i_x, keepDims, biasCorrected, dimensions).outputVariable();
+        return new ReduceStandardDeviation(sameDiff(), i_x, biasCorrected, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable stdBp(SDVariable stdInput, SDVariable gradient, boolean biasCorrected, boolean keepDims, int... dimensions){
@@ -774,7 +774,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable exp(SDVariable iX) {
-        return new Exp(sameDiff(), iX, null).outputVariable();
+        return new Exp(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable expm1(SDVariable iX) {

@@ -8,24 +8,18 @@ import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Slf4j
 public class RandomOpValidation extends BaseOpValidation {

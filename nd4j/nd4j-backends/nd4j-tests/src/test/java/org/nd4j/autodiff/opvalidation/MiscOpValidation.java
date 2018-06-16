@@ -1,10 +1,7 @@
 package org.nd4j.autodiff.opvalidation;
 
-import lombok.Builder;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -20,12 +17,13 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.CumProd;
 import org.nd4j.linalg.api.ops.impl.accum.CumSum;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
+import org.nd4j.linalg.api.ops.impl.shape.OneHot;
+import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
 import org.nd4j.linalg.api.ops.impl.transforms.Fill;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
-import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -34,7 +32,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Slf4j
 public class MiscOpValidation extends BaseOpValidation {
@@ -634,9 +631,7 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
     @Test
-    public void testClipByNorm(){
-        OpValidationSuite.ignoreFailing();
-
+    public void testClipByNorm1(){
         //Expected: if array.norm2(1) is less than 1.0, not modified
         //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
 
@@ -660,7 +655,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
 
         OpTestCase op = new OpTestCase(
-                new ClipByNorm(arr, out, 1.0))
+                new ClipByNorm(arr, out, 1.0, 1))
                 .expectedOutput(0, expOut);
 
 //        System.out.println("Input");
@@ -677,7 +672,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testClipByNorm0(){
-        OpValidationSuite.ignoreFailing();
         //Expected: if array.norm2(1) is less than 1.0, not modified
         //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
 
@@ -695,7 +689,8 @@ public class MiscOpValidation extends BaseOpValidation {
         INDArray out = Nd4j.create(arr.shape());
 
         INDArray norm2_0b = out.norm2(0);
-        INDArray exp = Nd4j.create(new double[]{2.0, 2.0, 2.0, 1.9}, new int[]{1, 4});  //Post clip norm2s along dimension 0
+        INDArray expNorm = Nd4j.create(new double[]{2.0, 2.0, 2.0, 1.9}, new int[]{1, 4});  //Post clip norm2s along dimension 0
+        INDArray exp = arr.divRowVector(norm2_0b).muliRowVector(expNorm);
 
         OpTestCase op = new OpTestCase(//Clip to norm2 of 2.0, along dimension 0
                 new ClipByNorm(arr, out, 2.0, 0))
@@ -878,11 +873,8 @@ public class MiscOpValidation extends BaseOpValidation {
         //https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/parity_ops/onehot.cpp
 
         for( int axis=-1; axis<=0; axis++ ) {
-            String err = OpValidation.validate(new OpTestCase(DynamicCustomOp.builder("onehot")
-                    .addInputs(Nd4j.trueVector(new double[]{0, 1, 2}))
-                    .addIntegerArguments(3, axis)   //Depth and axis args
-                    .addFloatingPointArguments(1.0, 0.0)    //on/off values
-                    .build())
+            String err = OpValidation.validate(new OpTestCase(new OneHot(Nd4j.trueVector(new double[]{0, 1, 2}),
+                    Nd4j.create(3,3), 3, axis, 1.0, 0.0))
                     .expectedOutput(0, Nd4j.eye(3)));
 
             assertNull(err);
@@ -955,7 +947,6 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(1, shapes.size());
 
         assertArrayEquals(new long[]{2}, shapes.get(0));
-
     }
 
     @Test
@@ -1003,7 +994,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
         INDArray out = sd.execAndEndResult();
         assertEquals(1, out.rank());
-
     }
 
     @Test
@@ -1071,10 +1061,7 @@ public class MiscOpValidation extends BaseOpValidation {
         INDArray out = Nd4j.trueScalar(-1);
         INDArray exp = Nd4j.trueScalar(0);
 
-        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("zeros_like")
-                .addInputs(arr)
-                .addOutputs(out)
-                .build());
+        OpTestCase op = new OpTestCase(new ZerosLike(arr, out));
         op.expectedOutput(0, exp);
 
         String err = OpValidation.validate(op);

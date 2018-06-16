@@ -15,11 +15,13 @@ import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
+import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +36,33 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     public ReductionOpValidation(Nd4jBackend backend) {
         super(backend);
+    }
+
+    @Test
+    public void testStdev(){
+
+        List<String> errors = new ArrayList<>();
+
+        for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(3, 4, 12345)) {
+            for(boolean biasCorrected : new boolean[]{false, true}){
+                SameDiff sd = SameDiff.create();
+                SDVariable var = sd.var("in", p.getFirst());
+                SDVariable stdev = var.std(biasCorrected);
+
+                INDArray expOut = p.getFirst().std(biasCorrected);
+
+                TestCase tc = new TestCase(sd)
+                        .testName(p.getSecond() + " - biasCorrected=" + biasCorrected)
+                        .expected(stdev, expOut)
+                        .gradientCheck(false);
+
+                String err = OpValidation.validate(tc);
+                if(err != null){
+                    errors.add(err);
+                }
+            }
+        }
+        assertEquals(errors.toString(), 0, errors.size());
     }
 
     @Test

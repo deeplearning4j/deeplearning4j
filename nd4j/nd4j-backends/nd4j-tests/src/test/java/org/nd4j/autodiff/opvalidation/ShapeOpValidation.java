@@ -11,10 +11,12 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.Permute;
+import org.nd4j.linalg.api.ops.impl.shape.Transpose;
+import org.nd4j.linalg.api.ops.impl.shape.Unstack;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -27,7 +29,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 @Slf4j
@@ -223,7 +226,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 SDVariable stdev = sd.standardDeviation("out", expand, true);
 
                 INDArray out = sd.execAndEndResult();
-                INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
+                INDArray expOut = in.getArr().std(true);
 
                 assertArrayEquals(expExpandShape, expand.getArr().shape());
                 INDArray expExpand = inArr.dup('c').reshape(expExpandShape);
@@ -238,7 +241,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                 String error = OpValidation.validate(tc);
                 if(error != null){
-                    failed.add(name);
+                    failed.add(error);
                 }
             }
         }
@@ -818,10 +821,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray arr = Nd4j.linspace(1,15, 15).reshape(5,3);
         INDArray out = Nd4j.create(3,5);
 
-        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("transpose")
-                .addInputs(arr)
-                .addOutputs(out)
-                .build());
+        OpTestCase op = new OpTestCase(new Transpose(arr, out));
         INDArray exp = arr.transpose();
         op.expectedOutput(0, exp);
         String err = OpValidation.validate(op);
@@ -861,8 +861,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         INDArray i = Nd4j.linspace(1, 16, 16).reshape(4,4);
 
-        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("diag_part")
-                .addInputs(i).build());
+        OpTestCase op = new OpTestCase(new DiagPart(i, null));
 
         INDArray exp = Nd4j.create(new double[]{1,6,11,16}, new long[]{4});
         op.expectedOutput(0, exp);
@@ -949,11 +948,8 @@ public class ShapeOpValidation extends BaseOpValidation {
 
             INDArray arr = Nd4j.rand(new long[]{1, 1, 1});
 
-            List<long[]> shapes = Nd4j.getExecutioner().calculateOutputShape(DynamicCustomOp.builder("unstack")
-                    .addInputs(arr)
-                    .addIntegerArguments(i)
-                    .build()
-            );
+            List<long[]> shapes = Nd4j.getExecutioner().calculateOutputShape(
+                    new Unstack(arr, null, i));
 
             assertEquals(1, shapes.size());
             assertArrayEquals(new long[]{1, 1}, shapes.get(0));

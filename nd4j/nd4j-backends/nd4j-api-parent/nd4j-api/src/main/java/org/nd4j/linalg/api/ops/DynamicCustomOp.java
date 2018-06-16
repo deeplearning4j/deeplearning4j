@@ -90,7 +90,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         if (outputs != null)
             outputArguments = new ArrayList<>(Arrays.asList(outputs));
         this.opName = opName;
-        this.tArguments = tArguments;
+        if(tArguments == null) {
+            this.tArguments = new ArrayList<>();
+        } else {
+            this.tArguments = tArguments;
+        }
         this.iArguments = new ArrayList<>();
 
         if(iArguments != null) {
@@ -330,7 +334,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public int numIArguments() {
-        return iArguments.size();
+        return iArguments == null ? 0 : iArguments.size();
     }
 
     @Override
@@ -356,7 +360,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public int numTArguments() {
-        return tArguments.size();
+        return tArguments == null ? 0 : tArguments.size();
     }
 
     @Override
