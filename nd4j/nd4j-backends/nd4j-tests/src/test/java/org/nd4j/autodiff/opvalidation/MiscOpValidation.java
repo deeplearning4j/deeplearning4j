@@ -1043,7 +1043,7 @@ public class MiscOpValidation extends BaseOpValidation {
         List<int[]> shapes = Arrays.asList(new int[0], new int[]{3}, new int[]{3,4}, new int[]{3,4,5});
         List<String> failed = new ArrayList<>();
 
-        for(boolean zeros : new boolean[]{/*true,*/ false}) {
+        for(boolean zeros : new boolean[]{true, false}) {
             for (int[] shape : shapes) {
                 SameDiff sd = SameDiff.create();
                 INDArray arr;
@@ -1074,6 +1074,8 @@ public class MiscOpValidation extends BaseOpValidation {
                 }
             }
         }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test

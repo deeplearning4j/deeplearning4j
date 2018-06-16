@@ -11,6 +11,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.shape.Permute;
@@ -842,6 +843,19 @@ public class ShapeOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testSize() {
+        SameDiff sameDiff = SameDiff.create();
+        val shape = new long[]{2, 3};
+        SDVariable x = sameDiff.var("x", shape);
+        SDVariable result = sameDiff.size(x);
+
+        String err = OpValidation.validate(new TestCase(sameDiff)
+                .expected(result, Nd4j.trueScalar(6)));
+
+        assertNull(err);
+    }
+
+    @Test
     public void testDiagShapeFn() {
         OpValidationSuite.ignoreFailing();
 
@@ -1040,6 +1054,63 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable result2 = sameDiff.sequenceMask(lengths, maxLen);
         assertArrayEquals(expected.shape(), result2.eval().shape());
         assertEquals(expected, result2.eval());
+    }
+
+    @Test
+    public void testMeshGrid(){
+
+        List<String> failed = new ArrayList<>();
+
+        for( int rank=2; rank<=4; rank++ ){
+            SameDiff sd = SameDiff.create();
+
+            SDVariable[] arr = new SDVariable[rank];
+            List<String> names = new ArrayList<>();
+            for( int i=0; i<rank; i++ ){
+                INDArray in = Nd4j.linspace(1,3+i, 3+i).reshape(3+i);
+                arr[i] = sd.var("in"+i, in);
+                names.add("meshgrid-" + i);
+            }
+
+            SDVariable[] meshgrid = sd.meshgrid(names, false, arr);
+
+            TestCase tc = new TestCase(sd);
+
+            long[] shape;
+            if(rank == 2){
+                shape = new long[]{3,4};
+            } else if(rank == 3) {
+                shape = new long[]{3,4,5};
+            } else {
+                shape = new long[]{3,4,5,6};
+            }
+            INDArray[] exp = new INDArray[shape.length];    //Nd4j.create(shape);
+            for( int i=0; i<exp.length; i++ ){
+                exp[i] = Nd4j.create(shape);
+                long nTensors = exp[i].tensorssAlongDimension(i);
+                for( long j=0; j<nTensors; j++ ){
+                    INDArray tad = exp[i].tensorAlongDimension((int)j, i);
+                    tad.assign(arr[i].getArr());
+                }
+
+                tc.expected(meshgrid[i], exp[i]);
+            }
+
+            SDVariable loss = null;
+            for( int i=0; i<rank; i++ ){
+                if(i == 0)
+                    loss = meshgrid[i].std(true);
+                else {
+                    loss = loss.add(meshgrid[i].std(true));
+                }
+            }
+
+            String err = OpValidation.validate(tc, true);
+            if(err != null)
+                failed.add(err);
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     //TODO UPDATE TO OPVALIDATION

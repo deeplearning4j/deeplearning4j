@@ -1455,6 +1455,24 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable[] meshgrid(SDVariable... inputs){
+        return meshgrid(null, inputs);
+    }
+
+    public SDVariable[] meshgrid(List<String> names, SDVariable... inputs){
+        return meshgrid(names, true, inputs);
+    }
+
+    public SDVariable[] meshgrid(List<String> names, boolean cartesian, SDVariable... inputs){
+        Preconditions.checkState(names == null || names.size() == inputs.length,
+                "Got %s names but %s inputs", (names == null ? 0 : names.size()), inputs.length);
+        SDVariable[] ret = f().meshgrid(cartesian, inputs);
+        for( int i=0; i<ret.length; i++ ){
+            ret[i] = updateVariableNameAndReference(ret[i], names == null ? null : names.get(i));
+        }
+        return ret;
+    }
+
     /**
      * Variable initialization
      * with a specified {@link WeightInitScheme}
@@ -2852,6 +2870,15 @@ public class SameDiff {
 
     public SDVariable shape(String name, SDVariable df) {
         SDVariable ret = f().shape(df);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable size(SDVariable in){
+        return size(null, in);
+    }
+
+    public SDVariable size(String name, SDVariable in){
+        SDVariable ret = f().size(in);
         return updateVariableNameAndReference(ret, name);
     }
 

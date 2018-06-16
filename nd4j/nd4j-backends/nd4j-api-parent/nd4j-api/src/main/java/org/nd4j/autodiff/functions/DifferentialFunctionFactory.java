@@ -141,6 +141,10 @@ public class DifferentialFunctionFactory {
         return new Linspace(sameDiff(), lower, upper, count).outputVariable();
     }
 
+    public SDVariable[] meshgrid(boolean cartesian, SDVariable... inputs){
+        return new MeshGrid(sameDiff(), cartesian, inputs).outputVariables();
+    }
+
     public SDVariable randomUniform(double min, double max, SDVariable shape){
         return new DistributionUniform(sameDiff(), shape, min, max).outputVariable();
     }
@@ -1446,6 +1450,10 @@ public class DifferentialFunctionFactory {
     public SDVariable shape(SDVariable df) {
         validateDifferentialFunctionsameDiff(df);
         return new org.nd4j.linalg.api.ops.impl.shape.Shape(sameDiff(), df, false).outputVariable();
+    }
+
+    public SDVariable size(SDVariable in){
+        return new Size(sameDiff(), in).outputVariable();
     }
 
     public SDVariable rank(SDVariable df){
