@@ -113,7 +113,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-        for (int i = 0; i < 18; i++) {
+        for (int i = 0; i < 19; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -220,6 +220,13 @@ public class ReductionOpValidation extends BaseOpValidation {
                     INDArray expArr = Transforms.exp(inputArr);
                     double sum = expArr.sumNumber().doubleValue();
                     tc.expected("loss", Nd4j.create(new double[]{Math.log(sum)}));
+                    break;
+                case 18:
+                    inputArr = Nd4j.rand(minibatch, nOut);
+                    name = "sqnorm";
+                    loss = sd.squaredNorm("loss", input);
+                    double norm2 = inputArr.norm2Number().doubleValue();
+                    tc.expected("loss", Nd4j.trueScalar(norm2 * norm2));
                     break;
                 default:
                     throw new RuntimeException();

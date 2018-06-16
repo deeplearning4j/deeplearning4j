@@ -454,6 +454,14 @@ public class DifferentialFunctionFactory {
         return new VarianceBp(sameDiff(), stdInput, gradient, biasCorrected, keepDims, dimensions).outputVariable();
     }
 
+    public SDVariable squaredNorm(SDVariable input, boolean keepDims, int... dimensions){
+        return new ReduceSquaredNorm(sameDiff(), input, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable squaredNormBp(SDVariable preReduceInput, SDVariable gradient, boolean keepDims, int... dimensions){
+        return new SquaredNormBp(sameDiff(), preReduceInput, gradient, keepDims, dimensions).outputVariable();
+    }
+
     public SDVariable entropy(SDVariable in, int... dimensions){
         return new Entropy(sameDiff(), in, dimensions).outputVariable();
     }

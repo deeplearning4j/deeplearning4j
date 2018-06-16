@@ -4688,6 +4688,23 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
+    public SDVariable squaredNorm(SDVariable ix, int... dimensions) {
+        return squaredNorm(null, ix, false, dimensions);
+    }
+
+    public SDVariable squaredNorm(String name, SDVariable ix, int... dimensions) {
+        return squaredNorm(name, ix, false, dimensions);
+    }
+
+    public SDVariable squaredNorm(SDVariable ix, boolean keepDims, int... dimensions) {
+        return squaredNorm(null, ix, keepDims, dimensions);
+    }
+
+    public SDVariable squaredNorm(String name, SDVariable ix, boolean keepDims, int... dimensions) {
+        SDVariable result = f().squaredNorm(ix, keepDims, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
     public SDVariable normmax(String name, SDVariable ix, int... dimensions) {
         return normmax(name, ix, false, dimensions);
     }
