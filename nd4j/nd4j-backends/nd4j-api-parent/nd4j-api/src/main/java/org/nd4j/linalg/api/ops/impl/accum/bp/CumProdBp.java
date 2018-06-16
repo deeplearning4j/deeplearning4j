@@ -41,6 +41,6 @@ public class CumProdBp extends BaseReductionBp {
 
     @Override
     public String opName() {
-        return "reduce_cum_prod_bp";
+        return "cumprod_bp";
     }
 }

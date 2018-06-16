@@ -134,7 +134,7 @@ public class OpValidation {
                 }
 
                 if (error != null) {
-                    return "Variable " + e.getKey() + " failed: " + error;
+                    return testCase.testNameErrMsg() + ": Variable " + e.getKey() + " failed: " + error;
                 }
             }
         }

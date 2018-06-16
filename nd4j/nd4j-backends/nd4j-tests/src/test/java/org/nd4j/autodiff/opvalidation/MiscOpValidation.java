@@ -1128,6 +1128,67 @@ public class MiscOpValidation extends BaseOpValidation {
 
             assertNull(err);
         }
+    }
 
+    @Test
+    public void testIsNonDecreasingIsStrictlyIncr(){
+        List<long[]> shapes = Arrays.asList(null, new long[]{12}, new long[]{1,12}, new long[]{3,4}, new long[]{2,2,3});
+
+        List<String> failed = new ArrayList<>();
+
+        for(boolean nonDec : new boolean[]{true, false}) {
+            for (long[] shape : shapes) {
+                for (boolean expTrue : new boolean[]{true, false}) {
+                    SameDiff sd = SameDiff.create();
+
+                    INDArray inArr;
+                    if (shape == null) {
+                        inArr = Nd4j.trueScalar(1.0);
+                    } else {
+                        inArr = Nd4j.linspace(1, 12, 12).reshape(shape);
+                    }
+
+                    if(nonDec && !expTrue) {
+                        inArr.negi();
+                    }
+                    if(!nonDec && !expTrue && inArr.length() > 0){
+                        inArr.putScalar(inArr.length()-1, inArr.getDouble(inArr.length()-2));
+                    }
+
+                    SDVariable in = sd.var("in", inArr);
+                    SDVariable out;
+                    if(nonDec){
+                        out = sd.isNonDecreasing(in);
+                    } else {
+                        out = sd.isStrictlyIncreasing(in);
+                    }
+
+                    if (shape == null) {
+                        SDVariable loss = out.mean();
+                    } else {
+                        SDVariable loss = out.std(true);
+                    }
+
+                    INDArray exp;
+                    if (expTrue || shape == null) {
+                        exp = Nd4j.trueScalar(1.0);
+                    } else {
+                        exp = Nd4j.trueScalar(0.0);
+                    }
+
+                    String msg = (nonDec ? "isNonDecreasing" : "isStrictlyIncreasing") + " - " +  (shape == null ? "[]" : Arrays.toString(shape)) + " - expected=" + exp;
+                    TestCase tc = new TestCase(sd)
+                            .testName(msg)
+                            .expected(out, exp);
+
+                    String err = OpValidation.validate(tc, true);
+                    if (err != null) {
+                        failed.add(err);
+                    }
+                }
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 }

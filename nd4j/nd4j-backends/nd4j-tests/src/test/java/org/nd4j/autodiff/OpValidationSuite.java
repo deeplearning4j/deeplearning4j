@@ -37,6 +37,7 @@ import static org.junit.Assume.assumeFalse;
         LayerOpValidation.class,
         LossOpValidation.class,
         MiscOpValidation.class,
+        RandomOpValidation.class,
         ReductionBpOpValidation.class,
         ReductionOpValidation.class,
         ShapeOpValidation.class,
