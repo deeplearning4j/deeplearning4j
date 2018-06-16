@@ -1535,9 +1535,10 @@ struct __registratorSynonymDouble_##NAME {\
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }
 #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
+
+#define STORE_RESULT(A)     this->storeResult(block, 0, A)
 #define OVERWRITE_RESULT(A)     this->overwriteResult(block, 0, A)
 #define OVERWRITE_2_RESULTS(A, B)     this->overwriteResult(block, 0, A); this->overwriteResult(block, 1, B)
-#define STORE_RESULT(A)     this->storeResult(block, 0, A)
 #define STORE_2_RESULTS(A, B)   this->storeResult(block, 0, A); this->storeResult(block, 1, B)
 #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
 #define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)

@@ -6530,14 +6530,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
 
@@ -7659,14 +7659,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
 
@@ -8788,14 +8788,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
 
@@ -15293,9 +15293,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }
 // #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
+
+// #define STORE_RESULT(A)     this->storeResult(block, 0, A)
 // #define OVERWRITE_RESULT(A)     this->overwriteResult(block, 0, A)
 // #define OVERWRITE_2_RESULTS(A, B)     this->overwriteResult(block, 0, A); this->overwriteResult(block, 1, B)
-// #define STORE_RESULT(A)     this->storeResult(block, 0, A)
 // #define STORE_2_RESULTS(A, B)   this->storeResult(block, 0, A); this->storeResult(block, 1, B)
 // #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
 // #define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
