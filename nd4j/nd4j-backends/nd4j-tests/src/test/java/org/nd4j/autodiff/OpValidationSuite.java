@@ -74,7 +74,7 @@ public class OpValidationSuite {
         Nd4j.setDataType(initialType);
 
         // Log coverage information
-        OpValidation.logCoverageInformation(true, true);
+        OpValidation.logCoverageInformation(true, true, true);
     }
 
 

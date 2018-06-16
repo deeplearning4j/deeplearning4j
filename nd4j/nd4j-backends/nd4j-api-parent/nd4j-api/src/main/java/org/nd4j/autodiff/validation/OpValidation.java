@@ -8,6 +8,8 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DefaultOpConverter;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.All;
@@ -38,6 +40,7 @@ import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -212,6 +215,9 @@ public class OpValidation {
     // Coverage information
 
     private static List<Class> allOps;
+    private static List<Long> nonMappedLibnd4jOps;
+    private static Map<Long,Pair<List<String>,CustomOpDescriptor>> dedupedCustomOps;
+    private static int countTotalLibnd4jOps;
     private static Map<Class, Integer> gradCheckCoverageCountPerClass = new LinkedHashMap<>();
     private static Map<Class, Integer> fwdPassCoverageCountPerClass = new LinkedHashMap<>();
     private static Map<Class, Integer> singleOpTestCountPerClass = new LinkedHashMap<>();
@@ -281,6 +287,25 @@ public class OpValidation {
             throw new RuntimeException(e);
         }
 
+        //Also, info for libnd4j op mapping:
+        Map<String,CustomOpDescriptor> customOps = Nd4j.getExecutioner().getCustomOperations();
+
+        //De-duplicate custom ops based on hash (due to aliases also being returned)
+        dedupedCustomOps = new HashMap<>();
+        for(Map.Entry<String,CustomOpDescriptor> e : customOps.entrySet()){
+            long hash = e.getValue().getHash();
+            if(!dedupedCustomOps.containsKey(hash)){
+                Pair<List<String>,CustomOpDescriptor> p = new Pair<List<String>,CustomOpDescriptor>(new ArrayList<String>(), e.getValue());
+                dedupedCustomOps.put(hash, p);
+            }
+            Pair<List<String>,CustomOpDescriptor> p = dedupedCustomOps.get(hash);
+            List<String> l = p.getFirst();
+            if(!l.contains(e.getKey())){
+                l.add(e.getKey());
+            }
+        }
+
+        Set<Long> notSeenCustomOps = new HashSet<>(dedupedCustomOps.keySet());
 
         allOps = new ArrayList<>(gradCheckCoverageCountPerClass.keySet());
         for (ClassPath.ClassInfo c : info) {
@@ -300,8 +325,32 @@ public class OpValidation {
             if (DifferentialFunction.class.isAssignableFrom(clazz) && !clazz.getSimpleName().contains("Old")) {   //Exclude OldSubOp, etc
                 allOps.add(clazz);
             }
+
+            String opName = null;
+            try{
+                opName = ((DifferentialFunction)clazz.newInstance()).opName();
+            } catch (Exception e){
+                log.warn("Could not instantiate object of type {}", clazz.getName(), e);
+            }
+
+            if(opName != null){
+                CustomOpDescriptor d = customOps.get(opName);
+                if(d != null) {
+                    notSeenCustomOps.remove(d.getHash());
+                }
+            }
         }
 
+        countTotalLibnd4jOps = dedupedCustomOps.size();
+        nonMappedLibnd4jOps = new ArrayList<>(notSeenCustomOps);
+        Collections.sort(nonMappedLibnd4jOps, new Comparator<Long>() {
+            @Override
+            public int compare(Long o1, Long o2) {
+                Pair<List<String>,CustomOpDescriptor> p1 = dedupedCustomOps.get(o1);
+                Pair<List<String>,CustomOpDescriptor> p2 = dedupedCustomOps.get(o2);
+                return p1.getKey().get(0).compareTo(p2.getKey().get(0));
+            }
+        });
 
         Collections.sort(allOps, new Comparator<Class>() {
             @Override
@@ -322,7 +371,7 @@ public class OpValidation {
      * @param logAdequatelyTested If true: log details of each op that has both forward and (if appropriate) backward tests
      * @param logInadequate       If false: log details of each op that does NOT have both forward and (if appropriate) backward tests
      */
-    public static void logCoverageInformation(boolean logAdequatelyTested, boolean logInadequate) {
+    public static void logCoverageInformation(boolean logAdequatelyTested, boolean logInadequate, boolean logUnmappedLibnd4jOps) {
         //Set of ops that we can't gradient check
         Set<Class> excludedFromBackpropCoverage = excludedFromGradientCheckCoverage();
         Set<Class> excludedFromAllTestCoverage = excludedFromAllTests();
@@ -386,6 +435,14 @@ public class OpValidation {
             }
         }
 
+        if(logUnmappedLibnd4jOps ){
+            log.info(" --- Libnd4j Ops Not Mapped ---");
+            for(long l : nonMappedLibnd4jOps){
+                Pair<List<String>,CustomOpDescriptor> p = dedupedCustomOps.get(l);
+                log.info("Not mapped libnd4j custom op: {} (hash: {})", p.getFirst(), l);
+            }
+        }
+
 
         int totalFwd = 0;
         for(Class c : allOps){
@@ -409,7 +466,11 @@ public class OpValidation {
         int countTf = DifferentialFunctionClassHolder.getInstance().getCountTotalTfOps();
         int countTfMapped = DifferentialFunctionClassHolder.getInstance().getCountTotalMappedOps();
         double tfFrac = countTfMapped / (double)countTf;
-        String fracTfStr = String.format("%.2f", tfFrac);
+        String fracTfStr = String.format("%.2f", 100.0 * tfFrac);
+
+        int countLibnd4jMapped = countTotalLibnd4jOps - nonMappedLibnd4jOps.size();
+        String fracLibnd4j = String.format("%.2f", 100.0 * (countLibnd4jMapped / (double)countTotalLibnd4jOps));
+
 
         log.info("*****************************************************");
         log.info("Op Validation:        {} of {} classes with adequate tests ({}% coverage)", countAdequate, totalFwd, pc);
@@ -417,7 +478,8 @@ public class OpValidation {
         log.info("Gradient check tests: {} of {} classes ({}% coverage)", countAdequateBwd, totalBwd, pcBwd);
         log.info("({} ops excluded from gradient check coverage)", excludedFromBackpropCoverage.size());
         log.info("({} ops excluded from fwd+gradient tests)", excludedFromAllTestCoverage.size());
-        log.info("TF mapped ops:        {} of {} ({}%)", countTfMapped, countTf, tfFrac, fracTfStr);
+        log.info("TF mapped ops:        {} of {} ({}%)", countTfMapped, countTf, fracTfStr);
+        log.info("Libnd4j mapped ops:   {} of {} ({}%)", countLibnd4jMapped, countTotalLibnd4jOps, fracLibnd4j);
         log.info("*****************************************************");
     }
 
