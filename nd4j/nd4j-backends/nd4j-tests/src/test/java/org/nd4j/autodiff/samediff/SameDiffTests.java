@@ -3444,4 +3444,41 @@ public class SameDiffTests {
         }
     }
 
+    @Test
+    public void testPermute(){
+        SameDiff sd  = SameDiff.create();
+        INDArray arr = Nd4j.create(new double[]{
+                                              /////////////
+                                              1, 2, 3, 4,
+                                              5, 6, 7, 8,
+                                              9, 10, 11, 12,
+                                              //////////////
+                                              13, 14, 15, 16,
+                                              17, 18, 19, 20,
+                                              21, 22, 23, 24
+                                              /////////////
+                                                },
+                                   new int[]{2, 3, 4});
+
+        INDArray expOut = Nd4j.create(new double[]{
+                /////////////
+                1, 2, 3, 4,
+                13, 14, 15, 16,
+                /////////////
+                5, 6, 7, 8,
+                17, 18, 19, 20,
+                /////////////
+                9, 10, 11, 12,
+                21, 22, 23, 24
+                /////////////
+        },
+                new int[]{3, 2, 4});
+
+
+        SDVariable x = sd.var(arr);
+        SDVariable result = sd.permute(x, 1, 0, 2);
+        assertEquals(expOut, result.eval());
+
+    }
+
 }
