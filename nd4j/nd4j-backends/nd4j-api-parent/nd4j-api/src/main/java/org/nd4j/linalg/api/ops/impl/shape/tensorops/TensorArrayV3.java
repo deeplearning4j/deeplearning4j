@@ -59,7 +59,7 @@ public class TensorArrayV3 extends  BaseTensorOp {
             int idx = arr.getInt(0);
             addIArgument(idx);
         }
-
+        this.list = new TensorList(this.getOwnName());
     }
 
 
