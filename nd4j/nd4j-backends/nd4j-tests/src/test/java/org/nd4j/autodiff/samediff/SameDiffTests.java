@@ -3342,7 +3342,7 @@ public class SameDiffTests {
         SDVariable var1 = sd.var(arr1);
         INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
         SDVariable var2 = sd.var(arr2);
-        tensorArray = tensorArray.write(0, var1);
+        tensorArray.write(0, var1);
         tensorArray.write(1, var2);
         SDVariable result = tensorArray.stack();
         assertEquals(Nd4j.pile(arr1, arr2), result.eval());
@@ -3372,7 +3372,7 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.create(new double[]{5, 6, 7, 8}, new int[]{2, 2});
         INDArray arr3 = Nd4j.pile(arr1, arr2);
         SDVariable var = sd.var(arr3);
-        tensorArray = tensorArray.unstack(var);
+        tensorArray.unstack(var);
         SDVariable result1 = tensorArray.read(0);
         SDVariable result2 = tensorArray.read(1);
         assertEquals(arr1, result1.eval());
@@ -3389,17 +3389,18 @@ public class SameDiffTests {
         val cond = new SameDiff.SameDiffFunctionDefinition(){
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = sameDiff.neq(variableInputs[0], 10);
+                SDVariable ret = sameDiff.neq(variableInputs[0], variableInputs[1]);
                 return new SDVariable[]{ret};
             }
         };
         val loop_body = new SameDiff.SameDiffFunctionDefinition(){
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                ta.write(variableInputs[0], variableInputs[1]).outputVariable();
+                ta.write(variableInputs[0], variableInputs[2]);
                 SDVariable ret1 = variableInputs[0].addi(1);
-                SDVariable ret2 = variableInputs[1].addi(1);
-                return new SDVariable[]{ret1, ret2};
+                SDVariable ret2 = variableInputs[1];
+                SDVariable ret3 = variableInputs[2].addi(1);
+                return new SDVariable[]{ret1, ret2, ret3};
             }
         };
 
@@ -3409,7 +3410,7 @@ public class SameDiffTests {
         INDArray arr = Nd4j.create(new double[]{1, 2, 3, 4, 5});
         SDVariable initial_state = sd.var(arr);
 
-        sd.whileStatement(predicate, cond, loop_body, new SDVariable[]{loop_counter, initial_state});
+        sd.whileStatement(predicate, cond, loop_body, new SDVariable[]{loop_counter, loop_counter.add(10), initial_state});
 
 
         // build expected output
