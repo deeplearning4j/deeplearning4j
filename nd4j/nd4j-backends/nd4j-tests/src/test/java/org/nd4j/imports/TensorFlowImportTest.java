@@ -962,7 +962,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
     public void testTensorArray_119_1() throws Exception {
         Nd4j.create(1);
 
-        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array.pb.txt").getInputStream());
+        val tg = TFGraphMapper.getInstance().importGraph(new File("C:/tensor_array.pb.txt"));
         assertNotNull(tg);
 
         val input_matrix = Nd4j.ones(3, 2);
