@@ -64,8 +64,15 @@ public abstract  class BaseTensorOp extends DynamicCustomOp {
 
         val list = sameDiff.getListByName(tName);
 
-        if (list == null)
-            throw new ND4JIllegalStateException("There's no TensorList with name [" + tName + "] registered");
+        if (list == null) {
+
+            if(sameDiff.getParent() != null && sameDiff.getParent().getListByName(tName) != null){
+                return sameDiff.getParent().getListByName(tName);
+            }
+            else{
+                throw new ND4JIllegalStateException("There's no TensorList with name [" + tName + "] registered");
+            }
+        }
 
         return list;
     }
