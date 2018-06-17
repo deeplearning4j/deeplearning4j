@@ -182,6 +182,13 @@ public class SameDiff {
     boolean logExecution = true;
 
 
+    @Getter
+    private SameDiff parent;
+
+    @Getter
+    private SameDiff child;
+
+
     static {
         opMethods = new HashMap<>();
         Method[] methods = SameDiff.class.getDeclaredMethods();
@@ -1304,7 +1311,7 @@ public class SameDiff {
     }
 
 
-    private SameDiff parent;
+
 
     /**
      * @return
@@ -1312,8 +1319,8 @@ public class SameDiff {
     public SameDiff dup() {
         Cloner cloner = newCloner();
         val clone = cloner.deepClone(this);
-        clone.exec_cache = this.exec_cache;
-        clone.parent = this;
+        //clone.exec_cache = this.exec_cache;
+        //clone.parent = this;
         return clone;
 
     }
@@ -5603,6 +5610,8 @@ public class SameDiff {
         if (!sameDiffFunctionInstances.containsKey(function)) {
             SameDiff sub = SameDiff.create();
             sub.workspace = (workspace);
+            this.child = sub;
+            sub.parent = this;
             //setup subgraph
             //re execute to populate subgraph
             SDVariable[] ret = new SDVariable[variables.length];
@@ -5615,7 +5624,7 @@ public class SameDiff {
 
             sameDiffFunctionInstances.put(function, sub);
         }
-
+        this.child = null;
         return sameDiffFunctionInstances.get(function);
     }
 
