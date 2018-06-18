@@ -17,16 +17,18 @@ public class CumSumBp extends BaseReductionBp {
     private boolean exclusive;
     private boolean reverse;
 
-    public CumSumBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean exclusive, boolean reverse, int... dimensions) {
-        super(sameDiff, origInput, gradAtOutput, false, dimensions);
+    public CumSumBp(SameDiff sameDiff, SDVariable origInput, SDVariable axis, SDVariable gradAtOutput, boolean exclusive, boolean reverse) {
+        super(sameDiff, origInput, axis, gradAtOutput, false);
         this.exclusive = exclusive;
         this.reverse = reverse;
+        addArgs();
     }
 
-    public CumSumBp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean exclusive, boolean reverse, int... dimensions){
-        super(origInput, gradAtOutput, output, false, dimensions);
+    public CumSumBp(INDArray origInput, INDArray axis, INDArray gradAtOutput, INDArray output, boolean exclusive, boolean reverse){
+        super(origInput, gradAtOutput, output, false);
         this.exclusive = exclusive;
         this.reverse = reverse;
+        addArgs();
     }
 
     public CumSumBp(){}
@@ -42,6 +44,6 @@ public class CumSumBp extends BaseReductionBp {
 
     @Override
     public String opName() {
-        return "reduce_cum_sum_bp";
+        return "cumsum_bp";
     }
 }

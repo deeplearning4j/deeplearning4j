@@ -6,6 +6,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -14,6 +15,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.Mean;
+import org.nd4j.linalg.api.ops.impl.accum.bp.MeanBp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
@@ -104,75 +106,6 @@ public class SameDiffTests {
         val varOne = sameDiff.var("one", Nd4j.ones(2));
     }
 
-
-    @Test
-    public void testReductionsBackwards() {
-
-        for (int i = 0; i < 7; i++) {
-
-            SameDiff sd = SameDiff.create();
-
-            int nOut = 4;
-            int minibatch = 3;
-            SDVariable input = sd.var("in", new long[]{-1, nOut});
-            SDVariable label = sd.var("label", new long[]{-1, nOut});
-
-            SDVariable diff = input.sub(label);
-            SDVariable sqDiff = diff.mul(diff);
-            SDVariable msePerEx = sd.mean("msePerEx", sqDiff, 1);
-
-            SDVariable loss;
-            String name;
-            switch (i) {
-                case 0:
-                    loss = sd.mean("loss", msePerEx, 0);
-                    name = "mean";
-                    break;
-                case 1:
-                    loss = sd.sum("loss", msePerEx, 0);
-                    name = "sum";
-                    break;
-                case 2:
-                    loss = sd.standardDeviation("loss", msePerEx, true, 0);
-                    name = "stdev";
-                    break;
-                case 3:
-                    loss = sd.min("loss", msePerEx, 0);
-                    name = "min";
-                    break;
-                case 4:
-                    loss = sd.max("loss", msePerEx, 0);
-                    name = "max";
-                    break;
-                case 5:
-                    loss = sd.variance("loss", msePerEx, true, 0);
-                    name = "variance";
-                    break;
-                case 6:
-                    loss = sd.prod("loss", msePerEx, 0);
-                    name = "prod";
-                    break;
-                default:
-                    throw new RuntimeException();
-            }
-
-
-            String msg = "test: " + i + " - " + name;
-            log.info("*** Starting test: " + msg);
-
-            INDArray inputArr = Nd4j.rand(minibatch, nOut);
-            INDArray labelArr = Nd4j.rand(minibatch, nOut);
-
-            sd.associateArrayWithVariable(inputArr, input);
-            sd.associateArrayWithVariable(labelArr, label);
-
-            INDArray result = sd.execAndEndResult();
-            assertEquals(1, result.length());
-
-            Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> p = sd.execBackwards();
-        }
-    }
-
     @Test
     public void testMseBackwards() {
 
@@ -220,7 +153,7 @@ public class SameDiffTests {
 
         sameDiff.exec();
 
-        INDArray exp = Nd4j.scalar(1+2+3+4);
+        INDArray exp = Nd4j.trueScalar(arr.sumNumber().doubleValue());
         INDArray resultArr = result.getArr();
         assertEquals(exp, resultArr);
     }
@@ -334,6 +267,7 @@ public class SameDiffTests {
         SDVariable result = sameDiff.cosineSimilarity(x, y, 1);
         SDVariable addResult = result.add(result);
         SDVariable finalReshape = sameDiff.reshape(addResult, 1, 2);
+        sameDiff.exec();
         assertArrayEquals(new long[]{1, 2}, finalReshape.getShape());
     }
 
@@ -1012,20 +946,22 @@ public class SameDiffTests {
 
     @Test
     public void testSequentialMeansPlaceholder() {
+        OpValidationSuite.ignoreFailing();
         for (int dim0 : new int[]{10, -1}) {
             String msg = "Dimension 0 = " + dim0;
             System.out.println(msg);
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", new long[]{dim0, 9, 8});
             SDVariable mean1 = sd.mean(in, 2);                  //[10,9,8] -> [10,9]
-            SDVariable mean2 = sd.mean(mean1, 1);               //[10,9] -> [10,1]
+            SDVariable mean2 = sd.mean(mean1, 1);               //[10,9] -> [10]
 
             INDArray inArr = Nd4j.create(10, 9, 8);
             sd.associateArrayWithVariable(inArr, in);
 
             INDArray out = sd.execAndEndResult();     //Exception here, dim0=-1 case only
 
-            assertArrayEquals(msg, new long[]{10, 1}, out.shape());
+            long[] shape = out.shape();
+            assertArrayEquals(msg, new long[]{10}, shape);
         }
     }
 
@@ -1036,14 +972,14 @@ public class SameDiffTests {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", new long[]{10, 9, 8});
         SDVariable mean1 = sd.mean(in, 2);      //[10,9] out
-        SDVariable mean2 = sd.mean(mean1, 1);   //[10,1] out
-        sd.execAndEndResult();  //***Exception***
+        SDVariable mean2 = sd.mean(mean1, 1);   //[10] out
+        sd.execAndEndResult();
 
         INDArray m1 = mean1.getArr();
         INDArray m2 = mean2.getArr();
 
         assertArrayEquals(new long[]{10, 9}, m1.shape());
-        assertArrayEquals(new long[]{10, 1}, m2.shape());
+        assertArrayEquals(new long[]{10}, m2.shape());
     }
 
 
@@ -1055,26 +991,26 @@ public class SameDiffTests {
         SDVariable meanA = sd2.mean(in2, 0);      //[9,8] out
         assertArrayEquals(new long[]{9, 8}, meanA.getShape());
 
-        SDVariable meanB = sd2.mean(meanA, 0);   //[1,8] out
-        assertArrayEquals(new long[]{1, 8}, meanB.getShape());
+        SDVariable meanB = sd2.mean(meanA, 0);   //[8] out
+        assertArrayEquals(new long[]{8}, meanB.getShape());
 
         assertArrayEquals(meanA.getShape(), meanA.getArr().shape());
         assertArrayEquals(meanB.getShape(), meanB.getArr().shape());
 
-        sd2.exec(); //***Exception***
+        sd2.exec();
 
         INDArray mA = meanA.getArr();
         INDArray mB = meanB.getArr();
 
         assertArrayEquals(new long[]{9, 8}, mA.shape());
-        assertArrayEquals(new long[]{1, 8}, mB.shape());
+        assertArrayEquals(new long[]{8}, mB.shape());
     }
 
     @Test
     public void testNames() {
         SameDiff sd = SameDiff.create();
         SDVariable in1 = sd.var("in", new long[]{3, 2});
-        SDVariable in2 = sd.var("in", new long[]{3, 3});
+        SDVariable in2 = sd.var("in2", new long[]{3, 3});
 
         val m = in1.add(1.0);
         val f = m.add(2.0);
@@ -1085,21 +1021,6 @@ public class SameDiffTests {
         log.info("Result M: {}", m.getArr());
         log.info("Result F: {}", f.getArr());
         log.info("Result S: {}", s.getArr());
-    }
-
-
-    @Test
-    public void testBroadcast() {
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.rand(3, 4));
-        SDVariable broadcast = sd.f().broadcast(in, 3, 4, 5);
-
-        INDArray out = sd.execAndEndResult();
-        assertArrayEquals(new long[]{3, 4, 5}, out.shape());
-
-        for (int i = 0; i < 5; i++) {
-            assertEquals(in.getArr(), out.get(all(), all(), point(i)));
-        }
     }
 
     @Test
@@ -1472,23 +1393,6 @@ public class SameDiffTests {
 
     }
 
-    @Test
-    public void testInplaceSubi() {
-        SameDiff sameDiffOuter = SameDiff.create();
-        Map<String, INDArray> params = new HashMap<>();
-        params.put("x", Nd4j.ones(4));
-        sameDiffOuter.defineFunction("inplacesubi", new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable inplace = sameDiff.var("x", inputs.get("x"));
-                return new SDVariable[]{inplace.subi(1.0)};
-            }
-        }, params);
-
-        sameDiffOuter.getFunction("inplacesubi").eval(params);
-        assertEquals(Nd4j.zeros(4), params.get("x"));
-    }
-
 
     @Test
     public void testMmul() {
@@ -1708,44 +1612,6 @@ public class SameDiffTests {
     }
 
     @Test
-    public void testConv3dBasic() {
-        int nIn = 3;
-        int nOut = 4;
-        int kH = 2;
-        int kW = 2;
-        int kT = 2;
-
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-        int imgT = 28;
-
-        SameDiff sd = SameDiff.create();
-        INDArray wArr = Nd4j.create(nOut, nIn, kT, kH, kW); //As per DL4J
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgT, imgH, imgW);
-
-        SDVariable in = sd.var("in", inArr);
-        SDVariable w = sd.var("W", wArr);
-        SDVariable b = sd.var("b", bArr);
-
-        Conv3DConfig conv3DConfig = Conv3DConfig.builder()
-                .kH(kH).kW(kW).kT(kT)
-                .dilationH(1).dilationW(1).dilationT(1)
-                .isValidMode(false)
-                .biasUsed(false)
-                .build();
-
-        SDVariable out = sd.conv3d(in, w, b, conv3DConfig);
-        out = sd.tanh("out", out);
-
-        INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27
-        val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 27, 27, 27}, outShape);
-    }
-
-    @Test
     public void testBatchNormTest() {
         SameDiff sd = SameDiff.create();
 
@@ -1852,336 +1718,7 @@ public class SameDiffTests {
     }
 
 
-    @Test
-    public void testDepthWiseConv2dBasic() {
-        int nIn = 3;
-        int depthWise = 4;
-        int kH = 2;
-        int kW = 2;
 
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-
-
-        SameDiff sd = SameDiff.create();
-        INDArray depthWeightArr = Nd4j.create(depthWise, nIn, kH, kW);
-
-        INDArray bArr = Nd4j.create(1, depthWise * nIn);
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
-
-        SDVariable in = sd.var("in", inArr);
-        SDVariable dW = sd.var("dW", depthWeightArr);
-        SDVariable b = sd.var("b", bArr);
-
-        SDVariable[] vars = new SDVariable[]{in, dW, b};
-
-        Conv2DConfig c = Conv2DConfig.builder()
-                .kh(kH).kw(kW)
-                .ph(0).pw(0)
-                .sy(1).sx(1)
-                .dh(1).dw(1)
-                .isSameMode(false)
-                .build();
-
-        SDVariable out = sd.sconv2d(vars, c);
-        out = sd.tanh("out", out);
-
-        INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, depthWise * nIn, 27, 27}, outShape);
-    }
-
-    @Test
-    public void testSeparableConv2dBasic() {
-        int nIn = 3;
-        int nOut = 4;
-        int kH = 2;
-        int kW = 2;
-
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-
-        int depthWise = 3;
-
-        SameDiff sd = SameDiff.create();
-        INDArray depthWeightArr = Nd4j.create(depthWise, nIn, kH, kW);
-        INDArray pointWeightArr = Nd4j.create(nOut, depthWise, 1, 1);
-
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
-
-        SDVariable in = sd.var("in", inArr);
-        SDVariable dW = sd.var("dW", depthWeightArr);
-        SDVariable pW = sd.var("pW", pointWeightArr);
-        SDVariable b = sd.var("b", bArr);
-
-        SDVariable[] vars = new SDVariable[]{in, dW, pW, b};
-
-        Conv2DConfig c = Conv2DConfig.builder()
-                .kh(kH).kw(kW)
-                .ph(0).pw(0)
-                .sy(1).sx(1)
-                .dh(1).dw(1)
-                .isSameMode(false)
-                .build();
-
-        SDVariable out = sd.sconv2d(vars, c);
-        out = sd.tanh("out", out);
-
-        INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 27, 27}, outShape);
-    }
-
-    @Test
-    public void testDeconv2dBasic() {
-        int nIn = 3;
-        int nOut = 4;
-        int kH = 2;
-        int kW = 2;
-
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-
-        SameDiff sd = SameDiff.create();
-        INDArray wArr = Nd4j.create(nOut, nIn, kH, kW);
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
-
-        SDVariable in = sd.var("in", inArr);
-        SDVariable w = sd.var("W", wArr);
-        SDVariable b = sd.var("b", bArr);
-
-        SDVariable[] vars = new SDVariable[]{in, w, b};
-
-        DeConv2DConfig deconv = DeConv2DConfig.builder()
-                .kX(kH).kY(kW)
-                .pX(0).pY(0)
-                .sX(1).sY(1)
-                .dX(1).dY(1)
-                .isSameMode(false)
-                .build();
-
-        SDVariable out = sd.deconv2d(vars, deconv);
-        out = sd.tanh("out", out);
-
-        INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in + k + 2*p)/ s - 1 = (28 + 2+0)/1 - 1 = 29
-        val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 29, 29}, outShape);
-    }
-
-
-    @Test
-    public void testConv2dBasic() {
-        int nIn = 3;
-        int nOut = 4;
-        int kH = 2;
-        int kW = 2;
-
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-
-        SameDiff sd = SameDiff.create();
-        INDArray wArr = Nd4j.create(nOut, nIn, kH, kW); //As per DL4J
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
-
-        SDVariable in = sd.var("in", inArr);
-        SDVariable w = sd.var("W", wArr);
-        SDVariable b = sd.var("b", bArr);
-
-        //Order: https://github.com/deeplearning4j/libnd4j/blob/6c41ea5528bb1f454e92a9da971de87b93ff521f/include/ops/declarable/generic/convo/conv2d.cpp#L20-L22
-        //in, w, b - bias is optional
-        SDVariable[] vars = new SDVariable[]{in, w, b};
-
-        Conv2DConfig c = Conv2DConfig.builder()
-                .kh(kH).kw(kW)
-                .ph(0).pw(0)
-                .sy(1).sx(1)
-                .dh(1).dw(1)
-                .isSameMode(false)
-                .build();
-
-        SDVariable out = sd.conv2d(vars, c);
-        out = sd.tanh("out", out);
-
-        INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 27, 27}, outShape);
-        // sd.execBackwards(); // TODO: test failing here
-    }
-
-    @Test
-    public void testMaxPooling2dBasic() {
-        int nIn = 3;
-        int kH = 2;
-        int kW = 2;
-
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-
-        SameDiff sd = SameDiff.create();
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
-
-        SDVariable in = sd.var("in", inArr);
-
-        Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
-                .kh(kH).kw(kW)
-                .ph(0).pw(0)
-                .sy(1).sx(1)
-                .dh(1).dw(1)
-                .isSameMode(false)
-                .build();
-
-        SDVariable out = sd.maxPooling2d(in, pooling2DConfig);
-        out = sd.tanh("out", out);
-
-        INDArray outArr = sd.execAndEndResult();
-        val outShape = outArr.shape();
-        // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-        assertArrayEquals(new long[]{mb, nIn, 27, 27}, outShape);
-    }
-
-    @Test
-    public void testAvgPooling2dBasic() {
-        int nIn = 3;
-        int kH = 2;
-        int kW = 2;
-
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-
-        SameDiff sd = SameDiff.create();
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
-
-        SDVariable in = sd.var("in", inArr);
-
-        Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
-                .kh(kH).kw(kW)
-                .ph(0).pw(0)
-                .sy(1).sx(1)
-                .dh(1).dw(1)
-                .isSameMode(false)
-                .build();
-
-        SDVariable out = sd.avgPooling2d(in, pooling2DConfig);
-        out = sd.tanh("out", out);
-
-        INDArray outArr = sd.execAndEndResult();
-        val outShape = outArr.shape();
-        // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-        assertArrayEquals(new long[]{mb, nIn, 27, 27}, outShape);
-    }
-
-    @Test
-    public void testAvgPooling3dBasic() {
-        int nIn = 3;
-        int kH = 2;
-        int kW = 2;
-        int kD = 2;
-
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-        int imgD = 28;
-
-        SameDiff sd = SameDiff.create();
-        INDArray inArr = Nd4j.create(mb, nIn, imgD, imgH, imgW);
-
-        SDVariable in = sd.var("in", inArr);
-
-        Pooling3DConfig pooling3DConfig = Pooling3DConfig.builder()
-                .kH(kH).kW(kW).kT(kD)
-                .pH(0).pH(0).pT(0)
-                .sH(1).sW(1).sT(1)
-                .dilationH(0).dilationW(0).dilationT(0)
-                .ceilingMode(false)
-                .build();
-
-        SDVariable out = sd.avgPooling3d(in, pooling3DConfig);
-        out = sd.tanh("out", out);
-
-        INDArray outArr = sd.execAndEndResult();
-        val outShape = outArr.shape();
-        // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-        assertArrayEquals(new long[]{mb, nIn, 27, 27, 27}, outShape);
-    }
-
-    @Test
-    public void testMaxPooling3dBasic() {
-        int nIn = 3;
-        int kH = 2;
-        int kW = 2;
-        int kD = 2;
-
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-        int imgD = 28;
-
-        SameDiff sd = SameDiff.create();
-        INDArray inArr = Nd4j.create(mb, nIn, imgD, imgH, imgW);
-
-        SDVariable in = sd.var("in", inArr);
-
-        Pooling3DConfig pooling3DConfig = Pooling3DConfig.builder()
-                .kH(kH).kW(kW).kT(kD)
-                .pH(0).pH(0).pT(0)
-                .sH(1).sW(1).sT(1)
-                .dilationH(0).dilationW(0).dilationT(0)
-                .ceilingMode(false)
-                .build();
-
-        SDVariable out = sd.maxPooling3d(in, pooling3DConfig);
-        out = sd.tanh("out", out);
-
-        INDArray outArr = sd.execAndEndResult();
-        val outShape = outArr.shape();
-        // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-        assertArrayEquals(new long[]{mb, nIn, 27, 27, 27}, outShape);
-    }
-
-    @Test
-    public void testConv1dBasic() {
-        int nIn = 3;
-        int nOut = 4;
-        int k = 2;
-        int mb = 3;
-        int img = 28;
-
-        SameDiff sd = SameDiff.create();
-        INDArray wArr = Nd4j.create(nOut, nIn, k);
-        INDArray inArr = Nd4j.create(mb, nIn, img);
-
-        SDVariable in = sd.var("in", inArr);
-        SDVariable w = sd.var("W", wArr);
-
-        SDVariable[] vars = new SDVariable[]{in, w};
-
-        Conv1DConfig conv1DConfig = Conv1DConfig.builder()
-                .k(k).p(0).s(1)
-                .isSameMode(false)
-                .build();
-
-        SDVariable out = sd.conv1d(vars, conv1DConfig);
-        out = sd.tanh("out", out);
-
-        INDArray outArr = sd.execAndEndResult();
-        INDArray iOut = out.getArr();
-        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 27}, outShape);
-    }
 
     @Test
     public void validateMeanDiff() {
@@ -2415,9 +1952,9 @@ public class SameDiffTests {
         INDArray out1 = sd.execAndEndResult();
         assertEquals(Nd4j.zeros(3, 4), out1);
 
-        sd.associateArrayWithVariable(Nd4j.create(4, 5), var0);
+        sd.associateArrayWithVariable(Nd4j.create(3, 4), var0);
         INDArray out2 = sd.execAndEndResult();
-        assertEquals(Nd4j.zeros(4, 5), out2);
+        assertEquals(Nd4j.zeros(3, 4), out2);
     }
 
     @Test
@@ -2429,9 +1966,9 @@ public class SameDiffTests {
         INDArray out1 = sd.execAndEndResult();
         assertEquals(Nd4j.ones(3, 4), out1);
 
-        sd.associateArrayWithVariable(Nd4j.create(4, 5), var0);
+        sd.associateArrayWithVariable(Nd4j.create(3, 4), var0);
         INDArray out2 = sd.execAndEndResult();
-        assertEquals(Nd4j.ones(4, 5), out2);
+        assertEquals(Nd4j.ones(3, 4), out2);
     }
 
 
@@ -2449,103 +1986,6 @@ public class SameDiffTests {
         sd.execBackwards();
 
         assertEquals(Nd4j.create(3, 4), sd.grad("in").getArr());
-    }
-
-
-    @Test
-    public void testReduce3() {
-
-        Nd4j.getRandom().setSeed(12345);
-
-        int d0 = 3;
-        int d1 = 4;
-        int d2 = 5;
-
-        for (val reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
-            for (int i = 0; i < 6; i++) {
-
-                SameDiff sd = SameDiff.create();
-                sd.setLogExecution(false);
-
-                INDArray a = Nd4j.rand(new long[]{d0, d1, d2});
-                INDArray b = Nd4j.rand(new long[]{d0, d1, d2});
-
-
-                SDVariable in = sd.var("in", a);
-                SDVariable in2 = sd.var("in2", b);
-
-                INDArray expOut;
-                SDVariable reduced;
-                String name;
-                switch (i) {
-                    case 0:
-                        reduced = sd.manhattanDistance(in, in2, reduceDims);
-                        name = "manhattan";
-                        expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b), reduceDims);
-                        break;
-                    case 1:
-                        reduced = sd.euclideanDistance(in, in2, reduceDims);
-                        name = "euclidean";
-                        expOut = Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), reduceDims);
-                        break;
-                    case 2:
-                        reduced = sd.cosineSimilarity(in, in2, reduceDims);
-                        name = "cosine";
-                        expOut = Nd4j.getExecutioner().exec(new CosineSimilarity(a, b), reduceDims);
-                        break;
-                    case 3:
-                        reduced = sd.jaccardDistance(in, in2, reduceDims);
-                        name = "jaccard";
-                        expOut = Nd4j.getExecutioner().exec(new JaccardDistance(a, b), reduceDims);
-                        break;
-                    case 4:
-                        reduced = sd.hammingDistance(in, in2, reduceDims);
-                        name = "hamming";
-                        expOut = Nd4j.getExecutioner().exec(new HammingDistance(a, b), reduceDims);
-                        break;
-                    case 5:
-                        reduced = sd.cosineDistance(in, in2, reduceDims);
-                        name = "reduced";
-                        expOut = Nd4j.getExecutioner().exec(new CosineDistance(a, b), reduceDims);
-                        break;
-                    default:
-                        throw new RuntimeException();
-                }
-
-                long[] expShape;
-                if (Arrays.equals(new int[]{0}, reduceDims)) {
-                    expShape = new long[]{4, 5};
-                } else if (Arrays.equals(new int[]{1}, reduceDims)) {
-                    expShape = new long[]{3, 5};
-                } else if (Arrays.equals(new int[]{2}, reduceDims)) {
-                    expShape = new long[]{3, 4};
-                } else if (Arrays.equals(new int[]{Integer.MAX_VALUE}, reduceDims)) {
-                    expShape = new long[]{1, 1};
-                } else if (Arrays.equals(new int[]{0, 1}, reduceDims)) {
-                    expShape = new long[]{1, 5};
-                } else if (Arrays.equals(new int[]{0, 2}, reduceDims)) {
-                    expShape = new long[]{1, 4};
-                } else if (Arrays.equals(new int[]{1, 2}, reduceDims)) {
-                    expShape = new long[]{3, 1};
-                } else if (Arrays.equals(new int[]{0, 1, 2}, reduceDims)) {
-                    expShape = new long[]{1, 1};
-                } else {
-                    throw new RuntimeException();
-                }
-
-                String msg = name + " - dims=" + Arrays.toString(reduceDims);
-
-                INDArray out = sd.execAndEndResult();
-
-                log.info(msg + " - expected shape: " + Arrays.toString(expShape) + ", out=" + Arrays.toString(out.shape())
-                        + ", outExp=" + Arrays.toString(expOut.shape()));
-
-                assertArrayEquals(msg, expShape, out.shape());
-                assertArrayEquals(msg, expShape, expOut.shape());
-
-                assertEquals(msg, out, expOut);
-            }
-        }
     }
 
 
@@ -2588,129 +2028,6 @@ public class SameDiffTests {
         assertEquals(1, out.length());
 
         assertEquals(jd, out.getDouble(0), 1e-6);
-    }
-
-
-    @Test
-    public void testSlice2d() {
-        INDArray inArr = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
-
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", inArr);
-        SDVariable slice_full = sd.slice(in, new int[]{0, 0}, new int[]{3, 4});
-        SDVariable subPart = sd.slice(in, new int[]{1, 2}, new int[]{2, 2});
-
-        sd.execAndEndResult();
-
-        assertEquals(inArr, slice_full.getArr());
-        assertEquals(inArr.get(interval(1, 3), interval(2, 4)), subPart.getArr());
-    }
-
-
-    @Test
-    public void testSlice3d() {
-        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
-
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", inArr);
-        SDVariable slice_full = sd.slice(in, new int[]{0, 0, 0}, new int[]{3, 4, 5});
-        SDVariable subPart = sd.slice(in, new int[]{1, 2, 3}, new int[]{2, 2, 1});
-
-        sd.execAndEndResult();
-
-        assertEquals(inArr, slice_full.getArr());
-        assertEquals(inArr.get(interval(1, 3), interval(2, 4), interval(3, 4)), subPart.getArr());
-    }
-
-    @Test
-    public void testStridedSlice2dBasic() {
-        INDArray inArr = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
-
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", inArr);
-        SDVariable slice_full = sd.stridedSlice(in, new int[]{0, 0}, new int[]{3, 4}, new int[]{1, 1});
-        SDVariable subPart = sd.stridedSlice(in, new int[]{1, 2}, new int[]{3, 4}, new int[]{1, 1});
-        SDVariable subPart2 = sd.stridedSlice(in, new int[]{0, 0}, new int[]{4, 5}, new int[]{2, 2});
-
-        sd.execAndEndResult();
-
-        assertEquals(inArr, slice_full.getArr());
-        assertEquals(inArr.get(interval(1, 3), interval(2, 4)), subPart.getArr());
-        assertEquals(inArr.get(interval(0, 2, 4), interval(0, 2, 5)), subPart2.getArr());
-    }
-
-
-    @Test
-    public void testStridedSliceBeginEndMask() {
-        INDArray inArr = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
-
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", inArr);
-        SDVariable slice1 = sd.stridedSlice(in, new int[]{-999, 0}, new int[]{2, 4}, new int[]{1, 1}, 1 << 1, 0, 0, 0, 0);
-        SDVariable slice2 = sd.stridedSlice(in, new int[]{1, 0}, new int[]{-999, 4}, new int[]{1, 1}, 0, 1, 0, 0, 0);
-
-        sd.execAndEndResult();
-
-        assertEquals(inArr.get(NDArrayIndex.interval(0, 2), NDArrayIndex.all()), slice1.getArr());
-        assertEquals(inArr.get(NDArrayIndex.interval(1, 3), NDArrayIndex.all()), slice2.getArr());
-    }
-
-    @Test
-    public void testStridedSliceEllipsisMask() {
-        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", inArr);
-
-        //[1:3,...] -> [1:3,:,:]
-        SDVariable slice = sd.stridedSlice(in, new int[]{1}, new int[]{3}, new int[]{1}, 0, 0, 1 << 1, 0, 0);
-        //[1:3,...,1:4] -> [1:3,:,1:4]
-        SDVariable slice2 = sd.stridedSlice(in, new int[]{1, 1}, new int[]{3, 4}, new int[]{1, 1}, 0, 0, 1 << 1, 0, 0);
-
-        sd.execAndEndResult();
-
-        assertEquals(inArr.get(interval(1, 3), all(), all()), slice.getArr());
-        assertEquals(inArr.get(interval(1, 3), all(), all()), slice2.getArr());
-    }
-
-    @Test
-    public void testStridedSliceNewAxisMask() {
-        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", inArr);
-        SDVariable slice = sd.stridedSlice(in, new int[]{-999, 0, 0, 0}, new int[]{-999, 3, 4, 5}, new int[]{-999, 1, 1, 1}, 0, 0, 0, 1, 0);
-
-        INDArray out = sd.execAndEndResult();
-
-        assertArrayEquals(new long[]{1, 3, 4, 5}, inArr.shape());
-        assertEquals(inArr, out.get(point(0), all(), all(), all()));
-    }
-
-    @Test
-    public void testStridedSliceNewAxisMask2() {
-        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", inArr);
-        SDVariable slice = sd.stridedSlice(in, new int[]{1, 1, -999, 1}, new int[]{3, 3, -999, 4}, new int[]{1, 1, -999, 1}, 0, 0, 0, 1 << 2, 0);
-        INDArray out = sd.execAndEndResult();
-
-        assertArrayEquals(new long[]{2, 2, 1, 3}, slice.getArr().shape());
-    }
-
-    @Test
-    public void testStridedSliceShrinkAxisMask() {
-
-        INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", inArr);
-        SDVariable slice = sd.stridedSlice(in, new int[]{0, 0, 0}, new int[]{-999, 4, 5}, new int[]{1, 1, 1}, 0, 0, 0, 0, 1);
-        SDVariable slice2 = sd.stridedSlice(in, new int[]{2, 0, 0}, new int[]{-999, 4, 5}, new int[]{1, 1, 1}, 0, 0, 0, 0, 1);
-        SDVariable slice3 = sd.stridedSlice(in, new int[]{1, 2, 1}, new int[]{-999, -999, 5}, new int[]{1, 1, 1}, 0, 0, 0, 0, 1 | 1 << 1);
-
-        sd.execAndEndResult();
-
-        assertEquals(inArr.get(point(0), all(), all()), slice.getArr());
-        assertEquals(inArr.get(point(2), all(), all()), slice2.getArr());
-        assertEquals(inArr.get(point(1), point(2), interval(1, 5)), slice3.getArr());
     }
 
     @Test
@@ -3193,29 +2510,26 @@ public class SameDiffTests {
         SameDiff sdGrad = sd.getFunction("grad");
 
         DifferentialFunction[] dfsBackward = sdGrad.functions();
-        assertEquals(14, dfsBackward.length);    //sub, mul, mean, mean, backward marker, meanbp=(onesLike,scalardiv,mul), meanbp=(onesLike,scalardiv,mul), mulbp, add (from diff.mul(diff)), subbp
+        assertEquals(10, dfsBackward.length);    //sub, mul, mean, mean, backward marker, meanbp, meanbp, mulbp, add (from diff.mul(diff)), subbp
 
         List<Class> classesExp = Arrays.asList(
-                SubOp.class, MulOp.class, Mean.class, Mean.class, GradientBackwardsMarker.class, OnesLike.class,
-                ScalarDivision.class, MulOp.class, OnesLike.class, ScalarDivision.class, MulOp.class, MulBpOp.class, AddOp.class, SubBpOp.class);
-
-        assertEquals(14, dfsBackward.length);
-        for(int i=0; i<14; i++ ){
+                SubOp.class, MulOp.class, Mean.class, Mean.class, GradientBackwardsMarker.class, MeanBp.class,
+                MeanBp.class, MulBpOp.class, AddOp.class, SubBpOp.class);
+        for(int i=0; i<10; i++ ){
             assertEquals(classesExp.get(i), dfsBackward[i].getClass());
         }
 
         List<SDVariable> variables = sdGrad.variables();    //in, label, sub, multiply
 
         Map<String,String[]> incomingArgsReverseBP = getObject("incomingArgsReverse", sdGrad, SameDiff.class);
-        System.out.println(incomingArgsReverseBP.keySet());
+        //System.out.println(incomingArgsReverseBP.keySet());
         //Should have 1 entry for each DifferentialFunction...
-        assertEquals(14, incomingArgsReverseBP.size());
+        assertEquals(10, incomingArgsReverseBP.size());
 
         Map<String,String[]> outgoingArgsReverseBP = getObject("outgoingArgsReverse", sdGrad, SameDiff.class);
-        System.out.println(outgoingArgsReverseBP.keySet());
+        //System.out.println(outgoingArgsReverseBP.keySet());
         //Should have 1 entry for each DifferentialFunction...
-        assertEquals(14, outgoingArgsReverseBP.size());
-
+        assertEquals(10, outgoingArgsReverseBP.size());
     }
 
     @Test

@@ -7,7 +7,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-public class BaseOpValidation extends BaseNd4jTest {
+public abstract class BaseOpValidation extends BaseNd4jTest {
 
     private DataBuffer.Type initialType;
 

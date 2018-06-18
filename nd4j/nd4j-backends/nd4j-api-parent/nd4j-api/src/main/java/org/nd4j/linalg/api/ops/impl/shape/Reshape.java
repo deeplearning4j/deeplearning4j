@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -57,6 +58,10 @@ public class Reshape extends DynamicCustomOp {
     public Reshape(SameDiff sameDiff, SDVariable i_v, SDVariable shape) {
         super(null, sameDiff, new SDVariable[]{i_v, shape});
         addIArgument('c');
+    }
+
+    public Reshape(INDArray in, INDArray shape, INDArray out){
+        super(null, new INDArray[]{in, shape}, new INDArray[]{out}, null, (List<Integer>)null);
     }
 
     public Reshape() {

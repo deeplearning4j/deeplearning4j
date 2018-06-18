@@ -5,6 +5,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -37,7 +38,14 @@ public class SpaceToDepth extends DynamicCustomOp {
         this.dataFormat = dataFormat;
         boolean isNHWC = dataFormat.equals("NHWC");
         addIArgument(blockSize, isNHWC ? 1 : 0);
+    }
 
+    public SpaceToDepth(INDArray in, INDArray out, int blockSize, String dataFormat){
+        super(null, in, out, null, null);
+        this.blockSize = blockSize;
+        this.dataFormat = dataFormat;
+        boolean isNHWC = dataFormat.equals("NHWC");
+        addIArgument(blockSize, isNHWC ? 1 : 0);
     }
 
     @Override

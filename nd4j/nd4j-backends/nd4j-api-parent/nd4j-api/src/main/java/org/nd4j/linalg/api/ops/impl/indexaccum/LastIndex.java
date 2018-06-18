@@ -45,8 +45,8 @@ public class LastIndex extends BaseIndexAccumulation {
     protected double eps;
     protected int mode;
 
-    public LastIndex(SameDiff sameDiff, SDVariable i_v, Condition condition, int... dimensions) {
-        super(sameDiff, i_v, dimensions);
+    public LastIndex(SameDiff sameDiff, SDVariable i_v, Condition condition, boolean keepDims, int... dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
         this.condition = condition;
         this.compare = condition.getValue();
         this.mode = condition.condtionNum();

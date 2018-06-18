@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
@@ -10,6 +11,10 @@ public class MatrixDiagPart extends DynamicCustomOp {
 
     public MatrixDiagPart() {
         //
+    }
+
+    public MatrixDiagPart(SameDiff sameDiff, SDVariable in, boolean inPlace) {
+        super(null, sameDiff, new SDVariable[]{in}, inPlace);
     }
 
 
