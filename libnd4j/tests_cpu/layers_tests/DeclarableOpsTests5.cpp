@@ -2116,7 +2116,7 @@ TEST_F(DeclarableOpsTests5, StopGradient_2) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    NDArray<float>* output = result->at(0);
+    auto output = result->at(0);
 
     // output->printShapeInfo("Output shape> ");
     // x.printShapeInfo("Expected shape> ");
@@ -2125,8 +2125,6 @@ TEST_F(DeclarableOpsTests5, StopGradient_2) {
 
     ASSERT_TRUE(x.isSameShape(output));
     ASSERT_TRUE(x.equalsTo(output));
-
-    delete result;
 }
 
 
