@@ -34,30 +34,32 @@ public class LayerOpValidation extends BaseOpValidation {
 
         Nd4j.getRandom().setSeed(12345);
 
-        for (boolean rank1Bias : new boolean[]{false, true}) {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray input = Nd4j.rand(new long[]{2, 3});
+        INDArray weights = Nd4j.rand(new long[]{3, 4});
+        INDArray b = Nd4j.rand(new long[]{4});
 
-            SameDiff sameDiff = SameDiff.create();
-            INDArray input = Nd4j.rand(new long[]{2, 3});
-            INDArray weights = Nd4j.rand(new long[]{3, 4});
-            INDArray b = Nd4j.rand(rank1Bias ? new long[]{4} : new long[]{1, 4});
+        SDVariable sdInput = sameDiff.var("input", input);
+        SDVariable sdWeights = sameDiff.var("weights", weights);
+        SDVariable sdBias = sameDiff.var("bias", b);
 
-            SDVariable sdInput = sameDiff.var("input", input);
-            SDVariable sdWeights = sameDiff.var("weights", weights);
-            SDVariable sdBias = sameDiff.var("bias", b);
+        SDVariable res = sameDiff.xwPlusB(sdInput, sdWeights, sdBias);
+        SDVariable loss = sameDiff.standardDeviation(res, true);
 
-            SDVariable res = sameDiff.xwPlusB(sdInput, sdWeights, sdBias);
-            SDVariable loss = sameDiff.standardDeviation(res, true);
+        INDArray exp = input.mmul(weights).addiRowVector(b);
 
-            INDArray exp = input.mmul(weights).addiRowVector(b);
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(res.getVarName(), exp);
 
-            TestCase tc = new TestCase(sameDiff)
-                    .gradientCheck(true)
-                    .expectedOutput(res.getVarName(), exp);
+        System.out.println(sameDiff.summary());
+        System.out.println("============================");
+        sameDiff.createGradFunction();
+        System.out.println(sameDiff.getFunction("grad").summary());
 
 
-            String err = OpValidation.validate(tc);
-            assertNull(err);
-        }
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 
     @Test

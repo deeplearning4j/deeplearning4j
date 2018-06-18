@@ -1013,7 +1013,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     public SDVariable sum(String name, boolean keepDims, int... dimensions){
-        return sameDiff.sum(name, this, dimensions);
+        return sameDiff.sum(name, this, keepDims, dimensions);
     }
 
     public SDVariable mean(boolean keepDims, int... dimensions){

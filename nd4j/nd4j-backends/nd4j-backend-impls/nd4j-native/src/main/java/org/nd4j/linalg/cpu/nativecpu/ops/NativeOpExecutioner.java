@@ -163,24 +163,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
 
-        long[] retShape;
-        if(!(op instanceof BaseIndexAccumulation) || !((BaseIndexAccumulation)op).isNewFormat()) {
-            retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
-                    : ArrayUtil.removeIndex(op.x().shape(), dimension);
-
-            //ensure vector is proper shape (if old format)
-            if (retShape.length == 1) {
-                if (dimension[0] == 0)
-                    retShape = new long[]{1, retShape[0]};
-                else
-                    retShape = new long[]{retShape[0], 1};
-            } else if (retShape.length == 0) {
-                retShape = new long[]{1, 1};
-            }
+        boolean keepDims;
+        boolean newFormat;
+        if(op instanceof BaseAccumulation) {
+            keepDims = ((BaseAccumulation) op).isKeepDims();
+            newFormat = ((BaseAccumulation) op).isNewFormat();
         } else {
-            retShape = Shape.wholeArrayDimension(dimension) ? new long[0]
-                    : ArrayUtil.removeIndex(op.x().shape(), dimension);
+            keepDims = false;
+            newFormat = false;
         }
+        long[] retShape = reductionShape(op.x(), dimension, newFormat, keepDims);
+
 
         if(op.z() == null || op.x() == op.z()) {
             INDArray ret;
@@ -284,22 +277,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
 
-
-        long[] retShape;
-        if (Shape.wholeArrayDimension(dimension))
-            retShape = new long[] {1, 1};
-        else
-            retShape = ArrayUtil.removeIndex(maxShape, dimension);
-        //ensure vector is proper shape
-        if (retShape.length == 1) {
-            if (dimension[0] == 0)
-                retShape = new long[] {1, retShape[0]};
-            else
-                retShape = new long[] {retShape[0], 1};
-        } else if (retShape.length == 0) {
-            retShape = new long[] {1, 1};
+        boolean keepDims;
+        boolean newFormat;
+        if(op instanceof BaseAccumulation) {
+            keepDims = op.isKeepDims();
+            newFormat = ((BaseAccumulation) op).isNewFormat();
+        } else {
+            keepDims = false;
+            newFormat = false;
         }
 
+        long[] retShape = reductionShape(op.x(), dimension, newFormat, keepDims);
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
@@ -346,7 +334,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             op.setZ(ret);
         } else {
             // compare length
-            if (!op.isComplexAccumulation() && op.z().lengthLong() != ArrayUtil.prodLong(retShape))
+            long shapeProduct = (retShape.length == 0 ? 1 : ArrayUtil.prodLong(retShape));
+            if (!op.isComplexAccumulation() && op.z().lengthLong() != shapeProduct)
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
             else if (op.isComplexAccumulation()) {
                 long xT = op.x().tensorssAlongDimension(dimension);
@@ -2078,5 +2067,40 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public void setTadThreshold(int threshold) {
         loop.setTADThreshold(threshold);
+    }
+
+
+    private static long[] reductionShape(INDArray x, int[] dimension, boolean newFormat, boolean keepDims){
+        boolean wholeArray = Shape.wholeArrayDimension(dimension);
+        long[] retShape;
+        if(!newFormat) {
+            retShape = wholeArray ? new long[] {1, 1} : ArrayUtil.removeIndex(x.shape(), dimension);
+
+            //ensure vector is proper shape (if old format)
+            if (retShape.length == 1) {
+                if (dimension[0] == 0)
+                    retShape = new long[]{1, retShape[0]};
+                else
+                    retShape = new long[]{retShape[0], 1};
+            } else if (retShape.length == 0) {
+                retShape = new long[]{1, 1};
+            }
+        } else {
+            if(keepDims){
+                retShape = x.shape().clone();
+                if(wholeArray){
+                    for( int i=0; i<retShape.length; i++ ){
+                        retShape[i] = 1;
+                    }
+                } else {
+                    for (int d : dimension) {
+                        retShape[d] = 1;
+                    }
+                }
+            } else {
+                retShape = wholeArray ? new long[0] : ArrayUtil.removeIndex(x.shape(), dimension);
+            }
+        }
+        return retShape;
     }
 }
