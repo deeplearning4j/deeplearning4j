@@ -1874,8 +1874,6 @@ public class SameDiffTests {
         SDVariable dW = sd.var("dW", depthWeightArr);
         SDVariable b = sd.var("b", bArr);
 
-        SDVariable[] vars = new SDVariable[]{in, dW, b};
-
         Conv2DConfig c = Conv2DConfig.builder()
                 .kH(kH).kW(kW)
                 .pH(0).pW(0)
@@ -1884,7 +1882,7 @@ public class SameDiffTests {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.sconv2d(vars, c);
+        SDVariable out = sd.depthWiseConv2d(in, dW, b, c);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
@@ -1918,8 +1916,6 @@ public class SameDiffTests {
         SDVariable pW = sd.var("pW", pointWeightArr);
         SDVariable b = sd.var("b", bArr);
 
-        SDVariable[] vars = new SDVariable[]{in, dW, pW, b};
-
         Conv2DConfig c = Conv2DConfig.builder()
                 .kH(kH).kW(kW)
                 .pH(0).pW(0)
@@ -1928,7 +1924,7 @@ public class SameDiffTests {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.sconv2d(vars, c);
+        SDVariable out = sd.separableConv2d(in, dW, pW, b, c);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();

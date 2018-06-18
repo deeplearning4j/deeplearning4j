@@ -1953,20 +1953,38 @@ public class SameDiff {
      * Local response normalization operation.
      *
      * @param name      name of the operation in SameDiff
-     * @param inputs    the inputs to lrn
+     * @param input    the inputs to lrn
      * @param lrnConfig the configuration
      * @return
      */
-    public SDVariable localResponseNormalization(String name, SDVariable inputs,
+    public SDVariable localResponseNormalization(String name, SDVariable input,
                                                  LocalResponseNormalizationConfig lrnConfig) {
-        SDVariable ret = f().localResponseNormalization(inputs, lrnConfig);
+        SDVariable ret = f().localResponseNormalization(input, lrnConfig);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * 2D convolution operation
+     *
+     * @param layerInput input tensor to conv 2D op
+     * @param weights conv 2D weights
+     * @param config Conv2DConfig configuration
+     * @return result of conv2d op
+     */
     public SDVariable conv2d(SDVariable layerInput, SDVariable weights, Conv2DConfig config) {
         return conv2d(layerInput, weights, null, config);
     }
 
+
+    /**
+     * 2D convolution operation
+     *
+     * @param layerInput input tensor to conv 2D op
+     * @param weights conv 2D weights
+     * @param bias conv 2D bias
+     * @param config Conv2DConfig configuration
+     * @return result of conv2d op
+     */
     public SDVariable conv2d(SDVariable layerInput, SDVariable weights, SDVariable bias, Conv2DConfig config) {
         SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
         arr[0] = layerInput;
@@ -2001,9 +2019,40 @@ public class SameDiff {
     }
 
     /**
+     * Depth-wise 2D convolution operation
+     *
+     * @param layerInput input tensor to conv 2D op
+     * @param depthWeights depth-wise conv 2D weights
+     * @param config Conv2DConfig configuration
+     * @return result of conv2d op
+     */
+    public SDVariable depthWiseConv2d(SDVariable layerInput, SDVariable depthWeights, Conv2DConfig config) {
+        return depthWiseConv2d(layerInput, depthWeights, null, config);
+    }
+
+
+    /**
+     * Depth-wise 2D convolution operation
+     *
+     * @param layerInput input tensor to conv 2D op
+     * @param depthWeights depth-wise conv 2D weights
+     * @param bias conv 2D bias
+     * @param config Conv2DConfig configuration
+     * @return result of conv2d op
+     */
+    public SDVariable depthWiseConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable bias, Conv2DConfig config) {
+        SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
+        arr[0] = layerInput;
+        arr[1] = depthWeights;
+        if (bias != null)
+            arr[2] = bias;
+        return depthWiseConv2d(arr, config);
+    }
+
+    /**
      * Depth-wise Conv2d operation.
      *
-     * @param inputs            the inputs to conv2d
+     * @param inputs            the inputs to depth-wise conv2d
      * @param depthConv2DConfig the configuration
      * @return
      */
@@ -2023,6 +2072,42 @@ public class SameDiff {
     public SDVariable depthWiseConv2d(String name, SDVariable[] inputs, Conv2DConfig depthConv2DConfig) {
         SDVariable ret = f().depthWiseConv2d(inputs, depthConv2DConfig);
         return updateVariableNameAndReference(ret, name);
+    }
+
+
+    /**
+     * Separable 2D convolution operation
+     *
+     * @param layerInput input tensor to conv 2D op
+     * @param depthWeights conv 2D weights
+     * @param config Conv2DConfig configuration
+     * @return result of conv2d op
+     */
+    public SDVariable separableConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable pointWeights,
+                                      Conv2DConfig config) {
+        return separableConv2d(layerInput, depthWeights, pointWeights, null, config);
+    }
+
+
+    /**
+     * Separable 2D convolution operation
+     *
+     * @param layerInput input tensor to conv 2D op
+     * @param depthWeights depth-wise conv 2D weights
+     * @param pointWeights point-wise conv 2D weights
+     * @param bias conv 2D bias
+     * @param config Conv2DConfig configuration
+     * @return result of conv2d op
+     */
+    public SDVariable separableConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable pointWeights,
+                                      SDVariable bias, Conv2DConfig config) {
+        SDVariable[] arr = new SDVariable[bias == null ? 3 : 4];
+        arr[0] = layerInput;
+        arr[1] = depthWeights;
+        arr[2] = pointWeights;
+        if (bias != null)
+            arr[3] = bias;
+        return sconv2d(arr, config);
     }
 
     /**
