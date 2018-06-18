@@ -1107,9 +1107,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         } else
             multiDataSetIterator = multi;
 
+        long time1 = System.currentTimeMillis();
         while(multiDataSetIterator.hasNext()){
             MultiDataSet mds = multiDataSetIterator.next();
+            long time2 = System.currentTimeMillis();
+            lastEtlTime.set((time2 - time1));
+
             fit(mds.getFeatures(),mds.getLabels(), mds.getFeaturesMaskArrays(), mds.getLabelsMaskArrays());
+            time1 = System.currentTimeMillis();
         }
 
         if (destructable)
