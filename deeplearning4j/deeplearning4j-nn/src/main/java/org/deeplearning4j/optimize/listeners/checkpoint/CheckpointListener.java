@@ -116,7 +116,6 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
             saveEveryMs = TimeUnit.MILLISECONDS.convert(saveEveryAmount, saveEveryUnit);
         }
 
-        //TODO see if existing checkpoints are present
         this.checkpointRecordFile = new File(rootDir, "checkpointInfo.txt");
         if(this.checkpointRecordFile.exists() && this.checkpointRecordFile.length() > 0){
 
@@ -569,8 +568,10 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
         }
 
         /**
-         * If the checkpoint listener is set to save to a non-empty directory,
-         * WARNING: Be careful using this, as it may delete your saved models if misused!
+         * If the checkpoint listener is set to save to a non-empty directory, should the CheckpointListener-related
+         * content be deleted?<br>
+         * This is disabled by default (and instead, an exception will be thrown if existing data is found)<br>
+         * WARNING: Be careful when enabling this, as it deletes all saved checkpoint models in the specified directory!
          */
         public Builder deleteExisting(boolean deleteExisting){
             this.deleteExisting = deleteExisting;
