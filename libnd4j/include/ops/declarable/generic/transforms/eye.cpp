@@ -36,14 +36,15 @@ DECLARE_SHAPE_FN(eye) {
         }
         delete input;
     }
+        const bool ordered = (params[0] == -99 || params[0] == -102); // -99 :'c', -102 : 'f'
+        if (!ordered){
+            params.insert(params.begin(), -99);
+        }
     }
 
     Nd4jLong* outShapeInfo(nullptr);
 
-    const bool ordered = (params[0] == -99 || params[0] == -102); // -99 :'c', -102 : 'f'
-    if (!ordered){
-        params.insert(params.begin(), -99);
-    }
+
 
     const int size = params.size();
 
