@@ -379,7 +379,7 @@ TEST_F(RNGTests, Test_BernoulliDistribution_1) {
 
 
     nd4j::ops::random_bernoulli<float> op;
-    auto result = op.execute({&x}, {}, {3});
+    auto result = op.execute({&x}, {0.5f}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
