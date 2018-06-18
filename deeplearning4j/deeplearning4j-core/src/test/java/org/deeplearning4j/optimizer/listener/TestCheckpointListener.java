@@ -22,8 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestCheckpointListener extends BaseDL4JTest {
 
@@ -225,5 +224,48 @@ public class TestCheckpointListener extends BaseDL4JTest {
         assertTrue(ns.toString(), ns.containsAll(Arrays.asList(5, 11, 15, 17, 19)));
 
         assertEquals(5, l.availableCheckpoints().size());
+    }
+
+    @Test
+    public void testDeleteExisting() throws Exception {
+        File f = tempDir.newFolder();
+        Pair<MultiLayerNetwork, DataSetIterator> p = getNetAndData();
+        MultiLayerNetwork net = p.getFirst();
+        DataSetIterator iter = p.getSecond();
+
+
+        CheckpointListener l = new CheckpointListener.Builder(f)
+                .keepAll()
+                .saveEveryNEpochs(1)
+                .build();
+        net.setListeners(l);
+
+        for(int i=0; i<3; i++ ){
+            net.fit(iter);
+        }
+
+        //Now, create new listener:
+        try{
+            l = new CheckpointListener.Builder(f)
+                    .keepAll()
+                    .saveEveryNEpochs(1)
+                    .build();
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage().contains("Use deleteExisting(true)"));
+        }
+
+        l = new CheckpointListener.Builder(f)
+                .keepAll()
+                .saveEveryNEpochs(1)
+                .deleteExisting(true)
+                .build();
+        net.setListeners(l);
+
+        net.fit(iter);
+
+        File[] fList = f.listFiles();   //checkpoint meta file + 1 checkpoint
+        assertNotNull(fList);
+        assertEquals(2, fList.length);
     }
 }
