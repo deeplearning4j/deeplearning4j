@@ -31,6 +31,7 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
+import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.meta.Prediction;
@@ -41,6 +42,7 @@ import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.EvaluativeListener;
@@ -51,6 +53,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1283,7 +1286,39 @@ public class EvalTest extends BaseDL4JTest {
         for( int i=0; i<10; i++ ){
             net.fit(iter);
         }
+    }
 
+    @Test
+    public void testMultiOutputEvalSimple(){
+        Nd4j.getRandom().setSeed(12345);
 
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("out1", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).build(), "in")
+                .addLayer("out2", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX).build(), "in")
+                .setOutputs("out1", "out2")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        List<MultiDataSet> list = new ArrayList<>();
+        DataSetIterator iter = new IrisDataSetIterator(30, 150);
+        while(iter.hasNext()){
+            list.add(ComputationGraphUtil.toMultiDataSet(iter.next()));
+        }
+
+        Evaluation e = new Evaluation();
+        RegressionEvaluation e2 = new RegressionEvaluation();
+        Map<Integer,IEvaluation[]> evals = new HashMap<>();
+        evals.put(0, new IEvaluation[]{e});
+        evals.put(1, new IEvaluation[]{e2});
+
+        cg.evaluate(new IteratorMultiDataSetIterator(list.iterator(), 30), evals);
+
+        assertEquals(150, e.getNumRowCounter());
+        assertEquals(150, e2.getExampleCountPerColumn().getInt(0));
     }
 }
