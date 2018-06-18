@@ -124,7 +124,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
             deltaHidden *= derivOfSigmoid(hiddenUnitPreSigmoid);
 
             //Calculate weight/bias updates:
-            //dL/dw = delta * (activation of prev. layer)
+            //dL/dW = delta * (activation of prev. layer)
             //dL/db = delta
             float[] dLdwOut = new float[3];
             for (int i = 0; i < dLdwOut.length; i++)
@@ -149,7 +149,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
             //w_i = w_i - (learningRate)/(batchSize) * sum_j (dL_j/dw_i)
             //b_i = b_i - (learningRate)/(batchSize) * sum_j (dL_j/db_i)
             //Which for batch size of one (here) is simply:
-            //w_i = w_i - learningRate * dL/dw
+            //w_i = w_i - learningRate * dL/dW
             //b_i = b_i - learningRate * dL/db
             float[] expectedL1WeightsAfter = new float[4];
             float[] expectedL2WeightsAfter = new float[3];

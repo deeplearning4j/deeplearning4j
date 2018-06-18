@@ -85,14 +85,14 @@ public class Pooling2D extends DynamicCustomOp {
     }
 
     private void addArgs() {
-        addIArgument(config.getKh());
-        addIArgument(config.getKw());
-        addIArgument(config.getSy());
-        addIArgument(config.getSx());
-        addIArgument(config.getPh());
-        addIArgument(config.getPw());
-        addIArgument(config.getDh());
-        addIArgument(config.getDw());
+        addIArgument(config.getKH());
+        addIArgument(config.getKW());
+        addIArgument(config.getSH());
+        addIArgument(config.getSW());
+        addIArgument(config.getPH());
+        addIArgument(config.getPW());
+        addIArgument(config.getDH());
+        addIArgument(config.getDW());
         addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));
         addIArgument((config.getType() == Pooling2DType.AVG) ? config.getDivisor().ordinal() : (int)config.getExtra());
         addIArgument(ArrayUtil.fromBoolean(config.isNHWC()));
@@ -135,14 +135,14 @@ public class Pooling2D extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val aStrides = nodeDef.getAttrOrThrow("strides");
         val tfStrides = aStrides.getList().getIList();
-        val sY = tfStrides.get(1);
-        val sX = tfStrides.get(2);
+        val sH = tfStrides.get(1);
+        val sW = tfStrides.get(2);
 
         val aKernels = nodeDef.getAttrOrThrow("ksize");
         val tfKernels = aKernels.getList().getIList();
 
-        val kY = tfKernels.get(1);
-        val kX = tfKernels.get(2);
+        val kH = tfKernels.get(1);
+        val kW = tfKernels.get(2);
 
         val aPadding = nodeDef.getAttrOrThrow("padding");
         val padding = aPadding.getList().getIList();
@@ -155,20 +155,20 @@ public class Pooling2D extends DynamicCustomOp {
             log.debug("Mode: {}", paddingMode);
 
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
-                .sy(sY.intValue())
-                .sx(sX.intValue())
+                .sH(sH.intValue())
+                .sW(sW.intValue())
                 .type(null)
                 .isSameMode(isSameMode)
-                .kh(kY.intValue())
-                .kw(kX.intValue())
-                .ph(padding.get(0).intValue())
-                .pw(padding.get(1).intValue())
+                .kH(kH.intValue())
+                .kH(kW.intValue())
+                .pH(padding.get(0).intValue())
+                .pW(padding.get(1).intValue())
                 .virtualWidth(1)
                 .virtualHeight(1)
                 .build();
         this.config = pooling2DConfig;
         addArgs();
-        log.debug("Pooling: k: [{},{}]; s: [{}, {}], padding: {}", kY, kX, sY, sX, aPadding);
+        log.debug("Pooling: k: [{},{}]; s: [{}, {}], padding: {}", kH, kW, sH, sW, aPadding);
 
 
     }
@@ -181,16 +181,16 @@ public class Pooling2D extends DynamicCustomOp {
         val strides = attributesForNode.get("strides").getIntsList();
 
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
-                .sy(strides.get(0).intValue())
-                .sx(strides.get(1).intValue())
+                .sW(strides.get(0).intValue())
+                .sH(strides.get(1).intValue())
                 .type(null)
                 .isSameMode(isSameNode)
-                .kh(kernelShape.get(0).intValue())
-                .kw(kernelShape.get(1).intValue())
-                .ph(padding.get(0).intValue())
-                .pw(padding.get(1).intValue())
-                .virtualWidth(1)
+                .kH(kernelShape.get(0).intValue())
+                .kW(kernelShape.get(1).intValue())
+                .pH(padding.get(0).intValue())
+                .pW(padding.get(1).intValue())
                 .virtualHeight(1)
+                .virtualWidth(1)
                 .build();
         this.config = pooling2DConfig;
         addArgs();

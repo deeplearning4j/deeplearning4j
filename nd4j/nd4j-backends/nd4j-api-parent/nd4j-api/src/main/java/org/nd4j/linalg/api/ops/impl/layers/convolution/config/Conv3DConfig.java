@@ -14,62 +14,78 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Conv3DConfig extends BaseConvolutionConfig {
-    @Builder.Default private long kT = 1;
-    @Builder.Default private long kW = 1;
-    @Builder.Default private long kH = 1;
+    //kernel
+    @Builder.Default
+    private long kD = 1;
+    @Builder.Default
+    private long kW = 1;
+    @Builder.Default
+    private long kH = 1;
 
     //strides
-    @Builder.Default private long dT = 1;
-    @Builder.Default private long dW = 1;
-    @Builder.Default private long dH = 1;
+    @Builder.Default
+    private long sD = 1;
+    @Builder.Default
+    private long sW = 1;
+    @Builder.Default
+    private long sH = 1;
 
     //padding
-    @Builder.Default private long pT = 0;
-    @Builder.Default private long pW = 0;
-    @Builder.Default private int pH = 0;
+    @Builder.Default
+    private long pD = 0;
+    @Builder.Default
+    private long pW = 0;
+    @Builder.Default
+    private long pH = 0;
 
     //dilations
-    @Builder.Default private long dilationT = 1;
-    @Builder.Default private long dilationW = 1;
-    @Builder.Default private long dilationH = 1;
+    @Builder.Default
+    private long dD = 1;
+    @Builder.Default
+    private long dW = 1;
+    @Builder.Default
+    private long dH = 1;
 
     //output padding
-    @Builder.Default private long aT = 0;
-    @Builder.Default private long aW = 0;
-    @Builder.Default private long aH = 0;
+    @Builder.Default
+    private long aD = 0;
+    @Builder.Default
+    private long aW = 0;
+    @Builder.Default
+    private long aH = 0;
 
+    @Builder.Default
     private boolean biasUsed = false;
     private boolean isValidMode;
-    private boolean isNCDHW;
+    @Builder.Default
+    private boolean isNCDHW = true;
 
     @Builder.Default
     private String dataFormat = "NDHWC";
 
-    public Map<String,Object> toProperties() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("kT",kT);
-        ret.put("kW",kW);
-        ret.put("kH",kH);
-        ret.put("dT",dT);
-        ret.put("dW",dW);
-        ret.put("dH",dH);
-        ret.put("pT",pT);
-        ret.put("pW",pW);
-        ret.put("pH",pH);
-        ret.put("dilationT",dilationT);
-        ret.put("dilationW",dilationW);
-        ret.put("dilationH",dilationH);
-        ret.put("aT",aT);
-        ret.put("aW",aW);
-        ret.put("aH",aH);
-        ret.put("biasUsed",biasUsed);
-        ret.put("dataFormat",dataFormat);
-        ret.put("isValidMode",isValidMode);
+    public Map<String, Object> toProperties() {
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("kD", kD);
+        ret.put("kW", kW);
+        ret.put("kH", kH);
+        ret.put("sD", sD);
+        ret.put("sW", sW);
+        ret.put("sH", sH);
+        ret.put("pD", pD);
+        ret.put("pW", pW);
+        ret.put("pH", pH);
+        ret.put("dD", dD);
+        ret.put("dW", dW);
+        ret.put("dH", dH);
+        ret.put("aD", aD);
+        ret.put("aW", aW);
+        ret.put("aH", aH);
+        ret.put("biasUsed", biasUsed);
+        ret.put("dataFormat", dataFormat);
+        ret.put("isValidMode", isValidMode);
 
         return ret;
     }
-
-
 
 
 }
