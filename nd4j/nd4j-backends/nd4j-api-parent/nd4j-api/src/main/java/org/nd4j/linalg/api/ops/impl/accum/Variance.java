@@ -97,6 +97,10 @@ public class Variance extends BaseAccumulation {
         init(x, y, x, x.lengthLong());
     }
 
+    public Variance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, y, z, newFormat, keepDims, dimensions);
+    }
+
     @Override
     public INDArray noOp() {
         return Nd4j.zerosLike(x());

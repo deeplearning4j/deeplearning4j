@@ -72,6 +72,10 @@ public class Max extends BaseAccumulation {
         super(x, y);
     }
 
+    public Max(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, y, z, newFormat, keepDims, dimensions);
+    }
+
 
     @Override
     public int opNum() {

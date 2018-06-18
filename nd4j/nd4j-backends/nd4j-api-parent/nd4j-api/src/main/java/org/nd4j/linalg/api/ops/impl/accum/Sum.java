@@ -69,8 +69,8 @@ public class Sum extends BaseAccumulation {
         super(x, y, z, x.lengthLong());
     }
 
-    public Sum(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean newFormat) {
-        super(x, y, z, keepDims, newFormat);
+    public Sum(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, y, z, newFormat, keepDims, dimensions);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class Sum extends BaseAccumulation {
 
     @Override
     public String opName() {
-        return "sum";
+        return "reduce_sum";
     }
 
     @Override

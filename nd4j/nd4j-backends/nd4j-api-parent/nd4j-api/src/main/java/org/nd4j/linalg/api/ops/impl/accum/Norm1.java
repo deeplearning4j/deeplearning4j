@@ -72,7 +72,7 @@ public class Norm1 extends BaseAccumulation {
 
     @Override
     public String opName() {
-        return "norm1";
+        return "reduce_norm1";
     }
 
     @Override

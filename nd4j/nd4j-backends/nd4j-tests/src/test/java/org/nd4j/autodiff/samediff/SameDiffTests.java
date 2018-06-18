@@ -2429,7 +2429,7 @@ public class SameDiffTests {
         INDArray out1 = sd.execAndEndResult();
         assertEquals(Nd4j.ones(3, 4), out1);
 
-        sd.associateArrayWithVariable(Nd4j.create(4, 5), var0);
+        sd.associateArrayWithVariable(Nd4j.create(3, 4), var0);
         INDArray out2 = sd.execAndEndResult();
         assertEquals(Nd4j.ones(4, 5), out2);
     }

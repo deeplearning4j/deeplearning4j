@@ -25,6 +25,7 @@ public class SquaredNorm extends BaseReduction {
 
     public SquaredNorm(){}
 
+
     @Override
     public String opName() {
         return "reduce_sqnorm";

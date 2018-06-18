@@ -146,10 +146,11 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         init();
     }
 
-    public BaseAccumulation(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean newFormat) {
+    public BaseAccumulation(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
         super(x, y, z, x.lengthLong());
-        this.keepDims = keepDims;
         this.newFormat = newFormat;
+        this.keepDims = keepDims;
+        this.dimensions = dimensions;
         init();
     }
 

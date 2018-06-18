@@ -76,7 +76,7 @@ public class NormMax extends BaseAccumulation {
 
     @Override
     public String opName() {
-        return "normmax";
+        return "reduce_normmax";
     }
 
 

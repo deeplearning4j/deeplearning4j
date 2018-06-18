@@ -61,8 +61,8 @@ public class Mean extends Sum {
         super(x, y, z, x.lengthLong());
     }
 
-    public Mean(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean newFormat) {
-        super(x, y, z, keepDims, newFormat);
+    public Mean(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, y, z, newFormat, keepDims, dimensions);
     }
 
     @Override
