@@ -46,7 +46,8 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     * */
 
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 2;
-    protected int rows, columns, rank;
+    protected long rows, columns;
+    protected int rank;
     protected Boolean isVector = null;
     protected Boolean isMatrix = null;
     protected Boolean isScalar = null;
@@ -329,10 +330,10 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
         if (shape.length == 1) {
             rows = 1;
-            columns = (int) shape[0];
+            columns = shape[0];
         } else if (this.shape().length == 2) {
-            rows = (int) shape[0];
-            columns = (int) shape[1];
+            rows = shape[0];
+            columns = shape[1];
         }
         rank = shape.length;
 
@@ -1673,12 +1674,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int columns() {
-        return columns;
+        return (int) columns;
     }
 
     @Override
     public int rows() {
-        return rows;
+        return (int) rows;
     }
 
     /**

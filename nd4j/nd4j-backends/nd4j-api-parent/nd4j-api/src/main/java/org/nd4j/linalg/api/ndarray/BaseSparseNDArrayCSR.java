@@ -48,7 +48,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
         this.columnsPointers = Nd4j.getDataBufferFactory().createInt(valuesSpace);
         this.columnsPointers.setData(columnsPointers);
         this.length = columnsPointers.length;
-        int pointersSpace = rows;
+        long pointersSpace = rows;
         this.pointerB = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerB.setData(pointerB);
         this.pointerE = Nd4j.getDataBufferFactory().createInt(pointersSpace);
@@ -70,7 +70,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
         this.columnsPointers.setData(columnsPointers);
         this.length = columnsPointers.length;
         // The size of these pointers are constant
-        int pointersSpace = rows;
+        long pointersSpace = rows;
         this.pointerB = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerB.setData(pointerB);
         this.pointerE = Nd4j.getDataBufferFactory().createInt(pointersSpace);
