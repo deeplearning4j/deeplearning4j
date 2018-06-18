@@ -2049,6 +2049,7 @@ public class SameDiff {
         return depthWiseConv2d(arr, config);
     }
 
+
     /**
      * Depth-wise Conv2d operation.
      *
@@ -2135,6 +2136,37 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+
+    /**
+     * 2D deconvolution operation
+     *
+     * @param layerInput input tensor to conv 2D op
+     * @param weights conv 2D weights
+     * @param deconv2DConfig DeConv2DConfig configuration
+     * @return result of deconv2d op
+     */
+    public SDVariable deconv2d(SDVariable layerInput, SDVariable weights, DeConv2DConfig deconv2DConfig) {
+        return deconv2d(layerInput, weights, null, deconv2DConfig);
+    }
+
+
+    /**
+     * 2D deconvolution operation
+     *
+     * @param layerInput input tensor to conv 2D op
+     * @param weights conv 2D weights
+     * @param bias conv 2D bias
+     * @param deconv2DConfig DeConv2DConfig configuration
+     * @return result of deconv2d op
+     */
+    public SDVariable deconv2d(SDVariable layerInput, SDVariable weights, SDVariable bias, DeConv2DConfig deconv2DConfig) {
+        SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
+        arr[0] = layerInput;
+        arr[1] = weights;
+        if (bias != null)
+            arr[2] = bias;
+        return deconv2d(arr, deconv2DConfig);
+    }
 
     /**
      * Deconv2d operation.

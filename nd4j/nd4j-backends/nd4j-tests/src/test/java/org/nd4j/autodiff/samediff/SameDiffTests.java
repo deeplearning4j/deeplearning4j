@@ -1952,18 +1952,16 @@ public class SameDiffTests {
         SDVariable in = sd.var("in", inArr);
         SDVariable w = sd.var("W", wArr);
         SDVariable b = sd.var("b", bArr);
-
-        SDVariable[] vars = new SDVariable[]{in, w, b};
-
-        DeConv2DConfig deconv = DeConv2DConfig.builder()
-                .kX(kH).kY(kW)
-                .pX(0).pY(0)
-                .sX(1).sY(1)
-                .dX(1).dY(1)
+        
+        DeConv2DConfig deconvConfig = DeConv2DConfig.builder()
+                .kH(kH).kW(kW)
+                .pH(0).pW(0)
+                .sH(1).sW(1)
+                .dH(1).dW(1)
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.deconv2d(vars, deconv);
+        SDVariable out = sd.deconv2d(in, w, b, deconvConfig);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
