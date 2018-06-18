@@ -1131,9 +1131,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                             input = input.reshape(inShape[0], inShape[1], 1);
                         }
                         if (layers[i] instanceof RecurrentLayer) {
-                            input = ((RecurrentLayer) layers[i]).rnnTimeStep(reshapeTimeStepInput(input), mgr);
+                            input = ((RecurrentLayer) layers[i]).rnnTimeStep(input, mgr);
                         } else if (layers[i] instanceof MultiLayerNetwork) {
-                            input = ((MultiLayerNetwork) layers[i]).rnnTimeStep(reshapeTimeStepInput(input));
+                            input = ((MultiLayerNetwork) layers[i]).rnnTimeStep(input);
                         } else {
                             input = layers[i].activate(input, false, mgr);
                         }
@@ -1176,14 +1176,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
         }
 
-        return input;
-    }
-
-    private INDArray reshapeTimeStepInput(INDArray input) {
-        if (input.rank() == 2) { // dynamically reshape to 3D input with one time-step.
-            long[] inShape = input.shape();
-            input = input.reshape(inShape[0], inShape[1], 1);
-        }
         return input;
     }
 
