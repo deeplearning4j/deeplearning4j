@@ -30,8 +30,6 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testXwPlusB() {
-        OpValidationSuite.ignoreFailing();
-
         Nd4j.getRandom().setSeed(12345);
 
         SameDiff sameDiff = SameDiff.create();
@@ -64,8 +62,6 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testReluLayer() {
-        OpValidationSuite.ignoreFailing();
-
         Nd4j.getRandom().setSeed(12345);
 
         SameDiff sameDiff = SameDiff.create();
