@@ -40,7 +40,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         INDArray last = stateMap.get(STATE_KEY_PREV_ACTIVATION);
         INDArray out = activateHelper(last, false, false, workspaceMgr).getFirst();
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            stateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)));
+            stateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)).dup());
         }
         return out;
     }
