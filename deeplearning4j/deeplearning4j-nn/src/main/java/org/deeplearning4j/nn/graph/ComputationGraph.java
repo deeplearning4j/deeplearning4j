@@ -4016,6 +4016,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Will also give information about frozen layers/vertices, if any.
      *
      * @return Summary as a string
+     * @see #memoryInfo(int, InputType...)
      */
     public String summary() {
         return summary(null);
@@ -4030,6 +4031,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Will also give information about frozen layers/vertices, if any.
      *
      * @return Summary as a string
+     * @see #memoryInfo(int, InputType...)
      */
     public String summary(InputType... inputTypes) {
 
@@ -4149,6 +4151,22 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         ret += "\n";
 
         return ret;
+    }
+
+    /**
+     * Generate information regarding memory use for the network, for the given input types and minibatch size.
+     * Note that when using workspaces or CuDNN, the network should be trained for some iterations so that the memory
+     * workspaces have time to initialize. Without this, the memory requirements during training may be underestimated.
+     *
+     * Note also that this is the same information that is generated during an OOM crash when training or performing
+     * inference.
+     *
+     * @param minibatch    Minibatch size to estimate memory for
+     * @param inputTypes   Input types to the network
+     * @return A String with information about network memory use information
+     */
+    public String memoryInfo(int minibatch, InputType... inputTypes){
+        return CrashReportingUtil.generateMemoryStatus(this, minibatch, inputTypes);
     }
 
     /**

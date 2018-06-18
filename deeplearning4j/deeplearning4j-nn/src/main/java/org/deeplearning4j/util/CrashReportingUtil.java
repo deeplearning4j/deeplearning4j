@@ -152,7 +152,7 @@ public class CrashReportingUtil {
 
         try{
             sb.append("\n\n");
-            sb.append(generateMemoryStatus(net));
+            sb.append(generateMemoryStatus(net, -1, (InputType[])null));
         } catch (Throwable t){
             sb.append("<Error generating network memory status information section>")
                     .append(ExceptionUtils.getStackTrace(t));
@@ -181,7 +181,7 @@ public class CrashReportingUtil {
      * @param net   Net to generate the report for
      * @return Report as a String
      */
-    public static String generateMemoryStatus(Model net){
+    public static String generateMemoryStatus(Model net, int minibatch, InputType... inputTypes){
         MultiLayerNetwork mln = null;
         ComputationGraph cg = null;
         boolean isMLN;
@@ -310,7 +310,7 @@ public class CrashReportingUtil {
             sb.append(f("Workspace Mode: Inference", mln.getLayerWiseConfigurations().getInferenceWorkspaceMode()));
             appendLayerInformation(sb, mln.getLayers(), bytesPerElement);
             appendHelperInformation(sb, mln.getLayers());
-            appendActivationShapes(mln, sb, bytesPerElement);
+            appendActivationShapes(mln, (inputTypes == null || inputTypes.length == 0 ? null : inputTypes[0]), minibatch, sb, bytesPerElement);
         } else {
             sb.append(f("Backprop Type", cg.getConfiguration().getBackpropType()));
             if(cg.getConfiguration().getBackpropType() == BackpropType.TruncatedBPTT){
@@ -520,17 +520,30 @@ public class CrashReportingUtil {
         sb.append(fBytes("Total Helper Persistent Memory Use", totalHelperMem));
     }
 
-    private static void appendActivationShapes(MultiLayerNetwork net, StringBuilder sb, int bytesPerElement){
+    private static void appendActivationShapes(MultiLayerNetwork net, InputType inputType, int minibatch, StringBuilder sb, int bytesPerElement){
         INDArray input = net.getInput();
-        if(input == null){
+        if(input == null && inputType == null){
             return;
         }
 
         sb.append("\n----- Network Activations: Inferred Activation Shapes -----\n");
-        InputType inputType = inferInputType(input);
+        if(inputType == null) {
+            inputType = inferInputType(input);
+            if(minibatch <= 0){
+                minibatch = (int)input.size(0);
+            }
+        }
 
-        sb.append(f("Current Minibatch Size", input.size(0)));
-        sb.append(f("Current Input Shape", Arrays.toString(input.shape())));
+        long[] inputShape;
+        if(input != null){
+            inputShape = input.shape();
+        } else {
+            inputShape = inputType.getShape(true);
+            inputShape[0] = minibatch;
+        }
+
+        sb.append(f("Current Minibatch Size", minibatch));
+        sb.append(f("Input Shape", Arrays.toString(inputShape)));
         List<InputType> inputTypes = net.getLayerWiseConfigurations().getLayerActivationTypes(inputType);
         String format = "%-3s %-20s %-20s %-42s %-20s %-12s %-12s";
         sb.append(String.format(format, "Idx", "Name", "Layer Type", "Activations Type", "Activations Shape",
@@ -541,7 +554,7 @@ public class CrashReportingUtil {
         for( int i=0; i<inputTypes.size(); i++ ){
             long[] shape = inputTypes.get(i).getShape(true);
             if(shape[0] <= 0){
-                shape[0] = input.size(0);
+                shape[0] = minibatch;
             }
             long numElements = ArrayUtil.prodLong(shape);
             long bytes = numElements*bytesPerElement;
@@ -551,12 +564,12 @@ public class CrashReportingUtil {
             last = bytes;
         }
         sb.append(fBytes("Total Activations Memory", totalActivationBytes));
-        sb.append(fBytes("Total Activations Memory (per ex)", totalActivationBytes / input.size(0)));
+        sb.append(fBytes("Total Activations Memory (per ex)", totalActivationBytes / minibatch));
 
         //Exclude output layer, include input
-        long totalActivationGradMem = totalActivationBytes - last + (ArrayUtil.prodLong(input.shape()) * bytesPerElement);
+        long totalActivationGradMem = totalActivationBytes - last + (ArrayUtil.prodLong(inputShape) * bytesPerElement);
         sb.append(fBytes("Total Activation Gradient Mem.", totalActivationGradMem));
-        sb.append(fBytes("Total Activation Gradient Mem. (per ex)", totalActivationGradMem / input.size(0)));
+        sb.append(fBytes("Total Activation Gradient Mem. (per ex)", totalActivationGradMem / minibatch));
     }
 
     private static void appendActivationShapes(ComputationGraph net, StringBuilder sb, int bytesPerElement){

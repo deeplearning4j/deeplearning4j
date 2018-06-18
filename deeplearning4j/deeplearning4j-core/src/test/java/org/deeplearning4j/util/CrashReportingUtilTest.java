@@ -12,8 +12,10 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
@@ -39,7 +41,7 @@ public class CrashReportingUtilTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testMLN() throws Exception {
+    public void test() throws Exception {
         File dir = testDir.newFolder();
         CrashReportingUtil.crashDumpOutputDirectory(dir);
 
@@ -77,6 +79,7 @@ public class CrashReportingUtilTest extends BaseDL4JTest {
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
+        net.addListeners(new ScoreIterationListener(1));
 
         //Test net that hasn't been trained yet
         Exception e = new Exception();
@@ -90,6 +93,7 @@ public class CrashReportingUtilTest extends BaseDL4JTest {
         assertTrue(str.contains("Network Information"));
         assertTrue(str.contains("Layer Helpers"));
         assertTrue(str.contains("JavaCPP"));
+        assertTrue(str.contains("ScoreIterationListener"));
 
 
         //Train:
@@ -106,10 +110,76 @@ public class CrashReportingUtilTest extends BaseDL4JTest {
         assertTrue(str.contains("Network Information"));
         assertTrue(str.contains("Layer Helpers"));
         assertTrue(str.contains("JavaCPP"));
+        assertTrue(str.contains("ScoreIterationListener(1)"));
 
-        System.out.println("///////////////////////////////////////////////////////////");
-        System.out.println(str);
-        System.out.println("///////////////////////////////////////////////////////////");
+//        System.out.println("///////////////////////////////////////////////////////////");
+//        System.out.println(str);
+//        System.out.println("///////////////////////////////////////////////////////////");
+
+
+        //Also test manual memory info
+        String mlnMemoryInfo = net.memoryInfo(32, InputType.convolutionalFlat(28, 28, 1));
+//        System.out.println("///////////////////////////////////////////////////////////");
+//        System.out.println(mlnMemoryInfo);
+//        System.out.println("///////////////////////////////////////////////////////////");
+
+        assertTrue(mlnMemoryInfo.contains("Network Information"));
+        assertTrue(mlnMemoryInfo.contains("Layer Helpers"));
+        assertTrue(mlnMemoryInfo.contains("JavaCPP"));
+        assertTrue(mlnMemoryInfo.contains("ScoreIterationListener(1)"));
+
+
+
+        ////////////////////////////////////////
+        //Same thing on ComputationGraph:
+        dir = testDir.newFolder();
+        CrashReportingUtil.crashDumpOutputDirectory(dir);
+
+        ComputationGraph cg = net.toComputationGraph();
+        cg.setListeners(new ScoreIterationListener(1));
+
+        //Test net that hasn't been trained yet
+        CrashReportingUtil.writeMemoryCrashDump(cg, e);
+
+        list = dir.listFiles();
+        assertNotNull(list);
+        assertEquals(1, list.length);
+        str = FileUtils.readFileToString(list[0]);
+        assertTrue(str.contains("Network Information"));
+        assertTrue(str.contains("Layer Helpers"));
+        assertTrue(str.contains("JavaCPP"));
+        assertTrue(str.contains("ScoreIterationListener(1)"));
+
+        //Train:
+        cg.fit(iter);
+        dir = testDir.newFolder();
+        CrashReportingUtil.crashDumpOutputDirectory(dir);
+        CrashReportingUtil.writeMemoryCrashDump(cg, e);
+
+        list = dir.listFiles();
+        assertNotNull(list);
+        assertEquals(1, list.length);
+        str = FileUtils.readFileToString(list[0]);
+        assertTrue(str.contains("Network Information"));
+        assertTrue(str.contains("Layer Helpers"));
+        assertTrue(str.contains("JavaCPP"));
+        assertTrue(str.contains("ScoreIterationListener(1)"));
+
+//        System.out.println("///////////////////////////////////////////////////////////");
+//        System.out.println(str);
+//        System.out.println("///////////////////////////////////////////////////////////");
+
+
+        //Also test manual memory info
+        String cgMemoryInfo = cg.memoryInfo(32, InputType.convolutionalFlat(28, 28, 1));
+//        System.out.println("///////////////////////////////////////////////////////////");
+//        System.out.println(cgMemoryInfo);
+//        System.out.println("///////////////////////////////////////////////////////////");
+
+        assertTrue(cgMemoryInfo.contains("Network Information"));
+        assertTrue(cgMemoryInfo.contains("Layer Helpers"));
+        assertTrue(cgMemoryInfo.contains("JavaCPP"));
+        assertTrue(cgMemoryInfo.contains("ScoreIterationListener(1)"));
 
     }
 
