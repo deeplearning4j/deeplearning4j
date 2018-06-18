@@ -66,7 +66,7 @@ public class TestConstraints extends BaseDL4JTest {
             INDArray input = Nd4j.rand(3, 12);
             INDArray labels = Nd4j.rand(3, 8);
 
-            net.fit(input, labels);
+            net.fit(input.reshape(3,12,1), labels);
 
             INDArray RW0 = net.getParam("0_RW");
 
