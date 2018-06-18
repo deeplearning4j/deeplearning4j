@@ -10,7 +10,9 @@
 namespace nd4j {
 namespace ops {
 
+
 CUSTOM_OP_IMPL(eye, -2, 1, false, 0, -2) {
+
     helpers::eye(*OUTPUT_VARIABLE(0));
 
     return Status::OK();

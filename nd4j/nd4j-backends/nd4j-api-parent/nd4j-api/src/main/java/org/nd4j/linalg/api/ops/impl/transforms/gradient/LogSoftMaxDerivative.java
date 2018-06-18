@@ -103,7 +103,7 @@ public class LogSoftMaxDerivative extends BaseGradientOp  {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Arrays.asList(f().sub(i_v.get(0),f().sum(f().exp(larg()),1)));
+        return Arrays.asList(f().sub(i_v.get(0),f().sum(f().exp(larg()), false,1)));
     }
 
 }

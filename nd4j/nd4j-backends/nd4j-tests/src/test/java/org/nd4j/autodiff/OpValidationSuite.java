@@ -37,6 +37,7 @@ import static org.junit.Assume.assumeFalse;
         LayerOpValidation.class,
         LossOpValidation.class,
         MiscOpValidation.class,
+        RandomOpValidation.class,
         ReductionBpOpValidation.class,
         ReductionOpValidation.class,
         ShapeOpValidation.class,
@@ -74,7 +75,7 @@ public class OpValidationSuite {
         Nd4j.setDataType(initialType);
 
         // Log coverage information
-        OpValidation.logCoverageInformation(true, true);
+        OpValidation.logCoverageInformation(true, true, true);
     }
 
 

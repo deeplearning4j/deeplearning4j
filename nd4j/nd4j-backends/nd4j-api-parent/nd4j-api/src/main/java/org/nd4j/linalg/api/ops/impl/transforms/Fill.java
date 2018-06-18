@@ -40,6 +40,11 @@ public class Fill extends DynamicCustomOp {
         addArgs();
     }
 
+    public Fill(INDArray shape, INDArray result, double value) {
+        super(null, shape, result, Collections.singletonList(value), null);
+        this.value = value;
+    }
+
 
     protected void addArgs() {
         addTArgument(value);

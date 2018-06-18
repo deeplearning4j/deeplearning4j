@@ -26,20 +26,17 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Calculate the min over a vector
+ * Calculate the min over an array
  *
  * @author Adam Gibson
  */
 public class Min extends BaseAccumulation {
-    public Min(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
-    }
-
-    public Min(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
-        super(sameDiff, i_v, i_v2, dimensions);
+    public Min(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, dimensions, keepDims);
     }
 
     public Min() {
@@ -61,6 +58,10 @@ public class Min extends BaseAccumulation {
         super(x, y);
     }
 
+    public Min(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, y, z, newFormat, keepDims, dimensions);
+    }
+
 
     @Override
     public int opNum() {
@@ -69,7 +70,7 @@ public class Min extends BaseAccumulation {
 
     @Override
     public String opName() {
-        return "min";
+        return "reduce_min";
     }
 
     @Override
@@ -99,20 +100,8 @@ public class Min extends BaseAccumulation {
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        //TODO do we need to handle the "multiple equal minimums" case?
-        //TODO code duplication (min/max)
-
-        SDVariable out = outputVariables()[0];
-
-        int origRank = Shape.rankFromShape(arg().getShape());
-        SDVariable expandedOut = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, out);
-        expandedOut = sameDiff.onesLike("temp0", arg()).mul("tempmul", expandedOut);
-        SDVariable expandedGrad = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-
-        SDVariable eq = sameDiff.eq(arg(), expandedOut);
-        SDVariable ret = eq.mul(expandedGrad);
-        return Arrays.asList(ret);
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
+        return Collections.singletonList(f().minBp(arg(), grad.get(0), keepDims, dimensions));
     }
 
     @Override

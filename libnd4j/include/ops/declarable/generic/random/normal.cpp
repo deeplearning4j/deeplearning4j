@@ -33,6 +33,8 @@ namespace nd4j {
 
             return SHAPELIST(newShape);
         }
+		
+		DECLARE_SYN(randomnormal, random_normal);
     }
 }
 

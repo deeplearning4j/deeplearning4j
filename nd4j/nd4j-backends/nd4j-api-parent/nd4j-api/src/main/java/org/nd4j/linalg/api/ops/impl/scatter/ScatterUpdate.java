@@ -19,14 +19,13 @@ public class ScatterUpdate extends DynamicCustomOp {
 
     public ScatterUpdate(SameDiff sameDiff, SDVariable ref, SDVariable indices, SDVariable updates) {
         super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);
-        throw new UnsupportedOperationException("ScatterUpdate op disabled pending libnd4j op!");
     }
 
     public ScatterUpdate(){}
 
     @Override
     public String opName() {
-        return "scatter_update";    //TODO WRONG OP NAME - has different semantics to tf-style scatter_update
+        return "scatter_upd";
     }
 
     @Override

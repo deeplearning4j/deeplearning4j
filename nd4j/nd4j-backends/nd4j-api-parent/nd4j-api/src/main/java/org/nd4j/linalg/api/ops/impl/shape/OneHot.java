@@ -6,6 +6,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -30,12 +31,7 @@ public class OneHot extends DynamicCustomOp {
     }
 
     public OneHot(SameDiff sameDiff, SDVariable indices, int depth) {
-        super(null, sameDiff,  new SDVariable[] {indices}, false);
-        this.depth = depth;
-        this.axis = -1;
-        this.on = 1.00;
-        this.off = 0.00;
-        addArgs();
+        this(sameDiff, indices, depth, -1, 1, 0);
     }
 
     public OneHot(SameDiff sameDiff, SDVariable indices, int depth, int axis, double on, double off) {
@@ -46,6 +42,21 @@ public class OneHot extends DynamicCustomOp {
         this.off = off;
         addArgs();
     }
+
+    public OneHot(INDArray indices, INDArray output, int depth) {
+        this(indices, output, depth, -1, 1, 0);
+    }
+
+    public OneHot(INDArray indices, INDArray output, int depth, int axis, double on, double off) {
+        super(null, indices, output, null, null);
+        this.depth = depth;
+        this.axis = axis;
+        this.on = on;
+        this.off = off;
+        addArgs();
+    }
+
+
 
 
     protected void addArgs() {

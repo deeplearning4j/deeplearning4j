@@ -2,28 +2,30 @@ package org.nd4j.autodiff.opvalidation;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
-public class ReductionBpOpValidation {
+public class ReductionBpOpValidation extends BaseOpValidation {
 
     private DataBuffer.Type initialType;
+
+    public ReductionBpOpValidation(Nd4jBackend backend) {
+        super(backend);
+    }
 
     @Before
     public void before() throws Exception {
@@ -440,7 +442,7 @@ public class ReductionBpOpValidation {
              [    5.0000,   24.0000,   63.0000,  128.0000]]
              */
 
-            INDArray dLdIn = Nd4j.createUninitialized(4, 4);
+            INDArray dLdIn = Nd4j.createUninitialized(3, 4);
 
             String err = OpValidation.validate(new OpTestCase(new ProdBp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))
                     .expectedOutput(0, dLdInExpected_0));
@@ -464,7 +466,7 @@ public class ReductionBpOpValidation {
              */
 
 
-            dLdIn = Nd4j.createUninitialized(4, 4);
+            dLdIn = Nd4j.createUninitialized(3, 4);
             err = OpValidation.validate(new OpTestCase(new ProdBp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
                     .expectedOutput(0, dLdInExpected_1));
 
@@ -513,7 +515,7 @@ public class ReductionBpOpValidation {
     @Test
     public void testStdevBP_Rank1() {
         OpValidationSuite.ignoreFailing();
-        fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
+        //fail(); //https://github.com/deeplearning4j/deeplearning4j/issues/5582
         INDArray dLdOut = Nd4j.trueScalar(0.5);
         INDArray preReduceInput = Nd4j.create(new double[]{2,3,4}, new long[]{3});
         double stdev = preReduceInput.stdNumber(true).doubleValue();
@@ -795,7 +797,7 @@ public class ReductionBpOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(-5, 6, 12).addi(0.1).reshape(3, 4);
 
             INDArray sgn = Transforms.sign(preReduceInput, true);
 
@@ -896,7 +898,7 @@ public class ReductionBpOpValidation {
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = sgn.mul(max_0).mulRowVector(dLdOut_0);
 
-            INDArray dLdIn = Nd4j.createUninitialized(4, 4);
+            INDArray dLdIn = Nd4j.createUninitialized(3, 4);
 
             String err = OpValidation.validate(new OpTestCase(new NormMaxBp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))
                     .expectedOutput(0, dLdInExpected_0));
