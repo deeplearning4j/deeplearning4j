@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -432,6 +433,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public boolean isPretrainLayer() {
         return false;
+    }
+
+    @Override
+    public LayerHelper getHelper() {
+        return helper;
     }
 
     public long[] getShape(INDArray x) {

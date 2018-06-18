@@ -2,6 +2,7 @@
 // Created by george@skymind.io on 6/4/2018.
 //
 
+#include <ops/declarable/helpers/reduce_norm.h>
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -63,20 +64,7 @@ namespace ops {
             }
             else {
                 std::vector<int> axes = *block.getIArguments();
-                std::vector<int> dimensions; //(input->rankOf() - axes.size());
-                for (Nd4jLong e = 0; e < input->rankOf(); e++) {
-                    if (std::find(axes.begin(), axes.end(), e) == axes.end()) {
-                        dimensions.emplace_back(e);
-                    }
-                }
-                std::unique_ptr<ResultSet<T>> outList(NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions));
-                std::unique_ptr<ResultSet<T>> inList(NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions));
-                for (int e = 0; e < outList->size(); ++e) {
-                    auto norm1Backprop = LAMBDA_T(_x, epsilon, e) {
-                        return (_x >= T(0.f) ?(*epsilon)(e):-(*epsilon)(e));
-                    };
-                    inList->at(e)->applyLambda(norm1Backprop, outList->at(e));
-                }
+                helpers::reduceNorm1BP(input, epsilon, (NDArray<T>*)nullptr, output, axes);
             }
 
             //delete tmpResult;

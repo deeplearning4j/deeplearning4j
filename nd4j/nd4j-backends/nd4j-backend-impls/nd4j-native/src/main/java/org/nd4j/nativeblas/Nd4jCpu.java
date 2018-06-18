@@ -275,7 +275,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_reduce_min_bp.class,
         float_reduce_max.class,
         float_reduce_max_bp.class,
-        float_reduce_dot_bp.class,
         float_reduce_norm1.class,
         float_reduce_norm1_bp.class,
         float_reduce_norm2.class,
@@ -290,6 +289,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_reduce_variance_bp.class,
         float_reduce_stdev.class,
         float_reduce_stdev_bp.class,
+        float_reduce_dot_bp.class,
         float_set_seed.class,
         float_get_seed.class,
         float_randomuniform.class,
@@ -361,7 +361,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_tri.class,
         float_triu.class,
         float_triu_bp.class,
-        float_mirror_pad.class,};
+        float_mirror_pad.class,
+        float_cumsum_bp.class,
+        float_cumprod_bp.class,};
     Class[] halfOps = {
         half_Switch.class,
         half_While.class,
@@ -628,7 +630,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_reduce_min_bp.class,
         half_reduce_max.class,
         half_reduce_max_bp.class,
-        half_reduce_dot_bp.class,
         half_reduce_norm1.class,
         half_reduce_norm1_bp.class,
         half_reduce_norm2.class,
@@ -643,6 +644,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_reduce_variance_bp.class,
         half_reduce_stdev.class,
         half_reduce_stdev_bp.class,
+        half_reduce_dot_bp.class,
         half_set_seed.class,
         half_get_seed.class,
         half_randomuniform.class,
@@ -714,7 +716,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_tri.class,
         half_triu.class,
         half_triu_bp.class,
-        half_mirror_pad.class,};
+        half_mirror_pad.class,
+        half_cumsum_bp.class,
+        half_cumprod_bp.class,};
     Class[] doubleOps = {
         double_Switch.class,
         double_While.class,
@@ -981,7 +985,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_reduce_min_bp.class,
         double_reduce_max.class,
         double_reduce_max_bp.class,
-        double_reduce_dot_bp.class,
         double_reduce_norm1.class,
         double_reduce_norm1_bp.class,
         double_reduce_norm2.class,
@@ -996,6 +999,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_reduce_variance_bp.class,
         double_reduce_stdev.class,
         double_reduce_stdev_bp.class,
+        double_reduce_dot_bp.class,
         double_set_seed.class,
         double_get_seed.class,
         double_randomuniform.class,
@@ -1067,7 +1071,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_tri.class,
         double_triu.class,
         double_triu_bp.class,
-        double_mirror_pad.class,};
+        double_mirror_pad.class,
+        double_cumsum_bp.class,
+        double_cumprod_bp.class,};
 
 @Name("std::vector<std::vector<int> >") public static class IntVectorVector extends Pointer {
     static { Loader.load(); }
@@ -7590,14 +7596,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
 
@@ -8719,14 +8725,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
 
@@ -9848,14 +9854,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
                 
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
 
@@ -16353,9 +16359,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }
 // #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
+
+// #define STORE_RESULT(A)     this->storeResult(block, 0, A)
 // #define OVERWRITE_RESULT(A)     this->overwriteResult(block, 0, A)
 // #define OVERWRITE_2_RESULTS(A, B)     this->overwriteResult(block, 0, A); this->overwriteResult(block, 1, B)
-// #define STORE_RESULT(A)     this->storeResult(block, 0, A)
 // #define STORE_2_RESULTS(A, B)   this->storeResult(block, 0, A); this->storeResult(block, 1, B)
 // #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
 // #define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)
@@ -27326,6 +27333,102 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+//         #if NOT_EXCLUDED(OP_cumsum_bp)
+        @Name("nd4j::ops::cumsum_bp<float>") public static class float_cumsum_bp extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_cumsum_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_cumsum_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_cumsum_bp position(long position) {
+                return (float_cumsum_bp)super.position(position);
+            }
+        
+                                                                                    public float_cumsum_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::cumsum_bp<float16>") public static class half_cumsum_bp extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_cumsum_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_cumsum_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_cumsum_bp position(long position) {
+                return (half_cumsum_bp)super.position(position);
+            }
+        
+                                                                                    public half_cumsum_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::cumsum_bp<double>") public static class double_cumsum_bp extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_cumsum_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_cumsum_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_cumsum_bp position(long position) {
+                return (double_cumsum_bp)super.position(position);
+            }
+        
+                                                                                    public double_cumsum_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
+//         #if NOT_EXCLUDED(OP_cumprod)
+        @Name("nd4j::ops::cumprod_bp<float>") public static class float_cumprod_bp extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_cumprod_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_cumprod_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_cumprod_bp position(long position) {
+                return (float_cumprod_bp)super.position(position);
+            }
+        
+                                                                                    public float_cumprod_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::cumprod_bp<float16>") public static class half_cumprod_bp extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_cumprod_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_cumprod_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_cumprod_bp position(long position) {
+                return (half_cumprod_bp)super.position(position);
+            }
+        
+                                                                                    public half_cumprod_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::cumprod_bp<double>") public static class double_cumprod_bp extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_cumprod_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_cumprod_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_cumprod_bp position(long position) {
+                return (double_cumprod_bp)super.position(position);
+            }
+        
+                                                                                    public double_cumprod_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
     
 
 
@@ -31915,7 +32018,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates min of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate min for        
+        *    x: tensor to calculate mins for        
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -32025,16 +32128,16 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates max of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate maxes for        
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
         *
         * int arguments:
-        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
+        *    list of integers - dimensions to calculate max along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
         *
         * output array:
-        *    reduced tensor with calculated maxs
+        *    reduced tensor with calculated maxes
         */
 //         #if NOT_EXCLUDED(OP_reduce_max)
         @Name("nd4j::ops::reduce_max<float>") public static class float_reduce_max extends FloatDeclarableCustomOp {
@@ -32126,71 +32229,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public double_reduce_max_bp() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
-                                                                                }
-//         #endif
-
-       /**
-        * This op calculates dot of elements along given dimensions
-        *
-        * input array:
-        *    x: tensor to calculate mean for        
-        *
-        * float arguments:
-        *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
-        *
-        * int arguments:
-        *    list of integers - dimensions to calculate mean along, default corresponds to empty list in which case calculation is performed for all dimensions and scalar is returned
-        *
-        * output array:
-        *    reduced tensor with calculated dots
-        *
-        */
-
-//         #if NOT_EXCLUDED(OP_reduce_dot_bp)
-        @Name("nd4j::ops::reduce_dot_bp<float>") public static class float_reduce_dot_bp extends FloatDeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public float_reduce_dot_bp(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public float_reduce_dot_bp(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public float_reduce_dot_bp position(long position) {
-                return (float_reduce_dot_bp)super.position(position);
-            }
-        
-                                                                                    public float_reduce_dot_bp() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
-                                                                                }
-        @Name("nd4j::ops::reduce_dot_bp<float16>") public static class half_reduce_dot_bp extends HalfDeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public half_reduce_dot_bp(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public half_reduce_dot_bp(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public half_reduce_dot_bp position(long position) {
-                return (half_reduce_dot_bp)super.position(position);
-            }
-        
-                                                                                    public half_reduce_dot_bp() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
-                                                                                }
-        @Name("nd4j::ops::reduce_dot_bp<double>") public static class double_reduce_dot_bp extends DoubleDeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public double_reduce_dot_bp(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public double_reduce_dot_bp(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public double_reduce_dot_bp position(long position) {
-                return (double_reduce_dot_bp)super.position(position);
-            }
-        
-                                                                                    public double_reduce_dot_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
@@ -32954,7 +32992,73 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
-                                                                                
+                                                                                /**
+        * This op calculates backprop dot for two tensors along given dimensions
+        *
+        * input array:
+        *    x: tensor to calculate dot for        
+        *    y: tensor to calculate dot for        
+        *    z: tensor with gradient output of the FF dot for x and y
+        *
+        * int arguments:
+        *   list of integers - dimensions to calculate dot along, 
+        *   default corresponds to empty list in which case calculation 
+        *   is performed for all dimensions and scalar is returned.
+        *
+        * output array:
+        *   the tensor with calculated backproped dots
+        *
+        */
+
+//         #if NOT_EXCLUDED(OP_reduce_dot_bp)
+        @Name("nd4j::ops::reduce_dot_bp<float>") public static class float_reduce_dot_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_reduce_dot_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_reduce_dot_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_reduce_dot_bp position(long position) {
+                return (float_reduce_dot_bp)super.position(position);
+            }
+        
+                                                                                    public float_reduce_dot_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::reduce_dot_bp<float16>") public static class half_reduce_dot_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_reduce_dot_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_reduce_dot_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_reduce_dot_bp position(long position) {
+                return (half_reduce_dot_bp)super.position(position);
+            }
+        
+                                                                                    public half_reduce_dot_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::reduce_dot_bp<double>") public static class double_reduce_dot_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_reduce_dot_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_reduce_dot_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_reduce_dot_bp position(long position) {
+                return (double_reduce_dot_bp)super.position(position);
+            }
+        
+                                                                                    public double_reduce_dot_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+//         #endif
+
+    
 
 
 // #endif

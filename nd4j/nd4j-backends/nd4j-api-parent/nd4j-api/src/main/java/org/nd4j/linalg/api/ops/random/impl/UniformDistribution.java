@@ -2,10 +2,12 @@ package org.nd4j.linalg.api.ops.random.impl;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -71,6 +73,6 @@ public class UniformDistribution extends BaseRandomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.emptyList();
     }
 }

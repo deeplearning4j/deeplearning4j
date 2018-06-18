@@ -34,12 +34,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class StandardDeviation extends Variance {
-    public StandardDeviation(SameDiff sameDiff, SDVariable i_v, int[] dimensions, boolean biasCorrected) {
-        super(sameDiff, i_v, dimensions, biasCorrected);
-    }
-
-    public StandardDeviation(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean biasCorrected) {
-        super(sameDiff, i_v, i_v2, dimensions, biasCorrected);
+    public StandardDeviation(SameDiff sameDiff, SDVariable i_v, boolean biasCorrected, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, biasCorrected, keepDims, dimensions );
     }
 
     public StandardDeviation(INDArray x, boolean biasCorrected) {
@@ -65,6 +61,10 @@ public class StandardDeviation extends Variance {
         super(x, y);
     }
 
+    public StandardDeviation(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, y, z, newFormat, keepDims, dimensions);
+    }
+
     @Override
     public int opNum() {
         return 1;
@@ -77,13 +77,12 @@ public class StandardDeviation extends Variance {
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         //Here: calculating dL/dIn given dL/dOut (i.e., i_v1) and input/output
         //If out = stdev(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         //dOut/dIn_i = (in_i-mean)/(stdev * (n-1))
-        //TODO KEEP DIMS SUPPORT
-        return Collections.singletonList(f().stdBp(arg(), i_v1.get(0), biasCorrected, false, dimensions));
+        return Collections.singletonList(f().stdBp(arg(), grad.get(0), biasCorrected, keepDims, dimensions));
     }
 
 }

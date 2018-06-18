@@ -34,7 +34,7 @@ public class TensorList {
         // TODO: if we want to validate shape - we should do it here
 
         list.ensureCapacity(index + 1);
-        list.add(index, array);
+        list.add(index, array.dup());
     }
 
     public INDArray stack() {

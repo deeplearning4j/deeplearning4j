@@ -1,6 +1,8 @@
 package org.nd4j.linalg.api.ops;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -20,12 +22,15 @@ import java.util.List;
  * @author Adam Gibson
  */
 @Slf4j
+@Data
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
     protected int finalResult;
-
+    protected boolean keepDims = false;
+    protected boolean newFormat = false;
 
     public BaseIndexAccumulation(SameDiff sameDiff,
                                  SDVariable i_v,
+                                 boolean keepDims,
                                  int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
@@ -40,11 +45,14 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
+        this.keepDims = keepDims;
+        this.newFormat = true;
     }
 
     public BaseIndexAccumulation(SameDiff sameDiff,
                                  SDVariable i_v,
                                  SDVariable i_v2,
+                                 boolean keepDims,
                                  int[] dimensions) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
@@ -65,6 +73,8 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
+        this.keepDims = keepDims;
+        this.newFormat = true;
     }
 
 
@@ -136,10 +146,12 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
 
     @Override
     public List<long[]> calculateOutputShape() {
-        List<long[]> ret = new ArrayList<>(1);
         if(arg().getShape() == null)
             return Collections.emptyList();
-        ret.add(Shape.getReducedShape(arg().getShape(),dimensions));
+
+        List<long[]> ret = new ArrayList<>(1);
+        val reducedShape = Shape.getReducedShape(arg().getShape(),dimensions, keepDims, newFormat);
+        ret.add(reducedShape);
         return ret;
     }
 

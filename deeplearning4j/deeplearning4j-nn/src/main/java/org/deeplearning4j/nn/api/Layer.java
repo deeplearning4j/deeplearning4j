@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -250,4 +251,9 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return New mask array after this layer, along with the new mask state.
      */
     Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
+
+    /**
+     * @return Get the layer helper, if any
+     */
+    LayerHelper getHelper();
 }

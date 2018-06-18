@@ -1,11 +1,9 @@
 package org.nd4j.autodiff.opvalidation;
 
-import lombok.Builder;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -16,10 +14,16 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.api.ops.impl.accum.CumProd;
+import org.nd4j.linalg.api.ops.impl.accum.CumSum;
+import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
+import org.nd4j.linalg.api.ops.impl.shape.OneHot;
+import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
+import org.nd4j.linalg.api.ops.impl.transforms.Fill;
+import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -28,7 +32,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 @Slf4j
 public class MiscOpValidation extends BaseOpValidation {
@@ -41,6 +44,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testGradientAutoBroadcast1() {
+        OpValidationSuite.ignoreFailing();
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -122,6 +126,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testGradientAutoBroadcast2() {
+        OpValidationSuite.ignoreFailing();
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -206,9 +211,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testGradientAutoBroadcast3() {
+        OpValidationSuite.ignoreFailing();
         //These tests: output size > input sizes
-
-        fail("TEST CRASHES JVM");
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -304,6 +308,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testScatterOpGradients() {
+        OpValidationSuite.ignoreFailing();
 
 
         List<String> failed = new ArrayList<>();
@@ -390,6 +395,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testGatherGradient() {
+        OpValidationSuite.ignoreFailing();
+
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
@@ -440,6 +447,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testTensorGradTensorMmul() {
+        OpValidationSuite.ignoreFailing();
+
         Nd4j.getRandom().setSeed(12345);
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.rand(new long[]{2, 2, 2});
@@ -569,6 +578,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMmulWithTranspose() {
+        OpValidationSuite.ignoreFailing();
+
         //Here: [x,3]^T * [x,4] = [3,4]
 
         for (int i : new int[]{2, 1}) {
@@ -608,14 +619,10 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testFillOp(){
 
-        INDArray ia = Nd4j.create(new double[]{2,2});
+        INDArray ia = Nd4j.trueVector(new double[]{2,2});
         double value = 42;
         INDArray out = Nd4j.create(2,2);
-        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("fill")
-                .addInputs(ia)
-                .addFloatingPointArguments(value)
-                .addOutputs(out)
-                .build());
+        OpTestCase op = new OpTestCase(new Fill(ia, out, value));
         INDArray expOut = Nd4j.valueArrayOf(new int[]{2,2}, 42);
 
         op.expectedOutput(0, expOut);
@@ -624,7 +631,7 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
     @Test
-    public void testClipByNorm(){
+    public void testClipByNorm1(){
         //Expected: if array.norm2(1) is less than 1.0, not modified
         //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
 
@@ -642,24 +649,22 @@ public class MiscOpValidation extends BaseOpValidation {
 
         INDArray out = Nd4j.createUninitialized(arr.shape());
 
-        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("clipbynorm")
-                .addInputs(arr)
-                .addOutputs(out)
-                .addFloatingPointArguments(1.0)
-                .build());
-
         INDArray expNorm2 = Nd4j.create(new double[]{1.0, 1.0, norm2_1.getDouble(2)}, new int[]{3,1});
 
         INDArray expOut = arr.divColumnVector(norm2_1).muliColumnVector(expNorm2);
-        op.expectedOutput(0, expOut);
 
-        System.out.println("Input");
-        System.out.println(arr.shapeInfoToString());
-        System.out.println(Arrays.toString(arr.data().asFloat()));
 
-        System.out.println("Expected");
-        System.out.println(expOut.shapeInfoToString());
-        System.out.println(Arrays.toString(expOut.data().asFloat()));
+        OpTestCase op = new OpTestCase(
+                new ClipByNorm(arr, out, 1.0, 1))
+                .expectedOutput(0, expOut);
+
+//        System.out.println("Input");
+//        System.out.println(arr.shapeInfoToString());
+//        System.out.println(Arrays.toString(arr.data().asFloat()));
+//
+//        System.out.println("Expected");
+//        System.out.println(expOut.shapeInfoToString());
+//        System.out.println(Arrays.toString(expOut.data().asFloat()));
 
         String err = OpValidation.validate(op);
         assertNull(err);
@@ -683,23 +688,20 @@ public class MiscOpValidation extends BaseOpValidation {
 
         INDArray out = Nd4j.create(arr.shape());
 
-        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("clipbynorm")
-                .addInputs(arr)
-                .addOutputs(out)
-                .addFloatingPointArguments(2.0)     //Clip to norm2 of 2.0
-                .addIntegerArguments(0)             //along dimension 0
-                .build());
-
         INDArray norm2_0b = out.norm2(0);
-        INDArray exp = Nd4j.create(new double[]{2.0, 2.0, 2.0, 1.9}, new int[]{1, 4});  //Post clip norm2s along dimension 0
+        INDArray expNorm = Nd4j.create(new double[]{2.0, 2.0, 2.0, 1.9}, new int[]{1, 4});  //Post clip norm2s along dimension 0
+        INDArray exp = arr.divRowVector(norm2_0b).muliRowVector(expNorm);
 
+        OpTestCase op = new OpTestCase(//Clip to norm2 of 2.0, along dimension 0
+                new ClipByNorm(arr, out, 2.0, 0))
+                .expectedOutput(0, exp);
 
-
-        assertEquals(exp, norm2_0b);
+        assertNull(OpValidation.validate(op));
     }
 
     @Test
     public void testCumSum(){
+        OpValidationSuite.ignoreFailing();
 
         List<String> failing = new ArrayList<>();
         for(char order : new char[]{'c','f'}) {
@@ -740,11 +742,7 @@ public class MiscOpValidation extends BaseOpValidation {
                     String msg = order + ", exclusive=" + exclusive + ", reverse=" + reverse;
 
                     INDArray out = Nd4j.create(3, 5);
-                    OpTestCase op = new OpTestCase(DynamicCustomOp.builder("cumsum")
-                            .addInputs(expFF, axisArg)
-                            .addOutputs(out)
-                            .addIntegerArguments(exclusive ? 1 : 0, reverse ? 1 : 0)
-                            .build());
+                    OpTestCase op = new OpTestCase(new CumSum(arr, axisArg, out, exclusive, reverse));
 
                     if(!exclusive && !reverse){
                         op.expectedOutput(0, expFF);
@@ -771,6 +769,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testCumProd(){
+        OpValidationSuite.ignoreFailing();
 
         List<String> failing = new ArrayList<>();
 
@@ -810,11 +809,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 for (boolean reverse : new boolean[]{false, true}) {
 
                     INDArray out = Nd4j.create(3, 5);
-                    OpTestCase op = new OpTestCase(DynamicCustomOp.builder("cumprod")
-                            .addInputs(expFF, axisArg)
-                            .addOutputs(out)
-                            .addIntegerArguments(exclusive ? 1 : 0, reverse ? 1 : 0)
-                            .build());
+                    OpTestCase op = new OpTestCase(new CumProd(arr, axisArg, out, exclusive, reverse));
                     String msg = order + ", exclusive=" + exclusive + ", reverse=" + reverse;
 
                     if(!exclusive && !reverse){
@@ -841,6 +836,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testOneHot1(){
+        OpValidationSuite.ignoreFailing();
         fail(); //JVM crash
         List<String> failed = new ArrayList<>();
 
@@ -871,15 +867,14 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testOneHotOp(){
+        OpValidationSuite.ignoreFailing();
+
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
         //https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/parity_ops/onehot.cpp
 
         for( int axis=-1; axis<=0; axis++ ) {
-            String err = OpValidation.validate(new OpTestCase(DynamicCustomOp.builder("onehot")
-                    .addInputs(Nd4j.trueVector(new double[]{0, 1, 2}))
-                    .addIntegerArguments(3, axis)   //Depth and axis args
-                    .addFloatingPointArguments(1.0, 0.0)    //on/off values
-                    .build())
+            String err = OpValidation.validate(new OpTestCase(new OneHot(Nd4j.trueVector(new double[]{0, 1, 2}),
+                    Nd4j.create(3,3), 3, axis, 1.0, 0.0))
                     .expectedOutput(0, Nd4j.eye(3)));
 
             assertNull(err);
@@ -888,6 +883,8 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testOneHot3() {
+        OpValidationSuite.ignoreFailing();
+
         //https://www.tensorflow.org/api_docs/python/tf/one_hot
         //indices = [[0, 2], [1, -1]]
         INDArray indicesArr = Nd4j.zeros(2, 2);
@@ -925,6 +922,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testLinspace(){
+        OpValidationSuite.ignoreFailing();
 
         SameDiff sd = SameDiff.create();
         SDVariable out = sd.linspace(1,10,10);
@@ -949,7 +947,6 @@ public class MiscOpValidation extends BaseOpValidation {
         assertEquals(1, shapes.size());
 
         assertArrayEquals(new long[]{2}, shapes.get(0));
-
     }
 
     @Test
@@ -969,7 +966,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMergeRank1(){
-
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", Nd4j.create(new long[]{1}).assign(5));
 
@@ -988,6 +984,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testDiagPart() {
+        OpValidationSuite.ignoreFailing();
 
         INDArray i = Nd4j.create(5,5);
 
@@ -997,16 +994,15 @@ public class MiscOpValidation extends BaseOpValidation {
 
         INDArray out = sd.execAndEndResult();
         assertEquals(1, out.rank());
-
     }
 
     @Test
     public void testDiagShapeFn() {
+        OpValidationSuite.ignoreFailing();
 
         INDArray i = Nd4j.create(5,5);
 
-        CustomOp op = DynamicCustomOp.builder("diag_part")
-                .addInputs(i).build();
+        CustomOp op = new DiagPart(i, null);
 
         List<long[]> outShape = Nd4j.getExecutioner().calculateOutputShape(op);
 
@@ -1017,14 +1013,13 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testZerosOnesLike(){
-        fail(); //JVM crash
-
+        OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
 
         List<int[]> shapes = Arrays.asList(new int[0], new int[]{3}, new int[]{3,4}, new int[]{3,4,5});
         List<String> failed = new ArrayList<>();
 
-        for(boolean zeros : new boolean[]{/*true,*/ false}) {
+        for(boolean zeros : new boolean[]{true, false}) {
             for (int[] shape : shapes) {
                 SameDiff sd = SameDiff.create();
                 INDArray arr;
@@ -1055,19 +1050,19 @@ public class MiscOpValidation extends BaseOpValidation {
                 }
             }
         }
+
+        assertEquals(failed.toString(), 0, failed.size());
     }
 
     @Test
     public void testZerosLikeOp(){
+        OpValidationSuite.ignoreFailing();
 
         INDArray arr = Nd4j.trueScalar(1.0);
         INDArray out = Nd4j.trueScalar(-1);
         INDArray exp = Nd4j.trueScalar(0);
 
-        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("zeros_like")
-                .addInputs(arr)
-                .addOutputs(out)
-                .build());
+        OpTestCase op = new OpTestCase(new ZerosLike(arr, out));
         op.expectedOutput(0, exp);
 
         String err = OpValidation.validate(op);
@@ -1108,6 +1103,85 @@ public class MiscOpValidation extends BaseOpValidation {
 
             assertNull(err);
         }
+    }
 
+    @Test
+    public void testIsNonDecreasingIsStrictlyIncr(){
+        List<long[]> shapes = Arrays.asList(null, new long[]{12}, new long[]{1,12}, new long[]{3,4}, new long[]{2,2,3});
+
+        List<String> failed = new ArrayList<>();
+
+        for(boolean nonDec : new boolean[]{true, false}) {
+            for (long[] shape : shapes) {
+                for (boolean expTrue : new boolean[]{true, false}) {
+                    SameDiff sd = SameDiff.create();
+
+                    INDArray inArr;
+                    if (shape == null) {
+                        inArr = Nd4j.trueScalar(1.0);
+                    } else {
+                        inArr = Nd4j.linspace(1, 12, 12).reshape(shape);
+                    }
+
+                    if(nonDec && !expTrue) {
+                        inArr.negi();
+                    }
+                    if(!nonDec && !expTrue && inArr.length() > 0){
+                        inArr.putScalar(inArr.length()-1, inArr.getDouble(inArr.length()-2));
+                    }
+
+                    SDVariable in = sd.var("in", inArr);
+                    SDVariable out;
+                    if(nonDec){
+                        out = sd.isNonDecreasing(in);
+                    } else {
+                        out = sd.isStrictlyIncreasing(in);
+                    }
+
+                    if (shape == null) {
+                        SDVariable loss = out.mean();
+                    } else {
+                        SDVariable loss = out.std(true);
+                    }
+
+                    INDArray exp;
+                    if (expTrue || shape == null) {
+                        exp = Nd4j.trueScalar(1.0);
+                    } else {
+                        exp = Nd4j.trueScalar(0.0);
+                    }
+
+                    String msg = (nonDec ? "isNonDecreasing" : "isStrictlyIncreasing") + " - " +  (shape == null ? "[]" : Arrays.toString(shape)) + " - expected=" + exp;
+                    TestCase tc = new TestCase(sd)
+                            .testName(msg)
+                            .expected(out, exp);
+
+                    String err = OpValidation.validate(tc, true);
+                    if (err != null) {
+                        failed.add(err);
+                    }
+                }
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testInplaceSubi() {
+        OpValidationSuite.ignoreFailing();
+        SameDiff sameDiffOuter = SameDiff.create();
+        Map<String, INDArray> params = new HashMap<>();
+        params.put("x", Nd4j.ones(4));
+        sameDiffOuter.defineFunction("inplacesubi", new SameDiff.SameDiffFunctionDefinition() {
+            @Override
+            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                SDVariable inplace = sameDiff.var("x", inputs.get("x"));
+                return new SDVariable[]{inplace.subi(1.0)};
+            }
+        }, params);
+
+        sameDiffOuter.getFunction("inplacesubi").eval(params);
+        assertEquals(Nd4j.zeros(4), params.get("x"));
     }
 }

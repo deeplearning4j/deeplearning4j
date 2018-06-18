@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,8 +37,8 @@ import java.util.List;
  */
 @Slf4j
 public class Sum extends BaseAccumulation {
-    public Sum(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
+    public Sum(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, dimensions, keepDims);
     }
 
     public Sum(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
@@ -68,6 +69,10 @@ public class Sum extends BaseAccumulation {
         super(x, y, z, x.lengthLong());
     }
 
+    public Sum(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, y, z, newFormat, keepDims, dimensions);
+    }
+
     @Override
     public int opNum() {
         return 1;
@@ -75,7 +80,7 @@ public class Sum extends BaseAccumulation {
 
     @Override
     public String opName() {
-        return "sum";
+        return "reduce_sum";
     }
 
     @Override
@@ -84,11 +89,7 @@ public class Sum extends BaseAccumulation {
         // dL/dIn = dL/dOut * dOut/dIn
         //        = dL/dOut * 1
         // But broadcast to shape of the input
-
-        int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
-        SDVariable broadcastable = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-        SDVariable ret = sameDiff.onesLike(arg()).mul(broadcastable);
-        return Arrays.asList(ret);
+        return Collections.singletonList(f().sumBp(arg(), i_v1.get(0), keepDims, dimensions));
     }
 
 

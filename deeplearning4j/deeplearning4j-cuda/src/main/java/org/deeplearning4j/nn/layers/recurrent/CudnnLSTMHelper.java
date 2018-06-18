@@ -39,6 +39,8 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.util.StringUtils;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.bytedeco.javacpp.cuda.*;
@@ -633,5 +635,14 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         toReturn.prevMemCell = prevMemCell;
 
         return toReturn;
+    }
+
+    @Override
+    public Map<String, Long> helperMemoryUse() {
+        Map<String,Long> memUse = new HashMap<>();
+        memUse.put("stateStace", stateSpace.capacity());
+        memUse.put("reserveSpace", reserveSpace.capacity());
+        memUse.put("weightsSpace", weightsSpace.capacity());
+        return memUse;
     }
 }

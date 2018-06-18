@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,12 +37,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Norm2 extends BaseAccumulation {
-    public Norm2(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
-    }
-
-    public Norm2(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
-        super(sameDiff, i_v, i_v2, dimensions);
+    public Norm2(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, dimensions, keepDims);
     }
 
     public Norm2() {
@@ -76,20 +73,14 @@ public class Norm2 extends BaseAccumulation {
 
     @Override
     public String opName() {
-        return "norm2";
+        return "reduce_norm2";
     }
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         //d norm2(in)/dx = x / norm2(in)
-
-        SDVariable norm2 = outputVariables()[0];
-        int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
-        SDVariable broadcastableNorm2 = f().reductionBroadcastableWithOrigShape(origRank, dimensions, norm2);
-        SDVariable broadcastableGradOut = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-        SDVariable ret = arg().div(broadcastableNorm2).mul(broadcastableGradOut);
-        return Arrays.asList(ret);
+        return Collections.singletonList(f().norm2Bp(arg(), grad.get(0), keepDims, dimensions));
     }
 
 
