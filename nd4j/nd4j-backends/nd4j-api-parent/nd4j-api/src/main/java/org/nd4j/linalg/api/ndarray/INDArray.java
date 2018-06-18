@@ -151,6 +151,7 @@ public interface INDArray extends Serializable {
     /**
      * Resets the linear view
      */
+    @Deprecated
     void resetLinearView();
 
     /**
@@ -197,7 +198,9 @@ public interface INDArray extends Serializable {
      * 1,length(ndarray)
      *
      * @return the linear view of this ndarray
+     * @deprecated Linear views are not always possible. Use reshape(array.length()) or reshape(1,array.length())
      */
+    @Deprecated
     INDArray linearView();
 
 
@@ -207,7 +210,9 @@ public interface INDArray extends Serializable {
      * 1,length(ndarray)
      *
      * @return the linear view of this ndarray
+     * * @deprecated Linear views are not always possible. Use reshape(array.length()) or reshape(1,array.length())
      */
+    @Deprecated
     INDArray linearViewColumnOrder();
 
     /**
