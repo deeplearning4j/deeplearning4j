@@ -49,6 +49,8 @@ import org.nd4j.util.OneTimeLogger;
 import org.nd4j.util.StringUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -651,6 +653,12 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         private INDArray origInput;
         private int[] padding;
         private int[] outSize;
+    }
+
+    @Override
+    public Map<String, Long> helperMemoryUse() {
+        //No memory use other than shared, and the structs (which are small)
+        return Collections.emptyMap();
     }
 
 }

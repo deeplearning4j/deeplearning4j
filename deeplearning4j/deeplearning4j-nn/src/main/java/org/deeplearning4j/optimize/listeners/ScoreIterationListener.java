@@ -54,4 +54,9 @@ public class ScoreIterationListener extends BaseTrainingListener implements Seri
             log.info("Score at iteration {} is {}", iteration, score);
         }
     }
+
+    @Override
+    public String toString(){
+        return "ScoreIterationListener(" + printIterations + ")";
+    }
 }
