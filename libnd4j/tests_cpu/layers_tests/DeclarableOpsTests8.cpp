@@ -2099,5 +2099,220 @@ TEST_F(DeclarableOpsTests8, avgpool2d_test13) {
 }
 
  
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test1) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,0,0,1,0,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> expected('c', {2,3}, {2.78507, 1.34254, 4.12761, 2.88507, 2.78507, 2.88507});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
 
-  
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test2) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,0,0,1,0,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> expected('c', {3,4}, {0.26328, 1.46328, 1.72656, 0.     , 0.26328, 0.     , 1.46328, 0.26328, 1.72656, 0.     , 1.72656, 1.46328});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test3) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,0,0,1,0,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> expected('c', {2,4}, {0.75125, 1.55125, 3.45375, 0.75125, 3.45375, 0.     , 2.3025 , 1.15125});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test4) {
+    
+    NDArray<double> labels('c', {2,3},{0,1,1,0,0,1});
+    NDArray<double> logits('c', {2,3});
+    NDArray<double> expected('c', {2}, {2.10389, 1.00194});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test5) {
+    
+    NDArray<double> labels('c', {2,3},{0,1,1,0,0,1});
+    NDArray<double> logits('c', {2,3});
+    NDArray<double> expected('c', {3}, {0., 0.85436, 1.40871});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test6) {
+    
+    NDArray<double> labels('c', {2,1}, {0,1});
+    NDArray<double> logits('c', {2,1});
+    NDArray<double> expected('c', {1}, {0.6444});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test7) {
+    
+    NDArray<double> labels('c', {2,1}, {0,1});
+    NDArray<double> logits('c', {2,1});
+    NDArray<double> expected('c', {2}, {0., 0.});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test8) {
+    
+    NDArray<double> labels('c', {2}, {0,1});
+    NDArray<double> logits('c', {2});
+    NDArray<double> expected(0.6444);
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test9) {
+    
+    NDArray<double> labels('c', {1}, {0});
+    NDArray<double> logits('c', {1}, {0.2});
+    NDArray<double> expected(0.);
+                                               
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test10) {
+    
+    NDArray<double> labels('c', {1,2}, {0,1});
+    NDArray<double> logits('c', {1,2});
+    NDArray<double> expected('c', {2}, {0., 0.});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
