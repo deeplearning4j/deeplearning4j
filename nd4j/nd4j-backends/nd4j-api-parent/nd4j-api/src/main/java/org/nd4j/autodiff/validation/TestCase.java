@@ -112,6 +112,10 @@ public class TestCase {
         return expectedOutput(name, output);
     }
 
+    public TestCase expected(SDVariable var, Function<INDArray,String> validationFn){
+        return expected(var.getVarName(), validationFn);
+    }
+
     /**
      * @param name         The name of the variable to check
      * @param validationFn Function to use to validate the correctness of the specific Op. Should return null

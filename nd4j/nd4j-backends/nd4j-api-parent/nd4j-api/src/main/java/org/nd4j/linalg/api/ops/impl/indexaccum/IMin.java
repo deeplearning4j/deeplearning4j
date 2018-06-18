@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,12 +36,8 @@ import java.util.List;
  * @author Alex Black
  */
 public class IMin extends BaseIndexAccumulation {
-    public IMin(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
-    }
-
-    public IMin(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
-        super(sameDiff, i_v, i_v2, dimensions);
+    public IMin(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
     }
 
     public IMin() {
@@ -106,6 +103,6 @@ public class IMin extends BaseIndexAccumulation {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not differentiable, but (assuming no ties) output does not change for a given infinitesimal change in the input
 
-        return Arrays.asList(f().zerosLike(arg()));
+        return Collections.singletonList(f().zerosLike(arg()));
     }
 }

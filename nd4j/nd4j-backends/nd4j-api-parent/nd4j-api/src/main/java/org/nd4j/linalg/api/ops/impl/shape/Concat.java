@@ -50,7 +50,8 @@ public class Concat extends DynamicCustomOp {
                 throw new ND4JIllegalStateException("Array with variable name " + varName + " unset!");
             }
 
-            concatDimension = var.getArr().getInt(0);
+            val arr = var.getArr();
+            concatDimension = arr.getInt(0);
             addIArgument(concatDimension);
         }
 
@@ -179,7 +180,7 @@ public class Concat extends DynamicCustomOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[]  {"Concat","ConcatV2", "ParallelConcat"};
+        return new String[]  {"Concat","ConcatV2"};
     }
 
     @Override

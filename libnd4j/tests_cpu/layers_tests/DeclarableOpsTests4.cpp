@@ -783,7 +783,7 @@ TEST_F(DeclarableOpsTests4, Test_Matmul_YATS_2) {
 
     auto z = result->at(0);
 
-    z->printShapeInfo("z");
+    // z->printShapeInfo("z");
     
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1314,8 +1314,8 @@ TEST_F(DeclarableOpsTests4, WeightedCrossEntropyWithLogits_2) {
     ResultSet<float>* results = op.execute({&targets, &input, &weights}, {}, {});
     NDArray<float>* output = results->at(0);
     
-    output->printIndexedBuffer("Result is ");
-    expected.printIndexedBuffer("Expected is ");
+    // output->printIndexedBuffer("Result is ");
+    // expected.printIndexedBuffer("Expected is ");
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1481,8 +1481,8 @@ TEST_F(DeclarableOpsTests4, LrnTest_1) {
         
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(exp.isSameShape(out));
-    out->printIndexedBuffer("LRN out");
-    exp.printIndexedBuffer("LRN exp");
+    // out->printIndexedBuffer("LRN out");
+    // exp.printIndexedBuffer("LRN exp");
     ASSERT_TRUE(exp.equalsTo(out));    
     
     delete results;
@@ -1509,8 +1509,8 @@ TEST_F(DeclarableOpsTests4, LrnTest_2) {
         
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(exp.isSameShape(out));
-    out->printIndexedBuffer("LRN out");
-    exp.printIndexedBuffer("LRN exp");
+    // out->printIndexedBuffer("LRN out");
+    // exp.printIndexedBuffer("LRN exp");
     ASSERT_TRUE(exp.equalsTo(out));    
     
     delete results;
@@ -1548,8 +1548,8 @@ TEST_F(DeclarableOpsTests4, LrnTest_3) {
         
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(exp.isSameShape(out));
-    out->printIndexedBuffer("LRN out");
-    exp.printIndexedBuffer("LRN exp");
+    // out->printIndexedBuffer("LRN out");
+    // exp.printIndexedBuffer("LRN exp");
     ASSERT_TRUE(exp.equalsTo(out));    
     
     delete results;
@@ -1587,8 +1587,8 @@ TEST_F(DeclarableOpsTests4, LrnTest_4) {
         
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(exp.isSameShape(out));
-    out->printIndexedBuffer("LRN out");
-    exp.printIndexedBuffer("LRN exp");
+    // out->printIndexedBuffer("LRN out");
+    // exp.printIndexedBuffer("LRN exp");
     ASSERT_TRUE(exp.equalsTo(out));    
     
     delete results;
@@ -1632,8 +1632,8 @@ TEST_F(DeclarableOpsTests4, LrnTest_5) {
         
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(exp.isSameShape(out));
-    out->printIndexedBuffer("LRN out");
-    exp.printIndexedBuffer("LRN exp");
+    // out->printIndexedBuffer("LRN out");
+    // exp.printIndexedBuffer("LRN exp");
 //    ASSERT_TRUE(exp.equalsTo(out));    
     
     delete results;

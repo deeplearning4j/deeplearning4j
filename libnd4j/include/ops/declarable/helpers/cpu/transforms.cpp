@@ -38,7 +38,7 @@ void triu(const NDArray<T>& input, NDArray<T>& output, const int diagonal) {
             ResultSet<T>* inTads  = NDArrayFactory<T>::allTensorsAlongDimension(&input,  {rank-2, rank-1});
             ResultSet<T>* outTads = NDArrayFactory<T>::allTensorsAlongDimension(&output, {rank-2, rank-1});                        
 
-#pragma omp parallel for schedule(guided) //if(inTads->size() > Environment::getInstance()->elementwiseThreshold())
+// #pragma omp parallel for schedule(guided) if(inTads->size() > Environment::getInstance()->elementwiseThreshold()) 
             for(int i = 0; i < inTads->size(); ++i) {
                 NDArray<T>* inSubArr = inTads->at(i);
                 NDArray<T>* outSubArr = outTads->at(i);

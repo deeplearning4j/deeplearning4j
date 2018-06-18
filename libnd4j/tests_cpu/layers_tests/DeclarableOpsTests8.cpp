@@ -905,7 +905,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_1) {
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {}, {0, 1});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -924,7 +924,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_2) {
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {1.}, {0, 1});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -944,7 +944,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_3) {
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {}, {0, 2});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -964,7 +964,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_4) {
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {1.}, {0, 2});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -1020,7 +1020,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_7) {
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1, 1, 1}, {1.f});
     NDArrayFactory<float>::linspace(1, x);
-    x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
+    // x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {1.}, {0,1,2});
     auto output = result->at(0);    
@@ -1044,8 +1044,8 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_1) {
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {}, {0,1});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
-    output->printShapeInfo("Output shape");
+    // output->printIndexedBuffer("Result is");
+    // output->printShapeInfo("Output shape");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -1064,7 +1064,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_2) {
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {1.}, {0, 1});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -1084,7 +1084,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_3) {
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {}, {0, 2});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -1104,7 +1104,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_4) {
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {1.}, {0, 2});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -1124,7 +1124,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_5) {
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {}, {});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -1144,7 +1144,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_6) {
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {}, {0,1,2});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -1157,14 +1157,14 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_6) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, Test_Reduce_Max_7) {
 
-    NDArray<float> x('c', {2, 3, 4});
+	NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1, 1, 1}, {24.f});
     NDArrayFactory<float>::linspace(1, x);
 //    x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
     nd4j::ops::reduce_max<float> op;
     auto result = op.execute({&x}, {1.}, {0,1,2});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+    // output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -2022,7 +2022,6 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test3) {
     delete result;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
 
@@ -2050,3 +2049,55 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
     delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceStDevBP_test4) {
+
+    NDArray<float> x('c', {3}, {2.f, 3.f, 4.f});
+    NDArray<float> gradO(0.5f);    
+    NDArray<float> exp('c', {3}, {-0.25f, 0.f, 0.25f});    
+            
+    nd4j::ops::reduce_stdev_bp<float> op;
+
+    auto result = op.execute({&x, &gradO}, {0,1}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());        
+    auto output = result->at(0);        
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, avgpool2d_test13) {
+
+    int bS=4, iH=10,iW=10,  iC=3,  kH=3,kW=3,  sH=3,sW=3,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=4, oW=4;
+    int paddingMode = 1;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<double> input   ('c', {bS, iH, iW, iC});
+    NDArray<double> expected('c', {bS, oH, oW, iC}, { 17.5,   18.5,   19.5,  25. ,   26. ,   27. ,  34. ,   35. ,   36. ,  41.5,   42.5,   43.5,  92.5,   93.5,   94.5, 100. ,  101. ,  102. , 109. ,  110. ,  111. , 116.5,  117.5,  118.5,
+                                                      182.5,  183.5,  184.5, 190. ,  191. ,  192. , 199. ,  200. ,  201. , 206.5,  207.5,  208.5, 257.5,  258.5,  259.5, 265. ,  266. ,  267. , 274. ,  275. ,  276. , 281.5,  282.5,  283.5,
+                                                      317.5,  318.5,  319.5, 325. ,  326. ,  327. , 334. ,  335. ,  336. , 341.5,  342.5,  343.5, 392.5,  393.5,  394.5, 400. ,  401. ,  402. , 409. ,  410. ,  411. , 416.5,  417.5,  418.5,
+                                                      482.5,  483.5,  484.5, 490. ,  491. ,  492. , 499. ,  500. ,  501. , 506.5,  507.5,  508.5, 557.5,  558.5,  559.5, 565. ,  566. ,  567. , 574. ,  575. ,  576. , 581.5,  582.5,  583.5,
+                                                      617.5,  618.5,  619.5, 625. ,  626. ,  627. , 634. ,  635. ,  636. , 641.5,  642.5,  643.5, 692.5,  693.5,  694.5, 700. ,  701. ,  702. , 709. ,  710. ,  711. , 716.5,  717.5,  718.5,
+                                                      782.5,  783.5,  784.5, 790. ,  791. ,  792. , 799. ,  800. ,  801. , 806.5,  807.5,  808.5, 857.5,  858.5,  859.5, 865. ,  866. ,  867. , 874. ,  875. ,  876. , 881.5,  882.5,  883.5,
+                                                      917.5,  918.5,  919.5, 925. ,  926. ,  927. , 934. ,  935. ,  936. , 941.5,  942.5,  943.5, 992.5,  993.5,  994.5,1000. , 1001. , 1002. ,1009. , 1010. , 1011. ,1016.5, 1017.5, 1018.5,
+                                                     1082.5, 1083.5, 1084.5,1090. , 1091. , 1092. ,1099. , 1100. , 1101. ,1106.5, 1107.5, 1108.5,1157.5, 1158.5, 1159.5,1165. , 1166. , 1167. ,1174. , 1175. , 1176. ,1181.5, 1182.5, 1183.5});
+    NDArrayFactory<double>::linspace(1., input);    
+
+    nd4j::ops::avgpool2d<double> op;
+    ResultSet<double>* results = op.execute({&input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 0, dataFormat});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+ 
+    delete results;
+}
+
+ 
+
+  

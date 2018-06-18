@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
@@ -27,6 +28,10 @@ public class Cross extends DynamicCustomOp {
 
     public Cross(SameDiff sameDiff, SDVariable[] args) {
         super(null, sameDiff, args, false);
+    }
+
+    public Cross(INDArray a, INDArray b, INDArray out){
+        super(null, new INDArray[]{a,b}, new INDArray[]{out}, null, (int[])null);
     }
 
     @Override

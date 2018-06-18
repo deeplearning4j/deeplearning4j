@@ -38,6 +38,9 @@ import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 
+import java.util.Collections;
+import java.util.Map;
+
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
 import static org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper.getCudnnForwardArgs;
@@ -260,6 +263,12 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
             context.syncOldStream();
 
         return reduced;
+    }
+
+    @Override
+    public Map<String, Long> helperMemoryUse() {
+        //No persistent memory use other than the structs (which are small)
+        return Collections.emptyMap();
     }
 
 }

@@ -4,6 +4,7 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.tensorflow.framework.AttrValue;
@@ -25,6 +26,10 @@ public class Shape extends DynamicCustomOp {
 
     public Shape(SameDiff sameDiff, SDVariable input, boolean inPlace) {
         super(null, sameDiff, new SDVariable[] {input}, inPlace);
+    }
+
+    public Shape(INDArray in, INDArray out){
+        super(null, in, out, null, null);
     }
 
     @Override
