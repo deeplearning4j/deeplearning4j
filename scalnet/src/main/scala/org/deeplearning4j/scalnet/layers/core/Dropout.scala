@@ -17,24 +17,19 @@
 package org.deeplearning4j.scalnet.layers.core
 import org.deeplearning4j.nn.conf.layers.DropoutLayer
 
-
 /**
   * Dropout layer
   *
   * @author Max Pumperla
   */
-class Dropout(nOut: List[Int],
-            nIn: List[Int],
-            rate: Double,
-            override val name: String)
-  extends Layer {
+class Dropout(nOut: List[Int], nIn: List[Int], rate: Double, override val name: String) extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
-      new DropoutLayer.Builder(rate)
-        .nIn(inputShape.last)
-        .nOut(outputShape.last)
-        .name(name)
-        .build()
+    new DropoutLayer.Builder(rate)
+      .nIn(inputShape.last)
+      .nOut(outputShape.last)
+      .name(name)
+      .build()
 
   override val outputShape: List[Int] = nOut
 
@@ -45,9 +40,6 @@ class Dropout(nOut: List[Int],
 }
 
 object Dropout {
-  def apply(nOut: Int,
-            nIn: Int = 0,
-            rate: Double,
-            name: String = ""): Dropout =
+  def apply(nOut: Int, nIn: Int = 0, rate: Double, name: String = ""): Dropout =
     new Dropout(List(nOut), List(nIn), rate, name)
 }

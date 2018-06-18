@@ -16,21 +16,17 @@
 
 package org.deeplearning4j.scalnet.layers.advanced.activation
 
-import org.deeplearning4j.nn.conf.layers.{ActivationLayer => JActivationLayer}
+import org.deeplearning4j.nn.conf.layers.{ ActivationLayer => JActivationLayer }
 import org.deeplearning4j.scalnet.layers.core.Layer
 import org.nd4j.linalg.activations.impl.ActivationLReLU
-
 
 /**
   * LeakyReLU layer
   *
   * @author Max Pumperla
   */
-class LeakyReLU(alpha: Double,
-                nOut: Option[List[Int]],
-                nIn: Option[List[Int]],
-                override val name: String = "")
-  extends Layer {
+class LeakyReLU(alpha: Double, nOut: Option[List[Int]], nIn: Option[List[Int]], override val name: String = "")
+    extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new JActivationLayer.Builder()
@@ -46,15 +42,6 @@ class LeakyReLU(alpha: Double,
 }
 
 object LeakyReLU {
-  def apply(alpha: Double,
-            nOut: Int = 0,
-            nIn: Int = 0,
-            name: String = ""): LeakyReLU =
+  def apply(alpha: Double, nOut: Int = 0, nIn: Int = 0, name: String = ""): LeakyReLU =
     new LeakyReLU(alpha, Some(List(nOut)), Some(List(nIn)), name)
 }
-
-
-
-
-
-
