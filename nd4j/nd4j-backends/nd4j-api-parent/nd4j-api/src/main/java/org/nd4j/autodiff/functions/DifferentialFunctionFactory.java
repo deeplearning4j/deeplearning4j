@@ -536,28 +536,28 @@ public class DifferentialFunctionFactory {
         return new ASum(sameDiff(), in, dimensions).outputVariable();
     }
 
-    public SDVariable argmax(SDVariable in, int... dimensions) {
-        return new IMax(sameDiff(), in, dimensions).outputVariable();
+    public SDVariable argmax(SDVariable in, boolean keepDims, int... dimensions) {
+        return new IMax(sameDiff(), in, keepDims, dimensions).outputVariable();
     }
 
-    public SDVariable argmin(SDVariable in, int... dimensions) {
-        return new IMin(sameDiff(), in, dimensions).outputVariable();
+    public SDVariable argmin(SDVariable in, boolean keepDims, int... dimensions) {
+        return new IMin(sameDiff(), in, keepDims, dimensions).outputVariable();
     }
 
-    public SDVariable iamax(SDVariable in, int... dimensions) {
-        return new IAMax(sameDiff(), in, dimensions).outputVariable();
+    public SDVariable iamax(SDVariable in, boolean keepDims, int... dimensions) {
+        return new IAMax(sameDiff(), in, keepDims, dimensions).outputVariable();
     }
 
-    public SDVariable iamin(SDVariable in, int... dimensions) {
-        return new IAMin(sameDiff(), in, dimensions).outputVariable();
+    public SDVariable iamin(SDVariable in, boolean keepDims, int... dimensions) {
+        return new IAMin(sameDiff(), in, keepDims, dimensions).outputVariable();
     }
 
-    public SDVariable firstIndex(SDVariable in, Condition condition, int... dimensions){
-        return new FirstIndex(sameDiff(), in, condition, dimensions).outputVariable();
+    public SDVariable firstIndex(SDVariable in, Condition condition, boolean keepDims, int... dimensions){
+        return new FirstIndex(sameDiff(), in, condition, keepDims, dimensions).outputVariable();
     }
 
-    public SDVariable lastIndex(SDVariable in, Condition condition, int... dimensions){
-        return new LastIndex(sameDiff(), in, condition, dimensions).outputVariable();
+    public SDVariable lastIndex(SDVariable in, Condition condition, boolean keepDims, int... dimensions){
+        return new LastIndex(sameDiff(), in, condition, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable matchCondition(SDVariable in, Condition condition){

@@ -3396,11 +3396,19 @@ public class SameDiff {
     }
 
     public SDVariable argmax(SDVariable in, int... dimensions) {
+        return argmax(null, in, false, dimensions);
+    }
+
+    public SDVariable argmax(SDVariable in, boolean keepDims, int... dimensions) {
         return argmax(null, in, dimensions);
     }
 
     public SDVariable argmax(String name, SDVariable in, int... dimensions) {
-        SDVariable ret = f().argmax(in, dimensions);
+        return argmax(name, in, false, dimensions);
+    }
+
+    public SDVariable argmax(String name, SDVariable in, boolean keepDims, int... dimensions) {
+        SDVariable ret = f().argmax(in, keepDims, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -3408,8 +3416,16 @@ public class SameDiff {
         return argmin(null, in, dimensions);
     }
 
+    public SDVariable argmin(SDVariable in, boolean keepDims, int... dimensions) {
+        return argmin(null, in, keepDims, dimensions);
+    }
+
     public SDVariable argmin(String name, SDVariable in, int... dimensions) {
-        SDVariable ret = f().argmin(in, dimensions);
+        return argmin(name, in, false, dimensions);
+    }
+
+    public SDVariable argmin(String name, SDVariable in, boolean keepDims, int... dimensions) {
+        SDVariable ret = f().argmin(in, keepDims, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -3417,8 +3433,16 @@ public class SameDiff {
         return iamax(null, in, dimensions);
     }
 
+    public SDVariable iamax(SDVariable in, boolean keepDims, int... dimensions) {
+        return iamax(null, in, keepDims, dimensions);
+    }
+
     public SDVariable iamax(String name, SDVariable in, int... dimensions) {
-        SDVariable ret = f().iamax(in, dimensions);
+        return iamax(name, in, false, dimensions);
+    }
+
+    public SDVariable iamax(String name, SDVariable in, boolean keepDims, int... dimensions) {
+        SDVariable ret = f().iamax(in, keepDims, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -3426,8 +3450,16 @@ public class SameDiff {
         return iamin(null, in, dimensions);
     }
 
+    public SDVariable iamin(SDVariable in, boolean keepDims, int... dimensions) {
+        return iamin(null, in, keepDims, dimensions);
+    }
+
     public SDVariable iamin(String name, SDVariable in, int... dimensions) {
-        SDVariable ret = f().iamin(in, dimensions);
+        return iamin(name, in, false, dimensions);
+    }
+
+    public SDVariable iamin(String name, SDVariable in, boolean keepDims, int... dimensions) {
+        SDVariable ret = f().iamin(in, keepDims, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -3435,8 +3467,16 @@ public class SameDiff {
         return firstIndex(null, in, condition, dimensions);
     }
 
-    public SDVariable firstIndex(String name, SDVariable in, Condition condition, int... dimensions){
-        SDVariable ret = f().firstIndex(in, condition, dimensions);
+    public SDVariable firstIndex(SDVariable in, Condition condition, boolean keepDims, int... dimensions){
+        return firstIndex(null, in, condition, keepDims, dimensions);
+    }
+
+    public SDVariable firstIndex(String name, SDVariable in, Condition condition, int... dimensions) {
+        return firstIndex(name, in, condition, false, dimensions);
+    }
+
+    public SDVariable firstIndex(String name, SDVariable in, Condition condition, boolean keepDims, int... dimensions){
+        SDVariable ret = f().firstIndex(in, condition, keepDims, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -3444,8 +3484,16 @@ public class SameDiff {
         return lastIndex(null, in, condition, dimensions);
     }
 
-    public SDVariable lastIndex(String name, SDVariable in, Condition condition, int... dimensions){
-        SDVariable ret = f().lastIndex(in, condition, dimensions);
+    public SDVariable lastIndex(SDVariable in, Condition condition, boolean keepDims, int... dimensions){
+        return lastIndex(null, in, condition, keepDims, dimensions);
+    }
+
+    public SDVariable lastIndex(String name, SDVariable in, Condition condition, int... dimensions) {
+        return lastIndex(name, in, condition, false, dimensions);
+    }
+
+    public SDVariable lastIndex(String name, SDVariable in, Condition condition, boolean keepDims, int... dimensions){
+        SDVariable ret = f().lastIndex(in, condition, keepDims, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 

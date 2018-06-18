@@ -2,6 +2,7 @@ package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.nd4j.autodiff.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
@@ -30,6 +31,7 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @Test
     public void testRandomOpsSDVarShape() {
+        OpValidationSuite.ignoreFailing();
 
         List<String> failed = new ArrayList<>();
 
@@ -161,6 +163,7 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @Test
     public void testRandomExponential() {
+        OpValidationSuite.ignoreFailing();
         long length = 1_000_000;
         INDArray shape = Nd4j.trueVector(new double[]{length});
         INDArray out = Nd4j.createUninitialized(new long[]{length});

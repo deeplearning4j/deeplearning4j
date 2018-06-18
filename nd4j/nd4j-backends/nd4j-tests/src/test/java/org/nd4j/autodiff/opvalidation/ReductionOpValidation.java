@@ -1,10 +1,12 @@
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.autodiff.OpValidationSuite;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
@@ -26,7 +28,9 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -810,5 +814,173 @@ public class ReductionOpValidation extends BaseOpValidation {
         }
 
         assertEquals(failed.toString(), 0, failed.size());
+    }
+
+
+    @Test
+    public void testReduce3_2() {
+        OpValidationSuite.ignoreFailing();
+
+        Nd4j.getRandom().setSeed(12345);
+
+        int d0 = 3;
+        int d1 = 4;
+        int d2 = 5;
+
+        for (val reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
+            for (int i = 0; i < 6; i++) {
+
+                SameDiff sd = SameDiff.create();
+                sd.setLogExecution(false);
+
+                INDArray a = Nd4j.rand(new long[]{d0, d1, d2});
+                INDArray b = Nd4j.rand(new long[]{d0, d1, d2});
+
+
+                SDVariable in = sd.var("in", a);
+                SDVariable in2 = sd.var("in2", b);
+
+                INDArray expOut;
+                SDVariable reduced;
+                String name;
+                switch (i) {
+                    case 0:
+                        reduced = sd.manhattanDistance(in, in2, reduceDims);
+                        name = "manhattan";
+                        expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b), reduceDims);
+                        break;
+                    case 1:
+                        reduced = sd.euclideanDistance(in, in2, reduceDims);
+                        name = "euclidean";
+                        expOut = Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), reduceDims);
+                        break;
+                    case 2:
+                        reduced = sd.cosineSimilarity(in, in2, reduceDims);
+                        name = "cosine";
+                        expOut = Nd4j.getExecutioner().exec(new CosineSimilarity(a, b), reduceDims);
+                        break;
+                    case 3:
+                        reduced = sd.jaccardDistance(in, in2, reduceDims);
+                        name = "jaccard";
+                        expOut = Nd4j.getExecutioner().exec(new JaccardDistance(a, b), reduceDims);
+                        break;
+                    case 4:
+                        reduced = sd.hammingDistance(in, in2, reduceDims);
+                        name = "hamming";
+                        expOut = Nd4j.getExecutioner().exec(new HammingDistance(a, b), reduceDims);
+                        break;
+                    case 5:
+                        reduced = sd.cosineDistance(in, in2, reduceDims);
+                        name = "reduced";
+                        expOut = Nd4j.getExecutioner().exec(new CosineDistance(a, b), reduceDims);
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                long[] expShape;
+                if (Arrays.equals(new int[]{0}, reduceDims)) {
+                    expShape = new long[]{4, 5};
+                } else if (Arrays.equals(new int[]{1}, reduceDims)) {
+                    expShape = new long[]{3, 5};
+                } else if (Arrays.equals(new int[]{2}, reduceDims)) {
+                    expShape = new long[]{3, 4};
+                } else if (Arrays.equals(new int[]{Integer.MAX_VALUE}, reduceDims)) {
+                    expShape = new long[]{1, 1};
+                } else if (Arrays.equals(new int[]{0, 1}, reduceDims)) {
+                    expShape = new long[]{1, 5};
+                } else if (Arrays.equals(new int[]{0, 2}, reduceDims)) {
+                    expShape = new long[]{1, 4};
+                } else if (Arrays.equals(new int[]{1, 2}, reduceDims)) {
+                    expShape = new long[]{3, 1};
+                } else if (Arrays.equals(new int[]{0, 1, 2}, reduceDims)) {
+                    expShape = new long[]{1, 1};
+                } else {
+                    throw new RuntimeException();
+                }
+
+                String msg = name + " - dims=" + Arrays.toString(reduceDims);
+
+                INDArray out = sd.execAndEndResult();
+
+                log.info(msg + " - expected shape: " + Arrays.toString(expShape) + ", out=" + Arrays.toString(out.shape())
+                        + ", outExp=" + Arrays.toString(expOut.shape()));
+
+                assertArrayEquals(msg, expShape, out.shape());
+                assertArrayEquals(msg, expShape, expOut.shape());
+
+                assertEquals(msg, out, expOut);
+            }
+        }
+    }
+
+    @Test
+    public void testReductionsBackwards() {
+        OpValidationSuite.ignoreFailing();
+
+        for (int i = 0; i < 7; i++) {
+
+            SameDiff sd = SameDiff.create();
+
+            int nOut = 4;
+            int minibatch = 3;
+            SDVariable input = sd.var("in", new long[]{-1, nOut});
+            SDVariable label = sd.var("label", new long[]{-1, nOut});
+
+            SDVariable diff = input.sub(label);
+            SDVariable sqDiff = diff.mul(diff);
+            SDVariable msePerEx = sd.mean("msePerEx", sqDiff, 1);
+
+            SDVariable loss;    //Scalar value
+            String name;
+            switch (i) {
+                case 0:
+                    loss = sd.mean("loss", msePerEx, 0);
+                    name = "mean";
+                    break;
+                case 1:
+                    loss = sd.sum("loss", msePerEx, 0);
+                    name = "sum";
+                    break;
+                case 2:
+                    loss = sd.standardDeviation("loss", msePerEx, true, 0);
+                    name = "stdev";
+                    break;
+                case 3:
+                    loss = sd.min("loss", msePerEx, 0);
+                    name = "min";
+                    break;
+                case 4:
+                    loss = sd.max("loss", msePerEx, 0);
+                    name = "max";
+                    break;
+                case 5:
+                    loss = sd.variance("loss", msePerEx, true, 0);
+                    name = "variance";
+                    break;
+                case 6:
+                    loss = sd.prod("loss", msePerEx, 0);
+                    name = "prod";
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+
+            String msg = "test: " + i + " - " + name;
+            log.info("*** Starting test: " + msg);
+
+            INDArray inputArr = Nd4j.rand(minibatch, nOut);
+            INDArray labelArr = Nd4j.rand(minibatch, nOut);
+
+            sd.associateArrayWithVariable(inputArr, input);
+            sd.associateArrayWithVariable(labelArr, label);
+
+            INDArray result = sd.execAndEndResult();
+            assertEquals(1, result.length());
+
+            Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> p = sd.execBackwards();
+        }
     }
 }
