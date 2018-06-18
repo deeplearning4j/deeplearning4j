@@ -911,12 +911,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * 1,length(ndarray)
      *
      * @return the linear view of this ndarray
+     * @deprecated Linear views are not always possible. Use reshape(array.length()) or reshape(1,array.length())
      */
+    @Deprecated
     @Override
     public INDArray linearView() {
         return reshape(this.ordering(), 1, this.length());
     }
 
+    @Deprecated
     @Override
     public void resetLinearView() {
 

@@ -103,7 +103,7 @@ public class NumberedFileInputSplit implements InputSplit {
 
     @Override
     public OutputStream openOutputStreamFor(String location) throws Exception {
-        FileOutputStream ret = location.startsWith("file://") ? new FileOutputStream(new File(URI.create(location))):
+        FileOutputStream ret = location.startsWith("file:") ? new FileOutputStream(new File(URI.create(location))):
                 new FileOutputStream(new File(location));
         return ret;
     }

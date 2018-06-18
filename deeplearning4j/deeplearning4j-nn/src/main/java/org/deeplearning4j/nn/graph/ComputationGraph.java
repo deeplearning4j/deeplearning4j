@@ -1107,9 +1107,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         } else
             multiDataSetIterator = multi;
 
+        long time1 = System.currentTimeMillis();
         while(multiDataSetIterator.hasNext()){
             MultiDataSet mds = multiDataSetIterator.next();
+            long time2 = System.currentTimeMillis();
+            lastEtlTime.set((time2 - time1));
+
             fit(mds.getFeatures(),mds.getLabels(), mds.getFeaturesMaskArrays(), mds.getLabelsMaskArrays());
+            time1 = System.currentTimeMillis();
         }
 
         if (destructable)
@@ -1912,11 +1917,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     } else if(fwdPassType == FwdPassType.RNN_TIMESTEP){
                         if (current.hasLayer()) {
                             //Layer
+                            INDArray input = current.getInputs()[0];
                             Layer l = current.getLayer();
                             if (l instanceof RecurrentLayer) {
-                                out = ((RecurrentLayer) l).rnnTimeStep(current.getInputs()[0], workspaceMgr);
+                                out = ((RecurrentLayer) l).rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
                             } else if (l instanceof MultiLayerNetwork) {
-                                out = ((MultiLayerNetwork) l).rnnTimeStep(current.getInputs()[0]);
+                                out = ((MultiLayerNetwork) l).rnnTimeStep(reshapeTimeStepInput(input));
                             } else {
                                 //non-recurrent layer
                                 out = current.doForward(train, workspaceMgr);
@@ -2267,11 +2273,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         } else if(fwdPassType == FwdPassType.RNN_TIMESTEP){
                             if (current.hasLayer()) {
                                 //Layer
+                                INDArray input = current.getInputs()[0];
                                 Layer l = current.getLayer();
                                 if (l instanceof RecurrentLayer) {
-                                    out = ((RecurrentLayer) l).rnnTimeStep(current.getInputs()[0], workspaceMgr);
+                                    out = ((RecurrentLayer) l).rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
                                 } else if (l instanceof MultiLayerNetwork) {
-                                    out = ((MultiLayerNetwork) l).rnnTimeStep(current.getInputs()[0]);
+                                    out = ((MultiLayerNetwork) l).rnnTimeStep(reshapeTimeStepInput(input));
                                 } else {
                                     //non-recurrent layer
                                     out = current.doForward(train, workspaceMgr);
@@ -2337,6 +2344,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         return outputs;
+    }
+
+    private INDArray reshapeTimeStepInput(INDArray input) {
+        if (input.rank() == 2) { // dynamically reshape to 3D input with one time-step.
+            long[] inShape = input.shape();
+            input = input.reshape(inShape[0], inShape[1], 1);
+        }
+        return input;
     }
 
 
@@ -3701,7 +3716,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
     public Evaluation evaluate(DataSetIterator iterator) {
-        return evaluate(iterator, null);
+        return evaluate(iterator, (List<String>)null);
     }
 
     /**
@@ -3711,7 +3726,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
     public Evaluation evaluate(MultiDataSetIterator iterator) {
-        return evaluate(iterator, null);
+        return evaluate(iterator, (List<String>)null);
     }
 
     /**
@@ -3912,16 +3927,50 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
     }
 
-    private <T extends IEvaluation> T[] doEvaluationHelper(MultiDataSetIterator iterator, T... evaluations){
+    /**
+     * Perform evaluation for networks with multiple outputs.
+     *
+     * @param iterator    Data to evaluate
+     * @param evaluations Evaluation instances. Key: the network output number (0 to numOutputs-1). Value: the IEvaluation
+     *                    instances to perform evaluation with, for that output only. Note that not every output needs to
+     *                    have an IEvaluation[] defined.
+     * @return The same evaluation map, after performing evaluation
+     */
+    public <T extends IEvaluation> Map<Integer, IEvaluation[]> evaluate(DataSetIterator iterator, Map<Integer,IEvaluation[]> evaluations){
+        return evaluate(new MultiDataSetIteratorAdapter(iterator), evaluations);
+    }
+
+    /**
+     * Perform evaluation for networks with multiple outputs.
+     *
+     * @param iterator    Data to evaluate
+     * @param evaluations Evaluation instances. Key: the network output number (0 to numOutputs-1). Value: the IEvaluation
+     *                    instances to perform evaluation with, for that output only. Note that not every output needs to
+     *                    have an IEvaluation[] defined.
+     * @return The same evaluation map, after performing evaluation
+     */
+    public Map<Integer, IEvaluation[]> evaluate(MultiDataSetIterator iterator, Map<Integer,IEvaluation[]> evaluations){
+        try{
+            return doEvaluationHelper(iterator, evaluations);
+        } catch (OutOfMemoryError e){
+            CrashReportingUtil.writeMemoryCrashDump(this, e);
+            throw e;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @SafeVarargs
+    private final <T extends IEvaluation> T[] doEvaluationHelper(MultiDataSetIterator iterator, T... evaluations) {
+        Map<Integer,IEvaluation[]> map = Collections.singletonMap(0, (IEvaluation[])evaluations);
+        return (T[])doEvaluationHelper(iterator, map).get(0);
+    }
+
+    private Map<Integer,IEvaluation[]> doEvaluationHelper(MultiDataSetIterator iterator, Map<Integer, IEvaluation[]> evaluations){
         if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
 
-        if (getNumOutputArrays() != 1) {
-            throw new IllegalStateException("Cannot evaluate a model using this method with > 1 output arrays");
-        }
-
-        WorkspaceUtils.assertNoWorkspacesOpen("Expected no external workspaces open in doEvaluation");
+        WorkspaceUtils.assertNoWorkspacesOpen("Expected no external workspaces open at start of evaluation (doEvaluationHelper)");
 
         if (iterator.resetSupported() && !iterator.hasNext())
             iterator.reset();
@@ -3938,7 +3987,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             MultiDataSet next = iter.next();
 
             if (next.getFeatures() == null || next.getLabels() == null)
-                break;
+                continue;
 
             if (!useRnnSegments) {
                 //Standard/non-RNN case
@@ -3948,13 +3997,26 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 INDArray[] featuresMasks = next.getFeaturesMaskArrays();
                 INDArray labels = next.getLabels(0);
                 INDArray[] labelMasks = next.getLabelsMaskArrays();
-                INDArray labelMask = next.getLabelsMaskArray(0);
 
                 //TODO in principle, we could keep these output arrays in a workspace...
                 INDArray[] out = outputOfLayersDetached(false, FwdPassType.STANDARD, getOutputLayerIndices(), features, featuresMasks, labelMasks, true, false);
 
-                for (T evaluation : evaluations)
-                    evaluation.eval(labels, out[0], labelMask);
+                for(Integer i : evaluations.keySet()){
+                    IEvaluation[] evalsThisOutput = evaluations.get(i);
+                    if(evalsThisOutput == null)
+                        continue;
+
+                    Preconditions.checkState(i >= 0 && i < getNumOutputArrays(), "Invalid output index: indices for outputs " +
+                            "must be between 0 and %s inclusive - found index %s", numOutputArrays, (int)i);
+                    INDArray currOut = out[i];
+
+                    try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                        for (IEvaluation evaluation : evalsThisOutput)
+                            evaluation.eval(labels, currOut, next.getLabelsMaskArray(i));
+                    }
+                }
+
+
             } else {
                 rnnClearPreviousState();
 
@@ -3984,12 +4046,20 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                     INDArray[] outSub = rnnTimeStep(subset.get(0));
 
-                    INDArray maskSub = subset.get(3) == null ? null : subset.get(3)[0];
 
 
-                    try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                        for (T evaluation : evaluations)
-                            evaluation.eval(subset.get(1)[0], outSub[0], maskSub);
+                    for(Integer idx : evaluations.keySet()) {
+                        IEvaluation[] evalsThisOutput = evaluations.get(idx);
+                        if (evalsThisOutput == null)
+                            continue;
+
+                        INDArray labelSub = (subset.get(1) == null ? null : subset.get(1)[idx]);
+                        INDArray maskSub = subset.get(3) == null ? null : subset.get(3)[idx];
+                        INDArray currOut = outSub[idx];
+                        try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                            for (IEvaluation evaluation : evalsThisOutput)
+                                evaluation.eval(labelSub, currOut, maskSub);
+                        }
                     }
                 }
 
