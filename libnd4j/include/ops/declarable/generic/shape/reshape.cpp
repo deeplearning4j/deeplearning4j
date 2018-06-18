@@ -21,7 +21,7 @@ namespace nd4j {
                 REQUIRE_TRUE(argsSize >= 2, 0, "Reshape arguments should have order and at least 1 dimensions");
 
                 int e = 1;
-                char order = (char) (*argumets)[0];
+                char order = (char) -(*argumets)[0];
                 if (order != 'c' && order != 'f') {
                     order = x->ordering();
                     e = 0;
@@ -57,7 +57,7 @@ namespace nd4j {
 
                 char order = 'c';
                 if (block.numI() > 0)
-                    order = (char) INT_ARG(0);
+                    order = (char) -INT_ARG(0);
 
                 std::vector<Nd4jLong> shapeNew(s->lengthOf());
                 for (int e = 0; e < (int) s->lengthOf(); e++)
@@ -91,7 +91,7 @@ namespace nd4j {
                 std::vector<int> *arguments = block.getIArguments();
 
                 int e = 1;
-                char order = (char) (*arguments)[0];
+                char order = (char) -(*arguments)[0];
                 if (order != 'c' && order != 'f') {
                     order = shape::order(inp);
                     e = 0;

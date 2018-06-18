@@ -1423,7 +1423,7 @@ TEST_F(DeclarableOpsTests1, Reshape3) {
     NDArray<float> x('c', {3, 4, 5});
 
     nd4j::ops::reshape<float> op;
-    auto result = op.execute({&x}, {}, {99, 3, 4, 5});
+    auto result = op.execute({&x}, {}, {-99, 3, 4, 5});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
