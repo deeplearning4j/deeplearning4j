@@ -1913,15 +1913,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         if (current.hasLayer()) {
                             //Layer
                             INDArray input = current.getInputs()[0];
-                            if (input.rank() == 2) { // dynamically reshape to 3D input with one time-step.
-                                long[] inShape = input.shape();
-                                input = input.reshape(inShape[0], inShape[1], 1);
-                            }
                             Layer l = current.getLayer();
                             if (l instanceof RecurrentLayer) {
-                                out = ((RecurrentLayer) l).rnnTimeStep(input, workspaceMgr);
+                                out = ((RecurrentLayer) l).rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
                             } else if (l instanceof MultiLayerNetwork) {
-                                out = ((MultiLayerNetwork) l).rnnTimeStep(current.getInputs()[0]);
+                                out = ((MultiLayerNetwork) l).rnnTimeStep(reshapeTimeStepInput(input));
                             } else {
                                 //non-recurrent layer
                                 out = current.doForward(train, workspaceMgr);
