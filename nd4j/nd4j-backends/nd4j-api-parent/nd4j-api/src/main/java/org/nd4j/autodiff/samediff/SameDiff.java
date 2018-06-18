@@ -3006,6 +3006,8 @@ public class SameDiff {
         SDVariable ret = f().size(in);
         return updateVariableNameAndReference(ret, name);
     }
+
+    public SDVariable rank(SDVariable in) {
         return rank(null, in);
     }
 
