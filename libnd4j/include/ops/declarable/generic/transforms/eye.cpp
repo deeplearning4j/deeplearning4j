@@ -25,12 +25,15 @@ DECLARE_SHAPE_FN(eye) {
         params = *block.getIArguments();
         REQUIRE_TRUE(params.size() > 0, 0, "Size not provided for eye op.");
     }
-    else{
-        auto input = INPUT_VARIABLE(0);
-        REQUIRE_TRUE(input->rankOf() == 1, 0, "Input to eye should be 1D");
-        for(int e=0; e<input->lengthOf(); e++){
+    else {
+        for (int i = 0; i < block.width(); i++) {
+        auto input = INPUT_VARIABLE(i);
+        REQUIRE_TRUE(input->rankOf() == 1, 0, "Inputs to eye should be 1D");
+        for (int e = 0; e < input->lengthOf(); e++) {
             params.emplace_back(input->getScalar(e));
         }
+        delete input;
+    }
     }
 
     Nd4jLong* outShapeInfo(nullptr);

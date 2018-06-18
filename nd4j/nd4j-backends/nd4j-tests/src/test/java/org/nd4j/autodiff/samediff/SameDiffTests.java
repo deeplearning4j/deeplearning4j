@@ -3481,4 +3481,19 @@ public class SameDiffTests {
 
     }
 
+    @Test
+    public void testEye(){
+        INDArray arr = Nd4j.create(new double[]{1, 0, 0, 0, 1, 0}, new int[]{2, 3});
+        List<INDArray> stack = new ArrayList<>();
+        for(int i=0; i< 25; i++){
+            stack.add(arr);
+        }
+        INDArray expOut = Nd4j.pile(stack).reshape(5, 5, 2, 3);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable result = sd.eye(2, 3, 5, 5);
+
+        assertEquals(expOut, result.eval());
+    }
+
 }
