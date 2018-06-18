@@ -9,29 +9,29 @@ import java.util.List;
 
 
 /**
- * Sum reduction operation
+ * Squared norm (sum_i x_i^2) reduction operation
  *
  * @author Alex Black
  */
 
-public class ReduceSum extends BaseReduction {
-    public ReduceSum(SameDiff sameDiff, SDVariable input, boolean keepDims, int... dimensions) {
+public class SquaredNorm extends BaseReduction {
+    public SquaredNorm(SameDiff sameDiff, SDVariable input, boolean keepDims, int... dimensions) {
         super(sameDiff, input, keepDims, dimensions);
     }
 
-    public ReduceSum(INDArray input, INDArray output, boolean keepDims, int... dimensions){
+    public SquaredNorm(INDArray input, INDArray output, boolean keepDims, int... dimensions){
         super(input, output, keepDims, dimensions);
     }
 
-    public ReduceSum(){}
+    public SquaredNorm(){}
 
     @Override
     public String opName() {
-        return "reduce_sum";
+        return "reduce_sqnorm";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad){
-        return Collections.singletonList(f().sumBp(arg(), grad.get(0), keepDims, dimensions));
+        return Collections.singletonList(f().squaredNormBp(arg(), grad.get(0), keepDims, dimensions));
     }
 }

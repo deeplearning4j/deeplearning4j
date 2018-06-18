@@ -36,7 +36,6 @@ import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
 import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.api.ops.random.impl.Linspace;
-import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -222,7 +221,7 @@ public class DifferentialFunctionFactory {
     /**
      * Average pooling 2d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling2DConfig the configuration
      * @return
      */
@@ -239,7 +238,7 @@ public class DifferentialFunctionFactory {
     /**
      * Max pooling 2d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling2DConfig the configuration
      * @return
      */
@@ -256,7 +255,7 @@ public class DifferentialFunctionFactory {
     /**
      * Avg pooling 3d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling3DConfig the configuration
      * @return
      */
@@ -269,7 +268,7 @@ public class DifferentialFunctionFactory {
     /**
      * Max pooling 3d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling3DConfig the configuration
      * @return
      */
@@ -412,7 +411,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable sum(SDVariable i_x, boolean keepDims, int... dimensions) {
-        return new ReduceSum(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+        return new Sum(sameDiff(), i_x, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable sumBp(SDVariable i_x, SDVariable grad, boolean keepDims, int... dimensions) {
@@ -421,7 +420,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable prod(SDVariable i_x, boolean keepDims, int... dimensions) {
-        return new ReduceProd(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+        return new Prod(sameDiff(), i_x, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable prodBp(SDVariable preReduceInput, SDVariable grad, boolean keepDims, int... dimensions) {
@@ -429,7 +428,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable mean(SDVariable in, boolean keepDims, int... dimensions){
-        return new ReduceMean(sameDiff(), in, keepDims, dimensions).outputVariable();
+        return new Mean(sameDiff(), in, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable meanBp(SDVariable in, SDVariable grad, boolean keepDims, int... dimensions){
@@ -438,7 +437,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable std(SDVariable i_x, boolean biasCorrected, boolean keepDims, int... dimensions) {
-        return new ReduceStandardDeviation(sameDiff(), i_x, biasCorrected, keepDims, dimensions).outputVariable();
+        return new StandardDeviation(sameDiff(), i_x, biasCorrected, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable stdBp(SDVariable stdInput, SDVariable gradient, boolean biasCorrected, boolean keepDims, int... dimensions){
@@ -447,7 +446,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable variance(SDVariable i_x, boolean biasCorrected, boolean keepDims, int... dimensions) {
-        return new ReduceVariance(sameDiff(), i_x, biasCorrected, keepDims, dimensions).outputVariable();
+        return new Variance(sameDiff(), i_x, biasCorrected, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable varianceBp(SDVariable stdInput, SDVariable gradient, boolean biasCorrected, boolean keepDims, int... dimensions){
@@ -455,7 +454,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable squaredNorm(SDVariable input, boolean keepDims, int... dimensions){
-        return new ReduceSquaredNorm(sameDiff(), input, keepDims, dimensions).outputVariable();
+        return new SquaredNorm(sameDiff(), input, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable squaredNormBp(SDVariable preReduceInput, SDVariable gradient, boolean keepDims, int... dimensions){
@@ -495,7 +494,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable max(SDVariable i_x, boolean keepDims, int... dimensions) {
-        return new ReduceMax(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+        return new Max(sameDiff(), i_x, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable max(SDVariable first, SDVariable second) {
@@ -509,7 +508,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable min(SDVariable i_x, boolean keepDims, int... dimensions) {
-        return new ReduceMin(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+        return new Min(sameDiff(), i_x, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable minBp(SDVariable i_x, SDVariable grad, boolean keepDims, int... dimensions) {
@@ -586,7 +585,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable norm1(SDVariable i_x, boolean keepDims, int... dimensions) {
-        return new ReduceNorm1(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+        return new Norm1(sameDiff(), i_x, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable norm1Bp(SDVariable preReduceIn, SDVariable grad, boolean keepDims, int... dimensions){
@@ -594,7 +593,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable norm2(SDVariable i_x, boolean keepDims, int... dimensions) {
-        return new ReduceNorm2(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+        return new Norm2(sameDiff(), i_x, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable norm2Bp(SDVariable preReduceIn, SDVariable grad, boolean keepDims, int... dimensions){
@@ -602,7 +601,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable normmax(SDVariable i_x, boolean keepDims, int... dimensions) {
-        return new ReduceNormMax(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+        return new NormMax(sameDiff(), i_x, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable normmaxBp(SDVariable preReduceIn, SDVariable grad, boolean keepDims, int... dimensions){

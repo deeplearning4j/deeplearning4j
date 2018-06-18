@@ -44,13 +44,8 @@ public class Variance extends BaseAccumulation {
     protected double mean, bias;
     protected boolean biasCorrected = true;
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, boolean biasCorrected) {
-        super(sameDiff, i_v, dimensions);
-        this.biasCorrected = biasCorrected;
-    }
-
-    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean biasCorrected) {
-        super(sameDiff, i_v, i_v2, dimensions);
+    public Variance(SameDiff sameDiff, SDVariable i_v, boolean biasCorrected, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, dimensions, keepDims);
         this.biasCorrected = biasCorrected;
     }
 
@@ -145,12 +140,11 @@ public class Variance extends BaseAccumulation {
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         //If out = var(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         // with dOut/dIn = (in-mean) * 2/(n-1)
-        //TODO KEEP DIMS SUPPORT
-        return Collections.singletonList(f().varianceBp(arg(), i_v1.get(0), biasCorrected, false, dimensions));
+        return Collections.singletonList(f().varianceBp(arg(), grad.get(0), biasCorrected, keepDims, dimensions));
     }
 
     @Override

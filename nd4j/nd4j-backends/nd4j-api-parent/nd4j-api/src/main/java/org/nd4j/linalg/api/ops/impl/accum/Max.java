@@ -26,16 +26,17 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Calculate the max over a vector
+ * Calculate the max over an array
  *
  * @author Adam Gibson
  */
 public class Max extends BaseAccumulation {
-    public Max(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
+    public Max(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, dimensions, keepDims);
     }
 
     public Max(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
@@ -79,7 +80,7 @@ public class Max extends BaseAccumulation {
 
     @Override
     public String opName() {
-        return "max";
+        return "reduce_max";
     }
 
     @Override
@@ -99,19 +100,8 @@ public class Max extends BaseAccumulation {
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        //TODO do we need to handle the "multiple equal maximums" case?
-        //TODO code duplication (min/max)
-
-        SDVariable out = outputVariables()[0];
-        int origRank = Shape.rankFromShape(arg().getShape());
-        SDVariable expandedOut = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, out);
-        expandedOut = sameDiff.onesLike(arg()).mul(expandedOut);
-        SDVariable expandedGrad = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-
-        SDVariable eq = sameDiff.eq(arg(), expandedOut);
-        SDVariable ret = eq.mul(expandedGrad);
-        return Arrays.asList(ret);
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
+        return Collections.singletonList(f().maxBp(arg(), grad.get(0), keepDims, dimensions));
     }
 
     @Override

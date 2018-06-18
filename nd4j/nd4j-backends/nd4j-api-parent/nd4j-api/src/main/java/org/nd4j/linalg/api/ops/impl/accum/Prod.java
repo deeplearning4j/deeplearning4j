@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,8 +35,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Prod extends BaseAccumulation {
-    public Prod(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
+    public Prod(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, dimensions, keepDims);
     }
 
     public Prod(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
@@ -69,7 +70,7 @@ public class Prod extends BaseAccumulation {
 
     @Override
     public String opName() {
-        return "prod";
+        return "reduce_prod";
     }
 
 
@@ -100,14 +101,8 @@ public class Prod extends BaseAccumulation {
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable prod = outputVariables()[0];
-        int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
-        SDVariable broadcastableGrad = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-        SDVariable broadcastableProd = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, prod);
-        SDVariable mul = broadcastableGrad.div(arg());
-        SDVariable ret = broadcastableProd.mul(mul);
-        return Arrays.asList(ret);
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
+        return Collections.singletonList(f().prodBp(arg(), grad.get(0), keepDims, dimensions));
     }
 
     @Override

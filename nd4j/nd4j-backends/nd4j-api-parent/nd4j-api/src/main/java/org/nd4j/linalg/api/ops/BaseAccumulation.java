@@ -78,6 +78,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             throw new IllegalArgumentException("Input not null variable.");
         }
 
+        this.newFormat = true;
     }
 
     public BaseAccumulation(SameDiff sameDiff,
@@ -102,6 +103,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             throw new IllegalArgumentException("Input not null variable.");
         }
 
+        this.newFormat = true;
     }
 
 
@@ -142,10 +144,13 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init();
-        //      if (y != null)
-        //            LinAlgExceptions.assertSameLength(x, y);
-        //LinAlgExceptions.assertSameLength(x, z);
+    }
 
+    public BaseAccumulation(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean newFormat) {
+        super(x, y, z, x.lengthLong());
+        this.keepDims = keepDims;
+        this.newFormat = newFormat;
+        init();
     }
 
     public BaseAccumulation(INDArray x, INDArray y, long n) {
