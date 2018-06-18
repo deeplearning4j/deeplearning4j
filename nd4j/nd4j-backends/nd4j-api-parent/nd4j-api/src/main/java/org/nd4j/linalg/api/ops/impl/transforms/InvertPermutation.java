@@ -39,7 +39,6 @@ public class InvertPermutation extends BaseDynamicTransformOp {
 
     public InvertPermutation(SameDiff sameDiff, SDVariable input, boolean inPlace) {
         super( sameDiff, new SDVariable[] {input}, inPlace);
-        addIArgument(dimensions);
     }
 
     @Override

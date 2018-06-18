@@ -63,7 +63,6 @@ public class BatchToSpace extends DynamicCustomOp {
 
         for (int e = 0; e < crops.length; e++)
             addIArgument(crops[e][0], crops[e][1]);
-
     }
 
     @Override

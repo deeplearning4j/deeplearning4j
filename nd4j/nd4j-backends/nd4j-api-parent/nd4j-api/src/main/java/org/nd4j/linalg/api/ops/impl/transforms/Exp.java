@@ -37,14 +37,6 @@ public class Exp extends BaseTransformOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Exp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Exp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Exp() {
     }
 

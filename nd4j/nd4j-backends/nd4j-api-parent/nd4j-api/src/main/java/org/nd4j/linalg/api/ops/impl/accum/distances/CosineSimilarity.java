@@ -133,20 +133,18 @@ public class CosineSimilarity extends BaseAccumulation {
 
     public static List<SDVariable> doDiff(SameDiff sameDiff, DifferentialFunctionFactory f, SDVariable x, SDVariable y,
                                           SDVariable gradOut, int... dimensions){
-        SDVariable a = sameDiff.sum(x.mul(y),dimensions);
-        SDVariable l2x = f.norm2(x, dimensions);
-        SDVariable l2y = f.norm2(y, dimensions);
+        SDVariable a = sameDiff.sum(x.mul(y),true, dimensions);
+        SDVariable l2x = f.norm2(x, true, dimensions);
+        SDVariable l2y = f.norm2(y, true, dimensions);
         SDVariable b = l2x.mul(l2y);
 
         int origRank = Shape.rankFromShape(x.getShape());
-        SDVariable broadcastableA = f.reductionBroadcastableWithOrigShape(origRank, dimensions, a);
-        SDVariable broadcastableB = f.reductionBroadcastableWithOrigShape(origRank, dimensions, b);
-        SDVariable broadcastableL2xSq = f.reductionBroadcastableWithOrigShape(origRank, dimensions, sameDiff.square(l2x));
-        SDVariable broadcastableL2ySq = f.reductionBroadcastableWithOrigShape(origRank, dimensions, sameDiff.square(l2y));
+        SDVariable l2xSq = sameDiff.square(l2x);
+        SDVariable l2ySq = sameDiff.square(l2y);
         SDVariable broadcastableGrad = f.reductionBroadcastableWithOrigShape(origRank, dimensions, gradOut);
 
-        SDVariable dcdx = y.sub(x.mul(broadcastableA).div(broadcastableL2xSq)).div(broadcastableB);
-        SDVariable dcdy = x.sub(y.mul(broadcastableA).div(broadcastableL2ySq)).div(broadcastableB);
+        SDVariable dcdx = y.sub(x.mul(a).div(l2xSq)).div(b);
+        SDVariable dcdy = x.sub(y.mul(a).div(l2ySq)).div(b);
 
         return Arrays.asList(dcdx.mul(broadcastableGrad), dcdy.mul(broadcastableGrad));
     }

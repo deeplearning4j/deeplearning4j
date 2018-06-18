@@ -163,24 +163,23 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
 
+        long[] retShape;
+        if(!(op instanceof BaseIndexAccumulation) || !((BaseIndexAccumulation)op).isNewFormat()) {
+            retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
+                    : ArrayUtil.removeIndex(op.x().shape(), dimension);
 
-
-        long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
-                : ArrayUtil.removeIndex(op.x().shape(), dimension);
-
-        // This is obviously wrong for IndexReduce, op.x has no real value as return
-        // if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
-        //     return op.x();
-
-
-        //ensure vector is proper shape
-        if (retShape.length == 1) {
-            if (dimension[0] == 0)
-                retShape = new long[] {1, retShape[0]};
-            else
-                retShape = new long[] {retShape[0], 1};
-        } else if (retShape.length == 0) {
-            retShape = new long[] {1, 1};
+            //ensure vector is proper shape (if old format)
+            if (retShape.length == 1) {
+                if (dimension[0] == 0)
+                    retShape = new long[]{1, retShape[0]};
+                else
+                    retShape = new long[]{retShape[0], 1};
+            } else if (retShape.length == 0) {
+                retShape = new long[]{1, 1};
+            }
+        } else {
+            retShape = Shape.wholeArrayDimension(dimension) ? new long[0]
+                    : ArrayUtil.removeIndex(op.x().shape(), dimension);
         }
 
         if(op.z() == null || op.x() == op.z()) {

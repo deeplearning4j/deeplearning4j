@@ -16,8 +16,12 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarRemainder;
+import org.nd4j.linalg.api.ops.impl.shape.Cross;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
@@ -25,6 +29,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -42,9 +47,13 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class TransformOpValidation {
+public class TransformOpValidation extends BaseOpValidation {
 
     private DataBuffer.Type initialType;
+
+    public TransformOpValidation(Nd4jBackend backend) {
+        super(backend);
+    }
 
     @Before
     public void before() throws Exception {
@@ -82,7 +91,7 @@ public class TransformOpValidation {
             for (char inOrder : new char[]{'c', 'f'}) {
                 SameDiff sd = SameDiff.create();
 
-                INDArray inArr = Nd4j.linspace(1, n, n).reshape(inOrder, d0, d1, d2);
+                INDArray inArr = Nd4j.linspace(1, n, n).reshape('c', d0, d1, d2).dup(inOrder);
                 SDVariable in = sd.var("in", inArr);
                 TestCase tc = new TestCase(sd).gradientCheck(true);
 
@@ -125,9 +134,9 @@ public class TransformOpValidation {
                         msg = "pow - " + inOrder;
                         break;
                     case 7:
-                        inArr.subi(n/2).muli(0.5);
+                        inArr.assign(Nd4j.rand(inArr.shape()).muli(5).subi(2.5));
                         out = sd.scalarFloorMod(in, 2);
-                        tc.expected(out, Nd4j.getExecutioner().execAndReturn(new ScalarRemainder(inArr.dup(), 2.0)));
+                        tc.expected(out, Nd4j.getExecutioner().execAndReturn(new ScalarFMod(inArr.dup(), 2.0)));
                         msg = "scalarRemainer - " + inOrder;
                         break;
                     case 8:
@@ -155,6 +164,7 @@ public class TransformOpValidation {
 
                 SDVariable loss = sd.standardDeviation(out, true);
 
+                log.info("Starting test: " + msg);
                 String err = OpValidation.validate(tc, true);
                 if(err != null){
                     failed.add(err);
@@ -162,6 +172,31 @@ public class TransformOpValidation {
             }
         }
         assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testScalarMulCF(){
+
+        INDArray in = Nd4j.linspace(1,12,12).reshape('c',3,4);
+        INDArray outC = Nd4j.createUninitialized(3,4);
+        INDArray outF = Nd4j.createUninitialized(3, 4);
+
+        Nd4j.getExecutioner().exec(new ScalarMultiplication(in, null, outC, in.length(), 2.0));
+        Nd4j.getExecutioner().exec(new ScalarMultiplication(in, null, outF, in.length(), 2.0));
+
+        assertEquals(outC, outF);
+    }
+
+
+    @Test
+    public void testScalarMulCF2(){
+
+        INDArray in = Nd4j.linspace(1,12,12).reshape('c',3,4);
+
+        INDArray outC = Nd4j.getExecutioner().execAndReturn(new ScalarMultiplication(in.dup('c'), 2.0));
+        INDArray outF = Nd4j.getExecutioner().execAndReturn(new ScalarMultiplication(in.dup('f'), 2.0));
+
+        assertEquals(outC, outF);
     }
 
     @Test
@@ -173,7 +208,7 @@ public class TransformOpValidation {
 
         INDArray expOut = Nd4j.create(1, 3);
 
-        DynamicCustomOp op = DynamicCustomOp.builder("cross").addInputs(a, b).addOutputs(expOut).build();
+        DynamicCustomOp op = new Cross(a, b, expOut);
         Nd4j.getExecutioner().exec(op);
 
         SameDiff sd = SameDiff.create();
@@ -209,10 +244,7 @@ public class TransformOpValidation {
         SDVariable sdInput = sd.var("in", inputShape);
 
         INDArray expOut = Nd4j.create(miniBatch, 2, 2, blockSize * blockSize);
-        DynamicCustomOp op = DynamicCustomOp.builder("space_to_depth")
-                .addInputs(input)
-                .addIntegerArguments(blockSize, isNHWC)
-                .addOutputs(expOut).build();
+        DynamicCustomOp op = new SpaceToDepth(input, expOut, blockSize, dataFormat);
         Nd4j.getExecutioner().exec(op);
 
         sd.associateArrayWithVariable(input, sdInput);
@@ -223,7 +255,7 @@ public class TransformOpValidation {
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("std", expOut)
                 .gradientCheck(true));
-        assertNull(err, err);
+        assertNull(err);
     }
 
     @Test
@@ -241,10 +273,7 @@ public class TransformOpValidation {
         SDVariable sdInput = sd.var("in", inputShape);
 
         INDArray expOut = Nd4j.create(miniBatch, 2 * blockSize, 2 * blockSize, 1);
-        DynamicCustomOp op = DynamicCustomOp.builder("depth_to_space")
-                .addInputs(input)
-                .addIntegerArguments(blockSize, isNHWC)
-                .addOutputs(expOut).build();
+        DynamicCustomOp op = new DepthToSpace(input, expOut, blockSize, dataFormat);
         Nd4j.getExecutioner().exec(op);
 
         sd.associateArrayWithVariable(input, sdInput);
@@ -766,8 +795,8 @@ public class TransformOpValidation {
                     boolean exclusive = false;
                     boolean reverseBool = false;
 
-
-                    t = sd.cumsum(in, exclusive, reverseBool, dim);
+                    SDVariable dimArg = sd.var("dim", Nd4j.trueScalar(dim));
+                    t = sd.cumsum(in, dimArg, exclusive, reverseBool);
                     INDArray expOut51 = Nd4j.create(ia.shape());
                     DynamicCustomOp cumsum = DynamicCustomOp.builder("cumsum")
                             .addIntegerArguments((exclusive) ? 1 : 0, (reverseBool) ? 1 : 0, dim)
@@ -779,7 +808,8 @@ public class TransformOpValidation {
                     dim = 0;
                     boolean ex = false;
                     boolean revBool = false;
-                    t = sd.cumprod(in, ex, revBool, dim);
+                    SDVariable dimArg2 = sd.var("dim", Nd4j.trueScalar(dim));
+                    t = sd.cumprod(in, dimArg2, ex, revBool);
                     INDArray expOut52 = Nd4j.create(ia.shape());
                     for( int s0=0; s0<ia.size(0); s0++){
                         for( int s1=0; s1<ia.size(1); s1++ ){

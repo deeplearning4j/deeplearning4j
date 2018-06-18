@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -90,8 +91,6 @@ public class ScalarMultiplication extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable g = f().mul(i_v1.get(0),scalarValue.doubleValue());
-
-        return Arrays.asList(g);
+        return Collections.singletonList(i_v1.get(0).mul(scalarValue.doubleValue()));
     }
 }
