@@ -1612,44 +1612,6 @@ public class SameDiffTests {
     }
 
     @Test
-    public void testConv3dBasic() {
-        int nIn = 3;
-        int nOut = 4;
-        int kH = 2;
-        int kW = 2;
-        int kD = 2;
-
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-        int imgT = 28;
-
-        SameDiff sd = SameDiff.create();
-        INDArray wArr = Nd4j.create(nOut, nIn, kD, kH, kW); //As per DL4J
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgT, imgH, imgW);
-
-        SDVariable in = sd.var("in", inArr);
-        SDVariable w = sd.var("W", wArr);
-        SDVariable b = sd.var("b", bArr);
-
-        Conv3DConfig conv3DConfig = Conv3DConfig.builder()
-                .kH(kH).kW(kW).kD(kD)
-                .dH(1).dW(1).dD(1)
-                .isValidMode(false)
-                .biasUsed(false)
-                .build();
-
-        SDVariable out = sd.conv3d(in, w, b, conv3DConfig);
-        out = sd.tanh("out", out);
-
-        INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27
-        val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 27, 27, 27}, outShape);
-    }
-
-    @Test
     public void testBatchNormTest() {
         SameDiff sd = SameDiff.create();
 
