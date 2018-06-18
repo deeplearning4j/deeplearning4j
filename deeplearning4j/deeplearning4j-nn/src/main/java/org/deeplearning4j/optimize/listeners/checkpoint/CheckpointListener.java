@@ -79,6 +79,7 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
     private int keepLast;
     private int keepEvery;
     private boolean logSaving;
+    private boolean deleteExisting;
 
     private Integer saveEveryNEpochs;
     private Integer saveEveryNIterations;
@@ -102,6 +103,7 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
         this.keepLast = builder.keepLast;
         this.keepEvery = builder.keepEvery;
         this.logSaving = builder.logSaving;
+        this.deleteExisting = builder.deleteExisting;
 
         this.saveEveryNEpochs = builder.saveEveryNEpochs;
         this.saveEveryNIterations = builder.saveEveryNIterations;
@@ -116,6 +118,26 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
 
         //TODO see if existing checkpoints are present
         this.checkpointRecordFile = new File(rootDir, "checkpointInfo.txt");
+        if(this.checkpointRecordFile.exists() && this.checkpointRecordFile.length() > 0){
+
+            if(deleteExisting){
+                //Delete any files matching:
+                //"checkpoint_" + checkpointNum + "_" + modelType + ".zip";
+                this.checkpointRecordFile.delete();
+                File[] files = rootDir.listFiles();
+                if(files != null && files.length > 0){
+                    for(File f : files){
+                        String name = f.getName();
+                        if(name.startsWith("checkpoint_") && (name.endsWith("MultiLayerNetwork.zip") || name.endsWith("ComputationGraph.zip"))){
+                            f.delete();
+                        }
+                    }
+                }
+            } else {
+                throw new IllegalStateException("Detected existing checkpoint files at directory " + rootDir.getAbsolutePath() +
+                        ". Use deleteExisting(true) to delete existing checkpoint files when present.");
+            }
+        }
     }
 
     @Override
@@ -412,6 +434,7 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
         private int keepLast;
         private int keepEvery;
         private boolean logSaving = true;
+        private boolean deleteExisting = false;
 
         private Integer saveEveryNEpochs;
         private Integer saveEveryNIterations;
@@ -542,6 +565,15 @@ public class CheckpointListener extends BaseTrainingListener implements Serializ
          */
         public Builder logSaving(boolean logSaving){
             this.logSaving = logSaving;
+            return this;
+        }
+
+        /**
+         * If the checkpoint listener is set to save to a non-empty directory,
+         * WARNING: Be careful using this, as it may delete your saved models if misused!
+         */
+        public Builder deleteExisting(boolean deleteExisting){
+            this.deleteExisting = deleteExisting;
             return this;
         }
 
