@@ -22,7 +22,7 @@ CUSTOM_OP_IMPL(eye, -2, 1, false, 0, -2) {
 DECLARE_SHAPE_FN(eye) {
 
     std::vector<int> params;
-    params.emplace_back(99);
+    params.emplace_back(-99);
     if(block.width() == 0) {
         params = *block.getIArguments();
         REQUIRE_TRUE(params.size() > 0, 0, "Size not provided for eye op.");
