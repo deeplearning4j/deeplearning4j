@@ -3030,8 +3030,6 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_7) {
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
