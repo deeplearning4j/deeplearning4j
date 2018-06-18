@@ -145,8 +145,8 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
-        Preconditions.checkState(input.shape().length == 3,
-                "3D input expected to RNN layer expected, got " + input.shape().length);
+        Preconditions.checkState(input.rank() == 3,
+                "3D input expected to RNN layer expected, got %s", input.rank());
         applyDropOutIfNecessary(training, workspaceMgr);
 
         //TODO LSTM cache mode is disabled for now - not passing all tests

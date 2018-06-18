@@ -122,8 +122,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
-        Preconditions.checkState(input.shape().length == 3,
-                "3D input expected to RNN layer expected, got " + input.shape().length);
+        Preconditions.checkState(input.rank() == 3,
+                "3D input expected to RNN layer expected, got %s", input.rank());
         applyDropOutIfNecessary(training, workspaceMgr);
 
 //        if (cacheMode == null)
