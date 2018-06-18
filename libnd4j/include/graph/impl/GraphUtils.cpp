@@ -107,13 +107,13 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     pathStr += pathEnv;
 
     nd4j_printf("%s\n", pathStr.c_str());
-    char const* env[] = {// "HOME=/tmp", 
-                          pathStr.c_str(),
-                          (char *)0 };
+//    char const* env[] = {// "HOME=/tmp", 
+//                          pathStr.c_str(),
+//                          (char *)0 };
 
 // to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}' 
     nd4j_printf("Run: \n\t g++ -E -P -std=c++11 -o %s -I{../include/*, ../blas} %s\n", output, input);
-    int err = execle(cxx, cxx, "-E", "-P", "-std=c++11", "-o", output, 
+    int err = execlp(cxx, cxx, "-E", "-P", "-std=c++11", "-o", output, 
         "-I../include",
         "-I../blas",
         "-I../include/ops",
@@ -123,8 +123,8 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
         "-I../include/cnpy",
         "-I../include/ops/declarable", 
         input,
-        (char*)nullptr, 
-        env);
+        (char*)nullptr
+    );
 
     if (err < 0) {
         perror("\nCannot run Preprocessor properly due \n");
