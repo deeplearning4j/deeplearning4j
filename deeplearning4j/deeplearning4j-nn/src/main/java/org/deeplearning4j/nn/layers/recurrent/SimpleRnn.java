@@ -162,8 +162,8 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     private Pair<INDArray,INDArray> activateHelper(INDArray prevStepOut, boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr){
         assertInputSet(false);
-        Preconditions.checkState(input.shape().length == 3,
-                "3D input expected to RNN layer expected, got " + input.shape().length);
+        Preconditions.checkState(input.rank() == 3,
+                "3D input expected to RNN layer expected, got " + input.rank());
 
         applyDropOutIfNecessary(training, workspaceMgr);
         val m = input.size(0);
