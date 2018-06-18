@@ -189,14 +189,14 @@ public class FileSplit extends BaseInputSplit {
     @Override
     public OutputStream openOutputStreamFor(String location) throws Exception {
         FileOutputStream ret = location.startsWith("file://") ? new FileOutputStream(new File(URI.create(location))):
-                new FileOutputStream(new File(URI.create(location)));
+                new FileOutputStream(new File(location));
         return ret;
     }
 
     @Override
     public InputStream openInputStreamFor(String location) throws Exception {
         FileInputStream ret = location.startsWith("file://") ? new FileInputStream(new File(URI.create(location))):
-                new FileInputStream(new File(URI.create(location)));
+                new FileInputStream(new File(location));
         return ret;
     }
 
