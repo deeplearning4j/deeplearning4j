@@ -59,7 +59,8 @@ namespace nd4j {
         *  indicates whether user allocates memory for _buffer/_shapeInfo by himself, in opposite case the memory must be allocated from outside
         */  
         bool _isShapeAlloc = false;                    
-        bool _isBuffAlloc = false; 						
+        bool _isBuffAlloc = false;
+        bool _isEmpty = false;
 
         /**
         *  type of array elements
@@ -67,7 +68,10 @@ namespace nd4j {
         DataType _dataType = DataType_FLOAT;
 
         std::string toStringValue(T value);
-    public:        
+    public:
+
+        static NDArray<T>* createEmpty();
+
         
         /**
         *  default constructor, do not allocate memory, memory for array is passed from outside 
@@ -221,6 +225,12 @@ namespace nd4j {
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
         T* specialBuffer();
+
+        /**
+         * Returns True if it's legally empty NDArray, or false otherwise
+         * @return
+         */
+        FORCEINLINE bool isEmpty() const;
 
         /**
         *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
@@ -1165,6 +1175,9 @@ namespace nd4j {
         FORCEINLINE bool isAttached();
 
         NDArray<T>* detach();
+
+
+        FORCEINLINE bool operator == (const NDArray<T> &other) const;
     };
 
 
@@ -1524,6 +1537,10 @@ template<typename T>
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
  bool NDArray<T>::isSameShape(const NDArray<T> *other) const {
+    if (this->isEmpty() != other->isEmpty())
+        return false;
+
+
     return isSameShape(std::vector<Nd4jLong>(other->_shapeInfo+1, other->_shapeInfo+1+other->_shapeInfo[0]));
 }
 
@@ -1548,7 +1565,19 @@ bool NDArray<T>::isSameShapeStrict(const NDArray<T> *other) const {
   return shape::equalsStrict(_shapeInfo, other->_shapeInfo);
 }
 
+template<typename T>
+bool NDArray<T>::isEmpty() const {
+    return _isEmpty;
+}
 
+template <typename T>
+bool NDArray<T>::operator ==(const NDArray<T> &other) const {
+    if (!this->isSameShape(&other))
+        return false;
+
+    return this->equalsTo(&other);
+}
 
 }
+
 #endif

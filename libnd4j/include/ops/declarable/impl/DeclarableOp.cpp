@@ -477,6 +477,10 @@ namespace nd4j {
                 if (v->variableType() == VariableType::NDARRAY) {
                     NDArray<T> *aV = v->getNDArray();
 
+                    // if array is empty intentionally - we're ok with that
+                    if (v->isEmpty())
+                        continue;
+
                     if (aV == nullptr || !aV->nonNull()) {
                         if (this->getOpName() != nullptr) {
                             nd4j_printf("Node [%i:<%s>]: NDArray [%i] (%i:%i) is NULL\n", block.getNodeId(), this->getOpName()->c_str(), cnt, p.first, p.second);

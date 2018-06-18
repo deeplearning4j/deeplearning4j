@@ -60,6 +60,14 @@ namespace nd4j {
     }
 
     template <typename T>
+    NDArray<T>* NDArray<T>::createEmpty() {
+        auto result = new NDArray<T>(nullptr, nullptr, nullptr);
+        result->_isEmpty = true;
+
+        return result;
+    }
+
+    template <typename T>
     template <typename N>
     NDArray<N>* NDArray<T>::asT() {
         auto result = new NDArray<N>(this->ordering(), this->getShapeAsVector());
