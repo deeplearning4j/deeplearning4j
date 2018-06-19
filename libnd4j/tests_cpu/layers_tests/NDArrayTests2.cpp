@@ -58,6 +58,26 @@ TEST_F(NDArrayTest2, Test_ByteVector_3) {
     delete restored;
 }
 
+TEST_F(NDArrayTest2, Test_Reshape_Scalar_1) {
+    NDArray<double> x('c', {1, 1}, {1.0});
+    NDArray<double> e(1.0);
+
+    x.reshapei({});
+
+    ASSERT_EQ(e, x);
+    ASSERT_EQ(e.rankOf(), x.rankOf());
+}
+
+TEST_F(NDArrayTest2, Test_Reshape_Scalar_2) {
+    NDArray<double> x('c', {1, 1}, {1.0});
+    NDArray<double> e('c', {1}, {1.0});
+
+    x.reshapei({1});
+
+    ASSERT_EQ(e, x);
+    ASSERT_EQ(e.rankOf(), x.rankOf());
+}
+
 TEST_F(NDArrayTest2, Test_IndexReduce_1) {
     NDArray<float> x('c', {1, 5}, {1, 2, 3, 4, 5});
 
