@@ -654,17 +654,17 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable out = sd.sconv2d(vars, c);
         out = sd.tanh("out", out);
 
-//        INDArray outArr = sd.execAndEndResult();
-//        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-//        val outShape = outArr.shape();
-//        assertArrayEquals(new long[]{mb, nOut, 27, 27}, outShape);
+        INDArray outArr = sd.execAndEndResult();
+        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
+        val outShape = outArr.shape();
+        assertArrayEquals(new long[]{mb, nOut, 27, 27}, outShape);
 
         SDVariable loss = out.std(true);
 
-        System.out.println(sd.summary());
-        System.out.println("--------------------------");
-        sd.createGradFunction();
-        System.out.println(sd.getFunction("grad").summary());
+//        System.out.println(sd.summary());
+//        System.out.println("--------------------------");
+//        sd.createGradFunction();
+//        System.out.println(sd.getFunction("grad").summary());
 
         //Gradient check:
         TestCase tc = new TestCase(sd);
@@ -676,19 +676,19 @@ public class LayerOpValidation extends BaseOpValidation {
     public void testDeconv2dBasic() {
         OpValidationSuite.ignoreFailing();
 
-        int nIn = 3;
-        int nOut = 4;
+        int nIn = 2;
+        int nOut = 3;
         int kH = 2;
         int kW = 2;
 
-        int mb = 3;
+        int mb = 2;
         int imgH = 28;
         int imgW = 28;
 
         SameDiff sd = SameDiff.create();
-        INDArray wArr = Nd4j.create(nOut, nIn, kH, kW);
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+        INDArray wArr = Nd4j.rand(new int[]{nIn, nOut, kH, kW}); //Libnd4j expected weights format: [chIn, chOut, kH, kW] - NCHW
+        INDArray bArr = Nd4j.rand(new long[]{nOut});
+        INDArray inArr = Nd4j.rand(new long[]{mb, nIn, imgH, imgW});
 
         SDVariable in = sd.var("in", inArr);
         SDVariable w = sd.var("W", wArr);
@@ -711,6 +711,12 @@ public class LayerOpValidation extends BaseOpValidation {
         //Expected output size: out = (in + k + 2*p)/ s - 1 = (28 + 2+0)/1 - 1 = 29
         val outShape = outArr.shape();
         assertArrayEquals(new long[]{mb, nOut, 29, 29}, outShape);
+
+        SDVariable loss = out.std(true);
+        //Gradient check:
+        TestCase tc = new TestCase(sd);
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 
 
