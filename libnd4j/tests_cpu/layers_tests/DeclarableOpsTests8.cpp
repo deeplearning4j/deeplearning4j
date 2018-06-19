@@ -2316,3 +2316,4 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test10) {
 
     delete results;
 }
+

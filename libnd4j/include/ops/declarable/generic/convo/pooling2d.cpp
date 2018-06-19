@@ -28,6 +28,8 @@ namespace nd4j {
             int poolingMode = argI[9];
             T extraParam0 = (int)argI[10];
 
+            REQUIRE_TRUE(dH != 0 && dW != 0, 0, "POOLING2D op: dilation must not be  zero, but got instead {%i, %i}", dH, dW);
+
             int kSize = kW * kH;
 
             auto inShape = shape::shapeOf(x->getShapeInfo());
@@ -158,6 +160,8 @@ namespace nd4j {
             int dH = argI[6];
             int dW = argI[7];
             int isSameMode = argI[8];
+
+            REQUIRE_TRUE(dH != 0 && dW != 0, 0, "POOLING2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
             int bS = inShape[1];
             int iD = inShape[2];
