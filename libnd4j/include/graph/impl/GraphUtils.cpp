@@ -83,22 +83,16 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     #if __CNUC__ < 4 && __GNUC_MINOR__ < 9
     #pragma error "Compiler version should be greater then 4.9"
     #endif
+
     // just stacking everything together
 //    std::string cmdline = "./buildnativeoperations.sh " + 
 ///        std::string(name_arg) + 
 //        std::string(build_arg) + 
 ///        std::string(arch_arg) + 
 //        std::string(opts_arg);
-    nd4j_printf("Run preprocessor as \ncpp %s\n", input);
-//    int err;
-//    char* cxx_path = getenv("CXX_PATH");
-//    if (cxx_path == NULL) {
-//        nd4j_printf("Cannot retrieve mandatory environment variable 'CXX_PATH'. Please set up the variable and try again.", "");
-//        exit(2);
-//    }
 
     char* cxx = getenv("CXX");
-    if (cxx == NULL) {
+    if (cxx == nullptr) {
         nd4j_printf("Cannot retrieve mandatory environment variable 'CXX'. Please set up the variable and try again.", "");
         exit(3);
     }
@@ -112,19 +106,35 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
 //                          (char *)0 };
 
 // to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}' 
-    nd4j_printf("Run: \n\t g++ -E -P -std=c++11 -o %s -I{../include/*, ../blas} %s\n", output, input);
-    int err = execlp(cxx, cxx, "-E", "-P", "-std=c++11", "-o", output, 
-        "-I../include",
-        "-I../blas",
-        "-I../include/ops",
-        "-I../include/helpers",
-        "-I../include/types",
-        "-I../include/array",
-        "-I../include/cnpy",
-        "-I../include/ops/declarable", 
-        input,
-        (char*)nullptr
-    );
+
+    std::vector<char*> params;//(9);
+    std::vector<std::string> args;//(9);
+    args.emplace_back(std::string(cxx));
+    args.emplace_back(std::string("-E"));
+    args.emplace_back(std::string("-P"));
+    args.emplace_back(std::string("-std=c++11"));
+    args.emplace_back(std::string("-o"));
+    args.emplace_back(output);
+    args.emplace_back(std::string("-I../include"));
+    args.emplace_back(std::string("-I../blas"));
+    args.emplace_back(std::string("-I../include/ops"));
+    args.emplace_back(std::string("-I../include/helpers"));
+    args.emplace_back(std::string("-I../include/types"));
+    args.emplace_back(std::string("-I../include/array"));
+    args.emplace_back(std::string("-I../include/cnpy"));
+    args.emplace_back(std::string("-I../include/ops/declarable")); 
+    args.emplace_back(input);
+
+    std::string preprocessorCmd(cxx);
+    for (auto& arg: args) {
+        preprocessorCmd += ' ';
+        preprocessorCmd += arg;
+        params.emplace_back(const_cast<char*>(arg.data()));
+    }
+    params.emplace_back(nullptr);
+    nd4j_printf("Run: \n\t %s\n", preprocessorCmd.c_str());
+
+    int err = execvp(cxx, &params[0]);
 
     if (err < 0) {
         perror("\nCannot run Preprocessor properly due \n");
