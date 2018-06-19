@@ -308,9 +308,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testScatterOpGradients() {
-        OpValidationSuite.ignoreFailing();
-
-
         List<String> failed = new ArrayList<>();
 
         for (int i = 0; i < 5; i++) {
@@ -381,8 +378,9 @@ public class MiscOpValidation extends BaseOpValidation {
             SDVariable loss = sd.sum(scatter);  //.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
             sd.execAndEndResult();
 
-            TestCase tc = new TestCase(sd);
-            tc.expected(scatter, exp);
+            TestCase tc = new TestCase(sd)
+                    .expected(scatter, exp)
+                    .gradCheckSkipVariables(indices.getVarName());
 
             String error = OpValidation.validate(tc);
             if(error != null){

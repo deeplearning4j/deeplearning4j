@@ -616,7 +616,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testSeparableConv2dBasic() {
-        OpValidationSuite.ignoreFailing();
+        Nd4j.getRandom().setSeed(12345);
         int nIn = 3;
         int nOut = 4;
         int kH = 2;
@@ -629,11 +629,11 @@ public class LayerOpValidation extends BaseOpValidation {
         int depthWise = 3;
 
         SameDiff sd = SameDiff.create();
-        INDArray depthWeightArr = Nd4j.create(depthWise, nIn, kH, kW);
-        INDArray pointWeightArr = Nd4j.create(nOut, depthWise, 1, 1);
+        INDArray depthWeightArr = Nd4j.rand(new int[]{depthWise, nIn, kH, kW});
+        INDArray pointWeightArr = Nd4j.rand(new int[]{nOut, nIn * depthWise, 1, 1});           //Must have shape: [outChannels, inChannels * depthMultiplier, 1, 1]
 
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+        INDArray bArr = Nd4j.rand(new int[]{nOut});
+        INDArray inArr = Nd4j.rand(new int[]{mb, nIn, imgH, imgW});
 
         SDVariable in = sd.var("in", inArr);
         SDVariable dW = sd.var("dW", depthWeightArr);
@@ -648,15 +648,28 @@ public class LayerOpValidation extends BaseOpValidation {
                 .sH(1).sW(1)
                 .dH(1).dW(1)
                 .isSameMode(false)
+                .isNHWC(false)
                 .build();
 
         SDVariable out = sd.sconv2d(vars, c);
         out = sd.tanh("out", out);
 
-        INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 27, 27}, outShape);
+//        INDArray outArr = sd.execAndEndResult();
+//        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
+//        val outShape = outArr.shape();
+//        assertArrayEquals(new long[]{mb, nOut, 27, 27}, outShape);
+
+        SDVariable loss = out.std(true);
+
+        System.out.println(sd.summary());
+        System.out.println("--------------------------");
+        sd.createGradFunction();
+        System.out.println(sd.getFunction("grad").summary());
+
+        //Gradient check:
+        TestCase tc = new TestCase(sd);
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 
     @Test
