@@ -78,18 +78,18 @@ public class Pooling3D extends DynamicCustomOp {
     }
 
     private void addArgs() {
-        addIArgument(config.getKT());
+        addIArgument(config.getKD());
         addIArgument(config.getKW());
         addIArgument(config.getKH());
-        addIArgument(config.getST());
+        addIArgument(config.getSD());
         addIArgument(config.getSW());
         addIArgument(config.getSH());
-        addIArgument(config.getPT());
+        addIArgument(config.getPD());
         addIArgument(config.getPW());
         addIArgument(config.getPH());
-        addIArgument(config.getDilationT());
-        addIArgument(config.getDilationW());
-        addIArgument(config.getDilationH());
+        addIArgument(config.getDD());
+        addIArgument(config.getDW());
+        addIArgument(config.getDH());
 
     }
 

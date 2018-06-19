@@ -37,11 +37,11 @@ public class AvgPooling2D extends DynamicCustomOp {
 
     @Builder(builderMethodName = "builder")
     public AvgPooling2D(SameDiff sameDiff, SDVariable input, INDArray arrayInput, INDArray arrayOutput, Pooling2DConfig config) {
-        super(null,sameDiff, new SDVariable[]{input}, false);
-        if(arrayInput != null) {
+        super(null, sameDiff, new SDVariable[]{input}, false);
+        if (arrayInput != null) {
             addInputArgument(arrayInput);
         }
-        if(arrayOutput != null) {
+        if (arrayOutput != null) {
             addOutputArgument(arrayOutput);
         }
         config.setType(Pooling2D.Pooling2DType.AVG);
@@ -54,29 +54,29 @@ public class AvgPooling2D extends DynamicCustomOp {
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> map = new HashMap<>();
+        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+        Map<String, PropertyMapping> map = new HashMap<>();
         val strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
-                .propertyNames(new String[]{"sx","sy"})
+                .propertyNames(new String[]{"sW", "sH"})
                 .build();
 
         val paddingMapping = PropertyMapping.builder()
                 .onnxAttrName("padding")
                 .tfAttrName("padding")
-                .propertyNames(new String[]{"px","py"})
+                .propertyNames(new String[]{"pH", "pW"})
                 .build();
 
         val kernelMapping = PropertyMapping.builder()
-                .propertyNames(new String[]{"kh","kw"})
+                .propertyNames(new String[]{"kH", "kW"})
                 .tfInputPosition(1)
                 .onnxAttrName("ksize")
                 .build();
 
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dw","dh"})
+                .propertyNames(new String[]{"dW", "dH"})
                 .tfAttrName("rates")
                 .build();
 
@@ -87,18 +87,18 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .tfAttrName("data_format")
                 .build();
 
-        map.put("sx", strideMapping);
-        map.put("sy", strideMapping);
-        map.put("kh", kernelMapping);
-        map.put("kw", kernelMapping);
-        map.put("dw", dilationMapping);
-        map.put("dh", dilationMapping);
-        map.put("ph",paddingMapping);
-        map.put("pw",paddingMapping);
-        map.put("isNHWC",dataFormatMapping);
+        map.put("sW", strideMapping);
+        map.put("sH", strideMapping);
+        map.put("kH", kernelMapping);
+        map.put("kW", kernelMapping);
+        map.put("dW", dilationMapping);
+        map.put("dH", dilationMapping);
+        map.put("pH", paddingMapping);
+        map.put("pW", paddingMapping);
+        map.put("isNHWC", dataFormatMapping);
 
-        ret.put(onnxName(),map);
-        ret.put(tensorflowName(),map);
+        ret.put(onnxName(), map);
+        ret.put(tensorflowName(), map);
 
 
         return ret;
@@ -120,18 +120,17 @@ public class AvgPooling2D extends DynamicCustomOp {
     }
 
     private void addArgs() {
-        addIArgument(
-                new long[]{config.getKh(),
-                        config.getKw(),
-                        config.getSy(),
-                        config.getSx(),
-                        config.getPh(),
-                        config.getPw(),
-                        config.getDh(),
-                        config.getDw(),
-                        ArrayUtil.fromBoolean(config.isSameMode()),
-                        (int) config.getExtra(),
-                        ArrayUtil.fromBoolean(config.isNHWC())});
+        addIArgument(config.getKH(),
+                config.getKW(),
+                config.getSH(),
+                config.getSW(),
+                config.getPH(),
+                config.getPW(),
+                config.getDH(),
+                config.getDW(),
+                ArrayUtil.fromBoolean(config.isSameMode()),
+                (int) config.getExtra(),
+                ArrayUtil.fromBoolean(config.isNHWC()));
 
     }
 
@@ -165,19 +164,19 @@ public class AvgPooling2D extends DynamicCustomOp {
         val aKernels = nodeDef.getAttrOrThrow("ksize");
         val tfKernels = aKernels.getList().getIList();
 
-        int sY = 0;
-        int sX = 0;
+        int sH = 0;
+        int sW = 0;
 
-        int ph = 0;
-        int pw = 0;
+        int pH = 0;
+        int pW = 0;
 
-        int kY = 0;
-        int kX = 0;
+        int kH = 0;
+        int kW = 0;
 
         val aPadding = nodeDef.getAttrOrThrow("padding");
         val padding = aPadding.getList().getIList();
 
-        val paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"","");
+        val paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"", "");
 
         boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
 
@@ -189,42 +188,42 @@ public class AvgPooling2D extends DynamicCustomOp {
         }
 
         if (data_format.equalsIgnoreCase("nhwc")) {
-            sY = tfStrides.get(1).intValue();
-            sX = tfStrides.get(2).intValue();
+            sH = tfStrides.get(1).intValue();
+            sW = tfStrides.get(2).intValue();
 
-            kY = tfKernels.get(1).intValue();
-            kX = tfKernels.get(2).intValue();
+            kH = tfKernels.get(1).intValue();
+            kW = tfKernels.get(2).intValue();
 
-            ph = padding.size() > 0 ? padding.get(1).intValue() : 0;
-            pw = padding.size() > 0 ? padding.get(2).intValue() : 0;
+            pH = padding.size() > 0 ? padding.get(1).intValue() : 0;
+            pW = padding.size() > 0 ? padding.get(2).intValue() : 0;
         } else {
-            sY = tfStrides.get(2).intValue();
-            sX = tfStrides.get(3).intValue();
+            sH = tfStrides.get(2).intValue();
+            sW = tfStrides.get(3).intValue();
 
-            kY = tfKernels.get(2).intValue();
-            kX = tfKernels.get(3).intValue();
+            kH = tfKernels.get(2).intValue();
+            kW = tfKernels.get(3).intValue();
 
-            ph = padding.size() > 0 ? padding.get(2).intValue() : 0;
-            pw = padding.size() > 0 ? padding.get(3).intValue() : 0;
+            pH = padding.size() > 0 ? padding.get(2).intValue() : 0;
+            pW = padding.size() > 0 ? padding.get(3).intValue() : 0;
         }
 
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
-                .sy(sY)
-                .sx(sX)
+                .sH(sH)
+                .sW(sW)
                 .type(Pooling2D.Pooling2DType.AVG)
                 .isSameMode(isSameMode)
-                .kh(kY)
-                .kw(kX)
-                .ph(ph)
-                .pw(pw)
-                .virtualWidth(1)
+                .kH(kH)
+                .kW(kW)
+                .pH(pH)
+                .pW(pW)
                 .virtualHeight(1)
+                .virtualWidth(1)
                 .isNHWC(data_format.equalsIgnoreCase("nhwc"))
                 .extra(0.0) // averaging only for non-padded values
                 .build();
         this.config = pooling2DConfig;
         addArgs();
-        log.debug("Pooling: k: [{},{}]; s: [{}, {}], padding: {}", kY, kX, sY, sX, aPadding);
+        log.debug("Pooling: k: [{},{}]; s: [{}, {}], padding: {}", kH, kW, sH, sW, aPadding);
 
 
     }
@@ -237,22 +236,20 @@ public class AvgPooling2D extends DynamicCustomOp {
         val strides = attributesForNode.get("strides").getIntsList();
 
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
-                .sy(strides.get(0).intValue())
-                .sx(strides.get(1).intValue())
+                .sH(strides.get(0).intValue())
+                .sW(strides.get(1).intValue())
                 .type(Pooling2D.Pooling2DType.AVG)
                 .isSameMode(paddingVal.equalsIgnoreCase("SAME"))
-                .kh(kernelShape.get(0).intValue())
-                .kw(kernelShape.get(1).intValue())
-                .ph(padding.get(0).intValue())
-                .pw(padding.size() < 2 ? padding.get(0).intValue() : padding.get(1).intValue())
+                .kH(kernelShape.get(0).intValue())
+                .kW(kernelShape.get(1).intValue())
+                .pH(padding.get(0).intValue())
+                .pW(padding.size() < 2 ? padding.get(0).intValue() : padding.get(1).intValue())
                 .virtualWidth(1)
                 .virtualHeight(1)
                 .build();
         this.config = pooling2DConfig;
         addArgs();
     }
-
-
 
 
     @Override

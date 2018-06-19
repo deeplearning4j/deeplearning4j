@@ -47,7 +47,7 @@ import java.util.*;
  * - https://code.google.com/p/cuda-convnet/wiki/CheckingGradients<br>
  *
  *
- * Is C is cost function, then dC/dw ~= (C(w+epsilon)-C(w-epsilon)) / (2*epsilon).<br>
+ * Is C is cost function, then dC/dW ~= (C(w+epsilon)-C(w-epsilon)) / (2*epsilon).<br>
  * Method checks gradient calculation for every parameter separately by doing 2 forward pass
  * calculations for each parameter, so can be very time consuming for large networks.
  *

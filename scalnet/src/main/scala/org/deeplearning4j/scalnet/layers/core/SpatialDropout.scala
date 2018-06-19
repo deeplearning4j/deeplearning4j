@@ -16,20 +16,15 @@
 
 package org.deeplearning4j.scalnet.layers.core
 
-import org.deeplearning4j.nn.conf.dropout.{SpatialDropout => JSpatialDropout}
+import org.deeplearning4j.nn.conf.dropout.{ SpatialDropout => JSpatialDropout }
 import org.deeplearning4j.nn.conf.layers.DropoutLayer
-
 
 /**
   * Spatial Dropout layer
   *
   * @author Max Pumperla
   */
-class SpatialDropout(nOut: List[Int],
-                      nIn: List[Int],
-                      rate: Double,
-                      override val name: String)
-  extends Layer {
+class SpatialDropout(nOut: List[Int], nIn: List[Int], rate: Double, override val name: String) extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new DropoutLayer.Builder()
@@ -48,9 +43,6 @@ class SpatialDropout(nOut: List[Int],
 }
 
 object SpatialDropout {
-  def apply(nOut: Int,
-            nIn: Int = 0,
-            rate: Double,
-            name: String = ""): SpatialDropout =
+  def apply(nOut: Int, nIn: Int = 0, rate: Double, name: String = ""): SpatialDropout =
     new SpatialDropout(List(nOut), List(nIn), rate, name)
 }

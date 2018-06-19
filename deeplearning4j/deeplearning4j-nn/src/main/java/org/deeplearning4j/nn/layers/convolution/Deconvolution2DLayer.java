@@ -132,8 +132,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         retGradient.setGradientFor(DeconvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
         weightNoiseParams.clear();
 
-        outEps = outEps.permute(1, 0, 2 , 3);
-
         return new Pair<>(retGradient, outEps);
     }
 

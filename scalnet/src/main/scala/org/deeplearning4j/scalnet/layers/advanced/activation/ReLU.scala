@@ -16,20 +16,16 @@
 
 package org.deeplearning4j.scalnet.layers.advanced.activation
 
-import org.deeplearning4j.nn.conf.layers.{ActivationLayer => JActivationLayer}
+import org.deeplearning4j.nn.conf.layers.{ ActivationLayer => JActivationLayer }
 import org.deeplearning4j.scalnet.layers.core.Layer
 import org.nd4j.linalg.activations.impl.ActivationReLU
-
 
 /**
   * ReLU layer
   *
   * @author Max Pumperla
   */
-class ReLU(nOut: Option[List[Int]],
-           nIn: Option[List[Int]],
-           override val name: String = "")
-  extends Layer {
+class ReLU(nOut: Option[List[Int]], nIn: Option[List[Int]], override val name: String = "") extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new JActivationLayer.Builder()
@@ -45,19 +41,6 @@ class ReLU(nOut: Option[List[Int]],
 }
 
 object ReLU {
-  def apply(nOut: Int = 0,
-            nIn: Int = 0,
-            name: String = ""): ReLU =
+  def apply(nOut: Int = 0, nIn: Int = 0, name: String = ""): ReLU =
     new ReLU(Some(List(nOut)), Some(List(nIn)), name)
 }
-
-
-
-
-
-
-
-
-
-
-

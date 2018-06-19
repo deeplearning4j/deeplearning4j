@@ -264,13 +264,13 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         gradXYCenter5d = new ActivationSigmoid().backprop(preSigmoidPredictedXYCenterGrid.dup(), gradXYCenter5d).getFirst();
         epsXY.assign(gradXYCenter5d);
 
-        //Calculate gradient component from width/height (w,h) loss - dL_size/dw and dL_size/dw
+        //Calculate gradient component from width/height (w,h) loss - dL_size/dW and dL_size/dW
         //Note that loss function gets sqrt(w) and sqrt(h)
         //gradWHSqrt2d = dL/dsqrt(w) and dL/dsqrt(h)
         INDArray gradWHSqrt2d = layerConf().getLossPositionScale().computeGradient(labelWHSqrt2d, predictedWHSqrt2d, identity, mask1_ij_obj_2d);   //Shape: [mb*b*h*w, 2]
-            //dL/dw = dL/dsqrtw * dsqrtw / dw = dL/dsqrtw * 0.5 / sqrt(w)
-        INDArray gradWH2d = gradWHSqrt2d.muli(0.5).divi(predictedWHSqrt2d);  //dL/dw and dL/dh, w = pw * exp(tw)
-            //dL/dinWH = dL/dw * dw/dInWH = dL/dw * pw * exp(tw)
+            //dL/dW = dL/dsqrtw * dsqrtw / dW = dL/dsqrtw * 0.5 / sqrt(w)
+        INDArray gradWH2d = gradWHSqrt2d.muli(0.5).divi(predictedWHSqrt2d);  //dL/dW and dL/dH, w = pw * exp(tw)
+            //dL/dinWH = dL/dW * dW/dInWH = dL/dW * pw * exp(tw)
         INDArray gradWH5d = gradWH2d.dup('c').reshape(mb, b, h, w, 2).permute(0,1,4,2,3);   //To: [mb, b, 2, h, w]
         gradWH5d.muli(predictedWH);
         gradWH5d.muli(lambdaCoord);
@@ -293,7 +293,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         //Note that we ALSO have components to x,y,w,h  from confidence loss (via IOU, which depends on all of these values)
-        //that is: dLc/dx, dLc/dy, dLc/dw, dLc/dh
+        //that is: dLc/dx, dLc/dy, dLc/dW, dLc/dH
         //For any value v, d(I/U)/dv = (U * dI/dv + I * dU/dv) / U^2
 
         //Confidence loss: sum squared errors + masking.
@@ -312,8 +312,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
 
         //Backprop through the wh and xy activation functions...
-        //dL/dw and dL/dh, w = pw * exp(tw), //dL/dinWH = dL/dw * dw/dInWH = dL/dw * pw * exp(in_w)
-        //as w = pw * exp(in_w) and dw/din_w = w
+        //dL/dW and dL/dH, w = pw * exp(tw), //dL/dinWH = dL/dW * dW/dInWH = dL/dW * pw * exp(in_w)
+        //as w = pw * exp(in_w) and dW/din_w = w
         INDArray dLc_din_wh = dLc_dwh.muli(predictedWH);
         INDArray dLc_din_xy = new ActivationSigmoid().backprop(preSigmoidPredictedXYCenterGrid, dLc_dxy).getFirst();    //Shape: same as subset of input... [mb, b, 2, h, w]
 

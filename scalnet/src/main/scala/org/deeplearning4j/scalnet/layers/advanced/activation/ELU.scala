@@ -16,21 +16,17 @@
 
 package org.deeplearning4j.scalnet.layers.advanced.activation
 
-import org.deeplearning4j.nn.conf.layers.{ActivationLayer => JActivationLayer}
+import org.deeplearning4j.nn.conf.layers.{ ActivationLayer => JActivationLayer }
 import org.deeplearning4j.scalnet.layers.core.Layer
-import org.nd4j.linalg.activations.impl.{ActivationELU}
-
+import org.nd4j.linalg.activations.impl.{ ActivationELU }
 
 /**
   * ELU layer
   *
   * @author Max Pumperla
   */
-class ELU(alpha: Double,
-          nOut: Option[List[Int]],
-          nIn: Option[List[Int]],
-          override val name: String = "")
-  extends Layer {
+class ELU(alpha: Double, nOut: Option[List[Int]], nIn: Option[List[Int]], override val name: String = "")
+    extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new JActivationLayer.Builder()
@@ -45,19 +41,7 @@ class ELU(alpha: Double,
     new ELU(alpha, Some(newIn), Some(newIn), name)
 }
 
-
 object ELU {
-  def apply(alpha: Double,
-            nOut: Int = 0,
-            nIn: Int = 0,
-            name: String = ""): ELU =
+  def apply(alpha: Double, nOut: Int = 0, nIn: Int = 0, name: String = ""): ELU =
     new ELU(alpha, Some(List(nOut)), Some(List(nIn)), name)
 }
-
-
-
-
-
-
-
-
