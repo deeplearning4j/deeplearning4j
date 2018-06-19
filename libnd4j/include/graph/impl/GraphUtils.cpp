@@ -126,9 +126,14 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     args.emplace_back(input);
 
     std::string preprocessorCmd(cxx);
+    bool skip = true;
     for (auto& arg: args) {
-        preprocessorCmd += ' ';
-        preprocessorCmd += arg;
+        if (!skip) {
+            preprocessorCmd += ' ';
+            preprocessorCmd += arg;
+        }
+        else 
+            skip = false;
         params.emplace_back(const_cast<char*>(arg.data()));
     }
     params.emplace_back(nullptr);
