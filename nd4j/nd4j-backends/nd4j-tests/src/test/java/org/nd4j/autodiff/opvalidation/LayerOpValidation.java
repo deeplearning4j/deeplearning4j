@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.opvalidation;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.OpValidationSuite;
@@ -22,6 +23,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
+@Slf4j
 public class LayerOpValidation extends BaseOpValidation {
     public LayerOpValidation(Nd4jBackend backend) {
         super(backend);
@@ -130,7 +132,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         Nd4j.getRandom().setSeed(12345);
 
-        int[][] inputSizes = new int[][]{{1, 3, 8, 8}, {3, 6, 12, 12}};
+        int[][] inputSizes = new int[][]{{1, 3, 8, 8}}; //, {3, 6, 12, 12}};
 
         List<String> failed = new ArrayList<>();
 
@@ -236,7 +238,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         break;
                     case 7:
                         //LRN
-                        msg = "7 - LRN with NHWC - input" + Arrays.toString(inSizeNCHW);
+                        msg = "7 - LRN with NCHW - input" + Arrays.toString(inSizeNCHW);
                         inSize = inSizeNCHW;
                         in = sd.var("in", inSize);
                         out = sd.localResponseNormalization(in, LocalResponseNormalizationConfig.builder()
@@ -255,6 +257,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 in.setArray(inArr);
                 SDVariable loss = sd.standardDeviation("loss", out, true);
 
+                log.info("Starting test: " + msg);
                 TestCase tc = new TestCase(sd);
                 String error = OpValidation.validate(tc);
                 if (error != null) {
@@ -554,7 +557,9 @@ public class LayerOpValidation extends BaseOpValidation {
                     in.setArray(inArr);
                     SDVariable loss = sd.standardDeviation("loss", out, true);
 
+                    log.info("Starting test: " + msg);
                     TestCase tc = new TestCase(sd);
+                    tc.testName(msg);
                     String error = OpValidation.validate(tc);
                     if (error != null) {
                         failed.add(name);
