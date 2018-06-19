@@ -449,6 +449,19 @@ public class ShapeTestsC extends BaseNd4jTest {
         assertEquals(exp, reshaped);
     }
 
+    @Test
+    public void testReshapeToTrueScalar_4() {
+        val orig = Nd4j.create(new float[]{1.0f}, new int[]{1, 1});
+        val exp = Nd4j.trueScalar(1.0f);
+
+        assertArrayEquals(new long[]{1, 1}, orig.shape());
+
+        val reshaped = orig.reshape(new int[0]);
+
+        assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
+        assertEquals(exp, reshaped);
+    }
+
     @Override
     public char ordering() {
         return 'c';
