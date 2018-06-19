@@ -62,8 +62,8 @@ namespace nd4j {
     template <typename T>
     NDArray<T>* NDArray<T>::createEmpty(nd4j::memory::Workspace* workspace) {
         auto shapeInfo = ShapeUtils<T>::createScalarShapeInfo(workspace);
+        ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
         auto result = new NDArray<T>(nullptr, shapeInfo, workspace);
-        result->_isEmpty = true;
         result->_length = 0;
         result->triggerAllocationFlag(false, true);
 

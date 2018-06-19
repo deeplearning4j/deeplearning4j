@@ -11,6 +11,8 @@
 #include <graph/Intervals.h>
 #include <array/DataType.h>
 #include <stdint.h>
+#include <array/ArrayOptions.h>
+#include <array/ArrayType.h>
 
 
 namespace nd4j {
@@ -60,7 +62,6 @@ namespace nd4j {
         */  
         bool _isShapeAlloc = false;                    
         bool _isBuffAlloc = false;
-        bool _isEmpty = false;
 
         /**
          * Field to store cached length
@@ -1599,7 +1600,7 @@ bool NDArray<T>::isSameShapeStrict(const NDArray<T> *other) const {
 
 template<typename T>
 bool NDArray<T>::isEmpty() const {
-    return _isEmpty;
+    return ArrayOptions::arrayType(this->getShapeInfo()) == ArrayType::EMPTY;
 }
 
 template <typename T>
