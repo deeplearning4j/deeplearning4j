@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.scatter.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
+import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
@@ -1816,6 +1817,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable slice(SDVariable input, int[] begin, int[] size) {
         return new Slice(sameDiff(), input, begin, size).outputVariable();
+    }
+
+    public SDVariable sliceBp(SDVariable input, SDVariable gradient, int[] begin, int[] size) {
+        return new SliceBp(sameDiff(), input, gradient, begin, size).outputVariable();
     }
 
     public SDVariable stridedSlice(SDVariable input, int[] begin, int[] end, int[] strides) {

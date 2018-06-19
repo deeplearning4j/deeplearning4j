@@ -322,11 +322,11 @@ public class ShapeOpValidation extends BaseOpValidation {
         //Order here: original shape, begin, size
         List<Triple<int[], int[], int[]>> testCases = new ArrayList<>();
         testCases.add(new Triple<>(new int[]{3, 4}, new int[]{0, 0}, new int[]{3, 4}));
-        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 1}, new int[]{3, 4}));
-        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 2}, new int[]{2, 3}));
+        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 1}, new int[]{2, 1}));
+        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 2}, new int[]{2, 2}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{0, 0, 0}, new int[]{3, 4, 5}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 1, 1}, new int[]{2, 3, 4}));
-        testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 0, 2}, new int[]{3, 3, 4}));
+        testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 0, 2}, new int[]{3, 3, 2}));
 
         List<String> failed = new ArrayList<>();
 
@@ -345,10 +345,10 @@ public class ShapeOpValidation extends BaseOpValidation {
             String msg = "i=" + i + ": inShape=" + Arrays.toString(os) + ", begin=" + Arrays.toString(b) + ", end=" + Arrays.toString(e);
             log.info("Starting test: " + msg);
 
-            TestCase tc = new TestCase(sd);
-            String error = OpValidation.validate(tc);
+            TestCase tc = new TestCase(sd).testName(msg);
+            String error = OpValidation.validate(tc, true);
             if(error != null){
-                failed.add(name);
+                failed.add(error);
             }
         }
 
