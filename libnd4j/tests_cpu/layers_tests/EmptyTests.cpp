@@ -76,3 +76,21 @@ TEST_F(EmptyTests, Test_Concat_2) {
     delete scalar2;
     delete result;
 }
+
+TEST_F(EmptyTests, Test_Reshape_1) {
+    /*
+    NDArray<float> vector('c', {1}, {119.0f});
+    NDArray<float> exp(119.0f);
+    auto empty = NDArray<float>::createEmpty();
+
+    nd4j::ops::reshape<float> op;
+    auto result = op.execute({&vector, empty}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(exp, *result->at(0));
+
+    delete empty;
+    delete result;
+     */
+}

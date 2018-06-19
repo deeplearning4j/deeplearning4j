@@ -63,6 +63,11 @@ namespace nd4j {
         bool _isEmpty = false;
 
         /**
+         * Field to store cached length
+         */
+        Nd4jLong _length = -1L;
+
+        /**
         *  type of array elements
         */  
         DataType _dataType = DataType_FLOAT;
@@ -1194,7 +1199,7 @@ template <typename T2>
 
 #pragma omp parallel for simd
     for (int e = 0; e < this->lengthOf(); e++)
-        result[e] = (T2) this->getIndexedScalar(e);
+        result[e] = static_cast<T2>(this->getIndexedScalar(e));
 
     return result;
 }
@@ -1212,6 +1217,9 @@ template<typename T>
 
     _shapeInfo = shapeInfo;
     _isShapeAlloc = false;
+
+    if (shapeInfo != nullptr)
+        this->_length = shape::length(shapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1235,7 +1243,6 @@ template<typename T>
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
  char NDArray<T>::ordering() const {
-
     return shape::order(_shapeInfo);
 }
 
@@ -1263,6 +1270,8 @@ Nd4jLong* NDArray<T>::stridesOf() const {
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 int NDArray<T>::rankOf() const {
+    if (isEmpty())
+        return 0;
 
     return shape::rank(_shapeInfo);
 }
@@ -1270,34 +1279,44 @@ int NDArray<T>::rankOf() const {
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 Nd4jLong NDArray<T>::lengthOf() const {
-    
-    return shape::length(_shapeInfo);
+    return _length;
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 Nd4jLong NDArray<T>::rows() const {
-    
+    if (this->rankOf() == 1)
+        return 1;
+
+    if (this->rankOf() > 2)
+        throw std::runtime_error("Array with rank > 2 can't have rows");
+
     return shapeOf()[0];
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 Nd4jLong NDArray<T>::columns() const {
+    if (this->rankOf() == 1)
+        return this->lengthOf();
+
+    if (this->rankOf() > 2)
+        throw std::runtime_error("Array with rank > 2 can't have columns");
 
     return shapeOf()[1];
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
- int NDArray<T>::sizeOfT() const {
-    
+int NDArray<T>::sizeOfT() const {
     return sizeof(T);
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 Nd4jLong NDArray<T>::ews() const {
+    if (this->isEmpty() || this->rankOf() == 0)
+        return 1;
 
     return shape::elementWiseStride(_shapeInfo);
 }
@@ -1305,32 +1324,45 @@ Nd4jLong NDArray<T>::ews() const {
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
  bool NDArray<T>::nonNull() const {
-    
+    if (isEmpty())
+        return true;
+
     return this->_buffer != nullptr && this->_shapeInfo != nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
  bool NDArray<T>::isMatrix() const {
+    if (isEmpty())
+        return false;
+
     return shape::isMatrix(this->_shapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
  bool NDArray<T>::isVector() const {
+    if (isEmpty())
+        return false;
+
     return !isScalar() && shape::isVector(this->_shapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
  bool NDArray<T>::isColumnVector() const {
-   
+    if (isEmpty())
+        return false;
+
     return !isScalar() && shape::isColumnVector(this->_shapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
  bool NDArray<T>::isRowVector() const {
+    if (isEmpty())
+        return false;
+
     // 1D edge case
     if (shape::rank(this->_shapeInfo) == 1)
         return true;
