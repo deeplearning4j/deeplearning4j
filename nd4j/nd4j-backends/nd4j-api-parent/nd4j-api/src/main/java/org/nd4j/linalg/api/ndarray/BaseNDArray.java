@@ -4540,9 +4540,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray reshape(char order, long... newShape) {
         Nd4j.getCompressor().autoDecompress(this);
 
+        // special case for empty reshape
+        if (this.length() == 1 && (newShape == null || newShape.length == 0)) {
+            return Nd4j.create(this.data(), new int[0], new int[0], 0);
+        }
+
         if (newShape == null || newShape.length < 1)
             throw new ND4JIllegalStateException(
-                    "Can't reshape(int...) without shape arguments. Got empty shape instead.");
+                    "Can't reshape(long...) without shape arguments. Got empty shape instead.");
 
         // TODO: maybe toFlatten() makes more sense here?
         // reshape(-1) special case
