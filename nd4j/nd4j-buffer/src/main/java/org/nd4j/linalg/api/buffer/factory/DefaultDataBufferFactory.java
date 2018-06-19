@@ -420,6 +420,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createLong(long[] data, MemoryWorkspace workspace) {
+        return new LongBuffer(data, true, workspace);
+    }
+
+    @Override
     public DataBuffer createLong(long length) {
         return new LongBuffer(length);
     }

@@ -399,7 +399,7 @@ public class SparseNDArrayCOOTest {
     public void shouldSortCOOIndices() {
         long[] shape = new long[] {4, 3, 3};
         double[] values = new double[] {1};
-        int[][] indices = new int[][] {{0, 0, 0}};
+        long[][] indices = new long[][] {{0, 0, 0}};
         INDArray original = Nd4j.createSparseCOO(values, indices, shape);
         original.putScalar(2, 2, 2, 3);
         original.putScalar(1, 1, 1, 2);

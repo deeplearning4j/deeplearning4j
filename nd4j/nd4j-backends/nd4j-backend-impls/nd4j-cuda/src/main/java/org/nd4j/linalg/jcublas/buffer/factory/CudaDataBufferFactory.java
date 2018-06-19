@@ -815,6 +815,11 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createLong(long[] data, MemoryWorkspace workspace) {
+        return new CudaLongDataBuffer(data, workspace);
+    }
+
+    @Override
     public DataBuffer createLong(long length) {
         return createLong(length, true);
     }

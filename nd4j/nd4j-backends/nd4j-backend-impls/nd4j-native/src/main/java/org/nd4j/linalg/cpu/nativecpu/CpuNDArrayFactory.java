@@ -1464,6 +1464,16 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
+    public INDArray createSparseCOO(double[] values, long[][] indices, long[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(float[] values, long[][] indices, long[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] shape) {
         throw new UnsupportedOperationException();
     }

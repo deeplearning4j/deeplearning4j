@@ -1471,6 +1471,19 @@ public class Nd4j {
     }
 
     /**
+     * Create a buffer equal of length prod(shape)
+     *
+     * @param data the shape of the buffer to create
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(long[] data) {
+        DataBuffer ret;
+        ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createLong(data) : DATA_BUFFER_FACTORY_INSTANCE.createLong(data, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Create a buffer equal of length prod(shape). This method is NOT affected by workspaces
      *
      * @param data
@@ -5798,6 +5811,30 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCOO(float[] data, int[][] indices, long[] shape) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
+
+        return matrix;
+    }
+
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCOO(double[] data, long[][] indices, long[] shape) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
+
+        return matrix;
+    }
+
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCOO(float[] data, long[][] indices, long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
 
         return matrix;

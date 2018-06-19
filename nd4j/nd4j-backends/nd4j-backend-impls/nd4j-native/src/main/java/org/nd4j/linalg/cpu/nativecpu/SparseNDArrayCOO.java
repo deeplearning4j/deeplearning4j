@@ -11,13 +11,22 @@ public class SparseNDArrayCOO extends BaseSparseNDArrayCOO {
         super(values, indices, shape);
     }
 
+    public SparseNDArrayCOO(float[] values, int[][] indices, long[] shape) {
+        super(values, indices, shape);
+    }
+
+    public SparseNDArrayCOO(double[] values, long[][] indices, long[] shape){
+        super(values, indices, shape);
+    }
+
+    public SparseNDArrayCOO(float[] values, long[][] indices, long[] shape) {
+        super(values, indices, shape);
+    }
+
     public SparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] shape){
         super(values, indices, shape);
     }
 
-    public SparseNDArrayCOO(float[] values, int[][] indices, long[] shape) {
-        super(values, indices, shape);
-    }
 
     public SparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, long[] shape){
         super(values, indices, sparseOffsets, flags, hiddenDimensions, underlyingRank, shape);

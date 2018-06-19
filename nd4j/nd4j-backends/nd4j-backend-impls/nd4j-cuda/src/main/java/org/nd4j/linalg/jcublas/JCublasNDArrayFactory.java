@@ -1861,12 +1861,12 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public INDArray createSparseCOO(double[] values, int[][] indices, long[] shape) {
+    public INDArray createSparseCOO(double[] values, long[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(float[] values, int[][] indices, long[] shape) {
+    public INDArray createSparseCOO(float[] values, long[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 

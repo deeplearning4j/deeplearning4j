@@ -41,49 +41,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     protected transient volatile DataBuffer indices;
     protected transient volatile boolean isSorted = false;
 
-
-    public BaseSparseNDArrayCOO(double[] values, int[][] indices, long[] shape) {
-
-        checkNotNull(values);
-        checkNotNull(indices);
-        checkNotNull(shape);
-        if (indices.length == 0 && values.length == 0) {
-            // make the room for one value
-            this.indices = Nd4j.createBuffer(shape.length);
-            this.values = Nd4j.createBuffer(1);
-            this.length = 0;
-        } else if (indices.length != 0 && values.length != 0) {
-            if (indices.length == shape.length && indices[0].length == values.length) {
-                this.indices = Nd4j.createBuffer(ArrayUtil.flattenF(indices));
-            } else if (indices.length == values.length && indices[0].length == shape.length) {
-                this.indices = Nd4j.createBuffer(ArrayUtil.flatten(indices));
-            } else {
-                throw new IllegalArgumentException("Sizes of values, indices and shape are incoherent.");
-            }
-        } else {
-            throw new IllegalArgumentException("Values array or indices array is empty");
-        }
-
-        if (values.length == 0) {
-            this.values = Nd4j.createBuffer(1);
-            this.length = 0;
-        } else {
-            this.values = Nd4j.createBuffer(values);
-            this.length = values.length;
-        }
-
-
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
-        init(shape);
-        int[] flags = new int[rank()];
-        long[] sparseOffsets = new long[rank()];
-        int[] hiddenDimension = new int[] {-1};
-        //this.numHiddenDimension = 0;
-        this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
-                        hiddenDimension, rank());
-
-    }
-
     public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] shape) {
         checkArgument(values.length() * shape.length == indices.length());
 
@@ -96,25 +53,54 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         long[] sparseOffsets = new long[rank()];
         int[] hiddenDimension = new int[] {-1};
         this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
-                        hiddenDimension, rank());
+                hiddenDimension, rank());
 
+    }
+
+    public BaseSparseNDArrayCOO(double[] values, long[][] indices, long[] shape) {
+        this.indices = createIndiceBuffer(indices, shape);
+        this.values = createValueBuffer(values);
+        length = values.length;
+
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
+        init(shape);
+        this.sparseInformation = createSparseInformationBuffer(rank());
+        checkBufferCoherence();
+    }
+
+    public BaseSparseNDArrayCOO(float[] values, long[][] indices, long[] shape) {
+        this.indices = createIndiceBuffer(indices, shape);
+        this.values = createValueBuffer(values);
+        length = values.length;
+
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
+        init(shape);
+        this.sparseInformation = createSparseInformationBuffer(rank());
+        checkBufferCoherence();
+    }
+
+    public BaseSparseNDArrayCOO(double[] values, int[][] indices, long[] shape) {
+        this.indices = createIndiceBuffer(indices, shape);
+        this.values = createValueBuffer(values);
+        length = values.length;
+
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
+        init(shape);
+        this.sparseInformation = createSparseInformationBuffer(rank());
+        checkBufferCoherence();
     }
 
     public BaseSparseNDArrayCOO(float[] values, int[][] indices, long[] shape) {
-        checkArgument(values.length == indices.length);
-        checkArgument(values.length == 0 || indices[0].length == shape.length);
+        this.indices = createIndiceBuffer(indices, shape);
+        this.values = createValueBuffer(values);
+        length = values.length;
 
-        this.values = Nd4j.createBuffer(values);
-        this.indices = Nd4j.createBuffer(ArrayUtil.flatten(indices));
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
         init(shape);
-        this.length = values.length;
-        int[] flags = new int[rank()];
-        long[] sparseOffsets = new long[rank()];
-        int[] hiddenDimension = new int[] {-1};
-        this.sparseInformation = Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
-                        hiddenDimension, rank());
+        this.sparseInformation = createSparseInformationBuffer(rank());
+        checkBufferCoherence();
     }
+
 
     public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, long[] shape) {
         this.values = Nd4j.createBuffer(values, 0, values.length());
@@ -130,6 +116,103 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                                 int[] hiddenDimensions, int underlyingRank, long[] shape) {
         this(values, indices, Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
                         hiddenDimensions, underlyingRank), shape);
+    }
+
+
+    /**
+     * Check that the length of indices and values are coherent and matches the rank of the matrix.
+     */
+    protected void checkBufferCoherence(){
+        if (values.length() < length){
+            throw new IllegalStateException("nnz is larger than capacity of buffers");
+        }
+
+        if (values.length() * rank() != indices.length()){
+            throw new IllegalArgumentException("Sizes of values, indices and shape are incoherent.");
+        }
+    }
+
+    /**
+     * Create a SparseInfo databuffer given rank if of the sparse matrix.
+     * @param rank
+     * @return
+     */
+    protected static DataBuffer createSparseInformationBuffer(int rank){
+        int[] flags = new int[rank];
+        long[] sparseOffsets = new long[rank];
+        int[] hiddenDimension = new int[] {-1};
+        return Nd4j.getSparseInfoProvider().createSparseInformation(flags, sparseOffsets,
+                hiddenDimension, rank);
+    }
+
+
+    /**
+     * Create a DataBuffer for values of given array of values.
+     * @param values
+     * @return
+     */
+    protected static DataBuffer createValueBuffer(float[] values) {
+        checkNotNull(values);
+        if (values.length == 0){
+            return Nd4j.createBuffer(1);
+        }
+        return Nd4j.createBuffer(values);
+    }
+
+
+    /**
+     * Create a DataBuffer for values of given array of values.
+     * @param values
+     * @return
+     */
+    protected static DataBuffer createValueBuffer(double[] values) {
+        checkNotNull(values);
+        if (values.length == 0){
+            return Nd4j.createBuffer(1);
+        }
+        return Nd4j.createBuffer(values);
+    }
+
+
+
+    /**
+     * Create a DataBuffer for indices of given arrays of indices.
+     * @param indices
+     * @param shape
+     * @return
+     */
+    protected static DataBuffer createIndiceBuffer(long[][] indices, long[] shape){
+        checkNotNull(indices);
+        checkNotNull(shape);
+        if(indices.length == 0){
+            return Nd4j.getDataBufferFactory().createLong(shape.length);
+        }
+
+        if (indices.length == shape.length) {
+            return Nd4j.createBuffer(ArrayUtil.flattenF(indices));
+        }
+
+        return Nd4j.createBuffer(ArrayUtil.flatten(indices));
+    }
+
+    /**
+     * Create a DataBuffer for indices of given arrays of indices.
+     * @param indices
+     * @param shape
+     * @return
+     */
+    protected static DataBuffer createIndiceBuffer(int[][] indices, long[] shape){
+        checkNotNull(indices);
+        checkNotNull(shape);
+        if(indices.length == 0){
+            return Nd4j.getDataBufferFactory().createLong(shape.length);
+        }
+
+        if (indices.length == shape.length) {
+            return Nd4j.createBuffer(ArrayUtil.toLongArray(ArrayUtil.flattenF(indices)));
+        }
+
+        return Nd4j.createBuffer(ArrayUtil.toLongArray(ArrayUtil.flatten(indices)));
     }
 
     @Override
@@ -286,7 +369,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public INDArray putScalar(int[] indexes, double value) {
+        return putScalar(ArrayUtil.toLongArray(indexes), value);
+    }
 
+    @Override
+    public INDArray putScalar(long[] indexes, double value) {
         for (int i = 0; i < indexes.length; i++) {
             if (indexes[i] < 0)
                 indexes[i] += rank();
@@ -297,16 +384,10 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         }
         if (indexes.length != rank) {
             throw new IllegalStateException(
-                            "Cannot use putScalar with indexes length " + indexes.length + " on rank " + rank);
+                    "Cannot use putScalar with indexes length " + indexes.length + " on rank " + rank);
         }
-
-        addOrUpdate(ArrayUtil.toLongArray(indexes), value);
+        addOrUpdate(indexes, value);
         return this;
-    }
-
-    @Override
-    public INDArray putScalar(long[] i, double value) {
-        return null;
     }
 
     @Override

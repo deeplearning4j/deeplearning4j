@@ -1933,6 +1933,10 @@ public interface NDArrayFactory {
 
     INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape);
 
+    INDArray createSparseCOO(double[] values, long[][] indices, long[] shape);
+
+    INDArray createSparseCOO(float[] values, long[][] indices, long[] shape);
+
     INDArray createSparseCOO(double[] values, int[][] indices, long[] shape);
 
     INDArray createSparseCOO(float[] values, int[][] indices, long[] shape);

@@ -288,6 +288,23 @@ public interface DataBuffer extends Serializable {
      */
     float[] getFloatsAt(long offset, int length);
 
+    /**
+     * Get the ints at a particular offset
+     *
+     * @param offset the offset to start
+     * @param length the length of the array
+     * @return the doubles at the specified offset and length
+     */
+    int[] getIntsAt(long offset, int length);
+
+    /**
+     * Get the longs at a particular offset
+     *
+     * @param offset the offset to start
+     * @param length the length of the array
+     * @return the doubles at the specified offset and length
+     */
+    long[] getLongsAt(long offset, int length);
 
     /**
      * Get the doubles at a particular offset
@@ -309,6 +326,27 @@ public interface DataBuffer extends Serializable {
      * @return the doubles at the specified offset and length
      */
     float[] getFloatsAt(long offset, long inc, int length);
+
+    /**
+     * Get the ints at a particular offset
+     *
+     * @param offset the offset to start
+     * @param inc    the increment to use
+     * @param length the length of the array
+     * @return the doubles at the specified offset and length
+     */
+    int[] getIntsAt(long offset, long inc, int length);
+
+
+    /**
+     * Get the long at a particular offset
+     *
+     * @param offset the offset to start
+     * @param inc    the increment to use
+     * @param length the length of the array
+     * @return the doubles at the specified offset and length
+     */
+    long[] getLongsAt(long offset, long inc, int length);
 
 
     /**

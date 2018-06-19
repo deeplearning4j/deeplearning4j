@@ -183,6 +183,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public long[][] toLongMatrix() {
+        return new long[0][];
+    }
+
+    @Override
     public int[][] toIntMatrix() {
         return new int[0][];
     }

@@ -388,6 +388,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createLong(long length, boolean initialize);
 
+    DataBuffer createLong(long[] data, MemoryWorkspace workspace);
+
     DataBuffer createLong(long length, boolean initialize, MemoryWorkspace workspace);
 
     /**
