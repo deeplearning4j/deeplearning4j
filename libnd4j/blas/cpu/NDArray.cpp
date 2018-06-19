@@ -60,9 +60,12 @@ namespace nd4j {
     }
 
     template <typename T>
-    NDArray<T>* NDArray<T>::createEmpty() {
-        auto result = new NDArray<T>(nullptr, nullptr, nullptr);
+    NDArray<T>* NDArray<T>::createEmpty(nd4j::memory::Workspace* workspace) {
+        auto shapeInfo = ShapeUtils<T>::createScalarShapeInfo(workspace);
+        auto result = new NDArray<T>(nullptr, shapeInfo, workspace);
         result->_isEmpty = true;
+        result->_length = 0;
+        result->triggerAllocationFlag(false, true);
 
         return result;
     }
@@ -76,7 +79,7 @@ namespace nd4j {
         // FIXME: we want to avoid put/get indexed scalars here really
 #pragma omp parallel for
         for (int e = 0; e < l; e++) {
-            result->putIndexedScalar(e, (N) this->getIndexedScalar(e));
+            result->putIndexedScalar(e, static_cast<N>(this->getScalar(e)));
         }
 
         return result;

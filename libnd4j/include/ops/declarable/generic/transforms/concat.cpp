@@ -128,13 +128,13 @@ namespace nd4j {
                 bool allScalars = true;
                 bool hasScalars = false;
                 for (int e = 0; e < block.width(); e++) {
-                    auto c = inputShape->at(e);
+                    auto c = INPUT_VARIABLE(e);
 
-                    if (c == nullptr)
+                    if (c->isEmpty())
                         continue;
 
-                    allScalars &= shape::rank(c) == 0;
-                    hasScalars |= shape::rank(c) == 0;
+                    allScalars &= c->rankOf() == 0;
+                    hasScalars |= c->rankOf() == 0;
                 }
 
                 // all scalars

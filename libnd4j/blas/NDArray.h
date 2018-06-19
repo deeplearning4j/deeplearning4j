@@ -75,7 +75,7 @@ namespace nd4j {
         std::string toStringValue(T value);
     public:
 
-        static NDArray<T>* createEmpty();
+        static NDArray<T>* createEmpty(nd4j::memory::Workspace* workspace = nullptr);
 
         
         /**
