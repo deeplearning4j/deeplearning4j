@@ -102,7 +102,7 @@ public class RepeatVector extends FeedForwardLayer {
 
 
     @NoArgsConstructor
-    protected static class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+    public static class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
 
         private int n = 1; // no repetition by default
 
