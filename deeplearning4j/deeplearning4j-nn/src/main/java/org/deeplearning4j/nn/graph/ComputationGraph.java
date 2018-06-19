@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
@@ -44,6 +45,7 @@ import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
+import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -4153,8 +4155,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     //layer with params
                     if (currentLayer.numParams() > 0) {
                         paramShape = "";
-                        in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
-                        out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                        if (currentLayer instanceof BidirectionalLayer) { // Bidirectional layer is not an FFL
+                            BidirectionalLayer bi = (BidirectionalLayer) currentLayer;
+                            in = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNIn());
+                            out = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNOut());
+                        } else {
+                            in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
+                            out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                        }
                         List<String> paraNames = currentLayer.conf().variables();
                         for (String aP : paraNames) {
                             String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
