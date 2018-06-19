@@ -69,4 +69,14 @@ public class Permute extends Transpose {
         SDVariable ret = f().permute(i_v.get(0), reverseDims);
         return Arrays.asList(ret);
     }
+
+    @Override
+    public String tensorflowName() {
+        return "NonExistent";
+    }
+
+    @Override
+    public String onnxName() {
+        return "NonExistentAsWell";
+    }
 }

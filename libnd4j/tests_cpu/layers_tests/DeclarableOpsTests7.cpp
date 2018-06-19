@@ -3020,7 +3020,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_7) {
     NDArray<float> x('c', {2, 3, 4});
     NDArray<float> exp('c', {1, 1, 1}, {1.f});
     NDArrayFactory<float>::linspace(1, x);
-    x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
+//    x.printIndexedBuffer("Input with shape (2, 3, 4) is");
     nd4j::ops::reduce_min<float> op;
     auto result = op.execute({&x}, {1.}, {0,1,2});
     auto output = result->at(0);    
@@ -3849,8 +3849,8 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_2) {
     exp *= eps.getScalar(0);
     ASSERT_EQ(Status::OK(), result->status());
     auto z = result->at(0);    
-    z->printIndexedBuffer("Result is ");
-    exp.printIndexedBuffer("Expected");
+    //z->printIndexedBuffer("Result is ");
+    //exp.printIndexedBuffer("Expected");
 //    z->printShapeInfo();
     ASSERT_TRUE(exp.equalsTo(z));
     delete result;
@@ -3893,8 +3893,8 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_4) {
 
     ASSERT_EQ(Status::OK(), result->status());
     auto z = result->at(0);    
-    z->printIndexedBuffer("Result is ");
-    exp.printIndexedBuffer("Expected");
+//    z->printIndexedBuffer("Result is ");
+//    exp.printIndexedBuffer("Expected");
 //    z->printShapeInfo();
     ASSERT_TRUE(exp.equalsTo(z));
     delete result;
@@ -3916,8 +3916,8 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_5) {
 
     ASSERT_EQ(Status::OK(), result->status());
     auto z = result->at(0);    
-    z->printIndexedBuffer("Result is ");
-    exp.printIndexedBuffer("Expected");
+//    z->printIndexedBuffer("Result is ");
+//    exp.printIndexedBuffer("Expected");
 //    z->printShapeInfo();
     ASSERT_TRUE(exp.equalsTo(z));
     delete result;
@@ -4204,7 +4204,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_1) {
     nd4j::ops::reduce_norm1_bp<float> op;
     auto result = op.execute({&x, &eps}, {}, {});
     auto output = result->at(0);
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -4223,7 +4223,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_2) {
     nd4j::ops::reduce_norm1_bp<float> op;
     auto result = op.execute({&x, &eps}, {}, {0,1});
     auto output = result->at(0);
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -4242,7 +4242,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_3) {
     nd4j::ops::reduce_norm1_bp<float> op;
     auto result = op.execute({&x, &eps}, {1.f}, {0,1});
     auto output = result->at(0);
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(exp.isSameShape(output));
@@ -4261,7 +4261,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_1) {
     nd4j::ops::reduce_norm2_bp<float> op;
     auto result = op.execute({&x, &eps}, {}, {0,1});
     auto output = result->at(0);
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(x.isSameShape(output));
@@ -4280,7 +4280,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_2) {
     nd4j::ops::reduce_norm2_bp<float> op;
     auto result = op.execute({&x, &eps}, {1.f}, {0,1});
     auto output = result->at(0);
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
     ASSERT_TRUE(x.isSameShape(output));
@@ -4299,7 +4299,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_3) {
     nd4j::ops::reduce_norm2_bp<float> op;
     auto result = op.execute({&x, &eps}, {}, {0, 2});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -4319,7 +4319,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_4) {
     nd4j::ops::reduce_norm2_bp<float> op;
     auto result = op.execute({&x, &eps}, {1.f}, {0, 2});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -4347,7 +4347,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_BP_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
     auto output = result->at(0);
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
 
 //    ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -4528,7 +4528,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_1) {
     nd4j::ops::reduce_dot_bp<float> op;
     auto result = op.execute({&x, &y, &eps}, {}, {});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
 
 //    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -4554,7 +4554,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_2) {
     nd4j::ops::reduce_dot_bp<float> op;
     auto result = op.execute({&x, &y, &eps}, {}, {1});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
 //    z->printShapeInfo("Result shape is");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -4579,7 +4579,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_3) {
     nd4j::ops::reduce_dot_bp<float> op;
     auto result = op.execute({&x,&y, &eps}, {}, {1});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -4662,7 +4662,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_CumSum_BP_3) {
     nd4j::ops::cumsum_bp<float> op;
     auto result = op.execute({&x, &eps}, {}, {1,1});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
+//    output->printIndexedBuffer("Result is");
 //    output->printShapeInfo("Result shape is");
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
@@ -4689,8 +4689,8 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_CumProd_BP_1) {
     nd4j::ops::cumprod<float> op;
     auto result = op.execute({&x}, {}, {1,1,0});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
-    output->printShapeInfo("Result shape is");
+//    output->printIndexedBuffer("Result is");
+    //output->printShapeInfo("Result shape is");
 
 //    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -4716,8 +4716,8 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_CumProd_BP_2) {
     nd4j::ops::cumprod<float> op;
     auto result = op.execute({&x}, {}, {0,0,0,1});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
-    output->printShapeInfo("Result shape is");
+//    output->printIndexedBuffer("Result is");
+//    output->printShapeInfo("Result shape is");
 
 //    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 
@@ -4743,8 +4743,8 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_CumProd_BP_3) {
     nd4j::ops::cumprod<float> op;
     auto result = op.execute({&x}, {}, {0,0});
     auto output = result->at(0);    
-    output->printIndexedBuffer("Result is");
-    output->printShapeInfo("Result shape is");
+//    output->printIndexedBuffer("Result is");
+//    output->printShapeInfo("Result shape is");
 
 //    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
 

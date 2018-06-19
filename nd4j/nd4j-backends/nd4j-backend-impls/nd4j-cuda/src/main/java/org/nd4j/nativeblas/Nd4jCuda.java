@@ -5845,7 +5845,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         @Override public FloatNDArray position(long position) {
             return (FloatNDArray)super.position(position);
         }
-            
+    
+
+        public static native FloatNDArray createEmpty();
+
         
         /**
         *  default constructor, do not allocate memory, memory for array is passed from outside 
@@ -6048,6 +6051,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
         public native FloatPointer specialBuffer();
+
+        /**
+         * Returns True if it's legally empty NDArray, or false otherwise
+         * @return
+         */
+        public native @Cast("bool") boolean isEmpty();
 
         /**
         *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
@@ -6961,6 +6970,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean isAttached();
 
         public native FloatNDArray detach();
+
+
+        public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef FloatNDArray other);
     }
 
 
@@ -6974,7 +6986,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         @Override public HalfNDArray position(long position) {
             return (HalfNDArray)super.position(position);
         }
-            
+    
+
+        public static native HalfNDArray createEmpty();
+
         
         /**
         *  default constructor, do not allocate memory, memory for array is passed from outside 
@@ -7177,6 +7192,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
         public native @Cast("float16*") ShortPointer specialBuffer();
+
+        /**
+         * Returns True if it's legally empty NDArray, or false otherwise
+         * @return
+         */
+        public native @Cast("bool") boolean isEmpty();
 
         /**
         *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
@@ -8090,6 +8111,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean isAttached();
 
         public native HalfNDArray detach();
+
+
+        public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef HalfNDArray other);
     }
 
 
@@ -8103,7 +8127,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         @Override public DoubleNDArray position(long position) {
             return (DoubleNDArray)super.position(position);
         }
-            
+    
+
+        public static native DoubleNDArray createEmpty();
+
         
         /**
         *  default constructor, do not allocate memory, memory for array is passed from outside 
@@ -8306,6 +8333,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
         public native DoublePointer specialBuffer();
+
+        /**
+         * Returns True if it's legally empty NDArray, or false otherwise
+         * @return
+         */
+        public native @Cast("bool") boolean isEmpty();
 
         /**
         *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
@@ -9219,6 +9252,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean isAttached();
 
         public native DoubleNDArray detach();
+
+
+        public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef DoubleNDArray other);
     }
 
 
@@ -9366,6 +9402,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 //////////////////////////////////////////////////////////////////////////
 // returns true if these two NDArrays have same _shapeInfo
 // still the definition of inline function must be in header file
+
+
+
 
 
 

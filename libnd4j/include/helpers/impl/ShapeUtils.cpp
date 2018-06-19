@@ -370,7 +370,7 @@ Nd4jLong* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>&
 template <typename T>
 bool ShapeUtils<T>::areShapesBroadcastable(const NDArray<T> &arr1, const NDArray<T> &arr2)
 {
-    return areShapesBroadcastable((Nd4jLong *) arr1.getShapeInfo(), (Nd4jLong *) arr2.getShapeInfo());   
+    return areShapesBroadcastable(arr1.getShapeInfo(), arr2.getShapeInfo());
 }
 
 template <typename T>
