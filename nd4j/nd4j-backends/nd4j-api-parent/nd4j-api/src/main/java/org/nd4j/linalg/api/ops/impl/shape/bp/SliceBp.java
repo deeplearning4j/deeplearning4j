@@ -38,9 +38,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Slice function
+ * Slice backprop function
  *
- * @author Adam Gibson
+ * @author Alex Black
  */
 @Slf4j
 public class SliceBp extends DynamicCustomOp {

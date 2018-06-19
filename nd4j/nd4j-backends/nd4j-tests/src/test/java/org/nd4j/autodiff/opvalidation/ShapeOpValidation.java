@@ -405,7 +405,6 @@ public class ShapeOpValidation extends BaseOpValidation {
         testCases.add(SSCase.builder().shape(3, 4).begin(-999, 0).end(3, 4).strides(1, 1).beginMask(1).build());
         testCases.add(SSCase.builder().shape(3, 4).begin(1, 1).end(3, -999).strides(1, 1).endMask(1 << 1).build());
         testCases.add(SSCase.builder().shape(3, 4).begin(-999, 0).end(-999, 4).strides(1, 1).beginMask(1).endMask(1).build());
-        testCases.add(SSCase.builder().shape(3, 4).begin(-999, 0, 0).end(-999, 3, 4).strides(1, 1).newAxisMask(1).build());
 
         testCases.add(SSCase.builder().shape(3, 4, 5).begin(0, 0, 0).end(3, 4, 5).strides(1, 1, 1).build());
         testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, 2, 3).end(3, 4, 5).strides(1, 1, 1).build());
@@ -433,9 +432,10 @@ public class ShapeOpValidation extends BaseOpValidation {
             log.info("Starting test: " + msg);
 
             TestCase tc = new TestCase(sd);
-            String error = OpValidation.validate(tc);
+            tc.testName(msg);
+            String error = OpValidation.validate(tc, true);
             if(error != null){
-                failed.add(name);
+                failed.add(error);
             }
         }
         assertEquals(failed.toString(), 0, failed.size());
