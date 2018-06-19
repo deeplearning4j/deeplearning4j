@@ -36,16 +36,17 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_LAYER = "layer";
 
     /* Basic layer names */
-    // Missing Layers: RepeatVector, Lambda, ActivityRegularization, Masking
+    // Missing Layers: Lambda, ActivityRegularization, Masking
     // Conv3DTranspose, SeparableConv1D, ConvRNN2D, ConvLSTM2D
     // CuDNNGRU, CuDNNLSTM (TF only)
-    // GlobalAveragePooling3D, GlobalMaxPooling3D
     // LocallyConnected1D-2D
     // Missing layers from keras 1: Highway, MaxoutDense
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     private final String LAYER_CLASS_NAME_PERMUTE = "Permute";
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
+    private final String LAYER_CLASS_NAME_REPEAT = "RepeatVector";
+
     private final String LAYER_CLASS_NAME_SPATIAL_DROPOUT_1D = "SpatialDropout1D";
     private final String LAYER_CLASS_NAME_SPATIAL_DROPOUT_2D = "SpatialDropout2D";
     private final String LAYER_CLASS_NAME_SPATIAL_DROPOUT_3D = "SpatialDropout3D";
@@ -135,6 +136,8 @@ public class KerasLayerConfiguration {
     private final String KERAS_PARAM_NAME_B = ""; // 1: b, 2: bias
     private final String KERAS_PARAM_NAME_RW = ""; // 1: U, 2: recurrent_kernel
 
+    /* Utils */
+    private final String LAYER_FIELD_REPEAT_MULTIPLIER = "n";
 
     /* Keras dimension ordering for, e.g., convolutional layersOrdered. */
     private final String LAYER_FIELD_BACKEND = "backend"; // not available in keras 1, caught in code
