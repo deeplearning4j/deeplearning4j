@@ -2317,3 +2317,144 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test10) {
     delete results;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test4) {
+    
+    NDArray<double> x('c', {3, 5}, {0.7044955, 0.55606544, 0.15833677, 0.001874401, 0.61595726, 0.3924779, 0.7414847, 0.4127324, 0.24026828, 0.26093036, 0.46741188, 0.01863421, 0.08528871, 0.529365, 0.5510694});
+    NDArray<double> exp('c', {3, 5}, {0.405392, 0.319980, 0.091113, 0.001079, 0.354444, 0.225846, 0.426676, 0.237501, 0.138259, 0.150149, 0.268965, 0.010723, 0.049078, 0.304615, 0.317105});    
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {1.f}, {});
+    auto output = result->at(0);
+        
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test5) {
+    
+    NDArray<double> x('c', {3, 5});
+    NDArray<double> exp('c', {3, 5}, {1.,  2.,  2.89271,  3.50524,  4.00892, 6.,  7.,  7.71389,  7.88678,  8.01784, 11., 12., 12.53507, 12.26833, 12.02676});    
+
+    NDArrayFactory<double>::linspace(1, x);
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {15.f}, {0});
+    auto output = result->at(0);
+        
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test6) {
+    
+    NDArray<double> x('c', {3, 5});
+    NDArray<double> exp('c', {3, 5}, {1., 2., 3., 4., 5., 4.95434, 5.78006, 6.60578, 7.43151, 8.25723, 5.64288, 6.15587, 6.66886, 7.18185, 7.69484});    
+
+    NDArrayFactory<double>::linspace(1, x);
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {15.f}, {1});
+    auto output = result->at(0);
+        
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test7) {
+    
+    NDArray<double> x('c', {3, 5});
+    NDArray<double> exp('c', {3, 5}, {0.42597, 0.85194, 1.27791, 1.70389, 2.12986, 2.55583, 2.9818 , 3.40777, 3.83374, 4.25971, 4.68569, 5.11166, 5.53763, 5.9636 , 6.38957});
+
+    NDArrayFactory<double>::linspace(1, x);
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {15.f}, {0,1});
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test8) {
+    
+    NDArray<double> x('c', {3, 5});
+    NDArray<double> exp('c', {3, 5}, {0.42597, 0.85194, 1.27791, 1.70389, 2.12986, 2.55583, 2.9818 , 3.40777, 3.83374, 4.25971, 4.68569, 5.11166, 5.53763, 5.9636 , 6.38957});
+
+    NDArrayFactory<double>::linspace(1, x);
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {15.}, {});
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test9) {
+    
+    NDArray<double> x('c', {2}, {3., 4.});
+    NDArray<double> exp('c', {2}, {2.4, 3.2});    
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {4.}, {});
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test10) {
+    
+    NDArray<double> x(6.);
+    NDArray<double> exp(5.);    
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {5.}, {});
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test11) {
+    
+    NDArray<double> x('c', {2, 3, 4});
+    NDArray<double> exp('c', {2, 3, 4}, {1.,  2.,  3.,  4.,  4.44787,  5.33745,  6.22702,  7.1166 , 6.33046,  7.03384,  7.73723,  8.44061,
+                                        13., 14., 15., 16., 15.12277, 16.01235, 16.90192, 17.7915 ,14.77107, 15.47446, 16.17784, 16.88123});
+
+    NDArrayFactory<double>::linspace(1, x);
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {35.}, {0, 2});
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+
+ 
