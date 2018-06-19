@@ -1221,10 +1221,9 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testReplaceWhereScalar(){
-        OpValidationSuite.ignoreFailing();
-        fail(); //JVM crash
         for(Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}){
 
+            log.info("Testing condition: " + c.getClass().getName());
             INDArray inArr = Nd4j.rand(3,4);
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", inArr);
@@ -1244,8 +1243,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testReplaceWhereArray(){
-        OpValidationSuite.ignoreFailing();
-        fail(); //JVM crash
         for(Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}){
 
             INDArray inArr = Nd4j.rand(3,4);

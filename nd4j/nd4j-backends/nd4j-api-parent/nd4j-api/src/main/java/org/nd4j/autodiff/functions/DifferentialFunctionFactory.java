@@ -566,8 +566,24 @@ public class DifferentialFunctionFactory {
         return new LastIndex(sameDiff(), in, condition, keepDims, dimensions).outputVariable();
     }
 
-    public SDVariable matchCondition(SDVariable in, Condition condition){
+    /**
+     * Returns a count of the number of elements that satisfy the condition
+     * @param in        Input
+     * @param condition Condition
+     * @return          Number of elements that the condition is satisfied for
+     */
+    public SDVariable matchConditionCount(SDVariable in, Condition condition){
         return new MatchCondition(sameDiff(), in, condition).outputVariable();
+    }
+
+    /**
+     * Returns a boolean mask of equal shape to the input, where the condition is satisfied
+     * @param in        Input
+     * @param condition Condition
+     * @return          Boolean mask
+     */
+    public SDVariable matchCondition(SDVariable in, Condition condition){
+        return new MatchConditionTransform(sameDiff(), in, condition).outputVariable();
     }
 
     public SDVariable cumsum(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
