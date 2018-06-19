@@ -386,6 +386,10 @@ public class DifferentialFunctionFactory {
         return new Im2col(sameDiff(), input, config).outputVariable();
     }
 
+    public SDVariable im2ColBp(SDVariable im2colInput, SDVariable gradientAtOutput, Conv2DConfig config){
+        return new Im2colBp(sameDiff(), im2colInput, gradientAtOutput, config).outputVariable();
+    }
+
     public SDVariable col2Im(SDVariable input, Conv2DConfig config){
         return new Col2Im(sameDiff(), input, config).outputVariable();
     }

@@ -345,10 +345,10 @@ public class LayerOpValidation extends BaseOpValidation {
 
             String msg = Arrays.toString(inSizeNCHW);
 
-            TestCase tc = new TestCase(sd);
+            TestCase tc = new TestCase(sd).testName(msg);
             String error = OpValidation.validate(tc);
             if (error != null) {
-                failed.add(name);
+                failed.add(msg);
             }
         }
 
@@ -864,6 +864,7 @@ public class LayerOpValidation extends BaseOpValidation {
     @Test
     public void testMaxPooling3dBasic() {
         OpValidationSuite.ignoreFailing();
+        fail("Test disabled due to native code deadlock");  //https://github.com/deeplearning4j/deeplearning4j/issues/5361
         int nIn = 3;
         int kH = 2;
         int kW = 2;
@@ -939,9 +940,9 @@ public class LayerOpValidation extends BaseOpValidation {
         int kD = 2;
 
         int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-        int imgT = 28;
+        int imgH = 8;
+        int imgW = 8;
+        int imgT = 8;
 
         SameDiff sd = SameDiff.create();
         INDArray wArr = Nd4j.create(nOut, nIn, kD, kH, kW); //As per DL4J
@@ -954,8 +955,9 @@ public class LayerOpValidation extends BaseOpValidation {
 
         Conv3DConfig conv3DConfig = Conv3DConfig.builder()
                 .kH(kH).kW(kW).kD(kD)
+                .sD(1).sH(1).sW(1)
                 .dH(1).dW(1).dD(1)
-                .isValidMode(false)
+                .isValidMode(false) //samemode = true
                 .biasUsed(false)
                 .build();
 
@@ -963,9 +965,16 @@ public class LayerOpValidation extends BaseOpValidation {
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27
+        //Expected output size, NOT same mode: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27
+        //Expected output size, WITH same mode: out = in/stride
         val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 27, 27, 27}, outShape);
+        assertArrayEquals(new long[]{mb, nOut, 8, 8, 8}, outShape);
+
+        SDVariable loss = out.std(true);
+        //Gradient check:
+        TestCase tc = new TestCase(sd);
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 
 }
