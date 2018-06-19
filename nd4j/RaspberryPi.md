@@ -8,9 +8,6 @@ Please follow following instructions to build nd4j for raspberry PI:
     $ cd $HOME/raspberrypi
     $ git clone git://github.com/raspberrypi/tools.git
     $ export PATH=$PATH:$HOME/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin
-    $ mkdir $HOME/raspberrypi/rootfs
-    (Replace the ip address in the following command with the IP of a raspberry pi device)
-    $ rsync -rl --delete-after --safe-links pi@(192.168.1.PI):/{lib,usr} $HOME/raspberrypi/rootfs
     ```
 
 2. download deeplearning4j:
@@ -24,7 +21,7 @@ Please follow following instructions to build nd4j for raspberry PI:
 
     ```
     $ cd deeplearning4j/libnd4j
-    $ ./buildnativeoperations.sh -o linux-armhf"
+    $ ./buildnativeoperations.sh -o linux-armhf
     ```
 
 4. build nd4j
