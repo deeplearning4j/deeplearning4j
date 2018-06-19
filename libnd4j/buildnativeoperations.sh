@@ -137,7 +137,9 @@ fi
 
 case "$OS" in
     linux-armhf)
-    export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=$HOME/raspberrypi/pi.cmake"
+    export RPI_BIN=$HOME/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin/arm-linux-gnueabihf
+    export RPI_ROOT=$HOME/raspberrypi/rootfs
+    export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/pi.cmake"
     if [ -z "$ARCH" ]; then
         ARCH="armv7-r"
     fi
