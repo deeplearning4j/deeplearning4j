@@ -96,8 +96,8 @@ public class LayerOpValidation extends BaseOpValidation {
         for (boolean rank1Bias : new boolean[]{false, true}) {
 
             SameDiff sameDiff = SameDiff.create();
-            INDArray input = Nd4j.rand(new long[]{2, 4});
-            INDArray b = Nd4j.rand(rank1Bias ? new long[]{4} : new long[]{1, 4});
+            INDArray input = Nd4j.linspace(1,8,8).reshape(new long[]{2, 4});
+            INDArray b = Nd4j.linspace(1,4,4).reshape(rank1Bias ? new long[]{4} : new long[]{1, 4}).divi(4);
 
             SDVariable sdInput = sameDiff.var("input", input);
             SDVariable sdBias = sameDiff.var("bias", b);
@@ -105,7 +105,7 @@ public class LayerOpValidation extends BaseOpValidation {
             SDVariable res = sameDiff.biasAdd(sdInput, sdBias);
             SDVariable loss = sameDiff.standardDeviation(res, true);
 
-            INDArray exp = input.addiRowVector(b);
+            INDArray exp = input.addRowVector(b);
 
             TestCase tc = new TestCase(sameDiff)
                     .gradientCheck(true)

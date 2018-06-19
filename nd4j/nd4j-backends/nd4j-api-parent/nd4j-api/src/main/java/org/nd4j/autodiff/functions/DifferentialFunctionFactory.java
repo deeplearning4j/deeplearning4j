@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
+import org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad;
 import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
@@ -583,6 +584,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable biasAdd(SDVariable input, SDVariable bias) {
         return new BiasAdd(sameDiff(), input, bias).outputVariable();
+    }
+
+    public SDVariable[] biasAddBp(SDVariable input, SDVariable bias, SDVariable grad) {
+        return new BiasAddGrad(sameDiff(), input, bias, grad).outputVariables();
     }
 
     public SDVariable norm1(SDVariable i_x, boolean keepDims, int... dimensions) {
