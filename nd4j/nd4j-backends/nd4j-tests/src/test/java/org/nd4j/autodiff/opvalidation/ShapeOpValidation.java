@@ -663,7 +663,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                     //for gradient check, need to combine to single scalar output...
                     SDVariable merged = sd.mergeAvg(unstacked);
 
-                    if (ArrayUtil.prodLong(stackedShape) == 1) {
+                    if (ArrayUtil.prodLong(stackedShape) == 1 || ArrayUtil.prodLong(shape) == 1) {
                         SDVariable loss = sd.sum("loss", merged);
                     } else {
                         SDVariable loss = sd.standardDeviation("loss", merged, true);
@@ -685,7 +685,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                     }
                     String error = OpValidation.validate(tc, true);
                     if(error != null){
-                        failed.add(name);
+                        failed.add(error);
                     }
                 }
             }
