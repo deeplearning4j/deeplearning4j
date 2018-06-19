@@ -1360,6 +1360,7 @@ public interface NDArrayFactory {
      */
     INDArray scalar(Number value);
 
+    INDArray empty();
     INDArray trueScalar(Number value);
 
     INDArray trueVector(float[] data);

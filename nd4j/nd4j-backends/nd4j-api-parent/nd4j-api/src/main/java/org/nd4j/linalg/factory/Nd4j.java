@@ -3880,6 +3880,18 @@ public class Nd4j {
     }
 
     /**
+     * This method creates "empty" INDArray
+     *
+     * PLEASE NOTE: this feature isn't production ready yet
+     * @return
+     */
+    public static INDArray empty() {
+        val ret = INSTANCE.empty();
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Create an ndrray with the specified shape
      *
      * @param data  the data to use with tne ndarray

@@ -2964,6 +2964,12 @@ public class Shape {
         return 0;
     }
 
+    public static long options(long[] buffer) {
+        int length = shapeInfoLength(rank(buffer));
+        long ret = buffer[length - 3];
+        return ret;
+    }
+
     /**
      * Get the offset for the buffer
      *
@@ -2988,10 +2994,12 @@ public class Shape {
      * @param buffer the shape info buffer to get the offset for
      * @return
      */
+    @Deprecated
     public static int offset(IntBuffer buffer) {
         return 0;
     }
 
+    @Deprecated
     public static long offset(LongBuffer buffer) {
         return 0L;
     }
@@ -3476,4 +3484,7 @@ public class Shape {
         }
         return Arrays.equals(input.stride(), defaultStrides);
     }
+
+
+
 }
