@@ -49,6 +49,7 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_conv2d)
         DECLARE_CUSTOM_OP(conv2d, 2, 1, false, 0, 9);
         DECLARE_CUSTOM_OP(conv2d_bp, 3, 2, false, 0, 9);
+        DECLARE_CUSTOM_OP(conv2d_input_bp, 3, 1, false, 0, 9);
         #endif
 
         /**
