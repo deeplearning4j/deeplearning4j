@@ -885,7 +885,7 @@ namespace shape {
   * @param numIndices the number of total indices (typically prod of shape(
   * @return the mapped indexes along each dimension
   */
-    ND4J_EXPORT _CUDA_HD Nd4jLong* ind2subC(int rank, Nd4jLong *shape, int index);
+    ND4J_EXPORT _CUDA_HD Nd4jLong* ind2subC(int rank, Nd4jLong *shape, Nd4jLong index);
     /**
   * Convert a linear index to
   * the equivalent nd index
@@ -894,7 +894,7 @@ namespace shape {
   * @param numIndices the number of total indices (typically prod of shape(
   * @return the mapped indexes along each dimension
   */
-    ND4J_EXPORT _CUDA_HD Nd4jLong* ind2subC(int rank, Nd4jLong *shape, int index, int numIndices);
+    ND4J_EXPORT _CUDA_HD Nd4jLong* ind2subC(int rank, Nd4jLong *shape, Nd4jLong index, Nd4jLong numIndices);
 
     /**
    * Convert a linear index to
@@ -904,7 +904,7 @@ namespace shape {
    * @param numIndices the number of total indices (typically prod of shape(
    * @return the mapped indexes along each dimension
    */
-    ND4J_EXPORT _CUDA_HD void  ind2subC(int rank, Nd4jLong *shape, int index, int numIndices, Nd4jLong *out);
+    ND4J_EXPORT _CUDA_HD void  ind2subC(int rank, Nd4jLong *shape, Nd4jLong index, Nd4jLong numIndices, Nd4jLong *out);
 
 /**
      * Convert a linear index to
@@ -915,7 +915,7 @@ namespace shape {
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
-    ND4J_EXPORT _CUDA_HD void ind2subC(int rank, Nd4jLong *shape, int index, Nd4jLong *out);
+    ND4J_EXPORT _CUDA_HD void ind2subC(int rank, Nd4jLong *shape, Nd4jLong index, Nd4jLong *out);
 
     /**
   * Convert the given index (such as 1,1)
@@ -1827,10 +1827,7 @@ template <typename T>
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    INLINEDEF _CUDA_HD Nd4jLong * ind2subC(int rank, Nd4jLong *shape, int index, int numIndices) {
-
-        traceNew(15);
-
+    INLINEDEF _CUDA_HD Nd4jLong * ind2subC(int rank, Nd4jLong *shape, Nd4jLong index, Nd4jLong numIndices) {
         auto ret = new Nd4jLong[rank];
         ind2subC(rank, shape, index, numIndices, ret);
         return ret;
@@ -1845,7 +1842,7 @@ template <typename T>
  * @param index the index to map
  * @return the mapped indexes along each dimension
  */
-    INLINEDEF _CUDA_HD Nd4jLong *ind2subC(int rank, Nd4jLong *shape, int index) {
+    INLINEDEF _CUDA_HD Nd4jLong *ind2subC(int rank, Nd4jLong *shape, Nd4jLong index) {
         return ind2subC(rank,shape, index, shape::prodLong(shape,rank));
     }
 
@@ -1857,8 +1854,8 @@ template <typename T>
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    INLINEDEF _CUDA_HD void ind2subC(int rank, Nd4jLong *shape, int index, int numIndices, Nd4jLong *ret) {
-        int denom = numIndices;
+    INLINEDEF _CUDA_HD void ind2subC(int rank, Nd4jLong *shape, Nd4jLong index, Nd4jLong numIndices, Nd4jLong *ret) {
+        auto denom = numIndices;
         for(int i = 0; i < rank; i++) {
             denom /= shape[i];
             if(denom > 0) {
@@ -1879,7 +1876,7 @@ template <typename T>
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
-    INLINEDEF _CUDA_HD void ind2subC(int rank, Nd4jLong *shape, int index, Nd4jLong *out) {
+    INLINEDEF _CUDA_HD void ind2subC(int rank, Nd4jLong *shape, Nd4jLong index, Nd4jLong *out) {
         ind2subC(rank,shape, index,shape::prodLong(shape,rank),out);
     }
 
