@@ -16,21 +16,16 @@
 
 package org.deeplearning4j.scalnet.layers.noise
 
-import org.deeplearning4j.nn.conf.dropout.{GaussianNoise => JGaussianNoise}
+import org.deeplearning4j.nn.conf.dropout.{ GaussianNoise => JGaussianNoise }
 import org.deeplearning4j.nn.conf.layers.DropoutLayer
 import org.deeplearning4j.scalnet.layers.core.Layer
-
 
 /**
   * GaussianNoise layer
   *
   * @author Max Pumperla
   */
-class GaussianNoise(nOut: List[Int],
-                    nIn: List[Int],
-                    stddev: Double,
-                    override val name: String)
-  extends Layer {
+class GaussianNoise(nOut: List[Int], nIn: List[Int], stddev: Double, override val name: String) extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new DropoutLayer.Builder()
@@ -49,11 +44,6 @@ class GaussianNoise(nOut: List[Int],
 }
 
 object GaussianNoise {
-  def apply(nOut: Int,
-            nIn: Int = 0,
-            stddev: Double,
-            name: String = ""): GaussianNoise =
+  def apply(nOut: Int, nIn: Int = 0, stddev: Double, name: String = ""): GaussianNoise =
     new GaussianNoise(List(nOut), List(nIn), stddev, name)
 }
-
-

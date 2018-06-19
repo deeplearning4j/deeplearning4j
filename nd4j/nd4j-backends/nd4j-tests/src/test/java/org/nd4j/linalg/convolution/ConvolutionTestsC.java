@@ -158,7 +158,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                             for (int ph : padH) {
                                                 for (int pw : padW) {
                                                     if ((w - kw + 2 * pw) % sw != 0 || (h - kh + 2 * ph) % sh != 0)
-                                                        continue; //(w-kp+2*pw)/sw + 1 is not an integer,  i.e., number of outputs doesn't fit
+                                                        continue; //(w-kp+2*pW)/sw + 1 is not an integer,  i.e., number of outputs doesn't fit
 
                                                     System.out.println("Running " + m + " " + d + " " + h + " " + w);
                                                     for (boolean cAll : coverall) {
@@ -228,7 +228,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
                                             INDArray col = Nd4j.create(new int[]{m, d, outSize[0], outSize[1], kh, kw}, 'c');
                                             INDArray col2 = col.permute(0, 1, 4, 5, 2, 3);
-                                            //INDArray col = Nd4j.createUninitialized(new int[]{m, d, kh, kw, outSize[0], outSize[1]}, 'c');
+                                            //INDArray col = Nd4j.createUninitialized(new int[]{m, d, kH, kW, outSize[0], outSize[1]}, 'c');
                                             //INDArray col2 = col;
 
                                             Convolution.im2col(in, kh, kw, sh, sw, padTop, padLeft, true, col2);

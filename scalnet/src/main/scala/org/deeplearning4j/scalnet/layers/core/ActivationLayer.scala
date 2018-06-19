@@ -16,9 +16,8 @@
 
 package org.deeplearning4j.scalnet.layers.core
 
-import org.deeplearning4j.nn.conf.layers.{ActivationLayer => JActivationLayer}
+import org.deeplearning4j.nn.conf.layers.{ ActivationLayer => JActivationLayer }
 import org.nd4j.linalg.activations.Activation
-
 
 /**
   * Activation layer
@@ -28,8 +27,8 @@ import org.nd4j.linalg.activations.Activation
 class ActivationLayer(activation: Activation,
                       nOut: Option[List[Int]],
                       nIn: Option[List[Int]],
-                 override val name: String = "")
-  extends Layer {
+                      override val name: String = "")
+    extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new JActivationLayer.Builder()
@@ -38,19 +37,13 @@ class ActivationLayer(activation: Activation,
       .build()
 
   override val outputShape: List[Int] = nOut.getOrElse(List(0))
-  override val inputShape: List[Int] =  nIn.getOrElse(List(0))
+  override val inputShape: List[Int] = nIn.getOrElse(List(0))
 
   override def reshapeInput(newIn: List[Int]): ActivationLayer =
-    new ActivationLayer(activation, Some(newIn), Some(newIn),  name)
+    new ActivationLayer(activation, Some(newIn), Some(newIn), name)
 }
 
 object ActivationLayer {
-  def apply(activation: Activation,
-            nOut: Int = 0,
-            nIn: Int = 0,
-            name: String = ""): ActivationLayer =
+  def apply(activation: Activation, nOut: Int = 0, nIn: Int = 0, name: String = ""): ActivationLayer =
     new ActivationLayer(activation, Some(List(nOut)), Some(List(nIn)), name)
 }
-
-
-

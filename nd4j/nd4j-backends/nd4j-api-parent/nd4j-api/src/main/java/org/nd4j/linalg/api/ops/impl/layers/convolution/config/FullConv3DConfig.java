@@ -24,9 +24,9 @@ public class FullConv3DConfig extends BaseConvolutionConfig {
         ret.put("pT",pT);
         ret.put("pW",pW);
         ret.put("pH",pH);
-        ret.put("dilationT",dilationT);
-        ret.put("dilationW",dilationW);
-        ret.put("dilationH",dilationH);
+        ret.put("dD",dilationT);
+        ret.put("dW",dilationW);
+        ret.put("dH",dilationH);
         ret.put("aT",aT);
         ret.put("aW",aW);
         ret.put("aH",aH);

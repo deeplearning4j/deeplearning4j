@@ -51,7 +51,7 @@ public class OpValidationSuite {
     The idea: failing SameDiff tests are disabled by default, but can be re-enabled.
     This is so we can prevent regressions on already passing tests
      */
-    public static final boolean IGNORE_FAILING = true;
+    public static final boolean IGNORE_FAILING = false;
 
     public static void ignoreFailing(){
         //If IGNORE_FAILING

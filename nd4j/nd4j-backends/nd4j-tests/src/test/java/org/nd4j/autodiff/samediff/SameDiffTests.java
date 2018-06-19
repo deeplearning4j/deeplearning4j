@@ -1718,7 +1718,44 @@ public class SameDiffTests {
     }
 
 
+    @Test
+    public void testDepthWiseConv2dBasic() {
+        int nIn = 3;
+        int depthWise = 4;
+        int kH = 2;
+        int kW = 2;
 
+        int mb = 3;
+        int imgH = 28;
+        int imgW = 28;
+
+
+        SameDiff sd = SameDiff.create();
+        INDArray depthWeightArr = Nd4j.create(depthWise, nIn, kH, kW);
+
+        INDArray bArr = Nd4j.create(1, depthWise * nIn);
+        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+
+        SDVariable in = sd.var("in", inArr);
+        SDVariable dW = sd.var("dW", depthWeightArr);
+        SDVariable b = sd.var("b", bArr);
+
+        Conv2DConfig c = Conv2DConfig.builder()
+                .kH(kH).kW(kW)
+                .pH(0).pW(0)
+                .sH(1).sW(1)
+                .dH(1).dW(1)
+                .isSameMode(false)
+                .build();
+
+        SDVariable out = sd.depthWiseConv2d(in, dW, b, c);
+        out = sd.tanh("out", out);
+
+        INDArray outArr = sd.execAndEndResult();
+        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
+        val outShape = outArr.shape();
+        assertArrayEquals(new long[]{mb, depthWise * nIn, 27, 27}, outShape);
+    }
 
     @Test
     public void validateMeanDiff() {

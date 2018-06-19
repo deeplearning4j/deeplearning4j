@@ -16,21 +16,16 @@
 
 package org.deeplearning4j.scalnet.layers.noise
 
-import org.deeplearning4j.nn.conf.dropout.{AlphaDropout => JAlphaDropout}
+import org.deeplearning4j.nn.conf.dropout.{ AlphaDropout => JAlphaDropout }
 import org.deeplearning4j.nn.conf.layers.DropoutLayer
 import org.deeplearning4j.scalnet.layers.core.Layer
-
 
 /**
   * AlphaDropout layer
   *
   * @author Max Pumperla
   */
-class AlphaDropout(nOut: List[Int],
-                   nIn: List[Int],
-                   rate: Double,
-                   override val name: String)
-  extends Layer {
+class AlphaDropout(nOut: List[Int], nIn: List[Int], rate: Double, override val name: String) extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new DropoutLayer.Builder()
@@ -49,9 +44,6 @@ class AlphaDropout(nOut: List[Int],
 }
 
 object AlphaDropout {
-  def apply(nOut: Int,
-            nIn: Int = 0,
-            rate: Double,
-            name: String = ""): AlphaDropout =
+  def apply(nOut: Int, nIn: Int = 0, rate: Double, name: String = ""): AlphaDropout =
     new AlphaDropout(List(nOut), List(nIn), rate, name)
 }

@@ -16,20 +16,16 @@
 
 package org.deeplearning4j.scalnet.layers.advanced.activation
 
-import org.deeplearning4j.nn.conf.layers.{ActivationLayer => JActivationLayer}
+import org.deeplearning4j.nn.conf.layers.{ ActivationLayer => JActivationLayer }
 import org.deeplearning4j.scalnet.layers.core.Layer
-import org.nd4j.linalg.activations.impl.{ActivationSoftmax}
-
+import org.nd4j.linalg.activations.impl.{ ActivationSoftmax }
 
 /**
   * Softmax layer
   *
   * @author Max Pumperla
   */
-class Softmax(nOut: Option[List[Int]],
-          nIn: Option[List[Int]],
-          override val name: String = "")
-  extends Layer {
+class Softmax(nOut: Option[List[Int]], nIn: Option[List[Int]], override val name: String = "") extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new JActivationLayer.Builder()
@@ -45,22 +41,6 @@ class Softmax(nOut: Option[List[Int]],
 }
 
 object Softmax {
-  def apply(alpha: Double,
-            nOut: Int = 0,
-            nIn: Int = 0,
-            name: String = ""): Softmax =
+  def apply(alpha: Double, nOut: Int = 0, nIn: Int = 0, name: String = ""): Softmax =
     new Softmax(Some(List(nOut)), Some(List(nIn)), name)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
