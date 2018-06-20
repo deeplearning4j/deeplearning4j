@@ -2028,6 +2028,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isScalar() {
+        if (isEmpty())
+            return false;
+
         if (Shape.rank(javaShapeInformation) == 0) {
             return true;
         } else if (Shape.rank(javaShapeInformation) > 2) {

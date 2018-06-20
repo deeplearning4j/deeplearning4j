@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ndarray;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -12,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     protected AtomicLong bytes = new AtomicLong(0);
 
@@ -71,7 +73,9 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
         val jvm = result.getSecond();
 
         result.getFirst().put(jvm.length - 3, extras);
-        result.getSecond()[jvm.length - 1] = extras;
+        result.getSecond()[jvm.length - 3] = extras;
+
+        log.info("Stuff: {}; Shape: {};", extras, result.getSecond());
 
         return result;
     }
