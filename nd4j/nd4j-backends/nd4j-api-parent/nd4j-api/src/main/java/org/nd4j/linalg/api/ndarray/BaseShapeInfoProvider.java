@@ -48,8 +48,7 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     }
 
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride,
-                    char order) {
+    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order) {
         DataBuffer buffer = Shape.createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), offset, (long) elementWiseStride, order);
         buffer.setConstant(true);
         return Pair.create(buffer, buffer.asLong());
@@ -68,17 +67,21 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
      */
     @Override
     public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order, long extras) {
-        val result = createShapeInformation(shape, stride, offset, elementWiseStride, order);
-
-        val jvm = result.getSecond();
-
-        result.getFirst().put(jvm.length - 3, extras);
-        result.getSecond()[jvm.length - 3] = extras;
-
-        log.info("Stuff: {}; Shape: {};", extras, result.getSecond());
-
-        return result;
+        DataBuffer buffer = Shape.createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), offset, (long) elementWiseStride, order);
+        buffer.put(buffer.length() - 3, extras);
+        buffer.setConstant(true);
+        return Pair.create(buffer, buffer.asLong());
     }
+
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order, long extras) {
+        DataBuffer buffer = Shape.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+        buffer.put(buffer.length() - 3, extras);
+        buffer.setConstant(true);
+        return Pair.create(buffer, buffer.asLong());
+    }
+
+
 
     /**
      * This method creates shapeInformation buffer, based on shape being passed in

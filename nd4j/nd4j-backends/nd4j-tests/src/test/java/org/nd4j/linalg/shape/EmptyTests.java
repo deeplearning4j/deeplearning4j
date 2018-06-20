@@ -39,6 +39,8 @@ public class EmptyTests extends BaseNd4jTest {
         assertFalse(array.isColumnVector());
         assertFalse(array.isCompressed());
         assertFalse(array.isSparse());
+
+        assertFalse(array.isAttached());
     }
 
 

@@ -6103,6 +6103,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isAttached() {
+        if (isEmpty())
+            return false;
+
+        if (data == null && !isEmpty())
+            throw new IllegalStateException();
+
         return data.isAttached() ||
                 (data.underlyingDataBuffer() != null && data.underlyingDataBuffer().isAttached()) ||
                 (data.originalDataBuffer() != null && data.originalDataBuffer().isAttached());

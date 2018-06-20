@@ -845,7 +845,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     fa[e] = (float) fb.get(e);
 
                 if (fa.length == 0)
-                    throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
+                    return Nd4j.empty();
+                    //throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
                 if (fa.length == 1)
                     return Nd4j.trueScalar(fa[0]);
