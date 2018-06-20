@@ -38,6 +38,7 @@
 
 #include "../pairwise_util.h"
 #include <stdint.h>
+#include <array/ArrayOptions.h>
 
 namespace shape {
 
@@ -444,6 +445,8 @@ namespace shape {
 /**
  * Compute the length of the given shape
  */
+    ND4J_EXPORT _CUDA_HD bool isEmpty(Nd4jLong *shapeInfo);
+
     ND4J_EXPORT _CUDA_HD Nd4jLong length(Nd4jLong *shapeInfo);
 
     ND4J_EXPORT _CUDA_HD Nd4jLong length(std::initializer_list<int>& shape);
@@ -2617,6 +2620,9 @@ template <typename T>
         return buffer + (1 + rank(buffer));
     }
 
+    INLINEDEF _CUDA_HD bool isEmpty(Nd4jLong *shapeInfo) {
+        return ((shape::extra(shapeInfo) & ARRAY_EMPTY) == ARRAY_EMPTY);
+    }
 
 
 /**
@@ -2624,8 +2630,12 @@ template <typename T>
  */
     INLINEDEF _CUDA_HD Nd4jLong length(Nd4jLong *shapeInfo) {
         int rank = shape::rank(shapeInfo);
-        if (rank == 0)
-            return 1L;
+        if (rank == 0) {
+            if (isEmpty(shapeInfo))
+                return 0L;
+            else
+                return 1L;
+        }
         if (rank == 1)
             return shapeInfo[1];
 

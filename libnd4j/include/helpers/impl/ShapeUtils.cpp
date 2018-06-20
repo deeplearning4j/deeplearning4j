@@ -778,6 +778,10 @@ Nd4jLong* ShapeUtils<T>::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* t
         // dot case
         shape[0] = 1;
         shape[1] = 1;
+    } else if (shape::isRowVector(tmpA) && shape::isColumnVector(tmpB)) {
+        // dot case
+        shape[0] = 1;
+        shape[1] = 1;
     }
 
     Nd4jLong *newShape;

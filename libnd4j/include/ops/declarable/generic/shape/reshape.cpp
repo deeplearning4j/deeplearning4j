@@ -60,8 +60,9 @@ namespace nd4j {
                     order = (char) INT_ARG(0);
 
                 std::vector<Nd4jLong> shapeNew(s->lengthOf());
+
                 for (int e = 0; e < (int) s->lengthOf(); e++)
-                    shapeNew[e] = s->getIndexedScalar(e);
+                    shapeNew[e] = static_cast<Nd4jLong>(s->getScalar(e));
 
                if (Environment::getInstance()->isDebugAndVerbose()) {
                     nd4j_printv("Reshape: new shape", shapeNew);

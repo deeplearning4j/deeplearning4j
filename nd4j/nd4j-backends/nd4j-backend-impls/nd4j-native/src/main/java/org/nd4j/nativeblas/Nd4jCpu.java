@@ -12972,6 +12972,7 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #include "../pairwise_util.h"
 // #include <stdint.h>
+// #include <array/ArrayOptions.h>
 
 /**
  * Shape information approximating
@@ -13510,6 +13511,10 @@ public static final int PREALLOC_SIZE = 33554432;
 /**
  * Compute the length of the given shape
  */
+    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("Nd4jLong*") long[] shapeInfo);
+
     @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("Nd4jLong*") LongPointer shapeInfo);
     @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("Nd4jLong*") LongBuffer shapeInfo);
     @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("Nd4jLong*") long[] shapeInfo);
@@ -14533,7 +14538,6 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the stride portion of an information
  * buffer
  */
-
 
 
 /**

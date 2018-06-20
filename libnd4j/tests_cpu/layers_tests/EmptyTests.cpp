@@ -26,6 +26,8 @@ TEST_F(EmptyTests, Test_Create_Empty) {
     ASSERT_EQ(0, empty->lengthOf());
     ASSERT_TRUE(empty->buffer() == nullptr);
 
+    ASSERT_TRUE(shape::isEmpty(empty->shapeInfo()));
+
     delete empty;
 }
 

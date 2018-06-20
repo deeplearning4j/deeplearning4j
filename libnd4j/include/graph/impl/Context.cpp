@@ -192,7 +192,7 @@ namespace nd4j {
                 auto array = v->getNDArray();
                 std::string shape_ = ShapeUtils<T>::shapeAsString(array);
 
-                float m = 0.0f;
+                float m = std::numeric_limits<float>::quiet_NaN();
                 if (!array->isEmpty())
                     m = static_cast<float>(array->meanNumber());
 

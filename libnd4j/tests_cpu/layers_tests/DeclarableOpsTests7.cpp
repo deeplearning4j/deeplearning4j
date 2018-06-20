@@ -2895,6 +2895,19 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_7) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests7, Test_Matmum_Once_Again) {
+    NDArray<float> x('c', {1, 2}, {2.0f, 2.0f});
+    NDArray<float> y('c', {2, 1}, {2.0f, 2.0f});
+    NDArray<float> exp('c', {1, 1}, {8.0f});
+
+    nd4j::ops::matmul<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(exp, *result->at(0));
+
+    delete result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Reduce_Min_1) {
 
