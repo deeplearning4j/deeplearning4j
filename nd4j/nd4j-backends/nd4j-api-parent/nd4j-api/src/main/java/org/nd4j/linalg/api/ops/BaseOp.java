@@ -405,7 +405,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         this.y = y;
         this.z = z;
         this.n = n;
-
     }
 
     @Override

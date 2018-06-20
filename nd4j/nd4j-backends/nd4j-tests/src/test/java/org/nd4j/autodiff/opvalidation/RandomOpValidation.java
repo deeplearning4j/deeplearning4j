@@ -8,9 +8,12 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.function.Function;
@@ -137,7 +140,7 @@ public class RandomOpValidation extends BaseOpValidation {
 
         for (long[] shape : Arrays.asList(new long[]{1000}, new long[]{100, 10}, new long[]{40, 5, 5})) {
 
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < 4; i++) {
 
                 Nd4j.getRandom().setSeed(12345);
                 SameDiff sd = SameDiff.create();
@@ -159,6 +162,44 @@ public class RandomOpValidation extends BaseOpValidation {
                                     (Math.abs(mean - 0.5) < 0.1 && min == 0 && max == 1 && (sum0 + sum1) == in.length()))
                                 return null;
                             return "Failed: bernoulli - sum0 = " + sum0 + ", sum1 = " + sum1;
+                        };
+                        break;
+                    case 1:
+                        name = "normal";
+                        rand = sd.randomNormal(1, 2, shape);
+                        checkFn = in -> {
+                            double mean = in.meanNumber().doubleValue();
+                            double stdev = in.std(true).getDouble(0);
+                            if (in.length() == 1 || (Math.abs(mean - 1) < 0.1 && Math.abs(stdev - 2) < 0.1))
+                                return null;
+                            return "Failed: mean = " + mean + ", stdev = " + stdev;
+                        };
+                        break;
+                    case 2:
+                        name = "randomBinomial";
+                        rand = sd.randomBinomial(4, 0.5, shape);
+                        checkFn = in -> {
+                            NdIndexIterator iter = new NdIndexIterator(in.shape());
+                            while(iter.hasNext()){
+                                long[] idx = iter.next();
+                                double d = in.getDouble(idx);
+                                if(d < 0 || d > 4 || d != Math.floor(d)){
+                                    return "Falied - binomial: indexes " + Arrays.toString(idx) + ", value " + d;
+                                }
+                            }
+                            return null;
+                        };
+                        break;
+                    case 3:
+                        name = "randomUniform";
+                        rand = sd.randomUniform(1, 2, shape);
+                        checkFn = in -> {
+                            double min = in.minNumber().doubleValue();
+                            double max = in.maxNumber().doubleValue();
+                            double mean = in.meanNumber().doubleValue();
+                            if (min >= 1 && max <= 2 && (in.length() == 1 || Math.abs(mean - 1.5) < 0.1))
+                                return null;
+                            return "Failed: min = " + min + ", max = " + max + ", mean = " + mean;
                         };
                         break;
                     default:
@@ -188,6 +229,16 @@ public class RandomOpValidation extends BaseOpValidation {
         }
 
         assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testRandomBinomial(){
+
+        INDArray z = Nd4j.create(new long[]{10});
+//        Nd4j.getExecutioner().exec(new BinomialDistribution(z, 4, 0.5));
+        Nd4j.getExecutioner().exec(new BinomialDistribution(z, 4, 0.5));
+
+        System.out.println(z);
     }
 
     @Test

@@ -37,9 +37,7 @@ import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
-import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
-import org.nd4j.linalg.api.ops.random.impl.DropOut;
-import org.nd4j.linalg.api.ops.random.impl.Linspace;
+import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -152,8 +150,16 @@ public class DifferentialFunctionFactory {
         return new DistributionUniform(sameDiff(), shape, min, max).outputVariable();
     }
 
+    public SDVariable randomUniform(double min, double max, long... shape){
+        return new UniformDistribution(sameDiff(), min, max, shape).outputVariable();
+    }
+
     public SDVariable randomNormal(double mean, double std, SDVariable shape){
         return new RandomNormal(sameDiff(), shape, mean, std).outputVariable();
+    }
+
+    public SDVariable randomNormal(double mean, double std, long... shape){
+        return new GaussianDistribution(sameDiff(), mean, std, shape).outputVariable();
     }
 
     public SDVariable randomBernoulli(double p, SDVariable shape){
@@ -162,6 +168,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable randomBernoulli(double p, long... shape){
         return new BernoulliDistribution(sameDiff(), p, shape).outputVariable();
+    }
+
+    public SDVariable randomBinomial(int nTrials, double p, long... shape){
+        return new BinomialDistribution(sameDiff(), nTrials, p, shape).outputVariable();
     }
 
     /**

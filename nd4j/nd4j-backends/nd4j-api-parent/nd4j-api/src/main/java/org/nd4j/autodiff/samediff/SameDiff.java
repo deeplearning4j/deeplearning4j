@@ -1849,11 +1849,29 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable randomUniform(double min, double max, long... shape){
+        return randomUniform(null, min, max, shape);
+    }
+
+    public SDVariable randomUniform(String name, double min, double max, long... shape){
+        SDVariable ret = f().randomUniform(min, max, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public SDVariable randomNormal(double mean, double stddev, SDVariable shape){
         return randomNormal(null, mean, stddev, shape);
     }
 
     public SDVariable randomNormal(String name, double mean, double stddev, SDVariable shape){
+        SDVariable ret = f().randomNormal(mean, stddev, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable randomNormal(double mean, double stddev, long... shape){
+        return randomNormal(null, mean, stddev, shape);
+    }
+
+    public SDVariable randomNormal(String name, double mean, double stddev, long... shape){
         SDVariable ret = f().randomNormal(mean, stddev, shape);
         return updateVariableNameAndReference(ret, name);
     }
@@ -1873,6 +1891,15 @@ public class SameDiff {
 
     public SDVariable randomBernoulli(String name, double p, long... shape){
         SDVariable ret = f().randomBernoulli(p, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable randomBinomial(int nTrials, double p, long... shape){
+        return randomBinomial(null, nTrials, p, shape);
+    }
+
+    public SDVariable randomBinomial(String name, int nTrials, double p, long... shape){
+        SDVariable ret = f().randomBinomial(nTrials, p, shape);
         return updateVariableNameAndReference(ret, name);
     }
 
