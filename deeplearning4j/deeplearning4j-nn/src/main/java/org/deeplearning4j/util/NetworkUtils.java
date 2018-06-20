@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -254,4 +255,41 @@ public class NetworkUtils {
         ComputationGraphUpdater u = net.getUpdater();
         u.setStateViewArray(origUpdaterState);
     }
+
+  /**
+   * Currently supports {@link MultiLayerNetwork} and {@link ComputationGraph} models.
+   * Pull requests to support additional <code>org.deeplearning4j</code> models are welcome.
+   *
+   * @param model Model to use
+   * @param input Inputs to the model
+   * @return output Outputs of the model
+   *
+   * @see org.deeplearning4j.nn.graph.ComputationGraph#outputSingle(INDArray...)
+   * @see org.deeplearning4j.nn.multilayer.MultiLayerNetwork#output(INDArray)
+   */
+  public static INDArray output(Model model, INDArray input) {
+
+    if (model instanceof MultiLayerNetwork) {
+      final MultiLayerNetwork multiLayerNetwork = (MultiLayerNetwork)model;
+      final INDArray output = multiLayerNetwork.output(input);
+      return output;
+    }
+
+    if (model instanceof ComputationGraph) {
+      final ComputationGraph computationGraph = (ComputationGraph)model;
+      final INDArray output = computationGraph.outputSingle(input);
+      return output;
+    }
+
+    final String message;
+    if (model.getClass().getName().startsWith("org.deeplearning4j")) {
+      message = model.getClass().getName()+" models are not yet supported and " +
+        "pull requests are welcome: https://github.com/deeplearning4j/deeplearning4j";
+    } else {
+      message = model.getClass().getName()+" models are unsupported.";
+    }
+
+    throw new UnsupportedOperationException(message);
+  }
+
 }

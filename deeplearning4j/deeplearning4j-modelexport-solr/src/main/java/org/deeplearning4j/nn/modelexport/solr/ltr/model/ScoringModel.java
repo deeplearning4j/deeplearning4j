@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelGuesser;
+import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -106,39 +107,13 @@ public class ScoringModel extends AdapterModel {
     return outputScore(model, modelFeatureValuesNormalized);
   }
 
+  /**
+   * Uses the {@link NetworkUtils#output(Model, INDArray)} method.
+   */
   public static float outputScore(Model model, float[] modelFeatureValuesNormalized) {
     final INDArray input = Nd4j.create(modelFeatureValuesNormalized);
-    final INDArray output = output(model, input);
+    final INDArray output = NetworkUtils.output(model, input);
     return output.getFloat(0);
-  }
-
-  /**
-   * Currently supports {@link MultiLayerNetwork} and {@link ComputationGraph} models.
-   * Pull requests to support additional <code>org.deeplearning4j</code> models are welcome.
-   */
-  public static INDArray output(Model model, INDArray input) {
-
-    if (model instanceof MultiLayerNetwork) {
-      final MultiLayerNetwork multiLayerNetwork = (MultiLayerNetwork)model;
-      final INDArray output = multiLayerNetwork.output(input);
-      return output;
-    }
-
-    if (model instanceof ComputationGraph) {
-      final ComputationGraph computationGraph = (ComputationGraph)model;
-      final INDArray output = computationGraph.outputSingle(input);
-      return output;
-    }
-
-    final String message;
-    if (model.getClass().getName().startsWith("org.deeplearning4j")) {
-      message = model.getClass().getName()+" models are not yet supported and " +
-        "pull requests are welcome: https://github.com/deeplearning4j/deeplearning4j";
-    } else {
-      message = model.getClass().getName()+" models are unsupported.";
-    }
-
-    throw new UnsupportedOperationException(message);
   }
 
   @Override
