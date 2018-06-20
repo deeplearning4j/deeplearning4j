@@ -317,4 +317,37 @@ public class RandomOpValidation extends BaseOpValidation {
         assertEquals("mean", expMean, mean, 0.1);
         assertEquals("std", expStd, std, 0.1);
     }
+
+    @Test
+    public void testRange(){
+        //Technically deterministic, not random...
+
+        double[][] testCases = new double[][]{
+                {3,18,3},
+                {3,1,-0.5},
+                {0,5,1}
+        };
+
+        List<INDArray> exp = Arrays.asList(
+                Nd4j.trueVector(new double[]{3, 6, 9, 12, 15}),
+                Nd4j.trueVector(new double[]{3, 2.5, 2, 1.5}),
+                Nd4j.trueVector(new double[]{0, 1, 2, 3, 4}));
+
+        for(int i=0; i<testCases.length; i++ ){
+            double[] d = testCases[i];
+            INDArray e = exp.get(i);
+
+            SameDiff sd = SameDiff.create();
+            SDVariable range = sd.range(d[0], d[1], d[2]);
+
+            SDVariable loss = range.std(true);
+
+            TestCase tc = new TestCase(sd)
+                    .expected(range, e)
+                    .testName(Arrays.toString(d));
+
+            assertNull(OpValidation.validate(tc));
+        }
+
+    }
 }

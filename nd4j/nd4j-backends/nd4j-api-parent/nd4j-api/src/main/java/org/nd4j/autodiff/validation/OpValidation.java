@@ -505,6 +505,7 @@ public class OpValidation {
                 SaveV2.class,
                 ScalarSetValue.class,   //Not used in SameDiff (it's a "set to X if less than X" type op, redundant given other ops)
                 LegacyPooling2D.class,  //Deprecated; not used in samediff
+                BinomialDistributionEx.class,   //Redundant?
 
                 //Exclude manual broadcast ops: SameDiff uses auto broadcasting
                 BroadcastAMax.class,
@@ -576,7 +577,14 @@ public class OpValidation {
                 Upsampling2dDerivative.class,
 
                 SliceBp.class,
-                StridedSliceBp.class
+                StridedSliceBp.class,
+
+                //We can't use these dropout ops in SameDiff: https://github.com/deeplearning4j/deeplearning4j/issues/5650
+                DropOut.class,
+                DropOutInverted.class,
+                AlphaDropOut.class,
+                Choice.class,
+                ProbablisticMerge.class
         );
 
         return new HashSet<>(list);

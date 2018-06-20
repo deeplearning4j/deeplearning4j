@@ -1456,6 +1456,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable range(double from, double to, double step){
+        return range(null, from, to, step);
+    }
+
+    public SDVariable range(String name, double from, double to, double step){
+        SDVariable ret = f().range(from, to, step);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public SDVariable[] meshgrid(SDVariable... inputs){
         return meshgrid(null, inputs);
     }
@@ -3993,12 +4002,25 @@ public class SameDiff {
         return fill(null, shape, value);
     }
 
-    public SDVariable dropout(SDVariable input, double p) {
-        return dropout(null, input, p);
+
+    /**
+     *
+     * @param input                  Input
+     * @param inputRetainProbability Probability of retaining an input (set to 0 with probability 1-p)
+     * @return
+     */
+    public SDVariable dropout(SDVariable input, double inputRetainProbability) {
+        return dropout(null, input, inputRetainProbability);
     }
 
-    public SDVariable dropout(String name, SDVariable input, double p) {
-        SDVariable res = f().dropout(input, p);
+    /**
+     *
+     * @param input                  Input
+     * @param inputRetainProbability Probability of retaining an input (set to 0 with probability 1-p)
+     * @return
+     */
+    public SDVariable dropout(String name, SDVariable input, double inputRetainProbability) {
+        SDVariable res = f().dropout(input, inputRetainProbability);
         return updateVariableNameAndReference(res, name);
     }
 

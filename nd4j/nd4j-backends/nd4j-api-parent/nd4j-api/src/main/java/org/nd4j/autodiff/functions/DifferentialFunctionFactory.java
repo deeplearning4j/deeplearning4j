@@ -142,6 +142,10 @@ public class DifferentialFunctionFactory {
         return new Linspace(sameDiff(), lower, upper, count).outputVariable();
     }
 
+    public SDVariable range(double from, double to, double step){
+        return new Range(sameDiff(), from, to, step).outputVariable();
+    }
+
     public SDVariable[] meshgrid(boolean cartesian, SDVariable... inputs){
         return new MeshGrid(sameDiff(), cartesian, inputs).outputVariables();
     }
@@ -447,7 +451,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable dropout(SDVariable input, double p) {
-        return new DropOut(sameDiff(), input, p).outputVariable();
+        return new DropOutInverted(sameDiff(), input, p).outputVariable();
     }
 
 
