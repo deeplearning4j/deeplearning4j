@@ -321,11 +321,18 @@ public class ShapeOpValidation extends BaseOpValidation {
         //Order here: original shape, begin, size
         List<Triple<int[], int[], int[]>> testCases = new ArrayList<>();
         testCases.add(new Triple<>(new int[]{3, 4}, new int[]{0, 0}, new int[]{3, 4}));
-        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 1}, new int[]{2, 1}));
+        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 1}, new int[]{2, 2}));
         testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 2}, new int[]{2, 2}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{0, 0, 0}, new int[]{3, 4, 5}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 1, 1}, new int[]{2, 3, 4}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 0, 2}, new int[]{3, 3, 2}));
+
+        Map<Integer,INDArrayIndex[]> indices = new HashMap<>();
+        indices.put(0, new INDArrayIndex[]{all(), all()});
+        indices.put(1, new INDArrayIndex[]{interval(1,3), interval(1,3)});
+        indices.put(2, new INDArrayIndex[]{interval(1,3), interval(2,4)});
+        indices.put(3, new INDArrayIndex[]{all(), all(), all()});
+        indices.put(4, new INDArrayIndex[]{interval(1,3), interval(1,4), interval(1,5)});
 
         List<String> failed = new ArrayList<>();
 
@@ -345,6 +352,11 @@ public class ShapeOpValidation extends BaseOpValidation {
             log.info("Starting test: " + msg);
 
             TestCase tc = new TestCase(sd).testName(msg);
+
+            if(indices.containsKey(i)){
+                tc.expected(slice, arr.get(indices.get(i)).dup());
+            }
+
             String error = OpValidation.validate(tc, true);
             if(error != null){
                 failed.add(error);

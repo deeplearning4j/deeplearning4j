@@ -575,6 +575,7 @@ public class OpValidation {
                 Pooling3DDerivative.class,
                 SConv2DDerivative.class,
                 Upsampling2dDerivative.class,
+                Im2colBp.class,
 
                 SliceBp.class,
                 StridedSliceBp.class,
