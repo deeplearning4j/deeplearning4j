@@ -5827,6 +5827,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <graph/Intervals.h>
 // #include <array/DataType.h>
 // #include <stdint.h>
+// #include <array/ArrayOptions.h>
+// #include <array/ArrayType.h>
     @Namespace("nd4j") public static native @ByVal @Name("operator -") FloatNDArray subtract(float arg0, @Const @ByRef FloatNDArray arg1);
     @Namespace("nd4j") public static native @ByVal @Name("operator -") HalfNDArray subtract(@Cast("const float16") short arg0, @Const @ByRef HalfNDArray arg1);
     @Namespace("nd4j") public static native @ByVal @Name("operator -") DoubleNDArray subtract(double arg0, @Const @ByRef DoubleNDArray arg1);
