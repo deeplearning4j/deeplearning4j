@@ -668,7 +668,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             SDVariable[] moments = sd.moments(in, axes);
             INDArray expMean = input.mean(axes);
-            INDArray expStdev = input.std(true, axes);
+            INDArray expVar = input.var(false, axes);
 
             SDVariable loss = moments[0].add(moments[1]).std(true);
 
@@ -677,7 +677,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             TestCase tc = new TestCase(sd)
                     .testName(msg)
                     .expected(moments[0], expMean)
-                    .expected(moments[1], expStdev);
+                    .expected(moments[1], expVar);
 
             String err = OpValidation.validate(tc);
             assertNull(err);
