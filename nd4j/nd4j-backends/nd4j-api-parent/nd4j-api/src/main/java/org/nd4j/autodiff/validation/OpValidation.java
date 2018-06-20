@@ -504,6 +504,7 @@ public class OpValidation {
                 RestoreV2.class,
                 SaveV2.class,
                 ScalarSetValue.class,   //Not used in SameDiff (it's a "set to X if less than X" type op, redundant given other ops)
+                LegacyPooling2D.class,  //Deprecated; not used in samediff
 
                 //Exclude manual broadcast ops: SameDiff uses auto broadcasting
                 BroadcastAMax.class,

@@ -83,6 +83,6 @@ public class RationalTanh extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().tanhRationalDerivative(arg(), f1.get(0)));
+        return Collections.singletonList(f().tanhRationalDerivative(arg()).mul(f1.get(0)));
     }
 }

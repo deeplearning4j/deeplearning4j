@@ -8,6 +8,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
@@ -744,16 +745,17 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testMaxPooling2dBasic() {
+        Nd4j.getRandom().setSeed(12345);
         int nIn = 3;
         int kH = 2;
         int kW = 2;
 
         int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
+        int imgH = 8;
+        int imgW = 8;
 
         SameDiff sd = SameDiff.create();
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+        INDArray inArr = Nd4j.rand(new int[]{mb, nIn, imgH, imgW});
 
         SDVariable in = sd.var("in", inArr);
 
@@ -765,27 +767,53 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.maxPooling2d(in, pooling2DConfig);
-        out = sd.tanh("out", out);
+        SDVariable outPool = sd.maxPooling2d(in, pooling2DConfig);
+        SDVariable out = sd.tanh("out", outPool);
 
         INDArray outArr = sd.execAndEndResult();
         val outShape = outArr.shape();
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-        assertArrayEquals(new long[]{mb, nIn, 27, 27}, outShape);
+        assertArrayEquals(new long[]{mb, nIn, 7, 7}, outShape);
+
+        SDVariable loss = out.std(true);
+
+        INDArray exp = Nd4j.create(mb, nIn, 7, 7);
+        NdIndexIterator iter = new NdIndexIterator(mb, nIn, 7, 7);
+        while(iter.hasNext()){
+            long[] next = iter.next();
+            double max = max(inArr.getDouble(next),
+                    inArr.getDouble(next[0], next[1], next[2]+1, next[3]),
+                    inArr.getDouble(next[0], next[1], next[2], next[3]+1),
+                    inArr.getDouble(next[0], next[1], next[2]+1, next[3]+1));
+            exp.putScalar(next, max);
+        }
+
+        assertNull(OpValidation.validate(new TestCase(sd)
+                .expected(outPool, exp)));
+    }
+
+    private double max(double... in){
+        double max = -Double.MAX_VALUE;
+        for(double d : in){
+            if(d > max)
+                max = d;
+        }
+        return max;
     }
 
     @Test
     public void testAvgPooling2dBasic() {
+        Nd4j.getRandom().setSeed(12345);
         int nIn = 3;
         int kH = 2;
         int kW = 2;
 
         int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
+        int imgH = 8;
+        int imgW = 8;
 
         SameDiff sd = SameDiff.create();
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+        INDArray inArr = Nd4j.rand(new int[]{mb, nIn, imgH, imgW});
 
         SDVariable in = sd.var("in", inArr);
 
@@ -797,13 +825,29 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.avgPooling2d(in, pooling2DConfig);
-        out = sd.tanh("out", out);
+        SDVariable outPool = sd.avgPooling2d(in, pooling2DConfig);
+        SDVariable out = sd.tanh("out", outPool);
 
         INDArray outArr = sd.execAndEndResult();
         val outShape = outArr.shape();
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-        assertArrayEquals(new long[]{mb, nIn, 27, 27}, outShape);
+        assertArrayEquals(new long[]{mb, nIn, 7, 7}, outShape);
+
+        SDVariable loss = out.std(true);
+
+        INDArray exp = Nd4j.create(mb, nIn, 7, 7);
+        NdIndexIterator iter = new NdIndexIterator(mb, nIn, 7, 7);
+        while(iter.hasNext()){
+            long[] next = iter.next();
+            double avg = (inArr.getDouble(next) + inArr.getDouble(next[0], next[1], next[2]+1, next[3])
+                    + inArr.getDouble(next[0], next[1], next[2], next[3]+1)
+                    + inArr.getDouble(next[0], next[1], next[2]+1, next[3]+1)) / 4.0;
+            exp.putScalar(next, avg);
+        }
+
+        assertNull(OpValidation.validate(new TestCase(sd)
+                .expected(outPool, exp)));
+
     }
 
     @Test

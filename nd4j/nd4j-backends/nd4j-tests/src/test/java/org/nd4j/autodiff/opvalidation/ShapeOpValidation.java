@@ -20,15 +20,14 @@ import org.nd4j.linalg.api.ops.impl.shape.Unstack;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -416,6 +415,16 @@ public class ShapeOpValidation extends BaseOpValidation {
         testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, 0, 1).end(3, -999, 4).strides(1, 1, 1).shrinkAxisMask(1 << 1).build());
         testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, 1, 1).end(3, -999, 4).strides(1, 1, 1).shrinkAxisMask(1 << 1).build());
 
+        Map<Integer,INDArrayIndex[]> indices = new HashMap<>();
+        indices.put(0, new INDArrayIndex[]{all(), all()});
+        indices.put(1, new INDArrayIndex[]{interval(1,2), interval(1,3)});
+        indices.put(2, new INDArrayIndex[]{interval(0,3), interval(0,4)});
+        indices.put(3, new INDArrayIndex[]{interval(1,3), interval(1,4)});
+
+        indices.put(5, new INDArrayIndex[]{all(), all(), all()});
+        indices.put(7, new INDArrayIndex[]{interval(0,1,3), interval(0,2,3), interval(0,2,5)});
+
+
         List<String> failed = new ArrayList<>();
 
         for (int i = 0; i < testCases.size(); i++) {
@@ -433,6 +442,11 @@ public class ShapeOpValidation extends BaseOpValidation {
 
             TestCase tc = new TestCase(sd);
             tc.testName(msg);
+
+            if(indices.containsKey(i)){
+                tc.expected(slice, arr.get(indices.get(i)).dup());
+            }
+
             String error = OpValidation.validate(tc, true);
             if(error != null){
                 failed.add(error);

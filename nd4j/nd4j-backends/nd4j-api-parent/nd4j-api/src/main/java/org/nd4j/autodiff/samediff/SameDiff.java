@@ -3713,7 +3713,17 @@ public class SameDiff {
      * @return          Number of elements that the condition is satisfied for
      */
     public SDVariable matchConditionCount(String name, SDVariable in, Condition condition) {
-        SDVariable ret = f().matchConditionCount(in, condition);
+        return matchConditionCount(name, in, condition, false);
+    }
+
+    /**
+     * Returns a count of the number of elements that satisfy the condition
+     * @param in        Input
+     * @param condition Condition
+     * @return          Number of elements that the condition is satisfied for
+     */
+    public SDVariable matchConditionCount(String name, SDVariable in, Condition condition, boolean keepDim, int... dimensions) {
+        SDVariable ret = f().matchConditionCount(in, condition, keepDim, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 

@@ -588,8 +588,8 @@ public class DifferentialFunctionFactory {
      * @param condition Condition
      * @return          Number of elements that the condition is satisfied for
      */
-    public SDVariable matchConditionCount(SDVariable in, Condition condition){
-        return new MatchCondition(sameDiff(), in, condition).outputVariable();
+    public SDVariable matchConditionCount(SDVariable in, Condition condition, boolean keepDims, int... dimensions){
+        return new MatchCondition(sameDiff(), in, condition, keepDims, dimensions).outputVariable();
     }
 
     /**
@@ -786,12 +786,12 @@ public class DifferentialFunctionFactory {
         return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(sameDiff(), iX, wrt).outputVariable();
     }
 
-    public SDVariable tanhRationalDerivative(SDVariable in, SDVariable grad){
-        return new RationalTanhDerivative(sameDiff(), in, grad, false).outputVariable();
+    public SDVariable tanhRationalDerivative(SDVariable in){
+        return new RationalTanhDerivative(sameDiff(), in, false).outputVariable();
     }
 
-    public SDVariable tanhRectifiedDerivative(SDVariable in, SDVariable grad){
-        return new RectifiedTanhDerivative(sameDiff(), in, grad, false).outputVariable();
+    public SDVariable tanhRectifiedDerivative(SDVariable in){
+        return new RectifiedTanhDerivative(sameDiff(), in, false).outputVariable();
     }
 
     public SDVariable step(SDVariable in, double cutoff){
