@@ -10,7 +10,8 @@
 namespace nd4j {
     namespace ops {
         //////////////////////////////////////////////////////////////////////////
-        // here iArgs is a vector with order as first element ({order, dim1, dim2, dim3, ...})
+        // here iArgs is a vector with (optional) negative of order as first element:
+        // ({-order, dim1, dim2, dim3, ...})
         CUSTOM_OP_IMPL(reshape, 1, 1, true, 0, -2) {
             auto x = INPUT_VARIABLE(0);
 
@@ -109,7 +110,7 @@ namespace nd4j {
 
                 int *shape_ = shapeNew.data();
                 for (int i = 0; i < (int) shapeNew.size(); i++) {
-                    if (shapeNew[i] < 0) {
+                    if (shapeNew[i] == -1) {
                         if (numberNegativesOnes >= 1)
                             throw std::runtime_error("Only one dimension can be negative ones");
 
@@ -163,7 +164,7 @@ namespace nd4j {
 
                 auto shape_ = shapeNew.data();
                 for (int i = 0; i < (int) shapeNew.size(); i++) {
-                    if (shapeNew[i] < 0) {
+                    if (shapeNew[i] == -1) {
                         if (numberNegativesOnes >= 1)
                             throw std::runtime_error("Only one dimension can be negative ones");
 

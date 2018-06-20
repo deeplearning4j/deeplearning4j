@@ -1370,7 +1370,7 @@ TEST_F(DeclarableOpsTests1, Reshape1) {
     Context<float>* block = new Context<float>(1, variableSpace, true);
     block->fillInputs({-1});    
     std::vector<int>* arguments = block->getIArguments();
-    arguments->push_back(y->ordering());
+    arguments->push_back(-y->ordering());
     arguments->push_back(3);
     arguments->push_back(5);
     arguments->push_back(4);
@@ -1401,7 +1401,7 @@ TEST_F(DeclarableOpsTests1, Reshape2) {
     Context<float>* block = new Context<float>(1, variableSpace, false);
     block->fillInputs({-1});    
     std::vector<int>* arguments = block->getIArguments();
-    arguments->push_back(y->ordering());
+    arguments->push_back(-y->ordering());
     arguments->push_back(3);
     arguments->push_back(5);
     arguments->push_back(4);
