@@ -129,7 +129,11 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
     auto shapeTF = tfShape->template asVectorT<Nd4jLong>();
     auto shapeND = shape::shapeOf(outputShapeInfo);
 
-    REQUIRE_TRUE(shape::shapeEquals(shapeTF.size(), shapeTF.data(), 4, shapeND),0, "deconv2d_tf: shape doesn't match TF value");
+    if (!shape::shapeEquals(shapeTF.size(), shapeTF.data(), 4, shapeND)) {
+        auto e = ShapeUtils<T>::shapeAsString(shapeTF.size(), shapeTF.data());
+        auto a = ShapeUtils<T>::shapeAsString(4, shapeND);
+        REQUIRE_TRUE(false, 0, "deconv2d_tf: shape doesn't match TF value: Expected %s vs actual %s", e.c_str(), a.c_str());
+    }
 
     return SHAPELIST(outputShapeInfo);
 }

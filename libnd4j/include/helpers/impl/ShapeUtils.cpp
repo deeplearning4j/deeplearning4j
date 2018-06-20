@@ -635,6 +635,25 @@ Nd4jLong* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vec
     }
 
 
+    template<typename T>
+    std::string ShapeUtils<T>::shapeAsString(const int rank, const Nd4jLong* shapeInfo) {
+
+        if(!shapeInfo)
+            throw std::runtime_error("ShapeUtils<T>::shapeAsString method: input shapeInfo must not be nullptr !");
+
+        std::string result;
+
+        result.append("[");
+        for (int e = 0; e < rank; e++) {
+            result += flatbuffers::NumToString(shapeInfo[e]);
+            if (e < rank - 1)
+                result.append(", ");
+        }
+        result.append("]");
+
+        return result;
+    }
+
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
 template<typename T>
