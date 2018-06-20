@@ -1676,6 +1676,35 @@ public class SameDiff {
         return updateVariableNameAndReference(eye, name);
     }
 
+    public SDVariable eye(String name, SDVariable rows, SDVariable cols, SDVariable batchDimension){
+        SDVariable eye = new Eye(this, rows, cols, batchDimension).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    public SDVariable eye(SDVariable rows, SDVariable cols, SDVariable batchDimension){
+        return eye(null, rows, cols, batchDimension);
+    }
+
+
+    public SDVariable eye(String name, SDVariable rows, SDVariable cols){
+        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    public SDVariable eye(SDVariable rows, SDVariable cols){
+        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
+        return updateVariableNameAndReference(eye, null);
+    }
+
+    public SDVariable eye(String name, SDVariable rows){
+        SDVariable eye = new Eye(this, rows).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    public SDVariable eye(SDVariable rows){
+        SDVariable eye = new Eye(this, rows).outputVariables()[0];
+        return updateVariableNameAndReference(eye, null);
+    }
 
     /**
      * Remove an argument for a function. Note that if this function
