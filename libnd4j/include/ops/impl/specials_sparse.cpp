@@ -83,6 +83,8 @@ namespace nd4j {
 
 
             {
+                // flag that indicates that pivot index lies between i and j and *could* be swapped.
+                bool checkPivot = true;
                 /* PARTITION PART */
                 while (i <= j) {
                     while (ltIndices(indices, rank, i, pvt))
@@ -93,7 +95,22 @@ namespace nd4j {
 
 
                     if (i <= j) {
-                        swapEverything(indices, array, rank, i, j);
+                        if(i != j) { // swap can be fairly expensive. don't swap i -> i
+                            swapEverything(indices, array, rank, i, j);
+                        }
+
+                        // only check pivot if it hasn't already been swapped.
+                        if (checkPivot) {
+                            // check if we moved the pivot, if so, change pivot index accordingly
+                            if (pvt == j) {
+                                pvt = i;
+                                checkPivot = false;
+                            } else if (pvt == i) {
+                                pvt = j;
+                                checkPivot = false;
+                            }
+                        }
+
                         i++;
                         j--;
                     }
