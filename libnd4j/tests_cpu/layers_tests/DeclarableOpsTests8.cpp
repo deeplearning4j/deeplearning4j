@@ -2534,3 +2534,37 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test5) {
     delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, zeros_as_test1) {
+
+    NDArray<double> x(10.);
+    NDArray<double> y(100.);
+    NDArray<double> exp(0.);
+                                                                          
+    nd4j::ops::zeros_as<double> op;
+
+    Nd4jStatus status = op.execute({&x}, {&y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);    
+    
+    ASSERT_TRUE(y.isSameShape(exp));
+    ASSERT_TRUE(y.equalsTo(exp));
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, ones_as_test1) {
+
+    NDArray<double> x(10.);
+    NDArray<double> y(100.);
+    NDArray<double> exp(1.);
+
+    nd4j::ops::ones_as<double> op;
+
+    Nd4jStatus status = op.execute({&x}, {&y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);    
+    
+    ASSERT_TRUE(y.isSameShape(exp));
+    ASSERT_TRUE(y.equalsTo(exp));
+        
+}
+
