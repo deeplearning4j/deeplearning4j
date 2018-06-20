@@ -1456,6 +1456,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable range(double from, double to, double step){
+        return range(null, from, to, step);
+    }
+
+    public SDVariable range(String name, double from, double to, double step){
+        SDVariable ret = f().range(from, to, step);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public SDVariable[] meshgrid(SDVariable... inputs){
         return meshgrid(null, inputs);
     }
@@ -1878,6 +1887,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable randomUniform(double min, double max, long... shape){
+        return randomUniform(null, min, max, shape);
+    }
+
+    public SDVariable randomUniform(String name, double min, double max, long... shape){
+        SDVariable ret = f().randomUniform(min, max, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public SDVariable randomNormal(double mean, double stddev, SDVariable shape){
         return randomNormal(null, mean, stddev, shape);
     }
@@ -1887,12 +1905,57 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable randomNormal(double mean, double stddev, long... shape){
+        return randomNormal(null, mean, stddev, shape);
+    }
+
+    public SDVariable randomNormal(String name, double mean, double stddev, long... shape){
+        SDVariable ret = f().randomNormal(mean, stddev, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable randomLogNormal(double mean, double stddev, long... shape){
+        return randomLogNormal(null, mean, stddev, shape);
+    }
+
+    public SDVariable randomLogNormal(String name, double mean, double stddev, long... shape){
+        SDVariable ret = f().randomLogNormal(mean, stddev, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable randomNormalTruncated(double mean, double stddev, long... shape){
+        return randomNormalTruncated(null, mean, stddev, shape);
+    }
+
+    public SDVariable randomNormalTruncated(String name, double mean, double stddev, long... shape){
+        SDVariable ret = f().randomNormalTruncated(mean, stddev, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public SDVariable randomBernoulli(double p, SDVariable shape){
         return randomBernoulli(null, p, shape);
     }
 
     public SDVariable randomBernoulli(String name, double p, SDVariable shape){
         SDVariable ret = f().randomBernoulli(p, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable randomBernoulli(double p, long... shape){
+        return randomBernoulli(null, p, shape);
+    }
+
+    public SDVariable randomBernoulli(String name, double p, long... shape){
+        SDVariable ret = f().randomBernoulli(p, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable randomBinomial(int nTrials, double p, long... shape){
+        return randomBinomial(null, nTrials, p, shape);
+    }
+
+    public SDVariable randomBinomial(String name, int nTrials, double p, long... shape){
+        SDVariable ret = f().randomBinomial(nTrials, p, shape);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -1918,6 +1981,54 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * Upsampling 2d - same scale for both dimensions. NCHW input format.
+     *
+     * @param input Input, in NCHW format
+     * @param scale Scale to upsample in both H and W dimensions
+     * @return Upsampled input
+     */
+    public SDVariable upsampling2d(SDVariable input, int scale) {
+        return upsampling2d(null, input, true, scale, scale);
+    }
+
+    /**
+     * Upsampling 2d - same scale for both dimensions. NCHW input format.
+     *
+     * @param input Input, in NCHW format
+     * @param scale Scale to upsample in both H and W dimensions
+     * @return Upsampled input
+     */
+    public SDVariable upsampling2d(String name, SDVariable input, int scale) {
+        return upsampling2d(name, input, true, scale, scale);
+    }
+
+    /**
+     * Upsampling 2d
+     *
+     * @param input  Input, in NCHW format
+     * @param nchw   If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
+     * @param scaleH Scale to upsample in height dimension
+     * @param scaleW Scale to upsample in width dimension
+     * @return Upsampled input
+     */
+    public SDVariable upsampling2d(SDVariable input, boolean nchw, int scaleH, int scaleW) {
+        return upsampling2d(null, input, nchw, scaleH, scaleW);
+    }
+
+    /**
+     * Upsampling 2d
+     *
+     * @param input  Input, in NCHW format
+     * @param nchw   If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
+     * @param scaleH Scale to upsample in height dimension
+     * @param scaleW Scale to upsample in width dimension
+     * @return Upsampled input
+     */
+    public SDVariable upsampling2d(String name, SDVariable input, boolean nchw, int scaleH, int scaleW) {
+        SDVariable ret = f().upsampling2d(input, nchw, scaleH, scaleW);
+        return updateVariableNameAndReference(ret, name);
+    }
 
     /**
      * Average pooling 2d operation.
@@ -3392,6 +3503,29 @@ public class SameDiff {
     }
 
     /**
+     * Log entropy reduction: log(-sum(x * log(x)))
+     *
+     * @param in         Input
+     * @param dimensions Dimensions to reduce on (null for full array)
+     * @return Output variable
+     */
+    public SDVariable logEntropy(SDVariable in, int... dimensions) {
+        return logEntropy(null, in, dimensions);
+    }
+
+    /**
+     * Log entropy reduction: log(-sum(x * log(x)))
+     *
+     * @param in         Input
+     * @param dimensions Dimensions to reduce on (null for full array)
+     * @return Output variable
+     */
+    public SDVariable logEntropy(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().logEntropy(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * @param iX
      * @param dimensions
      * @return
@@ -3671,7 +3805,17 @@ public class SameDiff {
      * @return          Number of elements that the condition is satisfied for
      */
     public SDVariable matchConditionCount(String name, SDVariable in, Condition condition) {
-        SDVariable ret = f().matchConditionCount(in, condition);
+        return matchConditionCount(name, in, condition, false);
+    }
+
+    /**
+     * Returns a count of the number of elements that satisfy the condition
+     * @param in        Input
+     * @param condition Condition
+     * @return          Number of elements that the condition is satisfied for
+     */
+    public SDVariable matchConditionCount(String name, SDVariable in, Condition condition, boolean keepDim, int... dimensions) {
+        SDVariable ret = f().matchConditionCount(in, condition, keepDim, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
 
@@ -3887,12 +4031,25 @@ public class SameDiff {
         return fill(null, shape, value);
     }
 
-    public SDVariable dropout(SDVariable input, double p) {
-        return dropout(null, input, p);
+
+    /**
+     *
+     * @param input                  Input
+     * @param inputRetainProbability Probability of retaining an input (set to 0 with probability 1-p)
+     * @return
+     */
+    public SDVariable dropout(SDVariable input, double inputRetainProbability) {
+        return dropout(null, input, inputRetainProbability);
     }
 
-    public SDVariable dropout(String name, SDVariable input, double p) {
-        SDVariable res = f().dropout(input, p);
+    /**
+     *
+     * @param input                  Input
+     * @param inputRetainProbability Probability of retaining an input (set to 0 with probability 1-p)
+     * @return
+     */
+    public SDVariable dropout(String name, SDVariable input, double inputRetainProbability) {
+        SDVariable res = f().dropout(input, inputRetainProbability);
         return updateVariableNameAndReference(res, name);
     }
 
@@ -7057,9 +7214,11 @@ public class SameDiff {
                 Op op = (Op) differentialFunction;
 
                 // ops in differential function might have stale NDArrays used. we should renew them
-                op.setX(inputs[0].getArr());
-                if (inputs.length == 2)
-                    op.setY(inputs[1].getArr());
+                if(inputs != null && inputs.length > 0) {
+                    op.setX(inputs[0].getArr());
+                    if (inputs.length == 2)
+                        op.setY(inputs[1].getArr());
+                }
 
                 if (differentialFunction.getDimensions() == null)
                     Nd4j.getExecutioner().exec(op);

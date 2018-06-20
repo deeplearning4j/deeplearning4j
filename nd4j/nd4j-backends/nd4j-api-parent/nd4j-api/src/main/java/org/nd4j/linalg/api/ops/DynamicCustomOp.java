@@ -14,6 +14,7 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.FunctionProperties;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -213,6 +214,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         } else {
             val shape = calculateOutputShape();
             if (shape != null && !shape.isEmpty()) {
+                Preconditions.checkState(shape.size() == outputVariables.length, "Different number of calculated" +
+                        " shapes (%s) vs. number of output variables (%s)", shape.size(), outputVariables.length);
+
                 for (int i = 0; i < outputVariables.length; i++) {
                     val var = outputVariables[i];
                     if (var.getShape() == null) {

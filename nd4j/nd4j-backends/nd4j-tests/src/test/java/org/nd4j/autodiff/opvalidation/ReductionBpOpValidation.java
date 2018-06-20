@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.opvalidation;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+@Slf4j
 public class ReductionBpOpValidation extends BaseOpValidation {
 
     private DataBuffer.Type initialType;
@@ -185,12 +187,15 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
             long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
-            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+            INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape('c',3, 4);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
             INDArray dLdInExpected_0 = Nd4j.createUninitialized(preReduceInput.shape());
             for (int i = 0; i < 3; i++) {
                 dLdInExpected_0.putRow(i, dLdOut_0.div(3));
             }
+
+            String msg = "keepDims=" + keepDims;
+            log.info("Starting test: " + msg);
 
             INDArray dLdIn = Nd4j.createUninitialized(3, 4);
             String err = OpValidation.validate(new OpTestCase(new MeanBp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))

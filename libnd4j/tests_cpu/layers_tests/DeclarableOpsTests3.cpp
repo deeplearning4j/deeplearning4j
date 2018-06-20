@@ -289,6 +289,7 @@ TEST_F(DeclarableOpsTests3, Test_ClipByNorm_2) {
     auto result = op.execute({&x}, {6.0}, {});
 
     auto z = result->at(0);
+    z->printIndexedBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

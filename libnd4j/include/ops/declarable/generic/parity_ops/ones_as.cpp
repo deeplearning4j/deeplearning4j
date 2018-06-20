@@ -12,7 +12,7 @@ namespace nd4j {
         OP_IMPL(ones_as, 1, 1, false) {
             auto output = OUTPUT_VARIABLE(0);
 
-            output->assign((T) 1.0f);
+            *output = static_cast<T>(1.f);
 
             return ND4J_STATUS_OK;
         }

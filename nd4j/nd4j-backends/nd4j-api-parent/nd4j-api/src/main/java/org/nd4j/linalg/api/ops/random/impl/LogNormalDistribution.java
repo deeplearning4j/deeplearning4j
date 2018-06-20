@@ -2,10 +2,12 @@ package org.nd4j.linalg.api.ops.random.impl;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +23,13 @@ public class LogNormalDistribution extends BaseRandomOp {
 
     public LogNormalDistribution() {
         super();
+    }
+
+    public LogNormalDistribution(SameDiff sd, double mean, double stdev, long... shape){
+        super(sd, shape);
+        this.mean = mean;
+        this.stddev = stddev;
+        this.extraArgs = new Object[] {this.mean, this.stddev};
     }
 
     /**
@@ -103,6 +112,6 @@ public class LogNormalDistribution extends BaseRandomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.emptyList();
     }
 }

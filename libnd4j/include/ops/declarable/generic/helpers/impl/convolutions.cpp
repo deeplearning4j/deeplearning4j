@@ -1537,7 +1537,7 @@ void ConvolutionUtils<T>::pooling2d(NDArray<T>& input, NDArray<T>& output, const
     }
 /*************************************************************************/    
     else if(poolingMode == 1) {      // avg
-#pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)        
+// #pragma omp parallel for schedule(guided) private(pIn, sum, hstart, wstart, hend, wend)        
         for(int b = 0; b < bS; ++b) {
             for(int c = 0; c < iC; ++c) {                                                            
                 for(int oh = 0; oh < oH; ++oh) {
