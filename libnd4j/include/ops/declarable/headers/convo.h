@@ -186,6 +186,7 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_im2col)
         DECLARE_CUSTOM_OP(im2col, 1, 1, false, 0, 9);
+		DECLARE_CUSTOM_OP(im2col_bp, 2, 1, false, 0, 9);
         #endif
 
         /**

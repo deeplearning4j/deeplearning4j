@@ -477,6 +477,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         if (outputShapes != null)
             return outputShapes;
 
+        if (descriptor == null) {
+            throw new IllegalStateException("Could not find descriptor for op: " + opName()
+                    + (DynamicCustomOp.class == this.getClass() ? "" : " - class: " + getClass().getName()));
+        }
+
 
         //not fully initialized: missing integer args
         if (descriptor.getNumIArgs() >= 0 && numIArguments() < descriptor.getNumIArgs()) {

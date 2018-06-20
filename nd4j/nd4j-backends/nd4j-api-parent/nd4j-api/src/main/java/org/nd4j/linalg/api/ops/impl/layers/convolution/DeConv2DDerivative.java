@@ -47,4 +47,12 @@ public class DeConv2DDerivative extends DeConv2D {
 
     }
 
+    @Override
+    public int getNumOutputs(){
+        //Inputs: in, weights, optional bias, gradOut                      3 req, 1 optional
+        //Outputs: gradAtInput, gradW, optional gradB                      2 req, 1 optional
+        SDVariable[] args = args();
+        return args.length - 1;
+    }
+
 }

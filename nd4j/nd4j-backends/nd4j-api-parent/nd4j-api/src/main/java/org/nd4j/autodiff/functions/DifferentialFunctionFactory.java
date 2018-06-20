@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
+import org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad;
 import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
@@ -21,6 +22,8 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.scatter.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
+import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
@@ -385,6 +388,10 @@ public class DifferentialFunctionFactory {
         return new Im2col(sameDiff(), input, config).outputVariable();
     }
 
+    public SDVariable im2ColBp(SDVariable im2colInput, SDVariable gradientAtOutput, Conv2DConfig config){
+        return new Im2colBp(sameDiff(), im2colInput, gradientAtOutput, config).outputVariable();
+    }
+
     public SDVariable col2Im(SDVariable input, Conv2DConfig config){
         return new Col2Im(sameDiff(), input, config).outputVariable();
     }
@@ -561,8 +568,24 @@ public class DifferentialFunctionFactory {
         return new LastIndex(sameDiff(), in, condition, keepDims, dimensions).outputVariable();
     }
 
-    public SDVariable matchCondition(SDVariable in, Condition condition){
+    /**
+     * Returns a count of the number of elements that satisfy the condition
+     * @param in        Input
+     * @param condition Condition
+     * @return          Number of elements that the condition is satisfied for
+     */
+    public SDVariable matchConditionCount(SDVariable in, Condition condition){
         return new MatchCondition(sameDiff(), in, condition).outputVariable();
+    }
+
+    /**
+     * Returns a boolean mask of equal shape to the input, where the condition is satisfied
+     * @param in        Input
+     * @param condition Condition
+     * @return          Boolean mask
+     */
+    public SDVariable matchCondition(SDVariable in, Condition condition){
+        return new MatchConditionTransform(sameDiff(), in, condition).outputVariable();
     }
 
     public SDVariable cumsum(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
@@ -583,6 +606,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable biasAdd(SDVariable input, SDVariable bias) {
         return new BiasAdd(sameDiff(), input, bias).outputVariable();
+    }
+
+    public SDVariable[] biasAddBp(SDVariable input, SDVariable bias, SDVariable grad) {
+        return new BiasAddGrad(sameDiff(), input, bias, grad).outputVariables();
     }
 
     public SDVariable norm1(SDVariable i_x, boolean keepDims, int... dimensions) {
@@ -1793,6 +1820,10 @@ public class DifferentialFunctionFactory {
         return new Slice(sameDiff(), input, begin, size).outputVariable();
     }
 
+    public SDVariable sliceBp(SDVariable input, SDVariable gradient, int[] begin, int[] size) {
+        return new SliceBp(sameDiff(), input, gradient, begin, size).outputVariable();
+    }
+
     public SDVariable stridedSlice(SDVariable input, int[] begin, int[] end, int[] strides) {
         return new StridedSlice(sameDiff(), input, begin, end, strides).outputVariable();
     }
@@ -1811,6 +1842,12 @@ public class DifferentialFunctionFactory {
     public SDVariable stridedSlice(SDVariable in, long[] begin, long[] end, long[] strides, int beginMask,
                                    int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
         return new StridedSlice(sameDiff(), in, begin, end, strides, beginMask, endMask, ellipsisMask,
+                newAxisMask, shrinkAxisMask).outputVariable();
+    }
+
+    public SDVariable stridedSliceBp(SDVariable in, SDVariable grad, long[] begin, long[] end, long[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        return new StridedSliceBp(sameDiff(), in, grad, begin, end, strides, beginMask, endMask, ellipsisMask,
                 newAxisMask, shrinkAxisMask).outputVariable();
     }
 

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -56,6 +57,11 @@ public class ZeroFraction extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tf name found for shape " + opName());
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
 }

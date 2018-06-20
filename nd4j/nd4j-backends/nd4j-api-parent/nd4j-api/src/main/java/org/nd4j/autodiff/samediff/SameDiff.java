@@ -3625,11 +3625,44 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
-    public SDVariable matchCondition(SDVariable in, Condition condition) {
+    /**
+     * Returns a count of the number of elements that satisfy the condition
+     * @param in        Input
+     * @param condition Condition
+     * @return          Number of elements that the condition is satisfied for
+     */
+    public SDVariable matchConditionCount(SDVariable in, Condition condition) {
+        return matchConditionCount(null, in, condition);
+    }
+
+    /**
+     * Returns a count of the number of elements that satisfy the condition
+     * @param in        Input
+     * @param condition Condition
+     * @return          Number of elements that the condition is satisfied for
+     */
+    public SDVariable matchConditionCount(String name, SDVariable in, Condition condition) {
+        SDVariable ret = f().matchConditionCount(in, condition);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Returns a boolean mask of equal shape to the input, where the condition is satisfied
+     * @param in        Input
+     * @param condition Condition
+     * @return          Boolean mask
+     */
+    public SDVariable matchCondition(SDVariable in, Condition condition){
         return matchCondition(null, in, condition);
     }
 
-    public SDVariable matchCondition(String name, SDVariable in, Condition condition) {
+    /**
+     * Returns a boolean mask of equal shape to the input, where the condition is satisfied
+     * @param in        Input
+     * @param condition Condition
+     * @return          Boolean mask
+     */
+    public SDVariable matchCondition(String name, SDVariable in, Condition condition){
         SDVariable ret = f().matchCondition(in, condition);
         return updateVariableNameAndReference(ret, name);
     }
