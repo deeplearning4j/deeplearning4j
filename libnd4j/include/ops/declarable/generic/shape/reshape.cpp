@@ -18,14 +18,14 @@ namespace nd4j {
                 auto argumets = block.getIArguments();
                 int argsSize = argumets->size();
 
-                REQUIRE_TRUE(argsSize >= 2, 0, "Reshape arguments should have order and at least 1 dimensions");
-
                 int e = 1;
                 char order = (char) -(*argumets)[0];
                 if (order != 'c' && order != 'f') {
                     order = x->ordering();
                     e = 0;
                 }
+
+                REQUIRE_TRUE(argsSize - e >= 1, 0, "Reshape arguments should at least 1 dimension");
 
                 std::vector<Nd4jLong> shapeNew;
                 
