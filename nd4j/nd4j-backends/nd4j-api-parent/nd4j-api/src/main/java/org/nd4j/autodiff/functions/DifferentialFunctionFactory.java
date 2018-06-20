@@ -174,6 +174,14 @@ public class DifferentialFunctionFactory {
         return new BinomialDistribution(sameDiff(), nTrials, p, shape).outputVariable();
     }
 
+    public SDVariable randomLogNormal(double mean, double stdev, long... shape){
+        return new LogNormalDistribution(sameDiff(), mean, stdev, shape).outputVariable();
+    }
+
+    public SDVariable randomNormalTruncated(double mean, double stdev, long... shape){
+        return new TruncatedNormalDistribution(sameDiff(), mean, stdev, shape).outputVariable();
+    }
+
     /**
      * Exponential distribution: P(x) = lambda * exp(-lambda * x)
      *

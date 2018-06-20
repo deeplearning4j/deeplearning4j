@@ -140,7 +140,7 @@ public class RandomOpValidation extends BaseOpValidation {
 
         for (long[] shape : Arrays.asList(new long[]{1000}, new long[]{100, 10}, new long[]{40, 5, 5})) {
 
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 6; i++) {
 
                 Nd4j.getRandom().setSeed(12345);
                 SameDiff sd = SameDiff.create();
@@ -200,6 +200,28 @@ public class RandomOpValidation extends BaseOpValidation {
                             if (min >= 1 && max <= 2 && (in.length() == 1 || Math.abs(mean - 1.5) < 0.1))
                                 return null;
                             return "Failed: min = " + min + ", max = " + max + ", mean = " + mean;
+                        };
+                        break;
+                    case 4:
+                        name = "truncatednormal";
+                        rand = sd.randomNormalTruncated(1, 2, shape);
+                        checkFn = in -> {
+                            double mean = in.meanNumber().doubleValue();
+                            double stdev = in.std(true).getDouble(0);
+                            if (in.length() == 1 || (Math.abs(mean - 1) < 0.1 && Math.abs(stdev - 2) < 0.2))
+                                return null;
+                            return "Failed: mean = " + mean + ", stdev = " + stdev;
+                        };
+                        break;
+                    case 5:
+                        name = "lognormal";
+                        rand = sd.randomLogNormal(1, 2, shape);
+                        checkFn = in -> {
+                            double mean = in.meanNumber().doubleValue();
+                            double stdev = in.std(true).getDouble(0);
+                            if (in.length() == 1 || (Math.abs(mean - 1) < 0.1 && Math.abs(stdev - 2) < 0.1))
+                                return null;
+                            return "Failed: mean = " + mean + ", stdev = " + stdev;
                         };
                         break;
                     default:

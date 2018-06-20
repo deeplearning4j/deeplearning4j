@@ -1876,6 +1876,24 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable randomLogNormal(double mean, double stddev, long... shape){
+        return randomLogNormal(null, mean, stddev, shape);
+    }
+
+    public SDVariable randomLogNormal(String name, double mean, double stddev, long... shape){
+        SDVariable ret = f().randomLogNormal(mean, stddev, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable randomNormalTruncated(double mean, double stddev, long... shape){
+        return randomNormalTruncated(null, mean, stddev, shape);
+    }
+
+    public SDVariable randomNormalTruncated(String name, double mean, double stddev, long... shape){
+        SDVariable ret = f().randomNormalTruncated(mean, stddev, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public SDVariable randomBernoulli(double p, SDVariable shape){
         return randomBernoulli(null, p, shape);
     }
