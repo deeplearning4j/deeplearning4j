@@ -3,11 +3,13 @@ Please follow following instructions to build nd4j for raspberry PI:
 1. download cross compilation tools for Raspberry PI
 
     ```
-    $ apt-get/yum install git rsync cmake
+    $ apt-get/yum install git cmake
+    (You may substitute any path you prefer instead of $HOME/raspberrypi in the following two steps)
     $ mkdir $HOME/raspberrypi
-    $ cd $HOME/raspberrypi
+    $ export RPI_HOME=$HOME/raspberrypi
+    $ cd $RPI_HOME
     $ git clone git://github.com/raspberrypi/tools.git
-    $ export PATH=$PATH:$HOME/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin
+    $ export PATH=$PATH:$RPI_HOME/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin
     ```
 
 2. download deeplearning4j:
