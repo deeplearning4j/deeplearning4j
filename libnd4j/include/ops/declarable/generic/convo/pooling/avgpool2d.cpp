@@ -33,6 +33,8 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
     const auto isSameMode = static_cast<bool>(INT_ARG(8));
     const auto extraParam0 = INT_ARG(9);
 
+    REQUIRE_TRUE(dH != 0 && dW != 0, 0, "AVGPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
+
     int oH = 0;
     int oW = 0;
 
@@ -85,6 +87,8 @@ DECLARE_SHAPE_FN(avgpool2d) {
     const int isSameMode = INT_ARG(8);
 
     const int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NDHWC, 1-NCDHW    
+
+    REQUIRE_TRUE(dH != 0 && dW != 0, 0, "AVGPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
     const int bS = shapeOf[0];
     const int iD = isNCHW ? shapeOf[1] : shapeOf[3];
@@ -139,6 +143,7 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
     int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // 0-NHWC, 1-NCHW    
 
     REQUIRE_TRUE(input->rankOf() == 4, 0, "AVGPOOL2D_BP op: input should have rank of 4, but got %i instead", input->rankOf());
+    REQUIRE_TRUE(dH != 0 && dW != 0, 0, "AVGPOOL2D_BP op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
