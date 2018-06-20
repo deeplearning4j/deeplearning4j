@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -56,14 +55,14 @@ public class Conv2D extends DynamicCustomOp {
     }
 
     protected void addArgs() {
-        addIArgument(config.getKh(),
-                config.getKw(),
-                config.getSy(),
-                config.getSx(),
-                config.getPh(),
-                config.getPw(),
-                config.getDh(),
-                config.getDw(),
+        addIArgument(config.getKH(),
+                config.getKW(),
+                config.getSH(),
+                config.getSW(),
+                config.getPH(),
+                config.getPW(),
+                config.getDH(),
+                config.getDW(),
                 ArrayUtil.fromBoolean(config.isSameMode()),
                 ArrayUtil.fromBoolean(config.isNHWC()));
     }
@@ -125,21 +124,21 @@ public class Conv2D extends DynamicCustomOp {
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
 
-        tfMappings.put("kh", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 2, 0, fields.get("dataFormat")));
-        tfMappings.put("kw", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 3, 1, fields.get("dataFormat")));
-        tfMappings.put("sy", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
-        tfMappings.put("sx", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
+        tfMappings.put("kH", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 2, 0, fields.get("dataFormat")));
+        tfMappings.put("kW", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 3, 1, fields.get("dataFormat")));
+        tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
+        tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
         tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
         tfMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 
 
         Map<String, AttributeAdapter> onnxMappings = new HashMap<>();
-        onnxMappings.put("kh", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("kw", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
-        onnxMappings.put("dh", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("dw", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
-        onnxMappings.put("sy", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("sx", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("kH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
+        onnxMappings.put("kW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("dH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
+        onnxMappings.put("dW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
+        onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
         onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
         onnxMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 
@@ -155,19 +154,19 @@ public class Conv2D extends DynamicCustomOp {
         val strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
-                .propertyNames(new String[]{"sx", "sy"})
+                .propertyNames(new String[]{"sW", "sH"})
                 .build();
 
 
         val kernelMappingH = PropertyMapping.builder()
-                .propertyNames(new String[]{"kh"})
+                .propertyNames(new String[]{"kH"})
                 .tfInputPosition(1)
                 .shapePosition(0)
                 .onnxAttrName("kernel_shape")
                 .build();
 
         val kernelMappingW = PropertyMapping.builder()
-                .propertyNames(new String[]{"kw"})
+                .propertyNames(new String[]{"kW"})
                 .tfInputPosition(1)
                 .shapePosition(1)
                 .onnxAttrName("kernel_shape")
@@ -175,7 +174,7 @@ public class Conv2D extends DynamicCustomOp {
 
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dw", "dh"})
+                .propertyNames(new String[]{"dW", "dH"})
                 .tfAttrName("rates")
                 .build();
 
@@ -199,19 +198,19 @@ public class Conv2D extends DynamicCustomOp {
 
         val paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
-                .propertyNames(new String[]{"ph", "pw"})
+                .propertyNames(new String[]{"pH", "pW"})
                 .build();
 
 
-        map.put("sx", strideMapping);
-        map.put("sy", strideMapping);
-        map.put("kh", kernelMappingH);
-        map.put("kw", kernelMappingW);
-        map.put("dw", dilationMapping);
-        map.put("dh", dilationMapping);
+        map.put("sW", strideMapping);
+        map.put("sH", strideMapping);
+        map.put("kH", kernelMappingH);
+        map.put("kW", kernelMappingW);
+        map.put("dW", dilationMapping);
+        map.put("dH", dilationMapping);
         map.put("isSameMode", sameMode);
-        map.put("ph", paddingWidthHeight);
-        map.put("pw", paddingWidthHeight);
+        map.put("pH", paddingWidthHeight);
+        map.put("pW", paddingWidthHeight);
         map.put("dataFormat", dataFormat);
         map.put("isNHWC", nhwc);
 
@@ -239,16 +238,15 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        List<SDVariable> ret = new ArrayList<>();
-        List<DifferentialFunction> inputs = new ArrayList<>();
-        inputs.addAll(Arrays.asList(args()));
+        List<SDVariable> inputs = new ArrayList<>(Arrays.asList(args()));
         inputs.add(f1.get(0));
         Conv2DDerivative conv2DDerivative = Conv2DDerivative.derivativeBuilder()
+                .sameDiff(sameDiff)
                 .config(config)
                 .outputs(outputArguments())
                 .inputFunctions(inputs.toArray(new SDVariable[inputs.size()]))
                 .build();
-        ret.addAll(Arrays.asList(conv2DDerivative.outputVariables()));
+        List<SDVariable> ret = Arrays.asList(conv2DDerivative.outputVariables());
         return ret;
     }
 

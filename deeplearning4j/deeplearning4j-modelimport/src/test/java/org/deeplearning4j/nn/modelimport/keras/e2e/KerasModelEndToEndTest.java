@@ -56,6 +56,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -86,6 +87,12 @@ public class KerasModelEndToEndTest {
 
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();
+
+    @Test(expected = FileNotFoundException.class)
+    public void fileNotFoundEndToEnd() throws Exception {
+        String modelPath = "modelimport/keras/examples/foo/bar.h5";
+        importEndModelTest(modelPath, null, true, true, false);
+    }
 
     /**
      * MNIST MLP tests
@@ -146,35 +153,31 @@ public class KerasModelEndToEndTest {
      * IMDB Embedding and LSTM test
      */
     @Test
-    @Ignore // too memory intense
     public void importImdbLstmTfKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false);
     }
 
     @Test
-    @Ignore // too memory intense
     public void importImdbLstmThKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false);
     }
 
     @Test
-    @Ignore // too memory intense
     public void importImdbLstmTfKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false);
     }
 
     @Test
-    @Ignore // too memory intense
     public void importImdbLstmThKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, false, true, true);
+        importEndModelTest(modelPath, inputsOutputPath, false, true, false);
     }
 
     /**
@@ -417,11 +420,20 @@ public class KerasModelEndToEndTest {
      * Xception
      */
     @Test
-    @Ignore
     public void importXception() throws Exception {
         int[] inputShape = new int[]{299, 299, 3};
         ComputationGraph graph = importFunctionalModelH5Test(
                 "modelimport/keras/examples/xception/xception_tf_keras_2.h5", inputShape, false);
+    }
+
+    /**
+     * Seq2seq model
+     */
+    @Test
+    @Ignore // does not work yet, needs DL4J enhancements
+    public void importSeq2Seq() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/seq2seq/full_model_seq2seq_5549.h5");
+
     }
 
 

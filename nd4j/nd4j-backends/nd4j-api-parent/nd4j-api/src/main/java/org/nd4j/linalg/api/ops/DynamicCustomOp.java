@@ -63,9 +63,15 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
-
     }
 
+    public DynamicCustomOp(String opName, INDArray input, INDArray output, List<Double> tArguments, int[] iArguments) {
+        this(opName, (input == null ? null : new INDArray[]{input}), (output == null ? null : new INDArray[]{output}), tArguments, iArguments);
+    }
+
+    public DynamicCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, int[] iArguments) {
+        this(opName, inputs, outputs, tArguments, ArrayUtil.toList(iArguments));
+    }
 
     /**
      * Initialize this custom op with all of the
@@ -84,11 +90,17 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         if (outputs != null)
             outputArguments = new ArrayList<>(Arrays.asList(outputs));
         this.opName = opName;
-        this.tArguments = tArguments;
+        if(tArguments == null) {
+            this.tArguments = new ArrayList<>();
+        } else {
+            this.tArguments = tArguments;
+        }
         this.iArguments = new ArrayList<>();
 
-        for (val a: iArguments)
-            this.iArguments.add((Long) a.longValue());
+        if(iArguments != null) {
+            for (val a : iArguments)
+                this.iArguments.add((Long) a.longValue());
+        }
     }
 
 
@@ -322,7 +334,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public int numIArguments() {
-        return iArguments.size();
+        return iArguments == null ? 0 : iArguments.size();
     }
 
     @Override
@@ -348,7 +360,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public int numTArguments() {
-        return tArguments.size();
+        return tArguments == null ? 0 : tArguments.size();
     }
 
     @Override
@@ -464,6 +476,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         if (outputShapes != null)
             return outputShapes;
+
+        if (descriptor == null) {
+            throw new IllegalStateException("Could not find descriptor for op: " + opName()
+                    + (DynamicCustomOp.class == this.getClass() ? "" : " - class: " + getClass().getName()));
+        }
 
 
         //not fully initialized: missing integer args

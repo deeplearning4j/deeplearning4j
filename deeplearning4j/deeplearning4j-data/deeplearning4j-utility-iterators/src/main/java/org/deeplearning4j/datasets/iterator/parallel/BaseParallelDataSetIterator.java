@@ -151,12 +151,6 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
 
     protected abstract void reset(int consumer);
 
-
-    @Override
-    public int totalExamples() {
-        return 0;
-    }
-
     @Override
     public int totalOutcomes() {
         return 0;
@@ -174,16 +168,6 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
 
     @Override
     public int batch() {
-        return 0;
-    }
-
-    @Override
-    public int cursor() {
-        return 0;
-    }
-
-    @Override
-    public int numExamples() {
         return 0;
     }
 

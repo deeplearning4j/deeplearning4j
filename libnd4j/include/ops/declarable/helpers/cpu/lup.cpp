@@ -115,11 +115,11 @@ namespace helpers {
                 }
             }
         }
-        nd4j_printf("Pivot: %i, Pivot value: %f.\n", pivot, pivotValue);
+        // nd4j_printf("Pivot: %i, Pivot value: %f.\n", pivot, pivotValue);
 //#pragma omp parallel for
 // if(rowNum > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < rowNum; e++) {
-            nd4j_printf("Compound matrix diag %i %f.\n", e, (*compoundMatrix)(e, e));
+            // nd4j_printf("Compound matrix diag %i %f.\n", e, (*compoundMatrix)(e, e));
             determinant *= (*compoundMatrix)(e, e);
         }
         if (0 == swapCount % 2) determinant = -determinant;

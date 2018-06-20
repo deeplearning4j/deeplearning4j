@@ -125,12 +125,12 @@ TEST_F(DeclarableOpsTests3, Test_Unique_2) {
     auto i = result->at(1);
     auto c = result->at(2);
 
-    v->printShapeInfo();
-    v->printIndexedBuffer("Values");
-    i->printShapeInfo();
-    i->printIndexedBuffer("Indices");
-    c->printShapeInfo();
-    c->printIndexedBuffer("Counts");
+    // v->printShapeInfo();
+    // v->printIndexedBuffer("Values");
+    // i->printShapeInfo();
+    // i->printIndexedBuffer("Indices");
+    // c->printShapeInfo();
+    // c->printIndexedBuffer("Counts");
 
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
@@ -401,7 +401,7 @@ TEST_F(DeclarableOpsTests3, Test_Range_2) {
 
     auto z = result->at(0);
 
-    z->printShapeInfo("shape");
+    // z->printShapeInfo("shape");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -848,8 +848,8 @@ TEST_F(DeclarableOpsTests3, Test_AvgPool_1) {
     //                                  0   1   2   3   4   5   6   7   8   9   10
     auto z = result->at(0);
 
-    z->printShapeInfo("z shape");
-    z->printIndexedBuffer("z buffr");
+    // z->printShapeInfo("z shape");
+    // z->printIndexedBuffer("z buffr");
 
     delete result;
 }

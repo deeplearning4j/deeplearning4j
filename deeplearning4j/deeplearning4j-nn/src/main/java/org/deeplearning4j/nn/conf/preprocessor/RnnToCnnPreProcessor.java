@@ -83,7 +83,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
         //First: reshape 4d to 2d
         INDArray twod = output.reshape('c', output.size(0), ArrayUtil.prod(output.shape()) / output.size(0));
         //Second: reshape 2d to 4d
-        INDArray reshaped = workspaceMgr.dup(ArrayType.ACTIVATIONS, twod, 'f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
+        INDArray reshaped = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, twod, 'f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
         return reshaped.permute(0, 2, 1);
     }
 

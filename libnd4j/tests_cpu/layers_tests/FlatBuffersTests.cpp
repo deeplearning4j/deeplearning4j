@@ -143,11 +143,11 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_EQ(1, restoredGraph->variables()->size());
     ASSERT_EQ(-1, restoredGraph->variables()->Get(0)->id()->first());
 
-    nd4j_printf("-------------------------\n","");
+    // nd4j_printf("-------------------------\n","");
 
     Graph<float> graph(restoredGraph);
 
-    graph.printOut();
+    // graph.printOut();
 
     ASSERT_EQ(2, graph.totalNodes());
     ASSERT_EQ(1, graph.rootNodes());
@@ -169,9 +169,9 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     nd4j::graph::GraphExecutioner<float>::execute(&graph);
 
-    auto result = (uint8_t *)nd4j::graph::GraphExecutioner<float>::executeFlatBuffer((Nd4jPointer) buf);
+    auto resultWrapper = nd4j::graph::GraphExecutioner<float>::executeFlatBuffer((Nd4jPointer) buf);
 
-    auto flatResults = GetFlatResult(result);
+    auto flatResults = GetFlatResult(resultWrapper->pointer());
 
     ASSERT_EQ(1, flatResults->variables()->size());
     ASSERT_TRUE(flatResults->variables()->Get(0)->name() != nullptr);
@@ -187,7 +187,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     delete array;
     delete var0;
-    delete[] result;
+    delete resultWrapper;
 }
 
 TEST_F(FlatBuffersTest, ExecutionTest1) {
@@ -648,12 +648,31 @@ TEST_F(FlatBuffersTest, transpose) {
 TEST_F(FlatBuffersTest, Test_Stitches) {
     nd4j::ops::realdiv<float> op0;
 
-
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/partition_stitch_misc.fb");
-    graph->printOut();
+    //graph->printOut();
 
     auto result = GraphExecutioner<float>::execute(graph);
     ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    delete graph;
+}
+
+TEST_F(FlatBuffersTest, Test_GruDynamicMnist) {
+    nd4j::Environment::getInstance()->setDebug(false);
+    nd4j::Environment::getInstance()->setVerbose(false);
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/gru_dynamic_mnist.fb");
+    //graph->printOut();
+
+    auto timeStart = std::chrono::system_clock::now();
+    auto result = GraphExecutioner<float>::execute(graph);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    auto timeEnd = std::chrono::system_clock::now();
+
+    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+
+    // nd4j_printf("GRU time 1 time %lld us\n", outerTime);
 
     delete graph;
 }

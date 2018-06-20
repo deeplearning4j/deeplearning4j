@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.modelimport.keras.utils;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -57,7 +58,7 @@ public class KerasModelUtils {
      * @return DL4J Model interface
      * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    public static Model copyWeightsToModel(Model model, Map<String, KerasLayer> layers)
+    public static Model copyWeightsToModel(Model model, Map<String, KerasLayer> kerasLayers)
             throws InvalidKerasConfigurationException {
         /* Get list if layers from model. */
         Layer[] layersFromModel;
@@ -67,18 +68,19 @@ public class KerasModelUtils {
             layersFromModel = ((ComputationGraph) model).getLayers();
 
         /* Iterate over layers in model, setting weights when relevant. */
-        Set<String> layerNames = new HashSet<>(layers.keySet());
+        Set<String> layerNames = new HashSet<>(kerasLayers.keySet());
         for (org.deeplearning4j.nn.api.Layer layer : layersFromModel) {
-            String layerName = layer.conf().getLayer().getLayerName();
-            if (!layers.containsKey(layerName))
+            String layerName;
+            layerName = layer.conf().getLayer().getLayerName();
+            if (!kerasLayers.containsKey(layerName))
                 throw new InvalidKerasConfigurationException(
                         "No weights found for layer in model (named " + layerName + ")");
-            layers.get(layerName).copyWeightsToLayer(layer);
+            kerasLayers.get(layerName).copyWeightsToLayer(layer);
             layerNames.remove(layerName);
         }
 
         for (String layerName : layerNames) {
-            if (layers.get(layerName).getNumParams() > 0)
+            if (kerasLayers.get(layerName).getNumParams() > 0)
                 throw new InvalidKerasConfigurationException(
                         "Attemping to copy weights for layer not in model (named " + layerName + ")");
         }
@@ -123,8 +125,7 @@ public class KerasModelUtils {
      * @return Keras backend string
      * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    public static String determineKerasBackend(Map<String, Object> modelConfig, KerasModelConfiguration config)
-            throws InvalidKerasConfigurationException {
+    public static String determineKerasBackend(Map<String, Object> modelConfig, KerasModelConfiguration config) {
         String kerasBackend = null;
         if (!modelConfig.containsKey(config.getFieldBackend())) {
             // TODO: H5 files unfortunately do not seem to have this property in keras 1.
@@ -187,7 +188,7 @@ public class KerasModelUtils {
             List<String> layerParamNames;
 
             // there's a bug where if a layer name contains a forward slash, the first fragment must be appended
-            // to the name of the dataset...it appears h5 interprets the forward slash as a data group
+            // to the name of the dataset; it appears h5 interprets the forward slash as a data group
             String[] layerFragments = layerName.split("/");
 
             // Find nested groups when using Tensorflow
@@ -234,20 +235,12 @@ public class KerasModelUtils {
                             }
 
                         }
-                        // For theano in keras 2 the weights are nested, but for parameterless layers this
-                        // next line will throw an HDF5 group error. This is inessential, as the model still
-                        // runs, but might lead to confusion to end users. So we try to catch this here.
-                        // TODO: find a better way to do this
-                        String emptyWeightsWarning = "No HDF5 group with weights found for layer with name "
-                                + layerName  + ", continuing import.";
-                        if (layerName.contains("dense") || layerName.contains("conv") || layerName.contains("lstm")
-                                || layerName.contains("rnn") || layerName.contains("gru")
-                                || layerName.contains("embedding") || layerName.contains("batch")
-                                || layerName.contains("locally") || layerName.contains("bidirectional")) {
+                        if (layers.get(layerName).getNumParams() > 0) {
                             try {
                                 layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
-                            } catch (Exception e){
-                                log.warn(emptyWeightsWarning);
+                            } catch (Exception e) {
+                                log.warn("No HDF5 group with weights found for layer with name "
+                                        + layerName + ", continuing import.");
                                 layerParamNames = Collections.emptyList();
                             }
                         } else {
@@ -285,7 +278,8 @@ public class KerasModelUtils {
                     String backwardAttributes = baseAttributes.replace("forward", "backward");
                     INDArray forwardParamValue = weightsArchive.readDataSet(layerParamName,
                             rootPrefix + baseAttributes);
-                    INDArray backwardParamValue = weightsArchive.readDataSet(layerParamName, rootPrefix + backwardAttributes);
+                    INDArray backwardParamValue = weightsArchive.readDataSet(
+                            layerParamName, rootPrefix + backwardAttributes);
                     weights.put("forward_" + paramName, forwardParamValue);
                     weights.put("backward_" + paramName, backwardParamValue);
                 } else {
@@ -297,7 +291,8 @@ public class KerasModelUtils {
                                     layerFragments[0] + "/" + layerParamName, rootPrefix, layerName);
                         } else {
                             if (kerasVersion == 2) {
-                                paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
+                                paramValue = weightsArchive.readDataSet(
+                                        layerParamName, rootPrefix + baseAttributes);
                             } else {
                                 paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix, layerName);
                             }
@@ -327,7 +322,8 @@ public class KerasModelUtils {
      * @throws IOException                        IO exception
      * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    public static Map<String, Object> parseModelConfig(String modelJson, String modelYaml) throws IOException, InvalidKerasConfigurationException {
+    public static Map<String, Object> parseModelConfig(String modelJson, String modelYaml)
+            throws IOException, InvalidKerasConfigurationException {
         Map<String, Object> modelConfig;
         if (modelJson != null)
             modelConfig = parseJsonString(modelJson);

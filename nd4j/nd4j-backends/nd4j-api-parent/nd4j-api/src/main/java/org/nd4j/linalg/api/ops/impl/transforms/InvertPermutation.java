@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 
 import java.util.Arrays;
@@ -35,7 +36,6 @@ import java.util.UUID;
  */
 @NoArgsConstructor
 public class InvertPermutation extends BaseDynamicTransformOp {
-
 
     public InvertPermutation(SameDiff sameDiff, SDVariable input, boolean inPlace) {
         super( sameDiff, new SDVariable[] {input}, inPlace);

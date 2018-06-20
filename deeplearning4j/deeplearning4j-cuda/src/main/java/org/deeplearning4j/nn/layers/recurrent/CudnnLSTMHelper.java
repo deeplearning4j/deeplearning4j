@@ -37,7 +37,10 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
+import org.nd4j.util.StringUtils;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.bytedeco.javacpp.cuda.*;
@@ -162,9 +165,10 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
     private TensorArray dxDesc = new TensorArray();
     private TensorArray dyDesc = new TensorArray();
     private DataCache stateSpace = new DataCache();
-    private DataCache workSpace = new DataCache();
     private DataCache reserveSpace = new DataCache();
     private DataCache weightsSpace = new DataCache();
+
+    private boolean initializedDropoutDescriptor = false;
 
     private static INDArray toCOrder(INDArray arr) {
         if (arr.isView() || arr.ordering() != 'c' || !Shape.strideDescendingCAscendingF(arr)) {
@@ -251,6 +255,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         cudnnTensorStruct xDesc0 = xDesc.get(cudnnTensorStruct.class, 0);
 
+        DataCache workSpace = workspaceMgr.getHelperWorkspace(LayerWorkspaceMgr.CUDNN_WORKSPACE_KEY);
         checkCudnn(cudnnRNNBackwardData(cudnnContext, cudnnContext.rnnDesc, (int) timeSeriesLength, yDesc,
                         outputActivationsData, dyDesc, dyData, cudnnContext.dhyDesc, null, cudnnContext.dcyDesc, null,
                         cudnnContext.wDesc, weightsSpace, cudnnContext.hxDesc, prevStepActivationsData, //hx: initial hidden state of RNN
@@ -260,7 +265,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                         cudnnContext.dcxDesc, null, //dcx: Gradient at initial cell state
                         workSpace, workSpace.limit(), reserveSpace, reserveSpace.limit()));
 
-        // cudnnRNNBackwardWeights adds to the data in dw.
+        // cudnnRNNBackwardWeights adds to the data in dW.
         checkCuda(cudaMemsetAsync(weightsSpace, 0, weightsSpace.limit(), stream));
 
         checkCudnn(cudnnRNNBackwardWeights(cudnnContext, cudnnContext.rnnDesc, (int) timeSeriesLength, xDesc, xData, //Input data
@@ -453,8 +458,10 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         }
         stateSpace.limit(stateSize);
 
-        checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, DROPOUT, stateSpace, stateSize,
-                        Nd4j.getRandom().getSeed()));
+        if(!initializedDropoutDescriptor) {
+            checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, DROPOUT, stateSpace, stateSize,
+                    Nd4j.getRandom().getSeed()));
+        }
 
         checkCudnn(cudnnSetRNNDescriptor_v6(cudnnContext, cudnnContext.rnnDesc, (int) hiddenLayerSize, NUM_LAYERS, cudnnContext.dropoutDesc,
                          CUDNN_LINEAR_INPUT, BIDIRECTIONAL ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL, RNN_MODE,
@@ -476,9 +483,22 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         checkCudnn(cudnnGetRNNWorkspaceSize(cudnnContext, cudnnContext.rnnDesc, (int) timeSeriesLength, xDesc, sizeInBytes));
         long workSize = sizeInBytes.get(0);
-        if (workSize > workSpace.capacity()) {
-            workSpace.deallocate();
+        DataCache workSpace = workspaceMgr.getHelperWorkspace(LayerWorkspaceMgr.CUDNN_WORKSPACE_KEY);
+        if (workSpace == null || workSize > workSpace.capacity()) {
+            if(log.isTraceEnabled()){
+                if(workSpace == null){
+                    log.trace("CudnnLSTMHelper activate: Allocating initial workspace of size {} ({})", workSize,
+                            StringUtils.TraditionalBinaryPrefix.long2String(workSize, "B", 2));
+                } else {
+                    log.trace("CudnnLSTMHelper activate: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
+                            workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), "B", 2),
+                            workSize, StringUtils.TraditionalBinaryPrefix.long2String(workSize, "B", 2));
+                }
+            }
+            if(workSpace != null)
+                workSpace.deallocate();
             workSpace = new DataCache(workSize);
+            workspaceMgr.setHelperWorkspace(LayerWorkspaceMgr.CUDNN_WORKSPACE_KEY, workSpace);
         }
         workSpace.limit(workSize);
 
@@ -615,5 +635,14 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         toReturn.prevMemCell = prevMemCell;
 
         return toReturn;
+    }
+
+    @Override
+    public Map<String, Long> helperMemoryUse() {
+        Map<String,Long> memUse = new HashMap<>();
+        memUse.put("stateStace", stateSpace.capacity());
+        memUse.put("reserveSpace", reserveSpace.capacity());
+        memUse.put("weightsSpace", weightsSpace.capacity());
+        return memUse;
     }
 }

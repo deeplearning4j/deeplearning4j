@@ -55,12 +55,12 @@ public class RandomTests extends BaseNd4jTest {
     @Before
     public void setUp() throws Exception {
         initialType = Nd4j.dataType();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
 
     @After
     public void tearDown() throws Exception {
-        DataTypeUtil.setDTypeForContext(initialType);
+        Nd4j.setDataType(initialType);
     }
 
     @Test

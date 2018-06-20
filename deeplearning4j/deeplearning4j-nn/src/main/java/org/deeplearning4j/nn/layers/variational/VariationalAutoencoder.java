@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.conf.layers.variational.LossFunctionWrapper;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -891,11 +892,21 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
+    public void allowInputModification(boolean allow) {
+        //No op
+    }
+
+    @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
 
 
         throw new UnsupportedOperationException("Not yet implemented " + layerId());
+    }
+
+    @Override
+    public LayerHelper getHelper() {
+        return null;
     }
 
 

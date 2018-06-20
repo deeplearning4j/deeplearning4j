@@ -73,7 +73,8 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
-        
+
+        DECLARE_SYN(ParallelConcat, concat);
         DECLARE_SYN(concat_v2, concat);
         DECLARE_SYN(concatv2, concat);
         

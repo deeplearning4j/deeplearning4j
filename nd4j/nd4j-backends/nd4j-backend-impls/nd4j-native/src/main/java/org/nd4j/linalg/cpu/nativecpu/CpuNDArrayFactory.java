@@ -91,6 +91,13 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public void createBlas() {
+        String lib = System.getProperty("org.bytedeco.javacpp.openblas.load",
+                     System.getProperty("org.bytedeco.javacpp.openblas_nolapack.load", "")).toLowerCase();
+        if (lib.trim().length() == 0) {
+            // try to load by default the LAPACK-less version of MKL bundled with MKL-DNN
+            System.setProperty("org.bytedeco.javacpp.openblas_nolapack.load", "mklml");
+        }
+
         blas = new CpuBlas();
 
         // TODO: add batched gemm here
@@ -1353,8 +1360,8 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         DataBuffer data = null;
         Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpy(pointer);
         int length = nativeOps.lengthForShapeBufferPointer(shapeBufferPointer);
-        shapeBufferPointer.capacity(4 * length);
-        shapeBufferPointer.limit(4 * length);
+        shapeBufferPointer.capacity(8 * length);
+        shapeBufferPointer.limit(8 * length);
         shapeBufferPointer.position(0);
 
 

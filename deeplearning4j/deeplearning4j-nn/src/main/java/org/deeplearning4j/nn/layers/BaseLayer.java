@@ -105,6 +105,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         weightNoiseParams.clear();
 
+        epsilonNext = backpropDropOutIfPresent(epsilonNext);
         return new Pair<>(ret, epsilonNext);
     }
 
@@ -408,7 +409,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public String toString() {
-        return getClass().getName() + "{" + "conf=" + conf + ", dropoutMask=" + dropoutMask + ", score=" + score
+        return getClass().getName() + "{" + "conf=" + conf + ", score=" + score
                 + ", optimizer=" + optimizer + ", listeners=" + trainingListeners + '}';
     }
 

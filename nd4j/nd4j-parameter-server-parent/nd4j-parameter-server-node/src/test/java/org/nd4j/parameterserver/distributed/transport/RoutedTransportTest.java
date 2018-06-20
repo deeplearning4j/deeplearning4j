@@ -39,7 +39,7 @@ public class RoutedTransportTest {
      *
      * @throws Exception
      */
-    @Test
+    @Test(timeout = 30000)
     public void testMessaging1() throws Exception {
 
         List<String> list = new ArrayList<>();

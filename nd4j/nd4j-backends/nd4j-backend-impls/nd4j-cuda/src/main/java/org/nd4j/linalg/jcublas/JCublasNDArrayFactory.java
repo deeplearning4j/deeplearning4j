@@ -1416,7 +1416,12 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
                     long length) {
-        nativeOps.convertTypes(null, typeSrc.ordinal(), source, length, typeDst.ordinal(), target);
+
+        val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
+
+        val p = new PointerPointer<>(new Pointer[]{null, stream});
+
+        nativeOps.convertTypes(p, typeSrc.ordinal(), source, length, typeDst.ordinal(), target);
     }
 
 
@@ -1489,8 +1494,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         DataBuffer data = null;
         Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpy(pointer);
         int length = nativeOps.lengthForShapeBufferPointer(shapeBufferPointer);
-        shapeBufferPointer.capacity(4 * length);
-        shapeBufferPointer.limit(4 * length);
+        shapeBufferPointer.capacity(8 * length);
+        shapeBufferPointer.limit(8 * length);
         shapeBufferPointer.position(0);
 
         val intPointer = new LongPointer(shapeBufferPointer);

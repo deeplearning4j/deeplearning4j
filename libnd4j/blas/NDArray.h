@@ -208,7 +208,7 @@ namespace nd4j {
         /**
         *   returns _buffer
         */
-        T* getBuffer();        
+        T* getBuffer() const;
         T* buffer();
 
         /**
@@ -242,6 +242,10 @@ namespace nd4j {
         bool permutei(const std::initializer_list<Nd4jLong>& dimensions);
         bool permutei(const std::vector<Nd4jLong>& dimensions);
         bool permutei(const Nd4jLong* dimensions, const int rank);
+
+        bool isFinite();
+        bool hasNaNs();
+        bool hasInfs();
 
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
@@ -719,7 +723,7 @@ namespace nd4j {
         /**
         *  apply reduce3 operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (tads not axis)
         *  extraArgs - extra parameters for operation
         */
         template<typename OpName>
@@ -728,7 +732,7 @@ namespace nd4j {
         /**
         *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
         *  other - input array
-        *  dimensions - vector of dimensions to reduce along
+        *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
         *  extraArgs - extra parameters for operation
         */
         template<typename OpName>

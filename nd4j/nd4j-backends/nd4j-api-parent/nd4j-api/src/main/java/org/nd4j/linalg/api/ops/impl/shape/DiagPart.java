@@ -3,12 +3,14 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -32,11 +34,15 @@ public class DiagPart extends DynamicCustomOp {
         super(null, sameDiff, args, inPlace);
     }
 
+    public DiagPart(INDArray in, INDArray out){
+        super(null, in, out, null, null);
+    }
+
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable grad = i_v.get(0);
         SDVariable ret = sameDiff.diag(grad);
-        return Arrays.asList(ret);
+        return Collections.singletonList(ret);
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,18 +43,12 @@ public class MatchCondition extends BaseAccumulation {
     private double eps;
     private int mode;
 
-    public MatchCondition(SameDiff sameDiff, SDVariable i_v, int[] dimensions, double compare, double eps, int mode) {
-        super(sameDiff, i_v, dimensions);
-        this.compare = compare;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double compare, double eps, int mode) {
-        super(sameDiff, i_v, i_v2, dimensions);
-        this.compare = compare;
-        this.eps = eps;
-        this.mode = mode;
+    public MatchCondition(SameDiff sameDiff, SDVariable in, Condition condition) {
+        super(sameDiff, in, null);
+        this.compare = condition.getValue();
+        this.mode = condition.condtionNum();
+        this.eps = Nd4j.EPS_THRESHOLD;
+        this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
 
     public MatchCondition() {}
@@ -105,7 +100,7 @@ public class MatchCondition extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
     @Override

@@ -464,7 +464,7 @@ TEST_F(DeclarableOpsTests1, TestRng1) {
     nd4j::random::RandomBuffer *rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);
 
     if (rng == nullptr)
-        throw "RNG initialization failed";
+        throw std::runtime_error("RNG initialization failed");
 
     auto x = new NDArray<float>('c', {5, 3});
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
@@ -1933,7 +1933,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -1977,7 +1977,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test2) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -2021,7 +2021,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test3) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -2065,7 +2065,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test4) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -2109,7 +2109,7 @@ TEST_F(DeclarableOpsTests1, Maxpool2d_test5) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -2180,7 +2180,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_test2) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -2223,7 +2223,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_test3) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     
     NDArray<float>* result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    result->printShapeInfo();
+    // result->printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -2360,7 +2360,7 @@ TEST_F(DeclarableOpsTests1, AvgPool2dBP) {
     block->fillInputs({-1});
     block->fillInputs({-2});
     std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 1, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode, 9 - extraParam0 (unnecessary for avg mode), 10 - data format
 
     nd4j::ops::avgpool2d_bp<float> bp;
     Nd4jStatus status = bp.execute(block);
@@ -2953,7 +2953,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_bp2) {
     epsilon.setBuffer(epsilonBuff);
     expected.setBuffer(expectedBuff);
     
-    std::initializer_list<Nd4jLong> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    std::initializer_list<Nd4jLong> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 1, 1, 0};   
 
     nd4j::ops::avgpool2d_bp<double> op;
     nd4j::ResultSet<double>*  results = op.execute({&input, &epsilon}, {}, argI);
@@ -3462,7 +3462,7 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
 
     auto array = result->at(0);
 
-    array->printShapeInfo("z");
+    // array->printShapeInfo("z");
 
     ASSERT_TRUE(exp.isSameShape(array));
     ASSERT_TRUE(exp.equalsTo(array));
@@ -3910,6 +3910,22 @@ TEST_F(DeclarableOpsTests1, Reverse_9 ) {
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
+}
+
+TEST_F(DeclarableOpsTests1, Reverse_10 ) {
+    NDArray<double> x('c', {4, 3}, {1.5375735, 0.1592365, 0.09966054, 0.677872, 1.144433, -1.0355669, 0.48456487, -0.67863184, 0.85020787, 0.13950661, 0.20998026, -1.1660044});
+    NDArray<double> i('c', {1}, {-1.0});
+    NDArray<double> e('c', {4, 3}, {0.09966054, 0.1592365, 1.5375735,  -1.0355669, 1.144433, 0.677872,   0.85020787, -0.67863184, 0.48456487,  -1.1660044, 0.20998026, 0.13950661});
+
+    nd4j::ops::reverse<double> op;
+    auto result = op.execute({&x, &i}, {}, {1});
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////

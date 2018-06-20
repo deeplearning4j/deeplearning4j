@@ -40,7 +40,6 @@ public class KerasReshape extends KerasLayer {
 
     private long[] targetShape;
 
-
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
@@ -102,20 +101,19 @@ public class KerasReshape extends KerasLayer {
         InputPreProcessor preprocessor = null;
         if (inputType[0] instanceof InputType.InputTypeConvolutional) {
             InputType.InputTypeConvolutional it = (InputType.InputTypeConvolutional) inputType[0];
-            val inputShape = new long[] {it.getChannels(), it.getHeight(), it.getWidth()};
-            switch (this.getDimOrder()) {
-                case THEANO: // Theano is channels first
-                    if (this.kerasMajorVersion == 1) {
-                        targetShape = new long[] {targetShape[1], targetShape[0], targetShape[2]};
-                    }
-                    preprocessor = new ReshapePreprocessor(inputShape, targetShape);
-                    break;
-                case NONE: // TF is now the default, channels last
-                case TENSORFLOW:
-                    if (inputShape[0] != targetShape[0]) {
-                        targetShape = new long[] {targetShape[2], targetShape[0], targetShape[1]};
-                    }
-                    preprocessor = new ReshapePreprocessor(inputShape, targetShape);
+            val inputShape = new long[]{it.getChannels(), it.getHeight(), it.getWidth()};
+            val dimOrder = getDimOrder();
+            if (dimOrder == DimOrder.THEANO || dimOrder == DimOrder.NONE && kerasMajorVersion == 1) {
+                if (targetShape.length == 2) { // edge caseKeras
+                    targetShape = new long[]{targetShape[1], targetShape[0]};
+                } else {
+                    targetShape = new long[]{targetShape[1], targetShape[0], targetShape[2]};
+                }
+                preprocessor = new ReshapePreprocessor(inputShape, targetShape);
+            } else { // (dimOrder == DimOrder.TENSORFLOW || dimOrder == DimOrder.NONE && kerasMajorVersion == 2)
+                if (inputShape[0] != targetShape[0])
+                    targetShape = new long[]{targetShape[2], targetShape[0], targetShape[1]};
+                preprocessor = new ReshapePreprocessor(inputShape, targetShape);
             }
         } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
             InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType[0];
@@ -124,9 +122,27 @@ public class KerasReshape extends KerasLayer {
         } else if (inputType[0] instanceof InputType.InputTypeFeedForward) {
             InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
             val inputShape = new long[]{it.getSize()};
+            if (targetShape.length == 3) {
+                targetShape = targetShapeForDimOrder(inputShape, targetShape);
+            }
             preprocessor = new ReshapePreprocessor(inputShape, this.targetShape);
         }
         return preprocessor;
+    }
+
+    public long[] targetShapeForDimOrder(long[] inputShape, long[] targetShape) {
+        if (dimOrder == DimOrder.THEANO || dimOrder == DimOrder.NONE && kerasMajorVersion == 1) {
+            if (dimOrder == DimOrder.NONE) { // weird things happen in the past.
+                targetShape = new long[]{targetShape[2], targetShape[0], targetShape[1]};
+            } else {
+                targetShape = new long[]{targetShape[1], targetShape[2], targetShape[0]};
+            }
+        } else {
+            if (inputShape[0] != targetShape[0]) {
+                targetShape = new long[]{targetShape[0], targetShape[1], targetShape[2]};
+            }
+        }
+        return targetShape;
     }
 
     /**

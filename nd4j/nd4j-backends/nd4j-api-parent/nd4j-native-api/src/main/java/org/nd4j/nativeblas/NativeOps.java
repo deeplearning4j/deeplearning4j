@@ -1578,7 +1578,7 @@ public abstract class NativeOps extends Pointer {
 
     public abstract void munmapFile(PointerPointer extraPointers, LongPointer ptrMap, long length);
 
-    public abstract Pointer executeFlatGraphFloat(PointerPointer extraPointers, Pointer flatBufferPointer);
+    public abstract ResultWrapperAbstraction executeFlatGraphFloat(PointerPointer extraPointers, Pointer flatBufferPointer);
 
     public abstract String getAllCustomOps();
 
@@ -1604,6 +1604,7 @@ public abstract class NativeOps extends Pointer {
     public abstract Pointer executeStoredGraphDouble(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
     public abstract Pointer executeStoredGraphHalf(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
 
+    public abstract void deleteResultWrapper(Pointer ptr);
     public abstract void deleteShapeList(Pointer ptr);
 
     public abstract int unregisterGraph(PointerPointer extraPointers, long graphId);

@@ -103,6 +103,7 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
                 .build();
         Nd4j.getExecutioner().exec(op);
 
+        reshapedEpsilon = backpropDropOutIfPresent(reshapedEpsilon);
         return new Pair<>(gradient, reshapedEpsilon);
     }
 

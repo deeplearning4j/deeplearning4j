@@ -42,7 +42,7 @@ public class ManhattanDistance extends BaseAccumulation {
         super(sameDiff, i_v, dimensions);
     }
 
-    public ManhattanDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public ManhattanDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 

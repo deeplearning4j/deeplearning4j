@@ -86,7 +86,7 @@ public class ParameterServerClientPartialTest {
     }
 
 
-    @Test
+    @Test(timeout = 60000L)
     public void testServer() throws Exception {
         ParameterServerClient client = ParameterServerClient.builder().aeron(aeron)
                         .ndarrayRetrieveUrl(masterNode.getResponder().connectionUrl())

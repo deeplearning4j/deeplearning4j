@@ -15,6 +15,9 @@ namespace nd4j {
         class ND4J_EXPORT BooleanOp : public DeclarableOp<T> {
         protected:
             OpDescriptor * _descriptor;
+
+            bool prepareOutputs(Context<T>& block);
+            virtual Nd4jStatus validateAndExecute(Context<T> &block) = 0;
         public:
             BooleanOp(const char *name, int numInputs, bool scalar);
             ~BooleanOp();
@@ -26,10 +29,6 @@ namespace nd4j {
             Nd4jStatus execute(Context<T>* block) override;
 
             ShapeList *calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) override;
-
-        protected:
-            bool prepareOutputs(Context<T>& block);
-            virtual Nd4jStatus validateAndExecute(Context<T> &block) = 0;
         };
     }
 }

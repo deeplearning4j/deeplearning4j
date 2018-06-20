@@ -87,7 +87,7 @@ namespace nd4j {
                     break;
                 default: {
                     nd4j_printf("Unsupported DataType requested: [%i]\n", static_cast<int>(dataType));
-                    throw "Unsupported DataType";
+                    throw std::runtime_error("Unsupported DataType");
                 }
             }
         }

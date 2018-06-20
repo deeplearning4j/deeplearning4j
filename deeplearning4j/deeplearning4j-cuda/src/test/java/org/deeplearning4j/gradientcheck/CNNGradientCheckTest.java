@@ -861,7 +861,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
     public void testDeconvolution2D() {
         int nOut = 2;
 
-        int[] minibatchSizes = new int[]{1, 3, 1, 3, 1, 3, 1, 3};
+        int[] minibatchSizes = new int[]{1, 4, 1, 4, 1, 1, 2, 1};
         int[] kernelSizes = new int[]{1, 1, 3, 3, 1, 1, 3, 3};
         int[] strides = {1, 1, 1, 1, 2, 2, 2, 2};
         int[] dilation = {1, 2, 2, 1, 1, 1, 2, 2};
@@ -895,13 +895,23 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     .updater(new NoOp())
                     .activation(act)
                     .list()
+                    .layer(new Deconvolution2D.Builder().name("deconvolution_2D_layer-0")
+                            .cudnnAllowFallback(false)
+                            .kernelSize(1, 1)
+                            .stride(1, 1)
+                            .dilation(0, 0)
+                            .convolutionMode(cm)
+                            .nIn(inputDepth)
+                            .nOut(inputDepth)
+                            .build())
                     .layer(new Deconvolution2D.Builder().name("deconvolution_2D_layer")
                             .cudnnAllowFallback(false)
                             .kernelSize(k, k)
                             .stride(s, s)
                             .dilation(d, d)
                             .convolutionMode(cm)
-                            .nIn(inputDepth).nOut(nOut).build());
+                            .nIn(inputDepth).nOut(nOut)
+                            .build());
 
             MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                     .activation(Activation.SOFTMAX).nOut(nOut).build())

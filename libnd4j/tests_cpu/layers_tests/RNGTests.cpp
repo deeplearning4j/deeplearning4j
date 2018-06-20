@@ -379,7 +379,7 @@ TEST_F(RNGTests, Test_BernoulliDistribution_1) {
 
 
     nd4j::ops::random_bernoulli<float> op;
-    auto result = op.execute({&x}, {}, {3});
+    auto result = op.execute({&x}, {0.5f}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -486,7 +486,7 @@ TEST_F(RNGTests, Test_Reproducibility_9) {
     
     for (int e = 0; e < length; e++)
         if (arrayE[e] != arrayT[e]) {
-            nd4j_printf("Failed at index[%i]\n", e);
+            // nd4j_printf("Failed at index[%i]\n", e);
             ASSERT_TRUE(false);
         }
 
@@ -524,12 +524,30 @@ TEST_F(RNGTests, Test_Reproducibility_8) {
     
     for (int e = 0; e < length; e++)
         if (arrayE[e] != arrayT[e]) {
-            nd4j_printf("Failed at index[%i]\n", e);
+            // nd4j_printf("Failed at index[%i]\n", e);
             ASSERT_TRUE(false);
         }
 
     delete[] arrayE;
     delete[] arrayT;
+
+    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
+}
+
+TEST_F(RNGTests, Test_RandomBuffer_Half_1) {
+    NativeOps ops;
+    Nd4jLong seed = 123;
+
+    std::vector<Nd4jLong> shape = {32, 3, 28, 28};
+    const int bufferSize = 10000;
+    int64_t buffer[bufferSize];
+
+    auto rng = (nd4j::random::RandomBuffer *) ops.initRandom(nullptr, seed, bufferSize, buffer);
+
+    auto r0 = rng->relativeT<float16>(12L);
+    auto r1 = rng->relativeT<float16>(13L);
+
+    ASSERT_NE(r0, r1);
 
     ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
 }
@@ -558,7 +576,7 @@ TEST_F(RNGTests, Test_Reproducibility_1) {
 
             bool t = arrayE->equalsTo(arrayT);
             if (!t) {
-                nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
+                // nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
                 ASSERT_TRUE(false);
             }
 
@@ -595,15 +613,15 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
 
             bool t = arrayE->equalsTo(arrayT);
             if (!t) {
-                nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
+                // nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
 
                 for (Nd4jLong f = 0; f < arrayE->lengthOf(); f++) {
                     double x = arrayE->getIndexedScalar(f);
                     double y = arrayT->getIndexedScalar(f);
 
                     if (nd4j::math::nd4j_re(x, y) > 0.1) {
-                        nd4j_printf("E[%lld] %f != T[%lld] %f\n", (long long) f, (float) x, (long long) f, (float) y);
-                        throw "boom";
+                        // nd4j_printf("E[%lld] %f != T[%lld] %f\n", (long long) f, (float) x, (long long) f, (float) y);
+                        throw std::runtime_error("boom");
                     }
                 }
 

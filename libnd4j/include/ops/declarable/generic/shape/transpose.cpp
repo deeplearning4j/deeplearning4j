@@ -13,15 +13,17 @@ namespace ops {
 
     //////////////////////////////////////////////////////////////////////////
     CUSTOM_OP_IMPL(transpose, 1, 1, true, 0, 0) {
-        NDArray<T>* x = INPUT_VARIABLE(0);
+        auto x = INPUT_VARIABLE(0);
         if (block.width() == 1) {
             if (block.isInplace()) {
                 x->transposei();
                 STORE_RESULT(*x);
             } else {
-                NDArray<T> *output = OUTPUT_VARIABLE(0);
-                x->transpose(*output);
+                auto output = OUTPUT_VARIABLE(0);
+                auto t = x->transpose();
+                output->assign(t);
                 STORE_RESULT(*output);
+                delete t;
             }
         } else {
             // this is tf-mode transpose, that's nd4j permute
@@ -31,10 +33,10 @@ namespace ops {
             auto w = block.width();
             auto a = arguments.size();
 
-            if (block.width() == 2 && arguments.size() == 0) {
+            if (w == 2 && a == 0) {
                 auto axis = INPUT_VARIABLE(1);
                 for (int e = 0; e < axis->lengthOf(); e++) {
-                    int ax = (int) axis->getScalar(e);
+                    auto ax = static_cast<int>(axis->getScalar(e));
                     if (ax < 0)
                         ax += x->rankOf();
 
@@ -42,7 +44,7 @@ namespace ops {
                 }
 
                 replace = true;
-            } else if (arguments.size() == 0) {
+            } else if (a == 0) {
                 for (int e = x->rankOf() - 1; e >= 0; e--)
                     arguments.emplace_back(e);
             }
@@ -61,21 +63,13 @@ namespace ops {
                 x->permutei(arguments);
                 STORE_RESULT(x);
             } else {
-                if (!replace) {			// not-in-place
-                    auto output = OUTPUT_VARIABLE(0);
+                auto input = x->permute(arguments);
 
-                    x->permute(arguments, *output);
+                auto output = OUTPUT_VARIABLE(0);
+                output->assign(input);
 
-                    STORE_RESULT(output);
-                } else {
-                    auto input = x->permute(arguments);
-
-                    auto output = OUTPUT_VARIABLE(0);
-                    output->assign(input);
-
-                    delete input;
-                }
-            }
+                delete input;
+             }
         }
         return Status::OK();
     }
@@ -98,7 +92,7 @@ namespace ops {
                 newshape[3] = 99;
                 shapeList->push_back(newshape);
             } else if (arguments->size() > 0 || inputShape->size() > 1) {
-                std::vector<int> axis = arguments->size() > 0 ? *arguments : (INPUT_VARIABLE(1))->template asVectorT<int>();
+                auto axis = arguments->size() > 0 ? *arguments : (INPUT_VARIABLE(1))->template asVectorT<int>();
                 auto outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(axis.data(), axis.size(), *INPUT_VARIABLE(0), block.workspace());
                 shapeList->push_back(outputShapeInfo);
             } else if (inputShape->size() == 2) {

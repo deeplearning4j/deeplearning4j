@@ -266,12 +266,12 @@ namespace nd4j {
         void nd4j::graph::VariableSpace<T>::putVariable(int id, Variable<T> *variable) {
             // we don't want to add variables more then once
             if (_variables.count(id) > 0 || _temporary.count(id) > 0) {
-                nd4j_verbose("Trying to update variable for node_%i\n", id);
+                // nd4j_verbose("Trying to update variable for node_%i\n", id);
 
                 auto local = id < 0 ? _variables.at(id) : _temporary.at(id);
 
                 if (local->getNDArray() == nullptr && variable->getNDArray() != nullptr) {
-                    nd4j_verbose("Saving variable for node_%i\n", id);
+                    // nd4j_verbose("Saving variable for node_%i\n", id);
                     local->setNDArray(variable->getNDArray());
                 }
                 return;

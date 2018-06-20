@@ -4,7 +4,7 @@ from keras.layers import Embedding, Convolution1D, Flatten, Dense, Dropout
 import keras.backend as K
 import numpy as np
 
-base_path = "../../../../../../../../resources/weights/"
+base_path = "./"
 backend = K.backend()
 version = keras.__version__
 major_version = int(version[0])
@@ -22,12 +22,12 @@ input_length = 10
 
 model = Sequential()
 model.add(Embedding(max_words, embedding_dim, input_length=input_length))
-model.add(Convolution1D(128, kernel_size=3, activation='relu'))
-model.add(Convolution1D(64, kernel_size=3, activation='relu'))
-model.add(Convolution1D(32, kernel_size=3, activation='relu'))
-model.add(Flatten())
+model.add(Convolution1D(128, kernel_size=3, activation='relu')) # 10 - 3 + 1 = 8
+model.add(Convolution1D(64, kernel_size=3, activation='relu')) # 10 - 3 + 1 = 6
+model.add(Convolution1D(32, kernel_size=3, activation='relu')) # 10 - 3 + 1 = 4
+model.add(Flatten()) # 128 = 32 * 4
 model.add(Dropout(0.2))
-model.add(Dense(128, activation='sigmoid'))
+model.add(Dense(128, activation='sigmoid')) # W = 128 x 128
 model.add(Dropout(0.2))
 model.add(Dense(1, activation='sigmoid'))
 model.summary()

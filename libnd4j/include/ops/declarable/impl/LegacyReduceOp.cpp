@@ -110,14 +110,14 @@ namespace nd4j {
 
                     // keepDims processing, for TF compatibility
                     if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
-                        z->printShapeInfo("z shape before");
+                        // z->printShapeInfo("z shape before");
                         std::vector<Nd4jLong> newshape(z->getShapeAsVector());
                         for (int e = 0; e < axis.size(); e++) {
                             auto a = axis.at(e);
                             newshape.insert(newshape.begin() + a, 1);
                         }
                         z->reshapei(z->ordering(), newshape);
-                        z->printShapeInfo("z shape after");
+                        // z->printShapeInfo("z shape after");
                     }
 
                     OVERWRITE_RESULT(z);

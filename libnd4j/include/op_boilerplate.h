@@ -49,6 +49,7 @@
 #ifndef OP_BOILERPLATE_HH
 #define OP_BOILERPLATE_HH
 
+#include <type_boilerplate.h>
 #include <helpers/OpTracker.h>
 
 #ifdef __CUDACC__
@@ -59,7 +60,7 @@
 // 610 is for tests only
 // 600 is Tesla P100
 // 530 is Tegra
-#if __CUDA_ARCH__ == 600 || __CUDA_ARCH__ == 530
+#if __CUDA_ARCH__ == 600 || __CUDA_ARCH__ == 530 || __CUDA_ARCH__ == 700
 #define NATIVE_HALFS
 #endif
 
@@ -98,18 +99,6 @@
 #define DEBUG_CALL(STREAM)      if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) { throw std::runtime_error(); }; }
 #define DEBUG_KERNEL(STREAM, OP_NUM)       if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) {std::string tFile(__FILE__); std::string tOp = "Kernel OpNum failed: [" + nd4j::StringUtils::valueToString<int>(OP_NUM) + std::string("]; File: ") + tFile + std::string(":") + nd4j::StringUtils::valueToString<int>(__LINE__); throw std::runtime_error(tOp.c_str()); }; }
 
-#define EXTRACT(...) EXTRACT __VA_ARGS__ 
-#define NOTHING_EXTRACT 
-#define PASTE(x, ...) x ## __VA_ARGS__ 
-#define EVALUATING_PASTE(x, ...) PASTE(x, __VA_ARGS__) 
-#define UNPAREN(x) EVALUATING_PASTE(NOTHING_, EXTRACT x) 
-#define EVAL( x ) x
-#define EVAL0(...)  EVAL1(EVAL1(EVAL1(__VA_ARGS__)))
-#define EVAL1(...) EVAL2(EVAL2(EVAL2(__VA_ARGS__)))
-#define EVAL2(...) EVAL3(EVAL3(EVAL3(__VA_ARGS__)))
-#define EVAL3(...) EVAL4(EVAL4(EVAL4(__VA_ARGS__)))
-#define EVAL4(...) EVAL5(EVAL5(EVAL5(__VA_ARGS__)))
-#define EVAL5(...) __VA_ARGS__
 
 #define LAUNCH(A, B, C, D) <<<A, B, C, D>>>
 
@@ -128,7 +117,7 @@
 #define EMPTY()
 #define DEFER(id) id EMPTY()
 #define OBSTRUCT(...) __VA_ARGS__ DEFER(EMPTY)()
-#define EXPAND(...) __VA_ARGS__
+
 
 #define _EXPAND_OP_CALL(FN, SIG, NUM, TYPE) case NUM: { FN<TYPE<T>>SIG; break; };
 #define _EXPAND_RETURNING_OP_CALL(FN, SIG, NUM, TYPE) else if(opNum == NUM){ return FN<TYPE<T>>SIG; }
@@ -1512,8 +1501,27 @@ struct __registratorSynonymDouble_##NAME {\
                                                                                 Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
 
 // this declaration MUST follow DECLARE_CUSTOM_OP
-#define DECLARE_SHAPE_FN(NAME)                                              template<typename T>\
-                                                                            nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)
+#define DECLARE_SHAPE_FN(NAME)                                                  template<typename T>\
+                                                                                nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block)
+
+#define DECLARE_BROADCASTABLE_OP(NAME,TARGS, IARGS)                             template <typename T> \
+                                                                                class NAME: public nd4j::ops::BroadcastableOp<T> { \
+                                                                                protected: \
+                                                                                    Nd4jStatus validateAndExecute(Context<T>& block); \
+                                                                                public:\
+                                                                                    NAME(); \
+                                                                                };\
+                                                                                REGISTER_H(NAME)
+
+#define BROADCASTABLE_OP_IMPL(NAME, TARGS, IARGS)                               template <typename T> \
+                                                                                NAME<T>::NAME(): nd4j::ops::BroadcastableOp<T>(#NAME, TARGS, IARGS) { }; \
+                                                                                template class ND4J_EXPORT NAME<float>; \
+                                                                                template class ND4J_EXPORT NAME<float16>; \
+                                                                                template class ND4J_EXPORT NAME<double>; \
+                                                                                REGISTER_C(NAME) \
+                                                                                template <typename T> \
+                                                                                Nd4jStatus nd4j::ops::NAME<T>::validateAndExecute(nd4j::graph::Context<T>& block)
+
 
 #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
 
@@ -1527,9 +1535,10 @@ struct __registratorSynonymDouble_##NAME {\
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }
 #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
+
+#define STORE_RESULT(A)     this->storeResult(block, 0, A)
 #define OVERWRITE_RESULT(A)     this->overwriteResult(block, 0, A)
 #define OVERWRITE_2_RESULTS(A, B)     this->overwriteResult(block, 0, A); this->overwriteResult(block, 1, B)
-#define STORE_RESULT(A)     this->storeResult(block, 0, A)
 #define STORE_2_RESULTS(A, B)   this->storeResult(block, 0, A); this->storeResult(block, 1, B)
 #define STORE_3_RESULTS(A, B, C)    this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C)
 #define STORE_4_RESULTS(A, B, C, D)     this->storeResult(block, 0, A); this->storeResult(block, 1, B); this->storeResult(block, 2, C); this->storeResult(block, 3, D)

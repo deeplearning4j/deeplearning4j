@@ -4,6 +4,7 @@ import org.deeplearning4j.earlystopping.scorecalc.base.BaseIEvaluationScoreCalcu
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Model;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 /**
  * Score function for evaluating a MultiLayerNetwork according to an evaluation metric ({@link Evaluation.Metric} such
@@ -21,6 +22,11 @@ public class ClassificationScoreCalculator extends BaseIEvaluationScoreCalculato
         this.metric = metric;
     }
 
+    public ClassificationScoreCalculator(Evaluation.Metric metric, MultiDataSetIterator iterator){
+        super(iterator);
+        this.metric = metric;
+    }
+
     @Override
     protected Evaluation newEval() {
         return new Evaluation();
@@ -29,5 +35,11 @@ public class ClassificationScoreCalculator extends BaseIEvaluationScoreCalculato
     @Override
     protected double finalScore(Evaluation e) {
         return e.scoreForMetric(metric);
+    }
+
+    @Override
+    public boolean minimizeScore() {
+        //All classification metrics should be maximized: ACCURACY, F1, PRECISION, RECALL, GMEASURE, MCC
+        return false;
     }
 }

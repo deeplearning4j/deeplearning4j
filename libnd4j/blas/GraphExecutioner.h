@@ -12,6 +12,7 @@
 #include <graph/VariableSpace.h>
 #include <graph/Node.h>
 #include <graph/Graph.h>
+#include <graph/ResultWrapper.h>
 #include <sys/stat.h>
 
 #define TF_INPUT "Placeholder"
@@ -44,7 +45,7 @@ namespace nd4j {
         * @param pointer Pointer to FlatBuffer
         * @return pointer to FlatBuffer with result
         */
-        static Nd4jPointer executeFlatBuffer(Nd4jPointer pointer);
+        static nd4j::graph::ResultWrapper* executeFlatBuffer(Nd4jPointer pointer);
 
 
         static Graph<T> *importFromTensorFlow(const char *fileName);

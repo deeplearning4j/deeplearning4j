@@ -18,16 +18,13 @@
 package org.deeplearning4j.nn.modelimport.keras.configurations;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -74,10 +71,8 @@ public class KerasModelImportTest {
 
         MultiLayerNetwork network = null;
         try {
-            network = new KerasModel().modelBuilder()
-                    .modelJsonFilename((modelResource.getFile().getAbsolutePath()))
-                    .weightsHdf5FilenameNoRoot(weightResource.getFile().getAbsolutePath())
-                    .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
+            network = KerasModelImport.importKerasSequentialModelAndWeights(modelResource.getFile().getAbsolutePath(),
+                    weightResource.getFile().getAbsolutePath(), false);
         } catch (IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
             e.printStackTrace();
         }

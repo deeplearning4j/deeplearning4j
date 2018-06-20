@@ -26,11 +26,6 @@ public class WorkspacesShieldDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return iterator.totalExamples();
-    }
-
-    @Override
     public int inputColumns() {
         return iterator.inputColumns();
     }
@@ -58,16 +53,6 @@ public class WorkspacesShieldDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return iterator.batch();
-    }
-
-    @Override
-    public int cursor() {
-        return iterator.cursor();
-    }
-
-    @Override
-    public int numExamples() {
-        return iterator.numExamples();
     }
 
     @Override

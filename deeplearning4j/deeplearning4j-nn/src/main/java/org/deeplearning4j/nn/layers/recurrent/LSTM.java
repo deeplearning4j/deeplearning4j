@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -126,6 +127,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
                         LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper, workspaceMgr);
 
         weightNoiseParams.clear();
+        p.setSecond(backpropDropOutIfPresent(p.getSecond()));
         return p;
     }
 
@@ -134,6 +136,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         setInput(input, workspaceMgr);
         return activateHelper(training, null, null, false, workspaceMgr).fwdPassOutput;
     }
+
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return activateHelper(training, null, null, false, workspaceMgr).fwdPassOutput;
@@ -142,10 +145,9 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
+        Preconditions.checkState(input.rank() == 3,
+                "3D input expected to RNN layer expected, got " + input.rank());
         applyDropOutIfNecessary(training, workspaceMgr);
-
-//        if (cacheMode == null)
-//            cacheMode = CacheMode.NONE;
 
         //TODO LSTM cache mode is disabled for now - not passing all tests
         cacheMode = CacheMode.NONE;

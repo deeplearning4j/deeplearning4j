@@ -12,27 +12,42 @@ import java.util.Map;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Conv2DConfig extends BaseConvolutionConfig  {
-    private long kh, kw, sy, sx, ph, pw;
-    @Builder.Default private long dh = 1;
-    @Builder.Default private long dw = 1;
+public class Conv2DConfig extends BaseConvolutionConfig {
+    @Builder.Default
+    private long kH = 1;
+    @Builder.Default
+    private long kW = 1;
+    @Builder.Default
+    private long sH = 1;
+    @Builder.Default
+    private long sW = 1;
+    @Builder.Default
+    private long pH = 0;
+    @Builder.Default
+    private long pW = 0;
+    @Builder.Default
+    private long dH = 1;
+    @Builder.Default
+    private long dW = 1;
     private boolean isSameMode;
     @Builder.Default
     private String dataFormat = "NWHC";
-    @Builder.Default private boolean isNHWC = false;
+    @Builder.Default
+    private boolean isNHWC = false;
 
-    public Map<String,Object> toProperties() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("kh",kh);
-        ret.put("kw",kw);
-        ret.put("sy",sy);
-        ret.put("sx",sx);
-        ret.put("ph",ph);
-        ret.put("pw",pw);
-        ret.put("dh",dh);
-        ret.put("dw",dw);
-        ret.put("isSameMode",isSameMode);
-        ret.put("isNWHC",isNHWC);
+    public Map<String, Object> toProperties() {
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("kH", kH);
+        ret.put("kW", kW);
+        ret.put("sH", sH);
+        ret.put("sW", sW);
+        ret.put("pH", pH);
+        ret.put("pW", pW);
+        ret.put("dH", dH);
+        ret.put("dW", dW);
+        ret.put("isSameMode", isSameMode);
+        ret.put("dataFormat", dataFormat);
+        ret.put("isNWHC", isNHWC);
         return ret;
     }
 

@@ -5,6 +5,7 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
@@ -45,6 +46,12 @@ public class Unstack extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{value}, false);
         this.axis = axis;
         this.num = num;
+        addArgs();
+    }
+
+    public Unstack(INDArray in, INDArray[] out, int axis){
+        super(null, new INDArray[]{in}, out, null, (int[])null);
+        this.axis = axis;
         addArgs();
     }
 
@@ -112,6 +119,11 @@ public class Unstack extends DynamicCustomOp {
     @Override
     public int getNumOutputs(){
         return num;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Collections.singletonList(sameDiff.stack(axis, f1.toArray(new SDVariable[f1.size()])));
     }
 
 }

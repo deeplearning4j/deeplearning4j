@@ -5,6 +5,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -24,6 +25,11 @@ public class Moments extends DynamicCustomOp {
     public Moments(SameDiff sameDiff, SDVariable input, int[] axes) {
         super(null, sameDiff, new SDVariable[] {input}, false);
         this.axes = axes;
+        addArgs();
+    }
+
+    public Moments(INDArray in, INDArray outMean, INDArray outStd, int... axes){
+        super(null, new INDArray[]{in}, new INDArray[]{outMean, outStd}, null, axes);
     }
 
     private void addArgs() {

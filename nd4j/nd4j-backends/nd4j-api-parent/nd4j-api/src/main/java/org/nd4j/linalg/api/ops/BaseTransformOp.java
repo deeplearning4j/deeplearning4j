@@ -160,7 +160,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
                            SDVariable i_v,
                            Object[] extraArgs) {
         this(sameDiff,i_v,i_v.getShape(),false,extraArgs);
-
     }
 
 

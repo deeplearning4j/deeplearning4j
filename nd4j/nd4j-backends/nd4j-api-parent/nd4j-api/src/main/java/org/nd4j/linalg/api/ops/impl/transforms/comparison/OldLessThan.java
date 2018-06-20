@@ -98,7 +98,7 @@ public class OldLessThan extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-      return "Less";
+      throw new NoOpNameFoundException("No tf opName found for " + opName());
     }
 
 

@@ -163,25 +163,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
 
-
-
-        long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
-                : ArrayUtil.removeIndex(op.x().shape(), dimension);
-
-        // This is obviously wrong for IndexReduce, op.x has no real value as return
-        // if(op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
-        //     return op.x();
-
-
-        //ensure vector is proper shape
-        if (retShape.length == 1) {
-            if (dimension[0] == 0)
-                retShape = new long[] {1, retShape[0]};
-            else
-                retShape = new long[] {retShape[0], 1};
-        } else if (retShape.length == 0) {
-            retShape = new long[] {1, 1};
+        boolean keepDims;
+        boolean newFormat;
+        if(op instanceof BaseAccumulation) {
+            keepDims = ((BaseAccumulation) op).isKeepDims();
+            newFormat = ((BaseAccumulation) op).isNewFormat();
+        } else {
+            keepDims = false;
+            newFormat = false;
         }
+        long[] retShape = reductionShape(op.x(), dimension, newFormat, keepDims);
+
 
         if(op.z() == null || op.x() == op.z()) {
             INDArray ret;
@@ -285,22 +277,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
 
-
-        long[] retShape;
-        if (Shape.wholeArrayDimension(dimension))
-            retShape = new long[] {1, 1};
-        else
-            retShape = ArrayUtil.removeIndex(maxShape, dimension);
-        //ensure vector is proper shape
-        if (retShape.length == 1) {
-            if (dimension[0] == 0)
-                retShape = new long[] {1, retShape[0]};
-            else
-                retShape = new long[] {retShape[0], 1};
-        } else if (retShape.length == 0) {
-            retShape = new long[] {1, 1};
+        boolean keepDims;
+        boolean newFormat;
+        if(op instanceof BaseAccumulation) {
+            keepDims = op.isKeepDims();
+            newFormat = ((BaseAccumulation) op).isNewFormat();
+        } else {
+            keepDims = false;
+            newFormat = false;
         }
 
+        long[] retShape = reductionShape(op.x(), dimension, newFormat, keepDims);
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();
@@ -347,7 +334,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             op.setZ(ret);
         } else {
             // compare length
-            if (!op.isComplexAccumulation() && op.z().lengthLong() != ArrayUtil.prodLong(retShape))
+            long shapeProduct = (retShape.length == 0 ? 1 : ArrayUtil.prodLong(retShape));
+            if (!op.isComplexAccumulation() && op.z().lengthLong() != shapeProduct)
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
             else if (op.isComplexAccumulation()) {
                 long xT = op.x().tensorssAlongDimension(dimension);
@@ -396,7 +384,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
 
             if (op.x().tensorAlongDimension(0, dimension).lengthLong() != op.y().tensorAlongDimension(0, dimension).lengthLong())
-                throw new ND4JIllegalStateException("Impossible to issue AllDistances operation: TAD lengths mismatch along given dimension");
+                throw new ND4JIllegalStateException("Impossible to issue AllDistances operation: TAD lengths mismatch along given dimension: " +
+                        "x TAD length = " + op.x().tensorAlongDimension(0, dimension).lengthLong() + ", y TAD length " +
+                        op.y().tensorAlongDimension(0, dimension).lengthLong());
         }
 
 
@@ -625,8 +615,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             validateDataType(Nd4j.dataType(), op);
 
             if (op.x().lengthLong() != op.z().lengthLong())
-                throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: ["
-                        + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "] != ["
+                throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: " +
+                        "x.length()=" + op.x().length() + ", y.length()=" + op.y().length() + " - x shape info = ["
+                        + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "], y shape info = ["
                         + Arrays.toString(op.z().shapeInfoDataBuffer().asInt()) + "]");
 
             if (op.getDimension() != null) {
@@ -745,8 +736,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 boolean zRow = op.z().isRowVector();
 
                 if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
-                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
-
+                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform " +
+                            op.opName() + ". x: length " + op.x().length() + ", shape " + Arrays.toString(op.x().shape()) +
+                            "; y: " + op.y().length() + ", shape " + Arrays.toString(op.y().shape()) +
+                            "; z: " + op.z().length() + ", shape " + Arrays.toString(op.z().shape()));
                 if ((xEWS >= 1 && yEWS >= 1
                         && xEWS == yEWS && !op.isExecSpecial()
                         && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
@@ -791,7 +784,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 boolean zRow = op.z().isRowVector();
 
                 if (op.x().length() != op.y().length() || op.x().length() != op.z().length())
-                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform");
+                    throw new ND4JIllegalStateException("X, Y and Z arguments should have the same length for PairwiseTransform. " +
+                            "x: length " + op.x().length() + ", shape " + Arrays.toString(op.x().shape()) +
+                            "; y: " + op.y().length() + ", shape " + Arrays.toString(op.y().shape()) +
+                            "; z: " + op.z().length() + ", shape " + Arrays.toString(op.z().shape()));
 
                 if ((xEWS >= 1 && yEWS >= 1
                         && xEWS == yEWS && !op.isExecSpecial()
@@ -950,7 +946,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             // since we're going to call reduceToScalar, we must ensure equal lengths
             if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                 if (op.x().lengthLong() != op.y().lengthLong())
-                    throw new ND4JIllegalStateException("X and Y operands should have equall lengths. X length: " + op.x().lengthLong() + "; Y length: " + op.y().lengthLong());
+                    throw new ND4JIllegalStateException("X and Y operands should have equal lengths. X length: " + op.x().lengthLong() +
+                            ", X shape: " + Arrays.toString(op.x().shape()) + "; Y length: " + op.y().lengthLong() +
+                            ", Y shape: " + Arrays.toString(op.y().shape()));
             }
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
@@ -1285,7 +1283,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray exec(RandomOp op, Random rng) {
         if (rng.getStateBuffer() == null)
             throw new IllegalStateException(
-                    "You should use one of NativeRandom classes for NativeOperations execution");
+                    "You should use one of NativeRandom classes for NativeOperations execution. Op class: " + op.getClass().getName());
 
         long st = profilingHookIn(op);
 
@@ -1677,7 +1675,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val inputArgs = op.inputArguments();
         for (val in: inputArgs) {
             if(in == null){
-                throw new NullPointerException("Input argument is null");
+                throw new NullPointerException("Input argument is null for op " + op.getClass().getName());
             }
             inputBuffers.put(cnt, in.data().addressPointer());
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
@@ -1686,7 +1684,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val outputArgs = op.outputArguments();
         for(int i = 0; i < outputArgs.length; i++) {
             if(outputArgs[i] == null)
-                throw new ND4JIllegalStateException("Op output arguments must not be null!");
+                throw new ND4JIllegalStateException("Op output arguments must not be null! Op " + op.getClass().getName());
         }
 
 
@@ -1718,7 +1716,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             OpStatus status = OpStatus.byNumber(loop.execCustomOpFloat(null, hash, inputBuffers, inputShapes, op.numInputArguments(), outputBuffers, outputShapes, op.numOutputArguments(), tArgs, op.numTArguments(), iArgs, op.numIArguments(), op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
-                throw new ND4JIllegalStateException("Op execution failed: " + status);
+                throw new ND4JIllegalStateException("Op execution failed: " + status + " - op " + op.getClass().getName());
         }  else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             val tArgs = op.numTArguments() > 0 ? getDoublePointerFrom(tArgsPointer,op.numTArguments()) : null;
             val tArgs1 = op.tArgs();
@@ -1744,7 +1742,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         iArgs, op.numIArguments(),
                         op.isInplaceCall()));
             }catch(Exception e) {
-                log.error("Failed to execute. Please see above message (printed out from c++) for a possible cause of error.");
+                log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
+                                String.valueOf(op.numInputArguments()) + " inputs, " +
+                                String.valueOf(op.numOutputArguments()) + " outputs, "+
+                                String.valueOf(op.numTArguments()) + " targs and " +
+                                String.valueOf(op.numIArguments()) + " iargs. " +
+                "Please see above message (printed out from c++) for a possible cause of error.");
                 throw e;
             }
 
@@ -1759,7 +1762,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             OpStatus status = OpStatus.byNumber(loop.execCustomOpHalf(null, hash, inputBuffers, inputShapes, op.numInputArguments(),
                     outputBuffers, outputShapes, op.numOutputArguments(), tArgs, op.numTArguments(), iArgs, op.numIArguments(), op.isInplaceCall()));
             if (status != OpStatus.ND4J_STATUS_OK)
-                throw new ND4JIllegalStateException("Op execution failed: " + status);
+                throw new ND4JIllegalStateException("Op execution failed: " + status + " - op " + op.getClass().getName());
         }
 
         profilingHookOut(op, st);
@@ -2064,5 +2067,40 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public void setTadThreshold(int threshold) {
         loop.setTADThreshold(threshold);
+    }
+
+
+    private static long[] reductionShape(INDArray x, int[] dimension, boolean newFormat, boolean keepDims){
+        boolean wholeArray = Shape.wholeArrayDimension(dimension);
+        long[] retShape;
+        if(!newFormat) {
+            retShape = wholeArray ? new long[] {1, 1} : ArrayUtil.removeIndex(x.shape(), dimension);
+
+            //ensure vector is proper shape (if old format)
+            if (retShape.length == 1) {
+                if (dimension[0] == 0)
+                    retShape = new long[]{1, retShape[0]};
+                else
+                    retShape = new long[]{retShape[0], 1};
+            } else if (retShape.length == 0) {
+                retShape = new long[]{1, 1};
+            }
+        } else {
+            if(keepDims){
+                retShape = x.shape().clone();
+                if(wholeArray){
+                    for( int i=0; i<retShape.length; i++ ){
+                        retShape[i] = 1;
+                    }
+                } else {
+                    for (int d : dimension) {
+                        retShape[d] = 1;
+                    }
+                }
+            } else {
+                retShape = wholeArray ? new long[0] : ArrayUtil.removeIndex(x.shape(), dimension);
+            }
+        }
+        return retShape;
     }
 }
