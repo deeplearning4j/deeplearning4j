@@ -15,11 +15,11 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
 
             if (block.width() == 1) {
-                auto argumets = block.getIArguments();
-                int argsSize = argumets->size();
+                auto arguments = block.getIArguments();
+                int argsSize = arguments->size();
 
                 int e = 1;
-                char order = (char) -(*argumets)[0];
+                char order = (char) -(*arguments)[0];
                 if (order != 'c' && order != 'f') {
                     order = x->ordering();
                     e = 0;
@@ -29,8 +29,8 @@ namespace nd4j {
 
                 std::vector<Nd4jLong> shapeNew;
                 
-                for (; e < (int) argumets->size(); e++)
-                    shapeNew.push_back((int) argumets->at(e));
+                for (; e < (int) arguments->size(); e++)
+                    shapeNew.push_back((int) arguments->at(e));
 
                 auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
                 REQUIRE_TRUE(len == x->lengthOf(), 0, "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(), len);
