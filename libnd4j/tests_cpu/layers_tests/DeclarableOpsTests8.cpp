@@ -1996,7 +1996,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test1) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests8, reduceMeanBP_test3) {
+TEST_F(DeclarableOpsTests8, reduceMeanBP_test2) {
 
     NDArray<float> x('c', {3,4});
     NDArray<float> gradO1('c', {4},  {1.f, 2.f, 3.f, 4.f});
@@ -2023,7 +2023,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test3) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
+TEST_F(DeclarableOpsTests8, reduceMeanBP_test3) {
 
     NDArray<float> x('c', {3,4});
     NDArray<float> gradO1('c', {3}, {1.f, 2.f, 3.f});
@@ -2038,7 +2038,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
     auto output = result->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
+    ASSERT_TRUE(exp.equalsTo(output)); 
     delete result;
 
     result = op.execute({&x, &gradO2}, {1}, {1});
@@ -2457,4 +2457,80 @@ TEST_F(DeclarableOpsTests8, clipbynorm_test11) {
 }
  
 
- 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceMeanBP_test4) {
+
+    NDArray<double> x('c', {3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. });
+    NDArray<double> gradO1('c', {4}, {1., 2., 3., 4.});
+    NDArray<double> gradO2('c', {1, 4}, {1., 2., 3., 4.});
+    NDArray<double> exp('c', {3,4}, {0.333333, 0.666667, 1.000000, 1.333333, 0.333333, 0.666667, 1.000000, 1.333333, 0.333333, 0.666667, 1.000000, 1.333333});
+                                     
+    nd4j::ops::reduce_mean_bp<double> op;
+
+    auto result = op.execute({&x, &gradO1}, {0}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO2}, {1}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    output = result->at(0);    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
+
+    NDArray<double> x('c', {3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. });
+    NDArray<double> gradO1('c', {3}, {1., 2., 3.});
+    NDArray<double> gradO2('c', {3, 1}, {1., 2., 3.});
+    NDArray<double> exp('c', {3,4}, {0.2500,0.2500,0.2500,0.2500, 0.5000,0.5000,0.5000,0.5000, 0.7500,0.7500,0.7500,0.7500});
+                                     
+    nd4j::ops::reduce_mean_bp<double> op;
+    
+    auto result = op.execute({&x, &gradO1}, {0}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO2}, {1}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    output = result->at(0);    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceStDevBP_test5) {
+
+    NDArray<double> x('c', {3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. });
+    NDArray<double> gradO1('c', {4}, {1., 2., 3., 4.});
+    NDArray<double> gradO2('c', {1, 4}, {1., 2., 3., 4.});
+    NDArray<double> exp('c', {3,4}, {-0.408248, -0.816497, -1.224745, -1.632993, 0.000000, 0.000000, 0.000000, 0.000000, 0.408248, 0.816497, 1.224745, 1.632993});
+                                                                          
+    nd4j::ops::reduce_stdev_bp<double> op;
+
+    auto result = op.execute({&x, &gradO1}, {0}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);        
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO2}, {1}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    output = result->at(0);    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+}
+

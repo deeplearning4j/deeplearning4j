@@ -240,7 +240,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
     T extraParam0 = extraParams[10];
 
     if(dH == 0 || dW == 0) {
-       printf("Special_ops pooling2d:: dilation must not be zero, but got instead {%i, %i} \n", dH, dW);
+       printf("Special_ops pooling2d:: dilation must not be zero, but got instead {%lld, %lld} \n", dH, dW);
        throw "";
     }
 
