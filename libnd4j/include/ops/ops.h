@@ -2042,11 +2042,12 @@ namespace simdOps {
         }
 
         op_def static T op(T d1, T *extraParams) {
-            return nd4j::math::nd4j_log<T>(nd4j::math::nd4j_pow<T>(d1, static_cast<T>(2.0f)));
+			return d1 * nd4j::math::nd4j_log<T>(d1);
         }
 
         op_def static T postProcess(T reduction, Nd4jLong n, T *extraParams) {
-            return reduction;
+			//entropy is -sum(p(x) * log(p(x))); log entropy is log of this
+			return nd4j::math::nd4j_log<T>(-reduction);
         }
     };
 
@@ -2073,7 +2074,7 @@ namespace simdOps {
         }
 
         op_def static T postProcess(T reduction, Nd4jLong n, T *extraParams) {
-            return reduction;
+            return -reduction;		//entropy is -sum(p(x) * log(p(x)))
         }
     };
 

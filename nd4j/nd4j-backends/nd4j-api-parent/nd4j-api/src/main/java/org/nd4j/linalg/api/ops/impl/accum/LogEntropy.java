@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
@@ -27,11 +28,16 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import java.util.List;
 
 /**
- * Log Entropy Op - returns the entropy (information gain, or uncertainty of a random variable).
+ * Log Entropy Op - returns the log entropy (information gain, or uncertainty of a random variable).
+ * log(-sum( x * log(x)))
  *
  * @author raver119@gmail.com
  */
 public class  LogEntropy extends BaseAccumulation {
+
+    public LogEntropy(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+        super(sameDiff, i_v, dimensions);
+    }
 
     public LogEntropy() {}
 

@@ -132,4 +132,9 @@ public class Fill extends DynamicCustomOp {
     public Op.Type opType() {
         return Op.Type.CUSTOM;
     }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradients){
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
+    }
 }
