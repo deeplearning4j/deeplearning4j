@@ -16,6 +16,7 @@ public class Pooling3DConfig extends BaseConvolutionConfig {
     private long dD, dW, dH; // dilation
     private Pooling3D.Pooling3DType type;
     private boolean ceilingMode;
+    @Builder.Default private boolean isNCDHW = true;
 
     public Map<String, Object> toProperties() {
         Map<String, Object> ret = new LinkedHashMap<>();

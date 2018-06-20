@@ -322,11 +322,11 @@ public class ShapeOpValidation extends BaseOpValidation {
         //Order here: original shape, begin, size
         List<Triple<int[], int[], int[]>> testCases = new ArrayList<>();
         testCases.add(new Triple<>(new int[]{3, 4}, new int[]{0, 0}, new int[]{3, 4}));
-        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 1}, new int[]{3, 4}));
-        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 2}, new int[]{2, 3}));
+        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 1}, new int[]{2, 1}));
+        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 2}, new int[]{2, 2}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{0, 0, 0}, new int[]{3, 4, 5}));
         testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 1, 1}, new int[]{2, 3, 4}));
-        testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 0, 2}, new int[]{3, 3, 4}));
+        testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 0, 2}, new int[]{3, 3, 2}));
 
         List<String> failed = new ArrayList<>();
 
@@ -345,10 +345,10 @@ public class ShapeOpValidation extends BaseOpValidation {
             String msg = "i=" + i + ": inShape=" + Arrays.toString(os) + ", begin=" + Arrays.toString(b) + ", end=" + Arrays.toString(e);
             log.info("Starting test: " + msg);
 
-            TestCase tc = new TestCase(sd);
-            String error = OpValidation.validate(tc);
+            TestCase tc = new TestCase(sd).testName(msg);
+            String error = OpValidation.validate(tc, true);
             if(error != null){
-                failed.add(name);
+                failed.add(error);
             }
         }
 
@@ -405,7 +405,6 @@ public class ShapeOpValidation extends BaseOpValidation {
         testCases.add(SSCase.builder().shape(3, 4).begin(-999, 0).end(3, 4).strides(1, 1).beginMask(1).build());
         testCases.add(SSCase.builder().shape(3, 4).begin(1, 1).end(3, -999).strides(1, 1).endMask(1 << 1).build());
         testCases.add(SSCase.builder().shape(3, 4).begin(-999, 0).end(-999, 4).strides(1, 1).beginMask(1).endMask(1).build());
-        testCases.add(SSCase.builder().shape(3, 4).begin(-999, 0, 0).end(-999, 3, 4).strides(1, 1).newAxisMask(1).build());
 
         testCases.add(SSCase.builder().shape(3, 4, 5).begin(0, 0, 0).end(3, 4, 5).strides(1, 1, 1).build());
         testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, 2, 3).end(3, 4, 5).strides(1, 1, 1).build());
@@ -433,9 +432,10 @@ public class ShapeOpValidation extends BaseOpValidation {
             log.info("Starting test: " + msg);
 
             TestCase tc = new TestCase(sd);
-            String error = OpValidation.validate(tc);
+            tc.testName(msg);
+            String error = OpValidation.validate(tc, true);
             if(error != null){
-                failed.add(name);
+                failed.add(error);
             }
         }
         assertEquals(failed.toString(), 0, failed.size());
@@ -663,7 +663,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                     //for gradient check, need to combine to single scalar output...
                     SDVariable merged = sd.mergeAvg(unstacked);
 
-                    if (ArrayUtil.prodLong(stackedShape) == 1) {
+                    if (ArrayUtil.prodLong(stackedShape) == 1 || ArrayUtil.prodLong(shape) == 1) {
                         SDVariable loss = sd.sum("loss", merged);
                     } else {
                         SDVariable loss = sd.standardDeviation("loss", merged, true);
@@ -685,7 +685,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                     }
                     String error = OpValidation.validate(tc, true);
                     if(error != null){
-                        failed.add(name);
+                        failed.add(error);
                     }
                 }
             }

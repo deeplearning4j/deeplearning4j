@@ -10,11 +10,11 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+/**
+ * Bias addition gradient operation.
+ */
 @NoArgsConstructor
 public class BiasAdd extends DynamicCustomOp {
 
@@ -58,5 +58,10 @@ public class BiasAdd extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "BiasAdd";
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradient){
+        return Arrays.asList(f().biasAddBp(arg(0), arg(1), gradient.get(0)));
     }
 }

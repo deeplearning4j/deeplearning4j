@@ -8,6 +8,9 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Random normal distribution
  *
@@ -38,5 +41,10 @@ public class RandomNormal extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("Not TF op name set for " + getClass().getSimpleName());
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 }

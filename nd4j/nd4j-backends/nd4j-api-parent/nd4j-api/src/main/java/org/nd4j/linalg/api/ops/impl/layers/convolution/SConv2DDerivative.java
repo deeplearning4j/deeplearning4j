@@ -15,8 +15,7 @@ import java.util.List;
  * SConv2DDerivative operation
  */
 @Slf4j
-public class
-SConv2DDerivative extends SConv2D {
+public class SConv2DDerivative extends SConv2D {
 
     @Builder(builderMethodName = "sDerviativeBuilder")
     public SConv2DDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
@@ -48,6 +47,14 @@ SConv2DDerivative extends SConv2D {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         throw new UnsupportedOperationException("Unable to take derivative of derivative.");
+    }
+
+    @Override
+    public int getNumOutputs(){
+        //Inputs: in, gradAtOutput, weightsDepth, optional weightsPoint, optional weightsBias       3 req, 2 optional
+        //Outputs: gradAtInput, gradWD, optional gradWP, optional gradB                             2 req, 2 optional
+        SDVariable[] args = args();
+        return args.length - 1;
     }
 
 }

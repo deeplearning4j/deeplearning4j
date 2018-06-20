@@ -41,6 +41,7 @@ import java.util.Map;
  */
 public class CompareAndSet extends BaseTransformOp {
 
+    private Condition condition;
     private double compare;
     private double set;
     private double eps;
@@ -48,10 +49,12 @@ public class CompareAndSet extends BaseTransformOp {
 
     public CompareAndSet(SameDiff sameDiff, SDVariable to, Number set, Condition condition) {
         super(sameDiff, to, false);
-        this.compare = compare;
+        this.condition = condition;
+        this.compare = condition.getValue();
         this.set = set.doubleValue();
-        this.eps = eps;
-        this.mode = mode;
+        this.mode = condition.condtionNum();
+        this.eps = condition.epsThreshold();
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
     }
 
     public CompareAndSet() {
@@ -224,8 +227,11 @@ public class CompareAndSet extends BaseTransformOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(sameDiff.zerosLike(arg()));
+    public List<SDVariable> doDiff(List<SDVariable> gradient) {
+        //Pass through gradient where condition is NOT matched (condition matched: output replaced by scalar)
+        SDVariable maskNotMatched = sameDiff.matchCondition(arg(), condition).rsub(1.0);
+        SDVariable gradAtIn = gradient.get(0).mul(maskNotMatched);
+        return Collections.singletonList(gradAtIn);
     }
 }
 

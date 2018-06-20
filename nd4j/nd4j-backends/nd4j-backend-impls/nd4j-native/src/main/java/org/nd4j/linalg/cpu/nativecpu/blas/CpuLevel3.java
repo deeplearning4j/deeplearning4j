@@ -12,7 +12,7 @@ import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.Nd4jBlas;
 
-import static org.bytedeco.javacpp.openblas.*;
+import static org.bytedeco.javacpp.openblas_nolapack.*;
 import static org.nd4j.linalg.cpu.nativecpu.blas.CpuBlas.*;
 
 
