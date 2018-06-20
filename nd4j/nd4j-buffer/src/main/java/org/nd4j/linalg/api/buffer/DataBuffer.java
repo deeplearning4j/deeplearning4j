@@ -377,6 +377,14 @@ public interface DataBuffer extends Serializable {
      *
      * @param data the data for this buffer
      */
+    void setData(long[] data);
+
+
+    /**
+     * Set the data for this buffer
+     *
+     * @param data the data for this buffer
+     */
     void setData(float[] data);
 
     /**

@@ -513,6 +513,39 @@ public interface DataBufferFactory {
     DataBuffer createInt(int[] data, boolean copy);
 
     /**
+     * Creates a long data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createLong(int[] data, boolean copy);
+
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(long[] data, boolean copy);
+
+    /**
+     * Creates a float data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createFloat(long[] data, boolean copy);
+
+    /**
+     * Creates a int data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createInt(long[] data, boolean copy);
+
+    /**
      * Creates a double data buffer
      *
      * @param data the data to create the buffer from

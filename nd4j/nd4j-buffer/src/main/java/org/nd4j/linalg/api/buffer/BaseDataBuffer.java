@@ -793,6 +793,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
+    @Override
+    public void setData(long[] data) {
+        for (int i = 0; i < data.length; i++) {
+            put(i, data[i]);
+        }
+    }
 
     @Override
     public void assign(long[] indices, double[] data, boolean contiguous, long inc) {

@@ -420,6 +420,11 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createLong(int[] data, boolean copy) {
+        return new CudaLongDataBuffer(data);
+    }
+
+    @Override
     public DataBuffer createDouble(double[] data, boolean copy) {
         return new CudaDoubleDataBuffer(data);
     }
@@ -447,6 +452,21 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createInt(float[] data, boolean copy) {
         return new CudaIntDataBuffer(ArrayUtil.toInts(data));
+    }
+
+    @Override
+    public DataBuffer createDouble(long[] data, boolean copy) {
+        return new CudaDoubleDataBuffer(ArrayUtil.toDoubles(data));
+    }
+
+    @Override
+    public DataBuffer createFloat(long[] data, boolean copy) {
+        return new CudaFloatDataBuffer(ArrayUtil.toFloats(data));
+    }
+
+    @Override
+    public DataBuffer createInt(long[] data, boolean copy) {
+        return new CudaIntDataBuffer(data);
     }
 
     /**
