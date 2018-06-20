@@ -33,9 +33,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Slice function
@@ -169,9 +167,7 @@ public class Slice extends DynamicCustomOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //TODO need to implement backprop ops for slice: https://github.com/deeplearning4j/libnd4j/issues/710
-        throw new UnsupportedOperationException("Not yet implemented/supported");
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
+        return Collections.singletonList(f().sliceBp(arg(), grad.get(0), begin, size));
     }
-
 }

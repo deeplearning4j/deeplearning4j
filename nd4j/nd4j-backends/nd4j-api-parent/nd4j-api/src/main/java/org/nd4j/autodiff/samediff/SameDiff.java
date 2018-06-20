@@ -1676,6 +1676,35 @@ public class SameDiff {
         return updateVariableNameAndReference(eye, name);
     }
 
+    public SDVariable eye(String name, SDVariable rows, SDVariable cols, SDVariable batchDimension){
+        SDVariable eye = new Eye(this, rows, cols, batchDimension).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    public SDVariable eye(SDVariable rows, SDVariable cols, SDVariable batchDimension){
+        return eye(null, rows, cols, batchDimension);
+    }
+
+
+    public SDVariable eye(String name, SDVariable rows, SDVariable cols){
+        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    public SDVariable eye(SDVariable rows, SDVariable cols){
+        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
+        return updateVariableNameAndReference(eye, null);
+    }
+
+    public SDVariable eye(String name, SDVariable rows){
+        SDVariable eye = new Eye(this, rows).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    public SDVariable eye(SDVariable rows){
+        SDVariable eye = new Eye(this, rows).outputVariables()[0];
+        return updateVariableNameAndReference(eye, null);
+    }
 
     /**
      * Remove an argument for a function. Note that if this function
@@ -3625,11 +3654,44 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
-    public SDVariable matchCondition(SDVariable in, Condition condition) {
+    /**
+     * Returns a count of the number of elements that satisfy the condition
+     * @param in        Input
+     * @param condition Condition
+     * @return          Number of elements that the condition is satisfied for
+     */
+    public SDVariable matchConditionCount(SDVariable in, Condition condition) {
+        return matchConditionCount(null, in, condition);
+    }
+
+    /**
+     * Returns a count of the number of elements that satisfy the condition
+     * @param in        Input
+     * @param condition Condition
+     * @return          Number of elements that the condition is satisfied for
+     */
+    public SDVariable matchConditionCount(String name, SDVariable in, Condition condition) {
+        SDVariable ret = f().matchConditionCount(in, condition);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Returns a boolean mask of equal shape to the input, where the condition is satisfied
+     * @param in        Input
+     * @param condition Condition
+     * @return          Boolean mask
+     */
+    public SDVariable matchCondition(SDVariable in, Condition condition){
         return matchCondition(null, in, condition);
     }
 
-    public SDVariable matchCondition(String name, SDVariable in, Condition condition) {
+    /**
+     * Returns a boolean mask of equal shape to the input, where the condition is satisfied
+     * @param in        Input
+     * @param condition Condition
+     * @return          Boolean mask
+     */
+    public SDVariable matchCondition(String name, SDVariable in, Condition condition){
         SDVariable ret = f().matchCondition(in, condition);
         return updateVariableNameAndReference(ret, name);
     }

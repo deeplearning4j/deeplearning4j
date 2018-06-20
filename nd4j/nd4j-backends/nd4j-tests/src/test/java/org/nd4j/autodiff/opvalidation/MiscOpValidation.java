@@ -308,9 +308,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testScatterOpGradients() {
-        OpValidationSuite.ignoreFailing();
-
-
         List<String> failed = new ArrayList<>();
 
         for (int i = 0; i < 5; i++) {
@@ -381,8 +378,9 @@ public class MiscOpValidation extends BaseOpValidation {
             SDVariable loss = sd.sum(scatter);  //.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
             sd.execAndEndResult();
 
-            TestCase tc = new TestCase(sd);
-            tc.expected(scatter, exp);
+            TestCase tc = new TestCase(sd)
+                    .expected(scatter, exp)
+                    .gradCheckSkipVariables(indices.getVarName());
 
             String error = OpValidation.validate(tc);
             if(error != null){
@@ -529,7 +527,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
 
     @Test
-    public void testMmulGradient() {
+    public void testMmulGradientManual() {
         SameDiff sameDiff = SameDiff.create();
         INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
@@ -573,6 +571,64 @@ public class MiscOpValidation extends BaseOpValidation {
 
         assertEquals(xGradAssertion, gradWrtX.getArr());
         assertEquals(yGradAssertion, gradWrtY.getArr());
+    }
+
+    @Test
+    public void testMmulGradients(){
+
+        int[] aShape = new int[]{2,3};
+        int[] bShape = new int[]{3,4};
+        List<String> failed = new ArrayList<>();
+
+        for( char aOrder : new char[]{'c', 'f'}) {
+            for (char bOrder : new char[]{'c', 'f'}) {
+                for (boolean transposeA : new boolean[]{false, true}) {
+                    for (boolean transposeB : new boolean[]{false, true}) {
+                        for (boolean transposeResult : new boolean[]{false, true}) {    //https://github.com/deeplearning4j/deeplearning4j/issues/5648
+                            Nd4j.getRandom().setSeed(12345);
+
+                            INDArray aArr = Nd4j.rand(t(transposeA, aShape)).dup(aOrder);
+                            INDArray bArr = Nd4j.rand(t(transposeB, bShape)).dup(bOrder);
+
+                            SameDiff sd = SameDiff.create();
+                            SDVariable a = sd.var("a", aArr);
+                            SDVariable b = sd.var("b", bArr);
+
+                            MMulTranspose mt = MMulTranspose.builder()
+                                    .transposeA(transposeA)
+                                    .transposeB(transposeB)
+                                    .transposeResult(transposeResult)
+                                    .build();
+
+                            SDVariable mmul = sd.mmul(a, b, mt);
+
+                            INDArray exp = (transposeA ? aArr.transpose() : aArr);
+                            exp = exp.mmul(transposeB ? bArr.transpose() : bArr);
+                            exp = (transposeResult ? exp.transpose() : exp);
+
+                            SDVariable loss = mmul.std(true);
+
+                            String name = aOrder + "," + bOrder + ",tA=" + transposeA + ",tB=" + transposeB +
+                                    ",tRes=" + transposeResult;
+                            TestCase tc = new TestCase(sd).testName(name)
+                                    .expected(mmul, exp);
+
+                            String err = OpValidation.validate(tc, true);
+                            if(err != null)
+                                failed.add(err);
+                        }
+                    }
+                }
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    private static int[] t(boolean transpose, int[] orig){
+        if(!transpose)
+            return orig;
+        return new int[]{orig[1], orig[0]};
     }
 
 

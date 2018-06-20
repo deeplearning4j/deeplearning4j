@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -38,29 +39,18 @@ import java.util.List;
  */
 public class MatchConditionTransform extends BaseTransformOp {
 
+    private Condition condition;
     private double compare;
     private double eps;
     private int mode;
 
-    public MatchConditionTransform(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double compare, double eps, int mode) {
-        super(sameDiff, i_v, inPlace);
-        this.compare = compare;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public MatchConditionTransform(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs, double compare, double eps, int mode) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.compare = compare;
-        this.eps = eps;
-        this.mode = mode;
-    }
-
-    public MatchConditionTransform(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double compare, double eps, int mode) {
-        super(sameDiff, i_v, extraArgs);
-        this.compare = compare;
-        this.eps = eps;
-        this.mode = mode;
+    public MatchConditionTransform(SameDiff sameDiff, SDVariable in, Condition condition) {
+        super(sameDiff, in, false);
+        this.condition = condition;
+        this.compare = condition.getValue();
+        this.mode = condition.condtionNum();
+        this.eps = Nd4j.EPS_THRESHOLD;
+        this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
 
     public MatchConditionTransform() {}
@@ -113,6 +103,6 @@ public class MatchConditionTransform extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 }

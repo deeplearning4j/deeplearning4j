@@ -26,10 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Element-wise Compare-and-Replace implementation as Op
@@ -39,6 +36,7 @@ import java.util.Map;
  */
 public class CompareAndReplace extends BaseTransformOp {
 
+    private Condition condition;
     private double compare;
     private double set;
     private double eps;
@@ -46,10 +44,12 @@ public class CompareAndReplace extends BaseTransformOp {
 
     public CompareAndReplace(SameDiff sameDiff, SDVariable to, SDVariable from, Condition condition) {
         super(sameDiff, to, from, false);
+        this.condition = condition;
         this.compare = condition.getValue();
         this.set = 0;
         this.mode = condition.condtionNum();
         this.eps = condition.epsThreshold();
+        this.extraArgs = new Object[] {compare, set, eps, (double) mode};
     }
 
     public CompareAndReplace() {
@@ -135,8 +135,14 @@ public class CompareAndReplace extends BaseTransformOp {
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(sameDiff.zerosLike(arg()));
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
+        //2 inputs: 'to' and 'from'
+        //Pass through gradient for 'to' where condition is NOT satisfied
+        //Pass through gradient for 'from' where condition IS satisfied
+        SDVariable maskMatched = sameDiff.matchCondition(arg(0), condition);
+        SDVariable maskNotMatched = maskMatched.rsub(1.0);
+
+        return Arrays.asList(grad.get(0).mul(maskNotMatched), grad.get(0).mul(maskMatched));
     }
 }
 

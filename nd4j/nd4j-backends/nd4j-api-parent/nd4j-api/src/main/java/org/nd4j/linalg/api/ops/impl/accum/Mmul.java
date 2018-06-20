@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import lombok.EqualsAndHashCode;
 import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -41,24 +42,25 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
+@EqualsAndHashCode
 public class Mmul extends DynamicCustomOp {
 
-    protected MMulTranspose mMulTranspose;
+    protected MMulTranspose mt;
 
     /**
      *
      * @param sameDiff
      * @param i_v1
      * @param i_v2
-     * @param mMulTranspose
+     * @param mt
      */
     public Mmul(SameDiff sameDiff,
                 SDVariable i_v1,
                 SDVariable i_v2,
-                MMulTranspose mMulTranspose) {
+                MMulTranspose mt) {
         super(null,sameDiff,new SDVariable[]{i_v1,i_v2});
-        this.mMulTranspose = mMulTranspose;
-        addIArgument(ArrayUtil.fromBoolean(mMulTranspose.isTransposeA()), ArrayUtil.fromBoolean(mMulTranspose.isTransposeB()));
+        this.mt = mt;
+        addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()), ArrayUtil.fromBoolean(mt.isTransposeB()));
     }
 
 
@@ -83,12 +85,12 @@ public class Mmul extends DynamicCustomOp {
     public Mmul(INDArray x,
                 INDArray y,
                 INDArray z,
-                MMulTranspose mMulTranspose) {
+                MMulTranspose mt) {
         super(null, new INDArray[]{x, y}, z == null ? null : new INDArray[]{z});
-        if (mMulTranspose != null) {
-          this.mMulTranspose = mMulTranspose;
-          addIArgument(ArrayUtil.fromBoolean(mMulTranspose.isTransposeA()),
-                       ArrayUtil.fromBoolean(mMulTranspose.isTransposeB()));
+        if (mt != null) {
+          this.mt = mt;
+          addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()),
+                       ArrayUtil.fromBoolean(mt.isTransposeB()));
         }
     }
 
@@ -98,25 +100,24 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public List<long[]> calculateOutputShape() {
-        if(mMulTranspose == null)
-            mMulTranspose = MMulTranspose.allFalse();
-        List<long[]> ret = new ArrayList<>(1);
-        long[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(larg().getShape()) : larg().getShape();
-        long[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getShape()) : rarg().getShape();
+        if(mt == null)
+            mt = MMulTranspose.allFalse();
+
+        long[] aShape = mt.isTransposeA() ? ArrayUtil.reverseCopy(larg().getShape()) : larg().getShape();
+        long[] bShape = mt.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getShape()) : rarg().getShape();
         if(Shape.isPlaceholderShape(aShape) || Shape.isPlaceholderShape(bShape))
             return Collections.emptyList();
 
-        if(aShape != null && bShape != null) {
-            val shape =  Shape.getMatrixMultiplyShape(aShape,bShape);
-            ret.add(shape);
+        long[] shape =  Shape.getMatrixMultiplyShape(aShape,bShape);
+        if(mt.isTransposeResult())
+            shape = ArrayUtil.reverseCopy(shape);
+
+        for(int i = 0; i < shape.length; i++) {
+            if(shape[i] < 1)
+                throw new ND4JIllegalStateException("Invalid shape computed at index " +  i + ": shape " + Arrays.toString(shape));
         }
-        if(!ret.isEmpty()) {
-            for(int i = 0; i < ret.get(0).length; i++) {
-                if(ret.get(0)[i] < 1)
-                    throw new ND4JIllegalStateException("Invalid shape computed at index " +  i);
-            }
-        }
-        return ret;
+
+        return Collections.singletonList(shape);
     }
 
 
@@ -147,7 +148,7 @@ public class Mmul extends DynamicCustomOp {
         MMulTranspose mMulTranspose = MMulTranspose.builder()
                 .transposeA(isTransposeA).transposeB(isTransposeB)
                 .build();
-        this.mMulTranspose = mMulTranspose;
+        this.mt = mMulTranspose;
         val args = args();
         for(val arg : args) {
             if(sameDiff.isPlaceHolder(arg.getVarName()) || arg.getShape() == null) {
@@ -163,7 +164,7 @@ public class Mmul extends DynamicCustomOp {
         MMulTranspose mMulTranspose = MMulTranspose.builder()
                 .transposeA(isTransposeA).transposeB(isTransposeB)
                 .build();
-        this.mMulTranspose = mMulTranspose;
+        this.mt = mMulTranspose;
     }
 
 
@@ -172,15 +173,45 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+//        List<SDVariable> ret = new ArrayList<>();
+//        SDVariable dLdOut = i_v1.get(0);
+//
+//        SDVariable dLdx = sameDiff.mmul(dLdOut, rarg(), MMulTranspose.builder()
+//                .transposeB(true)
+//                .build());
+//
+//        SDVariable dLdy = sameDiff.mmul(larg(), dLdOut, MMulTranspose.builder()
+//                .transposeA(true)
+//                .build());
+//
+//        ret.add(dLdx);
+//        ret.add(dLdy);
+//        return ret;
+
         List<SDVariable> ret = new ArrayList<>();
         SDVariable dLdOut = i_v1.get(0);
+        /*
+        In: x=[a,b], y=[b,c]
+        tX  tY  tZ  x       y       z       dz          dLdx
+        F   F   F   [a,b]   [b,c]   [a,c]   [a,c]       [a,c]*[b,c]T = [a,b]
+        T   F   F   [b,a]   [b,c]   [a,c]   [a,c]       ([a,c]*[b,c]T)T = [b,a]
+        F   T   F   [a,b]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b]) = [a,b]
+        T   T   F   [b,a]   [c,b]   [a,c]   [a,c]       ([a,c]*[c,b])T = [b,a]
+        F   F   T   [a,b]   [b,c]   [c,a]   [c,a]
 
-        SDVariable dLdx = sameDiff.mmul(dLdOut, rarg(), MMulTranspose.builder()
-                .transposeB(true)
+         */
+
+        //If x=[a,b] and y=[b,c] then x*y=[a,c] - no transpose case
+        SDVariable dLdx = sameDiff.mmul(dLdOut, rarg(), MMulTranspose.builder() //No transpose: [a,c]*[b,c]^T = [a,b]
+                .transposeA(mt.isTransposeResult()) //Transpose gradient if fwd result was transposed
+                .transposeB(!mt.isTransposeB())
+                .transposeResult(mt.isTransposeA())
                 .build());
 
-        SDVariable dLdy = sameDiff.mmul(larg(), dLdOut, MMulTranspose.builder()
-                .transposeA(true)
+        SDVariable dLdy = sameDiff.mmul(larg(), dLdOut, MMulTranspose.builder() //No transpose: [a,b]^T * [a,c] = [b,c]
+                .transposeA(!mt.isTransposeA())
+                .transposeB(mt.isTransposeResult()) //Transpose gradient if fwd result was transposed
+                .transposeResult(mt.isTransposeB())
                 .build());
 
         ret.add(dLdx);
@@ -213,23 +244,6 @@ public class Mmul extends DynamicCustomOp {
         ret.put(onnxName(),map);
 
         return ret;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Mmul mmul = (Mmul) o;
-
-        return mMulTranspose != null ? mMulTranspose.equals(mmul.mMulTranspose) : mmul.mMulTranspose == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (mMulTranspose != null ? mMulTranspose.hashCode() : 0);
-        return result;
     }
 }
 
