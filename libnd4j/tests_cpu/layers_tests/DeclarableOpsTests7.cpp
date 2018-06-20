@@ -2908,6 +2908,23 @@ TEST_F(DeclarableOpsTests7, Test_Matmum_Once_Again) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests7, Test_DeConv2D_TF_1) {
+/*
+    NDArray<float> input0('c', {4}, {12.f, 5.f, 5.f, 32.f});
+    NDArray<float> input1('c', {2, 2, 32, 16});
+    NDArray<float> input2('c', {12, 4, 4, 16});
+    NDArray<float> exp('c', {12, 5, 5, 32});
+
+    nd4j::ops::deconv2d_tf<float> op;
+    auto result = op.execute({&input0, &input1, &input2}, {}, {2, 2, 1, 1, 0, 0, 0, 0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(exp, *result->at(0));
+
+    delete result;
+    */
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Reduce_Min_1) {
 
