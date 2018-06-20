@@ -75,11 +75,56 @@ namespace nd4j {
             array[y] = tmp;
         }
 
+        template <typename T>
+        Nd4jLong SparseUtils<T>::coo_quickSort_findPivot(Nd4jLong *indices, T *array, Nd4jLong left, Nd4jLong right,
+                                                         int rank) {
+            Nd4jLong  mid = (left + right) / 2;
+
+            // ensure left < mid
+            if (ltIndices(indices, rank, mid, left)) {  // ensure lo < mid
+               swapEverything(indices, array, rank, mid, left);
+            }
+
+            // ensure left < right
+            if (ltIndices(indices, rank, right, left)) {
+                swapEverything(indices, array, rank, right, left);
+            }
+
+            // ensure mid < right
+            if (ltIndices(indices, rank, right, mid)) {
+                swapEverything(indices, array, rank, right, mid);
+            }
+
+            // mid is the median of the 3, and is the optimal pivot point
+            return mid;
+    }
+
         template<typename T>
         void SparseUtils<T>::coo_quickSort_parallel_internal(Nd4jLong *indices, T* array, Nd4jLong left, Nd4jLong right, int cutoff, int rank) {
+            Nd4jLong span = right - left;  // elements to be partitioned - 1
 
-            Nd4jLong i = left, j = right;
-            Nd4jLong pvt = (left + right) / 2;
+            if (span == 1){
+                // only 2 elements to partition. swap if needed and return directly without further sorting.
+                if (ltIndices(indices, rank, right, left)){
+                    swapEverything(indices, array, rank, left, right);
+                }
+                return;
+            }
+
+
+            // find optimal pivot and sort left < right < right
+            Nd4jLong pvt = coo_quickSort_findPivot(indices, array, left, right, rank);
+
+            if (span == 2){
+                // only 3 elements to partition. findPivot has already sorted them. no further sorting is needed.
+                return;
+            }
+
+            // index that is greater than pivot - leftmost element is already partitioned because of findPivot.
+            Nd4jLong i = left + 1;
+
+            // index that is smaller than pivot - rightmost element is already partitioned because of findPivot.
+            Nd4jLong j = right - 1;
 
 
             {
@@ -118,8 +163,7 @@ namespace nd4j {
 
             }
 
-
-            if ( ((right-left)<cutoff) ){
+            if ( (span < cutoff) ){
                 if (left < j){ coo_quickSort_parallel_internal(indices, array, left, j, cutoff, rank); }
                 if (i < right){ coo_quickSort_parallel_internal(indices, array, i, right, cutoff, rank); }
 
