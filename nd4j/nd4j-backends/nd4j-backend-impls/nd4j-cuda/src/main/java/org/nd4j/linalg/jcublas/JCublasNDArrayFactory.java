@@ -21,6 +21,8 @@ package org.nd4j.linalg.jcublas;
 
 import lombok.val;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
 import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
 import org.nd4j.linalg.memory.MemcpyDirection;
@@ -1694,6 +1696,14 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         return x;
     }
+
+    @Override
+    public INDArray empty() {
+        long extras  = ArrayOptionsHelper.setSpecificBit(0L, ArrayType.EMPTY);
+        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new int[0], new int[0],0,1,'c', extras);
+        return new JCublasNDArray(null, (CudaLongDataBuffer) shape.getFirst(), shape.getSecond());
+    }
+
 
     @Override
     public INDArray sort(INDArray x, boolean descending, int... dimension) {

@@ -2742,6 +2742,10 @@ public class Shape {
         return rank * 2 + 4;
     }
 
+    public static int shapeInfoLength(long[] shape) {
+        return shapeInfoLength((int) shape[0]);
+    }
+
     /**
      * Get the stride for the given
      * shape information buffer

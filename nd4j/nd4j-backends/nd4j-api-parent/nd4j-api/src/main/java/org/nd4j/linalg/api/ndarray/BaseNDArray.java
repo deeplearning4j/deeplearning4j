@@ -57,7 +57,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.api.shape.options.ArrayOptions;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.exception.*;
 import org.nd4j.linalg.factory.Nd4j;
@@ -126,7 +126,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
-    public BaseNDArray() {}
+    public BaseNDArray() {
+
+    }
 
     /**
      * Returns true if this array is compressed, and false otherwise
@@ -6556,6 +6558,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isEmpty() {
-        return ArrayOptions.arrayType(javaShapeInformation) == ArrayType.EMPTY;
+        return ArrayOptionsHelper.arrayType(javaShapeInformation) == ArrayType.EMPTY;
     }
 }

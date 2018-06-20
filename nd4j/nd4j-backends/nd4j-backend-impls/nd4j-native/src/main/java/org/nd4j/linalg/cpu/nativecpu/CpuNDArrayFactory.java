@@ -22,7 +22,10 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.api.buffer.LongBuffer;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
 import org.nd4j.linalg.exception.ND4JComplexNumbersNotSupportedException;
 import org.nd4j.linalg.memory.MemcpyDirection;
@@ -517,6 +520,13 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray create(List<INDArray> list, long[] shape) {
         return new NDArray(list, shape, Nd4j.getStrides(shape));
+    }
+
+    @Override
+    public INDArray empty() {
+        long extras  = ArrayOptionsHelper.setOptionBit(0L, ArrayType.EMPTY);
+        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new int[0], new int[0],0,1,'c', extras);
+        return new NDArray(null, (LongBuffer) shape.getFirst(), shape.getSecond());
     }
 
 

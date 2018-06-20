@@ -3,7 +3,7 @@ package org.nd4j.linalg.api.shape.options;
 import lombok.val;
 import org.nd4j.linalg.api.shape.Shape;
 
-public class ArrayOptions {
+public class ArrayOptionsHelper {
     public static boolean hasBitSet(long[] shapeInfo, long bit) {
         val opt = Shape.options(shapeInfo);
 
@@ -28,5 +28,30 @@ public class ArrayOptions {
     }
 
 
+    public static void setOptionBit(long[] storage, ArrayType type) {
+        int length = Shape.shapeInfoLength(storage);
+        storage[length - 3] = setOptionBit(storage[length-3], type);
+    }
+
+    public static long setOptionBit(long storage, ArrayType type) {
+        long bit = 0;
+        switch (type) {
+            case SPARSE:
+                bit = 2L;
+                break;
+            case COMPRESSED:
+                bit = 4L;
+                break;
+            case EMPTY:
+                bit = 8L;
+                break;
+            default:
+            case DENSE:
+                return storage;
+        }
+
+        storage |= bit;
+        return storage;
+    }
 
 }

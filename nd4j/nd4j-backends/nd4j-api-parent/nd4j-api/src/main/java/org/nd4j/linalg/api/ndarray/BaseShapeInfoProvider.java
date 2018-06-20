@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ndarray;
 
+import lombok.val;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.shape.Shape;
@@ -52,6 +53,28 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
         return Pair.create(buffer, buffer.asLong());
     }
 
+    /**
+     * This method creates shapeInformation buffer, based on detailed shape information being passed in
+     *
+     * @param shape
+     * @param stride
+     * @param offset
+     * @param elementWiseStride
+     * @param order
+     * @param extras
+     * @return
+     */
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order, long extras) {
+        val result = createShapeInformation(shape, stride, offset, elementWiseStride, order);
+
+        val jvm = result.getSecond();
+
+        result.getFirst().put(jvm.length - 3, extras);
+        result.getSecond()[jvm.length - 1] = extras;
+
+        return result;
+    }
 
     /**
      * This method creates shapeInformation buffer, based on shape being passed in
