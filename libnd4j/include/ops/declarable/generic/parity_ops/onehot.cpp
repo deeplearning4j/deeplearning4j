@@ -52,7 +52,7 @@ namespace nd4j {
 
             Nd4jLong *newShape;
             int rank = shape::rank(inShape);
-            if (shape::isVector(inShape)) {
+            if (inShape[0] == 2 && inShape[1] == 1) {
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
                 Nd4jLong* shape;

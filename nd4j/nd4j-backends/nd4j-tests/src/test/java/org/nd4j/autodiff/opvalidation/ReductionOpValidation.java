@@ -90,9 +90,11 @@ public class ReductionOpValidation extends BaseOpValidation {
             SDVariable nonZero = sd.countNonZero(input);
             SDVariable zero = sd.countZero(input);
 
+            SDVariable loss = nonZero.add(zero).std(true);
+
             String error = OpValidation.validate(new TestCase(sd)
-                    .expectedOutput(nonZero.getVarName(), Nd4j.trueScalar(2.0))
-                    .expectedOutput(zero.getVarName(), Nd4j.trueScalar(2.0))
+                    .expectedOutput(nonZero.getVarName(), Nd4j.trueScalar(i == 0 ? 2.0 : 4.0))
+                    .expectedOutput(zero.getVarName(), Nd4j.trueScalar(i == 0 ? 2.0 : 0.0))
                     .gradientCheck(i != 0)
             );
             if(error != null)
@@ -124,7 +126,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             SDVariable zeroFraction = sd.zeroFraction(input);
 
             String error = OpValidation.validate(new TestCase(sd)
-                    .expectedOutput(zeroFraction.getVarName(), Nd4j.trueScalar(0.5))
+                    .expectedOutput(zeroFraction.getVarName(), Nd4j.trueScalar(i == 0 ? 0.5 : 0.0))
                     .gradientCheck(i != 0)
             );
             if(error != null)

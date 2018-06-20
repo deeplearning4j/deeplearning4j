@@ -151,14 +151,15 @@ public class NDArrayStrings {
             offset++;
             StringBuilder sb = new StringBuilder();
             sb.append("[");
-            for (int i = 0; i < arr.slices(); i++) {
-                if (summarize && i > 2 && i < arr.slices() - 3) {
-                    if (i == 3) {
-                        sb.append(" ...");
-                        sb.append(newLineSep + " \n");
-                        sb.append(StringUtils.repeat("\n", rank - 2));
-                        sb.append(StringUtils.repeat(" ", offset));
-                    }
+            long nSlices = arr.slices();
+            for (int i = 0; i < nSlices; i++) {
+                if (summarize && i > 2 && i < nSlices - 3) {
+                    sb.append(" ...");
+                    sb.append(newLineSep).append(" \n");
+                    sb.append(StringUtils.repeat("\n", rank - 2));
+                    sb.append(StringUtils.repeat(" ", offset));
+                    // immediately jump to the last slices so we only print ellipsis once
+                    i = Math.max(i, (int) nSlices - 4);
                 } else {
                     if (arr.rank() == 3 && arr.slice(i).isRowVector()) sb.append("[");
                     //hack fix for slice issue with 'f' order
@@ -170,9 +171,9 @@ public class NDArrayStrings {
                     else {
                         sb.append(format(arr.slice(i), offset, summarize));
                     }
-                    if (i != arr.slices() - 1) {
+                    if (i != nSlices - 1) {
                         if (arr.rank() == 3 && arr.slice(i).isRowVector()) sb.append("]");
-                        sb.append(newLineSep + " \n");
+                        sb.append(newLineSep).append(" \n");
                         sb.append(StringUtils.repeat("\n", rank - 2));
                         sb.append(StringUtils.repeat(" ", offset));
                     } else {
@@ -188,12 +189,15 @@ public class NDArrayStrings {
     private String vectorToString(INDArray arr, boolean summarize) {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
-        for (int i = 0; i < arr.length(); i++) {
+        long l = arr.length();
+        for (int i = 0; i <l; i++) {
             if (arr instanceof IComplexNDArray) {
                 sb.append(((IComplexNDArray) arr).getComplex(i).toString());
             } else {
-                if (summarize && i > 2 && i < arr.length() - 3) {
-                    if (i == 3) sb.append("  ...");
+                if (summarize && i > 2 && i < l - 3) {
+                    sb.append("  ...");
+                    // immediately jump to the last elements so we only print ellipsis once
+                    i = Math.max(i, (int) l - 4);
                 } else {
                     double arrElement = arr.getDouble(i);
                     if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement!= 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
@@ -213,8 +217,8 @@ public class NDArrayStrings {
                     }
                 }
             }
-            if (i < arr.length() - 1) {
-                if (!summarize || i < 2 || i > arr.length() - 3 || (summarize && arr.length() == 6)) {
+            if (i < l - 1) {
+                if (!summarize || i < 2 || i > l - 3 || (summarize && l == 6)) {
                     sb.append(colSep);
                 }
             }

@@ -112,14 +112,12 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
 
         int nIn = 5;
         int nOut = 3;
+        int tsLength = 3;
         int layerSize = 6;
 
         for (int minibatch : new int[]{1, 4}) {
-            INDArray input = Nd4j.rand(minibatch, nIn);
-            INDArray labels = Nd4j.zeros(minibatch, nOut);
-            for (int i = 0; i < minibatch; i++) {
-                labels.putScalar(i, i % nOut, 1.0);
-            }
+            INDArray input = Nd4j.rand(new int[]{minibatch, nIn, tsLength});
+            INDArray labels = TestUtils.randomOneHotTimeSeries(minibatch, nOut, tsLength);
 
             for (boolean rnnOutHasBias : new boolean[]{true, false}) {
 

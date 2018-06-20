@@ -16,29 +16,23 @@ import java.util.Map;
 /**
  * Im2col operation
  */
-public class Im2col extends DynamicCustomOp {
+public class Im2colBp extends DynamicCustomOp {
 
     protected Conv2DConfig conv2DConfig;
 
-    @Builder(builderMethodName = "builder")
-    public Im2col(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
-        super(null, inputArrays, outputs);
-        if (sameDiff != null) {
-            this.sameDiff = sameDiff;
-        }
-
+    public Im2colBp(SameDiff sameDiff, SDVariable i2cInput, SDVariable gradAtOutput, Conv2DConfig conv2DConfig) {
+        super(null, sameDiff,new SDVariable[]{i2cInput, gradAtOutput});
         this.conv2DConfig = conv2DConfig;
-
         addArgs();
     }
 
-    public Im2col(SameDiff sd, SDVariable input, Conv2DConfig config){
+    public Im2colBp(SameDiff sd, SDVariable input, Conv2DConfig config){
         super(null, sd, new SDVariable[]{input});
         this.conv2DConfig = config;
         addArgs();
     }
 
-    public Im2col() {}
+    public Im2colBp() {}
 
     protected void addArgs() {
         addIArgument(conv2DConfig.getKH());
@@ -50,7 +44,6 @@ public class Im2col extends DynamicCustomOp {
         addIArgument(conv2DConfig.getDH());
         addIArgument(conv2DConfig.getDW());
         addIArgument(ArrayUtil.fromBoolean(conv2DConfig.isSameMode()));
-
     }
 
 
@@ -61,11 +54,11 @@ public class Im2col extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "im2col";
+        return "im2col_bp";
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(f().im2ColBp(arg(), grad.get(0), conv2DConfig));
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        throw new UnsupportedOperationException("Differentiation not supported for this op: " + getClass().getSimpleName());
     }
 }

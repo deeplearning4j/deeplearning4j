@@ -157,19 +157,14 @@ public class LocalResponseNormalization extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        List<SDVariable> ret = new ArrayList<>();
-        List<SDVariable> inputs = new ArrayList<>();
-        inputs.addAll(Arrays.asList(args()));
-        inputs.add(f1.get(0));
-        LocalResponseNormalizationDerivative localResponseNormalizationDerivative = LocalResponseNormalizationDerivative.derivativeBuilder()
+        SDVariable[] gradFnInputs = new SDVariable[]{arg(), f1.get(0)};
+        LocalResponseNormalizationDerivative lrnGrad = LocalResponseNormalizationDerivative.derivativeBuilder()
                 .inPlace(inPlace)
                 .sameDiff(sameDiff)
-                .inputFunctions(inputs.toArray(new SDVariable[inputs.size()]))
+                .inputFunctions(gradFnInputs)
                 .config(config)
                 .build();
-        ret.addAll(Arrays.asList(localResponseNormalizationDerivative.outputVariables()));
-
-        return ret;
+        return Collections.singletonList(lrnGrad.outputVariable());
     }
 
     @Override

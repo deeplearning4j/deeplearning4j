@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.opvalidation;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.OpValidationSuite;
@@ -22,6 +23,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
+@Slf4j
 public class LayerOpValidation extends BaseOpValidation {
     public LayerOpValidation(Nd4jBackend backend) {
         super(backend);
@@ -89,15 +91,13 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testBiasAdd() {
-        OpValidationSuite.ignoreFailing();
-
         Nd4j.getRandom().setSeed(12345);
 
         for (boolean rank1Bias : new boolean[]{false, true}) {
 
             SameDiff sameDiff = SameDiff.create();
-            INDArray input = Nd4j.rand(new long[]{2, 4});
-            INDArray b = Nd4j.rand(rank1Bias ? new long[]{4} : new long[]{1, 4});
+            INDArray input = Nd4j.linspace(1,8,8).reshape(new long[]{2, 4});
+            INDArray b = Nd4j.linspace(1,4,4).reshape(rank1Bias ? new long[]{4} : new long[]{1, 4}).divi(4);
 
             SDVariable sdInput = sameDiff.var("input", input);
             SDVariable sdBias = sameDiff.var("bias", b);
@@ -105,7 +105,7 @@ public class LayerOpValidation extends BaseOpValidation {
             SDVariable res = sameDiff.biasAdd(sdInput, sdBias);
             SDVariable loss = sameDiff.standardDeviation(res, true);
 
-            INDArray exp = input.addiRowVector(b);
+            INDArray exp = input.addRowVector(b);
 
             TestCase tc = new TestCase(sameDiff)
                     .gradientCheck(true)
@@ -132,7 +132,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         Nd4j.getRandom().setSeed(12345);
 
-        int[][] inputSizes = new int[][]{{1, 3, 8, 8}, {3, 6, 12, 12}};
+        int[][] inputSizes = new int[][]{{1, 3, 8, 8}}; //, {3, 6, 12, 12}};
 
         List<String> failed = new ArrayList<>();
 
@@ -238,7 +238,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         break;
                     case 7:
                         //LRN
-                        msg = "7 - LRN with NHWC - input" + Arrays.toString(inSizeNCHW);
+                        msg = "7 - LRN with NCHW - input" + Arrays.toString(inSizeNCHW);
                         inSize = inSizeNCHW;
                         in = sd.var("in", inSize);
                         out = sd.localResponseNormalization(in, LocalResponseNormalizationConfig.builder()
@@ -257,6 +257,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 in.setArray(inArr);
                 SDVariable loss = sd.standardDeviation("loss", out, true);
 
+                log.info("Starting test: " + msg);
                 TestCase tc = new TestCase(sd);
                 String error = OpValidation.validate(tc);
                 if (error != null) {
@@ -271,8 +272,6 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testConv2d2() {
-        OpValidationSuite.ignoreFailing();
-
         //avg pool, batch norm, conv2d, deconv2d, depthwise2d, LRN, max pool 2d, pooling2d, sconv2d, upsamilpng
 
         Nd4j.getRandom().setSeed(12345);
@@ -349,10 +348,10 @@ public class LayerOpValidation extends BaseOpValidation {
 
             String msg = Arrays.toString(inSizeNCHW);
 
-            TestCase tc = new TestCase(sd);
+            TestCase tc = new TestCase(sd).testName(msg);
             String error = OpValidation.validate(tc);
             if (error != null) {
-                failed.add(name);
+                failed.add(msg);
             }
         }
 
@@ -558,7 +557,9 @@ public class LayerOpValidation extends BaseOpValidation {
                     in.setArray(inArr);
                     SDVariable loss = sd.standardDeviation("loss", out, true);
 
+                    log.info("Starting test: " + msg);
                     TestCase tc = new TestCase(sd);
+                    tc.testName(msg);
                     String error = OpValidation.validate(tc);
                     if (error != null) {
                         failed.add(name);
@@ -573,8 +574,6 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testDepthWiseConv2dBasic() {
-        OpValidationSuite.ignoreFailing();
-
         int nIn = 3;
         int depthWise = 4;
         int kH = 2;
@@ -616,24 +615,24 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testSeparableConv2dBasic() {
-        OpValidationSuite.ignoreFailing();
-        int nIn = 3;
-        int nOut = 4;
+        Nd4j.getRandom().setSeed(12345);
+        int nIn = 2;
+        int nOut = 3;
         int kH = 2;
         int kW = 2;
 
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
+        int mb = 2;
+        int imgH = 8;
+        int imgW = 8;
 
         int depthWise = 3;
 
         SameDiff sd = SameDiff.create();
-        INDArray depthWeightArr = Nd4j.create(depthWise, nIn, kH, kW);
-        INDArray pointWeightArr = Nd4j.create(nOut, depthWise, 1, 1);
+        INDArray depthWeightArr = Nd4j.rand(new int[]{depthWise, nIn, kH, kW});
+        INDArray pointWeightArr = Nd4j.rand(new int[]{nOut, nIn * depthWise, 1, 1});           //Must have shape: [outChannels, inChannels * depthMultiplier, 1, 1]
 
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+        INDArray bArr = Nd4j.rand(new int[]{nOut});
+        INDArray inArr = Nd4j.rand(new int[]{mb, nIn, imgH, imgW});
 
         SDVariable in = sd.var("in", inArr);
         SDVariable dW = sd.var("dW", depthWeightArr);
@@ -648,34 +647,45 @@ public class LayerOpValidation extends BaseOpValidation {
                 .sH(1).sW(1)
                 .dH(1).dW(1)
                 .isSameMode(false)
+                .isNHWC(false)
                 .build();
 
         SDVariable out = sd.sconv2d(vars, c);
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
+        //Expected output size: out = (in - k + 2*p)/s + 1 = (8-2+0)/1+1 = 7
         val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 27, 27}, outShape);
+        assertArrayEquals(new long[]{mb, nOut, 7, 7}, outShape);
+
+        SDVariable loss = out.std(true);
+
+//        System.out.println(sd.summary());
+//        System.out.println("--------------------------");
+//        sd.createGradFunction();
+//        System.out.println(sd.getFunction("grad").summary());
+
+        //Gradient check:
+        TestCase tc = new TestCase(sd);
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 
     @Test
     public void testDeconv2dBasic() {
-        OpValidationSuite.ignoreFailing();
-
-        int nIn = 3;
-        int nOut = 4;
+        int nIn = 2;
+        int nOut = 3;
         int kH = 2;
         int kW = 2;
 
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
+        int mb = 2;
+        int imgH = 8;
+        int imgW = 8;
 
         SameDiff sd = SameDiff.create();
-        INDArray wArr = Nd4j.create(nOut, nIn, kH, kW);
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+        INDArray wArr = Nd4j.rand(new int[]{nIn, nOut, kH, kW}); //Libnd4j expected weights format: [chIn, chOut, kH, kW] - NCHW
+        INDArray bArr = Nd4j.rand(new long[]{nOut});
+        INDArray inArr = Nd4j.rand(new long[]{mb, nIn, imgH, imgW});
 
         SDVariable in = sd.var("in", inArr);
         SDVariable w = sd.var("W", wArr);
@@ -695,9 +705,15 @@ public class LayerOpValidation extends BaseOpValidation {
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in + k + 2*p)/ s - 1 = (28 + 2+0)/1 - 1 = 29
+        //Expected output size: out = (in + k + 2*p)/ s - 1 = (8 + 2+0)/1 - 1 = 9
         val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 29, 29}, outShape);
+        assertArrayEquals(new long[]{mb, nOut, 9, 9}, outShape);
+
+        SDVariable loss = out.std(true);
+        //Gradient check:
+        TestCase tc = new TestCase(sd);
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 
 
@@ -810,18 +826,19 @@ public class LayerOpValidation extends BaseOpValidation {
     @Test
     public void testAvgPooling3dBasic() {
         OpValidationSuite.ignoreFailing();
+        fail("Test disabled due to native code deadlock");  //https://github.com/deeplearning4j/deeplearning4j/issues/5361
         int nIn = 3;
         int kH = 2;
         int kW = 2;
         int kD = 2;
 
         int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-        int imgD = 28;
+        int imgH = 8;
+        int imgW = 8;
+        int imgD = 8;
 
         SameDiff sd = SameDiff.create();
-        INDArray inArr = Nd4j.create(mb, nIn, imgD, imgH, imgW);
+        INDArray inArr = Nd4j.rand(new long[]{mb, nIn, imgD, imgH, imgW});
 
         SDVariable in = sd.var("in", inArr);
 
@@ -831,6 +848,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .sH(1).sW(1).sD(1)
                 .dH(0).dW(0).dD(0)
                 .ceilingMode(false)
+                .isNCDHW(true)
                 .build();
 
         SDVariable out = sd.avgPooling3d(in, pooling3DConfig);
@@ -839,12 +857,19 @@ public class LayerOpValidation extends BaseOpValidation {
         INDArray outArr = sd.execAndEndResult();
         val outShape = outArr.shape();
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-        assertArrayEquals(new long[]{mb, nIn, 27, 27, 27}, outShape);
+        assertArrayEquals(new long[]{mb, nIn, 7, 7, 7}, outShape);
+
+        SDVariable loss = out.std(true);
+        //Gradient check:
+        TestCase tc = new TestCase(sd);
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 
     @Test
     public void testMaxPooling3dBasic() {
         OpValidationSuite.ignoreFailing();
+        fail("Test disabled due to native code deadlock");  //https://github.com/deeplearning4j/deeplearning4j/issues/5361
         int nIn = 3;
         int kH = 2;
         int kW = 2;
@@ -920,9 +945,9 @@ public class LayerOpValidation extends BaseOpValidation {
         int kD = 2;
 
         int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-        int imgT = 28;
+        int imgH = 8;
+        int imgW = 8;
+        int imgT = 8;
 
         SameDiff sd = SameDiff.create();
         INDArray wArr = Nd4j.create(nOut, nIn, kD, kH, kW); //As per DL4J
@@ -935,8 +960,9 @@ public class LayerOpValidation extends BaseOpValidation {
 
         Conv3DConfig conv3DConfig = Conv3DConfig.builder()
                 .kH(kH).kW(kW).kD(kD)
+                .sD(1).sH(1).sW(1)
                 .dH(1).dW(1).dD(1)
-                .isValidMode(false)
+                .isValidMode(false) //samemode = true
                 .biasUsed(false)
                 .build();
 
@@ -944,9 +970,16 @@ public class LayerOpValidation extends BaseOpValidation {
         out = sd.tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27
+        //Expected output size, NOT same mode: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27
+        //Expected output size, WITH same mode: out = in/stride
         val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 27, 27, 27}, outShape);
+        assertArrayEquals(new long[]{mb, nOut, 8, 8, 8}, outShape);
+
+        SDVariable loss = out.std(true);
+        //Gradient check:
+        TestCase tc = new TestCase(sd);
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 
 }
