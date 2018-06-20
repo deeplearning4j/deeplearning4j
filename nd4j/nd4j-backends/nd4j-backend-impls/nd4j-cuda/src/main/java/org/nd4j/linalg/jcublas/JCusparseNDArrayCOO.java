@@ -7,12 +7,19 @@ import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCOO;
  * @author Audrey Loeffel
  */
 public class JCusparseNDArrayCOO extends BaseSparseNDArrayCOO {
-
-    public JCusparseNDArrayCOO(double[] values, int[][] indices, long[] shape) {
+    public JCusparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] shape) {
         super(values, indices, shape);
     }
 
-    public JCusparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] shape) {
+    public JCusparseNDArrayCOO(double[] values, long[][] indices, long[] shape) {
+        super(values, indices, shape);
+    }
+
+    public JCusparseNDArrayCOO(float[] values, long[][] indices, long[] shape) {
+        super(values, indices, shape);
+    }
+
+    public JCusparseNDArrayCOO(double[] values, int[][] indices, long[] shape) {
         super(values, indices, shape);
     }
 
