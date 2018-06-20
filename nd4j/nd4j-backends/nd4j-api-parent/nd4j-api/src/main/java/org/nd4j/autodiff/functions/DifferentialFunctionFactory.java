@@ -222,6 +222,16 @@ public class DifferentialFunctionFactory {
         return conv2D.outputVariable();
     }
 
+    public SDVariable upsampling2d(SDVariable input, boolean nchw, int scaleH, int scaleW){
+        return new Upsampling2d(sameDiff(), input, nchw, scaleH, scaleW).outputVariable();
+    }
+
+    public SDVariable upsampling2dBp(SDVariable input, SDVariable gradient, boolean nchw, int scaleH, int scaleW){
+        return new Upsampling2dDerivative(sameDiff(), input, gradient, nchw, scaleH, scaleW).outputVariable();
+    }
+
+
+
     /**
      * Average pooling 2d operation.
      *

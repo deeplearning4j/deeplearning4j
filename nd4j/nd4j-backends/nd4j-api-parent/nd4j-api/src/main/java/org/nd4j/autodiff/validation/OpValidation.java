@@ -8,7 +8,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DefaultOpConverter;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -22,11 +21,14 @@ import org.nd4j.linalg.api.ops.impl.grid.FreeGridOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarRemainder;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
 import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.MergeSum;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
@@ -501,6 +503,7 @@ public class OpValidation {
                 ScalarRemainder.class,  //Redundant; SameDiff uses ScalarFMod instead
                 RestoreV2.class,
                 SaveV2.class,
+                ScalarSetValue.class,   //Not used in SameDiff (it's a "set to X if less than X" type op, redundant given other ops)
 
                 //Exclude manual broadcast ops: SameDiff uses auto broadcasting
                 BroadcastAMax.class,
@@ -569,7 +572,10 @@ public class OpValidation {
                 Pooling2DDerivative.class,
                 Pooling3DDerivative.class,
                 SConv2DDerivative.class,
-                UpsamplingDerivative.class
+                Upsampling2dDerivative.class,
+
+                SliceBp.class,
+                StridedSliceBp.class
         );
 
         return new HashSet<>(list);

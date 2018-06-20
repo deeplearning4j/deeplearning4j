@@ -1889,6 +1889,54 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * Upsampling 2d - same scale for both dimensions. NCHW input format.
+     *
+     * @param input Input, in NCHW format
+     * @param scale Scale to upsample in both H and W dimensions
+     * @return Upsampled input
+     */
+    public SDVariable upsampling2d(SDVariable input, int scale) {
+        return upsampling2d(null, input, true, scale, scale);
+    }
+
+    /**
+     * Upsampling 2d - same scale for both dimensions. NCHW input format.
+     *
+     * @param input Input, in NCHW format
+     * @param scale Scale to upsample in both H and W dimensions
+     * @return Upsampled input
+     */
+    public SDVariable upsampling2d(String name, SDVariable input, int scale) {
+        return upsampling2d(name, input, true, scale, scale);
+    }
+
+    /**
+     * Upsampling 2d
+     *
+     * @param input  Input, in NCHW format
+     * @param nchw   If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
+     * @param scaleH Scale to upsample in height dimension
+     * @param scaleW Scale to upsample in width dimension
+     * @return Upsampled input
+     */
+    public SDVariable upsampling2d(SDVariable input, boolean nchw, int scaleH, int scaleW) {
+        return upsampling2d(null, input, nchw, scaleH, scaleW);
+    }
+
+    /**
+     * Upsampling 2d
+     *
+     * @param input  Input, in NCHW format
+     * @param nchw   If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
+     * @param scaleH Scale to upsample in height dimension
+     * @param scaleW Scale to upsample in width dimension
+     * @return Upsampled input
+     */
+    public SDVariable upsampling2d(String name, SDVariable input, boolean nchw, int scaleH, int scaleW) {
+        SDVariable ret = f().upsampling2d(input, nchw, scaleH, scaleW);
+        return updateVariableNameAndReference(ret, name);
+    }
 
     /**
      * Average pooling 2d operation.

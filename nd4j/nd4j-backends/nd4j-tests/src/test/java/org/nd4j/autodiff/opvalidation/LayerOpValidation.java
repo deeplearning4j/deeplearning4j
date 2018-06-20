@@ -137,7 +137,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 8; i++) {
             for (int[] inSizeNCHW : inputSizes) {
 
                 SameDiff sd = SameDiff.create();
@@ -236,6 +236,13 @@ public class LayerOpValidation extends BaseOpValidation {
                                 .kH(3).kW(2)
                                 .sH(2).sW(2)
                                 .build());
+                        break;
+                    case 7:
+                        //Upsampling
+                        msg = "7 - upsampling2d, NCHW, 2x2 - " + Arrays.toString(inSizeNCHW);
+                        inSize = inSizeNCHW;
+                        in = sd.var("in", inSize);
+                        out = sd.upsampling2d(in, true, 2, 2);
                         break;
                     default:
                         throw new RuntimeException();
