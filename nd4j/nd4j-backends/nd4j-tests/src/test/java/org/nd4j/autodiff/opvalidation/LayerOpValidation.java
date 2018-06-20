@@ -96,8 +96,8 @@ public class LayerOpValidation extends BaseOpValidation {
         for (boolean rank1Bias : new boolean[]{false, true}) {
 
             SameDiff sameDiff = SameDiff.create();
-            INDArray input = Nd4j.linspace(1,8,8).reshape(new long[]{2, 4});
-            INDArray b = Nd4j.linspace(1,4,4).reshape(rank1Bias ? new long[]{4} : new long[]{1, 4}).divi(4);
+            INDArray input = Nd4j.linspace(1, 8, 8).reshape(new long[]{2, 4});
+            INDArray b = Nd4j.linspace(1, 4, 4).reshape(rank1Bias ? new long[]{4} : new long[]{1, 4}).divi(4);
 
             SDVariable sdInput = sameDiff.var("input", input);
             SDVariable sdBias = sameDiff.var("bias", b);
@@ -128,7 +128,8 @@ public class LayerOpValidation extends BaseOpValidation {
     public void testConv2d() {
         OpValidationSuite.ignoreFailing();
 
-        //avg pool, batch norm, conv2d, deconv2d, depthwise2d, LRN, max pool 2d, pooling2d, sconv2d, upsampling
+        //avg pool, batch norm, conv2d, max pool 2d, pooling2d, upsampling
+        //Tested elsewhere: deconv2d, depthwise2d, LRN, sconv2d
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -136,7 +137,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 7; i++) {
             for (int[] inSizeNCHW : inputSizes) {
 
                 SameDiff sd = SameDiff.create();
@@ -236,18 +237,6 @@ public class LayerOpValidation extends BaseOpValidation {
                                 .sH(2).sW(2)
                                 .build());
                         break;
-                    case 7:
-                        //LRN
-                        msg = "7 - LRN with NCHW - input" + Arrays.toString(inSizeNCHW);
-                        inSize = inSizeNCHW;
-                        in = sd.var("in", inSize);
-                        out = sd.localResponseNormalization(in, LocalResponseNormalizationConfig.builder()
-                                .depth(3)
-                                .bias(1)
-                                .alpha(1)
-                                .beta(0.5)
-                                .build());
-                        break;
                     default:
                         throw new RuntimeException();
 
@@ -271,61 +260,7 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
     @Test
-    public void testConv2d2() {
-        //avg pool, batch norm, conv2d, deconv2d, depthwise2d, LRN, max pool 2d, pooling2d, sconv2d, upsamilpng
-
-        Nd4j.getRandom().setSeed(12345);
-
-        int[][] inputSizes = new int[][]{{1, 3, 8, 8}, {3, 6, 12, 12}};
-
-        List<String> failed = new ArrayList<>();
-
-        for (int i = 4; i <= 4; i++) {
-            for (int[] inSizeNCHW : inputSizes) {
-
-                SameDiff sd = SameDiff.create();
-                SDVariable in = null;
-
-                int[] inSize;
-
-                SDVariable out;
-                String msg;
-                switch (i) {
-                    case 4:
-                        //Avg pool, NHWC, not same
-                        msg = "3 - avg pool, NHWC, not same - input " + Arrays.toString(inSizeNCHW);
-                        inSize = nchwToNhwc(inSizeNCHW);
-                        in = sd.var("in", inSize);
-                        out = sd.avgPooling2d(in, Pooling2DConfig.builder()
-                                .isNHWC(true)
-                                .isSameMode(false)
-                                .kH(3).kW(2)
-                                .sH(2).sW(2)
-                                .build());
-                        break;
-                    default:
-                        throw new RuntimeException();
-
-                }
-
-                INDArray inArr = Nd4j.rand(inSize).muli(10);
-                in.setArray(inArr);
-                SDVariable loss = sd.standardDeviation("loss", out, true);
-
-                TestCase tc = new TestCase(sd);
-                String error = OpValidation.validate(tc);
-                if (error != null) {
-                    failed.add(name);
-                }
-
-            }
-        }
-
-        assertEquals(failed.toString(), 0, failed.size());
-    }
-
-    @Test
-    public void testIm2Col() {
+    public void testLrn2d() {
         OpValidationSuite.ignoreFailing();
 
         Nd4j.getRandom().setSeed(12345);
@@ -337,7 +272,48 @@ public class LayerOpValidation extends BaseOpValidation {
         for (int[] inSizeNCHW : inputSizes) {
 
             SameDiff sd = SameDiff.create();
-            SDVariable var = sd.var("in", Nd4j.create(inSizeNCHW));
+            SDVariable in = null;
+
+            int[] inSize;
+
+            //LRN
+            String msg = "7 - LRN with NCHW - input" + Arrays.toString(inSizeNCHW);
+            inSize = inSizeNCHW;
+            in = sd.var("in", inSize);
+            SDVariable out = sd.localResponseNormalization(in, LocalResponseNormalizationConfig.builder()
+                    .depth(3)
+                    .bias(1)
+                    .alpha(1)
+                    .beta(0.5)
+                    .build());
+
+            INDArray inArr = Nd4j.rand(inSize).muli(10);
+            in.setArray(inArr);
+            SDVariable loss = sd.standardDeviation("loss", out, true);
+
+            log.info("Starting test: " + msg);
+            TestCase tc = new TestCase(sd);
+            String error = OpValidation.validate(tc);
+            if (error != null) {
+                failed.add(msg);
+            }
+
+        }
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
+    public void testIm2Col() {
+        Nd4j.getRandom().setSeed(12345);
+
+        int[][] inputSizes = new int[][]{{1, 3, 8, 8}, {3, 6, 12, 12}};
+
+        List<String> failed = new ArrayList<>();
+
+        for (int[] inSizeNCHW : inputSizes) {
+
+            SameDiff sd = SameDiff.create();
+            SDVariable var = sd.var("in", Nd4j.rand(inSizeNCHW));
             SDVariable im2col = sd.im2Col(var, Conv2DConfig.builder()
                     .kH(2).kW(2)
                     .sH(1).sW(1)
@@ -487,7 +463,7 @@ public class LayerOpValidation extends BaseOpValidation {
             for (boolean ncdhw : new boolean[]{true, false}) {
                 int[] shape = (ncdhw ? inSizeNCDHW : ncdhwToNdhwc(inSizeNCDHW));
 
-                for( int i=0; i<4; i++ ) {
+                for (int i = 0; i < 4; i++) {
                     SameDiff sd = SameDiff.create();
                     SDVariable in = sd.var("in", shape);
 
@@ -498,7 +474,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             //Conv3d, with bias, same
                             msg = "0 - conv3d+bias+same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
                             SDVariable w0;
-                            if(ncdhw){
+                            if (ncdhw) {
                                 w0 = sd.var("w0", Nd4j.rand(new int[]{3, shape[1], 2, 2, 2}).muli(10));  //NCDHW: [oC, iC, kD, kH, kW]
                             } else {
                                 w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, 3, shape[1]}).muli(10));  //NDHWC: [kD, kH, kW, iC, oC]
@@ -515,7 +491,7 @@ public class LayerOpValidation extends BaseOpValidation {
                             //Conv3d, no bias, no same
                             msg = "1 - conv3d+no bias+no same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
                             SDVariable w1;
-                            if(ncdhw){
+                            if (ncdhw) {
                                 w1 = sd.var("w1", Nd4j.rand(new int[]{3, shape[1], 2, 2, 2}).muli(10));  //NCDHW: [oC, iC, kD, kH, kW]
                             } else {
                                 w1 = sd.var("w1", Nd4j.rand(new int[]{2, 2, 2, 3, shape[1]}).muli(10));  //NDHWC: [kD, kH, kW, iC, oC]
@@ -825,8 +801,6 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testAvgPooling3dBasic() {
-        OpValidationSuite.ignoreFailing();
-        fail("Test disabled due to native code deadlock");  //https://github.com/deeplearning4j/deeplearning4j/issues/5361
         int nIn = 3;
         int kH = 2;
         int kW = 2;
@@ -846,7 +820,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .kH(kH).kW(kW).kD(kD)
                 .pH(0).pW(0).pD(0)
                 .sH(1).sW(1).sD(1)
-                .dH(0).dW(0).dD(0)
+                .dH(1).dW(1).dD(1)
                 .ceilingMode(false)
                 .isNCDHW(true)
                 .build();
@@ -868,8 +842,6 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testMaxPooling3dBasic() {
-        OpValidationSuite.ignoreFailing();
-        fail("Test disabled due to native code deadlock");  //https://github.com/deeplearning4j/deeplearning4j/issues/5361
         int nIn = 3;
         int kH = 2;
         int kW = 2;
@@ -889,7 +861,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .kH(kH).kW(kW).kD(kD)
                 .pH(0).pW(0).pD(0)
                 .sH(1).sW(1).sD(1)
-                .dH(0).dW(0).dD(0)
+                .dH(1).dW(1).dD(1)
                 .ceilingMode(false)
                 .build();
 
