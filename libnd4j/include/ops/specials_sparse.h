@@ -41,9 +41,6 @@ namespace nd4j {
 
             static void coo_quickSort_parallel(Nd4jLong *indices, T* array, Nd4jLong lenArray, int numThreads, int rank);
 
-            static Nd4jLong coo_quickSort_findPivot(Nd4jLong *indices, T *array, Nd4jLong left, Nd4jLong right,
-                                                    int rank);
-
             static void sortCooIndicesGeneric(Nd4jLong *indices, T *values, Nd4jLong length, int rank);
         };
     }
