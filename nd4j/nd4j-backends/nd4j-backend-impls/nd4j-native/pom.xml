@@ -166,7 +166,7 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <properties>${javacpp.platform}</properties>
+                    <properties>${javacpp.platform.properties}</properties>
                     <propertyKeysAndValues>
                         <property>
                             <name>platform.root</name>

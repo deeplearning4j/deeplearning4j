@@ -256,9 +256,9 @@
             </property>
           </activation>
           <properties>
-            <javacpp.platform>android-arm</javacpp.platform>
+            <javacpp.platform.properties>android-arm-clang</javacpp.platform.properties>
             <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
-            <javacpp.platform.compiler>toolchains/arm-linux-androideabi-4.9/prebuilt/${os.name}-${os.arch}/bin/arm-linux-androideabi-g++</javacpp.platform.compiler>
+            <javacpp.platform.compiler>toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++</javacpp.platform.compiler>
           </properties>
         </profile>
         <profile>
@@ -270,9 +270,9 @@
             </property>
           </activation>
           <properties>
-            <javacpp.platform>android-arm64</javacpp.platform>
+            <javacpp.platform.properties>android-arm64-clang</javacpp.platform.properties>
             <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
-            <javacpp.platform.compiler>toolchains/aarch64-linux-android-4.9/prebuilt/${os.name}-${os.arch}/bin/aarch64-linux-android-g++</javacpp.platform.compiler>
+            <javacpp.platform.compiler>toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++</javacpp.platform.compiler>
           </properties>
         </profile>
         <profile>
@@ -284,9 +284,9 @@
             </property>
           </activation>
           <properties>
-            <javacpp.platform>android-x86</javacpp.platform>
+            <javacpp.platform.properties>android-x86-clang</javacpp.platform.properties>
             <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
-            <javacpp.platform.compiler>toolchains/x86-4.9/prebuilt/${os.name}-${os.arch}/bin/i686-linux-android-g++</javacpp.platform.compiler>
+            <javacpp.platform.compiler>toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++</javacpp.platform.compiler>
           </properties>
         </profile>
         <profile>
@@ -298,9 +298,9 @@
             </property>
           </activation>
           <properties>
-            <javacpp.platform>android-x86_64</javacpp.platform>
+            <javacpp.platform.properties>android-x86_64-clang</javacpp.platform.properties>
             <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
-            <javacpp.platform.compiler>toolchains/x86_64-4.9/prebuilt/${os.name}-${os.arch}/bin/x86_64-linux-android-g++</javacpp.platform.compiler>
+            <javacpp.platform.compiler>toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++</javacpp.platform.compiler>
           </properties>
         </profile>
         <profile>
@@ -312,7 +312,7 @@
             </property>
           </activation>
           <properties>
-            <javacpp.platform>linux-armhf</javacpp.platform>
+            <javacpp.platform.properties>linux-armhf</javacpp.platform.properties>
             <javacpp.platform.root>/home/almanac/raspberrypi/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf</javacpp.platform.root>
             <javacpp.platform.compiler>bin/arm-linux-gnueabihf-g++</javacpp.platform.compiler>
           </properties>
