@@ -5168,12 +5168,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
     protected double getLogEntropy(double[] array) {
-        double ret = 0;
-        for (double x : array) {
-            ret += FastMath.log(FastMath.pow(x, 2));
-        }
-
-        return ret;
+        return Math.log(MathUtils.entropy(array));
     }
 
 

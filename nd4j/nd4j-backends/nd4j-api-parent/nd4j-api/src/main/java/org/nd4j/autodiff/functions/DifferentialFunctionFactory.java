@@ -483,6 +483,10 @@ public class DifferentialFunctionFactory {
         return new Entropy(sameDiff(), in, dimensions).outputVariable();
     }
 
+    public SDVariable logEntropy(SDVariable in, int... dimensions){
+        return new LogEntropy(sameDiff(), in, dimensions).outputVariable();
+    }
+
     public SDVariable countNonZero(SDVariable input, int... dimensions) {
         return new CountNonZero(sameDiff(), input, dimensions).outputVariable();
     }

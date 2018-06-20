@@ -3411,6 +3411,29 @@ public class SameDiff {
     }
 
     /**
+     * Log entropy reduction: log(-sum(x * log(x)))
+     *
+     * @param in         Input
+     * @param dimensions Dimensions to reduce on (null for full array)
+     * @return Output variable
+     */
+    public SDVariable logEntropy(SDVariable in, int... dimensions) {
+        return logEntropy(null, in, dimensions);
+    }
+
+    /**
+     * Log entropy reduction: log(-sum(x * log(x)))
+     *
+     * @param in         Input
+     * @param dimensions Dimensions to reduce on (null for full array)
+     * @return Output variable
+     */
+    public SDVariable logEntropy(String name, SDVariable in, int... dimensions) {
+        SDVariable ret = f().logEntropy(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
      * @param iX
      * @param dimensions
      * @return
