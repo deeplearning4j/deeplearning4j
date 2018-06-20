@@ -201,11 +201,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             val attr = node.getAttrOrThrow(tfMappingAttrName);
             val type = attr.getType();
             if(fields == null) {
-                throw new ND4JIllegalStateException("No fields found for op " + mapping);
+                throw new ND4JIllegalStateException("No fields found for op [" + mapping + "]");
             }
 
             if(mapping.getPropertyNames() == null) {
-                throw new ND4JIllegalStateException("no property found for " + name + " and op " + on.opName());
+                throw new ND4JIllegalStateException("no property found for [" + name + "] in op [" + on.opName()+"]");
             }
 
             val field = fields.get(mapping.getPropertyNames()[0]);

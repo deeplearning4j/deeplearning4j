@@ -153,6 +153,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_depthwise_conv2d.class,
         float_depthwise_conv2d_bp.class,
         float_pointwise_conv2d.class,
+        float_deconv2d_tf.class,
         float_to_double.class,
         float_to_float16.class,
         float_to_float32.class,
@@ -511,6 +512,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_depthwise_conv2d.class,
         half_depthwise_conv2d_bp.class,
         half_pointwise_conv2d.class,
+        half_deconv2d_tf.class,
         half_to_double.class,
         half_to_float16.class,
         half_to_float32.class,
@@ -869,6 +871,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_depthwise_conv2d.class,
         double_depthwise_conv2d_bp.class,
         double_pointwise_conv2d.class,
+        double_deconv2d_tf.class,
         double_to_double.class,
         double_to_float16.class,
         double_to_float32.class,
@@ -24306,6 +24309,54 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public double_pointwise_conv2d() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+
+        @Name("nd4j::ops::deconv2d_tf<float>") public static class float_deconv2d_tf extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_deconv2d_tf(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_deconv2d_tf(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_deconv2d_tf position(long position) {
+                return (float_deconv2d_tf)super.position(position);
+            }
+        
+                                                                                    public float_deconv2d_tf() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+
+        @Name("nd4j::ops::deconv2d_tf<float16>") public static class half_deconv2d_tf extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_deconv2d_tf(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_deconv2d_tf(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_deconv2d_tf position(long position) {
+                return (half_deconv2d_tf)super.position(position);
+            }
+        
+                                                                                    public half_deconv2d_tf() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+
+        @Name("nd4j::ops::deconv2d_tf<double>") public static class double_deconv2d_tf extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_deconv2d_tf(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_deconv2d_tf(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_deconv2d_tf position(long position) {
+                return (double_deconv2d_tf)super.position(position);
+            }
+        
+                                                                                    public double_deconv2d_tf() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
