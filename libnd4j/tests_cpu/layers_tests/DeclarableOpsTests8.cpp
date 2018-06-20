@@ -2316,3 +2316,40 @@ TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test10) {
 
     delete results;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
+
+    NDArray<double> data  ('c', {10, 10});
+    NDArrayFactory<double>::linspace(1, data);
+    
+    NDArray<double>* means = data.sum({0});
+    NDArray<double>* deviance = data.varianceAlongDimension<simdOps::SummaryStatsVariance<double>>(true, {0}); //('c', {10, 10});
+
+    NDArray<double> counts(10.0);
+
+//    NDArray<double> expMeans('c', {10, 10});
+
+//    NDArray<double> expDeviance('c', {10, 10});
+
+    nd4j::ops::normalize_moments<double> op;
+    ResultSet<double>* results = op.execute({&counts, means, deviance}, {0.0}, {});
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(results->size(), 2);
+
+    NDArray<double>* outputMeans = results->at(0);    
+    NDArray<double>* outputDeviance = results->at(1);    
+
+    outputMeans->printIndexedBuffer("Means");
+    outputDeviance->printIndexedBuffer("Variance");
+    delete means;
+    delete deviance;
+//    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
+//    ASSERT_TRUE(expMeans.equalsTo(outputMeans));    
+//    ASSERT_TRUE(expMeans.isSameShape(outputDeviance));
+//    ASSERT_TRUE(expDeviance.equalsTo(outputDeviance));    
+
+    delete results;
+}
+
