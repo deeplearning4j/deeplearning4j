@@ -130,6 +130,67 @@ public class RandomOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testRandomOpsLongShape() {
+        OpValidationSuite.ignoreFailing();
+
+        List<String> failed = new ArrayList<>();
+
+        for (long[] shape : Arrays.asList(new long[]{1000}, new long[]{100, 10}, new long[]{40, 5, 5})) {
+
+            for (int i = 0; i < 1; i++) {
+
+                Nd4j.getRandom().setSeed(12345);
+                SameDiff sd = SameDiff.create();
+
+                SDVariable rand;
+                Function<INDArray, String> checkFn;
+                String name;
+                switch (i) {
+                    case 0:
+                        name = "randomBernoulli";
+                        rand = sd.randomBernoulli(0.5, shape);
+                        checkFn = in -> {
+                            double mean = in.meanNumber().doubleValue();
+                            double min = in.minNumber().doubleValue();
+                            double max = in.maxNumber().doubleValue();
+                            int sum0 = Transforms.not(in.dup()).sumNumber().intValue();
+                            int sum1 = in.sumNumber().intValue();
+                            if ((in.length() == 1 && min == max && (min == 0 || min == 1)) ||
+                                    (Math.abs(mean - 0.5) < 0.1 && min == 0 && max == 1 && (sum0 + sum1) == in.length()))
+                                return null;
+                            return "Failed: bernoulli - sum0 = " + sum0 + ", sum1 = " + sum1;
+                        };
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                SDVariable loss;
+                if (shape.length > 0) {
+                    loss = rand.std(true);
+                } else {
+                    loss = rand.mean();
+                }
+
+                String msg = name + " - " + Arrays.toString(shape);
+                TestCase tc = new TestCase(sd)
+                        .gradCheckSkipVariables("shape")
+                        .testName(msg)
+                        .expected(rand, checkFn);
+
+                log.info("TEST: " + msg);
+
+                String err = OpValidation.validate(tc, true);
+                if (err != null) {
+                    failed.add(err);
+                }
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    @Test
     public void testUniformRankSimple() {
 
         INDArray arr = Nd4j.trueVector(new double[]{100.0});

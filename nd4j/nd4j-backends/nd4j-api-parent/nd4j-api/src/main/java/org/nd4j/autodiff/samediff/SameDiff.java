@@ -1867,6 +1867,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable randomBernoulli(double p, long... shape){
+        return randomBernoulli(null, p, shape);
+    }
+
+    public SDVariable randomBernoulli(String name, double p, long... shape){
+        SDVariable ret = f().randomBernoulli(p, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      * Exponential distribution: P(x) = lambda * exp(-lambda * x)
      *
@@ -7109,9 +7118,11 @@ public class SameDiff {
                 Op op = (Op) differentialFunction;
 
                 // ops in differential function might have stale NDArrays used. we should renew them
-                op.setX(inputs[0].getArr());
-                if (inputs.length == 2)
-                    op.setY(inputs[1].getArr());
+                if(inputs != null && inputs.length > 0) {
+                    op.setX(inputs[0].getArr());
+                    if (inputs.length == 2)
+                        op.setY(inputs[1].getArr());
+                }
 
                 if (differentialFunction.getDimensions() == null)
                     Nd4j.getExecutioner().exec(op);

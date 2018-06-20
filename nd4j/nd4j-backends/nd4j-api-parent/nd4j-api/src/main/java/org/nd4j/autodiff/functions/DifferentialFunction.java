@@ -521,6 +521,8 @@ public abstract class DifferentialFunction {
      * @return
      */
     public SDVariable arg() {
+        if(args() == null)
+            return null;
         return args()[0];
     }
 

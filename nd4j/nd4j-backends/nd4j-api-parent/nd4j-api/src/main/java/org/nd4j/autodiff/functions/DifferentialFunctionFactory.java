@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.shape.Shape;
@@ -157,6 +158,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable randomBernoulli(double p, SDVariable shape){
         return new RandomBernoulli(sameDiff(), shape, p).outputVariable();
+    }
+
+    public SDVariable randomBernoulli(double p, long... shape){
+        return new BernoulliDistribution(sameDiff(), p, shape).outputVariable();
     }
 
     /**
@@ -705,7 +710,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable tan(SDVariable iX) {
-        return new Tan(sameDiff(), iX, null).outputVariable();
+        return new Tan(sameDiff(), iX, false).outputVariable();
 
     }
 
