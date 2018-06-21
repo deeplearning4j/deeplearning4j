@@ -85,7 +85,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, 2, 1, false, 0, 0) {
         if(!isGradOShapeBroadcast)
             delete gradO;
     }
-    
+
     return Status::OK();
 }
 
