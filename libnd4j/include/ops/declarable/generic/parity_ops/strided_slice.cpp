@@ -358,6 +358,8 @@ namespace nd4j {
             bool is_simple_slice;
             bool is_dim0;
 
+            // FIXME: remove this method once we get 1D vectors supported
+            vectorize(input_shape);
             REQUIRE_TRUE(_preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0), 0, "StridedSlice: shape calculation failed");
 
             auto sub = x->subarray(indices);
