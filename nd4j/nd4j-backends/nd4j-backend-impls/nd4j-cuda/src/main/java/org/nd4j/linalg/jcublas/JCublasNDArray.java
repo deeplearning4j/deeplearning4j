@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
@@ -54,6 +55,14 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 
 public class JCublasNDArray extends BaseNDArray {
+
+
+    public JCublasNDArray(DataBuffer buffer, CudaLongDataBuffer shapeInfo, long[] javaShapeInfo) {
+        this.javaShapeInformation = javaShapeInfo;
+        this.shapeInformation = shapeInfo;
+        this.data = buffer;
+    }
+
     public JCublasNDArray(double[][] data) {
         super(data);
     }

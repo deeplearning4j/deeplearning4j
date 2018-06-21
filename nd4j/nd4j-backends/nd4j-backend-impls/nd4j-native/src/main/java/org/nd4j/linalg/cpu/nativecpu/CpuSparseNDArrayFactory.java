@@ -607,4 +607,10 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     public INDArray create(double[] data, long[] shape, char ordering) {
         return null;
     }
+
+
+    @Override
+    public INDArray empty() {
+        throw new UnsupportedOperationException();
+    }
 }

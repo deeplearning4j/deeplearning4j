@@ -34,69 +34,35 @@ import java.util.Map;
 
 
 /**
- * Softmax cross entropy loss
+ * Softmax cross entropy loss with Logits
  *
  * @author Max Pumperla
  */
 @NoArgsConstructor
-public class SoftmaxCrossEntropyLoss extends DynamicCustomOp {
+public class SoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
 
-    private int reductionMode = 0;
-    private double labelSmoothing = 0.0;
-
-    public SoftmaxCrossEntropyLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels,
-                                   int reductionMode, double labelSmoothing) {
+    public SoftmaxCrossEntropyLossWithLogits(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels,
+                                             int reductionMode, double labelSmoothing) {
         super(null, sameDiff, new SDVariable[]{logits, weights, labels}, false);
-        this.reductionMode = reductionMode;
-        this.labelSmoothing = labelSmoothing;
-        this.sameDiff = sameDiff;
-
-        addArgs();
     }
 
-    public SoftmaxCrossEntropyLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels,
-                                   int reductionMode) {
+    public SoftmaxCrossEntropyLossWithLogits(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels,
+                                             int reductionMode) {
         this(sameDiff, logits, weights, labels, reductionMode, 0.0);
     }
 
 
     public void addArgs() {
-        addIArgument(reductionMode);
-        addTArgument(labelSmoothing);
     }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-        addArgs();
     }
-
-    /*
-    @Override
-    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> attrs = new LinkedHashMap<>();
-
-        val labelSmooting = PropertyMapping.builder()
-                .propertyNames(new String[]{"label_smoothing"})
-                .tfInputPosition(4)
-                .build();
-        attrs.put("labelSmoothing", labelSmooting);
-
-        val reduction = PropertyMapping.builder()
-                .propertyNames(new String[]{"reduction"})
-                .tfInputPosition(7)
-                .build();
-        attrs.put("reductionMode", reduction);
-
-        ret.put(tensorflowName(),attrs);
-        return ret;
-    }
-    */
 
     @Override
     public String opName() {
-        return "softmax_cross_entropy_loss";
+        return "softmax_cross_entropy_loss_with_logits";
     }
 
     @Override
@@ -106,7 +72,7 @@ public class SoftmaxCrossEntropyLoss extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "SoftmaxCrossEntropy";
+        return "SoftmaxCrossEntropyWithLogits";
     }
 
     @Override

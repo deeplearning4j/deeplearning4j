@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.ndarray;
 
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.shape.Shape;
@@ -11,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     protected AtomicLong bytes = new AtomicLong(0);
 
@@ -45,12 +48,39 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     }
 
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride,
-                    char order) {
+    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order) {
         DataBuffer buffer = Shape.createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), offset, (long) elementWiseStride, order);
         buffer.setConstant(true);
         return Pair.create(buffer, buffer.asLong());
     }
+
+    /**
+     * This method creates shapeInformation buffer, based on detailed shape information being passed in
+     *
+     * @param shape
+     * @param stride
+     * @param offset
+     * @param elementWiseStride
+     * @param order
+     * @param extras
+     * @return
+     */
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order, long extras) {
+        DataBuffer buffer = Shape.createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), offset, (long) elementWiseStride, order);
+        buffer.put(buffer.length() - 3, extras);
+        buffer.setConstant(true);
+        return Pair.create(buffer, buffer.asLong());
+    }
+
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order, long extras) {
+        DataBuffer buffer = Shape.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+        buffer.put(buffer.length() - 3, extras);
+        buffer.setConstant(true);
+        return Pair.create(buffer, buffer.asLong());
+    }
+
 
 
     /**

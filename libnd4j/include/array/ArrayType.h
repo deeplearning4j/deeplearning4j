@@ -10,6 +10,7 @@ namespace nd4j {
         DENSE = 1,
         SPARSE = 2,
         COMPRESSED = 3,
+        EMPTY = 4,
     };
 }
 
