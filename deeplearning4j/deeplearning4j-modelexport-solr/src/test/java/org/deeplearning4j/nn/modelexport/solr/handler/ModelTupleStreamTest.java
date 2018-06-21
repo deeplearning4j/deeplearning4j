@@ -26,10 +26,10 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.modelexport.solr.ltr.model.ScoringModel; // TODO: temporary only
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelGuesser;
 import org.deeplearning4j.util.ModelSerializer;
+import org.deeplearning4j.util.NetworkUtils;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -135,8 +135,8 @@ public class ModelTupleStreamTest {
 
         for (int ii=0; ii<outputKeys.length; ++ii)
         {
-          final double originalScore = ScoringModel.output((Model)originalModel, Nd4j.create(floats)).getDouble(ii);
-          final double restoredScore = ScoringModel.output((Model)restoredModel, Nd4j.create(floats)).getDouble(ii);
+          final double originalScore = NetworkUtils.output((Model)originalModel, Nd4j.create(floats)).getDouble(ii);
+          final double restoredScore = NetworkUtils.output((Model)restoredModel, Nd4j.create(floats)).getDouble(ii);
           assertEquals(
             originalModel.getClass().getSimpleName()+" (originalScore-restoredScore)="+(originalScore-restoredScore),
             originalScore, restoredScore, 1e-5);

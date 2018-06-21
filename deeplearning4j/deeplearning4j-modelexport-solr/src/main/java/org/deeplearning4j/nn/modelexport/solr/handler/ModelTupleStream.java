@@ -21,8 +21,8 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.SolrDefaultStreamFactory; // TODO: https://issues.apache.org/jira/browse/SOLR-12402
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.modelexport.solr.ltr.model.ScoringModel; // TODO: temporary only
 import org.deeplearning4j.util.ModelGuesser;
+import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -136,7 +136,7 @@ public class ModelTupleStream extends TupleStream implements Expressible {
       return tuple;
     } else {
       final INDArray inputs = getInputsFromTuple(tuple);
-      final INDArray outputs = ScoringModel.output(model, inputs);
+      final INDArray outputs = NetworkUtils.output(model, inputs);
       return applyOutputsToTuple(tuple, outputs);
     }
   }
