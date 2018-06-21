@@ -3,21 +3,15 @@ import re
 import os
 import shutil
 import json
+import argparse
 
-DOCS_ROOT = 'http://deeplearning4j.org'
-SOURCE_ROOT = 'https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/' \
-              'deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/'
-TEMPLATE_DIR = 'templates'
-TARGET_DIR = 'doc_sources'
-BASE_PATH = '../deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/'
-PROJECT = 'keras-import/'
 
 def class_to_docs_link(module_name, class_name):
     return DOCS_ROOT + module_name.replace('.', '/') + '#' + class_name
 
 
 def class_to_source_link(module_name, cls_name):
-    return '[[source]](' + SOURCE_ROOT + module_name + '/' + cls_name + '.java)'
+    return '[[source]](' + GITHUB_ROOT + module_name + '/' + cls_name + '.java)'
 
 
 def to_java(code):
@@ -86,13 +80,13 @@ def read_page_data(data):
     classes = []
     module = data.get('module', "")
     if module:
-        classes = os.listdir(BASE_PATH + module)
+        classes = os.listdir(SOURCE_CODE_PATH + module)
     cls = data.get('class', "")
     if cls:
         classes = cls
     page_data = []
     for c in classes:
-        class_string = read_file(BASE_PATH + module + '/' + c)
+        class_string = read_file(SOURCE_CODE_PATH + module + '/' + c)
         class_name = c.strip('.java')
         doc_string, class_string = get_main_doc_string(class_string, class_name)
         constructors, class_string = get_constructor_data(class_string, class_name)
@@ -150,10 +144,29 @@ def write_content(blocks, page_data):
         f.write(markdown)
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--project', '-p', type=str, required=True)  # e.g. keras-import
+    parser.add_argument('--code', '-c', type=str, required=True)  # relative path to source code for this project
+
+    parser.add_argument('--docs_root', '-d', type=str, required=False, default='http://deeplearning4j.org') # TBD
+    parser.add_argument('--templates', '-t', type=str, required=False, default='templates')
+    parser.add_argument('--sources', '-s', type=str, required=False, default='doc_sources')
+
+    args = parser.parse_args()
+
+    TEMPLATE_DIR = args.templates
+    TARGET_DIR = args.sources
+    PROJECT = args.project + '/'
+    DOCS_ROOT = args.docs_root
+    SOURCE_CODE_PATH = args.code
+    GITHUB_ROOT = 'https://github.com/deeplearning4j/deeplearning4j/tree/master/' + SOURCE_CODE_PATH[3:]
+
+
     clean_target()
     create_index_page()
 
-    with open(PROJECT + 'keras_pages.json', 'r') as f:
+    with open(PROJECT + 'pages.json', 'r') as f:
         json_pages = f.read()
     pages = json.loads(json_pages)
 
@@ -163,6 +176,7 @@ if __name__ == '__main__':
         for module_name, class_name, doc_string, constructors, methods in data:
             subblocks = []
             link = class_to_source_link(module_name, class_name)
+            print(link)
             subblocks.append('<span style="float:right;"> {} </span>'.format(link))
             if module_name:
                 subblocks.append('## {}\n'.format(class_name))
