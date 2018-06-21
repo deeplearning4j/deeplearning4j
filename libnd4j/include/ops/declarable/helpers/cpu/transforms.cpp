@@ -616,35 +616,51 @@ void mergeAdd(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output) {
 template<typename T>
 void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace) {
     
-    if (dimensions.size() == 0) {
-        // all-reduce
-        const T n2 = input.template reduceNumber<simdOps::Norm2<T>>();
-        if (n2 <= clipNorm) {
-            if (!isInplace)
-                output.assign(input);
-        } 
+        
+    NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions, true);
+
+    if (isInplace) {
+
+        if(dimensions.empty()) {
+
+            if(norm2(0) > clipNorm)
+                input *= (clipNorm / norm2(0));
+        }
         else {
-            const T factor = clipNorm / n2;
-            auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
-            input.applyLambda(lambda, &output);
+
+            ResultSet<T>* inTads = NDArrayFactory<T>::allTensorsAlongDimension(&input, dimensions);
+#pragma omp parallel for if(inTads->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
+            for (int e = 0; e < inTads->size(); e++) {                
+                if (norm2(e) > clipNorm) 
+                    (*inTads->at(e)) *= (clipNorm / norm2(e));                    
+            }
+            delete inTads;
         }
     }
     else {
-        // along dimension
-        NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions, false);
-        if (!isInplace)
-            output.assign(input);
-        ResultSet<T>* tads = NDArrayFactory<T>::allTensorsAlongDimension(&output, dimensions);
-        // TODO: make this CUDA-compliant somehow
-        for (int e = 0; e < tads->size(); e++) {
-            T n2 = norm2(e);
-            T factor = clipNorm / n2;
-            if (n2 > clipNorm) {
-                auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
-                tads->at(e)->applyLambda(lambda, &output);
-            }
+        
+        if(dimensions.empty()) {
+
+            if(norm2(0) > clipNorm)
+                output.assign( input * (clipNorm / norm2(0)));
+            else
+                output.assign( input );
         }
-        delete tads;
+        else {
+
+            ResultSet<T>* inTads  = NDArrayFactory<T>::allTensorsAlongDimension(&input,  dimensions);
+            ResultSet<T>* outTads = NDArrayFactory<T>::allTensorsAlongDimension(&output, dimensions);
+            const int numTads = inTads->size();
+ #pragma omp parallel for schedule(guided) proc_bind(close)
+            for (int e = 0; e < numTads; e++) {                
+                if (norm2(e) > clipNorm) 
+                    outTads->at(e)->assign( (*inTads->at(e)) * (clipNorm / norm2(e)) );
+                else
+                    outTads->at(e)->assign( inTads->at(e) );
+            }
+            delete inTads;
+            delete outTads;
+        }
     }
 }
 

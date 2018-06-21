@@ -17,8 +17,9 @@ public class ShapeDescriptor {
 
     @Getter private int[] shape;
     @Getter private int[] stride;
+    @Getter private long extras;
 
-    public ShapeDescriptor(int[] shape, int[] stride, long offset, int ews, char order) {
+    public ShapeDescriptor(int[] shape, int[] stride, long offset, int ews, char order, long extras) {
         /*
         if (shape != null) {
             hashShape = shape[0];
@@ -38,6 +39,7 @@ public class ShapeDescriptor {
         this.offset = offset;
         this.ews = ews;
         this.order = order;
+        this.extras = extras;
     }
 
     @Override
@@ -49,6 +51,8 @@ public class ShapeDescriptor {
 
         ShapeDescriptor that = (ShapeDescriptor) o;
 
+        if (extras != that.extras)
+            return false;
         if (order != that.order)
             return false;
         if (offset != that.offset)
@@ -65,7 +69,8 @@ public class ShapeDescriptor {
     public int hashCode() {
         int result = (int) order;
         // FIXME: LONG
-        result = 31 * result + (int) offset;
+        result = 31 * result + Long.hashCode(offset);
+        result = 31 * result + Long.hashCode(extras);
         result = 31 * result + ews;
         result = 31 * result + Arrays.hashCode(shape);
         result = 31 * result + Arrays.hashCode(stride);

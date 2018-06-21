@@ -95,6 +95,11 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
+    public INDArray empty() {
+        throw new IllegalStateException();
+    }
+
+    @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, long offset, char ordering) {
         return null;
     }

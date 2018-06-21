@@ -36,8 +36,8 @@ import java.util.List;
  * @author AlexDBlack
  */
 public class RectifiedTanhDerivative extends BaseTransformOp {
-    public RectifiedTanhDerivative(SameDiff sameDiff, SDVariable in, SDVariable grad, boolean inPlace) {
-        super(sameDiff, in, grad, inPlace);
+    public RectifiedTanhDerivative(SameDiff sameDiff, SDVariable in, boolean inPlace) {
+        super(sameDiff, in, inPlace);
     }
 
     public RectifiedTanhDerivative() {}

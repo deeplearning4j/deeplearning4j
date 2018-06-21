@@ -18,7 +18,7 @@ namespace nd4j {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
+            REQUIRE_TRUE(input->rankOf() == 4, 0, "PNORMPOOL2D op: input should have rank of 4, but got %i instead", input->rankOf());
 
             int kY = INT_ARG(0);
             int kX = INT_ARG(1);
@@ -30,6 +30,8 @@ namespace nd4j {
             int dX = INT_ARG(7);
             bool isSameMode = INT_ARG(8);
             int extraParam0 = INT_ARG(9);
+
+            REQUIRE_TRUE(dY != 0 && dX != 0, 0, "PNORMPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dY, dX);
 
             int oY = 0;
             int oX = 0;
@@ -82,6 +84,8 @@ namespace nd4j {
             int isSameMode = INT_ARG(8);
             int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // 0-NDHWC, 1-NCDHW    
 
+            REQUIRE_TRUE(dH != 0 && dW != 0, 0, "PNORMPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
+
             int bS = shapeOf[0];
             int iC = isNCHW ? shapeOf[1] : shapeOf[3];
             int iH = isNCHW ? shapeOf[2] : shapeOf[1];
@@ -133,6 +137,7 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
     T eps = T_ARG(0);
 
     REQUIRE_TRUE(input->rankOf() == 4, 0, "PNORMPOOL2D_BP op: input should have rank of 4, but got %i instead", input->rankOf());
+    REQUIRE_TRUE(dH != 0 && dW != 0, 0, "PNORMPOOL2D_BP op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes

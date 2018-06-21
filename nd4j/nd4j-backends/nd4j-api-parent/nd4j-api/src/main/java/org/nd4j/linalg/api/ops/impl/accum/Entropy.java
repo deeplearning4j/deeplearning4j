@@ -30,16 +30,13 @@ import java.util.List;
 
 /**
  * Entropy Op - returns the entropy (information gain, or uncertainty of a random variable).
+ * -sum(x * log(x))
  *
  * @author raver119@gmail.com
  */
 public class Entropy extends BaseAccumulation {
     public Entropy(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
-    }
-
-    public Entropy(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
-        super(sameDiff, i_v, i_v2, dimensions);
     }
 
     public Entropy() {}

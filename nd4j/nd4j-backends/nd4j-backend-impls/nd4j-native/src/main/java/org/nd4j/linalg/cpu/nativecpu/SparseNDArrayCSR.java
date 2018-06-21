@@ -103,4 +103,14 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     public INDArray convertToDoubles() {
         return null;
     }
+
+    /**
+     * This method returns true if this INDArray is special case: no-value INDArray
+     *
+     * @return
+     */
+    @Override
+    public boolean isEmpty() {
+        return false;
+    }
 }

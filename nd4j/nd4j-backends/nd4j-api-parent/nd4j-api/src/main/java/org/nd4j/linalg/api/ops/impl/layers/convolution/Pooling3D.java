@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -41,8 +42,12 @@ public class Pooling3D extends DynamicCustomOp {
     public Pooling3D(SameDiff sameDiff, SDVariable[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace,
                      Pooling3DConfig pooling3DConfig, Pooling3DType type) {
         super(null,sameDiff, inputs, inPlace);
+        Preconditions.checkState(pooling3DConfig.getDD() > 0 && pooling3DConfig.getDH() > 0 && pooling3DConfig.getDW() > 0,
+                "Dilation values must all be > 0: got dD/H/W = %s/%s/%s", pooling3DConfig.getDD(), pooling3DConfig.getDH(), pooling3DConfig.getDW());
 
-        pooling3DConfig.setType(type);
+        if(type != null) {
+            pooling3DConfig.setType(type);
+        }
 
         this.config = pooling3DConfig;
         this.sameDiff = sameDiff;

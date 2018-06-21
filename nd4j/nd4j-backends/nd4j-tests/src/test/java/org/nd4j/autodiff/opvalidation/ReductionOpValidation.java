@@ -144,7 +144,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-        for (int i = 0; i < 19; i++) {
+        for (int i = 0; i < 20; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -259,6 +259,13 @@ public class ReductionOpValidation extends BaseOpValidation {
                     double norm2 = inputArr.norm2Number().doubleValue();
                     tc.expected("loss", Nd4j.trueScalar(norm2 * norm2));
                     break;
+                case 19:
+                    inputArr = Nd4j.rand(minibatch, nOut);
+                    name = "logEntropy";
+                    loss = sd.logEntropy("loss", input);
+                    double logEntropy = inputArr.logEntropyNumber().doubleValue();
+                    tc.expected(loss, Nd4j.trueScalar(logEntropy));
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -289,7 +296,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         for (int dim : new int[]{0, Integer.MAX_VALUE}) {    //These two cases are equivalent here
 
-            for (int i = 0; i < 16; i++) {
+            for (int i = 0; i < 18; i++) {
 
                 SameDiff sd = SameDiff.create();
 
@@ -369,6 +376,14 @@ public class ReductionOpValidation extends BaseOpValidation {
                     case 15:
                         loss = sd.amean("loss", input, dim);
                         name = "amean";
+                        break;
+                    case 16:
+                        loss = sd.entropy("loss", input, dim);
+                        name = "entropy";
+                        break;
+                    case 17:
+                        name = "logEntropy";
+                        loss = sd.logEntropy("loss", input, dim);
                         break;
                     default:
                         throw new RuntimeException();
@@ -653,7 +668,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
             SDVariable[] moments = sd.moments(in, axes);
             INDArray expMean = input.mean(axes);
-            INDArray expStdev = input.std(true, axes);
+            INDArray expVar = input.var(false, axes);
 
             SDVariable loss = moments[0].add(moments[1]).std(true);
 
@@ -662,7 +677,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             TestCase tc = new TestCase(sd)
                     .testName(msg)
                     .expected(moments[0], expMean)
-                    .expected(moments[1], expStdev);
+                    .expected(moments[1], expVar);
 
             String err = OpValidation.validate(tc);
             assertNull(err);
@@ -749,7 +764,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 //        for(int[] d : dims){
         for( int t=0; t<4; t++ ){
             int[] d = dims.get(t);
-            for( int i=0; i<6; i++ ){
+            for( int i=0; i<7; i++ ){
 
                 int[] dim = d.length == 0 ? null : d;
 
@@ -791,6 +806,13 @@ public class ReductionOpValidation extends BaseOpValidation {
                         else if(t == 1) exp = Nd4j.create(new double[]{3,3,3,3});
                         else exp = Nd4j.create(new double[]{11});
                         name = "lastindex";
+                        break;
+                    case 6:
+                        reduce = sd.matchConditionCount("count", s, Conditions.greaterThan(0), false, dim);
+                        if(t == 0) exp = Nd4j.create(new double[]{2,2,2});
+                        else if(t == 1) exp = Nd4j.create(new double[]{3,3,3,3});
+                        else exp = Nd4j.create(new double[]{12});
+                        name = "matchConditionCount";
                         break;
                     default:
                         throw new RuntimeException();

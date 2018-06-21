@@ -687,6 +687,81 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testClipByNorm(){
+        //Expected: if array.norm2(1) is less than 1.0, not modified
+        //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.rand(3,5);
+        INDArray norm2_1 = arr.norm2(1);
+        arr.diviColumnVector(norm2_1);
+
+        norm2_1 = arr.norm2(1);
+        assertEquals(Nd4j.ones(3), norm2_1);
+
+        INDArray scale = Nd4j.create(new double[]{1.1, 1.0, 0.9}, new int[]{3,1});
+        arr.muliColumnVector(scale);
+        norm2_1 = arr.norm2(1);
+
+        INDArray out = Nd4j.create(arr.shape());
+
+        Nd4j.getExecutioner().exec(DynamicCustomOp.builder("clipbynorm")
+                .addInputs(arr)
+                .addOutputs(out)
+                .addIntegerArguments(1)
+                .addFloatingPointArguments(1.0)
+                .build());
+
+        INDArray norm2_1b = out.norm2(1);
+        INDArray exp = Nd4j.create(new double[]{1.0, 1.0, norm2_1.getDouble(2)}, new int[]{3,1});
+
+        assertEquals(exp, norm2_1b);
+    }
+
+    @Test
+    public void testClipByNorm2(){
+        //Expected: if array.norm2(1) is less than 1.0, not modified
+        //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.rand(3,5);
+        INDArray norm2_1 = arr.norm2(1);
+        arr.diviColumnVector(norm2_1);
+
+        norm2_1 = arr.norm2(1);
+        assertEquals(Nd4j.ones(3), norm2_1);
+
+        INDArray scale = Nd4j.create(new double[]{1.1, 1.0, 0.9}, new int[]{3,1});
+        arr.muliColumnVector(scale);
+        norm2_1 = arr.norm2(1);
+
+        INDArray out = Nd4j.createUninitialized(arr.shape());
+
+        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("clipbynorm")
+                .addInputs(arr)
+                .addOutputs(out)
+                .addIntegerArguments(1)
+                .addFloatingPointArguments(1.0)
+                .build());
+
+        INDArray expNorm2 = Nd4j.create(new double[]{1.0, 1.0, norm2_1.getDouble(2)}, new int[]{3,1});
+
+        INDArray expOut = arr.divColumnVector(norm2_1).muliColumnVector(expNorm2);
+        op.expectedOutput(0, expOut);
+
+        System.out.println("Input");
+        System.out.println(arr.shapeInfoToString());
+        System.out.println(Arrays.toString(arr.data().asFloat()));
+
+        System.out.println("Expected");
+        System.out.println(expOut.shapeInfoToString());
+        System.out.println(Arrays.toString(expOut.data().asFloat()));
+
+        String err = OpValidation.validate(op);
+        assertNull(err);
+    }
+
+    @Test
     public void testClipByNorm1(){
         //Expected: if array.norm2(1) is less than 1.0, not modified
         //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
@@ -728,7 +803,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testClipByNorm0(){
-        //Expected: if array.norm2(1) is less than 1.0, not modified
+        //Expected: if array.norm2(0) is less than 1.0, not modified
         //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
 
         Nd4j.getRandom().setSeed(12345);

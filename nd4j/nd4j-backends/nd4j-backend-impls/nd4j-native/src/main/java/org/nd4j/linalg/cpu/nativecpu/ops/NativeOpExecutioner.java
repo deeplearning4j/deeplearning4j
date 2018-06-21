@@ -1674,10 +1674,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int cnt= 0;
         val inputArgs = op.inputArguments();
         for (val in: inputArgs) {
-            if(in == null){
+            if(in == null)
                 throw new NullPointerException("Input argument is null for op " + op.getClass().getName());
-            }
-            inputBuffers.put(cnt, in.data().addressPointer());
+
+            if (!in.isEmpty())
+                inputBuffers.put(cnt, in.data().addressPointer());
+
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
         }
 
@@ -1797,7 +1799,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val inputArgs = op.inputArguments();
         int cnt= 0;
         for (val in: inputArgs) {
-            inputBuffers.put(cnt, in.data().addressPointer());
+            if (!in.isEmpty())
+                inputBuffers.put(cnt, in.data().addressPointer());
+
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
         }
 

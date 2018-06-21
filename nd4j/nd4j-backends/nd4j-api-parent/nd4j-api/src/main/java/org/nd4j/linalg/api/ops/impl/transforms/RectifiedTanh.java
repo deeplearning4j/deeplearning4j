@@ -101,6 +101,6 @@ public class RectifiedTanh extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().tanhRectifiedDerivative(arg(), f1.get(0)));
+        return Collections.singletonList(f().tanhRectifiedDerivative(arg()).mul(f1.get(0)));
     }
 }
