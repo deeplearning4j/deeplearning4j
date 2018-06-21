@@ -6726,6 +6726,10 @@ public class SameDiff {
 
     private Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec_cache;
 
+    public void clearExecutionCache(){
+        exec_cache = null;
+    }
+
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec() {
 
         /*

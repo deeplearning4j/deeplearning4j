@@ -2,9 +2,12 @@ package org.deeplearning4j.nn.layers.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.TestUtils;
+import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -16,17 +19,22 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
 @Slf4j
 public class TestSameDiffDense {
+
+    private static final boolean PRINT_RESULTS = true;
+    private static final boolean RETURN_ON_FIRST_FAILURE = false;
+    private static final double DEFAULT_EPS = 1e-6;
+    private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
+    private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     @Test
     public void testSameDiffDenseBasic() {
@@ -214,8 +222,8 @@ public class TestSameDiffDense {
                         Activation.SIGMOID,
                         Activation.ELU, Activation.IDENTITY, Activation.SOFTPLUS, Activation.SOFTSIGN,
                         Activation.HARDTANH,
-//                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
-//                    Activation.RELU      //JVM crash
+                        Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
+                        Activation.RELU      //JVM crash
                 };
 
                 for (Activation a : afns) {
@@ -277,6 +285,45 @@ public class TestSameDiffDense {
 
                     assertEquals(gStd.gradient(), gSD.gradient());
                 }
+            }
+        }
+    }
+
+    @Test
+    public void gradientCheck(){
+        int nIn = 4;
+        int nOut = 4;
+
+        for(boolean workspaces : new boolean[]{false, true}) {
+            for(Activation a : new Activation[]{Activation.TANH, Activation.IDENTITY}) {
+
+                String msg = "workspaces: " + workspaces + ", " + a;
+                Nd4j.getRandom().setSeed(12345);
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .seed(12345)
+                        .updater(new NoOp())
+                        .trainingWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
+                        .inferenceWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
+                        .list()
+                        .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut).activation(a).build())
+                        .layer(new SameDiffDense.Builder().nIn(nOut).nOut(nOut).activation(a).build())
+                        .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                        //.setInputType(InputType.feedForward(nIn))     //TODO
+                        .build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                INDArray f = Nd4j.rand(3, nIn);
+                INDArray l = TestUtils.randomOneHot(3, nOut);
+
+                log.info("Starting: " + msg);
+                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l);
+
+                assertTrue(msg, gradOK);
             }
         }
     }

@@ -56,6 +56,8 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         //TODO - properly support noise weight...
     }
 
+    int iterCount = 0;
+
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
@@ -64,6 +66,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         }
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             INDArray result = sameDiff.execAndEndResult();
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, result);
@@ -82,7 +85,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-
+            sameDiff.clearExecutionCache();
             fn.updateVariable(outputVars.get(0).getVarName(), epsilon.dup());
 
             sameDiff.execBackwards();
