@@ -16,6 +16,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.Nd4jCuda;
 
 /**
  * CUDA-aware MemoryWorkspace implementation
@@ -227,8 +228,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                 PagedPointer ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
 
-                //if (initialize)
-                //    Pointer.memset(ptr, 0, requiredMemory);
+                if (initialize && workspaceConfiguration.getPolicyMirroring() == MirroringPolicy.HOST_ONLY)
+                    Pointer.memset(ptr, 0, requiredMemory);
 
                 return ptr;
             } else {

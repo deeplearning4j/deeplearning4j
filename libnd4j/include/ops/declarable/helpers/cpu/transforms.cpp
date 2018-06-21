@@ -629,7 +629,7 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
         else {
 
             ResultSet<T>* inTads = NDArrayFactory<T>::allTensorsAlongDimension(&input, dimensions);
-#pragma omp parallel for if(inTads->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
+// #pragma omp parallel for if(inTads->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
             for (int e = 0; e < inTads->size(); e++) {                
                 if (norm2(e) > clipNorm) 
                     (*inTads->at(e)) *= (clipNorm / norm2(e));                    
@@ -651,7 +651,7 @@ void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& d
             ResultSet<T>* inTads  = NDArrayFactory<T>::allTensorsAlongDimension(&input,  dimensions);
             ResultSet<T>* outTads = NDArrayFactory<T>::allTensorsAlongDimension(&output, dimensions);
             const int numTads = inTads->size();
- #pragma omp parallel for schedule(guided) proc_bind(close)
+ // #pragma omp parallel for schedule(guided) proc_bind(close)
             for (int e = 0; e < numTads; e++) {                
                 if (norm2(e) > clipNorm) 
                     outTads->at(e)->assign( (*inTads->at(e)) * (clipNorm / norm2(e)) );
