@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -198,79 +199,84 @@ public class TestSameDiffDense {
         }
     }
 
-    @Test(expected = UnsupportedOperationException.class)   //Backprop not yet supported
+    @Test   //(expected = UnsupportedOperationException.class)   //Backprop not yet supported
     public void testSameDiffDenseBackward() {
 
         int nIn = 3;
         int nOut = 4;
 
-        for (int minibatch : new int[]{5, 1}) {
+        for(boolean workspaces : new boolean[]{false, true}) {
 
-            Activation[] afns = new Activation[]{
-                    Activation.TANH,
-                    Activation.SIGMOID,
-                    Activation.ELU, Activation.IDENTITY, Activation.SOFTPLUS, Activation.SOFTSIGN,
-                    Activation.HARDTANH,
+            for (int minibatch : new int[]{5, 1}) {
+
+                Activation[] afns = new Activation[]{
+                        Activation.TANH,
+                        Activation.SIGMOID,
+                        Activation.ELU, Activation.IDENTITY, Activation.SOFTPLUS, Activation.SOFTSIGN,
+                        Activation.HARDTANH,
 //                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
 //                    Activation.RELU      //JVM crash
-            };
+                };
 
-            for (Activation a : afns) {
-                log.info("Starting test - " + a);
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .list()
-                        .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
-                                .activation(a)
-                                .build())
-                        .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
-                                .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .build();
+                for (Activation a : afns) {
+                    log.info("Starting test - " + a + " - minibatch " + minibatch + ", workspaces: " + workspaces);
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .trainingWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
+                            .inferenceWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
+                            .list()
+                            .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
+                                    .activation(a)
+                                    .build())
+                            .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
+                                    .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                            .build();
 
-                MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                net.init();
+                    MultiLayerNetwork netSD = new MultiLayerNetwork(conf);
+                    netSD.init();
 
-                MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                        .list()
-                        .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
-                        .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
-                                .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                        .build();
+                    MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                            .list()
+                            .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
+                            .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
+                                    .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                            .build();
 
-                MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
-                net2.init();
+                    MultiLayerNetwork netStandard = new MultiLayerNetwork(conf2);
+                    netStandard.init();
 
-                net.params().assign(net2.params());
+                    netSD.params().assign(netStandard.params());
 
-                //Check params:
-                assertEquals(net2.params(), net.params());
-                assertEquals(net2.paramTable(), net.paramTable());
+                    //Check params:
+                    assertEquals(netStandard.params(), netSD.params());
+                    assertEquals(netStandard.paramTable(), netSD.paramTable());
 
-                INDArray in = Nd4j.rand(minibatch, nIn);
-                INDArray l = TestUtils.randomOneHot(minibatch, nOut, 12345);
-                net.setInput(in);
-                net2.setInput(in);
-                net.setLabels(l);
-                net2.setLabels(l);
+                    INDArray in = Nd4j.rand(minibatch, nIn);
+                    INDArray l = TestUtils.randomOneHot(minibatch, nOut, 12345);
+                    netSD.setInput(in);
+                    netStandard.setInput(in);
+                    netSD.setLabels(l);
+                    netStandard.setLabels(l);
 
-                net.computeGradientAndScore();
-                net2.computeGradientAndScore();
+                    netSD.computeGradientAndScore();
+                    netStandard.computeGradientAndScore();
 
-                Gradient g = net.gradient();
-                Gradient g2 = net2.gradient();
+                    Gradient gSD = netSD.gradient();
+                    Gradient gStd = netStandard.gradient();
 
-                Map<String,INDArray> m1 = g.gradientForVariable();
-                Map<String,INDArray> m2 = g2.gradientForVariable();
+                    Map<String, INDArray> m1 = gSD.gradientForVariable();
+                    Map<String, INDArray> m2 = gStd.gradientForVariable();
 
-                assertEquals(m2.keySet(), m1.keySet());
+                    assertEquals(m2.keySet(), m1.keySet());
 
-                for(String s : m1.keySet()){
-                    INDArray i1 = m1.get(s);
-                    INDArray i2 = m2.get(s);
+                    for (String s : m1.keySet()) {
+                        INDArray i1 = m1.get(s);
+                        INDArray i2 = m2.get(s);
 
-                    assertEquals(s, i2, i1);
+                        assertEquals(s, i2, i1);
+                    }
+
+                    assertEquals(gStd.gradient(), gSD.gradient());
                 }
-
-                assertEquals(g2.gradient(), g.gradient());
             }
         }
     }
