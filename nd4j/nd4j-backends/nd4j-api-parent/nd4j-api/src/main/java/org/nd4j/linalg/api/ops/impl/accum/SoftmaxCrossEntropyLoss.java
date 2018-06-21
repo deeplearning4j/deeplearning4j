@@ -34,7 +34,7 @@ import java.util.Map;
 
 
 /**
- * Softmax cross entropy loss with logits
+ * Softmax cross entropy loss
  *
  * @author Max Pumperla
  */
@@ -106,7 +106,7 @@ public class SoftmaxCrossEntropyLoss extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "SoftmaxCrossEntropyWithLogits";
+        return "SoftmaxCrossEntropy";
     }
 
     @Override

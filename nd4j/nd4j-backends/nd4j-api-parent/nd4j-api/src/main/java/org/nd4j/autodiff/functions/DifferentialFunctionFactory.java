@@ -37,8 +37,7 @@ import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
-import org.nd4j.linalg.api.ops.random.impl.DropOut;
-import org.nd4j.linalg.api.ops.random.impl.Linspace;
+import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -143,6 +142,10 @@ public class DifferentialFunctionFactory {
         return new Linspace(sameDiff(), lower, upper, count).outputVariable();
     }
 
+    public SDVariable range(double from, double to, double step){
+        return new Range(sameDiff(), from, to, step).outputVariable();
+    }
+
     public SDVariable[] meshgrid(boolean cartesian, SDVariable... inputs){
         return new MeshGrid(sameDiff(), cartesian, inputs).outputVariables();
     }
@@ -151,12 +154,36 @@ public class DifferentialFunctionFactory {
         return new DistributionUniform(sameDiff(), shape, min, max).outputVariable();
     }
 
+    public SDVariable randomUniform(double min, double max, long... shape){
+        return new UniformDistribution(sameDiff(), min, max, shape).outputVariable();
+    }
+
     public SDVariable randomNormal(double mean, double std, SDVariable shape){
         return new RandomNormal(sameDiff(), shape, mean, std).outputVariable();
     }
 
+    public SDVariable randomNormal(double mean, double std, long... shape){
+        return new GaussianDistribution(sameDiff(), mean, std, shape).outputVariable();
+    }
+
     public SDVariable randomBernoulli(double p, SDVariable shape){
         return new RandomBernoulli(sameDiff(), shape, p).outputVariable();
+    }
+
+    public SDVariable randomBernoulli(double p, long... shape){
+        return new BernoulliDistribution(sameDiff(), p, shape).outputVariable();
+    }
+
+    public SDVariable randomBinomial(int nTrials, double p, long... shape){
+        return new BinomialDistribution(sameDiff(), nTrials, p, shape).outputVariable();
+    }
+
+    public SDVariable randomLogNormal(double mean, double stdev, long... shape){
+        return new LogNormalDistribution(sameDiff(), mean, stdev, shape).outputVariable();
+    }
+
+    public SDVariable randomNormalTruncated(double mean, double stdev, long... shape){
+        return new TruncatedNormalDistribution(sameDiff(), mean, stdev, shape).outputVariable();
     }
 
     /**
@@ -221,6 +248,16 @@ public class DifferentialFunctionFactory {
 
         return conv2D.outputVariable();
     }
+
+    public SDVariable upsampling2d(SDVariable input, boolean nchw, int scaleH, int scaleW){
+        return new Upsampling2d(sameDiff(), input, nchw, scaleH, scaleW).outputVariable();
+    }
+
+    public SDVariable upsampling2dBp(SDVariable input, SDVariable gradient, boolean nchw, int scaleH, int scaleW){
+        return new Upsampling2dDerivative(sameDiff(), input, gradient, nchw, scaleH, scaleW).outputVariable();
+    }
+
+
 
     /**
      * Average pooling 2d operation.
@@ -414,7 +451,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable dropout(SDVariable input, double p) {
-        return new DropOut(sameDiff(), input, p).outputVariable();
+        return new DropOutInverted(sameDiff(), input, p).outputVariable();
     }
 
 
@@ -471,6 +508,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable entropy(SDVariable in, int... dimensions){
         return new Entropy(sameDiff(), in, dimensions).outputVariable();
+    }
+
+    public SDVariable logEntropy(SDVariable in, int... dimensions){
+        return new LogEntropy(sameDiff(), in, dimensions).outputVariable();
     }
 
     public SDVariable countNonZero(SDVariable input, int... dimensions) {
@@ -574,8 +615,8 @@ public class DifferentialFunctionFactory {
      * @param condition Condition
      * @return          Number of elements that the condition is satisfied for
      */
-    public SDVariable matchConditionCount(SDVariable in, Condition condition){
-        return new MatchCondition(sameDiff(), in, condition).outputVariable();
+    public SDVariable matchConditionCount(SDVariable in, Condition condition, boolean keepDims, int... dimensions){
+        return new MatchCondition(sameDiff(), in, condition, keepDims, dimensions).outputVariable();
     }
 
     /**
@@ -691,7 +732,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable tan(SDVariable iX) {
-        return new Tan(sameDiff(), iX, null).outputVariable();
+        return new Tan(sameDiff(), iX, false).outputVariable();
 
     }
 
@@ -772,12 +813,12 @@ public class DifferentialFunctionFactory {
         return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(sameDiff(), iX, wrt).outputVariable();
     }
 
-    public SDVariable tanhRationalDerivative(SDVariable in, SDVariable grad){
-        return new RationalTanhDerivative(sameDiff(), in, grad, false).outputVariable();
+    public SDVariable tanhRationalDerivative(SDVariable in){
+        return new RationalTanhDerivative(sameDiff(), in, false).outputVariable();
     }
 
-    public SDVariable tanhRectifiedDerivative(SDVariable in, SDVariable grad){
-        return new RectifiedTanhDerivative(sameDiff(), in, grad, false).outputVariable();
+    public SDVariable tanhRectifiedDerivative(SDVariable in){
+        return new RectifiedTanhDerivative(sameDiff(), in, false).outputVariable();
     }
 
     public SDVariable step(SDVariable in, double cutoff){

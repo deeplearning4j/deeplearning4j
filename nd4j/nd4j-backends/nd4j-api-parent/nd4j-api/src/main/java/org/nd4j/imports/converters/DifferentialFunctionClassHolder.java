@@ -43,6 +43,7 @@ public class DifferentialFunctionClassHolder {
         add(Pooling2D.class.getName());
         add(Pooling3D.class.getName());
         add(DepthwiseConv2D.class.getName());
+        add(DeConv2DTF.class.getName());
     }};
 
     @Getter

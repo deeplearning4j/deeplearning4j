@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Inverted DropOut implementation as Op
+ * DropOut implementation as Op
  *
  * @author raver119@gmail.com
  */
@@ -43,6 +43,8 @@ public class DropOut extends BaseRandomOp {
     public DropOut(SameDiff sameDiff, SDVariable input, double p) {
         super(sameDiff, input);
         this.p = p;
+        //https://github.com/deeplearning4j/deeplearning4j/issues/5650
+        throw new UnsupportedOperationException("Dropout SameDiff support disabled pending backprop support");
     }
 
     public DropOut(@NonNull INDArray x, double p) {
@@ -100,6 +102,6 @@ public class DropOut extends BaseRandomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        throw new UnsupportedOperationException("Not supported");   //We should only use *inverted* dropout with samediff
     }
 }

@@ -21,6 +21,13 @@ public class UniformDistribution extends BaseRandomOp {
         super();
     }
 
+    public UniformDistribution(SameDiff sd, double from, double to, long[] shape){
+        super(sd, shape);
+        this.from = from;
+        this.to = to;
+        this.extraArgs = new Object[] {this.from, this.to};
+    }
+
     /**
      * This op fills Z with random values within from...to boundaries
      * @param z

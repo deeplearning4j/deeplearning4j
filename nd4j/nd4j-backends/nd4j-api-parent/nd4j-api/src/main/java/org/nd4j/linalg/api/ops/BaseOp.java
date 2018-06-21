@@ -286,7 +286,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     @Override
     public INDArray x() {
         if(x == null) {
-            if(sameDiff != null) {
+            if(sameDiff != null && args() != null && args().length > 0) {
                 this.x = sameDiff.getArrForVarName(args()[0].getVarName());
                 if(x == null && args()[0].getShape() != null) {
                     x = args()[0].storeAndAllocateNewArray();
@@ -299,7 +299,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     @Override
     public INDArray y() {
         if(y == null) {
-            if(sameDiff != null && args().length > 1) {
+            if(sameDiff != null && args() != null && args().length > 1) {
                 this.y = sameDiff.getArrForVarName(args()[1].getVarName());
                 if(y == null && args()[1].getShape() != null) {
                     y = args()[1].storeAndAllocateNewArray();
@@ -405,7 +405,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         this.y = y;
         this.z = z;
         this.n = n;
-
     }
 
     @Override

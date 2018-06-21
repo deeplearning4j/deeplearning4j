@@ -12,6 +12,8 @@ public class DeConv2DConfig extends BaseConvolutionConfig {
     private long kH, kW, sH, sW, pH, pW, dH, dW;
     private boolean isSameMode;
     @Builder.Default
+    private String dataFormat = "NWHC";
+    @Builder.Default
     private boolean isNHWC = false;
 
 

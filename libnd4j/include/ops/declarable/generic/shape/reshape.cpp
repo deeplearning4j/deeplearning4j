@@ -60,8 +60,9 @@ namespace nd4j {
                     order = (char) INT_ARG(0);
 
                 std::vector<Nd4jLong> shapeNew(s->lengthOf());
+
                 for (int e = 0; e < (int) s->lengthOf(); e++)
-                    shapeNew[e] = s->getIndexedScalar(e);
+                    shapeNew[e] = static_cast<Nd4jLong>(s->getScalar(e));
 
                if (Environment::getInstance()->isDebugAndVerbose()) {
                     nd4j_printv("Reshape: new shape", shapeNew);
@@ -70,14 +71,20 @@ namespace nd4j {
                 if (block.isInplace()) {
                     if (x->reshapei(order, shapeNew)) {
                         STORE_RESULT(*x);
-                        return ND4J_STATUS_OK;
+                        return Status::OK();
                     }
                 } else {
                     auto ret = OUTPUT_VARIABLE(0);
-                    auto xr = x->reshape(order, shapeNew);
-                    ret->assign(xr);
-                    delete xr;
-                    return ND4J_STATUS_OK;
+                    if (s->isEmpty()) {
+                        // just a scalar
+                        ret->assign(x);
+                    } else {
+                        auto xr = x->reshape(order, shapeNew);
+                        ret->assign(xr);
+                        delete xr;
+                    }
+
+                    return Status::OK();
                 }
             }
 
@@ -136,8 +143,8 @@ namespace nd4j {
                     }
                 }
 
-                for (int e = 0; e < (int) shapeNew.size(); e++) {
-                    shapeNew[e] = shape_[e];
+                for (int f = 0; e < (int) shapeNew.size(); f++) {
+                    shapeNew[f] = shape_[f];
                 }
 
                 if (numberNegativesOnes > 0)
@@ -153,7 +160,16 @@ namespace nd4j {
                 return SHAPELIST(newShape);
             } else {
                 // or, with second input "as shape"
+                auto x = INPUT_VARIABLE(0);
                 auto y = INPUT_VARIABLE(1);
+
+                // special case here
+                if (y->isEmpty()) {
+                    REQUIRE_TRUE(x->lengthOf() == 1, 0, "Reshape: new length doesn't match existing array");
+
+
+                    return SHAPELIST(ShapeUtils<T>::createScalarShapeInfo(block.getWorkspace()));
+                }
 
                 std::vector<Nd4jLong> shapeNew(y->lengthOf());
                 int numberNegativesOnes = 0;
@@ -175,7 +191,7 @@ namespace nd4j {
                                 shapeLength *= shape_[j];
 
                         // FIXME: use workspace here
-                        int realShape = nd4j::math::nd4j_abs<Nd4jLong>((Nd4jLong) shape::length(inp) / shapeLength);
+                        auto realShape = nd4j::math::nd4j_abs<Nd4jLong>(x->lengthOf()/ shapeLength);
                         auto thisNewShape = new Nd4jLong[shapeNew.size()];
 
                         for (int j = 0; j < (int) shapeNew.size(); j++) {

@@ -50,19 +50,24 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
     @Override
     public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order) {
+        return createShapeInformation(shape, stride, offset, elementWiseStride, order, 0L);
+    }
+
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order, long extras) {
         // We enforce offset to 0 in shapeBuffer, since we need it for cache efficiency + we don't actually use offset value @ native side
         offset = 0;
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
 
-        ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
+        ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order, extras);
 
         if (!protector.containsDataBuffer(deviceId, descriptor)) {
             Pair<DataBuffer, long[]> buffer = null;
             synchronized (this) {
                 if (!protector.containsDataBuffer(deviceId, descriptor)) {
                     //log.info("Cache miss: {}", descriptor);
-                    buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+                    buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order, extras);
                     buffer.getFirst().setConstant(true);
 
                     if (CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
@@ -72,7 +77,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
                     //deviceCache.get(deviceId).put(descriptor, buffer);
                     protector.persistDataBuffer(deviceId, descriptor, buffer);
 
-                    bytes.addAndGet(buffer.getFirst().length() * 4 * 2);
+                    bytes.addAndGet(buffer.getFirst().length() * 8 * 2);
 
                     cacheMiss.incrementAndGet();
                 } else {
@@ -91,19 +96,24 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
 
     @Override
     public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order) {
+        return createShapeInformation(shape, stride, offset, elementWiseStride, order, 0L);
+    }
+
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order, long extras) {
         // We enforce offset to 0 in shapeBuffer, since we need it for cache efficiency + we don't actually use offset value @ native side
         offset = 0;
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
 
-        LongShapeDescriptor descriptor = new LongShapeDescriptor(shape, stride, offset, elementWiseStride, order);
+        LongShapeDescriptor descriptor = new LongShapeDescriptor(shape, stride, offset, elementWiseStride, order, extras);
 
         if (!protector.containsDataBuffer(deviceId, descriptor)) {
             Pair<DataBuffer, long[]> buffer = null;
             synchronized (this) {
                 if (!protector.containsDataBuffer(deviceId, descriptor)) {
                     //log.info("Cache miss: {}", descriptor);
-                    buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+                    buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order, extras);
                     buffer.getFirst().setConstant(true);
 
                     if (CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
@@ -113,7 +123,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
                     //deviceCache.get(deviceId).put(descriptor, buffer);
                     protector.persistDataBuffer(deviceId, descriptor, buffer);
 
-                    bytes.addAndGet(buffer.getFirst().length() * 4 * 2);
+                    bytes.addAndGet(buffer.getFirst().length() * 8 * 2);
 
                     cacheMiss.incrementAndGet();
                 } else {

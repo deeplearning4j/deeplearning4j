@@ -17,6 +17,7 @@
 
 #define ARRAY_SPARSE 2
 #define ARRAY_COMPRESSED 4
+#define ARRAY_EMPTY 8
 
 #define ARRAY_CSR 16
 #define ARRAY_CSC 32

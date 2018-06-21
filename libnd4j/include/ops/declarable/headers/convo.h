@@ -319,6 +319,8 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(pointwise_conv2d, 2, 1, false, 0, 0);
 
+        DECLARE_CUSTOM_OP(deconv2d_tf, 2, 1, false, 0, 0);
+
     }
 }
 

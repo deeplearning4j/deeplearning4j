@@ -35,6 +35,8 @@ CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
     const int dW = INT_ARG(7);
     const bool isSameMode = INT_ARG(8);
 
+    REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
+
     int oH = 0;
     int oW = 0;
 
@@ -88,6 +90,8 @@ DECLARE_SYN(maxpool, maxpool2d);
             int isSameMode = INT_ARG(8);
             int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;           // 0-NHWC, 1-NCHW
 
+            REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
+
             int bS = shapeOf[0];
             int iC = isNCHW ? shapeOf[1] : shapeOf[3];
             int iH = isNCHW ? shapeOf[2] : shapeOf[1];
@@ -138,6 +142,7 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
     int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // 0-NHWC, 1-NCHW    
 
     REQUIRE_TRUE(input->rankOf() == 4, 0, "MAXPOOL2D_BP op: input should have rank of 4, but got %i instead", input->rankOf());
+    REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D_BP op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
