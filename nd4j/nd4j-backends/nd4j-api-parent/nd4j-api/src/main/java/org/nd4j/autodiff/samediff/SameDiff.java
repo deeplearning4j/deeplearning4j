@@ -50,6 +50,7 @@ import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
+import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
@@ -6761,6 +6762,9 @@ public class SameDiff {
         // yet another flag, to remove LastFrame once we really left last frame
         boolean frameLeft = false;
 
+        //If true: this execution includes gradient functions...
+        boolean isExecBackwards = functionInstancesById.containsKey(GradientBackwardsMarker.OP_NAME);
+
         int i = 0;
         int exec_counter = 0;
         for (; i < funcs.size(); i++) {
@@ -6796,6 +6800,14 @@ public class SameDiff {
                 continue;
 
             DifferentialFunction differentialFunction = funcs.get(i);
+
+            if((differentialFunction instanceof ExternalErrorsFunction)) {
+                if(isExecBackwards)
+                    ((ExternalErrorsFunction) differentialFunction).updateBeforeExecution();
+
+                continue;
+            }
+
             val ownName = differentialFunction.getOwnName();
 
             // just registering function for this pass

@@ -6,6 +6,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.NoOp;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
@@ -33,6 +34,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
@@ -102,6 +104,17 @@ public class DifferentialFunctionFactory {
                 .build();
     }
 
+    public ExternalErrorsFunction externalErrors(SDVariable... inputs){
+        return externalErrors(null, inputs);
+    }
+
+    public ExternalErrorsFunction externalErrors(Map<String,INDArray> externalGradients, SDVariable... inputs){
+        Preconditions.checkArgument(inputs != null && inputs.length > 0, "Require at least one SDVariable to" +
+                " be specified when using external errors: got %s", inputs);
+        ExternalErrorsFunction fn = new ExternalErrorsFunction(sameDiff(), Arrays.asList(inputs), externalGradients);
+        fn.outputVariable();
+        return fn;
+    }
 
     public SDVariable zero(int[] shape) {
         return sameDiff.zero("one-" + UUID.randomUUID().toString(), shape);
