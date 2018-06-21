@@ -3070,8 +3070,16 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
             functions::scalar::ScalarTransform<T>::template transform<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer[0], nullptr);
         } else if (other.lengthOf() == lengthOf())
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Add<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
-        else
-            *this = this->template applyTrueBroadcast<simdOps::Add<T>>(other);
+        else{
+            Nd4jLong *bShape = nullptr;
+            auto p = ShapeUtils<T>::evalBroadcastShapeInfo(this, &other, true, bShape, this->_workspace);
+            if (shape::shapeEquals(this->shapeInfo(), bShape))
+                this->template applyTrueBroadcast<simdOps::Add<T>>(&other, this, true);
+            else
+                *this = this->template applyTrueBroadcast<simdOps::Add<T>>(other);
+
+            RELEASE(bShape, this->_workspace);
+        }
     }
 
     template<typename T>
@@ -3079,8 +3087,16 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
 
         if (other.lengthOf() == lengthOf())
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Subtract<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
-        else
-            *this = this->template applyTrueBroadcast<simdOps::Subtract<T>>(other);
+        else {
+            Nd4jLong *bShape = nullptr;
+            auto p = ShapeUtils<T>::evalBroadcastShapeInfo(this, &other, true, bShape, this->_workspace);
+            if (shape::shapeEquals(this->shapeInfo(), bShape))
+                this->template applyTrueBroadcast<simdOps::Subtract<T>>(&other, this, true);
+            else
+                *this = this->template applyTrueBroadcast<simdOps::Subtract<T>>(other);
+
+            RELEASE(bShape, this->_workspace);
+        }
     }
 
     template<typename T>
@@ -3168,8 +3184,16 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
             functions::scalar::ScalarTransform<T>::template transform<simdOps::Multiply<T>>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer[0], nullptr);
         } else if (other.lengthOf() == lengthOf())
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Multiply<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
-        else
-            *this = this->template applyTrueBroadcast<simdOps::Multiply<T>>(other);
+        else {
+            Nd4jLong *bShape = nullptr;
+            auto p = ShapeUtils<T>::evalBroadcastShapeInfo(this, &other, true, bShape, this->_workspace);
+            if (shape::shapeEquals(this->shapeInfo(), bShape))
+                this->template applyTrueBroadcast<simdOps::Multiply<T>>(&other, this, true);
+            else
+                *this = this->template applyTrueBroadcast<simdOps::Multiply<T>>(other);
+
+            RELEASE(bShape, this->_workspace);
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -3217,8 +3241,16 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
             functions::scalar::ScalarTransform<T>::template transform<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, this->_buffer, this->_shapeInfo, other._buffer[0], nullptr);
         } else if (other.lengthOf() == lengthOf())
             functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
-        else
-            *this = this->template applyTrueBroadcast<simdOps::Divide<T>>(other);
+        else {
+            Nd4jLong *bShape = nullptr;
+            auto p = ShapeUtils<T>::evalBroadcastShapeInfo(this, &other, true, bShape, this->_workspace);
+            if (shape::shapeEquals(this->shapeInfo(), bShape))
+                this->template applyTrueBroadcast<simdOps::Divide<T>>(&other, this, true);
+            else
+                *this = this->template applyTrueBroadcast<simdOps::Divide<T>>(other);
+
+            RELEASE(bShape, this->_workspace);
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////
