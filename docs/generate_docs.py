@@ -162,7 +162,6 @@ if __name__ == '__main__':
     SOURCE_CODE_PATH = args.code
     GITHUB_ROOT = 'https://github.com/deeplearning4j/deeplearning4j/tree/master/' + SOURCE_CODE_PATH[3:]
 
-
     clean_target()
     create_index_page()
 
@@ -176,7 +175,6 @@ if __name__ == '__main__':
         for module_name, class_name, doc_string, constructors, methods in data:
             subblocks = []
             link = class_to_source_link(module_name, class_name)
-            print(link)
             subblocks.append('<span style="float:right;"> {} </span>'.format(link))
             if module_name:
                 subblocks.append('## {}\n'.format(class_name))
