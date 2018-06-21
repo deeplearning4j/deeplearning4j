@@ -1,20 +1,29 @@
 package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Builder
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class DeConv2DConfig extends BaseConvolutionConfig {
-    private long kH, kW, sH, sW, pH, pW, dH, dW;
-    private boolean isSameMode;
-    @Builder.Default
-    private String dataFormat = "NWHC";
-    @Builder.Default
-    private boolean isNHWC = false;
+    @Builder.Default private long kH = 1L;
+    @Builder.Default private long kW = 1L;
+    @Builder.Default private long sH = 1L;
+    @Builder.Default private long sW = 1L;
+    @Builder.Default private long pH = 0;
+    @Builder.Default private long pW = 0;
+    @Builder.Default private long dH = 1L;
+    @Builder.Default private long dW = 1L;
+    @Builder.Default private boolean isSameMode = false;
+    @Builder.Default private String dataFormat = "NWHC";
+    @Builder.Default private boolean isNHWC = false;
 
 
     public Map<String, Object> toProperties() {
