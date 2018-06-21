@@ -380,6 +380,16 @@ TEST_F(DeclarableOpsTests7, Test_DeConv2D_TF_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests7, Test_Conv2D_TF_1) {
+    NDArray<double> input('c', {54, 1, 12, 12});
+    NDArray<double> weights('c', {1, 2, 12, 2});
+
+    nd4j::ops::conv2d<double> op;
+    auto result = op.execute({&input, &weights}, {}, {-1,-1,  1,1,  0,0,  1,1,  1,1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    delete result;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_119) {

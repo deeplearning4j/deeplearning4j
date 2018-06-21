@@ -441,6 +441,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             return;
         }
 
+        val nodeName = tfNode.getName();
 
         val diff = importState.getSameDiff();
         if (isVariableNode(tfNode)) {
@@ -472,7 +473,6 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         }
         else {
             val opName = tfNode.getOp();
-            val nodeName = tfNode.getName();
 
             // FIXME: early draft
             // conditional import

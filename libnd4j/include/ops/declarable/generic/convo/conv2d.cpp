@@ -26,8 +26,6 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
 
     NDArray<T> *output  = OUTPUT_VARIABLE(0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
     
-    int kH = INT_ARG(0);                                                        // filter(kernel) height
-    int kW = INT_ARG(1);                                                        // filter(kernel) width
     int sH = INT_ARG(2);                                                        // strides height
     int sW = INT_ARG(3);                                                        // strides width
     int pH = INT_ARG(4);                                                        // paddings height
@@ -35,7 +33,10 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
-    int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // 1-NCHW,  0-NHWC
+    bool isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // 1-NCHW,  0-NHWC
+
+    int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(isNCHW ? 2 : 0)); // filter(kernel) height
+    int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(isNCHW ? 3 : 1)); // filter(kernel) width
 
      int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
@@ -62,8 +63,6 @@ DECLARE_SHAPE_FN(conv2d) {
 
     //output [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
 
-    int kH = INT_ARG(0);                                                        // filter(kernel) height
-    int kW = INT_ARG(1);                                                        // filter(kernel) width
     int sH = INT_ARG(2);                                                        // strides height
     int sW = INT_ARG(3);                                                        // strides width
     int pH = INT_ARG(4);                                                        // paddings height
@@ -72,6 +71,9 @@ DECLARE_SHAPE_FN(conv2d) {
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NDHWC, 1-NCDHW
+
+    int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, isNCHW ? 2 : 0)); // filter(kernel) height
+    int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(shape::sizeAt(weightsShapeInfo, isNCHW ? 3 : 1)); // filter(kernel) width
 
     const int rank = 4;                                                        // 4
 

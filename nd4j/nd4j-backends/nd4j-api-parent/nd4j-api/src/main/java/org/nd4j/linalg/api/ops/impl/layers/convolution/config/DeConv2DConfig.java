@@ -13,8 +13,8 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DeConv2DConfig extends BaseConvolutionConfig {
-    @Builder.Default private long kH = 1L;
-    @Builder.Default private long kW = 1L;
+    @Builder.Default private long kH = -1L;
+    @Builder.Default private long kW = -1L;
     @Builder.Default private long sH = 1L;
     @Builder.Default private long sW = 1L;
     @Builder.Default private long pH = 0;
