@@ -2353,3 +2353,143 @@ TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
     delete results;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_1) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {4}, {1.f, 2.f, 3.f, 4.f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {}, {0, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputDeviance = result->at(1);    
+
+    outputMeans->printIndexedBuffer("Means");
+    outputDeviance->printIndexedBuffer("Variance");
+
+
+//    ASSERT_TRUE(exp.isSameShape(output));
+//    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_2) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {1,1,4}, {1.f, 2.f, 3.f, 4.f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {1.}, {0, 1});
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputDeviance = result->at(1);    
+
+    outputMeans->printIndexedBuffer("Means");
+    outputDeviance->printIndexedBuffer("Variance");
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+//    ASSERT_TRUE(exp.isSameShape(output));
+//    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_3) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {3}, {1.f, 5.f, 9.f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {}, {0, 2});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputDeviance = result->at(1);    
+
+    outputMeans->printIndexedBuffer("Means");
+    outputDeviance->printIndexedBuffer("Variance");
+
+//    ASSERT_TRUE(exp.isSameShape(output));
+//    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_4) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {1,3,1}, {1.f, 5.f, 9.f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {1.}, {0, 2});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputDeviance = result->at(1);    
+
+    outputMeans->printIndexedBuffer("Means");
+    outputDeviance->printIndexedBuffer("Variance");
+
+//    ASSERT_TRUE(exp.isSameShape(output));
+//    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_6) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp(1.f);
+    NDArrayFactory<float>::linspace(1, x);
+           
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {}, {0,1,2});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputDeviance = result->at(1);    
+
+    outputMeans->printIndexedBuffer("Means");
+    outputDeviance->printIndexedBuffer("Variance");
+
+//    ASSERT_TRUE(exp.isSameShape(output));
+//    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_7) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> exp('c', {1, 1, 1}, {1.f});
+    NDArrayFactory<float>::linspace(1, x);
+    // x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {1.}, {0,1,2});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputDeviance = result->at(1);    
+
+    outputMeans->printIndexedBuffer("Means");
+    outputDeviance->printIndexedBuffer("Variance");
+
+//    ASSERT_TRUE(exp.isSameShape(output));
+//    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
