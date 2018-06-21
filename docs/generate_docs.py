@@ -11,11 +11,11 @@ def class_to_docs_link(module_name, class_name):
 
 
 def class_to_source_link(module_name, cls_name):
-    return '[[source]](' + GITHUB_ROOT + module_name + '/' + cls_name + '.java)'
+    return '[[source]](' + GITHUB_ROOT + module_name + '/' + cls_name + '.' + LANG + ')'
 
 
-def to_java(code):
-    return '```java\n' + code + '\n```\n'
+def to_code_snippet(code):
+    return '```' + LANG + '\n' + code + '\n```\n'
 
 
 def process_main_docstring(doc_string):
@@ -32,7 +32,7 @@ def process_docstring(doc_string):
 
 def render(signature, doc_string):
     name = signature
-    subblocks = ['<b<{}</b> \n{}'.format(name, to_java(signature))]
+    subblocks = ['<b<{}</b> \n{}'.format(name, to_code_snippet(signature))]
     if doc_string:
         subblocks.append(doc_string + '\n')
     return '\n\n'.join(subblocks)
@@ -87,7 +87,7 @@ def read_page_data(data):
     page_data = []
     for c in classes:
         class_string = read_file(SOURCE_CODE_PATH + module + '/' + c)
-        class_name = c.strip('.java')
+        class_name = c.strip('.' + LANG)
         doc_string, class_string = get_main_doc_string(class_string, class_name)
         constructors, class_string = get_constructor_data(class_string, class_name)
         methods = get_public_method_data(class_string)
@@ -149,6 +149,7 @@ if __name__ == '__main__':
     parser.add_argument('--project', '-p', type=str, required=True)  # e.g. keras-import
     parser.add_argument('--code', '-c', type=str, required=True)  # relative path to source code for this project
 
+    parser.add_argument('--language', '-l', type=str, required=False, default='java')
     parser.add_argument('--docs_root', '-d', type=str, required=False, default='http://deeplearning4j.org') # TBD
     parser.add_argument('--templates', '-t', type=str, required=False, default='templates')
     parser.add_argument('--sources', '-s', type=str, required=False, default='doc_sources')
@@ -158,6 +159,7 @@ if __name__ == '__main__':
     TEMPLATE_DIR = args.templates
     TARGET_DIR = args.sources
     PROJECT = args.project + '/'
+    LANG = args.language
     DOCS_ROOT = args.docs_root
     SOURCE_CODE_PATH = args.code
     GITHUB_ROOT = 'https://github.com/deeplearning4j/deeplearning4j/tree/master/' + SOURCE_CODE_PATH[3:]
