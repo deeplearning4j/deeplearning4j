@@ -6606,7 +6606,42 @@ public class Nd4jTestsC extends BaseNd4jTest {
             assertEquals(in1c, in2c);
 
         }
+    }
 
+    @Test
+    public void testEmptyShapeRank0(){
+        Nd4j.getRandom().setSeed(12345);
+        int[] s = new int[0];
+        INDArray create = Nd4j.create(s);
+        INDArray zeros = Nd4j.zeros(s);
+        INDArray ones = Nd4j.ones(s);
+        INDArray uninit = Nd4j.createUninitialized(s).assign(0);
+        INDArray rand = Nd4j.rand(s);
+
+        INDArray tsZero = Nd4j.trueScalar(0);
+        INDArray tsOne = Nd4j.trueScalar(1);
+        Nd4j.getRandom().setSeed(12345);
+        INDArray tsRand = Nd4j.trueScalar(Nd4j.rand(new int[]{1,1}).getDouble(0));
+        assertEquals(tsZero, create);
+        assertEquals(tsZero, zeros);
+        assertEquals(tsOne, ones);
+        assertEquals(tsZero, uninit);
+        assertEquals(tsRand, rand);
+
+
+        Nd4j.getRandom().setSeed(12345);
+        long[] s2 = new long[0];
+        create = Nd4j.create(s2);
+        zeros = Nd4j.zeros(s2);
+        ones = Nd4j.ones(s2);
+        uninit = Nd4j.createUninitialized(s2).assign(0);
+        rand = Nd4j.rand(s2);
+
+        assertEquals(tsZero, create);
+        assertEquals(tsZero, zeros);
+        assertEquals(tsOne, ones);
+        assertEquals(tsZero, uninit);
+        assertEquals(tsRand, rand);
     }
 
 
