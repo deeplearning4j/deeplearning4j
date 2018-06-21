@@ -6634,7 +6634,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         create = Nd4j.create(s2);
         zeros = Nd4j.zeros(s2);
         ones = Nd4j.ones(s2);
-        uninit = Nd4j.createUninitialized(s2);
+        uninit = Nd4j.createUninitialized(s2).assign(0);
         rand = Nd4j.rand(s2);
 
         assertEquals(tsZero, create);
