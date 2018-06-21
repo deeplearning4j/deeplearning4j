@@ -18,6 +18,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Arrays;
+import java.util.stream.LongStream;
 
 /**
  * @author raver119@gmail.com
@@ -108,6 +109,18 @@ public class SortCooTests extends BaseNd4jTest {
         assertArrayEquals(expValues, val.asDouble(), 1e-5);
     }
 
+    /**
+     * Workaround for missing method in DataBuffer interface:
+     *      long[] DataBuffer.GetLongsAt(long i, long length)
+     *
+     *
+     * When method is added to interface, this workaround should be deleted!
+     * @return
+     */
+    static long[] getLongsAt(DataBuffer buffer, long i, long length){
+        return LongStream.range(i, i + length).map(buffer::getLong).toArray();
+    }
+
     @Test
     public void sortSparseCooIndicesSort3() throws Exception {
         // FIXME: we don't want this test running on cuda for now
@@ -136,13 +149,12 @@ public class SortCooTests extends BaseNd4jTest {
                 if (prev < current){
                     break;
                 } else if(prev > current){
-                    long[] prevRow = indiceBuffer.getLongsAt((i - 1) * shape.length, shape.length);
-                    long[] currentRow = indiceBuffer.getLongsAt(i * shape.length, shape.length);
+                    long[] prevRow = getLongsAt(indiceBuffer, (i - 1) * shape.length, shape.length);
+                    long[] currentRow = getLongsAt(indiceBuffer, i * shape.length, shape.length);
                     throw new AssertionError(String.format("indices are not correctly sorted between element %d and %d. %s > %s",
                             i - 1, i, Arrays.toString(prevRow), Arrays.toString(currentRow)));
                 }
             }
-
         }
     }
 
