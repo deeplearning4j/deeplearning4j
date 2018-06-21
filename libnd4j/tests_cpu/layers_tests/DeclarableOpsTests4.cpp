@@ -336,7 +336,7 @@ TEST_F(DeclarableOpsTests4, Test_Reshape_Again) {
     NDArrayFactory<float>::linspace(1, exp);
 
     nd4j::ops::reshape<float> op;
-    auto result = op.execute({&x}, {}, {99, 4, 3});
+    auto result = op.execute({&x}, {}, {-99, 4, 3});
 
     auto z = result->at(0);
 
