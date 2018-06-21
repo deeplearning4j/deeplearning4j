@@ -21,6 +21,7 @@ public class ActivationIdentity extends BaseActivationFunction {
 
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
+        assertShape(in, epsilon);
         return new Pair<>(epsilon, null);
     }
 

@@ -40,7 +40,7 @@ namespace nd4j {
     NDArray<T>* NDArrayList<T>::readRaw(int idx) {
         if (_chunks.count(idx) < 1) {
             nd4j_printf("Non-existent chunk requested: [%i]\n", idx);
-            throw "Bad index";
+            throw std::runtime_error("Bad index");
         }
 
         return _chunks[idx];

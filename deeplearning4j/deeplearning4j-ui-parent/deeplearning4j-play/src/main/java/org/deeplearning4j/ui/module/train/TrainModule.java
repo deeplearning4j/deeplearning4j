@@ -23,12 +23,10 @@ import org.deeplearning4j.ui.stats.api.Histogram;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.api.StatsReport;
 import org.deeplearning4j.ui.stats.api.StatsType;
-import org.deeplearning4j.ui.views.html.training.TrainingHelp;
 import org.deeplearning4j.ui.views.html.training.TrainingModel;
 import org.deeplearning4j.ui.views.html.training.TrainingOverview;
 import org.deeplearning4j.ui.views.html.training.TrainingSystem;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
@@ -109,8 +107,6 @@ public class TrainModule implements UIModule {
         Route r4 = new Route("/train/system", HttpMethod.GET, FunctionType.Supplier,
                         () -> ok(TrainingSystem.apply(I18NProvider.getInstance())));
         Route r4a = new Route("/train/system/data", HttpMethod.GET, FunctionType.Supplier, this::getSystemData);
-        Route r5 = new Route("/train/help", HttpMethod.GET, FunctionType.Supplier,
-                        () -> ok(TrainingHelp.apply(I18NProvider.getInstance())));
         Route r6 = new Route("/train/sessions/current", HttpMethod.GET, FunctionType.Supplier,
                         () -> ok(currentSessionID == null ? "" : currentSessionID));
         Route r6a = new Route("/train/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
@@ -124,7 +120,7 @@ public class TrainModule implements UIModule {
                         this::setWorkerByIdx);
 
 
-        return Arrays.asList(r, r2, r2a, r3, r3a, r3b, r4, r4a, r5, r6, r6a, r6b, r6c, r6d, r7, r7a);
+        return Arrays.asList(r, r2, r2a, r3, r3a, r3b, r4, r4a, r6, r6a, r6b, r6c, r6d, r7, r7a);
     }
 
     @Override

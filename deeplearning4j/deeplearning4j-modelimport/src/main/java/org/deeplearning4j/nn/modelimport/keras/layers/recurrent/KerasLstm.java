@@ -238,9 +238,10 @@ public class KerasLstm extends KerasLayer {
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
-        if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException(
-                    "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
+        if (inputType.length > 1 && inputType.length != 3)
+            throw new InvalidKerasConfigurationException("Keras LSTM layer accepts only one single input" +
+                            "or three (input to LSTM and two states tensors, but " +
+                            "received " + inputType.length + ".");
         InputPreProcessor preProcessor = getInputPreprocessor(inputType);
         if (preProcessor != null) {
             if (returnSequences) {
@@ -273,9 +274,10 @@ public class KerasLstm extends KerasLayer {
      */
     @Override
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
-        if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException(
-                    "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
+        if (inputType.length > 1 && inputType.length != 3)
+            throw new InvalidKerasConfigurationException("Keras LSTM layer accepts only one single input" +
+                    "or three (input to LSTM and two states tensors, but " +
+                    "received " + inputType.length + ".");
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
     }
 

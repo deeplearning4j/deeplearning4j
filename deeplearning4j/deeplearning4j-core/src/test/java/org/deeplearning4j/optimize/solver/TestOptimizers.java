@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -1068,6 +1069,16 @@ public class TestOptimizers extends BaseDL4JTest {
         @Override
         public void setEpochCount(int epochCount) {
 
+        }
+
+        @Override
+        public void allowInputModification(boolean allow) {
+
+        }
+
+        @Override
+        public LayerHelper getHelper() {
+            return null;
         }
     }
 }

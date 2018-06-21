@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
@@ -10,19 +11,19 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.TimeSeriesUtils;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
@@ -39,8 +40,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 public class BidirectionalLayer implements RecurrentLayer {
 
     private NeuralNetConfiguration conf;
-    private RecurrentLayer fwd;
-    private RecurrentLayer bwd;
+    private Layer fwd;
+    private Layer bwd;
 
     private Bidirectional layerConf;
     private INDArray paramsView;
@@ -52,7 +53,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     private INDArray outFwd;
     private INDArray outBwd;
 
-    public BidirectionalLayer(@NonNull NeuralNetConfiguration conf, @NonNull RecurrentLayer fwd, @NonNull RecurrentLayer bwd) {
+    public BidirectionalLayer(@NonNull NeuralNetConfiguration conf, @NonNull Layer fwd, @NonNull Layer bwd) {
         this.conf = conf;
         this.fwd = fwd;
         this.bwd = bwd;
@@ -461,8 +462,19 @@ public class BidirectionalLayer implements RecurrentLayer {
     public void setInput(INDArray input, LayerWorkspaceMgr layerWorkspaceMgr) {
         this.input = input;
         fwd.setInput(input, layerWorkspaceMgr);
+
         INDArray reversed;
-        reversed = TimeSeriesUtils.reverseTimeSeries(input, layerWorkspaceMgr, ArrayType.INPUT);
+        if(!input.isAttached()){
+            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                reversed = TimeSeriesUtils.reverseTimeSeries(input);
+            }
+        } else {
+            MemoryWorkspace ws = input.data().getParentWorkspace();
+            try(MemoryWorkspace ws2 = ws.notifyScopeBorrowed()){
+                //Put the reversed input into the same workspace as the original input
+                reversed = TimeSeriesUtils.reverseTimeSeries(input);
+            }
+        }
         bwd.setInput(reversed, layerWorkspaceMgr);
     }
 
@@ -500,10 +512,57 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
+    public void allowInputModification(boolean allow) {
+        fwd.allowInputModification(allow);
+        bwd.allowInputModification(true);   //Always allow: always safe due to reverse op
+    }
+
+    @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
         Pair<INDArray,MaskState> ret = fwd.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
         bwd.feedForwardMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT),   //TODO
                 currentMaskState, minibatchSize);
         return ret;
+    }
+
+    @Override
+    public LayerHelper getHelper() {
+        LayerHelper f = fwd.getHelper();
+        LayerHelper b = bwd.getHelper();
+        if(f != null || b != null){
+            return new BidirectionalHelper(f,b);
+        }
+        return null;
+    }
+
+    @AllArgsConstructor
+    private static class BidirectionalHelper implements LayerHelper {
+        private final LayerHelper helperFwd;
+        private final LayerHelper helperBwd;
+
+        @Override
+        public Map<String, Long> helperMemoryUse() {
+            Map<String,Long> fwd = (helperFwd != null ? helperFwd.helperMemoryUse() : null);
+            Map<String,Long> bwd = (helperBwd != null ? helperBwd.helperMemoryUse() : null);
+
+            Set<String> keys = new HashSet<>();
+            if(fwd != null)
+                keys.addAll(fwd.keySet());
+            if(bwd != null)
+                keys.addAll(bwd.keySet());
+
+            Map<String,Long> ret = new HashMap<>();
+            for(String s : keys){
+                long sum = 0;
+                if(fwd != null && fwd.containsKey(s)){
+                    sum += fwd.get(s);
+                }
+                if(bwd != null && bwd.containsKey(s)){
+                    sum += bwd.get(s);
+                }
+                ret.put(s, sum);
+            }
+            return ret;
+        }
     }
 }

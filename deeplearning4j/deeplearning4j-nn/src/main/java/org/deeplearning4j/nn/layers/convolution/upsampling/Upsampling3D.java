@@ -32,7 +32,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -103,6 +102,7 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
                 .build();
         Nd4j.getExecutioner().exec(op);
 
+        reshapedEpsilon = backpropDropOutIfPresent(reshapedEpsilon);
         return new Pair<>(gradient, reshapedEpsilon);
     }
 

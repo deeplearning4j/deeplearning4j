@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -247,6 +248,33 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
         val shape = getShape(x);
 
+        INDArray gamma = null;
+        INDArray beta = null;
+        INDArray globalMeanView = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
+        INDArray globalVarView = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
+        if (layerConf.isLockGammaBeta()) {
+            if (helper != null && input.rank() == 4) {
+                //TODO: don't create these each iteration, when using cudnn
+                val gammaBetaShape = new long[] {1, layerConf().getNOut()};
+                gamma = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getGamma());
+                beta = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getBeta());
+            }
+        } else {
+            gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
+            beta = getParam(BatchNormalizationParamInitializer.BETA);
+        }
+
+        if (helper != null && input.rank() == 4) {
+            //Note that cudnn does not support dense (2d) batch norm case as of v7.1
+            double decay = layerConf.getDecay();
+
+            // FIXME: int cast
+            INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
+                            globalVarView, decay, layerConf.getEps(), workspaceMgr);
+            if (ret != null) {
+                return ret;
+            }
+        }
 
         // xHat = (x-xmean) / sqrt(var + epsilon)
         //Note that for CNNs, mean and variance are calculated per feature map (i.e., per activation) rather than per activation
@@ -269,7 +297,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     break;
                 default:
                     throw new IllegalStateException("Batch normalization on activations of rank " + x.rank()
-                                    + " not supported " + layerId());
+                            + " not supported " + layerId());
             }
 
 
@@ -280,34 +308,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
         }
         std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var), false);
-
-        INDArray gamma = null;
-        INDArray beta = null;
-        INDArray globalMeanView = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
-        INDArray globalVarView = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
-        if (layerConf.isLockGammaBeta()) {
-            if (helper != null && input.rank() == 4) {
-                //TODO: don't create these each iteration, when using cudnn
-                val gammaBetaShape = new long[] {1, layerConf().getNOut()};
-                gamma = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getGamma());
-                beta = Nd4j.valueArrayOf(gammaBetaShape, layerConf().getBeta());
-            }
-        } else {
-            gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
-            beta = getParam(BatchNormalizationParamInitializer.BETA);
-        }
-
-        if (helper != null && input.rank() == 4) {
-            //Note that cudnn does not support dense (2d) batch norm case as of v5.1
-            double decay = layerConf.getDecay();
-
-            // FIXME: int cast
-            INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
-                            globalVarView, decay, layerConf.getEps(), workspaceMgr);
-            if (ret != null) {
-                return ret;
-            }
-        }
 
         // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation)
         if (x.rank() == 2) {
@@ -433,6 +433,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public boolean isPretrainLayer() {
         return false;
+    }
+
+    @Override
+    public LayerHelper getHelper() {
+        return helper;
     }
 
     public long[] getShape(INDArray x) {

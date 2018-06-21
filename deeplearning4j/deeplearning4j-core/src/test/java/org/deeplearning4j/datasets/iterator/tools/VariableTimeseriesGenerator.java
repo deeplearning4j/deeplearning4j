@@ -117,16 +117,6 @@ public class VariableTimeseriesGenerator implements DataSetIterator {
     }
 
     /**
-     * Total examples in the iterator
-     *
-     * @return
-     */
-    @Override
-    public int totalExamples() {
-        return 0;
-    }
-
-    /**
      * Input columns for the dataset
      *
      * @return
@@ -153,26 +143,6 @@ public class VariableTimeseriesGenerator implements DataSetIterator {
      */
     @Override
     public int batch() {
-        return 0;
-    }
-
-    /**
-     * The current cursor if applicable
-     *
-     * @return
-     */
-    @Override
-    public int cursor() {
-        return 0;
-    }
-
-    /**
-     * Total number of examples in the dataset
-     *
-     * @return
-     */
-    @Override
-    public int numExamples() {
         return 0;
     }
 

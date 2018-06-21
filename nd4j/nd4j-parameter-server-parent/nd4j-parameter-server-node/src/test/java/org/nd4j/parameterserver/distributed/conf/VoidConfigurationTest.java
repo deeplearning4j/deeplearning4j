@@ -1,7 +1,9 @@
 package org.nd4j.parameterserver.distributed.conf;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import static org.junit.Assert.*;
@@ -10,6 +12,9 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 public class VoidConfigurationTest {
+
+    @Rule
+    public Timeout globalTimeout = Timeout.seconds(30);
 
     @Test
     public void testNetworkMask1() throws Exception {

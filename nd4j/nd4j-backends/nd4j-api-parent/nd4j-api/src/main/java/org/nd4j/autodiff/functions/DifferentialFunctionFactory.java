@@ -6,13 +6,15 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ops.NoOp;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
+import org.nd4j.linalg.api.ops.impl.accum.bp.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad;
+import org.nd4j.linalg.api.ops.impl.indexaccum.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
@@ -20,6 +22,8 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.scatter.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
+import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
@@ -29,9 +33,14 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.random.impl.DropOut;
+import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
+import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
+import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
+import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
+import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Method;
@@ -125,16 +134,79 @@ public class DifferentialFunctionFactory {
         return new OnesLike(name, sameDiff(), input).outputVariable();
     }
 
+    public SDVariable constant(SDVariable input, long... shape){
+        return new Constant(sameDiff(), input, (shape != null && shape.length > 0 ? null : shape)).outputVariable();
+    }
+
+    public SDVariable linspace(double lower, double upper, long count){
+        return new Linspace(sameDiff(), lower, upper, count).outputVariable();
+    }
+
+    public SDVariable range(double from, double to, double step){
+        return new Range(sameDiff(), from, to, step).outputVariable();
+    }
+
+    public SDVariable[] meshgrid(boolean cartesian, SDVariable... inputs){
+        return new MeshGrid(sameDiff(), cartesian, inputs).outputVariables();
+    }
+
+    public SDVariable randomUniform(double min, double max, SDVariable shape){
+        return new DistributionUniform(sameDiff(), shape, min, max).outputVariable();
+    }
+
+    public SDVariable randomUniform(double min, double max, long... shape){
+        return new UniformDistribution(sameDiff(), min, max, shape).outputVariable();
+    }
+
+    public SDVariable randomNormal(double mean, double std, SDVariable shape){
+        return new RandomNormal(sameDiff(), shape, mean, std).outputVariable();
+    }
+
+    public SDVariable randomNormal(double mean, double std, long... shape){
+        return new GaussianDistribution(sameDiff(), mean, std, shape).outputVariable();
+    }
+
+    public SDVariable randomBernoulli(double p, SDVariable shape){
+        return new RandomBernoulli(sameDiff(), shape, p).outputVariable();
+    }
+
+    public SDVariable randomBernoulli(double p, long... shape){
+        return new BernoulliDistribution(sameDiff(), p, shape).outputVariable();
+    }
+
+    public SDVariable randomBinomial(int nTrials, double p, long... shape){
+        return new BinomialDistribution(sameDiff(), nTrials, p, shape).outputVariable();
+    }
+
+    public SDVariable randomLogNormal(double mean, double stdev, long... shape){
+        return new LogNormalDistribution(sameDiff(), mean, stdev, shape).outputVariable();
+    }
+
+    public SDVariable randomNormalTruncated(double mean, double stdev, long... shape){
+        return new TruncatedNormalDistribution(sameDiff(), mean, stdev, shape).outputVariable();
+    }
+
+    /**
+     * Exponential distribution: P(x) = lambda * exp(-lambda * x)
+     *
+     * @param lambda Must be > 0
+     * @param shape  Shape of the output
+     */
+    public SDVariable randomExponential(double lambda, SDVariable shape) {
+        return new RandomExponential(sameDiff(), shape, lambda).outputVariable();
+    }
+
+
     /**
      * Local response normalization operation.
      *
-     * @param inputs    the inputs to lrn
+     * @param input    the inputs to lrn
      * @param lrnConfig the configuration
      * @return
      */
-    public SDVariable localResponseNormalization(SDVariable inputs, LocalResponseNormalizationConfig lrnConfig) {
+    public SDVariable localResponseNormalization(SDVariable input, LocalResponseNormalizationConfig lrnConfig) {
         LocalResponseNormalization lrn = LocalResponseNormalization.builder()
-                .inputFunctions(new SDVariable[]{inputs})
+                .inputFunctions(new SDVariable[]{input})
                 .sameDiff(sameDiff())
                 .config(lrnConfig)
                 .build();
@@ -145,13 +217,14 @@ public class DifferentialFunctionFactory {
     /**
      * Conv1d operation.
      *
-     * @param inputs       the inputs to conv1d
+     * @param input       the inputs to conv1d
+     * @param weights     conv1d weights
      * @param conv1DConfig the configuration
      * @return
      */
-    public SDVariable conv1d(SDVariable[] inputs, Conv1DConfig conv1DConfig) {
+    public SDVariable conv1d(SDVariable input, SDVariable weights, Conv1DConfig conv1DConfig) {
         Conv1D conv1D = Conv1D.builder()
-                .inputFunctions(inputs)
+                .inputFunctions(new SDVariable[] {input, weights})
                 .sameDiff(sameDiff())
                 .config(conv1DConfig)
                 .build();
@@ -176,16 +249,26 @@ public class DifferentialFunctionFactory {
         return conv2D.outputVariable();
     }
 
+    public SDVariable upsampling2d(SDVariable input, boolean nchw, int scaleH, int scaleW){
+        return new Upsampling2d(sameDiff(), input, nchw, scaleH, scaleW).outputVariable();
+    }
+
+    public SDVariable upsampling2dBp(SDVariable input, SDVariable gradient, boolean nchw, int scaleH, int scaleW){
+        return new Upsampling2dDerivative(sameDiff(), input, gradient, nchw, scaleH, scaleW).outputVariable();
+    }
+
+
+
     /**
      * Average pooling 2d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling2DConfig the configuration
      * @return
      */
-    public SDVariable avgPooling2d(SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
+    public SDVariable avgPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
         AvgPooling2D avgPooling2D = AvgPooling2D.builder()
-                .inputs(inputs)
+                .input(input)
                 .sameDiff(sameDiff())
                 .config(pooling2DConfig)
                 .build();
@@ -196,13 +279,13 @@ public class DifferentialFunctionFactory {
     /**
      * Max pooling 2d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling2DConfig the configuration
      * @return
      */
-    public SDVariable maxPooling2d(SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
+    public SDVariable maxPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
         MaxPooling2D maxPooling2D = MaxPooling2D.builder()
-                .inputs(inputs)
+                .input(input)
                 .sameDiff(sameDiff())
                 .config(pooling2DConfig)
                 .build();
@@ -213,39 +296,37 @@ public class DifferentialFunctionFactory {
     /**
      * Avg pooling 3d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable avgPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        Pooling3D maxPooling3D = Pooling3D.builder()
-                .inputs(inputs)
-                .sameDiff(sameDiff())
-                .pooling3DConfig(pooling3DConfig)
-                .type(Pooling3D.Pooling3DType.AVG)
-                .build();
-
-        return maxPooling3D.outputVariable();
+    public SDVariable avgPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
+        pooling3DConfig.setType(Pooling3D.Pooling3DType.AVG);
+        return pooling3d(input, pooling3DConfig);
     }
 
 
     /**
      * Max pooling 3d operation.
      *
-     * @param inputs          the inputs to pooling
+     * @param input          the inputs to pooling
      * @param pooling3DConfig the configuration
      * @return
      */
-    public SDVariable maxPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
-        Pooling3D maxPooling3D = Pooling3D.builder()
-                .inputs(inputs)
+    public SDVariable maxPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
+        pooling3DConfig.setType(Pooling3D.Pooling3DType.MAX);
+        return pooling3d(input, pooling3DConfig);
+    }
+    public SDVariable pooling3d(SDVariable input, Pooling3DConfig pooling3DConfig){
+        Pooling3D pool3d = Pooling3D.builder()
+                .inputs(new SDVariable[]{input})
                 .sameDiff(sameDiff())
                 .pooling3DConfig(pooling3DConfig)
-                .type(Pooling3D.Pooling3DType.MAX)
+                .type(pooling3DConfig.getType())
                 .build();
-
-        return maxPooling3D.outputVariable();
+        return pool3d.outputVariable();
     }
+
 
     /**
      * Separable Conv2d operation.
@@ -266,7 +347,7 @@ public class DifferentialFunctionFactory {
 
 
     /**
-     * Depthwise Conv2d operation. This is just separable convolution with
+     * Depth-wise Conv2d operation. This is just separable convolution with
      * only the depth-wise weights specified.
      *
      * @param inputs            the inputs to conv2d
@@ -340,6 +421,18 @@ public class DifferentialFunctionFactory {
         return outputVars[0];
     }
 
+    public SDVariable im2Col(SDVariable input, Conv2DConfig config){
+        return new Im2col(sameDiff(), input, config).outputVariable();
+    }
+
+    public SDVariable im2ColBp(SDVariable im2colInput, SDVariable gradientAtOutput, Conv2DConfig config){
+        return new Im2colBp(sameDiff(), im2colInput, gradientAtOutput, config).outputVariable();
+    }
+
+    public SDVariable col2Im(SDVariable input, Conv2DConfig config){
+        return new Col2Im(sameDiff(), input, config).outputVariable();
+    }
+
     public SDVariable[] moments(SDVariable input, int... axes) {
         return new Moments(sameDiff(), input, axes).outputVariables();
     }
@@ -358,37 +451,67 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable dropout(SDVariable input, double p) {
-        return new DropOut(sameDiff(), input, p).outputVariable();
+        return new DropOutInverted(sameDiff(), input, p).outputVariable();
     }
 
 
-    public SDVariable sum(SDVariable i_x,
-                          int... dimensions) {
-        return new Sum(sameDiff(), i_x, dimensions).outputVariable();
+    public SDVariable sum(SDVariable i_x, boolean keepDims, int... dimensions) {
+        return new Sum(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable sumBp(SDVariable i_x, SDVariable grad, boolean keepDims, int... dimensions) {
+        return new SumBp(sameDiff(), i_x, grad, keepDims, dimensions).outputVariable();
     }
 
 
-    public SDVariable prod(SDVariable i_x, int... dimensions) {
-        return new Prod(sameDiff(), i_x, dimensions).outputVariable();
+    public SDVariable prod(SDVariable i_x, boolean keepDims, int... dimensions) {
+        return new Prod(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable prodBp(SDVariable preReduceInput, SDVariable grad, boolean keepDims, int... dimensions) {
+        return new ProdBp(sameDiff(), preReduceInput, grad, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable mean(SDVariable in, boolean keepDims, int... dimensions){
+        return new Mean(sameDiff(), in, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable meanBp(SDVariable in, SDVariable grad, boolean keepDims, int... dimensions){
+        return new MeanBp(sameDiff(), in, grad, keepDims, dimensions).outputVariable();
     }
 
 
-    public SDVariable mean(SDVariable i_x, int... dimensions) {
-        return new Mean(sameDiff(), i_x, dimensions).outputVariable();
+    public SDVariable std(SDVariable i_x, boolean biasCorrected, boolean keepDims, int... dimensions) {
+        return new StandardDeviation(sameDiff(), i_x, biasCorrected, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable stdBp(SDVariable stdInput, SDVariable gradient, boolean biasCorrected, boolean keepDims, int... dimensions){
+        return new StandardDeviationBp(sameDiff(), stdInput, gradient, biasCorrected, keepDims, dimensions).outputVariable();
     }
 
 
-    public SDVariable std(SDVariable i_x,
-                          boolean biasCorrected,
-                          int... dimensions) {
-        return new StandardDeviation(sameDiff(), i_x, dimensions, biasCorrected).outputVariable();
+    public SDVariable variance(SDVariable i_x, boolean biasCorrected, boolean keepDims, int... dimensions) {
+        return new Variance(sameDiff(), i_x, biasCorrected, keepDims, dimensions).outputVariable();
     }
 
+    public SDVariable varianceBp(SDVariable stdInput, SDVariable gradient, boolean biasCorrected, boolean keepDims, int... dimensions){
+        return new VarianceBp(sameDiff(), stdInput, gradient, biasCorrected, keepDims, dimensions).outputVariable();
+    }
 
-    public SDVariable variance(SDVariable i_x,
-                               boolean biasCorrected,
-                               int... dimensions) {
-        return new Variance(sameDiff(), i_x, dimensions, biasCorrected).outputVariable();
+    public SDVariable squaredNorm(SDVariable input, boolean keepDims, int... dimensions){
+        return new SquaredNorm(sameDiff(), input, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable squaredNormBp(SDVariable preReduceInput, SDVariable gradient, boolean keepDims, int... dimensions){
+        return new SquaredNormBp(sameDiff(), preReduceInput, gradient, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable entropy(SDVariable in, int... dimensions){
+        return new Entropy(sameDiff(), in, dimensions).outputVariable();
+    }
+
+    public SDVariable logEntropy(SDVariable in, int... dimensions){
+        return new LogEntropy(sameDiff(), in, dimensions).outputVariable();
     }
 
     public SDVariable countNonZero(SDVariable input, int... dimensions) {
@@ -411,12 +534,16 @@ public class DifferentialFunctionFactory {
         return new ScalarMin(sameDiff(), in, num).outputVariable();
     }
 
+    public SDVariable scalarSet(SDVariable in, Number num){
+        return new ScalarSet(sameDiff(), in, num).outputVariable();
+    }
+
     public SDVariable scalarFloorMod(SDVariable in, Number num){
         return new ScalarFMod(sameDiff(), in, num).outputVariable();
     }
 
-    public SDVariable max(SDVariable i_x, int... dimensions) {
-        return new Max(sameDiff(), i_x, dimensions).outputVariable();
+    public SDVariable max(SDVariable i_x, boolean keepDims, int... dimensions) {
+        return new Max(sameDiff(), i_x, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable max(SDVariable first, SDVariable second) {
@@ -424,9 +551,17 @@ public class DifferentialFunctionFactory {
                 .outputVariable();
     }
 
+    public SDVariable maxBp(SDVariable i_x, SDVariable grad, boolean keepDims, int... dimensions) {
+        return new MaxBp(sameDiff(), i_x, grad, keepDims, dimensions).outputVariable();
+    }
 
-    public SDVariable min(SDVariable i_x, int... dimensions) {
-        return new Min(sameDiff(), i_x, dimensions).outputVariable();
+
+    public SDVariable min(SDVariable i_x, boolean keepDims, int... dimensions) {
+        return new Min(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable minBp(SDVariable i_x, SDVariable grad, boolean keepDims, int... dimensions) {
+        return new MinBp(sameDiff(), i_x, grad, keepDims, dimensions).outputVariable();
     }
 
     public SDVariable min(SDVariable first, SDVariable second) {
@@ -450,42 +585,96 @@ public class DifferentialFunctionFactory {
         return new ASum(sameDiff(), in, dimensions).outputVariable();
     }
 
-    public SDVariable argmax(SDVariable in, int... dimensions) {
-        return new IMax(sameDiff(), in, dimensions).outputVariable();
+    public SDVariable argmax(SDVariable in, boolean keepDims, int... dimensions) {
+        return new IMax(sameDiff(), in, keepDims, dimensions).outputVariable();
     }
 
-    public SDVariable argmin(SDVariable in, int... dimensions) {
-        return new IMin(sameDiff(), in, dimensions).outputVariable();
+    public SDVariable argmin(SDVariable in, boolean keepDims, int... dimensions) {
+        return new IMin(sameDiff(), in, keepDims, dimensions).outputVariable();
     }
 
-
-    public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... dimensions) {
-        return new CumSum(sameDiff(), in, exclusive, reverse, dimensions).outputVariable();
+    public SDVariable iamax(SDVariable in, boolean keepDims, int... dimensions) {
+        return new IAMax(sameDiff(), in, keepDims, dimensions).outputVariable();
     }
 
-    public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... dimensions) {
-        return new CumProd(sameDiff(), in, exclusive, reverse, dimensions).outputVariable();
+    public SDVariable iamin(SDVariable in, boolean keepDims, int... dimensions) {
+        return new IAMin(sameDiff(), in, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable firstIndex(SDVariable in, Condition condition, boolean keepDims, int... dimensions){
+        return new FirstIndex(sameDiff(), in, condition, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable lastIndex(SDVariable in, Condition condition, boolean keepDims, int... dimensions){
+        return new LastIndex(sameDiff(), in, condition, keepDims, dimensions).outputVariable();
+    }
+
+    /**
+     * Returns a count of the number of elements that satisfy the condition
+     * @param in        Input
+     * @param condition Condition
+     * @return          Number of elements that the condition is satisfied for
+     */
+    public SDVariable matchConditionCount(SDVariable in, Condition condition, boolean keepDims, int... dimensions){
+        return new MatchCondition(sameDiff(), in, condition, keepDims, dimensions).outputVariable();
+    }
+
+    /**
+     * Returns a boolean mask of equal shape to the input, where the condition is satisfied
+     * @param in        Input
+     * @param condition Condition
+     * @return          Boolean mask
+     */
+    public SDVariable matchCondition(SDVariable in, Condition condition){
+        return new MatchConditionTransform(sameDiff(), in, condition).outputVariable();
+    }
+
+    public SDVariable cumsum(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
+        return new CumSum(sameDiff(), in, axis, exclusive, reverse).outputVariable();
+    }
+
+    public SDVariable cumsumBp(SDVariable in, SDVariable axis, SDVariable grad, boolean exclusive, boolean reverse) {
+        return new CumSumBp(sameDiff(), in, axis, grad, exclusive, reverse).outputVariable();
+    }
+
+    public SDVariable cumprod(SDVariable in, SDVariable axis, boolean exclusive, boolean reverse) {
+        return new CumProd(sameDiff(), in, axis, exclusive, reverse).outputVariable();
+    }
+
+    public SDVariable cumprodBp(SDVariable in, SDVariable axis, SDVariable grad, boolean exclusive, boolean reverse) {
+        return new CumProdBp(sameDiff(), in, axis, grad, exclusive, reverse).outputVariable();
     }
 
     public SDVariable biasAdd(SDVariable input, SDVariable bias) {
         return new BiasAdd(sameDiff(), input, bias).outputVariable();
     }
 
-    public SDVariable norm1(SDVariable i_x, int... dimensions) {
-        return new Norm1(sameDiff(), i_x, dimensions).outputVariable();
-
+    public SDVariable[] biasAddBp(SDVariable input, SDVariable bias, SDVariable grad) {
+        return new BiasAddGrad(sameDiff(), input, bias, grad).outputVariables();
     }
 
-
-    public SDVariable norm2(SDVariable i_x, int... dimensions) {
-        return new Norm2(sameDiff(), i_x, dimensions).outputVariable();
-
+    public SDVariable norm1(SDVariable i_x, boolean keepDims, int... dimensions) {
+        return new Norm1(sameDiff(), i_x, keepDims, dimensions).outputVariable();
     }
 
+    public SDVariable norm1Bp(SDVariable preReduceIn, SDVariable grad, boolean keepDims, int... dimensions){
+        return new Norm1Bp(sameDiff(), preReduceIn, grad, keepDims, dimensions).outputVariable();
+    }
 
-    public SDVariable normmax(SDVariable i_x, int... dimensions) {
-        return new NormMax(sameDiff(), i_x, dimensions).outputVariable();
+    public SDVariable norm2(SDVariable i_x, boolean keepDims, int... dimensions) {
+        return new Norm2(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+    }
 
+    public SDVariable norm2Bp(SDVariable preReduceIn, SDVariable grad, boolean keepDims, int... dimensions){
+        return new Norm2Bp(sameDiff(), preReduceIn, grad, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable normmax(SDVariable i_x, boolean keepDims, int... dimensions) {
+        return new NormMax(sameDiff(), i_x, keepDims, dimensions).outputVariable();
+    }
+
+    public SDVariable normmaxBp(SDVariable preReduceIn, SDVariable grad, boolean keepDims, int... dimensions){
+        return new NormMaxBp(sameDiff(), preReduceIn, grad, keepDims, dimensions).outputVariable();
     }
 
     /**
@@ -543,7 +732,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable tan(SDVariable iX) {
-        return new Tan(sameDiff(), iX, null).outputVariable();
+        return new Tan(sameDiff(), iX, false).outputVariable();
 
     }
 
@@ -552,6 +741,21 @@ public class DifferentialFunctionFactory {
         return new Permute(sameDiff(), iX, dimensions).outputVariable();
     }
 
+    public SDVariable noop(SDVariable input){
+        return new NoOp(sameDiff(), input).outputVariable();
+    }
+
+    public SDVariable identity(SDVariable input){
+        return new Identity(sameDiff(), input).outputVariable();
+    }
+
+    public SDVariable all(SDVariable input, int... dimensions){
+        return new All(sameDiff(), input, dimensions).outputVariable();
+    }
+
+    public SDVariable any(SDVariable input, int... dimensions){
+        return new Any(sameDiff(), input, dimensions).outputVariable();
+    }
 
     public SDVariable invertPermutation(SDVariable input, boolean inPlace) {
         return new InvertPermutation(sameDiff(), input, inPlace).outputVariable();
@@ -597,9 +801,28 @@ public class DifferentialFunctionFactory {
         return new Tanh(sameDiff(), iX, null).outputVariable();
     }
 
+    public SDVariable tanhRational(SDVariable in){
+        return new RationalTanh(sameDiff(), in, false).outputVariable();
+    }
+
+    public SDVariable tanhRectified(SDVariable in){
+        return new RectifiedTanh(sameDiff(), in, false).outputVariable();
+    }
 
     public SDVariable tanhDerivative(SDVariable iX, SDVariable wrt) {
         return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(sameDiff(), iX, wrt).outputVariable();
+    }
+
+    public SDVariable tanhRationalDerivative(SDVariable in){
+        return new RationalTanhDerivative(sameDiff(), in, false).outputVariable();
+    }
+
+    public SDVariable tanhRectifiedDerivative(SDVariable in){
+        return new RectifiedTanhDerivative(sameDiff(), in, false).outputVariable();
+    }
+
+    public SDVariable step(SDVariable in, double cutoff){
+        return new Step(sameDiff(), in, false, cutoff).outputVariable();
     }
 
 
@@ -619,7 +842,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable exp(SDVariable iX) {
-        return new Exp(sameDiff(), iX, null).outputVariable();
+        return new Exp(sameDiff(), iX, false).outputVariable();
     }
 
     public SDVariable expm1(SDVariable iX) {
@@ -634,6 +857,10 @@ public class DifferentialFunctionFactory {
         return new Log(sameDiff(), iX, null).outputVariable();
     }
 
+    public SDVariable log(SDVariable in, double base){
+        return new LogX(sameDiff(), in, base).outputVariable();
+    }
+
     public SDVariable log1p(SDVariable iX) {
         return new Log1p(sameDiff(), iX, null).outputVariable();
     }
@@ -643,13 +870,24 @@ public class DifferentialFunctionFactory {
         return new IsFinite(sameDiff(), ix, null).outputVariable();
     }
 
-
     public SDVariable isInfinite(SDVariable ix) {
         return new IsInf(sameDiff(), ix, null).outputVariable();
     }
 
     public SDVariable isNaN(SDVariable ix) {
         return new IsNaN(sameDiff(), ix, null).outputVariable();
+    }
+
+    public SDVariable isMax(SDVariable ix){
+        return new IsMax(sameDiff(), ix, false).outputVariable();
+    }
+
+    public SDVariable replaceWhere(SDVariable to, SDVariable from, Condition condition){
+        return new CompareAndReplace(sameDiff(), to, from, condition).outputVariable();
+    }
+
+    public SDVariable replaceWhere(SDVariable to, Number set, Condition condition){
+        return new CompareAndSet(sameDiff(), to, set, condition).outputVariable();
     }
 
     public SDVariable round(SDVariable ix) {
@@ -703,7 +941,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable square(SDVariable iX) {
-        return new Pow(sameDiff(), iX, false, 2.0).outputVariable();
+        return new Square(sameDiff(), iX, false).outputVariable();
     }
 
 
@@ -983,6 +1221,14 @@ public class DifferentialFunctionFactory {
         return new Fill(sameDiff(), shape, value).outputVariable();
     }
 
+    public SDVariable dot(SDVariable x, SDVariable y, int... dimensions){
+        return new Dot(sameDiff(), x, y, dimensions).outputVariable();
+    }
+
+    public SDVariable[] dotBp(SDVariable in1, SDVariable in2, SDVariable grad, boolean keepDims, int... dimensions){
+        return new DotBp(sameDiff(), in1, in2, grad, keepDims, dimensions).outputVariables();
+    }
+
     public SDVariable cosineSimilarity(SDVariable iX, SDVariable i_y, int... dimensions) {
         return new CosineSimilarity(sameDiff(), iX, i_y, dimensions).outputVariable();
     }
@@ -1158,6 +1404,10 @@ public class DifferentialFunctionFactory {
         return new LogSoftMaxDerivative(sameDiff(), arg, wrt).outputVariable();
     }
 
+    public SDVariable logSumExp(SDVariable arg, int... dimension){
+        return new LogSumExp(sameDiff(), arg, dimension).outputVariable();
+    }
+
 
     public SDVariable selu(SDVariable arg) {
         validateDifferentialFunctionsameDiff(arg);
@@ -1236,6 +1486,10 @@ public class DifferentialFunctionFactory {
         return new DiagPart(sameDiff(), new SDVariable[]{sdVariable}, false).outputVariable();
     }
 
+    public SDVariable setDiag(SDVariable in, SDVariable diag){
+        return new MatrixSetDiag(sameDiff(), in, diag, false).outputVariable();
+    }
+
 
     public SDVariable batchToSpace(SDVariable differentialFunction, int[] blocks, int[][] crops) {
         validateDifferentialFunctionsameDiff(differentialFunction);
@@ -1285,6 +1539,14 @@ public class DifferentialFunctionFactory {
     public SDVariable shape(SDVariable df) {
         validateDifferentialFunctionsameDiff(df);
         return new org.nd4j.linalg.api.ops.impl.shape.Shape(sameDiff(), df, false).outputVariable();
+    }
+
+    public SDVariable size(SDVariable in){
+        return new Size(sameDiff(), in).outputVariable();
+    }
+
+    public SDVariable rank(SDVariable df){
+        return new Rank(sameDiff(), df, false).outputVariable();
     }
 
     public SDVariable gather(SDVariable df, int[] indices, int axis) {
@@ -1599,13 +1861,34 @@ public class DifferentialFunctionFactory {
         return new Slice(sameDiff(), input, begin, size).outputVariable();
     }
 
+    public SDVariable sliceBp(SDVariable input, SDVariable gradient, int[] begin, int[] size) {
+        return new SliceBp(sameDiff(), input, gradient, begin, size).outputVariable();
+    }
+
     public SDVariable stridedSlice(SDVariable input, int[] begin, int[] end, int[] strides) {
         return new StridedSlice(sameDiff(), input, begin, end, strides).outputVariable();
     }
 
+    public SDVariable stridedSlice(SDVariable input, long[] begin, long[] end, long[] strides) {
+        return new StridedSlice(sameDiff(), input, begin, end, strides).outputVariable();
+    }
+
+
     public SDVariable stridedSlice(SDVariable in, int[] begin, int[] end, int[] strides, int beginMask,
                                    int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
         return new StridedSlice(sameDiff(), in, begin, end, strides, beginMask, endMask, ellipsisMask,
+                newAxisMask, shrinkAxisMask).outputVariable();
+    }
+
+    public SDVariable stridedSlice(SDVariable in, long[] begin, long[] end, long[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        return new StridedSlice(sameDiff(), in, begin, end, strides, beginMask, endMask, ellipsisMask,
+                newAxisMask, shrinkAxisMask).outputVariable();
+    }
+
+    public SDVariable stridedSliceBp(SDVariable in, SDVariable grad, long[] begin, long[] end, long[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        return new StridedSliceBp(sameDiff(), in, grad, begin, end, strides, beginMask, endMask, ellipsisMask,
                 newAxisMask, shrinkAxisMask).outputVariable();
     }
 
@@ -1671,23 +1954,6 @@ public class DifferentialFunctionFactory {
                 "Function applications must be contained in same graph. The left %s must match this function %s",
                 function, this);
 
-    }
-
-
-    /**
-     * @param func
-     * @param input
-     * @return
-     */
-    public SDVariable doGradChoose(SDVariable func,
-                                   SDVariable input) {
-        validateDifferentialFunctionsameDiff(func);
-        validateDifferentialFunctionsameDiff(input);
-
-        SDVariable repeatedGrad = doRepeat(func, input);
-        SDVariable resultRepeated = doRepeat(func.args()[0], input);
-        SDVariable argMaxLocations = eq(input, resultRepeated);
-        return div(mul(argMaxLocations, repeatedGrad), sum(argMaxLocations).outputVariable());
     }
 
 

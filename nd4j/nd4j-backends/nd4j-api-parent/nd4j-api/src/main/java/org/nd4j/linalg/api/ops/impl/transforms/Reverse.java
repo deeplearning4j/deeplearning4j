@@ -35,12 +35,6 @@ public class Reverse extends DynamicCustomOp {
     }
 
     @Override
-    public String[] tensorflowNames() {
-        return new String[] {"Reverse","ReverseV2"};
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         SDVariable ret = f().reverse(f1.get(0), dimensions);
         return Arrays.asList(ret);

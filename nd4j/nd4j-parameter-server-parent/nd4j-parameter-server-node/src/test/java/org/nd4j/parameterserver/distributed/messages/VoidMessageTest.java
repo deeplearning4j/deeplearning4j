@@ -21,7 +21,7 @@ public class VoidMessageTest {
 
     }
 
-    @Test
+    @Test(timeout = 30000L)
     public void testSerDe1() throws Exception {
         SkipGramRequestMessage message = new SkipGramRequestMessage(10, 12, new int[] {10, 20, 30, 40},
                         new byte[] {(byte) 0, (byte) 0, (byte) 1, (byte) 0}, (short) 0, 0.0, 117L);

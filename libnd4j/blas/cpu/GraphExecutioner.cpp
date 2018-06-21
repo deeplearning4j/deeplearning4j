@@ -34,6 +34,7 @@
 #include <helpers/ShapeUtils.h>
 #include <Status.h>
 #include <deque>
+#include <graph/ResultWrapper.h>
 
 namespace nd4j{
 namespace graph {
@@ -441,15 +442,17 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph, VariableSpace<T>* varia
                 }
 
                 if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
-                    auto array = __variableSpace->getVariable(node->id())->getNDArray();
-                    auto list = __variableSpace->getVariable(node->id())->hasNDArrayList() ? __variableSpace->getVariable(node->id())->getNDArrayList() : nullptr;
-                    auto shape = ShapeUtils<T>::shapeAsString(array);
 
-                    if (array != nullptr) {
+                    if (__variableSpace->getVariable(node->id())->hasNDArray()) {
+                        auto array = __variableSpace->getVariable(node->id())->getNDArray();
+                        auto shape = ShapeUtils<T>::shapeAsString(array);
                         auto values = array->asIndexedString(16);
                         nd4j_debug("node_%i finished. result shape: %s; first values: %s\n", node->id(), shape.c_str(), values.c_str());
-                    } else if (list != nullptr) {
+                    } else if (__variableSpace->getVariable(node->id())->hasNDArrayList()) {
+                        auto list = __variableSpace->getVariable(node->id())->hasNDArrayList() ? __variableSpace->getVariable(node->id())->getNDArrayList() : nullptr;
                         nd4j_debug("node_% is ListOp, skipping evaluation", node->id());
+                    } else {
+                        nd4j_debug("node_% is Unknown: has no NDArray or NDArrayList", node->id());
                     }
                 }
             }
@@ -468,13 +471,15 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph, VariableSpace<T>* varia
 
     // saving memory footprint for current run
     if (__variableSpace->workspace() != nullptr) {
-        nd4j::memory::MemoryRegistrator::getInstance()->setGraphMemoryFootprintIfGreater(graph->hashCode(), __variableSpace->workspace()->getAllocatedSize());
+        auto m = __variableSpace->workspace()->getAllocatedSize();
+        auto h = graph->hashCode();
+        nd4j::memory::MemoryRegistrator::getInstance()->setGraphMemoryFootprintIfGreater(h, m);
     }
 
     if (tempFlow)
         delete flowPath;
 
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 /**
@@ -487,14 +492,14 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph, VariableSpace<T>* varia
  *
  */
 template <typename T>
-Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
+    nd4j::graph::ResultWrapper* GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
     uint8_t *buffer = reinterpret_cast<uint8_t *>(pointer);
 
-    nd4j_debug("Trying to restore graph\n", 0);
+    // nd4j_debug("Trying to restore graph\n", 0);
 
     auto restoredGraph = GetFlatGraph(buffer);
 
-    nd4j_debug("Graph restored\n", 0);
+    // nd4j_debug("Graph restored\n", 0);
 
     // converting FlatGraph to internal representation
     auto nativeGraph = new Graph<T>(restoredGraph);
@@ -507,7 +512,7 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
     nativeGraph->getVariableSpace()->setFlowPath(&flowPath);
 
 
-    nd4j_debug("Going to execute graph\n", 0);
+    // nd4j_debug("Going to execute graph\n", 0);
 
     // executing internal representation
     auto status = GraphExecutioner<T>::execute(nativeGraph);
@@ -516,7 +521,7 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
         return nullptr;
     }
 
-    nd4j_debug("Building output...\n", 0);
+    // nd4j_debug("Building output...\n", 0);
 
     flatbuffers::FlatBufferBuilder builder(1024);
 
@@ -542,8 +547,10 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
 
     // now, we'll prepare output, depending on given outputmode
     auto outputs = nativeGraph->fetchOutputs();
+    auto size = static_cast<int>(outputs->size());
+    int arrays = 0;
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
-    for (int e = 0; e < (int) outputs->size(); e++) {
+    for (int e = 0; e < size; e++) {
         auto var = outputs->at(e);
 
         // FIXME: we want to export multi-output nodes as well
@@ -558,9 +565,9 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
         auto fBuffer = builder.CreateVector(byteVector);
         auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
 
-        nd4j::graph::ByteOrder bo = (nd4j::graph::ByteOrder) BitwiseUtils::asByteOrder();
+        auto bo = static_cast<nd4j::graph::ByteOrder>(BitwiseUtils::asByteOrder());
 
-        auto fArray = CreateFlatArray(builder, fShape, fBuffer, (nd4j::graph::DataType) DataTypeUtils::fromT<T>(), bo);
+        auto fArray = CreateFlatArray(builder, fShape, fBuffer, static_cast<nd4j::graph::DataType>(DataTypeUtils::fromT<T>()), bo);
 
         auto fName = builder.CreateString(*(var->getName()));
         auto id = CreateIntPair(builder, var->id(), var->index());
@@ -568,12 +575,10 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
         auto fv = CreateFlatVariable(builder, id, fName, 0, fArray);
 
         variables_vector.push_back(fv);
-
-        //nd4j_printf("exporting variable [%s]:\n", var->getName()->c_str());
-        //array->printIndexedBuffer(var->getName()->c_str());
+        arrays++;
     }
 
-    nd4j_debug("Returning %i variables back\n", variables_vector.size());
+    nd4j_debug("Returning %i variables back\n", arrays);
 
     auto varTimings = builder.CreateVector(timings_vector);
     auto varVectors = builder.CreateVector(variables_vector);
@@ -587,7 +592,9 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
     char* res = new char[builder.GetSize()];
     memcpy(res, builder.GetBufferPointer(), builder.GetSize());
 
-    return (Nd4jPointer) res; //builder.GetBufferPointer();
+    nd4j_debug("Buffer size: %lld\n", static_cast<Nd4jLong>(builder.GetSize()));
+
+    return new ResultWrapper(builder.GetSize(), reinterpret_cast<Nd4jPointer>(res));
 }
 
 
@@ -808,7 +815,7 @@ uint8_t* readFlatBuffers(const char * filename) {
     long fileLen = getFileSize(filename);
     if (fileLen < 0) {
         nd4j_printf("File [%s] wasn't found. Please check path and permissions\n", filename);
-        throw "File not found";
+        throw std::runtime_error("File not found");
     }
 
     nd4j_debug("File length: %i\n", fileLen);

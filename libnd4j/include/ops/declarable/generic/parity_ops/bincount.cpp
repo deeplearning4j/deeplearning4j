@@ -46,6 +46,9 @@ namespace nd4j {
             int maxIndex = in->argMax();
             int maxLength = int((*in)(maxIndex))  + 1;
 
+            if (block.numI() > 0)
+                maxLength = nd4j::math::nd4j_max(maxLength, INT_ARG(0));
+
             if (block.numI() > 1) 
                 maxLength = nd4j::math::nd4j_min(maxLength, INT_ARG(1));
 

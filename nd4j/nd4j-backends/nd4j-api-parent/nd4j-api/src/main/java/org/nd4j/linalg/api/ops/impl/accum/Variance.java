@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -43,13 +44,8 @@ public class Variance extends BaseAccumulation {
     protected double mean, bias;
     protected boolean biasCorrected = true;
 
-    public Variance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, boolean biasCorrected) {
-        super(sameDiff, i_v, dimensions);
-        this.biasCorrected = biasCorrected;
-    }
-
-    public Variance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean biasCorrected) {
-        super(sameDiff, i_v, i_v2, dimensions);
+    public Variance(SameDiff sameDiff, SDVariable i_v, boolean biasCorrected, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, dimensions, keepDims);
         this.biasCorrected = biasCorrected;
     }
 
@@ -101,6 +97,10 @@ public class Variance extends BaseAccumulation {
         init(x, y, x, x.lengthLong());
     }
 
+    public Variance(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, y, z, newFormat, keepDims, dimensions);
+    }
+
     @Override
     public INDArray noOp() {
         return Nd4j.zerosLike(x());
@@ -144,18 +144,11 @@ public class Variance extends BaseAccumulation {
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         //If out = var(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         // with dOut/dIn = (in-mean) * 2/(n-1)
-        val n = f().getReductionLength(this);
-        int origRank = Shape.rankFromShape(arg().getShape());
-        SDVariable broadcastableMean = f().reductionBroadcastableWithOrigShape(origRank, dimensions, f().mean(arg(), dimensions));
-        SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-        SDVariable dOutdIn = arg().sub(broadcastableMean).mul(2.0 / (biasCorrected ? (n - 1) : n));
-
-        SDVariable dLdIn = dOutdIn.mul(broadcastableGrad);
-        return Arrays.asList(dLdIn);
+        return Collections.singletonList(f().varianceBp(arg(), grad.get(0), biasCorrected, keepDims, dimensions));
     }
 
     @Override

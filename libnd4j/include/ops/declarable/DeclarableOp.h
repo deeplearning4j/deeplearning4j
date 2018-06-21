@@ -86,7 +86,7 @@ namespace nd4j {
             /**
             *   This method pre-allocates NDArrays for Op output, in case they are not available at op execution time
             */
-            bool prepareOutputs(Context<T>& block);
+            int prepareOutputs(Context<T>& block);
 
             //std::vector<int>* calculateOutputShape(std::vector<int>* inputShape, nd4j::graph::Block<T>& block);
         public:

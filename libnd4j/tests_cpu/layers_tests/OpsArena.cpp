@@ -22,7 +22,7 @@ public:
 
 
     OpsArena() {
-        nd4j_printf("\nStarting memory tests...\n","");
+        // nd4j_printf("\nStarting memory tests...\n","");
 
 
         // conv2d_bp
@@ -92,11 +92,11 @@ TEST_F(OpsArena, TestFeedForward) {
     for (auto tuple: tuples) {
         auto op = OpRegistrator::getInstance()->getOperationFloat(tuple->_opName);
         if (op == nullptr) {
-            nd4j_printf("Can't find Op by name: [%s]\n", tuple->_opName);
+            // nd4j_printf("Can't find Op by name: [%s]\n", tuple->_opName);
             ASSERT_TRUE(false);
         }
 
-        nd4j_printf("Testing op [%s]\n", tuple->_opName);
+        // nd4j_printf("Testing op [%s]\n", tuple->_opName);
         nd4j::memory::MemoryReport before, after;
 
         // warmup
@@ -127,7 +127,7 @@ TEST_F(OpsArena, TestFeedForward) {
 
         // this is our main assertion. memory footprint after op run should NOT be higher then before
         if (after > before) {
-            nd4j_printf("WARNING!!! OpName: [%s]; RSS before: [%lld]; RSS after: [%lld]\n", tuple->_opName, before.getRSS(), after.getRSS())
+            // nd4j_printf("WARNING!!! OpName: [%s]; RSS before: [%lld]; RSS after: [%lld]\n", tuple->_opName, before.getRSS(), after.getRSS())
         //    ASSERT_TRUE(after <= before);
         }
     }
@@ -152,7 +152,7 @@ TEST_F(OpsArena, TestMmulHelper1) {
 
     nd4j::memory::MemoryUtils::retrieveMemoryStatistics(after);
     if (after > before) {
-        nd4j_printf("WARNING!!! OpName: [%s]; RSS before: [%lld]; RSS after: [%lld]\n", "mmulHelper", before.getRSS(), after.getRSS())
+        // nd4j_printf("WARNING!!! OpName: [%s]; RSS before: [%lld]; RSS after: [%lld]\n", "mmulHelper", before.getRSS(), after.getRSS())
         ASSERT_TRUE(after <= before);
     }
 }
@@ -176,7 +176,7 @@ TEST_F(OpsArena, TestMmulHelper2) {
 
     nd4j::memory::MemoryUtils::retrieveMemoryStatistics(after);
     if (after > before) {
-        nd4j_printf("WARNING!!! OpName: [%s]; RSS before: [%lld]; RSS after: [%lld]\n", "mmulHelper", before.getRSS(), after.getRSS())
+        // nd4j_printf("WARNING!!! OpName: [%s]; RSS before: [%lld]; RSS after: [%lld]\n", "mmulHelper", before.getRSS(), after.getRSS())
         ASSERT_TRUE(after <= before);
     }
 }

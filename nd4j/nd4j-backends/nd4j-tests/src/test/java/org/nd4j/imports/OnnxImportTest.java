@@ -43,8 +43,8 @@ public class OnnxImportTest {
         assertTrue(pooling instanceof MaxPooling2D);
 
         val poolingCast = (MaxPooling2D) pooling;
-        assertEquals(24,poolingCast.getConfig().getKh());
-        assertEquals(24,poolingCast.getConfig().getKw());*/
+        assertEquals(24,poolingCast.getConfig().getkH());
+        assertEquals(24,poolingCast.getConfig().getkW());*/
 
     }
 

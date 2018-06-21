@@ -58,6 +58,26 @@ TEST_F(NDArrayTest2, Test_ByteVector_3) {
     delete restored;
 }
 
+TEST_F(NDArrayTest2, Test_Reshape_Scalar_1) {
+    NDArray<double> x('c', {1, 1}, {1.0});
+    NDArray<double> e(1.0);
+
+    x.reshapei({});
+
+    ASSERT_EQ(e, x);
+    ASSERT_EQ(e.rankOf(), x.rankOf());
+}
+
+TEST_F(NDArrayTest2, Test_Reshape_Scalar_2) {
+    NDArray<double> x('c', {1, 1}, {1.0});
+    NDArray<double> e('c', {1}, {1.0});
+
+    x.reshapei({1});
+
+    ASSERT_EQ(e, x);
+    ASSERT_EQ(e.rankOf(), x.rankOf());
+}
+
 TEST_F(NDArrayTest2, Test_IndexReduce_1) {
     NDArray<float> x('c', {1, 5}, {1, 2, 3, 4, 5});
 
@@ -636,7 +656,7 @@ TEST_F(NDArrayTest2, permute_test4) {
 
     const std::vector<int> perm = {0, 4, 5, 1, 2, 3};    
     NDArray<float>* arr1P = arr1.permute(perm);
-    arr1P->printShapeInfo();
+    // arr1P->printShapeInfo();
 
     // ASSERT_TRUE(arr1.isSameShapeStrict(&arr2));
     ASSERT_TRUE(arr1P->isSameShapeStrict(&arr2));
@@ -669,8 +689,8 @@ TEST_F(NDArrayTest2, TestStdDev3) {
     const double variance     = array.varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(false);
     const double varianceCorr = array.varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true);
 
-    printf("%s  expected %.10f    calculated %.10f\n","variance          :", trueVariance, variance );
-    printf("%s  expected %.10f    calculated %.10f\n","variance corrected:", trueVarianceCorr, varianceCorr);
+    // printf("%s  expected %.10f    calculated %.10f\n","variance          :", trueVariance, variance );
+    // printf("%s  expected %.10f    calculated %.10f\n","variance corrected:", trueVarianceCorr, varianceCorr);
 
     ASSERT_NEAR(trueVariance, variance, 1e-8);
     ASSERT_NEAR(trueVarianceCorr, varianceCorr, 1e-8);

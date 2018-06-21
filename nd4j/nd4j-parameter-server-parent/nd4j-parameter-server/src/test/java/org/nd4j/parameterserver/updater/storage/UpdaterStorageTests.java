@@ -22,7 +22,7 @@ public class UpdaterStorageTests {
         updateStorage.close();
     }
 
-    @Test
+    @Test(timeout = 30000L)
     public void testInMemory() {
         UpdateStorage updateStorage = new InMemoryUpdateStorage();
         NDArrayMessage message = NDArrayMessage.wholeArrayUpdate(Nd4j.scalar(1.0));

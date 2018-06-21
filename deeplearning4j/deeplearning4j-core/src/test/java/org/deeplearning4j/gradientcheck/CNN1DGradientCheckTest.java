@@ -82,7 +82,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                                         .build())
                                 .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(finalNOut).build())
-                                .setInputType(InputType.recurrent(convNIn)).build();
+                                .setInputType(InputType.recurrent(convNIn, length)).build();
 
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
@@ -165,7 +165,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                                         .stride(stride).padding(padding).pnorm(pnorm).build())
                                 .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(finalNOut).build())
-                                .setInputType(InputType.recurrent(convNIn)).build();
+                                .setInputType(InputType.recurrent(convNIn, length)).build();
 
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
@@ -241,7 +241,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                                                         .stride(stride).padding(padding).pnorm(pnorm).build())
                                         .layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                                         .activation(Activation.SOFTMAX).nOut(finalNOut).build())
-                                        .setInputType(InputType.recurrent(convNIn)).build();
+                                        .setInputType(InputType.recurrent(convNIn, length)).build();
 
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);

@@ -102,7 +102,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
             INDArray exp = entry.getValue();
             INDArray act = g2.gradientForVariable().get(entry.getKey());
 
-            System.out.println(entry.getKey() + "\t" + exp.equals(act));
+            //System.out.println(entry.getKey() + "\t" + exp.equals(act));
         }
 
         assertEquals(mln1.getFlattenedGradients(), mln2.getFlattenedGradients());

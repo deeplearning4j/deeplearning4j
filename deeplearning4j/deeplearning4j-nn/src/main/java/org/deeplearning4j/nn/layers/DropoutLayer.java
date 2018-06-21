@@ -68,6 +68,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
         }
 
         Gradient ret = new DefaultGradient();
+        delta = backpropDropOutIfPresent(delta);
         return new Pair<>(ret, delta);
     }
 
@@ -77,11 +78,17 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
 
         INDArray ret;
         if(!training){
-            ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
+            ret = input;
         } else {
             if(layerConf().getIDropout() != null){
-                ret = layerConf().getIDropout().applyDropout(workspaceMgr.dup(ArrayType.ACTIVATIONS, input, input.ordering()),
-                        getIterationCount(), getEpochCount(), true);
+                INDArray result;
+                if(inputModificationAllowed){
+                    result = input;
+                } else {
+                    result = workspaceMgr.createUninitialized(ArrayType.INPUT, input.shape(), input.ordering());
+                }
+
+                ret = layerConf().getIDropout().applyDropout(input, result, getIterationCount(), getEpochCount(), workspaceMgr);
             } else {
                 ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
             }
@@ -91,6 +98,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
             ret.muliColumnVector(maskArray);
         }
 
+        ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
         return ret;
     }
 

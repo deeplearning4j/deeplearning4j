@@ -201,11 +201,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             val attr = node.getAttrOrThrow(tfMappingAttrName);
             val type = attr.getType();
             if(fields == null) {
-                throw new ND4JIllegalStateException("No fields found for op " + mapping);
+                throw new ND4JIllegalStateException("No fields found for op [" + mapping + "]");
             }
 
             if(mapping.getPropertyNames() == null) {
-                throw new ND4JIllegalStateException("no property found for " + name + " and op " + on.opName());
+                throw new ND4JIllegalStateException("no property found for [" + name + "] in op [" + on.opName()+"]");
             }
 
             val field = fields.get(mapping.getPropertyNames()[0]);
@@ -845,7 +845,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     fa[e] = (float) fb.get(e);
 
                 if (fa.length == 0)
-                    throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
+                    return Nd4j.empty();
+                    //throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
                 if (fa.length == 1)
                     return Nd4j.trueScalar(fa[0]);

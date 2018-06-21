@@ -5168,12 +5168,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
     protected double getLogEntropy(double[] array) {
-        double ret = 0;
-        for (double x : array) {
-            ret += FastMath.log(FastMath.pow(x, 2));
-        }
-
-        return ret;
+        return Math.log(MathUtils.entropy(array));
     }
 
 
@@ -5735,16 +5730,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .inputArrays(new INDArray[]{input})
                 .outputs(new INDArray[]{output})
                 .conv2DConfig(Conv2DConfig.builder()
-                        .kh(kY)
-                        .kw(kX)
-                        .kh(kY)
-                        .kw(kX)
-                        .sy(sY)
-                        .sx(sX)
-                        .ph(pY)
-                        .pw(pX)
-                        .dh(dY)
-                        .dw(dX)
+                        .kH(kY)
+                        .kW(kX)
+                        .kH(kY)
+                        .kW(kX)
+                        .sH(sY)
+                        .sW(sX)
+                        .pH(pY)
+                        .pW(pX)
+                        .dH(dY)
+                        .dW(dX)
                         .isSameMode(isSameMode)
                         .build())
 
@@ -6493,6 +6488,186 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.setDataType(dtype);
     }
+
+
+    @Test
+    public void testEye(){
+
+        int[] rows = new int[]{3,3,3,3};
+        int[] cols = new int[]{3,2,2,2};
+        int[][] batch = new int[][]{null, null, {4}, {3,3}};
+        INDArray[] expOut = new INDArray[4];
+
+        expOut[0] = Nd4j.eye(3);
+        expOut[1] = Nd4j.create(new double[][]{{1,0,0},{0,1,0}});
+        expOut[2] = Nd4j.create(4,3,2);
+        for( int i=0; i<4; i++ ){
+            expOut[2].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
+        }
+        expOut[3] = Nd4j.create(3,3,3,2);
+        for( int i=0; i<3; i++ ){
+            for( int j=0; j<3; j++ ) {
+                expOut[3].get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
+            }
+        }
+
+
+        for(int i=0; i<3; i++ ) {
+            INDArray out = Nd4j.create(expOut[i].shape());
+
+            DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("eye")
+                    .addOutputs(out)
+                    .addIntegerArguments(rows[i], cols[i]);
+            if(batch[i] != null){
+                op.addIntegerArguments(batch[i]);
+            }
+
+            Nd4j.getExecutioner().exec(op.build());
+
+            assertEquals(expOut[i], out);
+        }
+    }
+
+    @Test
+    public void testTranspose_Custom(){
+
+        INDArray arr = Nd4j.linspace(1,15, 15).reshape(5,3);
+        INDArray out = Nd4j.create(3,5);
+
+        val op = DynamicCustomOp.builder("transpose")
+                .addInputs(arr)
+                .addOutputs(out)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = arr.transpose();
+        assertEquals(exp, out);
+    }
+
+    @Test
+    public void testRowColumnOpsRank1(){
+
+        for( int i=0; i<6; i++ ) {
+            INDArray orig = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
+            INDArray in1r = orig.dup();
+            INDArray in2r = orig.dup();
+            INDArray in1c = orig.dup();
+            INDArray in2c = orig.dup();
+
+            INDArray rv1 = Nd4j.create(new double[]{1, 2, 3, 4}, new long[]{1, 4});
+            INDArray rv2 = Nd4j.create(new double[]{1, 2, 3, 4}, new long[]{4});
+            INDArray cv1 = Nd4j.create(new double[]{1, 2, 3}, new long[]{3, 1});
+            INDArray cv2 = Nd4j.create(new double[]{1, 2, 3}, new long[]{3});
+
+            switch (i){
+                case 0:
+                    in1r.addiRowVector(rv1);
+                    in2r.addiRowVector(rv2);
+                    in1c.addiColumnVector(cv1);
+                    in2c.addiColumnVector(cv2);
+                    break;
+                case 1:
+                    in1r.subiRowVector(rv1);
+                    in2r.subiRowVector(rv2);
+                    in1c.subiColumnVector(cv1);
+                    in2c.subiColumnVector(cv2);
+                    break;
+                case 2:
+                    in1r.muliRowVector(rv1);
+                    in2r.muliRowVector(rv2);
+                    in1c.muliColumnVector(cv1);
+                    in2c.muliColumnVector(cv2);
+                    break;
+                case 3:
+                    in1r.diviRowVector(rv1);
+                    in2r.diviRowVector(rv2);
+                    in1c.diviColumnVector(cv1);
+                    in2c.diviColumnVector(cv2);
+                    break;
+                case 4:
+                    in1r.rsubiRowVector(rv1);
+                    in2r.rsubiRowVector(rv2);
+                    in1c.rsubiColumnVector(cv1);
+                    in2c.rsubiColumnVector(cv2);
+                    break;
+                case 5:
+                    in1r.rdiviRowVector(rv1);
+                    in2r.rdiviRowVector(rv2);
+                    in1c.rdiviColumnVector(cv1);
+                    in2c.rdiviColumnVector(cv2);
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+            assertEquals(in1r, in2r);
+            assertEquals(in1c, in2c);
+
+        }
+    }
+
+    @Test
+    public void testEmptyShapeRank0(){
+        Nd4j.getRandom().setSeed(12345);
+        int[] s = new int[0];
+        INDArray create = Nd4j.create(s);
+        INDArray zeros = Nd4j.zeros(s);
+        INDArray ones = Nd4j.ones(s);
+        INDArray uninit = Nd4j.createUninitialized(s).assign(0);
+        INDArray rand = Nd4j.rand(s);
+
+        INDArray tsZero = Nd4j.trueScalar(0);
+        INDArray tsOne = Nd4j.trueScalar(1);
+        Nd4j.getRandom().setSeed(12345);
+        INDArray tsRand = Nd4j.trueScalar(Nd4j.rand(new int[]{1,1}).getDouble(0));
+        assertEquals(tsZero, create);
+        assertEquals(tsZero, zeros);
+        assertEquals(tsOne, ones);
+        assertEquals(tsZero, uninit);
+        assertEquals(tsRand, rand);
+
+
+        Nd4j.getRandom().setSeed(12345);
+        long[] s2 = new long[0];
+        create = Nd4j.create(s2);
+        zeros = Nd4j.zeros(s2);
+        ones = Nd4j.ones(s2);
+        uninit = Nd4j.createUninitialized(s2).assign(0);
+        rand = Nd4j.rand(s2);
+
+        assertEquals(tsZero, create);
+        assertEquals(tsZero, zeros);
+        assertEquals(tsOne, ones);
+        assertEquals(tsZero, uninit);
+        assertEquals(tsRand, rand);
+    }
+
+    @Test
+    public void testScalarView_1() {
+        val array = Nd4j.linspace(1, 5, 5);
+        val exp = Nd4j.create(new double[]{1.0, 2.0, 5.0, 4.0, 5.0});
+        val scalar = array.getScalar(2);
+
+        assertEquals(3.0, scalar.getDouble(0), 1e-5);
+        scalar.addi(2.0);
+
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testScalarView_2() {
+        val array = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        val exp = Nd4j.create(new double[]{1.0, 2.0, 5.0, 4.0}).reshape(2, 2);
+        val scalar = array.getScalar(1, 0);
+
+        assertEquals(3.0, scalar.getDouble(0), 1e-5);
+        scalar.addi(2.0);
+
+        assertEquals(exp, array);
+    }
+
 
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {

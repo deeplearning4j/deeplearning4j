@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,8 +36,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class NormMax extends BaseAccumulation {
-    public NormMax(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
+    public NormMax(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, dimensions, keepDims);
     }
 
     public NormMax(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
@@ -75,26 +76,15 @@ public class NormMax extends BaseAccumulation {
 
     @Override
     public String opName() {
-        return "normmax";
+        return "reduce_normmax";
     }
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         //maxnorm(in) = max_i |x_i|
         //d maxnorm(in)/dx = 0 if x_i is not the max, or d|x|/dx otherwise
-
-        SDVariable absIn = sameDiff.abs(arg());
-        SDVariable maxnorm = outputVariables()[0];
-        int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
-        SDVariable maxnormBc = f().reductionBroadcastableWithOrigShape(origRank, dimensions, maxnorm);
-        maxnormBc = sameDiff.onesLike(arg()).mul(maxnormBc);
-        SDVariable eq = sameDiff.eq(absIn, maxnormBc);
-        SDVariable dAbsXdX = sameDiff.sign(arg());
-        SDVariable dNormmaxDx = eq.mul(dAbsXdX);
-        SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-        SDVariable ret = dNormmaxDx.mul(broadcastableGrad);
-        return Arrays.asList(ret);
+        return Collections.singletonList(f().normmaxBp(arg(), grad.get(0), keepDims, dimensions));
     }
 
     @Override

@@ -50,17 +50,12 @@ namespace ops  {
     		Nd4jLong* outShapeInfo = nullptr;
 
 			int outRank = inRank/2;
-			if(outRank == 1)
-				outRank += 1;
-	
+
 			ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
 	
 			outShapeInfo[0] = outRank;
 			for(int i = 1; i <= outRank; ++i)
 				outShapeInfo[i] = inputShapeInfo[i];
-
-			if(inRank/2 == 1)
-				outShapeInfo[1] = 1;
 
 			shape::updateStrides(outShapeInfo, shape::order(inputShapeInfo));
 

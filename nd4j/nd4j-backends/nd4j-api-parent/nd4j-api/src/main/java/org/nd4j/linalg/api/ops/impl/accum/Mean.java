@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -33,12 +34,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Mean extends Sum {
-    public Mean(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
-    }
-
-    public Mean(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
-        super(sameDiff, i_v, i_v2, dimensions);
+    public Mean(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
     }
 
     public Mean() {
@@ -64,6 +61,10 @@ public class Mean extends Sum {
         super(x, y, z, x.lengthLong());
     }
 
+    public Mean(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, y, z, newFormat, keepDims, dimensions);
+    }
+
     @Override
     public int opNum() {
         return 0;
@@ -71,22 +72,16 @@ public class Mean extends Sum {
 
     @Override
     public String opName() {
-        return "mean";
+        return "reduce_mean";
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+        if(!newFormat)
+            throw new IllegalStateException("Cannot doDiff with newFormat == false");
         //If out = mean(in), then dL/dIn = 1/N * dL/dOut  (broadcast to appropriate shape)
         //Note that N differs for "along dimension" vs. "whole array" reduce cases
-        long n = f().getReductionLength(this);
-
-        int rank = Shape.rankFromShape(arg().getShape());
-        SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(rank, dimensions, i_v1.get(0));
-        SDVariable ret = sameDiff.onesLike(arg()).div(n);      //1/N with shape equal to input
-
-        ret = ret.mul(broadcastableGrad);
-        return Arrays.asList(ret);
+        return Collections.singletonList(f().meanBp(arg(), i_v1.get(0), keepDims, dimensions));
     }
 
     @Override

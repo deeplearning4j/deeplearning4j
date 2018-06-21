@@ -76,7 +76,7 @@ namespace graph {
                 _variableSpace.putVariable(p.first(), p.second(), var);
             }
 
-            nd4j_printf("Node_%i: adding input [%i:%i]\n", node->id(), p.first(), p.second());
+            // nd4j_printf("Node_%i: adding input [%i:%i]\n", node->id(), p.first(), p.second());
             node->pickInput(p.first(), p.second());
         }
 
@@ -127,7 +127,7 @@ namespace graph {
                 _variableSpace.putVariable(p.first(), p.second(), var);
             }
 
-            nd4j_printf("Node_%i: adding input [%i:%i]\n", node->id(), p.first(), p.second());
+            // nd4j_printf("Node_%i: adding input [%i:%i]\n", node->id(), p.first(), p.second());
             node->pickInput(p.first(), p.second());
             node->pickOutput(0, e);
         }

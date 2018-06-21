@@ -38,6 +38,9 @@ import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 
+import java.util.Collections;
+import java.util.Map;
+
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
 import static org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper.getCudnnForwardArgs;
@@ -163,8 +166,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN, kernel[0],
                         kernel[1], pad[0], pad[1], strides[0], strides[1]));
 
-        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch, (int) depth, (int) inH, (int) inW}, 'c');
-
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch, (int) depth, (int) inH, (int) inW}, 'c');
 
         val dstStride = outEpsilon.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, (int) miniBatch, (int) depth, (int) inH, (int) inW,
@@ -261,6 +263,12 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
             context.syncOldStream();
 
         return reduced;
+    }
+
+    @Override
+    public Map<String, Long> helperMemoryUse() {
+        //No persistent memory use other than the structs (which are small)
+        return Collections.emptyMap();
     }
 
 }

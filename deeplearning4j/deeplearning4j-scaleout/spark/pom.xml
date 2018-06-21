@@ -79,6 +79,7 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
+                <version>${maven-scala-plugin.version}</version>
                 <executions>
                     <!-- Run scala compiler in the process-resources phase, so that dependencies on
                         scala classes can be resolved later in the (Java) compile phase -->
@@ -193,7 +194,7 @@
             <id>test-nd4j-native</id>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-9.0</id>
+            <id>test-nd4j-cuda-9.2</id>
         </profile>
     </profiles>
 </project>

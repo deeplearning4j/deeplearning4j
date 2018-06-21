@@ -299,7 +299,7 @@ namespace nd4j {
             _built.store(false);
 
             if (node->opType() == OpType_LOGIC) {
-                nd4j_debug("Adding LogicOp [%i]\n", node->opNum());
+                // nd4j_debug("Adding LogicOp [%i]\n", node->opNum());
                 // SCOPE
                 if (node->opNum() == 10) {
                     auto scope = new Scope<T>(node->id(), node->getName() != nullptr ? node->getName()->c_str() : "");
@@ -414,7 +414,7 @@ namespace nd4j {
                 } else {
                     var = _variableSpace->getVariable(node->id());
                 }
-                nd4j_logger("Adding auto output variable; Output size: %i\n", node->output()->size());
+                // nd4j_logger("Adding auto output variable; Output size: %i\n", node->output()->size());
 
                 var->setId(node->id());
                 var->setName(node->getName());
@@ -460,14 +460,14 @@ namespace nd4j {
             }
 
             std::pair<int, Node<T> *> pair(node->id(), node);
-            nd4j_debug("Adding node_%i\n", node->id());
+            // nd4j_debug("Adding node_%i\n", node->id());
             // if model has only external variables as input - it goes to first layer, no matter what.
             if (node->hasExternalInputs() && !node->hasInternalInputs()) {
                 node->setLayer(0);
 
                 injectNode(node);
 
-                nd4j_logger("A Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
+                // nd4j_logger("A Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
                 
                 return;
             } else {
@@ -701,7 +701,7 @@ namespace nd4j {
                         nd4j_printf("Unmapped node: [%i]\n", node->id());
                     }
 
-                    throw "Unable to build graph";
+                    throw std::runtime_error("Unable to build graph");
                 }
             }
 
@@ -816,7 +816,7 @@ namespace nd4j {
                 nd4j_debug("Paring nodes... \n", "");
 
                 if (Environment::getInstance()->isDebugAndVerbose()) {
-                    nd4j_printv("current _output", _output);
+                    // nd4j_printv("current _output", _output);
                 }
                 //_output.clear();
 
@@ -932,7 +932,7 @@ namespace nd4j {
                         std::pair<int, int> vp(out->first(), out->second());
                         if (!_variableSpace->hasVariable(vp)) {
                             nd4j_verbose("Non-existent variable requested: %i\n", out);
-                            throw "Non-existent variable requested";
+                            throw std::runtime_error("Non-existent variable requested");
                         }
 
                         // TODO: fix this .first
@@ -1085,7 +1085,7 @@ namespace nd4j {
         template <typename T>
         std::vector<OpDescriptor> Graph<T>::getOperations() {
             buildGraph();
-            nd4j_printf("\nRetrieving ops from the Graph and collect them...\n", "");
+            // nd4j_printf("\nRetrieving ops from the Graph and collect them...\n", "");
             std::vector<OpDescriptor> res;
 
             int opCnt = 0;
@@ -1134,10 +1134,10 @@ namespace nd4j {
             }
 
 
-            nd4j_printf("\nCollecting out Scopes...\n","");
+            // nd4j_printf("\nCollecting out Scopes...\n","");
             for (int s = 0; s < _scopes.size(); s++) {
                 Scope<T>* scope = _scopes.at(s);
-                nd4j_printf("Scope %i:<%s>:\n", scope->id(), scope->name()->c_str());
+                // nd4j_printf("Scope %i:<%s>:\n", scope->id(), scope->name()->c_str());
 
                 for (int n = 0; n < scope->nodes()->size(); n++) {
                     Node<T>* node = scope->nodes()->at(n);
@@ -1183,7 +1183,7 @@ namespace nd4j {
         Scope<T> *Graph<T>::scopeById(int id) {
             if (_mappedScopes.count(id) == 0) {
                 nd4j_printf("Requested Scope [%i] doesn't exist\n", id);
-                throw "Non-existent Scope was requested";
+                throw std::runtime_error("Non-existent Scope was requested");
             }
 
             return _mappedScopes.at(id);
@@ -1307,17 +1307,21 @@ namespace nd4j {
             }
 
             int cnt = 0;
+            /*
             if (_variableSpace != nullptr) {
                 // loop over existing variables
                 for (auto v: *(_variableSpace->handles())) {
                     if (v->hasNDArray()) {
                         NDArray<T> *arr = v->getNDArray();
-                        auto shape = arr->getShapeAsVector();
-                        auto string = ShapeUtils<T>::shapeAsString(shape);
-                        localStamp += string;
+                        if (arr != nullptr && arr->nonNull()) {
+                            auto shape = arr->getShapeAsVector();
+                            auto string = ShapeUtils<T>::shapeAsString(shape);
+                            localStamp += string;
+                        }
                     }
                 }
             }
+            */
 
             // loop over nodes in graph
             for (auto &v: *_mapped) {

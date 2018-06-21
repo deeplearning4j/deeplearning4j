@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops;
 
 import com.google.common.primitives.Ints;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
@@ -53,6 +54,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected boolean keepDims = false;
 
     // flag for tf imported ops, shows that there's probably one more value appended in axis
+    @Getter
     protected boolean newFormat = false;
     protected boolean isComplex = false;
 
@@ -78,6 +80,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             throw new IllegalArgumentException("Input not null variable.");
         }
 
+        this.newFormat = true;
     }
 
     public BaseAccumulation(SameDiff sameDiff,
@@ -102,6 +105,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             throw new IllegalArgumentException("Input not null variable.");
         }
 
+        this.newFormat = true;
     }
 
 
@@ -142,10 +146,14 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init();
-        //      if (y != null)
-        //            LinAlgExceptions.assertSameLength(x, y);
-        //LinAlgExceptions.assertSameLength(x, z);
+    }
 
+    public BaseAccumulation(INDArray x, INDArray y, INDArray z, boolean newFormat, boolean keepDims, int[] dimensions) {
+        super(x, y, z, x.lengthLong());
+        this.newFormat = newFormat;
+        this.keepDims = keepDims;
+        this.dimensions = dimensions;
+        init();
     }
 
     public BaseAccumulation(INDArray x, INDArray y, long n) {

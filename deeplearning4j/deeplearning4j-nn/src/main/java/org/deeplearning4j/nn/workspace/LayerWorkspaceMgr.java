@@ -1,16 +1,16 @@
 package org.deeplearning4j.nn.workspace;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.workspace.BaseWorkspaceMgr;
 import org.nd4j.linalg.workspace.WorkspaceMgr;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * {@link WorkspaceMgr} for DL4J layers.
@@ -19,6 +19,7 @@ import java.util.Set;
  * @author Alex Black
  */
 public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
+    public static String CUDNN_WORKSPACE_KEY = "CUDNN_WORKSPACE";
 
     private static LayerWorkspaceMgr NO_WS_IMMUTABLE;
     static{
@@ -29,6 +30,9 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
     }
 
     protected Set<String> noLeverageOverride;
+
+    @Setter @Getter
+    protected Map<String,Pointer> helperWorkspacePointers;
 
     private LayerWorkspaceMgr(){
 
@@ -66,8 +70,43 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
         return super.validateArrayLocation(arrayType, array, migrateIfInvalid, exceptionIfDetached);
     }
 
+    /**
+     * Get the pointer to the helper memory. Usually used for CUDNN workspace memory sharing.
+     * NOTE: Don't use this method unless you are fully aware of how it is used to manage CuDNN memory!
+     * Will (by design) throw a NPE if the underlying map (set from MultiLayerNetwork or ComputationGraph) is not set.
+     *
+     * @param key Key for the helper workspace pointer
+     * @param <T> Pointer type
+     * @return Pointer for that key, or null if none exists
+     */
+    public <T extends Pointer> T getHelperWorkspace(String key){
+        return (T)helperWorkspacePointers.get(key);
+    }
+
+    /**
+     * Set the pointer to the helper memory. Usually used for CuDNN workspace memory sharing.
+     * NOTE: Don't use this method unless you are fully aware of how it is used to manage CuDNN memory!
+     * Will (by design) throw a NPE if the underlying map (set from MultiLayerNetwork or ComputationGraph) is not set.
+     *
+     * @param key   Key for the helper workspace pointer
+     * @param value Pointer
+     */
+    public void setHelperWorkspace(@NonNull String key, Pointer value){
+        helperWorkspacePointers.put(key, value);
+    }
+
     public static Builder builder(){
         return new Builder();
+    }
+
+    /**
+     * @param helperWorkspacePointers Helper pointers - see {@link #getHelperWorkspace(String)} for details
+     * @return Workspace manager
+     */
+    public static LayerWorkspaceMgr noWorkspaces(Map<String,Pointer> helperWorkspacePointers){
+        LayerWorkspaceMgr wsm = noWorkspaces();
+        wsm.setHelperWorkspacePointers(helperWorkspacePointers);
+        return wsm;
     }
 
     public static LayerWorkspaceMgr noWorkspaces(){

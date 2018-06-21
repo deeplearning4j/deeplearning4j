@@ -5,6 +5,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -31,11 +33,25 @@ public class Eye extends DynamicCustomOp {
 
     private int numRows;
     private int numCols;
+    private boolean isVariableInput = false;
     private int[] batchDimension = new int[] {};
 
     public Eye() {
     }
 
+    public Eye(SameDiff sameDiff, SDVariable numRows){
+        super(null, sameDiff, new SDVariable[] {numRows}, false);
+        isVariableInput = true;
+    }
+
+    public Eye(SameDiff sameDiff, SDVariable numRows, SDVariable numCols){
+        super(null, sameDiff, new SDVariable[] {numRows, numCols}, false);
+        isVariableInput = true;
+    }
+    public Eye(SameDiff sameDiff, SDVariable numRows, SDVariable numCols, SDVariable batch_shape){
+        super(null, sameDiff, new SDVariable[] {numRows, numCols, batch_shape}, false);
+        isVariableInput = true;
+    }
     public Eye(SameDiff sameDiff,  int numRows) {
         super(null, sameDiff, new SDVariable[] {}, false);
         this.numRows = numRows;
@@ -56,6 +72,23 @@ public class Eye extends DynamicCustomOp {
         this.numCols = numCols;
         this.batchDimension = batchDimension;
         addArgs();
+    }
+
+    @Override
+    public List<long[]> calculateOutputShape(){
+        if(isVariableInput){
+            return super.calculateOutputShape();
+        }
+        long[] outputShape = new long[2 + batchDimension.length];
+        int i;
+        for(i = 0; i < batchDimension.length; i++){
+            outputShape[i] = batchDimension[i];
+        }
+        outputShape[i++] = numRows;
+        outputShape[i] = numCols;
+        List<long[]> ret = new ArrayList<>();
+        ret.add(outputShape);
+        return ret;
     }
 
     protected void addArgs() {

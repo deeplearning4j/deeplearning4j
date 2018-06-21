@@ -39,11 +39,6 @@ public class FileSplitDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return numFiles;
-    }
-
-    @Override
     public int inputColumns() {
         return 0;
     }
@@ -71,16 +66,6 @@ public class FileSplitDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return 0;
-    }
-
-    @Override
-    public int cursor() {
-        return counter.get();
-    }
-
-    @Override
-    public int numExamples() {
-        return numFiles;
     }
 
     @Override

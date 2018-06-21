@@ -25,17 +25,22 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
 
     @Override
     public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order) {
+        return createShapeInformation(shape, stride, offset, elementWiseStride, order, 0L);
+    }
+
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order, long extras) {
         // We enforce offset to 0 in shapeBuffer, since we need it for cache efficiency + we don't actually use offset value @ native side
         offset = 0;
 
-        ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
+        ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order, extras);
         if (!shapeCache.containsKey(descriptor)) {
             if (counter.get() < MAX_ENTRIES) {
                 synchronized (this) {
                     if (!shapeCache.containsKey(descriptor)) {
                         counter.incrementAndGet();
                         Pair<DataBuffer, long[]> buffer =
-                                        super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+                                        super.createShapeInformation(shape, stride, offset, elementWiseStride, order, extras);
                         shapeCache.put(descriptor, buffer);
 
                         bytes.addAndGet(buffer.getFirst().length() * 4 * 2);
@@ -45,26 +50,30 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
                         return shapeCache.get(descriptor);
                 }
             } else {
-                return super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+                return super.createShapeInformation(shape, stride, offset, elementWiseStride, order, extras);
             }
         }
 
         return shapeCache.get(descriptor);
     }
 
-
     @Override
     public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order) {
+        return createShapeInformation(shape, stride, offset, elementWiseStride, order, 0L);
+    }
+
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long offset, long elementWiseStride, char order, long extras) {
         // We enforce offset to 0 in shapeBuffer, since we need it for cache efficiency + we don't actually use offset value @ native side
         offset = 0;
 
-        LongShapeDescriptor descriptor = new LongShapeDescriptor(shape, stride, offset, elementWiseStride, order);
+        LongShapeDescriptor descriptor = new LongShapeDescriptor(shape, stride, offset, elementWiseStride, order, extras);
         if (!shapeCache.containsKey(descriptor)) {
             if (counter.get() < MAX_ENTRIES) {
                 synchronized (this) {
                     if (!longCache.containsKey(descriptor)) {
                         counter.incrementAndGet();
-                        Pair<DataBuffer, long[]> buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+                        Pair<DataBuffer, long[]> buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order, extras);
                         longCache.put(descriptor, buffer);
 
                         bytes.addAndGet(buffer.getFirst().length() * 4 * 2);
@@ -74,7 +83,7 @@ public class DirectShapeInfoProvider extends BaseShapeInfoProvider {
                         return longCache.get(descriptor);
                 }
             } else {
-                return super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+                return super.createShapeInformation(shape, stride, offset, elementWiseStride, order, extras);
             }
         }
 

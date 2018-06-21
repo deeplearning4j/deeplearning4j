@@ -46,8 +46,11 @@ import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
+import org.nd4j.util.StringUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -123,7 +126,6 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     }
 
     private CudnnConvolutionContext cudnnContext = new CudnnConvolutionContext();
-    private DataCache workSpace = new DataCache();
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
@@ -247,7 +249,13 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             checkCudnn(false, "cudnnGetConvolutionBackwardDataAlgorithm", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
         }
 
-        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch,(int)  inDepth, (int) inH, (int) inW}, 'c');
+        if(log.isTraceEnabled()){
+            BwdFilterAlgo fa = BwdFilterAlgo.values()[algo1[0]];
+            BwdDataAlgo da = BwdDataAlgo.values()[algo2[0]];
+            log.trace("CudnnConvolutionHelper backward algorithm selection: mode {}, filter algorithm {}, data algorithm {}", mode, fa, da);
+        }
+
+        INDArray epsNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {(int) miniBatch,(int)  inDepth, (int) inH, (int) inW}, 'c');
 
         val dstStride = epsNext.stride();
 
@@ -279,10 +287,24 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         sizeInBytes);
         checkCudnn(false, "cudnnGetConvolutionBackwardDataWorkspaceSize", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
 
+        DataCache workSpace = workspaceMgr.getHelperWorkspace(LayerWorkspaceMgr.CUDNN_WORKSPACE_KEY);
         long sizeInBytes2 = sizeInBytes.get(0);
-        if (sizeInBytes1 > workSpace.capacity() || sizeInBytes2 > workSpace.capacity()) {
-            workSpace.deallocate();
-            workSpace = new DataCache(Math.max(sizeInBytes1, sizeInBytes2));
+        if (workSpace == null || sizeInBytes1 > workSpace.capacity() || sizeInBytes2 > workSpace.capacity()) {
+            long newSize = Math.max(sizeInBytes1, sizeInBytes2);
+            if(log.isTraceEnabled()){
+                if(workSpace == null){
+                    log.trace("CudnnConvolutionHelper backpropGradient: Allocating initial workspace of size {} ({})", newSize,
+                            StringUtils.TraditionalBinaryPrefix.long2String(newSize, "B", 2));
+                } else {
+                    log.trace("CudnnConvolutionHelper backpropGradient: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
+                            workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), "B", 2),
+                            newSize, StringUtils.TraditionalBinaryPrefix.long2String(newSize, "B", 2));
+                }
+            }
+            if(workSpace != null)
+                workSpace.deallocate();
+            workSpace = new DataCache(newSize);
+            workspaceMgr.setHelperWorkspace(LayerWorkspaceMgr.CUDNN_WORKSPACE_KEY, workSpace);
         }
 
         code = cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, TENSOR_FORMAT, dataType, 1, (int) outDepth, 1, 1);
@@ -425,6 +447,11 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             }
         }
 
+        if(log.isTraceEnabled()){
+            FwdAlgo a = FwdAlgo.values()[algo[0]];
+            log.trace("CudnnConvolutionHelper forward algorithm selection: mode {}, algorithm {}", mode, a);
+        }
+
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(z, input, weights, bias);
         Pointer srcData = allocator.getPointer(input, context);
@@ -440,9 +467,22 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         sizeInBytes);
         checkCudnn(true, "cudnnGetConvolutionForwardWorkspaceSize", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
 
-        if (sizeInBytes.get(0) > workSpace.capacity()) {
-            workSpace.deallocate();
+        DataCache workSpace = workspaceMgr.getHelperWorkspace(LayerWorkspaceMgr.CUDNN_WORKSPACE_KEY);
+        if (workSpace == null || sizeInBytes.get(0) > workSpace.capacity()) {
+            if(log.isTraceEnabled()){
+                if(workSpace == null){
+                    log.trace("CudnnConvolutionHelper preOutput: allocating initial workspace of size {} ({})",
+                            sizeInBytes.get(), StringUtils.TraditionalBinaryPrefix.long2String(sizeInBytes.get(), "B", 2));
+                } else {
+                    log.trace("CudnnConvolutionHelper preOutput: Deallocating workspace of size {} ({}), allocating new workspace of size {} ({})",
+                            workSpace.capacity(), StringUtils.TraditionalBinaryPrefix.long2String(workSpace.capacity(), "B", 2),
+                            sizeInBytes.get(), StringUtils.TraditionalBinaryPrefix.long2String(sizeInBytes.get(), "B", 2));
+                }
+            }
+            if(workSpace != null)
+                workSpace.deallocate();
             workSpace = new DataCache(sizeInBytes.get(0));
+            workspaceMgr.setHelperWorkspace(LayerWorkspaceMgr.CUDNN_WORKSPACE_KEY, workSpace);
         }
         code = cudnnConvolutionForward(cudnnContext, alpha, cudnnContext.srcTensorDesc, srcData,
                         cudnnContext.filterDesc, filterData, cudnnContext.convDesc, algo[0], workSpace,
@@ -613,6 +653,12 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         private INDArray origInput;
         private int[] padding;
         private int[] outSize;
+    }
+
+    @Override
+    public Map<String, Long> helperMemoryUse() {
+        //No memory use other than shared, and the structs (which are small)
+        return Collections.emptyMap();
     }
 
 }

@@ -61,6 +61,9 @@ public class RoutedTransport extends BaseTransport {
         super.init(voidConfiguration, clipboard, role, localIp, localPort, shardIndex);
         setProperty("aeron.client.liveness.timeout", "30000000000");
 
+        // setting this property to try to increase maxmessage length, not sure if it still works though
+        setProperty("aeron.term.buffer.length", "32000000");
+
         context = new Aeron.Context().publicationConnectionTimeout(30000000000L).driverTimeoutMs(30000)
                         .keepAliveInterval(100000000);
 

@@ -87,7 +87,7 @@ TEST_F(SwitchTests, SwitchTest1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    nd4j_printf("Z0: [%i]; Z1: [%i]\n", flowPath.isNodeActive(nodeZ0->id()), flowPath.isNodeActive(nodeZ1->id()));
+    // nd4j_printf("Z0: [%i]; Z1: [%i]\n", flowPath.isNodeActive(nodeZ0->id()), flowPath.isNodeActive(nodeZ1->id()));
 
     // we know that Switch got TRUE evaluation, so :0 should be inactive
     ASSERT_FALSE(flowPath.isNodeActive(nodeZ0->id()));

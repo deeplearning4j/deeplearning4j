@@ -24,6 +24,9 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Calculate the absolute mean of the given vector
  *
@@ -84,5 +87,12 @@ public class  AMean extends ASum {
     @Override
     public Type opType() {
         return Type.REDUCE;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        SDVariable sgn = sameDiff.sign(arg());
+        SDVariable meanBp = f().meanBp(sameDiff.abs(arg()), f1.get(0), false, dimensions);
+        return Collections.singletonList(sgn.mul(meanBp));
     }
 }

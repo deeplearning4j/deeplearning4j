@@ -31,7 +31,7 @@ namespace nd4j {
                     array = new NDArray<T>((char) shapeInfo.at(shapeInfo.size() - 1), shape);
                 } else {
                     nd4j_printf("Either shape or NDArray should be defined in FlatResult variable\n","");
-                    throw "Empty variable";
+                    throw std::runtime_error("Empty variable");
                 }
 
 

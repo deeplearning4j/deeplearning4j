@@ -21,6 +21,8 @@ package org.nd4j.linalg.jcublas;
 
 import lombok.val;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
 import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
 import org.nd4j.linalg.memory.MemcpyDirection;
@@ -1416,7 +1418,12 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
                     long length) {
-        nativeOps.convertTypes(null, typeSrc.ordinal(), source, length, typeDst.ordinal(), target);
+
+        val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
+
+        val p = new PointerPointer<>(new Pointer[]{null, stream});
+
+        nativeOps.convertTypes(p, typeSrc.ordinal(), source, length, typeDst.ordinal(), target);
     }
 
 
@@ -1489,8 +1496,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         DataBuffer data = null;
         Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpy(pointer);
         int length = nativeOps.lengthForShapeBufferPointer(shapeBufferPointer);
-        shapeBufferPointer.capacity(4 * length);
-        shapeBufferPointer.limit(4 * length);
+        shapeBufferPointer.capacity(8 * length);
+        shapeBufferPointer.limit(8 * length);
         shapeBufferPointer.position(0);
 
         val intPointer = new LongPointer(shapeBufferPointer);
@@ -1689,6 +1696,14 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         return x;
     }
+
+    @Override
+    public INDArray empty() {
+        long extras  = ArrayOptionsHelper.setOptionBit(0L, ArrayType.EMPTY);
+        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new int[0], new int[0],0,1,'c', extras);
+        return new JCublasNDArray(null, (CudaLongDataBuffer) shape.getFirst(), shape.getSecond());
+    }
+
 
     @Override
     public INDArray sort(INDArray x, boolean descending, int... dimension) {

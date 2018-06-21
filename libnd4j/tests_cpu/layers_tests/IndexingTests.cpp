@@ -173,6 +173,26 @@ TEST_F(IndexingTests, SimpleSlice_3) {
     delete result;
 }
 
+TEST_F(IndexingTests, SimpleSlice_4) {
+    NDArray<double> input('c', {3, 2, 3}, {1.0, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6});
+    NDArray<double> start('c', {3}, {1.0, 0.0, 0.0});
+    NDArray<double> stop('c', {3}, {2.0, 1.0, 3.0});
+    NDArray<double> exp('c', {2, 1, 3}, {3.0, 3.0, 3.0, 5.0, 5.0, 5.0});
+
+    nd4j::ops::slice<double> op;
+
+    auto result = op.execute({&input, &start, &stop}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
 TEST_F(IndexingTests, MaskedSlice_0) {
     NDArray<float> matrix('c', {3, 5});
     auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1});
@@ -190,7 +210,7 @@ TEST_F(IndexingTests, MaskedSlice_0) {
 
     auto z = result->at(0);
 
-    z->printShapeInfo("z");
+    // z->printShapeInfo("z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -217,7 +237,7 @@ TEST_F(IndexingTests, MaskedSlice_00) {
 
     auto z = result->at(0);
 
-    z->printShapeInfo("z");
+    // z->printShapeInfo("z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -244,7 +264,7 @@ TEST_F(IndexingTests, MaskedSlice_1) {
 
     auto z = result->at(0);
 
-    z->printShapeInfo("z");
+    // z->printShapeInfo("z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -346,7 +366,7 @@ TEST_F(IndexingTests, Live_Slice_1) {
 
     auto z = result->at(0);
 
-    z->printShapeInfo("z shape");
+    // z->printShapeInfo("z shape");
     
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -369,7 +389,7 @@ TEST_F(IndexingTests, Test_StridedSlice_1) {
 
     auto z = result->at(0);
 
-    z->printIndexedBuffer("Z");
+    // z->printIndexedBuffer("Z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -391,7 +411,7 @@ TEST_F(IndexingTests, Test_StridedSlice_2) {
 
     auto z = result->at(0);
 
-    //z->printIndexedBuffer("Z");
+    // z->printIndexedBuffer("Z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

@@ -64,3 +64,9 @@ TEST_F(ArrayOptionsTests, TestShape_Basic_5) {
     ASSERT_TRUE(nd4j::DataType::DataType_INT32 == ArrayOptions::dataType(shape));
     ASSERT_EQ(nd4j::SparseType::CSC, ArrayOptions::sparseType(shape));
 }
+
+TEST_F(ArrayOptionsTests, TestShape_Basic_6) {
+    ArrayOptions::setPropertyBits(shape, {ARRAY_EMPTY, ARRAY_INT, ARRAY_CSC});
+
+    ASSERT_EQ(nd4j::ArrayType::EMPTY, ArrayOptions::arrayType(shape));
+}

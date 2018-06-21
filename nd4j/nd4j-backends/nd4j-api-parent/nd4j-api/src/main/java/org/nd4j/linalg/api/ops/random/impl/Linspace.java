@@ -2,11 +2,13 @@ package org.nd4j.linalg.api.ops.random.impl;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,7 @@ import java.util.Map;
 public class Linspace extends BaseRandomOp {
     private double from;
     private double to;
+    private long length;
 
     public Linspace() {
         // no-op
@@ -33,6 +36,14 @@ public class Linspace extends BaseRandomOp {
         this.to = to;
         init(null, null, z, z.lengthLong());
         this.extraArgs = new Object[] {from, to};
+    }
+
+    public Linspace(SameDiff sd, double from, double to, long length){
+        this.sameDiff = sd;
+        this.from = from;
+        this.to = to;
+        this.length = length;
+        sameDiff.addArgsFor(new String[]{},this);
     }
 
     @Override
@@ -64,10 +75,14 @@ public class Linspace extends BaseRandomOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
+    public List<long[]> calculateOutputShape() {
+        return Collections.singletonList(new long[]{length});
+    }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-       throw new UnsupportedOperationException("Unable to differentiate array creation routine");
+        //No inputs
+        return Collections.emptyList();
     }
 }

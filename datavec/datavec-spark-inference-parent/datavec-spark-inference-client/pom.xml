@@ -27,7 +27,7 @@
         </dependency>
         <dependency>
             <groupId>org.datavec</groupId>
-            <artifactId>datavec-spark-inference-server_2.10</artifactId>
+            <artifactId>datavec-spark-inference-server_2.11</artifactId>
             <version>1.0.0_spark_1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
@@ -45,7 +45,10 @@
 
     <profiles>
         <profile>
-            <id>testresources</id>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-9.2</id>
         </profile>
     </profiles>
 </project>

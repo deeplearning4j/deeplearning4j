@@ -2,15 +2,24 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
+import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
+import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
+import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
+import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
+import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -23,6 +32,8 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -597,5 +608,50 @@ public class BidirectionalTest extends BaseDL4JTest {
                 }
             }
         }
+    }
+
+
+    @Test
+    public void testIssue5472(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/5472
+
+        int in = 2;
+        int out = 2;
+        ComputationGraphConfiguration.GraphBuilder builder = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(0.01))
+                .activation(Activation.RELU)
+                .graphBuilder()
+                .addInputs("IN")
+                .setInputTypes(InputType.recurrent(in))
+                .addLayer("AUTOENCODER",
+                        new VariationalAutoencoder.Builder()
+                                .encoderLayerSizes(64)
+                                .decoderLayerSizes(64)
+                                .nOut(7)
+                                .pzxActivationFunction(Activation.IDENTITY)
+                                .reconstructionDistribution(new BernoulliReconstructionDistribution(Activation.SIGMOID.getActivationFunction())).build(),
+                        "IN")
+                .addLayer("RNN", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nOut(128).build()), "AUTOENCODER")
+                .addLayer("OUT", new RnnOutputLayer.Builder()
+                        .nOut(out)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "RNN")
+                .setOutputs("OUT")
+                .pretrain(true)
+                .backprop(true);
+
+        ComputationGraph net = new ComputationGraph(builder.build());
+        net.init();
+
+        MultiDataSetIterator iterator = new SingletonMultiDataSetIterator(new MultiDataSet(Nd4j.create(10,in,5), Nd4j.create(10,out,5)));
+
+        EarlyStoppingConfiguration.Builder b = new EarlyStoppingConfiguration.Builder<>()
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(10))
+                .scoreCalculator(new DataSetLossCalculator(iterator, true))
+                .evaluateEveryNEpochs(1)
+                .modelSaver(new InMemoryModelSaver<>());
+
+        EarlyStoppingGraphTrainer earlyStoppingGraphTrainer = new EarlyStoppingGraphTrainer(b.build(), net, iterator, null);
+        earlyStoppingGraphTrainer.fit();
     }
 }

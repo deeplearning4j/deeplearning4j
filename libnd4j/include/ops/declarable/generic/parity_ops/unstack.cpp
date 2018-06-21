@@ -66,9 +66,14 @@ namespace nd4j {
             for (int e = 0; e < shape::rank(tad.tadOnlyShapeInfo); e++)
                 shape[e] = shape::shapeOf(tad.tadOnlyShapeInfo)[e];
 
-            // remove leading 1
-            if (shape.size() == 2 && shape[0] == 1)
-                shape.erase(shape.begin());
+            // remove leading and trailing 1
+            if (inShape[0] == 2 && shape.size() == 2) {
+                if (shape[0] == 1) {
+                    shape.erase(shape.begin());
+                } else if (shape[1] == 1) {
+                    shape.erase(shape.end());
+                }
+            }
             
             auto result = SHAPELIST();
             for (int e = 0; e < numTads; e++) {

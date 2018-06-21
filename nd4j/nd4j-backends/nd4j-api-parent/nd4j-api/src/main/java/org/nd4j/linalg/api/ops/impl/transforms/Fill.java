@@ -40,6 +40,11 @@ public class Fill extends DynamicCustomOp {
         addArgs();
     }
 
+    public Fill(INDArray shape, INDArray result, double value) {
+        super(null, shape, result, Collections.singletonList(value), null);
+        this.value = value;
+    }
+
 
     protected void addArgs() {
         addTArgument(value);
@@ -96,16 +101,8 @@ public class Fill extends DynamicCustomOp {
         val shape = args()[0].getArr();
         if(shape == null)
             return Collections.emptyList();
-        else {
-            if(shape.length() == 1) {
-                if(shape.getDouble(0) < 1)
-                    return Arrays.asList(new long[]{1,1});
-                else
-                    return Arrays.asList(new long[]{1,shape.getInt(0)});
-            }
-        }
-
-        return Arrays.asList(shape.data().asLong());
+        else
+            return Arrays.asList(shape.data().asLong());
     }
 
     @Override
@@ -126,5 +123,10 @@ public class Fill extends DynamicCustomOp {
     @Override
     public Op.Type opType() {
         return Op.Type.CUSTOM;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradients){
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 }

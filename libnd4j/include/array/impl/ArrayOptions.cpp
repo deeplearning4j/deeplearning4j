@@ -6,6 +6,7 @@ namespace nd4j {
         return (shape::extra(shapeInfo) != 0);
     }
 
+
     bool ArrayOptions::isSparseArray(Nd4jLong *shapeInfo) {
         return hasPropertyBitSet(shapeInfo, ARRAY_SPARSE);
     }
@@ -73,6 +74,10 @@ namespace nd4j {
     ArrayType ArrayOptions::arrayType(Nd4jLong *shapeInfo) {
         if (hasPropertyBitSet(shapeInfo, ARRAY_SPARSE))
             return ArrayType::SPARSE;
+        else if (hasPropertyBitSet(shapeInfo, ARRAY_COMPRESSED))
+            return ArrayType::COMPRESSED;
+        else if (hasPropertyBitSet(shapeInfo, ARRAY_EMPTY))
+            return ArrayType::EMPTY;
         else // by default we return DENSE type here
             return ArrayType::DENSE;
     }

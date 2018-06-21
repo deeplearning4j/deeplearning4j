@@ -24,9 +24,9 @@ std::vector<Nd4jLong> ShapeUtils<T>::evalShapeForTensorDot(const Nd4jLong* aShap
     int bRank = bShapeInfo[0];
 
     if(axeAsize != axeBsize)
-        throw "ShapeUtils::evalShapeForTensorDot method: the numbers of a axes and b axes to make dot product along must have identical values !";
+        throw std::runtime_error("ShapeUtils::evalShapeForTensorDot method: the numbers of a axes and b axes to make dot product along must have identical values !");
     if(axeAsize > aRank || axeBsize > bRank)
-        throw "ShapeUtils::evalShapeForTensorDot method: the length of vector of a or b axes is larger than array rank !";
+        throw std::runtime_error("ShapeUtils::evalShapeForTensorDot method: the length of vector of a or b axes is larger than array rank !");
     
     // axes validation
     for (int i = 0; i < axeBsize; i++) {        
@@ -35,17 +35,17 @@ std::vector<Nd4jLong> ShapeUtils<T>::evalShapeForTensorDot(const Nd4jLong* aShap
         if (axesB[i] < 0)
             axesB[i] += bRank;
         if (aShapeInfo[axesA[i] + 1] != bShapeInfo[axesB[i] + 1])
-            throw "ShapeUtils::evalShapeForTensorDot method: the dimensions at given axes for both input arrays must be the same !";
+            throw std::runtime_error("ShapeUtils::evalShapeForTensorDot method: the dimensions at given axes for both input arrays must be the same !");
     }
     
     // check whether axesA and axesB contain only unique numbers
     std::set<T> uniqueElems(axesA.begin(), axesA.end());
     if((int)uniqueElems.size() != axeAsize)
-        throw "ShapeUtils::evalShapeForTensorDot method: the vector of a axes contains duplicates !";
+        throw std::runtime_error("ShapeUtils::evalShapeForTensorDot method: the vector of a axes contains duplicates !");
     uniqueElems.clear();
     uniqueElems = std::set<T>(axesB.begin(), axesB.end());
     if((int)uniqueElems.size() != axeBsize)
-        throw "ShapeUtils::evalShapeForTensorDot method: the vector of b axes contains duplicates !";
+        throw std::runtime_error("ShapeUtils::evalShapeForTensorDot method: the vector of b axes contains duplicates !");
 
     std::vector<int> list_A, list_B;
     for (int i = 0; i < aRank; i++)
@@ -242,8 +242,11 @@ Nd4jLong* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>&
     template<typename T>
     Nd4jLong* ShapeUtils<T>::evalPermShapeInfo(const int* dimensions, const int rank, const NDArray<T>& arr, nd4j::memory::Workspace* workspace) {
 
-        if (!arr.nonNull() || rank != arr.rankOf())
-            throw "ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr or rank is not suitable!";
+        if (!arr.nonNull())
+            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr!");
+
+        if (rank != arr.rankOf())
+            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: rank is not suitable!");
     
         auto shapeInfoLength = shape::shapeInfoLength(rank);
         // allocate memory for new array - shapeInfo
@@ -264,8 +267,11 @@ Nd4jLong* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>&
     template<typename T>
     Nd4jLong* ShapeUtils<T>::evalPermShapeInfo(const Nd4jLong *dimensions, const int rank, const NDArray<T>& arr, nd4j::memory::Workspace* workspace) {
 
-        if (!arr.nonNull() || rank != arr.rankOf())
-            throw "ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr or rank is not suitable!";
+        if (!arr.nonNull())
+            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr!");
+
+        if (rank != arr.rankOf())
+            throw std::runtime_error("ShapeUtils<T>::evalPermShapeInfo static method: wrong arguments in pn/termute method: rank is not suitable!");
 
         auto shapeInfoLength = shape::shapeInfoLength(rank);
         // allocate memory for new array - shapeInfo
@@ -364,7 +370,7 @@ Nd4jLong* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>&
 template <typename T>
 bool ShapeUtils<T>::areShapesBroadcastable(const NDArray<T> &arr1, const NDArray<T> &arr2)
 {
-    return areShapesBroadcastable((Nd4jLong *) arr1.getShapeInfo(), (Nd4jLong *) arr2.getShapeInfo());   
+    return areShapesBroadcastable(arr1.getShapeInfo(), arr2.getShapeInfo());
 }
 
 template <typename T>
@@ -426,7 +432,7 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong*min, const bo
     
     // evaluate shapeInfo for resulting array
     if(resultShapeInfo != nullptr)
-        throw "ShapeUtils::evalBroadcastShapeInfo method: the input pointer on shapeInfo must be empty (=nullptr) !" ;
+        throw std::runtime_error("std::runtime_error(ShapeUtils::evalBroadcastShapeInfo method: the input pointer on shapeInfo must be empty (=nullptr) !");
     
     ALLOCATE(resultShapeInfo, workspace, shape::shapeInfoLength(maxRank), Nd4jLong);
 
@@ -447,7 +453,7 @@ template <typename T>
 bool ShapeUtils<T>::evalCommonBroadcastShapeInfo(const std::vector<const NDArray<T>*>& arrays, Nd4jLong*& resultShapeInfo, memory::Workspace* workspace) {
 
     if(resultShapeInfo != nullptr)
-        throw "ShapeUtils::evalCommonBroadcastShapeInfo method: the input pointer on shapeInfo must be empty (=nullptr) !" ;
+        throw std::runtime_error("ShapeUtils::evalCommonBroadcastShapeInfo method: the input pointer on shapeInfo must be empty (=nullptr) !");
 
     int size = arrays.size();
     int maxRank = arrays[size - 1]->rankOf();
@@ -502,12 +508,12 @@ template <typename T>
 Nd4jLong ShapeUtils<T>::getSubArrayIndex(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const Nd4jLong maxIdx) {
     // check shape consistence 
     if(maxShapeInfo[0] < minShapeInfo[0])
-        throw "ShapeUtils::getSubArrayIndex: rank of max-array must be greater or equal to min-array rank !";
+        throw std::runtime_error("ShapeUtils::getSubArrayIndex: rank of max-array must be greater or equal to min-array rank !");
     
     for(int i = 0; i < minShapeInfo[0]; ++i)
         // if((maxShapeInfo[maxShapeInfo[0] - i] < minShapeInfo[minShapeInfo[0] - i]) || (maxShapeInfo[maxShapeInfo[0] - i] % minShapeInfo[minShapeInfo[0] - i] != 0) )        
         if(maxShapeInfo[maxShapeInfo[0] - i] < minShapeInfo[minShapeInfo[0] - i])        
-            throw "ShapeUtils::getSubArrayIndex: some of dimension shape of max-array is smaller than those of min-array or the max shape is not multiple of min shape !";
+            throw std::runtime_error("ShapeUtils::getSubArrayIndex: some of dimension shape of max-array is smaller than those of min-array or the max shape is not multiple of min shape !");
 
     return shape::subArrayIndex(maxShapeInfo, minShapeInfo, maxIdx);
 }
@@ -523,7 +529,7 @@ Nd4jLong* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vec
     for(const auto& item : reps)
         product *= item;
     if(product == 0)
-        throw "NDArray::tile method: one of the elements in reps array is zero !";
+        throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
 
     int rankOld = arr.rankOf();
     int diff = rankOld - dim;
@@ -613,7 +619,7 @@ Nd4jLong* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vec
     std::string ShapeUtils<T>::shapeAsString(const Nd4jLong* shapeInfo) {
         
         if(!shapeInfo)
-            throw "ShapeUtils<T>::shapeAsString method: input shapeInfo must not be nullptr !";
+            throw std::runtime_error("ShapeUtils<T>::shapeAsString method: input shapeInfo must not be nullptr !");
         
         std::string result;
 
@@ -628,6 +634,25 @@ Nd4jLong* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vec
         return result;
     }
 
+
+    template<typename T>
+    std::string ShapeUtils<T>::shapeAsString(const int rank, const Nd4jLong* shapeInfo) {
+
+        if(!shapeInfo)
+            throw std::runtime_error("ShapeUtils<T>::shapeAsString method: input shapeInfo must not be nullptr !");
+
+        std::string result;
+
+        result.append("[");
+        for (int e = 0; e < rank; e++) {
+            result += flatbuffers::NumToString(shapeInfo[e]);
+            if (e < rank - 1)
+                result.append(", ");
+        }
+        result.append("]");
+
+        return result;
+    }
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
@@ -772,6 +797,10 @@ Nd4jLong* ShapeUtils<T>::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* t
         // dot case
         shape[0] = 1;
         shape[1] = 1;
+    } else if (shape::isRowVector(tmpA) && shape::isColumnVector(tmpB)) {
+        // dot case
+        shape[0] = 1;
+        shape[1] = 1;
     }
 
     Nd4jLong *newShape;
@@ -819,7 +848,7 @@ std::vector<int> ShapeUtils<T>::evalPermutFromTo(const std::vector<Nd4jLong>& sh
 
     int rank = shapeFrom.size();
     if(rank != shapeTo.size())
-        throw "ShapeUtils::evalPermutFromTo static method: the input shapes are not suitable for mutual permutation !";
+        throw std::runtime_error("ShapeUtils::evalPermutFromTo static method: the input shapes are not suitable for mutual permutation !");
 
     if (std::equal(begin(shapeFrom), end(shapeFrom), begin(shapeTo)))       // if shapes are identical (permutation is unnecessary) then return empty vector
         return std::vector<int>();
@@ -836,7 +865,7 @@ std::vector<int> ShapeUtils<T>::evalPermutFromTo(const std::vector<Nd4jLong>& sh
             }   
 
     if(std::find(begin(permutation), end(permutation), -2) != end(permutation))      // if -2 is still present in vector then permutation is impossible
-        throw "ShapeUtils::evalPermutFromTo static method: the input shapes are not suitable for mutual permutation !";    
+        throw std::runtime_error("ShapeUtils::evalPermutFromTo static method: the input shapes are not suitable for mutual permutation !");
 
     return permutation;        
 }
@@ -848,7 +877,7 @@ std::vector<Nd4jLong> ShapeUtils<T>::composeShapeUsingDimsAndIdx(const std::vect
 
     int size = dimsAndIdx.size();
     if(size % 2 != 0)
-        throw "ShapeUtils::composeShapeUsingDimsAndIdx static method: the size of input vector must be even !";
+        throw std::runtime_error("ShapeUtils::composeShapeUsingDimsAndIdx static method: the size of input vector must be even !");
 
     size /= 2;
 
@@ -858,7 +887,7 @@ std::vector<Nd4jLong> ShapeUtils<T>::composeShapeUsingDimsAndIdx(const std::vect
     for(int i = 0; i < size; ++i) {
         index = dimsAndIdx[i + size];
         if(index > size-1)
-            throw "ShapeUtils::composeShapeUsingDimsAndIdx static method: input index is too large !";
+            throw std::runtime_error("ShapeUtils::composeShapeUsingDimsAndIdx static method: input index is too large !");
         shape[index] = dimsAndIdx[i];
     }
 

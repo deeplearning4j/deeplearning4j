@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -21,8 +22,8 @@ public class Im2col extends DynamicCustomOp {
 
     @Builder(builderMethodName = "builder")
     public Im2col(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
-        super(null,inputArrays,outputs);
-        if(sameDiff != null) {
+        super(null, inputArrays, outputs);
+        if (sameDiff != null) {
             this.sameDiff = sameDiff;
         }
 
@@ -31,17 +32,23 @@ public class Im2col extends DynamicCustomOp {
         addArgs();
     }
 
+    public Im2col(SameDiff sd, SDVariable input, Conv2DConfig config){
+        super(null, sd, new SDVariable[]{input});
+        this.conv2DConfig = config;
+        addArgs();
+    }
+
     public Im2col() {}
 
     protected void addArgs() {
-        addIArgument(conv2DConfig.getKh());
-        addIArgument(conv2DConfig.getKw());
-        addIArgument(conv2DConfig.getSy());
-        addIArgument(conv2DConfig.getSx());
-        addIArgument(conv2DConfig.getPh());
-        addIArgument(conv2DConfig.getPw());
-        addIArgument(conv2DConfig.getDh());
-        addIArgument(conv2DConfig.getDw());
+        addIArgument(conv2DConfig.getKH());
+        addIArgument(conv2DConfig.getKW());
+        addIArgument(conv2DConfig.getSH());
+        addIArgument(conv2DConfig.getSW());
+        addIArgument(conv2DConfig.getPH());
+        addIArgument(conv2DConfig.getPW());
+        addIArgument(conv2DConfig.getDH());
+        addIArgument(conv2DConfig.getDW());
         addIArgument(ArrayUtil.fromBoolean(conv2DConfig.isSameMode()));
 
     }
@@ -57,11 +64,8 @@ public class Im2col extends DynamicCustomOp {
         return "im2col";
     }
 
-
-
-
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Unable to run derivative on im2col op");
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
+        return Collections.singletonList(f().im2ColBp(arg(), grad.get(0), conv2DConfig));
     }
 }

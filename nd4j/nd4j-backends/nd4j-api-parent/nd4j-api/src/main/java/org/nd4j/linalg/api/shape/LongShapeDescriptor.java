@@ -19,7 +19,9 @@ public class LongShapeDescriptor {
     private long[] shape;
     private long[] stride;
 
-    public LongShapeDescriptor(long[] shape, long[] stride, long offset, long ews, char order) {
+    private long extras;
+
+    public LongShapeDescriptor(long[] shape, long[] stride, long offset, long ews, char order, long extras) {
         /*
         if (shape != null) {
             hashShape = shape[0];
@@ -39,6 +41,8 @@ public class LongShapeDescriptor {
         this.offset = offset;
         this.ews = ews;
         this.order = order;
+
+        this.extras = extras;
     }
 
     @Override
@@ -50,6 +54,8 @@ public class LongShapeDescriptor {
 
         LongShapeDescriptor that = (LongShapeDescriptor) o;
 
+        if (extras != that.extras)
+            return false;
         if (order != that.order)
             return false;
         if (offset != that.offset)
@@ -65,9 +71,10 @@ public class LongShapeDescriptor {
     @Override
     public int hashCode() {
         int result = (int) order;
-        // FIXME: LONG
-        result = 31 * result + (int) offset;
-        result = 31 * result + (int) ews;
+
+        result = 31 * result + Long.hashCode(offset);
+        result = 31 * result + Long.hashCode(ews);
+        result = 31 * result + Long.hashCode(extras);
         result = 31 * result + Arrays.hashCode(shape);
         result = 31 * result + Arrays.hashCode(stride);
         return result;
@@ -90,6 +97,6 @@ public class LongShapeDescriptor {
 
 
     public static LongShapeDescriptor fromShapeDescriptor(@NonNull ShapeDescriptor descriptor) {
-        return new LongShapeDescriptor(ArrayUtil.toLongArray(descriptor.getShape()), ArrayUtil.toLongArray(descriptor.getStride()), descriptor.getOffset(), descriptor.getEws(), descriptor.getOrder());
+        return new LongShapeDescriptor(ArrayUtil.toLongArray(descriptor.getShape()), ArrayUtil.toLongArray(descriptor.getStride()), descriptor.getOffset(), descriptor.getEws(), descriptor.getOrder(), descriptor.getExtras());
     }
 }

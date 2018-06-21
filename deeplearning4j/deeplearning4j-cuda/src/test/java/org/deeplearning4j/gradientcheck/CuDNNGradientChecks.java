@@ -1,17 +1,23 @@
 package org.deeplearning4j.gradientcheck;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionHelper;
 import org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingHelper;
+import org.deeplearning4j.nn.layers.dropout.CudnnDropoutHelper;
 import org.deeplearning4j.nn.layers.normalization.BatchNormalizationHelper;
 import org.deeplearning4j.nn.layers.normalization.CudnnBatchNormalizationHelper;
 import org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper;
@@ -26,17 +32,20 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.function.Consumer;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
 import java.util.Random;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 09/09/2016.
  */
+@Slf4j
 public class CuDNNGradientChecks extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
@@ -543,6 +552,83 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
                     }
                 }
             }
+        }
+    }
+
+
+    @Test
+    public void testDropout() {
+        int minibatch = 3;
+
+        for (boolean cnn : new boolean[]{false, true}) {
+            Nd4j.getRandom().setSeed(12345);
+            IDropout dropout = new Dropout(0.6);
+
+            NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .weightInit(WeightInit.DISTRIBUTION)
+                    .dist(new NormalDistribution(0, 1))
+                    .convolutionMode(ConvolutionMode.Same)
+                    .dropOut(dropout)
+                    .activation(Activation.TANH)
+                    .updater(new NoOp())
+                    .list();
+
+            if (cnn) {
+                builder.layer(new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).nOut(3).build());
+                builder.layer(new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).nOut(3).build());
+                builder.setInputType(InputType.convolutional(8, 8, 3));
+            } else {
+                builder.layer(new DenseLayer.Builder().nOut(12).build());
+                builder.layer(new DenseLayer.Builder().nOut(12).build());
+                builder.setInputType(InputType.feedForward(8));
+            }
+            builder.layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build());
+            MultiLayerConfiguration conf = builder.build();
+
+            MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+            mln.init();
+
+            for (Layer l : mln.getLayers()) {
+                Dropout d = (Dropout) l.conf().getLayer().getIDropout();
+                assertNotNull(d);
+                CudnnDropoutHelper h = (CudnnDropoutHelper) d.getHelper();
+                assertNotNull(h);
+            }
+
+            String msg = (cnn ? "CNN" : "Dense") + ": " + dropout.getClass().getSimpleName();
+
+            INDArray f;
+            if (cnn) {
+                f = Nd4j.rand(new int[]{minibatch, 3, 8, 8}).muli(10).subi(5);
+            } else {
+                f = Nd4j.rand(minibatch, 8).muli(10).subi(5);
+            }
+            INDArray l = TestUtils.randomOneHot(minibatch, 10);
+
+            //Consumer function to enforce CuDNN RNG repeatability - otherwise will fail due to randomness (inconsistent
+            // dropout mask between forward passes)
+            Consumer<MultiLayerNetwork> c = new Consumer<MultiLayerNetwork>() {
+                @Override
+                public void accept(MultiLayerNetwork net) {
+                    Nd4j.getRandom().setSeed(12345);
+                    for(Layer l : net.getLayers()){
+                        Dropout d = (Dropout) l.conf().getLayer().getIDropout();
+                        if(d != null){
+                            ((CudnnDropoutHelper)d.getHelper()).setMask(null);
+                            ((CudnnDropoutHelper)d.getHelper()).setRngStates(null);
+                        }
+                    }
+                }
+            };
+
+            log.info("*** Starting test: " + msg + " ***");
+            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l, null, null,
+                    false, -1, null, c);
+
+            assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(mln);
         }
     }
 }

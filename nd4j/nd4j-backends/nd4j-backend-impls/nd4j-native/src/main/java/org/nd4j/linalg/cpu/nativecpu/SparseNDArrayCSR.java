@@ -90,6 +90,11 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     }
 
     @Override
+    public INDArray convertToHalfs() {
+        return null;
+    }
+
+    @Override
     public INDArray convertToFloats() {
         return null;
     }
@@ -97,5 +102,15 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     @Override
     public INDArray convertToDoubles() {
         return null;
+    }
+
+    /**
+     * This method returns true if this INDArray is special case: no-value INDArray
+     *
+     * @return
+     */
+    @Override
+    public boolean isEmpty() {
+        return false;
     }
 }

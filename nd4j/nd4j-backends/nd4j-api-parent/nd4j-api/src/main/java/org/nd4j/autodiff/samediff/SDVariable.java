@@ -1,7 +1,9 @@
 package org.nd4j.autodiff.samediff;
 
+import com.google.common.annotations.VisibleForTesting;
 import lombok.*;
 import onnx.OnnxProto3;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
@@ -24,6 +26,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  *
@@ -61,7 +64,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         this.weightInitScheme = weightInitScheme;
 
         if(weightInitScheme == null) {
-            this.weightInitScheme = new ZeroInitScheme('f');
+            // we want C order as default in ALL cases
+            this.weightInitScheme = new ZeroInitScheme('c');
         }
 
         if(shape == null) {
@@ -200,7 +204,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             }
             return null;
         } else {
-            INDArray newAlloc = getWeightInitScheme().create(sameDiff.getShapeForVarName(getVarName()));
+            long[] shape = sameDiff.getShapeForVarName(getVarName());
+            INDArray newAlloc = getWeightInitScheme().create(shape);
             sameDiff.associateArrayWithVariable(newAlloc,this);
 
         }
@@ -268,6 +273,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.var(this);
     }
 
+    public SDVariable assign(Number value){
+        return sameDiff.scalarSet(this, value);
+    }
 
     /**
      * Negate op
@@ -725,14 +733,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
     /**
      *
-     * @param sameDiffVariable
+     * @param value
      * @return
      */
-    public SDVariable mul(String varName, double sameDiffVariable) {
+    public SDVariable mul(String varName, double value) {
         val function = sameDiff.f().mul(this
-                , sameDiffVariable);
+                , value);
         return sameDiff.updateVariableNameAndReference(function,varName);
+    }
 
+    public SDVariable pow(double value){
+        return pow(null, value);
+    }
+
+    public SDVariable pow(String varName, double value){
+        SDVariable ret = f().pow(this, value);
+        return sameDiff.updateVariableNameAndReference(ret, varName);
     }
 
     /**
@@ -984,6 +1000,163 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return result;
     }
 
+    public SDVariable sum(int... dimensions){
+        return sum(null, dimensions);
+    }
+
+    public SDVariable sum(boolean keepDims, int... dimensions){
+        return sum(null, dimensions);
+    }
+
+    public SDVariable sum(String name, int... dimensions){
+        return sum(name, false, dimensions);
+    }
+
+    public SDVariable sum(String name, boolean keepDims, int... dimensions){
+        return sameDiff.sum(name, this, keepDims, dimensions);
+    }
+
+    public SDVariable mean(boolean keepDims, int... dimensions){
+        return mean(null, keepDims, dimensions);
+    }
+
+    public SDVariable mean(String name, int... dimensions){
+        return mean(name, false, dimensions);
+    }
+
+    public SDVariable mean(int... dimensions){
+        return mean(null, false, dimensions);
+    }
+
+    public SDVariable mean(String name, boolean keepDims, int... dimensions){
+        return sameDiff.mean(name, this, keepDims, dimensions);
+    }
+
+    public SDVariable std(boolean biasCorrected, int... dimensions){
+        return std(null, biasCorrected, dimensions);
+    }
+
+    public SDVariable std(String name, boolean biasCorrected, int... dimensions){
+        return sameDiff.standardDeviation(name, this, biasCorrected, dimensions);
+    }
+
+    public SDVariable std(String name, boolean biasCorrected, boolean keepDims, int... dimensions){
+        return sameDiff.standardDeviation(name, this, biasCorrected, keepDims, dimensions);
+    }
+
+    public SDVariable prod(int... dimensions){
+        return prod(null, dimensions);
+    }
+
+    public SDVariable prod(boolean keepDims, int... dimensions){
+        return prod(null, keepDims, dimensions);
+    }
+
+    public SDVariable prod(String name, int... dimensions){
+        return sameDiff.prod(name, this, dimensions);
+    }
+
+    public SDVariable prod(String name, boolean keepDims, int... dimensions){
+        return sameDiff.prod(name, this, keepDims, dimensions);
+    }
+
+    public SDVariable min(int... dimensions){
+        return min(null, dimensions);
+    }
+
+    public SDVariable min(boolean keepDims, int... dimensions){
+        return min(null, keepDims, dimensions);
+    }
+
+    public SDVariable min(String name, int... dimensions){
+        return min(name, false, dimensions);
+    }
+
+    public SDVariable min(String name, boolean keepDims, int... dimensions){
+        return sameDiff.min(name, this, keepDims, dimensions);
+    }
+
+    public SDVariable max(int... dimensions){
+        return max(null, dimensions);
+    }
+
+    public SDVariable max(boolean keepDims, int... dimensions){
+        return max(null, keepDims, dimensions);
+    }
+
+    public SDVariable max(String name, int... dimensions){
+        return max(name, false, dimensions);
+    }
+
+    public SDVariable max(String name, boolean keepDims, int... dimensions){
+        return sameDiff.max(name, this, keepDims, dimensions);
+    }
+
+    public SDVariable norm1(int... dimensions){
+        return norm1(null, dimensions);
+    }
+
+    public SDVariable norm1(boolean keepDims, int... dimensions){
+        return norm1(null, keepDims, dimensions);
+    }
+
+    public SDVariable norm1(String name, int... dimensions){
+        return norm1(name, false, dimensions);
+    }
+
+    public SDVariable norm1(String name, boolean keepDims, int... dimensions){
+        return sameDiff.norm1(name, this, keepDims, dimensions);
+    }
+
+    public SDVariable norm2(int... dimensions){
+        return norm2(null, dimensions);
+    }
+
+    public SDVariable norm2(boolean keepDims, int... dimensions){
+        return norm2(null, keepDims, dimensions);
+    }
+
+    public SDVariable norm2(String name, int... dimensions){
+        return norm2(name, false, dimensions);
+    }
+
+    public SDVariable norm2(String name, boolean keepDims, int... dimensions){
+        return sameDiff.norm2(name, this, keepDims, dimensions);
+    }
+
+    public SDVariable normmax(int... dimensions){
+        return normmax(null, dimensions);
+    }
+
+    public SDVariable normmax(boolean keepDims, int... dimensions){
+        return normmax(null, keepDims, dimensions);
+    }
+
+    public SDVariable normmax(String name, int... dimensions){
+        return normmax(name, false, dimensions);
+    }
+
+    public SDVariable normmax(String name, boolean keepDims, int... dimensions){
+        return sameDiff.normmax(name, this, keepDims, dimensions);
+    }
+
+    public SDVariable argmax(int... dimensions){
+        return argmax(null, dimensions);
+    }
+
+    public SDVariable argmax(String name, int... dimensions){
+        return sameDiff.argmax(name, this, dimensions);
+    }
+
+    public SDVariable argmin(int... dimensions){
+        return argmin(null, dimensions);
+    }
+
+    public SDVariable argmin(String name, int... dimensions){
+        return sameDiff.argmin(name, this, dimensions);
+    }
+
+
     public SDVariable setArray(INDArray array){
         sameDiff.associateArrayWithVariable(array, this);
         return this;
@@ -1051,6 +1224,70 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
+   public SDVariable get(SDIndex... indices){
+       int ndims = indices.length;
+       long[] begin = new long[ndims];
+       long[] end = new long[ndims];
+       long[] strides = new long[ndims];
+       int[] begin_mask_arr = new int[ndims];
+       int[] end_mask_arr = new int[ndims];
+       int[] shrink_axis_mask_arr = new int[ndims];
+       for(int i=0; i<ndims; i++){
+           strides[i] = 1;
+           SDIndex index = indices[i];
+           SDIndex.IndexType indexType = index.getIndexType();
+           if(indexType == SDIndex.IndexType.ALL){
+               begin_mask_arr[i] = 1;
+               end_mask_arr[i] = 1;
+           }
+           else if(indexType == SDIndex.IndexType.POINT){
+                   long pointIndex = index.getPointIndex();
+                   begin[i] = pointIndex;
+                   end[i] = pointIndex + 1;
+                   shrink_axis_mask_arr[i] = 1;
+           }
+           else if(indexType == SDIndex.IndexType.INTERVAL){
+               if(index.getIntervalBegin() == null){
+                   begin_mask_arr[i] = 1;
+               }
+               else{
+                   begin[i] = index.getIntervalBegin();
+               }
+               if(index.getIntervalEnd() == null){
+                   end_mask_arr[i] = 1;
+               }
+               else{
+                   end[i] = index.getIntervalEnd();
+               }
+               if(index.getIntervalStrides() == null){
+                   strides[i] = 1;
+               }
+               else{
+                   strides[i] = index.getIntervalStrides();
+               }
+           }
+       }
+
+       // convert binary int[] to int
+        int begin_mask = binArrToInt(begin_mask_arr);
+       int end_mask = binArrToInt(end_mask_arr);
+       int shrink_axis = binArrToInt(shrink_axis_mask_arr);
+
+       return this.sameDiff.stridedSlice(this, begin, end, strides,
+               begin_mask, end_mask, 0, 0, shrink_axis);
+   }
 
 
+   private static int binArrToInt(int[] arr){
+        int x = 0;
+        int m = 1;
+        for(int i = 0; i < arr.length; i++){
+            if(arr[i] == 1){
+                x += m;
+            }
+            m *= 2;
+        }
+        return x;
+   }
+   
 }

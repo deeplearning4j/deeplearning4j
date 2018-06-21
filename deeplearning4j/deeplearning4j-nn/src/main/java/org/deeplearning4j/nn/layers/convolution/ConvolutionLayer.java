@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
@@ -170,7 +171,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                     throw new RuntimeException(e);
                 }
             }
+
             if (ret != null) {
+                //Backprop dropout, if present
+                INDArray gradPostDropout = ret.getRight();
+                gradPostDropout = backpropDropOutIfPresent(gradPostDropout);
+                ret.setSecond(gradPostDropout);
                 return ret;
             }
         }
@@ -227,6 +233,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         weightNoiseParams.clear();
 
+        epsNext = backpropDropOutIfPresent(epsNext);
         return new Pair<>(retGradient, epsNext);
     }
 
@@ -429,6 +436,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public boolean isPretrainLayer() {
         return false;
+    }
+
+    @Override
+    public LayerHelper getHelper() {
+        return helper;
     }
 
     @Override

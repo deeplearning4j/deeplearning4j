@@ -33,7 +33,7 @@ namespace nd4j {
         Graph<float>* GraphHolder::cloneGraph(Nd4jLong graphId) {
             if (!this->hasGraph<float>(graphId)) {
                 nd4j_printf("GraphHolder doesn't have graph stored for [%lld]\n", graphId);
-                throw "Bad argument";
+                throw std::runtime_error("Bad argument");
             }
 
             auto graph = _graphF[graphId]->clone();
@@ -45,7 +45,7 @@ namespace nd4j {
         Graph<float>* GraphHolder::pullGraph(Nd4jLong graphId) {
             if (!this->hasGraph<float>(graphId)) {
                 nd4j_printf("GraphHolder doesn't have graph stored for [%lld]\n", graphId);
-                throw "Bad argument";
+                throw std::runtime_error("Bad argument");
             }
 
             auto graph = _graphF[graphId];
@@ -57,7 +57,7 @@ namespace nd4j {
         Graph<float16>* GraphHolder::pullGraph(Nd4jLong graphId) {
             if (!this->hasGraph<float16>(graphId)) {
                 nd4j_printf("GraphHolder doesn't have graph stored for [%lld]\n", graphId);
-                throw "Bad argument";
+                throw std::runtime_error("Bad argument");
             }
 
             auto graph = _graphH[graphId];
@@ -69,7 +69,7 @@ namespace nd4j {
         Graph<double>* GraphHolder::pullGraph(Nd4jLong graphId) {
             if (!this->hasGraph<double>(graphId)) {
                 nd4j_printf("GraphHolder doesn't have graph stored for [%lld]\n", graphId);
-                throw "Bad argument";
+                throw std::runtime_error("Bad argument");
             }
 
             auto graph = _graphD[graphId];

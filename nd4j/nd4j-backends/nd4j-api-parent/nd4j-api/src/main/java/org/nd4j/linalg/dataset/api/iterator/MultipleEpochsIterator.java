@@ -65,17 +65,6 @@ public class MultipleEpochsIterator implements DataSetIterator {
             preProcessor.preProcess(next);
         return next;
     }
-
-    /**
-     * Total examples in the iterator
-     *
-     * @return
-     */
-    @Override
-    public int totalExamples() {
-        return iter.totalExamples();
-    }
-
     /**
      * Input columns for the dataset
      *
@@ -124,26 +113,6 @@ public class MultipleEpochsIterator implements DataSetIterator {
     @Override
     public int batch() {
         return iter.batch();
-    }
-
-    /**
-     * The current cursor if applicable
-     *
-     * @return
-     */
-    @Override
-    public int cursor() {
-        return iter.cursor();
-    }
-
-    /**
-     * Total number of examples in the dataset
-     *
-     * @return
-     */
-    @Override
-    public int numExamples() {
-        return iter.numExamples();
     }
 
     /**

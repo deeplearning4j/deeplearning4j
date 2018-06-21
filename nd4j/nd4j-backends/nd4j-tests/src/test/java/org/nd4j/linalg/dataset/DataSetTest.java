@@ -39,6 +39,7 @@ import java.util.*;
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 @RunWith(Parameterized.class)
 public class DataSetTest extends BaseNd4jTest {
@@ -560,12 +561,12 @@ public class DataSetTest extends BaseNd4jTest {
         DataSet ds3d2 = new DataSet(f3d2, l3d2, null, lm3d2);
 
         INDArray expLabels3d = Nd4j.create(3, 3, 4);
-        expLabels3d.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
+        expLabels3d.put(new INDArrayIndex[] {point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
                         l3d1);
         expLabels3d.put(new INDArrayIndex[] {NDArrayIndex.interval(1, 2, true), NDArrayIndex.all(),
                         NDArrayIndex.interval(0, 3)}, l3d2);
         INDArray expLM3d = Nd4j.create(3, 3, 4);
-        expLM3d.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
+        expLM3d.put(new INDArrayIndex[] {point(0), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)},
                         lm3d1);
         expLM3d.put(new INDArrayIndex[] {NDArrayIndex.interval(1, 2, true), NDArrayIndex.all(),
                         NDArrayIndex.interval(0, 3)}, lm3d2);
@@ -922,6 +923,31 @@ public class DataSetTest extends BaseNd4jTest {
 
         assertTrue(allF);
         assertTrue(allL);
+    }
+
+    @Test
+    public void testSample4d(){
+        Nd4j.getRandom().setSeed(12345);
+        int next1 = Nd4j.getRandom().nextInt(4);
+        int next2 = Nd4j.getRandom().nextInt(4);
+
+        assertNotEquals(next1, next2);
+
+        INDArray arr = Nd4j.create(4,1,5,5);
+        for( int i=0; i<4; i++ ){
+            arr.get(point(i), all(), all(), all()).assign(i);
+        }
+
+        DataSet ds = new DataSet(arr, arr);
+
+        Nd4j.getRandom().setSeed(12345);
+        DataSet ds2 = ds.sample(2);
+
+        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, next1), ds2.getFeatures().get(point(0), all(), all(), all()));
+        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, next2), ds2.getFeatures().get(point(1), all(), all(), all()));
+
+        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, next1), ds2.getLabels().get(point(0), all(), all(), all()));
+        assertEquals(Nd4j.valueArrayOf(new long[]{1, 5, 5}, next2), ds2.getLabels().get(point(1), all(), all(), all()));
     }
 
 

@@ -162,11 +162,6 @@ public class FileDataSetIterator extends BaseFileIterator<DataSet, DataSetPrePro
     }
 
     @Override
-    public int totalExamples() {
-        throw new UnsupportedOperationException("Not supported for this iterator");
-    }
-
-    @Override
     public int inputColumns() {
         throw new UnsupportedOperationException("Not supported for this iterator");
     }
@@ -179,15 +174,5 @@ public class FileDataSetIterator extends BaseFileIterator<DataSet, DataSetPrePro
     @Override
     public int batch() {
         return batchSize;
-    }
-
-    @Override
-    public int cursor() {
-        return position;
-    }
-
-    @Override
-    public int numExamples() {
-        throw new UnsupportedOperationException("Not supported for this iterator");
     }
 }

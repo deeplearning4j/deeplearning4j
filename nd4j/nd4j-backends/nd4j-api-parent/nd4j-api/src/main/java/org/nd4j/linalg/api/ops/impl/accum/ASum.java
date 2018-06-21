@@ -26,6 +26,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -71,13 +72,6 @@ public class ASum extends BaseAccumulation {
         return "asum";
     }
 
-
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
-
     @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
@@ -91,5 +85,12 @@ public class ASum extends BaseAccumulation {
     @Override
     public Type getOpType() {
         return Type.REDUCE;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        SDVariable sgn = sameDiff.sign(arg());
+        SDVariable meanBp = f().sumBp(sameDiff.abs(arg()), f1.get(0), false, dimensions);
+        return Collections.singletonList(sgn.mul(meanBp));
     }
 }

@@ -32,10 +32,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Rank function
@@ -47,6 +44,10 @@ public class Rank extends DynamicCustomOp {
 
 
     public Rank() {
+    }
+
+    public Rank(SameDiff sameDiff, SDVariable input, boolean inPlace) {
+        super(null, sameDiff, new SDVariable[] {input}, inPlace);
     }
 
 
@@ -94,8 +95,7 @@ public class Rank extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = outputVariables()[0];
-        return Arrays.asList(ret);
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
 }

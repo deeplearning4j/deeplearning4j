@@ -34,12 +34,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class IAMax extends BaseIndexAccumulation {
-    public IAMax(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
-    }
-
-    public IAMax(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
-        super(sameDiff, i_v, i_v2, dimensions);
+    public IAMax(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
     }
 
     public IAMax() {}

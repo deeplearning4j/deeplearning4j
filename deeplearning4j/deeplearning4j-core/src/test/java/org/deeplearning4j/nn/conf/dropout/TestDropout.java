@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
@@ -22,7 +23,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.schedule.MapSchedule;
 import org.nd4j.linalg.schedule.ScheduleType;
 
@@ -92,16 +94,19 @@ public class TestDropout extends BaseDL4JTest {
         net.fit(iter);
         net.fit(iter);
 
-        List<Triple<Integer,Integer,Boolean>> expList = Arrays.asList(
-                new Triple<>(0, 0, true),
-                new Triple<>(1, 0, true),
-                new Triple<>(2, 0, true),
-                new Triple<>(3, 1, true),
-                new Triple<>(4, 1, true),
-                new Triple<>(5, 1, true));
+        List<Pair<Integer,Integer>> expList = Arrays.asList(
+                new Pair<>(0, 0),
+                new Pair<>(1, 0),
+                new Pair<>(2, 0),
+                new Pair<>(3, 1),
+                new Pair<>(4, 1),
+                new Pair<>(5, 1));
 
         assertEquals(expList, d1.getAllCalls());
         assertEquals(expList, d2.getAllCalls());
+
+        assertEquals(expList, d1.getAllReverseCalls());
+        assertEquals(expList, d2.getAllReverseCalls());
 
 
         d1 = new CustomDropout();
@@ -126,12 +131,24 @@ public class TestDropout extends BaseDL4JTest {
 
     @Data
     public static class CustomDropout implements IDropout{
-        private List<Triple<Integer,Integer,Boolean>> allCalls = new ArrayList<>();
+        private List<Pair<Integer,Integer>> allCalls = new ArrayList<>();
+        private List<Pair<Integer,Integer>> allReverseCalls = new ArrayList<>();
 
         @Override
-        public INDArray applyDropout(INDArray inputActivations, int iteration, int epoch, boolean inPlace) {
-            allCalls.add(new Triple<>(iteration, epoch, inPlace));
+        public INDArray applyDropout(INDArray inputActivations, INDArray result, int iteration, int epoch, LayerWorkspaceMgr workspaceMgr) {
+            allCalls.add(new Pair<>(iteration, epoch));
             return inputActivations;
+        }
+
+        @Override
+        public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
+            allReverseCalls.add(new Pair<>(iteration, epoch));
+            return gradAtInput;
+        }
+
+        @Override
+        public void clear() {
+
         }
 
         @Override
@@ -185,7 +202,7 @@ public class TestDropout extends BaseDL4JTest {
         Dropout d = new Dropout(0.5);
 
         INDArray in = Nd4j.ones(10, 10);
-        INDArray out = d.applyDropout(in, 0, 0, false);
+        INDArray out = d.applyDropout(in, Nd4j.create(10,10), 0, 0, LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(in, Nd4j.ones(10, 10));
 
@@ -200,7 +217,7 @@ public class TestDropout extends BaseDL4JTest {
         //Test schedule:
         d = new Dropout(new MapSchedule.Builder(ScheduleType.ITERATION).add(0, 0.5).add(5, 0.1).build());
         for( int i=0; i<10; i++ ) {
-            out = d.applyDropout(in, i, 0, false);
+            out = d.applyDropout(in, Nd4j.create(in.shape()), i, 0, LayerWorkspaceMgr.noWorkspacesImmutable());
             assertEquals(in, Nd4j.ones(10, 10));
             countZeros = Nd4j.getExecutioner().exec(new MatchCondition(out, Conditions.equals(0))).z().getInt(0);
 
@@ -227,7 +244,7 @@ public class TestDropout extends BaseDL4JTest {
         GaussianDropout d = new GaussianDropout(0.1);   //sqrt(0.1/(1-0.1)) = 0.3333 stdev
 
         INDArray in = Nd4j.ones(50, 50);
-        INDArray out = d.applyDropout(in, 0, 0, false);
+        INDArray out = d.applyDropout(in, Nd4j.create(in.shape()),  0, 0, LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(in, Nd4j.ones(50, 50));
 
@@ -245,7 +262,7 @@ public class TestDropout extends BaseDL4JTest {
         GaussianNoise d = new GaussianNoise(0.1);   //sqrt(0.1/(1-0.1)) = 0.3333 stdev
 
         INDArray in = Nd4j.ones(50, 50);
-        INDArray out = d.applyDropout(in, 0, 0, false);
+        INDArray out = d.applyDropout(in, Nd4j.create(in.shape()),  0, 0, LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(in, Nd4j.ones(50, 50));
 
@@ -276,7 +293,7 @@ public class TestDropout extends BaseDL4JTest {
         assertEquals(b, actB, 1e-6);
 
         INDArray in = Nd4j.ones(10, 10);
-        INDArray out = d.applyDropout(in, 0, 0, false);
+        INDArray out = d.applyDropout(in, Nd4j.create(in.shape()), 0, 0, LayerWorkspaceMgr.noWorkspacesImmutable());
 
         int countValueDropped = 0;
         int countEqn = 0;
@@ -305,7 +322,7 @@ public class TestDropout extends BaseDL4JTest {
         SpatialDropout d = new SpatialDropout(0.5);
 
         INDArray in = Nd4j.ones(10, 10, 5, 5, 5);
-        INDArray out = d.applyDropout(in, 0, 0, false);
+        INDArray out = d.applyDropout(in, Nd4j.create(in.shape()), 0, 0, LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(in, Nd4j.ones(10, 10, 5, 5, 5));
 
@@ -335,7 +352,7 @@ public class TestDropout extends BaseDL4JTest {
         //Test schedule:
         d = new SpatialDropout(new MapSchedule.Builder(ScheduleType.ITERATION).add(0, 0.5).add(5, 0.1).build());
         for( int i=0; i<10; i++ ) {
-            out = d.applyDropout(in, i, 0, false);
+            out = d.applyDropout(in, Nd4j.create(in.shape()), i, 0, LayerWorkspaceMgr.noWorkspacesImmutable());
             assertEquals(in, Nd4j.ones(10, 10, 5, 5, 5));
 
             if(i < 5){
@@ -394,7 +411,7 @@ public class TestDropout extends BaseDL4JTest {
         SpatialDropout d = new SpatialDropout(0.5);
 
         INDArray in = Nd4j.ones(10, 10, 5, 5);
-        INDArray out = d.applyDropout(in, 0, 0, false);
+        INDArray out = d.applyDropout(in, Nd4j.create(in.shape()), 0, 0, LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(in, Nd4j.ones(10, 10, 5, 5));
 
@@ -424,7 +441,7 @@ public class TestDropout extends BaseDL4JTest {
         //Test schedule:
         d = new SpatialDropout(new MapSchedule.Builder(ScheduleType.ITERATION).add(0, 0.5).add(5, 0.1).build());
         for( int i=0; i<10; i++ ) {
-            out = d.applyDropout(in, i, 0, false);
+            out = d.applyDropout(in, Nd4j.create(in.shape()), i, 0, LayerWorkspaceMgr.noWorkspacesImmutable());
             assertEquals(in, Nd4j.ones(10, 10, 5, 5));
 
             if(i < 5){
@@ -482,7 +499,7 @@ public class TestDropout extends BaseDL4JTest {
         SpatialDropout d = new SpatialDropout(0.5);
 
         INDArray in = Nd4j.ones(10, 8, 12);
-        INDArray out = d.applyDropout(in, 0, 0, false);
+        INDArray out = d.applyDropout(in, Nd4j.create(in.shape()), 0, 0, LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(in, Nd4j.ones(10, 8, 12));
 
@@ -512,7 +529,7 @@ public class TestDropout extends BaseDL4JTest {
         //Test schedule:
         d = new SpatialDropout(new MapSchedule.Builder(ScheduleType.ITERATION).add(0, 0.5).add(5, 0.1).build());
         for( int i=0; i<10; i++ ) {
-            out = d.applyDropout(in, i, 0, false);
+            out = d.applyDropout(in, Nd4j.create(in.shape()), i, 0, LayerWorkspaceMgr.noWorkspacesImmutable());
             assertEquals(in, Nd4j.ones(10, 8, 12));
 
             if(i < 5){

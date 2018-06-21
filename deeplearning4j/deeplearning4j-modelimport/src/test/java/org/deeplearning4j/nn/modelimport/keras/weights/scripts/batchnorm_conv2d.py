@@ -3,7 +3,7 @@ from keras.models import Sequential
 from keras.layers import Dense, BatchNormalization, Reshape
 import keras.backend as K
 
-base_path = "../../../../../../../../resources/weights/"
+base_path = "./"
 backend = K.backend()
 version = keras.__version__
 major_version = int(version[0])
@@ -26,7 +26,7 @@ w = 7
 n_out = 5
 
 model.add(Dense(depth * h * w, input_shape=in_shape))
-model.add(Reshape((h, w, depth)))
+model.add(Reshape((h, w, depth))) # (7,7,10) - need to make sure DL4J detects 10 as channels
 model.add(BatchNormalization())
 if major_version == 2:
     model.add(Conv2D(n_out, kernel_size))

@@ -53,8 +53,6 @@ public class TestEmnistDataSetIterator extends BaseDL4JTest {
                     expNumExamples = EmnistDataSetIterator.numExamplesTest(s);
                 }
 
-                assertEquals(expNumExamples, iter.numExamples());
-
 
 
                 assertEquals(numLabels, iter.getLabels().size());

@@ -3,7 +3,7 @@ from keras.models import Sequential, save_model
 from keras.layers import LSTM
 import keras.backend as K
 
-base_path = "../../../../../../../../resources/weights/"
+base_path = "./"
 backend = K.backend()
 version = keras.__version__
 major_version = int(version[0])
