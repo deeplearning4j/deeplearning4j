@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scalnet.layers.advanced.activation
+package org.deeplearning4j.scalnet.layers.advanced.activations
 
 import org.deeplearning4j.nn.conf.layers.{ ActivationLayer => JActivationLayer }
 import org.deeplearning4j.scalnet.layers.core.Layer

@@ -25,9 +25,7 @@ pages:
   - Recurrent Layers: layers/recurrent.md
   - Embedding Layers: layers/embeddings.md
   - Advanced Activations Layers: layers/advanced-activations.md
-  - Normalization Layers: layers/normalization.md
   - Noise layers: layers/noise.md
-  - Layer wrappers: layers/wrappers.md
 - Losses: losses.md
 - Optimizers: optimizers.md
 - Activations: activations.md

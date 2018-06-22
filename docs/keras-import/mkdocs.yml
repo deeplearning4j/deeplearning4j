@@ -9,6 +9,7 @@ dev_addr: '0.0.0.0:8000'
 
 pages:
 - Home: index.md
+- Overview of supported features: supported-features.md
 - Why import Keras models: why-import-keras.md
 - Getting started:
   - Guide to KerasSequentialModel: getting-started/keras-sequential-guide.md
