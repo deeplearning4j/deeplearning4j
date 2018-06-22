@@ -822,27 +822,43 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         INDArray ret = Nd4j.createUninitialized(outputShape, Nd4j.order());
 
-        if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
+        switch (ret.data().dataType()){
+            case DOUBLE: {
             nativeOps.concatDouble(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (DoublePointer) ret.data().addressPointer(),
                     (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     //new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
                     null, null);
-        } else if (ret.data().dataType() == DataBuffer.Type.FLOAT) {
+            } break;
+            case FLOAT: {
             nativeOps.concatFloat(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (FloatPointer) ret.data().addressPointer(),
                     (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     //new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
                     null, null);
-
-        } else if (ret.data().dataType() == DataBuffer.Type.HALF) {
+            } break;
+            case HALF: {
             nativeOps.concatHalf(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (ShortPointer) ret.data().addressPointer(),
                     (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     //new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
                     null, null);
-        } else {
-            throw new ND4JIllegalStateException("Unknown dataType: " + ret.data().dataType());
+            } case INT: {
+                nativeOps.concatInt(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+                        (IntPointer) ret.data().addressPointer(),
+                        (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                        //new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
+                        null, null);
+            } break;
+            case LONG: {
+                nativeOps.concatLong(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+                        (LongPointer) ret.data().addressPointer(),
+                        (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                        //new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
+                        null, null);
+            } break;
+            default:
+                throw new ND4JIllegalStateException("Unknown dataType: " + ret.data().dataType());
         }
         return ret;
         // return super.concat(dimension,toConcat);

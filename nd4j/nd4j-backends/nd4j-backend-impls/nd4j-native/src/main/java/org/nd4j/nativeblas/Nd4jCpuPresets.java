@@ -137,6 +137,8 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                         .put(new Info("Nd4jPointer").cast().valueTypes("Pointer").pointerTypes("PointerPointer"))
                         .put(new Info("Nd4jLong").cast().valueTypes("long").pointerTypes("LongPointer", "LongBuffer",
                                         "long[]"))
+                        .put(new Info("Nd4jInt").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
+                        "int[]"))
                         .put(new Info("Nd4jStatus").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
                                         "int[]"))
                         .put(new Info("float16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",

@@ -1100,6 +1100,38 @@ public abstract class NativeOps extends Pointer {
      * @param tadPointers
      * @param tadOffsets
      */
+    public abstract void concatInt(PointerPointer extraPointers, int dimension, int numArrays, PointerPointer data,
+                                      PointerPointer inputShapeInfo, IntPointer results, @Cast("Nd4jLong *") LongPointer resultShapeInfo,
+                                      PointerPointer tadPointers, PointerPointer tadOffsets);
+
+    /**
+     *
+     * @param extraPointers
+     * @param dimension
+     * @param numArrays
+     * @param data
+     * @param inputShapeInfo
+     * @param results
+     * @param resultShapeInfo
+     * @param tadPointers
+     * @param tadOffsets
+     */
+    public abstract void concatLong(PointerPointer extraPointers, int dimension, int numArrays, PointerPointer data,
+                                   PointerPointer inputShapeInfo, LongPointer results, @Cast("Nd4jLong *") LongPointer resultShapeInfo,
+                                   PointerPointer tadPointers, PointerPointer tadOffsets);
+
+    /**
+     *
+     * @param extraPointers
+     * @param dimension
+     * @param numArrays
+     * @param data
+     * @param inputShapeInfo
+     * @param results
+     * @param resultShapeInfo
+     * @param tadPointers
+     * @param tadOffsets
+     */
     public abstract void concatFloat(PointerPointer extraPointers, int dimension, int numArrays, PointerPointer data,
                     PointerPointer inputShapeInfo, FloatPointer results, @Cast("Nd4jLong *") LongPointer resultShapeInfo,
                     PointerPointer tadPointers, PointerPointer tadOffsets);
@@ -1124,6 +1156,15 @@ public abstract class NativeOps extends Pointer {
 
     public abstract void specialConcatDouble(PointerPointer extraPointers, int dimension, int numArrays,
                     PointerPointer data, PointerPointer inputShapeInfo, DoublePointer results,
+                                             @Cast("Nd4jLong *") LongPointer resultShapeInfo, PointerPointer tadPointers, PointerPointer tadOffsets);
+
+    public abstract void specialConcatInt(PointerPointer extraPointers, int dimension, int numArrays,
+                                             PointerPointer data, PointerPointer inputShapeInfo, IntPointer results,
+                                             @Cast("Nd4jLong *") LongPointer resultShapeInfo, PointerPointer tadPointers, PointerPointer tadOffsets);
+
+
+    public abstract void specialConcatLong(PointerPointer extraPointers, int dimension, int numArrays,
+                                             PointerPointer data, PointerPointer inputShapeInfo, LongPointer results,
                                              @Cast("Nd4jLong *") LongPointer resultShapeInfo, PointerPointer tadPointers, PointerPointer tadOffsets);
 
     /**

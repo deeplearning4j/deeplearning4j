@@ -1546,10 +1546,13 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(long length, boolean initialize) {
         DataBuffer ret;
+
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.INT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (dataType() == DataBuffer.Type.LONG)
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createLong(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createLong(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
             ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
         else

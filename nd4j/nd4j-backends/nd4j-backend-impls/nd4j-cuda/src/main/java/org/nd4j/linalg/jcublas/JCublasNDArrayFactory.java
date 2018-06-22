@@ -687,23 +687,39 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                         AtomicAllocator.getInstance().getPointer(zBuffers.getSecond(), context) // getting zOffset
         );
 
-        if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
+        switch (ret.data().dataType()){
+            case DOUBLE: {
             nativeOps.concatDouble(extras, dimension, toConcat.length, new PointerPointer(new Pointer[] {dataPointer}),
                             new PointerPointer(new Pointer[] {shapesPointer}), (DoublePointer) dZ,
                             (LongPointer) dZShapeInfo, new PointerPointer(new Pointer[] {tadPointer}),
                             new PointerPointer(new Pointer[] {offsetPointer}));
-        } else if (ret.data().dataType() == DataBuffer.Type.FLOAT) {
-            nativeOps.concatFloat(extras, dimension, toConcat.length, new PointerPointer(new Pointer[] {dataPointer}),
-                            new PointerPointer(new Pointer[] {shapesPointer}), (FloatPointer) dZ,
-                            (LongPointer) dZShapeInfo, new PointerPointer(new Pointer[] {tadPointer}),
-                            new PointerPointer(new Pointer[] {offsetPointer}));
-
-        } else {
-            nativeOps.concatHalf(extras, dimension, toConcat.length, new PointerPointer(new Pointer[] {dataPointer}),
-                            new PointerPointer(new Pointer[] {shapesPointer}), (ShortPointer) dZ,
-                            (LongPointer) dZShapeInfo, new PointerPointer(new Pointer[] {tadPointer}),
-                            new PointerPointer(new Pointer[] {offsetPointer}));
-
+            } break;
+            case FLOAT: {
+                nativeOps.concatFloat(extras, dimension, toConcat.length, new PointerPointer(new Pointer[]{dataPointer}),
+                        new PointerPointer(new Pointer[]{shapesPointer}), (FloatPointer) dZ,
+                        (LongPointer) dZShapeInfo, new PointerPointer(new Pointer[]{tadPointer}),
+                        new PointerPointer(new Pointer[]{offsetPointer}));
+            } break;
+            case HALF: {
+                nativeOps.concatHalf(extras, dimension, toConcat.length, new PointerPointer(new Pointer[] {dataPointer}),
+                        new PointerPointer(new Pointer[] {shapesPointer}), (ShortPointer) dZ,
+                        (LongPointer) dZShapeInfo, new PointerPointer(new Pointer[] {tadPointer}),
+                        new PointerPointer(new Pointer[] {offsetPointer}));
+            } break;
+            case INT: {
+                nativeOps.concatInt(extras, dimension, toConcat.length, new PointerPointer(new Pointer[] {dataPointer}),
+                        new PointerPointer(new Pointer[] {shapesPointer}), (IntPointer) dZ,
+                        (LongPointer) dZShapeInfo, new PointerPointer(new Pointer[] {tadPointer}),
+                        new PointerPointer(new Pointer[] {offsetPointer}));
+            } break;
+            case LONG: {
+                nativeOps.concatLong(extras, dimension, toConcat.length, new PointerPointer(new Pointer[] {dataPointer}),
+                        new PointerPointer(new Pointer[] {shapesPointer}), (LongPointer) dZ,
+                        (LongPointer) dZShapeInfo, new PointerPointer(new Pointer[] {tadPointer}),
+                        new PointerPointer(new Pointer[] {offsetPointer}));
+            } break;
+            default:
+                throw new ND4JIllegalStateException("Unknown dataType: " + ret.data().dataType());
         }
 
         allocator.registerAction(context, ret, toConcat);
@@ -755,24 +771,40 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         INDArray ret = Nd4j.createUninitialized(outputShape, Nd4j.order());
 
-        if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
-            nativeOps.specialConcatDouble(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
-                    (DoublePointer) ret.data().addressPointer(),
-                    (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                    new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
-        } else if (ret.data().dataType() == DataBuffer.Type.FLOAT) {
+        switch (ret.data().dataType()) {
+            case DOUBLE: {
+                nativeOps.specialConcatDouble(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+                        (DoublePointer) ret.data().addressPointer(),
+                        (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                        new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
+            } break;
+            case FLOAT: {
             nativeOps.specialConcatFloat(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (FloatPointer) ret.data().addressPointer(),
                     (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
 
-        } else if (ret.data().dataType() == DataBuffer.Type.HALF) {
-            nativeOps.specialConcatHalf(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
-                    (ShortPointer) ret.data().addressPointer(),
-                    (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                    new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
-        } else {
-            throw new ND4JIllegalStateException("Unknown dataType: " + ret.data().dataType());
+            } break;
+            case HALF: {
+                nativeOps.specialConcatHalf(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+                        (ShortPointer) ret.data().addressPointer(),
+                        (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                        new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
+            } break;
+            case INT: {
+                nativeOps.specialConcatInt(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+                        (IntPointer) ret.data().addressPointer(),
+                        (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                        new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
+            } break;
+            case LONG: {
+                nativeOps.specialConcatLong(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+                        (LongPointer) ret.data().addressPointer(),
+                        (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                        new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
+            } break;
+            default:
+                throw new ND4JIllegalStateException("Unknown dataType: " + ret.data().dataType());
         }
 
         AllocationPoint point = allocator.getAllocationPoint(ret);
