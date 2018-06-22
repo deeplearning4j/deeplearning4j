@@ -69,7 +69,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             INDArray result = sameDiff.execAndEndResult();
-            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, result);
+            return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
         }
     }
 

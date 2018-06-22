@@ -2,10 +2,14 @@ package org.deeplearning4j.nn.layers.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.TestUtils;
+import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffConv;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -14,6 +18,8 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -24,6 +30,12 @@ import static org.junit.Assume.assumeTrue;
 
 @Slf4j
 public class TestSameDiffConv {
+
+    private static final boolean PRINT_RESULTS = true;
+    private static final boolean RETURN_ON_FIRST_FAILURE = false;
+    private static final double DEFAULT_EPS = 1e-6;
+    private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
+    private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     @Test
     public void testSameDiffConvBasic() {
@@ -187,6 +199,97 @@ public class TestSameDiffConv {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testSameDiffConvGradient() {
+        //Only run test for CPU backend for now:
+        assumeTrue("CPU".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend")));
+
+
+        int imgH = 8;
+        int imgW = 8;
+        int nIn = 3;
+        int nOut = 4;
+        int[] kernel = {2, 2};
+        int[] strides = {1, 1};
+        int[] dilation = {1, 1};
+
+        int count = 0;
+
+        //Note: to avoid the exporential number of tests here, we'll randomly run every Nth test only.
+        //With n=1, m=3 this is 1 out of every 3 tests (on average)
+        Random r = new Random(12345);
+        int n = 1;
+        int m = 5;
+        for(boolean workspaces : new boolean[]{false, true}) {
+            for (int minibatch : new int[]{5, 1}) {
+                for (boolean hasBias : new boolean[]{true, false}) {
+                    for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
+                        int i = r.nextInt(m);
+                        if (i >= n) {
+                            //Example: n=2, m=3... skip on i=2, run test on i=0, i=1
+                            continue;
+                        }
+
+                        String msg = "Test " + (count++) + " - minibatch=" + minibatch + ", ConvolutionMode=" + cm + ", hasBias=" + hasBias;
+
+                        int outH = cm == ConvolutionMode.Same ? imgH : (imgH-2);
+                        int outW = cm == ConvolutionMode.Same ? imgW : (imgW-2);
+
+                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .seed(12345)
+                                .updater(new NoOp())
+                                .trainingWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
+                                .inferenceWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
+                                .list()
+                                .layer(new SameDiffConv.Builder()
+                                        .weightInit(WeightInit.XAVIER)
+                                        .nIn(nIn)
+                                        .nOut(nOut)
+                                        .kernelSize(kernel)
+                                        .stride(strides)
+                                        .dilation(dilation)
+                                        .convolutionMode(cm)
+                                        .activation(Activation.TANH)
+                                        .hasBias(hasBias)
+                                        .build())
+                                .layer(new SameDiffConv.Builder()
+                                        .weightInit(WeightInit.XAVIER)
+                                        .nIn(nOut)
+                                        .nOut(nOut)
+                                        .kernelSize(kernel)
+                                        .stride(strides)
+                                        .dilation(dilation)
+                                        .convolutionMode(cm)
+                                        .activation(Activation.SIGMOID)
+                                        .hasBias(hasBias)
+                                        .build())
+                                .layer(new OutputLayer.Builder().activation(Activation.SOFTMAX)
+                                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                                        .nIn(nOut * outH * outW)
+                                        .nOut(nOut).build())
+                                .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(outH, outW, nOut))
+                                .build();
+
+                        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                        net.init();
+
+                        INDArray f = Nd4j.rand(new int[]{minibatch, nIn, imgH, imgW});
+                        INDArray l = TestUtils.randomOneHot(minibatch, nOut);
+
+                        log.info("Starting: " + msg);
+                        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l);
+
+                        assertTrue(msg, gradOK);
+
+                        TestUtils.testModelSerialization(net);
                     }
                 }
             }

@@ -324,6 +324,8 @@ public class TestSameDiffDense {
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l);
 
                 assertTrue(msg, gradOK);
+
+                TestUtils.testModelSerialization(net);
             }
         }
     }
