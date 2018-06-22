@@ -44,6 +44,7 @@ namespace nd4j {
 
             resMeans->template applyTransform<simdOps::Square<T>>(squareMeans.get(), nullptr);
             variances->template applyScalar<simdOps::Divide<T>>((*counts)(0), tempVariances.get(), nullptr);
+            tempVariances->printIndexedBuffer("varianced divided by count");
             tempVariances->template applyPairwiseTransform<simdOps::Subtract<T>>(squareMeans.get(), resVariances, nullptr);
           
             if (shift != T(0)) {
