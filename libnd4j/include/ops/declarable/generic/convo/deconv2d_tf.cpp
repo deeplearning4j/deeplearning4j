@@ -12,13 +12,13 @@
 namespace nd4j {
 namespace ops  {
 
-/*
+
 ////////////////////////////////////////////////////////////////////////// 
 CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
     
-    NDArray<T> *gradO      = INPUT_VARIABLE(0);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    NDArray<T> *gradO      = INPUT_VARIABLE(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
     NDArray<T> *weights    = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)    
-    NDArray<T> *gradIShape = INPUT_VARIABLE(2);                                                // [4] - shape of input of conv2d (that is shape of gradI)
+    NDArray<T> *gradIShape = INPUT_VARIABLE(0);                                                // [4] - shape of input of conv2d (that is shape of gradI)
             
     NDArray<T> *gradI = OUTPUT_VARIABLE(0);                                                  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
 
@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // 0-NHWC, 1-NCHW    
 
-    const int rank = gradO->lengthOf();
+    const int rank = gradO->rankOf();
 
     REQUIRE_TRUE(weights->rankOf() == rank, 0, "CUSTOM DECONV2D_TF OP: rank of weights array must be equal to 4, but got %i instead !", weights->rankOf());
     REQUIRE_TRUE(gradIShape->rankOf() == 1, 0, "CUSTOM DECONV2D_TF OP: rank of array with output shape must be equal to 1, but got %i instead !", gradIShape->rankOf());
@@ -65,9 +65,9 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
 
 DECLARE_SHAPE_FN(deconv2d_tf) {
 
-    auto gradOShapeInfo   = inputShape->at(0);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    auto gradOShapeInfo   = inputShape->at(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
     auto weightsShapeInfo = inputShape->at(1);                                                // [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
-    auto gradIShapeShapeInfo = inputShape->at(2);                                               // [4]    
+    auto gradIShapeShapeInfo = inputShape->at(0);                                               // [4]
 
     const int rank = 4;
     
@@ -95,7 +95,7 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
         indIOioC = 1; indIiH = 2; indWkH = 2; indWoC = 0; indWiC = 1, indOoH = 2;              
     }    
 
-    std::vector<Nd4jLong> gradIShape = INPUT_VARIABLE(2)->template asVectorT<Nd4jLong>();
+    std::vector<Nd4jLong> gradIShape = INPUT_VARIABLE(0)->template asVectorT<Nd4jLong>();
 
     const int bS = gradIShape[0];                          // batch size
     const int iH = gradIShape[indIiH];                     // input height
@@ -134,8 +134,8 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
     return SHAPELIST(gradIshapeInfo);        
 
 }
-*/
 
+/*
 
 
     CUSTOM_OP_IMPL(deconv2d_tf, 2, 1, false, 0, 9) {
@@ -263,7 +263,7 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
 
      return SHAPELIST(outputShapeInfo);
  }
-
+*/
 
 }
 }
