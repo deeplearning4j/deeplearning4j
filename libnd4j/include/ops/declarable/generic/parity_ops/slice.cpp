@@ -42,8 +42,8 @@ namespace nd4j {
 
                 REQUIRE_TRUE(start >= 0, 0, "Slice: start index should not be negative");
 
-                REQUIRE_TRUE(start < x_rank, 0, "Index %i is invalid for dimension %i with size %i.", start, e, input->shapeInfo()[e + 1]);
-                if (size < 0){
+                REQUIRE_TRUE(start < x_rank, input->shapeInfo()[e + 1], "Index %i is invalid for dimension %i with size %i.", start, e, input->shapeInfo()[e + 1]);
+                if (size == -1){
                     size = input->shapeInfo()[e + 1] - start;
                 }
                 REQUIRE_TRUE(size > 0, 0, "Slice: interval for dimension %i is less then 1");
