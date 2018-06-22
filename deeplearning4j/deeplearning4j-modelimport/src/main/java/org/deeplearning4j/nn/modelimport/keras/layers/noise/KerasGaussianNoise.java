@@ -10,6 +10,11 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.Map;
 
+/**
+ * Keras wrapper for DL4J dropout layer with GaussianNoise.
+ *
+ * @author Max Pumperla
+ */
 public class KerasGaussianNoise extends KerasLayer {
 
     /**

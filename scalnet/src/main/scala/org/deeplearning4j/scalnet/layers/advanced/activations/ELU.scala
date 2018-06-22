@@ -14,34 +14,34 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scalnet.layers.advanced.activation
+package org.deeplearning4j.scalnet.layers.advanced.activations
 
 import org.deeplearning4j.nn.conf.layers.{ ActivationLayer => JActivationLayer }
 import org.deeplearning4j.scalnet.layers.core.Layer
-import org.nd4j.linalg.activations.impl.ActivationLReLU
+import org.nd4j.linalg.activations.impl.{ ActivationELU }
 
 /**
-  * LeakyReLU layer
+  * ELU layer
   *
   * @author Max Pumperla
   */
-class LeakyReLU(alpha: Double, nOut: Option[List[Int]], nIn: Option[List[Int]], override val name: String = "")
+class ELU(alpha: Double, nOut: Option[List[Int]], nIn: Option[List[Int]], override val name: String = "")
     extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new JActivationLayer.Builder()
-      .activation(new ActivationLReLU(alpha))
+      .activation(new ActivationELU(alpha))
       .name(name)
       .build()
 
   override val outputShape: List[Int] = nOut.getOrElse(List(0))
   override val inputShape: List[Int] = nIn.getOrElse(List(0))
 
-  override def reshapeInput(newIn: List[Int]): LeakyReLU =
-    new LeakyReLU(alpha, Some(newIn), Some(newIn), name)
+  override def reshapeInput(newIn: List[Int]): ELU =
+    new ELU(alpha, Some(newIn), Some(newIn), name)
 }
 
-object LeakyReLU {
-  def apply(alpha: Double, nOut: Int = 0, nIn: Int = 0, name: String = ""): LeakyReLU =
-    new LeakyReLU(alpha, Some(List(nOut)), Some(List(nIn)), name)
+object ELU {
+  def apply(alpha: Double, nOut: Int = 0, nIn: Int = 0, name: String = ""): ELU =
+    new ELU(alpha, Some(List(nOut)), Some(List(nIn)), name)
 }
