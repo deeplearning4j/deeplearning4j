@@ -1944,7 +1944,7 @@ TEST_F(DeclarableOpsTests6, deconv2d_tf_test1) {
     NDArrayFactory<double>::linspace(0.1, weights, 0.1);
     
     nd4j::ops::deconv2d_tf<double> op;
-    ResultSet<double>* results = op.execute({&input, &weights, &outShape}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&outShape, &weights, &input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     NDArray<double>* output = results->at(0);            
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1977,7 +1977,7 @@ TEST_F(DeclarableOpsTests6, deconv2d_tf_test2) {
     NDArrayFactory<double>::linspace(0.1, weights, 0.1);
     
     nd4j::ops::deconv2d_tf<double> op;
-    ResultSet<double>* results = op.execute({&input, &weights, &outShape}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    ResultSet<double>* results = op.execute({&outShape, &weights, &input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     NDArray<double>* output = results->at(0);            
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1986,8 +1986,6 @@ TEST_F(DeclarableOpsTests6, deconv2d_tf_test2) {
     
     delete results;
 }
-
-
 
   
 
