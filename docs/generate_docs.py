@@ -6,142 +6,155 @@ import json
 import argparse
 
 
-def class_to_docs_link(module_name, class_name):
-    return DOCS_ROOT + module_name.replace('.', '/') + '#' + class_name
+class DocumentationGenerator:
+
+    def __init__(self, args):
+        self.template_dir = args.templates
+        self.target_dir = args.sources
+        self.project_name = args.project + '/'
+        self.language = args.language
+        self.docs_root = args.docs_root
+        self.source_code_path = args.code
+        self.github_root = ('https://github.com/deeplearning4j/deeplearning4j/tree/master/'
+                            + self.source_code_path[3:])
 
 
-def class_to_source_link(module_name, cls_name):
-    return '[[source]](' + GITHUB_ROOT + module_name + '/' + cls_name + '.' + LANG + ')'
+    def class_to_docs_link(self, module_name, class_name):
+        return self.docs_root + module_name.replace('.', '/') + '#' + class_name
 
 
-def to_code_snippet(code):
-    return '```' + LANG + '\n' + code + '\n```\n'
+    def class_to_source_link(self, module_name, cls_name):
+        return '[[source]](' + self.github_root + module_name + '/' + cls_name + '.' + self.language + ')'
 
 
-def process_main_docstring(doc_string):
-    lines = doc_string.split('\n')
-    doc = [line.replace('*', '').lstrip(' ').rstrip('/') for line in lines[1:-1] if not '@' in line]
-    return '\n'.join(doc)
+    def to_code_snippet(self, code):
+        return '```' + self.language + '\n' + code + '\n```\n'
 
 
-def process_docstring(doc_string):
-    lines = doc_string.split('\n')
-    doc = [line.replace('*', '').lstrip(' ').replace('@', '- ') for line in lines]
-    return '\n'.join(doc)
+    def process_main_docstring(self, doc_string):
+        lines = doc_string.split('\n')
+        doc = [line.replace('*', '').lstrip(' ').rstrip('/') for line in lines[1:-1] if not '@' in line]
+        return '\n'.join(doc)
 
 
-def render(signature, doc_string):
-    name = signature
-    subblocks = ['<b<{}</b> \n{}'.format(name, to_code_snippet(signature))]
-    if doc_string:
-        subblocks.append(doc_string + '\n')
-    return '\n\n'.join(subblocks)
+    def process_docstring(self, doc_string):
+        lines = doc_string.split('\n')
+        doc = [line.replace('*', '').lstrip(' ').replace('@', '- ') for line in lines]
+        return '\n'.join(doc)
 
 
-def get_main_doc_string(class_string, class_name):
-    doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n'  # match "/** ... */" at the top
-    doc_string = re.search(doc_regex, class_string)
-    doc = process_main_docstring(doc_string.group())
-    if not doc_string:
-        print('Warning, no doc string found for class {}'.format(class_name))
-    return doc, class_string[doc_string.end():]
+    def render(self, signature, doc_string):
+        name = signature
+        subblocks = ['<b<{}</b> \n{}'.format(name, self.to_code_snippet(signature))]
+        if doc_string:
+            subblocks.append(doc_string + '\n')
+        return '\n\n'.join(subblocks)
 
 
-def get_constructor_data(class_string, class_name):
-    constructors = []
-    if 'public ' + class_name in class_string:
-        while 'public ' + class_name in class_string:
-            doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?(public ' \
-                        + class_name + '.[\S\s]*?){'
+    def get_main_doc_string(self, class_string, class_name):
+        doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n'  # match "/** ... */" at the top
+        doc_string = re.search(doc_regex, class_string)
+        doc = self.process_main_docstring(doc_string.group())
+        if not doc_string:
+            print('Warning, no doc string found for class {}'.format(class_name))
+        return doc, class_string[doc_string.end():]
+
+
+    def get_constructor_data(self, class_string, class_name):
+        constructors = []
+        if 'public ' + class_name in class_string:
+            while 'public ' + class_name in class_string:
+                doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?(public ' \
+                            + class_name + '.[\S\s]*?){'
+                result = re.search(doc_regex, class_string)
+                doc_string, signature = result.groups()
+                doc = self.process_docstring(doc_string)
+                class_string = class_string[result.end():]
+                constructors.append((signature, doc))
+        return constructors, class_string
+
+    def get_public_method_data(self, class_string):
+        method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
+        method_strings = re.findall(method_regex, class_string)
+
+        methods = []
+        for method in method_strings:
+            doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?' + \
+                        '(public [static\s]?[a-zA-Z0-9]*.[\S\s]*?){'
             result = re.search(doc_regex, class_string)
             doc_string, signature = result.groups()
-            doc = process_docstring(doc_string)
+            doc = self.process_docstring(doc_string)
             class_string = class_string[result.end():]
-            constructors.append((signature, doc))
-    return constructors, class_string
-
-def get_public_method_data(class_string):
-    method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
-    method_strings = re.findall(method_regex, class_string)
-
-    methods = []
-    for method in method_strings:
-        doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?' + \
-                    '(public [static\s]?[a-zA-Z0-9]*.[\S\s]*?){'
-        result = re.search(doc_regex, class_string)
-        doc_string, signature = result.groups()
-        doc = process_docstring(doc_string)
-        class_string = class_string[result.end():]
-        methods.append((signature, doc))
-    return methods
+            methods.append((signature, doc))
+        return methods
 
 
-def read_page_data(data):
-    classes = []
-    module = data.get('module', "")
-    if module:
-        classes = os.listdir(SOURCE_CODE_PATH + module)
-    cls = data.get('class', "")
-    if cls:
-        classes = cls
-    page_data = []
-    for c in classes:
-        class_string = read_file(SOURCE_CODE_PATH + module + '/' + c)
-        class_name = c.strip('.' + LANG)
-        doc_string, class_string = get_main_doc_string(class_string, class_name)
-        constructors, class_string = get_constructor_data(class_string, class_name)
-        methods = get_public_method_data(class_string)
+    def read_page_data(self, data):
+        classes = []
+        module = data.get('module', "")
+        if module:
+            classes = os.listdir(self.source_code_path + module)
+        cls = data.get('class', "")
+        if cls:
+            classes = cls
+        page_data = []
+        for c in classes:
+            class_string = self.read_file(self.source_code_path + module + '/' + c)
+            class_name = c.strip('.' + self.language)
+            doc_string, class_string = self.get_main_doc_string(class_string, class_name)
+            constructors, class_string = self.get_constructor_data(class_string, class_name)
+            methods = self.get_public_method_data(class_string)
 
-        page_data.append([module, class_name, doc_string, constructors, methods])
+            page_data.append([module, class_name, doc_string, constructors, methods])
 
-    return page_data
+        return page_data
 
 
-def clean_target():
-    if os.path.exists(PROJECT + TARGET_DIR):
-        shutil.rmtree(PROJECT + TARGET_DIR)
+    def clean_target(self):
+        if os.path.exists(self.project_name + self.target_dir):
+            shutil.rmtree(self.project_name + self.target_dir)
 
-    for subdir, dirs, fnames in os.walk(PROJECT + TEMPLATE_DIR):
-        for fname in fnames:
-            new_subdir = subdir.replace(PROJECT + TEMPLATE_DIR, PROJECT + TARGET_DIR)
-            if not os.path.exists(new_subdir):
-                os.makedirs(new_subdir)
-            if fname[-3:] == '.md':
-                fpath = os.path.join(subdir, fname)
-                new_fpath = fpath.replace(PROJECT + TEMPLATE_DIR, PROJECT + TARGET_DIR)
-                shutil.copy(fpath, new_fpath)
+        for subdir, dirs, fnames in os.walk(self.project_name + self.template_dir):
+            for fname in fnames:
+                new_subdir = subdir.replace(self.project_name + self.template_dir, self.project_name + self.target_dir)
+                if not os.path.exists(new_subdir):
+                    os.makedirs(new_subdir)
+                if fname[-3:] == '.md':
+                    fpath = os.path.join(subdir, fname)
+                    new_fpath = fpath.replace(self.project_name + self.template_dir, self.project_name + self.target_dir)
+                    shutil.copy(fpath, new_fpath)
 
 
 
-def read_file(path):
-    with open(path) as f:
-        return f.read()
+    def read_file(self, path):
+        with open(path) as f:
+            return f.read()
 
 
-def create_index_page():
-    readme = read_file(PROJECT + 'README.md')
-    index = read_file(PROJECT + 'templates/index.md')
-    index = index.replace('{{autogenerated}}', readme[readme.find('##'):])
-    with open(PROJECT + TARGET_DIR + '/index.md', 'w') as f:
-        f.write(index)
+    def create_index_page(self):
+        readme = self.read_file(self.project_name + 'README.md')
+        index = self.read_file(self.project_name + 'templates/index.md')
+        index = index.replace('{{autogenerated}}', readme[readme.find('##'):])
+        with open(self.project_name + self.target_dir + '/index.md', 'w') as f:
+            f.write(index)
 
-def write_content(blocks, page_data):
-    assert blocks, 'No content for page ' + page_data['page']
+    def write_content(self, blocks, page_data):
+        assert blocks, 'No content for page ' + page_data['page']
 
-    markdown = '\n----\n\n'.join(blocks)
-    path = os.path.join(PROJECT + TARGET_DIR, page_data['page'])
-    if os.path.exists(path):
-        template = read_file(path)
-        assert '{{autogenerated}}' in template, \
-                'Template found for {} but missing {{autogenerated}} tag.'.format(path)
-        markdown = template.replace('{{autogenerated}}', markdown)
-    print('Auto-generating docs for {}'.format(path))
+        markdown = '\n----\n\n'.join(blocks)
+        path = os.path.join(self.project_name + self.target_dir, page_data['page'])
+        if os.path.exists(path):
+            template = self.read_file(path)
+            assert '{{autogenerated}}' in template, \
+                    'Template found for {} but missing {{autogenerated}} tag.'.format(path)
+            markdown = template.replace('{{autogenerated}}', markdown)
+        print('Auto-generating docs for {}'.format(path))
 
-    subdir = os.path.dirname(path)
-    if not os.path.exists(subdir):
-        os.makedirs(subdir)
-    with open(path, 'w') as f:
-        f.write(markdown)
+        subdir = os.path.dirname(path)
+        if not os.path.exists(subdir):
+            os.makedirs(subdir)
+        with open(path, 'w') as f:
+            f.write(markdown)
 
 if __name__ == '__main__':
 
@@ -155,28 +168,21 @@ if __name__ == '__main__':
     parser.add_argument('--sources', '-s', type=str, required=False, default='doc_sources')
 
     args = parser.parse_args()
+    doc_generator = DocumentationGenerator(args)
 
-    TEMPLATE_DIR = args.templates
-    TARGET_DIR = args.sources
-    PROJECT = args.project + '/'
-    LANG = args.language
-    DOCS_ROOT = args.docs_root
-    SOURCE_CODE_PATH = args.code
-    GITHUB_ROOT = 'https://github.com/deeplearning4j/deeplearning4j/tree/master/' + SOURCE_CODE_PATH[3:]
+    doc_generator.clean_target()
+    doc_generator.create_index_page()
 
-    clean_target()
-    create_index_page()
-
-    with open(PROJECT + 'pages.json', 'r') as f:
+    with open(doc_generator.project_name + 'pages.json', 'r') as f:
         json_pages = f.read()
     pages = json.loads(json_pages)
 
     for page_data in pages:
-        data = read_page_data(page_data)
+        data = doc_generator.read_page_data(page_data)
         blocks = []
         for module_name, class_name, doc_string, constructors, methods in data:
             subblocks = []
-            link = class_to_source_link(module_name, class_name)
+            link = doc_generator.class_to_source_link(module_name, class_name)
             subblocks.append('<span style="float:right;"> {} </span>'.format(link))
             if module_name:
                 subblocks.append('## {}\n'.format(class_name))
@@ -187,13 +193,13 @@ if __name__ == '__main__':
             if constructors:
                 subblocks.append('\n---')
                 subblocks.append('<b>Constructors</b>\n')
-                subblocks.append('\n---\n'.join([render(cs, cd) for (cs, cd) in constructors]))
+                subblocks.append('\n---\n'.join([doc_generator.render(cs, cd) for (cs, cd) in constructors]))
 
             if methods:
                 subblocks.append('\n---')
                 subblocks.append('<b>Methods</b>\n')
-                subblocks.append('\n---\n'.join([render(ms, md) for (ms, md) in methods]))
+                subblocks.append('\n---\n'.join([doc_generator.render(ms, md) for (ms, md) in methods]))
             blocks.append('\n'.join(subblocks))
 
-        write_content(blocks, page_data)
+        doc_generator.write_content(blocks, page_data)
 
