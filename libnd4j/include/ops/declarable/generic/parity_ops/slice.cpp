@@ -47,7 +47,7 @@ namespace nd4j {
                     size = input->shapeInfo()[e + 1] - start;
                 }
                 REQUIRE_TRUE(size > 0, 0, "Slice: interval for dimension %i is less then 1");
-                REQUIRE_TRUE(start + size <= x_rank, 0, "Slice: interval [%i, %i] is out of bounds for dimension %i with size %i", start, start + size, e, input->shapeInfo()[e + 1]);
+                REQUIRE_TRUE(start + size <= input->shapeInfo()[e + 1], 0, "Slice: interval [%i, %i] is out of bounds for dimension %i with size %i", start, start + size, e, input->shapeInfo()[e + 1]);
 
                 indices.push_back(NDIndex::interval(start, start + size, 1));
             }
