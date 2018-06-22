@@ -91,16 +91,43 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
 ///        std::string(arch_arg) + 
 //        std::string(opts_arg);
 
-    char* cxx = getenv("CXX");
-    if (cxx == nullptr) {
-        nd4j_printf("Cannot retrieve mandatory environment variable 'CXX'. Please set up the variable and try again.", "");
-        exit(3);
+    FILE *f = popen("which c++", "r");
+    char* line = nullptr;
+    size_t size = 0;
+    getline(&line, &size, f);
+    if (size > 0) {
+        char* p = strchr(line, '\n');
+        if (p)
+            *p = '\0';
+        size = p - line;
     }
-    char* pathEnv = getenv("PATH");
-    std::string pathStr("PATH=./;");
-    pathStr += pathEnv;
+    
+    if (size == 0) {
+        std::cerr << "Cannot find c++ compiler." << std::endl;
+        return 3;
+    }
+//    std::cout << "c++ path is "<< line << " with size " << size << std::endl;
+    std::string cmd(line);
 
-    nd4j_printf("%s\n", pathStr.c_str());
+    fclose(f);
+//    char* cmdPath = realpath(line, NULL);
+//    if (cmdPath == nullptr) {
+//        perror("Cannot retrieve c++ path.");
+//        return 2;
+//    }
+
+    free(line);
+
+    char const* cxx = cmd.c_str(); //;getenv("CXX");
+//    if (cxx == nullptr) {
+//        nd4j_printf("Cannot retrieve mandatory environment variable 'CXX'. Please set up the variable and try again.", "");
+//        exit(3);
+//    }
+    //char* pathEnv = getenv("PATH");
+    //std::string pathStr("PATH=./;");
+    //pathStr += pathEnv;
+
+    //nd4j_printf("%s\n", pathStr.c_str());
 //    char const* env[] = {// "HOME=/tmp", 
 //                          pathStr.c_str(),
 //                          (char *)0 };
@@ -109,7 +136,7 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
 
     std::vector<char*> params;//(9);
     std::vector<std::string> args;//(9);
-    args.emplace_back(std::string(cxx));
+    args.emplace_back(cmd);
     args.emplace_back(std::string("-E"));
     args.emplace_back(std::string("-P"));
     args.emplace_back(std::string("-std=c++11"));
@@ -139,7 +166,7 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
     params.emplace_back(nullptr);
     nd4j_printf("Run: \n\t %s\n", preprocessorCmd.c_str());
 
-    int err = execvp(cxx, &params[0]);
+    int err = execvp(cmd.c_str(), &params[0]);
 
     if (err < 0) {
         perror("\nCannot run Preprocessor properly due \n");
