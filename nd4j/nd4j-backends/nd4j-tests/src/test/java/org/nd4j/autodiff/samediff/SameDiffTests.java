@@ -2975,4 +2975,27 @@ public class SameDiffTests {
         assertNotEquals(origGrad.get("in"), in.gradient().getArr());
         assertNotEquals(origGrad.get("out"), out.gradient().getArr());
     }
+
+
+    @Test
+    public void testExecutionDifferentShapes(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        SDVariable w = sd.var("w", Nd4j.linspace(1,20,20).reshape(4,5));
+        SDVariable b = sd.var("b", Nd4j.linspace(1,5,5).reshape(1,5));
+
+        SDVariable mmul = sd.mmul(in,w).addi(b);
+        INDArray exp = in.getArr().mmul(w.getArr()).addiRowVector(b.getArr());
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(exp, out);
+
+        //Now, replace with minibatch 5:
+        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        INDArray out2 = sd.execAndEndResult();
+        assertArrayEquals(new long[]{5,5}, out2.shape());
+
+        exp = in.getArr().mmul(w.getArr()).addiRowVector(b.getArr());
+        assertEquals(exp, out2);
+    }
 }

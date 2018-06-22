@@ -619,12 +619,24 @@ public class SameDiff {
      * @param shape   the shape to associate with
      */
     public void updateShapeForVarName(String varName, long[] shape) {
+        updateShapeForVarName(varName, shape, false);
+    }
+
+    public void updateShapeForVarName(String varName, long[] shape, boolean clearArrayOnShapeMismatch) {
         if (shape == null) {
             throw new ND4JIllegalStateException("Null shapes not allowed!");
         }
 
         if (variableNameToArr.containsKey(varName) && !Arrays.equals(variableNameToArr.get(varName).shape(), shape)) {
-            throw new ND4JIllegalStateException("Already found an existing array!");
+            if(clearArrayOnShapeMismatch){
+                if(log.isTraceEnabled()){
+                    log.trace("Clearing array for variable {}: array shape {}, new shape {}", varName,
+                            Arrays.toString(variableNameToArr.get(varName).shape()), Arrays.toString(shape));
+                }
+                variableNameToArr.remove(varName);
+            } else {
+                throw new ND4JIllegalStateException("Already found an existing array!");
+            }
         }
 
 
@@ -665,6 +677,14 @@ public class SameDiff {
         }
 
         variableNameToShape.put(varName, shape);
+    }
+
+    public void putOrUpdateShapeForVarName(String varName, @NonNull long[] shape, boolean clearArrayOnShapeMismatch){
+        if(variableNameToArr.containsKey(varName)){
+            updateShapeForVarName(varName, shape, clearArrayOnShapeMismatch);
+        } else {
+            putShapeForVarName(varName, shape);
+        }
     }
 
 
@@ -7283,8 +7303,6 @@ public class SameDiff {
                             + "\" of type " + differentialFunction.getClass().getName(), t);
                 }
                 customOp.assertValidForExecution();
-
-                customOp.updateInputsFromSameDiff();
 
                 Nd4j.getExecutioner().exec(customOp);
 
