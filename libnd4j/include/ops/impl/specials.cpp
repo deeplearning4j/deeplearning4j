@@ -10,7 +10,7 @@
 
 namespace nd4j {
     /**
-  * Concatneate multi array of the same shape together
+  * Concatenate multi array of the same shape together
   * along a particular dimension
   */
     template <typename T>

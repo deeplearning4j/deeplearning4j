@@ -1667,7 +1667,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
 
 
 /**
-  * Concatneate multi array of the same shape together
+  * Concatenate multi array of the same shape together
   * along a particular dimension
   */
 void NativeOps::concatFloat(
@@ -1705,8 +1705,8 @@ void NativeOps::concatHalf(
             result,
             resultShapeInfo);
 }
-/**
-    * Concatneate multi array of the same shape together
+    /**
+    * Concatenate multi array of the same shape together
     * along a particular dimension
     */
 void NativeOps::concatDouble(
@@ -1718,6 +1718,50 @@ void NativeOps::concatDouble(
         double *result,
         Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
     nd4j::SpecialMethods<double>::concatCpuGeneric(
+            dimension,
+            numArrays,
+            data,
+            inputShapeInfo,
+            result,
+            resultShapeInfo);
+
+}
+
+/**
+* Concatenate multi array of the same shape together
+* along a particular dimension
+*/
+void NativeOps::concatInt(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jInt *result,
+        Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    nd4j::SpecialMethods<Nd4jInt>::concatCpuGeneric(
+            dimension,
+            numArrays,
+            data,
+            inputShapeInfo,
+            result,
+            resultShapeInfo);
+
+}
+
+/**
+* Concatenate multi array of the same shape together
+* along a particular dimension
+*/
+void NativeOps::concatLong(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jLong *result,
+        Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    nd4j::SpecialMethods<Nd4jLong>::concatCpuGeneric(
             dimension,
             numArrays,
             data,
@@ -1762,8 +1806,8 @@ void NativeOps::specialConcatHalf(
             result,
             resultShapeInfo);
 }
-/**
-    * Concatneate multi array of the same shape together
+    /**
+    * Concatenate multi array of the same shape together
     * along a particular dimension
     */
 void NativeOps::specialConcatDouble(
@@ -1775,6 +1819,50 @@ void NativeOps::specialConcatDouble(
         double *result,
         Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
     nd4j::SpecialMethods<double>::concatCpuGeneric(
+            dimension,
+            numArrays,
+            data,
+            inputShapeInfo,
+            result,
+            resultShapeInfo);
+
+}
+
+/**
+* Concatenate multi array of the same shape together
+* along a particular dimension
+*/
+void NativeOps::specialConcatInt(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jInt *result,
+        Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    nd4j::SpecialMethods<Nd4jInt>::concatCpuGeneric(
+            dimension,
+            numArrays,
+            data,
+            inputShapeInfo,
+            result,
+            resultShapeInfo);
+
+}
+
+/**
+* Concatenate multi array of the same shape together
+* along a particular dimension
+*/
+void NativeOps::specialConcatLong(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jLong *result,
+        Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    nd4j::SpecialMethods<Nd4jLong>::concatCpuGeneric(
             dimension,
             numArrays,
             data,

@@ -4083,6 +4083,22 @@ void NativeOps::initializeDevicesAndFunctions() {
     //cudaFuncGetAttributes(&funcAttributes[47], scalarAlongDimension_0_float);
     //cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_float16);
     //cudaFuncGetAttributes(&funcAttributes[48], scalarAlongDimension_0_double);
+
+    cudaFuncGetAttributes(&funcAttributes[49], concatKernelScalarInt);
+
+    cudaFuncGetAttributes(&funcAttributes[50], concatKernelScalarLong);
+
+    cudaFuncGetAttributes(&funcAttributes[51], concatKernelHStackInt);
+
+    cudaFuncGetAttributes(&funcAttributes[52], concatKernelHStackLong);
+
+    cudaFuncGetAttributes(&funcAttributes[53], concatKernelVStackInt);
+
+    cudaFuncGetAttributes(&funcAttributes[54], concatKernelVStackLong);
+
+    cudaFuncGetAttributes(&funcAttributes[55], concatKernelInt);
+
+    cudaFuncGetAttributes(&funcAttributes[56], concatKernelLong);
 }
 
 void NativeOps::initializeFunctions(Nd4jPointer *functions) {
@@ -4411,7 +4427,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 }
 
 /**
-  * Concatneate multi array of the same shape together
+  * Concatenate multi array of the same shape together
   * along a particular dimension
   */
  void NativeOps::concatFloat(
@@ -4652,7 +4668,7 @@ void NativeOps::specialConcatHalf(
             resultShapeInfo);
 }
 /**
-    * Concatneate multi array of the same shape together
+    * Concatenate multi array of the same shape together
     * along a particular dimension
     */
 void NativeOps::specialConcatDouble(
@@ -4673,9 +4689,52 @@ void NativeOps::specialConcatDouble(
 
 }
 
+/**
+    * Concatenate multi array of the same shape together
+    * along a particular dimension
+    */
+void NativeOps::specialConcatInt(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jInt *result,
+        Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    nd4j::SpecialMethods<Nd4jInt>::concatCpuGeneric(
+            dimension,
+            numArrays,
+            data,
+            inputShapeInfo,
+            result,
+            resultShapeInfo);
+
+}
 
 /**
-    * Concatneate multi array of the same shape together
+    * Concatenate multi array of the same shape together
+    * along a particular dimension
+    */
+void NativeOps::specialConcatLong(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jLong *result,
+        Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    nd4j::SpecialMethods<Nd4jLong>::concatCpuGeneric(
+            dimension,
+            numArrays,
+            data,
+            inputShapeInfo,
+            result,
+            resultShapeInfo);
+
+}
+
+/**
+    * Concatenate multi array of the same shape together
     * along a particular dimension
     */
 void NativeOps::concatDouble(
@@ -4770,6 +4829,208 @@ void NativeOps::concatDouble(
 	}
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("sharedMemory requested for concatDouble: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
+
+
+    nd4j::DebugHelper::checkErrorCode(stream, "ConcatDouble(...) failed");
+}
+
+    /**
+    * Concatenate multi array of the same shape together
+    * along a particular dimension
+    */
+void NativeOps::concatInt(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jInt *result,
+        Nd4jLong *resultShapeInfo,
+        Nd4jPointer *tadPointers,
+        Nd4jPointer *offsetPointers) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+
+    auto hostShapePointers = reinterpret_cast<Nd4jLong **>(extraPointers[9]);
+
+    // numArrays will be used as number of TADs, so each block process 1 input
+
+    int smem = 0;
+    bool isVstack = false;
+    bool isScalar = true;
+    bool isHstack = false;
+
+    for (int i = 0; i < numArrays; i++) {
+        if (!shape::isScalar(hostShapePointers[i])) {
+            isScalar = false;
+            break;
+        }
+    }
+
+    if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2 && shape::order(hostXShapeInfo) == 'c' ) {
+        isVstack = true;
+        for (int i = 0; i < numArrays; i++) {
+            if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c') {
+                isVstack = false;
+                break;
+            }
+        }
+    }
+
+    // let's try to fit N-dimensional vstack
+    if (!isVstack && !isScalar && dimension == 0 && shape::order(hostXShapeInfo) == 'c') {
+        Nd4jLong length0 = shape::length(hostShapePointers[0]);
+        isVstack = true;
+        for (int i = 0; i < numArrays; i++) {
+            if (shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c' || length0 != shape::length(hostShapePointers[i])) {
+                isVstack = false;
+                break;
+            }
+        }
+    }
+
+    if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hostXShapeInfo)) {
+        isHstack = true;
+        for (int i = 0; i < numArrays; i++) {
+            if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0) {
+                isHstack = false;
+                break;
+            }
+        }
+    }
+
+    if (isScalar) {
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("Going scalar concat\n");
+
+        smem = funcAttributes[49].sharedSizeBytes;
+        concatKernelScalarInt<<< 128, 128, smem, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), result, resultShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]));
+    } else if (isVstack) {
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("Going VStack concat\n");
+
+        smem = funcAttributes[53].sharedSizeBytes;
+        concatKernelVStackInt<<< 128, 128, smem, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), result, resultShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]));
+    } else if (isHstack) {
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("Going HStack concat\n");
+        smem = funcAttributes[51].sharedSizeBytes;
+
+        concatKernelHStackInt<<< 128, 128, smem, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), result, resultShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]));
+    } else {
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("Going generic concat\n");
+
+        auto devZTadShape = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+        auto devZOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
+
+        concatKernelInt<<< 512, 128, 4096, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), result, resultShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]), devZTadShape, devZOffsets);
+    }
+    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+        printf("sharedMemory requested for concatDouble: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
+
+
+    nd4j::DebugHelper::checkErrorCode(stream, "ConcatDouble(...) failed");
+}
+
+/**
+* Concatenate multi array of the same shape together
+* along a particular dimension
+*/
+void NativeOps::concatLong(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        Nd4jLong *result,
+        Nd4jLong *resultShapeInfo,
+        Nd4jPointer *tadPointers,
+        Nd4jPointer *offsetPointers) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    auto hostXShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+
+    auto hostShapePointers = reinterpret_cast<Nd4jLong **>(extraPointers[9]);
+
+    // numArrays will be used as number of TADs, so each block process 1 input
+
+    int smem = 0;
+    bool isVstack = false;
+    bool isScalar = true;
+    bool isHstack = false;
+
+    for (int i = 0; i < numArrays; i++) {
+        if (!shape::isScalar(hostShapePointers[i])) {
+            isScalar = false;
+            break;
+        }
+    }
+
+    if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2 && shape::order(hostXShapeInfo) == 'c' ) {
+        isVstack = true;
+        for (int i = 0; i < numArrays; i++) {
+            if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c') {
+                isVstack = false;
+                break;
+            }
+        }
+    }
+
+    // let's try to fit N-dimensional vstack
+    if (!isVstack && !isScalar && dimension == 0 && shape::order(hostXShapeInfo) == 'c') {
+        Nd4jLong length0 = shape::length(hostShapePointers[0]);
+        isVstack = true;
+        for (int i = 0; i < numArrays; i++) {
+            if (shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c' || length0 != shape::length(hostShapePointers[i])) {
+                isVstack = false;
+                break;
+            }
+        }
+    }
+
+    if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hostXShapeInfo)) {
+        isHstack = true;
+        for (int i = 0; i < numArrays; i++) {
+            if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0) {
+                isHstack = false;
+                break;
+            }
+        }
+    }
+
+    if (isScalar) {
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("Going scalar concat\n");
+
+        smem = funcAttributes[50].sharedSizeBytes;
+        concatKernelScalarLong<<< 128, 128, smem, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), result, resultShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]));
+    } else if (isVstack) {
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("Going VStack concat\n");
+
+        smem = funcAttributes[54].sharedSizeBytes;
+        concatKernelVStackLong<<< 128, 128, smem, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), result, resultShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]));
+    } else if (isHstack) {
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("Going HStack concat\n");
+        smem = funcAttributes[52].sharedSizeBytes;
+
+        concatKernelHStackLong<<< 128, 128, smem, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), result, resultShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]));
+    } else {
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("Going generic concat\n");
+
+        auto devZTadShape = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+        auto devZOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
+
+        concatKernelLong<<< 512, 128, 4096, *stream>>> (dimension, numArrays, reinterpret_cast<Nd4jPointer *>(data[0]), reinterpret_cast<Nd4jPointer *>(inputShapeInfo[0]), result, resultShapeInfo, reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]), devZTadShape, devZOffsets);
+    }
+    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+        printf("sharedMemory requested for concatDouble: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
 
 
     nd4j::DebugHelper::checkErrorCode(stream, "ConcatDouble(...) failed");

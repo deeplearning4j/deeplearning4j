@@ -1505,7 +1505,7 @@ public:
             Nd4jLong *inputShapeInfo);
 
     /**
-     * Concatneate multi array of the same shape together
+     * Concatenate multi array of the same shape together
      * along a particular dimension
      */
     void concatFloat(
@@ -1516,8 +1516,8 @@ public:
             Nd4jPointer *inputShapeInfo,
             float *result,
             Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
-/**
-    * Concatneate multi array of the same shape together
+    /**
+    * Concatenate multi array of the same shape together
     * along a particular dimension
     */
     void concatDouble(
@@ -1527,6 +1527,36 @@ public:
             Nd4jPointer *data,
             Nd4jPointer *inputShapeInfo,
             double *result,
+            Nd4jLong *resultShapeInfo,
+            Nd4jPointer *tadPointers,
+            Nd4jPointer *offsetPointers);
+
+    /**
+    * Concatenate multi array of the same shape together
+    * along a particular dimension
+    */
+    void concatInt(
+            Nd4jPointer *extraPointers,
+            int dimension,
+            int numArrays,
+            Nd4jPointer *data,
+            Nd4jPointer *inputShapeInfo,
+            Nd4jInt *result,
+            Nd4jLong *resultShapeInfo,
+            Nd4jPointer *tadPointers,
+            Nd4jPointer *offsetPointers);
+
+    /**
+    * Concatenate multi array of the same shape together
+    * along a particular dimension
+    */
+    void concatLong(
+            Nd4jPointer *extraPointers,
+            int dimension,
+            int numArrays,
+            Nd4jPointer *data,
+            Nd4jPointer *inputShapeInfo,
+            Nd4jLong *result,
             Nd4jLong *resultShapeInfo,
             Nd4jPointer *tadPointers,
             Nd4jPointer *offsetPointers);
@@ -1563,8 +1593,8 @@ public:
             Nd4jPointer *inputShapeInfo,
             float *result,
             Nd4jLong *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
-/**
-    * Concatneate multi array of the same shape together
+    /**
+    * Concatenate multi array of the same shape together
     * along a particular dimension
     */
     void specialConcatDouble(
@@ -1574,6 +1604,36 @@ public:
             Nd4jPointer *data,
             Nd4jPointer *inputShapeInfo,
             double *result,
+            Nd4jLong *resultShapeInfo,
+            Nd4jPointer *tadPointers,
+            Nd4jPointer *offsetPointers);
+
+    /**
+    * Concatenate multi array of the same shape together
+    * along a particular dimension
+    */
+    void specialConcatInt(
+            Nd4jPointer *extraPointers,
+            int dimension,
+            int numArrays,
+            Nd4jPointer *data,
+            Nd4jPointer *inputShapeInfo,
+            Nd4jInt *result,
+            Nd4jLong *resultShapeInfo,
+            Nd4jPointer *tadPointers,
+            Nd4jPointer *offsetPointers);
+
+    /**
+    * Concatenate multi array of the same shape together
+    * along a particular dimension
+    */
+    void specialConcatLong(
+            Nd4jPointer *extraPointers,
+            int dimension,
+            int numArrays,
+            Nd4jPointer *data,
+            Nd4jPointer *inputShapeInfo,
+            Nd4jLong *result,
             Nd4jLong *resultShapeInfo,
             Nd4jPointer *tadPointers,
             Nd4jPointer *offsetPointers);
