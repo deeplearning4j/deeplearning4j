@@ -2998,4 +2998,24 @@ public class SameDiffTests {
         exp = in.getArr().mmul(w.getArr()).addiRowVector(b.getArr());
         assertEquals(exp, out2);
     }
+
+    @Test
+    public void testExecutionDifferentShapes2(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+
+        SDVariable tanh = sd.tanh(in);
+        INDArray exp = Transforms.tanh(in.getArr(), true);
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(exp, out);
+
+        //Now, replace with minibatch 5:
+        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        INDArray out2 = sd.execAndEndResult();
+        assertArrayEquals(new long[]{5,4}, out2.shape());
+
+        exp = Transforms.tanh(in.getArr(), true);
+        assertEquals(exp, out2);
+    }
 }

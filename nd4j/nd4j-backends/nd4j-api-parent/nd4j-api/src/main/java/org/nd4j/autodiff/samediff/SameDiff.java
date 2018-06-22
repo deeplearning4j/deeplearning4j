@@ -7343,7 +7343,7 @@ public class SameDiff {
 
                         Nd4j.getExecutioner().exec(accumulation, axes);
 
-                        if (differentialFunction.outputVariables()[0].getArr() == null) {
+                        if (differentialFunction.outputVariable().getArr() == null) {
                             val var = differentialFunction.outputVariables()[0];
                             updateVariable(var.getVarName(), accumulation.z());
                             updateShapeForVarName(var.getVarName(), accumulation.z().shape());

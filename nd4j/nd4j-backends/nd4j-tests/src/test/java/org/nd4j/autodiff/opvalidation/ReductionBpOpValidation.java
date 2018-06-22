@@ -579,7 +579,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
                         .muliColumnVector(dLdOut_1.reshape(3,1));
 
                 dLdIn = Nd4j.createUninitialized(3, 4);
-                err = OpValidation.validate(new OpTestCase(new ProdBp(preReduceInput, dLdOut_1, dLdIn, keepDims, 1))
+                err = OpValidation.validate(new OpTestCase(new StandardDeviationBp(preReduceInput, dLdOut_1, dLdIn, biasCorrected, keepDims, 1))
                         .expectedOutput(0, dLdInExpected_1));
                 assertNull(err, err);
             }
@@ -768,7 +768,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
         for (boolean keepDims : new boolean[]{false, true}) {
 
-            long[] reducedShape_0 = (keepDims ? new long[]{3, 4} : new long[]{4});
+            long[] reducedShape_0 = (keepDims ? new long[]{1, 4} : new long[]{4});
             INDArray preReduceInput = Nd4j.linspace(1, 12, 12).reshape(3, 4);
             INDArray norm2_0 = preReduceInput.norm2(0);
             INDArray dLdOut_0 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_0);
@@ -776,14 +776,14 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
             INDArray dLdIn = Nd4j.createUninitialized(3, 4);
 
-            String err = OpValidation.validate(new OpTestCase(new MinBp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))
+            String err = OpValidation.validate(new OpTestCase(new Norm2Bp(preReduceInput, dLdOut_0, dLdIn, keepDims, 0))
                     .expectedOutput(0, dLdInExpected_0));
             assertNull(err);
 
 
             long[] reducedShape_1 = (keepDims ? new long[]{3, 1} : new long[]{3});
             INDArray norm2_1 = preReduceInput.norm2(1);
-            INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3, 4}, reducedShape_1);
+            INDArray dLdOut_1 = Nd4j.create(new double[]{1, 2, 3}, reducedShape_1);
             INDArray dLdInExpected_1 = preReduceInput.divColumnVector(norm2_1).mulColumnVector(dLdOut_1);
             dLdIn = Nd4j.createUninitialized(3, 4);
 
