@@ -1,7 +1,7 @@
 {
-  "excludes": {
-    "name" :"abstract"
-  },
+  "excludes": [
+    "abstract"
+  ],
   "pages":[
     {
       "page": "models/model-import.md",
@@ -40,10 +40,6 @@
     {
       "page": "layers/embeddings.md",
       "module": "layers/embeddings"
-    },
-    {
-      "page": "layers/normalization.md",
-      "module": "layers/normalization"
     },
     {
       "page": "layers/advanced-activations.md",

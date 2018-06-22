@@ -1,7 +1,8 @@
 {
-  "excludes": {
-    "name" :"abstract"
-  },
+  "excludes": [
+    "abstract"
+  ]
+  ,
   "pages": [
     {
       "page": "models/model-import.md",

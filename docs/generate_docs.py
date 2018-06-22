@@ -56,19 +56,24 @@ class DocumentationGenerator:
             name = re.findall(method_regex, signature)[0]
         else: # Constructor takes class name
             name = class_name
-        subblocks = ['<b>{}</b> \n{}'.format(name, self.to_code_snippet(signature))]
+        sub_blocks = ['<b>{}</b> \n{}'.format(name, self.to_code_snippet(signature))]
         if doc_string:
-            subblocks.append(doc_string + '\n')
-        return '\n\n'.join(subblocks)
+            sub_blocks.append(doc_string + '\n')
+        return '\n\n'.join(sub_blocks)
 
 
     def get_main_doc_string(self, class_string, class_name):
         doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n'  # match "/** ... */" at the top
         doc_string = re.search(doc_regex, class_string)
-        doc = self.process_main_docstring(doc_string.group())
+        try:
+            doc_match = doc_string.group();
+        except:
+            doc_match = ''
+        doc = self.process_main_docstring(doc_match)
         if not doc_string:
             print('Warning, no doc string found for class {}'.format(class_name))
-        return doc, class_string[doc_string.end():]
+        doc_index = 0 if not doc_match else doc_string.end()
+        return doc, class_string[doc_index:]
 
 
     def get_constructor_data(self, class_string, class_name):
@@ -99,6 +104,9 @@ class DocumentationGenerator:
             methods.append((signature, doc))
         return methods
 
+    def inspect_class_string(self, module, cls):
+        return self.read_file(self.source_code_path + module + '/' + cls)
+
 
     def read_page_data(self, data):
         classes = []
@@ -108,10 +116,11 @@ class DocumentationGenerator:
         cls = data.get('class', "")
         if cls:
             classes = cls
+
         page_data = []
-        for c in classes:
-            class_string = self.read_file(self.source_code_path + module + '/' + c)
-            class_name = c.strip('.' + self.language)
+        for cls in sorted(classes):
+            class_string = self.inspect_class_string(module, cls)
+            class_name = cls.replace('.' + self.language, '')
             doc_string, class_string = self.get_main_doc_string(class_string, class_name)
             constructors, class_string = self.get_constructor_data(class_string, class_name)
             methods = self.get_public_method_data(class_string)
@@ -190,29 +199,28 @@ if __name__ == '__main__':
         data = doc_generator.read_page_data(page_data)
         blocks = []
         for module_name, class_name, doc_string, constructors, methods in data:
-            subblocks = []
-            link = doc_generator.class_to_source_link(module_name, class_name)
-            subblocks.append('<span style="float:right;"> {} </span>'.format(link))
-            if module_name:
-                subblocks.append('## {}\n'.format(class_name))
+            class_string = doc_generator.inspect_class_string(module_name, class_name + '.' + doc_generator.language)
+            # skip class if it contains any exclude keywords
+            if not any(ex in class_string for ex in doc_generator.excludes):
+                sub_blocks = []
+                link = doc_generator.class_to_source_link(module_name, class_name)
+                sub_blocks.append('<span style="float:right;"> {} </span>'.format(link))
+                if module_name:
+                    sub_blocks.append('## {}\n'.format(class_name))
 
-            if doc_string:
-                subblocks.append(doc_string)
+                if doc_string:
+                    sub_blocks.append(doc_string)
 
-            if constructors:
-                subblocks.append('\n---')
-                subblocks.append('<b>Constructors</b>\n')
-                subblocks.append('\n---\n'.join(
-                    [doc_generator.render(cs, cd, class_name, False) for (cs, cd) in constructors])
-                )
+                if constructors:
+                    sub_blocks.append('\n---\n<b>Constructors</b>\n\n---\n'.join(
+                        [doc_generator.render(cs, cd, class_name, False) for (cs, cd) in constructors])
+                    )
 
-            if methods:
-                subblocks.append('\n---')
-                subblocks.append('<b>Methods</b>\n')
-                subblocks.append('\n---\n'.join(
-                    [doc_generator.render(ms, md, class_name, True) for (ms, md) in methods])
-                )
-            blocks.append('\n'.join(subblocks))
+                if methods:
+                    sub_blocks.append('\n---\n<b>Methods</b>\n\n---\n'.join(
+                        [doc_generator.render(ms, md, class_name, True) for (ms, md) in methods])
+                    )
+                blocks.append('\n'.join(sub_blocks))
 
         doc_generator.write_content(blocks, page_data)
 
