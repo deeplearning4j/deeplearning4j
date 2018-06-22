@@ -158,7 +158,7 @@ TEST_F(SingleDimTests, Test_Reshape_1) {
     NDArray<float> exp('c', {3}, {1, 2, 3});
 
     nd4j::ops::reshape<float> op;
-    auto result = op.execute({&x}, {}, {99, 3});
+    auto result = op.execute({&x}, {}, {-99, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -174,7 +174,7 @@ TEST_F(SingleDimTests, Test_Reshape_2) {
     NDArray<float> exp('c', {1, 3}, {1, 2, 3});
 
     nd4j::ops::reshape<float> op;
-    auto result = op.execute({&x}, {}, {99, 1, 3});
+    auto result = op.execute({&x}, {}, {-99, 1, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);

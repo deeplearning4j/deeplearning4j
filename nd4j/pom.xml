@@ -76,6 +76,7 @@
         <javacpp.platform.compiler/> <!-- -Dplatform.compiler=/path/to/arm-linux-androideabi-g++ -->
         <javacpp.platform.sysroot/> <!-- -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
         <javacpp.platform.extension/>
+        <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
     </properties>
 
     <dependencyManagement>

@@ -6644,6 +6644,30 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(tsRand, rand);
     }
 
+    @Test
+    public void testScalarView_1() {
+        val array = Nd4j.linspace(1, 5, 5);
+        val exp = Nd4j.create(new double[]{1.0, 2.0, 5.0, 4.0, 5.0});
+        val scalar = array.getScalar(2);
+
+        assertEquals(3.0, scalar.getDouble(0), 1e-5);
+        scalar.addi(2.0);
+
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testScalarView_2() {
+        val array = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        val exp = Nd4j.create(new double[]{1.0, 2.0, 5.0, 4.0}).reshape(2, 2);
+        val scalar = array.getScalar(1, 0);
+
+        assertEquals(3.0, scalar.getDouble(0), 1e-5);
+        scalar.addi(2.0);
+
+        assertEquals(exp, array);
+    }
+
 
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {

@@ -1503,7 +1503,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         for (int i = 0; i < indexes.length; i++) {
             if (indexes[i] < 0)
-                indexes[i] += rank();
+                indexes[i] += this.size(i);
         }
 
         if (indexes.length == 1) {
@@ -1529,7 +1529,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         for (int i = 0; i < indexes.length; i++) {
             if (indexes[i] < 0)
-                indexes[i] += rank();
+                indexes[i] += size(i);
         }
 
         if (indexes.length == 1) {
@@ -2743,7 +2743,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray getScalar(long i) {
-        return Nd4j.scalar(getDouble(i));
+        if (i > this.length())
+            throw new ND4JIllegalStateException("Index can't be greater then array length");
+
+        if (i < 0)
+            i += this.length();
+
+        long idx = this.isVector() ? i : Shape.getOffset(this.javaShapeInformation, Shape.ind2subC(this.shape(), i));
+        val buffer = Nd4j.createBuffer(this.data(), idx, 1);
+        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],0,1,'c');
+        return Nd4j.createArrayFromShapeBuffer(buffer, shape);
     }
 
     /**
@@ -4297,13 +4306,34 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return the number at the specified indices
      */
     @Override
-    public INDArray getScalar(int... indexes) {
-        return Nd4j.scalar(getDouble(indexes));
+    public INDArray getScalar(int[] indexes) {
+        if (indexes.length > rank())
+            throw new ND4JIllegalStateException("Indexes can't be longer then array rank");
+
+        for (int i = 0; i < indexes.length; i++) {
+            if (indexes[i] < 0)
+                indexes[i] += this.size(i);
+        }
+        long idx = Shape.getOffset(this.javaShapeInformation, indexes);
+        val buffer = Nd4j.createBuffer(this.data(), idx, 1);
+        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],0,1,'c');
+        return Nd4j.createArrayFromShapeBuffer(buffer, shape);
     }
 
     @Override
     public INDArray getScalar(long... indexes) {
-        return Nd4j.trueScalar(getDouble(indexes));
+        if (indexes.length > rank())
+            throw new ND4JIllegalStateException("Indexes can't be longer then array rank");
+
+        for (int i = 0; i < indexes.length; i++) {
+            if (indexes[i] < 0)
+                indexes[i] += this.size(i);
+        }
+
+        long idx = Shape.getOffset(this.javaShapeInformation, indexes);
+        val buffer = Nd4j.createBuffer(this.data(), idx, 1);
+        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],0,1,'c');
+        return Nd4j.createArrayFromShapeBuffer(buffer, shape);
     }
 
     @Override

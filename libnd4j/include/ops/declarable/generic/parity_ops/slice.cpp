@@ -37,13 +37,19 @@ namespace nd4j {
 
             IndicesList indices;
             for (int e = 0; e < x_rank; e++) {
-                int stop = end[e];
+                int size = end[e];
                 int start = begin[e];
 
+                REQUIRE_TRUE(start >= 0, 0, "Slice: start index should not be negative");
 
-                REQUIRE_TRUE(stop > 0, 0, "Slice: interval for dimension %i is less then 1", e);
+                REQUIRE_TRUE(start < input->sizeAt(e), 0, "Index %i is invalid for dimension %i with size %i.", start, e, input->shapeInfo()[e + 1]);
+                if (size == -1){
+                    size = input->sizeAt(e) - start;
+                }
+                REQUIRE_TRUE(size > 0, 0, "Slice: interval for dimension %i is less then 1");
+                REQUIRE_TRUE(start + size <= input->sizeAt(e), 0, "Slice: interval [%i, %i] is out of bounds for dimension %i with size %i", start, start + size, e, input->sizeAt(e));
 
-                indices.push_back(NDIndex::interval(start, start+stop, 1));
+                indices.push_back(NDIndex::interval(start, start + size, 1));
             }
             auto sub = input->subarray(indices);
             output->assign(sub);

@@ -16,6 +16,7 @@ namespace nd4j {
             NDArray<T>* variances = OUTPUT_VARIABLE(1);
 
             std::vector<int> axis = *block.getIArguments();
+            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
 
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
@@ -34,7 +35,7 @@ namespace nd4j {
 
             std::vector<int>& dims = axis;
             input->template varianceAlongDimension<simdOps::SummaryStatsVariance<T>>(variances, false, axis);
-            input->template reduceAlongDimension<simdOps::Mean<T>>(means, axis);
+            input->template reduceAlongDimension<simdOps::Mean<T>>(means, axis, keepDims);
 
             return ND4J_STATUS_OK;
         }
@@ -57,9 +58,10 @@ namespace nd4j {
 
             }
             //std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
-
-            auto meanShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
-            auto varianceShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
+            const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
+    
+            auto meanShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
+            auto varianceShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
             return SHAPELIST(meanShape, varianceShape); 
         }
     }

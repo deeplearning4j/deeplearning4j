@@ -1854,3 +1854,139 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test5) {
 
     delete results;
 }
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, deconv2d_test1) {
+
+    int bS=2, iH=4,iW=4,  iC=5,oC=10,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=3,oW=3;
+    int paddingMode = 0;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, oH, oW, oC});
+    NDArray<double> weights ('c', {kH, kW, iC, oC});    
+    NDArray<double> exp('c', {bS, iH, iW, iC}, {  2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 27.75,  32.75,  37.75,  42.75,  47.75,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  52.75,  57.75,  62.75,  67.75,  72.75,130.5 , 140.5 , 150.5 , 160.5 , 170.5 ,130.5 , 140.5 , 150.5 , 160.5 , 170.5 , 77.75,  82.75,  87.75,  92.75,  97.75,
+                                                   2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 27.75,  32.75,  37.75,  42.75,  47.75,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  52.75,  57.75,  62.75,  67.75,  72.75,130.5 , 140.5 , 150.5 , 160.5 , 170.5 ,130.5 , 140.5 , 150.5 , 160.5 , 170.5 , 77.75,  82.75,  87.75,  92.75,  97.75});
+    input = 0.5;
+    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::deconv2d<double> op;
+    ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* output = results->at(0);            
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, deconv2d_test2) {
+
+    int bS=2, iH=4,iW=4,  iC=5,oC=10,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=4,oW=4;
+    int paddingMode = 1;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, oH, oW, oC});
+    NDArray<double> weights ('c', {kH, kW, iC, oC});
+    NDArray<double> exp('c', {bS, iH, iW, iC}, {2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                 2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  });    
+    input = 0.5;
+    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::deconv2d<double> op;
+    ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* output = results->at(0);            
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, deconv2d_tf_test1) {
+
+    int bS=2, iH=4,iW=4,  iC=5,oC=10,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=3,oW=3;
+    int paddingMode = 0;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, oH, oW, oC});
+    NDArray<double> weights ('c', {kH, kW, iC, oC});
+    NDArray<double> outShape('c', {4}, {static_cast<double>(bS), static_cast<double>(iH), static_cast<double>(iW), static_cast<double>(iC)});
+    NDArray<double> exp('c', {bS, iH, iW, iC}, {  2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 27.75,  32.75,  37.75,  42.75,  47.75,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  52.75,  57.75,  62.75,  67.75,  72.75,130.5 , 140.5 , 150.5 , 160.5 , 170.5 ,130.5 , 140.5 , 150.5 , 160.5 , 170.5 , 77.75,  82.75,  87.75,  92.75,  97.75,
+                                                   2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 27.75,  32.75,  37.75,  42.75,  47.75,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  52.75,  57.75,  62.75,  67.75,  72.75,130.5 , 140.5 , 150.5 , 160.5 , 170.5 ,130.5 , 140.5 , 150.5 , 160.5 , 170.5 , 77.75,  82.75,  87.75,  92.75,  97.75});
+    input = 0.5;
+    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::deconv2d_tf<double> op;
+    ResultSet<double>* results = op.execute({&outShape, &weights, &input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* output = results->at(0);            
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, deconv2d_tf_test2) {
+
+    int bS=2, iH=4,iW=4,  iC=5,oC=10,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=4,oW=4;
+    int paddingMode = 1;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, oH, oW, oC});
+    NDArray<double> weights ('c', {kH, kW, iC, oC});
+    NDArray<double> outShape('c', {4}, {static_cast<double>(bS), static_cast<double>(iH), static_cast<double>(iW), static_cast<double>(iC)});
+    NDArray<double> exp('c', {bS, iH, iW, iC}, {2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                 2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  });    
+    input = 0.5;
+    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::deconv2d_tf<double> op;
+    ResultSet<double>* results = op.execute({&outShape, &weights, &input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* output = results->at(0);            
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete results;
+}
+
+  
+
+  

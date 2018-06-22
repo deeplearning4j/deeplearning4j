@@ -14,9 +14,9 @@ import java.util.Map;
 @NoArgsConstructor
 public class Conv2DConfig extends BaseConvolutionConfig {
     @Builder.Default
-    private long kH = 1;
+    private long kH = -1L;
     @Builder.Default
-    private long kW = 1;
+    private long kW = -1L;
     @Builder.Default
     private long sH = 1;
     @Builder.Default
