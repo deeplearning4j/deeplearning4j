@@ -74,6 +74,9 @@ public class KerasPermute extends KerasLayer {
 
     }
 
+    /**
+     * KerasPermute is an InputPreProcessor
+     */
     @Override
     public boolean isInputPreProcessor() {
         return true;

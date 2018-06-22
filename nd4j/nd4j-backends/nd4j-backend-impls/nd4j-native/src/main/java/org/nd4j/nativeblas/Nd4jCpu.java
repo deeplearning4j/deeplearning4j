@@ -30443,6 +30443,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * For full axis the result is both mean and variance of all members in array.
          * Otherwise there are two NDArrays with means and variances for 
          * Axes can be put as the second NDArray or as int vector.
+         *
+         * the optional flag "keep_dims" can be set as T param
          */
 //         #if NOT_EXCLUDED(OP_moments)
         @Name("nd4j::ops::moments<float>") public static class float_moments extends FloatDeclarableCustomOp {
