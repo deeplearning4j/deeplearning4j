@@ -6785,6 +6785,7 @@ public class SameDiff {
 
         Map<SDVariable, DifferentialFunction> opMap = new HashMap<>();
         val funcs = new ArrayList<DifferentialFunction>(functionInstancesById.values());
+        List<String> funcNames = new ArrayList<>(functionInstancesById.keySet());       //LinkedHashMap, so order for both these vars should be identical
         boolean onBackward = false;
 
         // dequeue for Frames (nested, probably)
@@ -7331,6 +7332,28 @@ public class SameDiff {
                     if (inputs.length == 2)
                         op.setY(inputs[1].getArr());
                 }
+
+                //Check output shape; allocate a new Z if required
+                //For example, if minibatch size has changed since last op execution
+                List<long[]> outputShape = ((BaseOp)op).calculateOutputShape();
+                Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
+                INDArray z = op.z();
+                Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
+                if(!Arrays.equals(outputShape.get(0), z.shape())){
+                    if(log.isTraceEnabled()){
+                        log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
+                                op.getClass().getSimpleName(), Arrays.toString(outputShape.get(0)), Arrays.toString(z.shape()));
+                    }
+                    //Get output variable:
+                    String fnName = funcNames.get(i);
+                    String outputName = outgoingArgsReverse.get(fnName)[0];
+                    SDVariable outputVar = getVariable(outputName);
+
+                    putOrUpdateShapeForVarName(outputName, outputShape.get(0), true);
+                    INDArray newZ = outputVar.storeAndAllocateNewArray();
+                    op.setZ(newZ);
+                }
+
 
                 if (differentialFunction.getDimensions() == null)
                     Nd4j.getExecutioner().exec(op);

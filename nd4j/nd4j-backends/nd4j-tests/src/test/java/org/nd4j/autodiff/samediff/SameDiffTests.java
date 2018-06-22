@@ -2978,7 +2978,7 @@ public class SameDiffTests {
 
 
     @Test
-    public void testExecutionDifferentShapes(){
+    public void testExecutionDifferentShapesDynamicCustom(){
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
         SDVariable w = sd.var("w", Nd4j.linspace(1,20,20).reshape(4,5));
@@ -3000,7 +3000,7 @@ public class SameDiffTests {
     }
 
     @Test
-    public void testExecutionDifferentShapes2(){
+    public void testExecutionDifferentShapesTransform(){
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
 
@@ -3016,6 +3016,46 @@ public class SameDiffTests {
         assertArrayEquals(new long[]{5,4}, out2.shape());
 
         exp = Transforms.tanh(in.getArr(), true);
+        assertEquals(exp, out2);
+    }
+
+    @Test
+    public void testExecutionDifferentShapesAccumAlongDim(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+
+        SDVariable sum = in.sum(1);
+        INDArray exp = in.getArr().sum(1).reshape(3);
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(exp, out);
+
+        //Now, replace with minibatch 5:
+        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        INDArray out2 = sd.execAndEndResult();
+        assertArrayEquals(new long[]{5}, out2.shape());
+
+        exp = in.getArr().sum(1).reshape(5);
+        assertEquals(exp, out2);
+    }
+
+    @Test
+    public void testExecutionDifferentShapesIndexAccumAlongDim(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+
+        SDVariable sum = in.argmax(1);
+        INDArray exp = in.getArr().argMax(1).reshape(3);
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(exp, out);
+
+        //Now, replace with minibatch 5:
+        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        INDArray out2 = sd.execAndEndResult();
+        assertArrayEquals(new long[]{5}, out2.shape());
+
+        exp = in.getArr().argMax(1).reshape(5);
         assertEquals(exp, out2);
     }
 }
