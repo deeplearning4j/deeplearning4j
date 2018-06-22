@@ -18,6 +18,13 @@ class DocumentationGenerator:
         self.github_root = ('https://github.com/deeplearning4j/deeplearning4j/tree/master/'
                             + self.source_code_path[3:])
 
+        with open(self.project_name + 'pages.json', 'r') as f:
+            json_pages = f.read()
+        site = json.loads(json_pages)
+        self.pages = site.get('pages')
+        self.excludes = site.get('excludes')
+
+
 
     def class_to_docs_link(self, module_name, class_name):
         return self.docs_root + module_name.replace('.', '/') + '#' + class_name
@@ -43,9 +50,13 @@ class DocumentationGenerator:
         return '\n'.join(doc)
 
 
-    def render(self, signature, doc_string):
-        name = signature
-        subblocks = ['<b<{}</b> \n{}'.format(name, self.to_code_snippet(signature))]
+    def render(self, signature, doc_string, class_name, is_method):
+        if is_method:  # Method name from signature
+            method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
+            name = re.findall(method_regex, signature)[0]
+        else: # Constructor takes class name
+            name = class_name
+        subblocks = ['<b>{}</b> \n{}'.format(name, self.to_code_snippet(signature))]
         if doc_string:
             subblocks.append(doc_string + '\n')
         return '\n\n'.join(subblocks)
@@ -80,7 +91,7 @@ class DocumentationGenerator:
         methods = []
         for method in method_strings:
             doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?' + \
-                        '(public [static\s]?[a-zA-Z0-9]*.[\S\s]*?){'
+                        '(public [static\s]?[a-zA-Z0-9]* ' + method + '[\S\s]*?){'
             result = re.search(doc_regex, class_string)
             doc_string, signature = result.groups()
             doc = self.process_docstring(doc_string)
@@ -114,15 +125,17 @@ class DocumentationGenerator:
         if os.path.exists(self.project_name + self.target_dir):
             shutil.rmtree(self.project_name + self.target_dir)
 
-        for subdir, dirs, fnames in os.walk(self.project_name + self.template_dir):
-            for fname in fnames:
+        for subdir, dirs, file_names in os.walk(self.project_name + self.template_dir):
+            for file_name in file_names:
                 new_subdir = subdir.replace(self.project_name + self.template_dir, self.project_name + self.target_dir)
                 if not os.path.exists(new_subdir):
                     os.makedirs(new_subdir)
-                if fname[-3:] == '.md':
-                    fpath = os.path.join(subdir, fname)
-                    new_fpath = fpath.replace(self.project_name + self.template_dir, self.project_name + self.target_dir)
-                    shutil.copy(fpath, new_fpath)
+                if file_name[-3:] == '.md':
+                    file_path = os.path.join(subdir, file_name)
+                    new_file_path = file_path.replace(
+                        self.project_name + self.template_dir, self.project_name + self.target_dir
+                    )
+                    shutil.copy(file_path, new_file_path)
 
 
 
@@ -173,11 +186,7 @@ if __name__ == '__main__':
     doc_generator.clean_target()
     doc_generator.create_index_page()
 
-    with open(doc_generator.project_name + 'pages.json', 'r') as f:
-        json_pages = f.read()
-    pages = json.loads(json_pages)
-
-    for page_data in pages:
+    for page_data in doc_generator.pages:
         data = doc_generator.read_page_data(page_data)
         blocks = []
         for module_name, class_name, doc_string, constructors, methods in data:
@@ -193,12 +202,16 @@ if __name__ == '__main__':
             if constructors:
                 subblocks.append('\n---')
                 subblocks.append('<b>Constructors</b>\n')
-                subblocks.append('\n---\n'.join([doc_generator.render(cs, cd) for (cs, cd) in constructors]))
+                subblocks.append('\n---\n'.join(
+                    [doc_generator.render(cs, cd, class_name, False) for (cs, cd) in constructors])
+                )
 
             if methods:
                 subblocks.append('\n---')
                 subblocks.append('<b>Methods</b>\n')
-                subblocks.append('\n---\n'.join([doc_generator.render(ms, md) for (ms, md) in methods]))
+                subblocks.append('\n---\n'.join(
+                    [doc_generator.render(ms, md, class_name, True) for (ms, md) in methods])
+                )
             blocks.append('\n'.join(subblocks))
 
         doc_generator.write_content(blocks, page_data)
