@@ -555,8 +555,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         inputArguments.clear();;
 
-        for (val input: inputs)
-            inputArguments.add(sameDiff.getArrForVarName(input));
+        for (val input: inputs) {
+            INDArray array = sameDiff.getArrForVarName(input);
+            inputArguments.add(array);
+        }
     }
 
     @Override

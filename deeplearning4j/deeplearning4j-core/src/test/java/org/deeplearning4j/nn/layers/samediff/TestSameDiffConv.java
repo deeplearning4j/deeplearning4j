@@ -82,7 +82,7 @@ public class TestSameDiffConv {
         //With n=1, m=3 this is 1 out of every 3 tests (on average)
         Random r = new Random(12345);
         int n = 1;
-        int m = 5;
+        int m = 30;     //1 ot of every 30... 3888 possible combinations here
         for (int minibatch : new int[]{5, 1}) {
 
             Activation[] afns = new Activation[]{

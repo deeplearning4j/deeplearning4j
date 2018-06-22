@@ -736,6 +736,16 @@ public class SameDiff {
         }
         // invalidate exec cache
         exec_cache = null;
+
+        //Also update nested SameDiff instances (such as gradient function)
+        if(sameDiffFunctionInstances != null && sameDiffFunctionInstances.size() > 0){
+            for(Map.Entry<String,SameDiff> e : sameDiffFunctionInstances.entrySet()){
+                SameDiff sd = e.getValue();
+                if(sd.variableNameToArr != null && sd.variableNameToArr.containsKey(variable.getVarName())){
+                    sd.associateArrayWithVariable(arr, variable);
+                }
+            }
+        }
     }
 
 

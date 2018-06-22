@@ -56,8 +56,6 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         //TODO - properly support noise weight...
     }
 
-    int iterCount = 0;
-
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
