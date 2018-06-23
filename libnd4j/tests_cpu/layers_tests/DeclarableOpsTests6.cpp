@@ -52,6 +52,48 @@ TEST_F(DeclarableOpsTests6, Test_Dilation2D_Again_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_1) {
+    NDArray<float> matrix('c', {5, 2});
+    NDArray<float> b(0.0f);
+    NDArray<float> e(1.0f);
+    NDArray<float> s(1.0f);
+
+    NDArray<float> exp('c', {2}, {1.0f, 2.0f});
+
+    NDArrayFactory<float>::linspace(1, matrix);
+
+    nd4j::ops::strided_slice<float> op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);    
+
+    ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_2) {
+    NDArray<float> matrix('c', {5, 2});
+    NDArray<float> b('c', {1}, {0.0f});
+    NDArray<float> e('c', {1}, {1.0f});
+    NDArray<float> s('c', {1}, {1.0f});
+
+    NDArray<float> exp('c', {2}, {1.0f, 2.0f});
+
+    NDArrayFactory<float>::linspace(1, matrix);
+
+    nd4j::ops::strided_slice<float> op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);    
+
+    ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
     NDArray<float> x('c', {1, 1}, {2.0f});
     NDArray<float> exp('c', {1, 1}, {4.0f});
