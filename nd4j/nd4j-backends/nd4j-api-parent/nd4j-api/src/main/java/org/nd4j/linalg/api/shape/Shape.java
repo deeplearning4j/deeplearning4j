@@ -2974,6 +2974,10 @@ public class Shape {
         return ret;
     }
 
+    public static long extras(long[] buffer) {
+        return options(buffer);
+    }
+
     /**
      * Get the offset for the buffer
      *
@@ -3032,6 +3036,18 @@ public class Shape {
     public static int elementWiseStride(IntBuffer buffer) {
         int length2 = shapeInfoLength(buffer.get(0));
         return buffer.get(length2 - 2);
+    }
+
+    /**
+     * Get the element wise stride for the
+     * shape info buffer
+     * @param buffer the buffer to get the element
+     *               wise stride from
+     * @return the element wise stride for the buffer
+     */
+    public static long elementWiseStride(long[] buffer) {
+        int length2 = shapeInfoLength(buffer);
+        return buffer[length2 - 2];
     }
 
 
