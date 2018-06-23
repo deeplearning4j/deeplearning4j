@@ -25,6 +25,7 @@ import lombok.val;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -6668,6 +6669,31 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, array);
     }
 
+    @Test
+    public void testSomething_1() {
+        val arrayX = Nd4j.create(128, 128, 'f');
+        val arrayY = Nd4j.create(128, 128, 'f');
+        val arrayZ = Nd4j.create(128, 128, 'f');
+
+        int iterations = 10000;
+        // warmup
+        for (int e = 0; e < 1000; e++)
+            arrayX.addi(arrayY);
+
+        for (int e = 0; e < iterations; e++) {
+            val c = new GemmParams(arrayX, arrayY, arrayZ);
+        }
+
+        val tS = System.nanoTime();
+        for (int e = 0; e < iterations; e++) {
+            //val c = new GemmParams(arrayX, arrayY, arrayZ);
+            arrayX.mmuli(arrayY, arrayZ);
+        }
+
+        val tE = System.nanoTime();
+
+        log.info("Average time: {}", ((tE - tS) / iterations));
+    }
 
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
