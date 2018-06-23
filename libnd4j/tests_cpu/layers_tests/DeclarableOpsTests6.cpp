@@ -1920,7 +1920,6 @@ TEST_F(DeclarableOpsTests6, deconv2d_test2) {
     delete results;
 }
 
-
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, deconv2d_tf_test1) {
 

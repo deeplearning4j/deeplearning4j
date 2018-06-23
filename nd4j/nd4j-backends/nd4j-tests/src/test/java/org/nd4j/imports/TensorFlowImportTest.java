@@ -19,6 +19,7 @@ import org.nd4j.graph.FlatGraph;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
@@ -33,6 +34,7 @@ import org.tensorflow.framework.GraphDef;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +44,7 @@ import static org.junit.Assert.*;
 
 
 @Slf4j
-@Ignore
+
 @RunWith(Parameterized.class)
 public class TensorFlowImportTest extends BaseNd4jTest {
     private static ExecutorConfiguration configuration = ExecutorConfiguration.builder()
@@ -1019,13 +1021,14 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         tg.associateArrayWithVariable(input_matrix, "input_matrix");
 
 
+        log.info("Graph: {}", tg.asFlatPrint());
+
         val array = tg.execAndEndResult();
 
         val exp = Nd4j.create(new float[] {3,6,  9,12,  15,18,  21,24,  27,30}, new int[]{5, 2});
 
         assertEquals(exp, array);
     }
-
 
     @Test(expected = ND4JIllegalStateException.class)
     public void testNonFrozenGraph1() throws Exception {
