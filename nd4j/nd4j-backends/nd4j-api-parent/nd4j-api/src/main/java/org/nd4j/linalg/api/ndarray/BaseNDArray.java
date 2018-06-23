@@ -3775,15 +3775,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 Nd4j.getBlasWrapper().level3().gemm(BlasBufferUtil.getCharForTranspose(result),
                         BlasBufferUtil.getCharForTranspose(this), BlasBufferUtil.getCharForTranspose(temp), 1.0,
                         this, other, 0.0, temp);
-                Nd4j.getBlasWrapper().level3().gemm(
-                        BlasBufferUtil.getCharForTranspose(result),
-                        BlasBufferUtil.getCharForTranspose(this),
-                        BlasBufferUtil.getCharForTranspose(temp),
-                        1.0,
-                        this,
-                        other,
-                        0.0,
-                        temp);
             }
 
             result.assign(temp);
