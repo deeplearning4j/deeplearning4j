@@ -16,11 +16,11 @@ import java.util.List;
 public class AnalyzeLocal {
     private static final int DEFAULT_MAX_HISTOGRAM_BUCKETS = 20;
 
-    DataAnalysis analyze(Schema schema, RecordReader rr) {
+    public static DataAnalysis analyze(Schema schema, RecordReader rr) {
         return analyze(schema, rr, DEFAULT_MAX_HISTOGRAM_BUCKETS);
     }
 
-    DataAnalysis analyze(Schema schema, RecordReader rr, int maxHistogramBuckets){
+    public static DataAnalysis analyze(Schema schema, RecordReader rr, int maxHistogramBuckets){
         AnalysisAddFunction addFn = new AnalysisAddFunction(schema);
         List<AnalysisCounter> counters = null;
         while(rr.hasNext()){

@@ -21,7 +21,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.writable.Writable;
-import org.datavec.local.transforms.analysis.statcounter.StatCounter;
 
 /**
  * A counter function for doing analysis on Long columns, on Spark

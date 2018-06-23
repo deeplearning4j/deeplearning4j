@@ -6,7 +6,7 @@ public class StatCounter {
     private double runningMean;
     private double runningM2;   // Running variance numerator (sum of (x - mean)^2)
     private double max = -Double.MAX_VALUE;
-    private double min = Double.MIN_VALUE;
+    private double min = Double.MAX_VALUE;
 
 
     public double getMean(){
@@ -45,6 +45,7 @@ public class StatCounter {
         double d = x - runningMean;
         count++;
         runningMean += d / count;
+        runningM2 += d * (x - runningMean);
         max = Math.max(max, x);
         min = Math.min(min, x);
     }
