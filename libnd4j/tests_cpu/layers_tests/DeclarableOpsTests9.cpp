@@ -8,6 +8,7 @@
 #include <NDArray.h>
 #include <ops/ops.h>
 
+
 using namespace nd4j;
 
 
@@ -50,80 +51,93 @@ TEST_F(DeclarableOpsTests9, reduceStDevBP_test3) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, random_exponential_test3) {
+TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     
+    const int N = 50000;
     const double lambda = 2.;
     const double mean   = 1. / lambda; 
     const double std    = mean;
-    NDArray<double> shapeArr('c', {1}, {100000});
-
-    // NDArray<double> x('c', {100000});
-    // const double min = 0.;
-    // const double max = 1.;
-    // const int len = static_cast<int>(shapeArr(0));
-    // for(int i=0; i<len; ++i) {
-    //     double f = (double)rand() / RAND_MAX;
-    //     double elem = min + f * (max - min);
-    //     // x(i) = 1. - nd4j::math::nd4j_pow<double>((double) M_E, -(lambda * elem));
-    //     x(i) = -nd4j::math::nd4j_log<double>(1. - elem) / lambda;
-    // }
-
-    // double actualMean = 0.;
-    // for(int i=0; i<len; ++i)
-    //     actualMean += x(i);
-    // actualMean /= len;
-
-    // double actualStd = 0.;
-    // for(int i=0; i<len; ++i)
-    //     actualStd += (x(i) - actualMean)*(x(i) - actualMean);
-    // actualStd = nd4j::math::nd4j_sqrt<double>(actualStd/(len-1));
-
-    nd4j::ops::random_exponential<double> op;
-    ResultSet<double>* results = op.execute({&shapeArr}, {lambda}, {});
-    ASSERT_EQ(Status::OK(), results->status());
-
-    NDArray<double>* output = results->at(0);
-
-    const double actualMean = output->meanNumber();
-    const double actualStd  = nd4j::math::nd4j_sqrt<double>(output->template varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true));
-    // const double actualMean = x.meanNumber();
-    // const double actualStd  = nd4j::math::nd4j_sqrt<double>(x.template varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true));
+    NDArray<double> shapeArr('c', {1}, {(double)N});
+    NDArray<double> x('c', {N});
+    double extraParams[] = {lambda};
 
 
-    printf("%f\n", actualMean);
-    printf("%f\n", actualStd);
-
-    ASSERT_EQ(mean, actualMean);
-    ASSERT_EQ(std,  actualStd);
-    ASSERT_EQ(1,1);
+    Nd4jLong *buffer = new Nd4jLong[N];
+    NativeOps nativeOps;
+    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);    
+    if (rng == nullptr)
+        throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
     
-    delete results;
+    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistributionInv<double>>(rng, x.getBuffer(), x.getShapeInfo(), extraParams);
+    
+    const double min = 0.;
+    const double max = 1.;
+    const int len = static_cast<int>(shapeArr(0));
+    for(int i=0; i<len; ++i) {
+        double f = (double)rand() / RAND_MAX;
+        double elem = min + f * (max - min);
+        // x(i) = 1. - nd4j::math::nd4j_pow<double>((double) M_E, -(lambda * elem));
+        x(i) = -nd4j::math::nd4j_log<double>(1. - elem) / lambda;
+    }
+
+    double trueMean = 0.;
+    for(int i=0; i<len; ++i)
+        trueMean += x(i);
+    trueMean /= len;
+
+    double trueStd = 0.;
+    for(int i=0; i<len; ++i)
+        trueStd += (x(i) - trueMean)*(x(i) - trueMean);
+    trueStd = nd4j::math::nd4j_sqrt<double>(trueStd/(len-1));
+
+    const double actualMean = x.meanNumber();
+    const double actualStd  = nd4j::math::nd4j_sqrt<double>(x.template varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true));
+
+    printf("%f : %f\n", trueMean, actualMean);
+    printf("%f : %f\n", trueStd, actualStd);
+
+    ASSERT_NEAR(mean, actualMean, 0.01);
+    ASSERT_NEAR(std,  trueMean, 0.01);    
+
+    nativeOps.destroyRandom((Nd4jPointer) rng);
+    delete[] buffer;
+        
 }
 
-//////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, random_exponential_test4) {
+// //////////////////////////////////////////////////////////////////////////////
+// TEST_F(DeclarableOpsTests9, random_exponential_test4) {
     
-    const double lambda = 2.;
-    const double mean   = 1. / lambda; 
-    const double std    = mean;
-    NDArray<double> shapeArr('c', {1}, {100000});
-    NDArray<double> x('c', {100000});
-    NDArrayFactory<double>::linspace(-100., x);
+//     const double lambda = 2.;
+//     const double mean   = 1. / lambda; 
+//     const double std    = mean;
+//     NDArray<double> shapeArr('c', {1}, {100000});
+//     NDArray<double> x('c', {100000});
+//     NDArrayFactory<double>::linspace(-100., x);
 
-    nd4j::ops::random_exponential<double> op;
-    ResultSet<double>* results = op.execute({&shapeArr, &x}, {lambda}, {});
-    ASSERT_EQ(Status::OK(), results->status());
+    // nd4j::ops::random_exponential<double> op;
+    // ResultSet<double>* results = op.execute({&shapeArr}, {lambda}, {});
+    // ASSERT_EQ(Status::OK(), results->status());
 
-    NDArray<double>* output = results->at(0);
+    // NDArray<double>* output = results->at(0);
 
-    const double actualMean = output->meanNumber();
-    const double actualStd  = nd4j::math::nd4j_sqrt<double>(output->template varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true));
+    // const double actualMean = output->meanNumber();
+    // const double actualStd  = nd4j::math::nd4j_sqrt<double>(output->template varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true));
 
-    printf("%f\n", actualMean);
-    printf("%f\n", actualStd);
+//     nd4j::ops::random_exponential<double> op;
+//     ResultSet<double>* results = op.execute({&shapeArr, &x}, {lambda}, {});
+//     ASSERT_EQ(Status::OK(), results->status());
 
-    ASSERT_EQ(mean, actualMean);
-    ASSERT_EQ(std,  actualStd);
+//     NDArray<double>* output = results->at(0);
+
+//     const double actualMean = output->meanNumber();
+//     const double actualStd  = nd4j::math::nd4j_sqrt<double>(output->template varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true));
+
+//     printf("%f\n", actualMean);
+//     printf("%f\n", actualStd);
+
+//     ASSERT_EQ(mean, actualMean);
+//     ASSERT_EQ(std,  actualStd);
     
-    delete results;
-}
+//     delete results;
+// }
+

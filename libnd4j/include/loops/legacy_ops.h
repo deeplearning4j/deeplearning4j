@@ -246,7 +246,8 @@
         (10, randomOps::LogNormalDistribution) ,\
         (11, randomOps::TruncatedNormalDistribution) ,\
         (12, randomOps::AlphaDropOut),\
-        (13, randomOps::ExponentialDistribution)
+        (13, randomOps::ExponentialDistribution),\
+        (14, randomOps::ExponentialDistributionInv)
 
 
 

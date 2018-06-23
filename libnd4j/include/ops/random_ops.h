@@ -102,15 +102,13 @@ namespace randomOps {
 
         random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             T lambda = extraParams[0];
-            T x = helper->relativeT(idx, nd4j::DataTypeUtils::template min<T>(), (T)1.f);
-            // return (T) 1.f - nd4j::math::nd4j_pow<T>((T) M_E, -(lambda * x));
-            return -nd4j::math::nd4j_log<double>((T)1.f - x) / lambda; // inverse
+            T x = helper->relativeT(idx, -nd4j::DataTypeUtils::template max<T>(), nd4j::DataTypeUtils::template max<T>());
+            return x <= (T)0.f ? (T)0.f : (T)1.f - nd4j::math::nd4j_pow<T>((T) M_E, -(lambda * x));
         }
 
         random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             T lambda = extraParams[0];
-            // return valueX <= (T) 0.f ? (T) 0.f : (T) 1.f - nd4j::math::nd4j_pow<T>((T) M_E, -(lambda * valueX));
-            return valueX <= (T) 0.f ? (T) 0.f : -nd4j::math::nd4j_log<double>((T)1.f - valueX) / lambda;  // inverse
+            return valueX <= (T)0.f ? (T)0.f : (T)1.f - nd4j::math::nd4j_pow<T>((T) M_E, -(lambda * valueX));
         }
     };
 
@@ -197,6 +195,27 @@ namespace randomOps {
             return from * ((T) 1.0f - step) + step * to;
         }
     };
+
+    template <typename T>
+    class ExponentialDistributionInv {          // inverse exponential distribution
+    public:
+        no_exec_special
+        no_exec_special_cuda
+
+        method_XY
+
+        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+            T lambda = extraParams[0];
+            T x = helper->relativeT(idx, nd4j::DataTypeUtils::template min<T>(), (T)1.f);            
+            return -nd4j::math::nd4j_log<double>((T)1.f - x) / lambda;      
+        }
+
+        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+            T lambda = extraParams[0];            
+            return -nd4j::math::nd4j_log<double>((T)1.f - valueX) / lambda;  // valueX must be within (0, 1]
+        }
+    };
+
 }
 
 #endif //LIBND4J_RANDOM_OPS_H
