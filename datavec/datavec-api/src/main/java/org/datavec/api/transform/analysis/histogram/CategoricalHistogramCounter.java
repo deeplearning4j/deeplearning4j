@@ -14,7 +14,7 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.histogram;
+package org.datavec.api.transform.analysis.histogram;
 
 import org.datavec.api.writable.Writable;
 

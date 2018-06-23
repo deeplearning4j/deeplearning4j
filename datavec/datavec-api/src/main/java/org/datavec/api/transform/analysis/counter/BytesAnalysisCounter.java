@@ -14,12 +14,12 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.columns;
+package org.datavec.api.transform.analysis.counter;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.analysis.AnalysisCounter;
 
 /**
  * A counter function for doing analysis on BytesWritable columns, on Spark

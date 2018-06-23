@@ -14,19 +14,25 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis;
+package org.datavec.api.transform.analysis.histogram;
 
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
 
 /**
- * Created by Alex on 23/06/2016.
+ * HistogramCounter: used to calculate histogram values for one column
+ *
+ * @author Alex Black
  */
-public interface AnalysisCounter<T extends AnalysisCounter> extends Serializable {
+public interface HistogramCounter extends Serializable {
 
-    T add(Writable writable);
+    HistogramCounter add(Writable w);
 
-    T merge(T other);
+    HistogramCounter merge(HistogramCounter other);
+
+    double[] getBins();
+
+    long[] getCounts();
 
 }

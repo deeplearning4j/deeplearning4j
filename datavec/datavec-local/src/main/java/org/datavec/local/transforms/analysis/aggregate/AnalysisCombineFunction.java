@@ -14,11 +14,10 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.aggregate;
+package org.datavec.local.transforms.analysis.aggregate;
 
-
-import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.analysis.AnalysisCounter;
+import org.nd4j.linalg.function.BiFunction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +28,9 @@ import java.util.List;
  * @author Alex Black
  */
 public class AnalysisCombineFunction
-                implements Function2<List<AnalysisCounter>, List<AnalysisCounter>, List<AnalysisCounter>> {
+                implements BiFunction<List<AnalysisCounter>, List<AnalysisCounter>, List<AnalysisCounter>> {
     @Override
-    public List<AnalysisCounter> call(List<AnalysisCounter> l1, List<AnalysisCounter> l2) throws Exception {
+    public List<AnalysisCounter> apply(List<AnalysisCounter> l1, List<AnalysisCounter> l2) {
         if (l1 == null)
             return l2;
         if (l2 == null)

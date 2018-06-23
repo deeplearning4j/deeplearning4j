@@ -14,11 +14,10 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.string;
+package org.datavec.api.transform.analysis.counter;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.spark.util.StatCounter;
 import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.writable.Writable;
 
@@ -39,31 +38,31 @@ public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCoun
     public StringAnalysisCounter() {};
 
     public int getMinLengthSeen() {
-        return (int) counter.min();
+        return (int) counter.getMin();
     };
 
     public int getMaxLengthSeen() {
-        return (int) counter.max();
+        return (int) counter.getMax();
     };
 
     public long getSumLength() {
-        return (long) counter.sum();
+        return (long) counter.getSum();
     };
 
     public long getCountTotal() {
-        return counter.count();
+        return counter.getCount();
     };
 
     public double getSampleStdev() {
-        return counter.sampleStdev();
+        return counter.getStddev(false);
     };
 
     public double getMean() {
-        return counter.mean();
+        return counter.getMean();
     }
 
     public double getSampleVariance() {
-        return counter.sampleVariance();
+        return counter.getVariance(false);
     }
 
     @Override
@@ -85,7 +84,7 @@ public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCoun
             countMaxLength = 1;
         }
 
-        counter.merge((double) length);
+        counter.add((double) length);
 
         return this;
     }

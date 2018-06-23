@@ -14,14 +14,13 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.columns;
+package org.datavec.api.transform.analysis.counter;
 
 import com.tdunning.math.stats.TDigest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.spark.util.StatCounter;
+import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.analysis.AnalysisCounter;
 
 /**
  * A counter function for doing analysis on integer columns, on Spark
@@ -51,31 +50,31 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
     public IntegerAnalysisCounter() {};
 
     public int getMinValueSeen() {
-        return (int) counter.min();
+        return (int) counter.getMin();
     };
 
     public int getMaxValueSeen() {
-        return (int) counter.max();
+        return (int) counter.getMax();
     };
 
     public long getSum() {
-        return (long) counter.sum();
+        return (long) counter.getSum();
     };
 
     public long getCountTotal() {
-        return counter.count();
+        return counter.getCount();
     };
 
     public double getSampleStdev() {
-        return counter.sampleStdev();
+        return counter.getStddev(false);
     };
 
     public double getMean() {
-        return counter.mean();
+        return counter.getMean();
     }
 
     public double getSampleVariance() {
-        return counter.sampleVariance();
+        return counter.getVariance(false);
     }
 
     @Override
@@ -104,8 +103,7 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
         } ;
 
         digest.add((double) value);
-
-        counter.merge((double) value);
+        counter.add((double) value);
 
         return this;
     }

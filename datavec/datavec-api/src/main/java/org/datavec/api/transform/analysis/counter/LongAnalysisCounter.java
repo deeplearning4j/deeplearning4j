@@ -14,23 +14,23 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.columns;
+package org.datavec.api.transform.analysis.counter;
 
 import com.tdunning.math.stats.TDigest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.spark.util.StatCounter;
+import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.analysis.AnalysisCounter;
+import org.datavec.local.transforms.analysis.statcounter.StatCounter;
 
 /**
- * A counter function for doing analysis on Double columns, on Spark
+ * A counter function for doing analysis on Long columns, on Spark
  *
  * @author Alex Black
  */
 @AllArgsConstructor
 @Data
-public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCounter> {
+public class LongAnalysisCounter implements AnalysisCounter<LongAnalysisCounter> {
 
     private StatCounter counter = new StatCounter();
     private long countZero = 0;
@@ -38,57 +38,52 @@ public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCoun
     private long countMaxValue = 0;
     private long countPositive = 0;
     private long countNegative = 0;
-    private long countNaN = 0;
-  /**
-   * A histogram structure that will record a sketch of a distribution.
-   *
-   * The compression argument regulates how accuracy should be traded for size? A value of N here
-   * will give quantile errors almost always less than 3/N with considerably smaller errors expected
-   * for extreme quantiles. Conversely, you should expect to track about 5 N centroids for this
-   * accuracy.
-   */
-  private TDigest digest = TDigest.createDigest(100);
+    /**
+     * A histogram structure that will record a sketch of a distribution.
+     *
+     * The compression argument regulates how accuracy should be traded for size? A value of N here
+     * will give quantile errors almost always less than 3/N with considerably smaller errors expected
+     * for extreme quantiles. Conversely, you should expect to track about 5 N centroids for this
+     * accuracy.
+     */
+    private TDigest digest = TDigest.createDigest(100);
 
+    public LongAnalysisCounter() {};
 
-    public DoubleAnalysisCounter() {};
-
-    public double getMinValueSeen() {
-        return counter.min();
+    public long getMinValueSeen() {
+        return (long) counter.getMin();
     };
 
-    public double getMaxValueSeen() {
-        return counter.max();
+    public long getMaxValueSeen() {
+        return (long) counter.getMax();
     };
 
-    public double getSum() {
-        return counter.sum();
+    public long getSum() {
+        return (long) counter.getSum();
     };
 
     public long getCountTotal() {
-        return counter.count();
+        return counter.getCount();
     };
 
     public double getSampleStdev() {
-        return counter.sampleStdev();
-    };
+        return counter.getStddev(false);
+    }
 
     public double getMean() {
-        return counter.mean();
+        return counter.getMean();
     }
 
     public double getSampleVariance() {
-        return counter.sampleVariance();
+        return counter.getVariance(false);
     }
 
     @Override
-    public DoubleAnalysisCounter add(Writable writable) {
-        double value = writable.toDouble();
+    public LongAnalysisCounter add(Writable writable) {
+        long value = writable.toLong();
 
         if (value == 0)
             countZero++;
-
-        if (value == Double.NaN)
-            countNaN++;
 
         if (value == getMinValueSeen())
             countMinValue++;
@@ -108,26 +103,26 @@ public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCoun
             countNegative++;
         } ;
 
-        digest.add(value);
-        counter.merge(value);
+        digest.add((double) value);
+        counter.add((double) value);
 
         return this;
     }
 
-    public DoubleAnalysisCounter merge(DoubleAnalysisCounter other) {
-        double otherMin = other.getMinValueSeen();
+    public LongAnalysisCounter merge(LongAnalysisCounter other) {
+        long otherMin = other.getMinValueSeen();
         long newCountMinValue;
         if (getMinValueSeen() == otherMin) {
             newCountMinValue = countMinValue + other.getCountMinValue();
         } else if (getMinValueSeen() > otherMin) {
-            //Keep other, take count from othergetSampleStdDev
+            //Keep other, take count from other
             newCountMinValue = other.getCountMinValue();
         } else {
             //Keep this min, no change to count
             newCountMinValue = countMinValue;
         }
 
-        double otherMax = other.getMaxValueSeen();
+        long otherMax = other.getMaxValueSeen();
         long newCountMaxValue;
         if (getMaxValueSeen() == otherMax) {
             newCountMaxValue = countMaxValue + other.getCountMaxValue();
@@ -141,8 +136,8 @@ public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCoun
 
         digest.add(other.getDigest());
 
-        return new DoubleAnalysisCounter(counter.merge(other.getCounter()), countZero + other.getCountZero(),
+        return new LongAnalysisCounter(counter.merge(other.getCounter()), countZero + other.getCountZero(),
                         newCountMinValue, newCountMaxValue, countPositive + other.getCountPositive(),
-                        countNegative + other.getCountNegative(), countNaN + other.getCountNaN(), digest);
+                        countNegative + other.getCountNegative(), digest);
     }
 }

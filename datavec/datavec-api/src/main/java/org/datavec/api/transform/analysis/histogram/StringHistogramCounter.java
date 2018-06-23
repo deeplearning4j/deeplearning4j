@@ -14,35 +14,35 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.histogram;
+package org.datavec.api.transform.analysis.histogram;
 
 import org.datavec.api.writable.Writable;
 
 /**
- * A counter for building histograms on a Double column
+ * A counter for building histograms (of String length) on a String column
  *
  * @author Alex Black
  */
-public class DoubleHistogramCounter implements HistogramCounter {
+public class StringHistogramCounter implements HistogramCounter {
 
-    private final double minValue;
-    private final double maxValue;
+    private final int minLength;
+    private final int maxLength;
     private final int nBins;
     private final double[] bins;
     private final long[] binCounts;
 
-    public DoubleHistogramCounter(double minValue, double maxValue, int nBins) {
-        this.minValue = minValue;
-        this.maxValue = maxValue;
+    public StringHistogramCounter(int minLength, int maxLength, int nBins) {
+        this.minLength = minLength;
+        this.maxLength = maxLength;
         this.nBins = nBins;
 
         bins = new double[nBins + 1]; //+1 because bins are defined by a range of values: bins[i] to bins[i+1]
-        double step = (maxValue - minValue) / nBins;
+        double step = ((double) (maxLength - minLength)) / nBins;
         for (int i = 0; i < bins.length; i++) {
             if (i == bins.length - 1)
-                bins[i] = maxValue;
+                bins[i] = maxLength;
             else
-                bins[i] = minValue + i * step;
+                bins[i] = i * step;
         }
 
         binCounts = new long[nBins];
@@ -51,12 +51,12 @@ public class DoubleHistogramCounter implements HistogramCounter {
 
     @Override
     public HistogramCounter add(Writable w) {
-        double d = w.toDouble();
+        double d = w.toString().length();
 
         //Not super efficient, but linear search on 20-50 items should be good enough
         int idx = -1;
         for (int i = 0; i < nBins; i++) {
-            if (d >= bins[i] && d < bins[i + 1]) {
+            if (d >= bins[i] && d < bins[i]) {
                 idx = i;
                 break;
             }
@@ -70,17 +70,17 @@ public class DoubleHistogramCounter implements HistogramCounter {
     }
 
     @Override
-    public DoubleHistogramCounter merge(HistogramCounter other) {
+    public StringHistogramCounter merge(HistogramCounter other) {
         if (other == null)
             return this;
-        if (!(other instanceof DoubleHistogramCounter))
+        if (!(other instanceof StringHistogramCounter))
             throw new IllegalArgumentException("Cannot merge " + other);
 
-        DoubleHistogramCounter o = (DoubleHistogramCounter) other;
+        StringHistogramCounter o = (StringHistogramCounter) other;
 
-        if (minValue != o.minValue || maxValue != o.maxValue)
-            throw new IllegalStateException("Min/max values differ: (" + minValue + "," + maxValue + ") " + " vs. ("
-                            + o.minValue + "," + o.maxValue + ")");
+        if (minLength != o.minLength || maxLength != o.maxLength)
+            throw new IllegalStateException("Min/max values differ: (" + minLength + "," + maxLength + ") " + " vs. ("
+                            + o.minLength + "," + o.maxLength + ")");
         if (nBins != o.nBins)
             throw new IllegalStateException("Different number of bins: " + nBins + " vs " + o.nBins);
 

@@ -14,75 +14,82 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.aggregate;
+package org.datavec.local.transforms.analysis.histogram;
 
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.ColumnType;
-import org.datavec.api.transform.analysis.AnalysisCounter;
-import org.datavec.api.transform.analysis.counter.*;
+import org.datavec.api.transform.analysis.histogram.*;
+import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.analysis.string.StringAnalysisCounter;
+import org.nd4j.linalg.function.BiFunction;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Add function used for undertaking analysis of a data set via Spark
+ * An adder function used in the calculation of histograms
  *
  * @author Alex Black
  */
 @AllArgsConstructor
-public class AnalysisAddFunction implements Function2<List<AnalysisCounter>, List<Writable>, List<AnalysisCounter>> {
-    private Schema schema;
+public class HistogramAddFunction implements BiFunction<List<HistogramCounter>, List<Writable>, List<HistogramCounter>> {
+    private final int nBins;
+    private final Schema schema;
+    private final double[][] minsMaxes;
 
     @Override
-    public List<AnalysisCounter> call(List<AnalysisCounter> analysisCounters, List<Writable> writables)
-                    throws Exception {
-        if (analysisCounters == null) {
-            analysisCounters = new ArrayList<>();
+    public List<HistogramCounter> apply(List<HistogramCounter> histogramCounters, List<Writable> writables) {
+        if (histogramCounters == null) {
+            histogramCounters = new ArrayList<>();
             List<ColumnType> columnTypes = schema.getColumnTypes();
+            int i = 0;
             for (ColumnType ct : columnTypes) {
                 switch (ct) {
                     case String:
-                        analysisCounters.add(new StringAnalysisCounter());
+                        histogramCounters.add(new StringHistogramCounter((int) minsMaxes[i][0], (int) minsMaxes[i][1],
+                                        nBins));
                         break;
                     case Integer:
-                        analysisCounters.add(new IntegerAnalysisCounter());
+                        histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
                         break;
                     case Long:
-                        analysisCounters.add(new LongAnalysisCounter());
+                        histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
                         break;
                     case Double:
-                        analysisCounters.add(new DoubleAnalysisCounter());
+                        histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
                         break;
                     case Categorical:
-                        analysisCounters.add(new CategoricalAnalysisCounter());
+                        CategoricalMetaData meta = (CategoricalMetaData) schema.getMetaData(i);
+                        histogramCounters.add(new CategoricalHistogramCounter(meta.getStateNames()));
                         break;
                     case Time:
-                        analysisCounters.add(new LongAnalysisCounter());
+                        histogramCounters.add(new DoubleHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
                         break;
                     case Bytes:
-                        analysisCounters.add(new BytesAnalysisCounter());
+                        histogramCounters.add(null); //TODO
                         break;
                     case NDArray:
-                        analysisCounters.add(new NDArrayAnalysisCounter());
+                        histogramCounters.add(new NDArrayHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown column type: " + ct);
                 }
+
+                i++;
             }
         }
 
-        int size = analysisCounters.size();
+        int size = histogramCounters.size();
         if (size != writables.size())
             throw new IllegalStateException("Writables list and number of counters does not match (" + writables.size()
                             + " vs " + size + ")");
         for (int i = 0; i < size; i++) {
-            analysisCounters.get(i).add(writables.get(i));
+            HistogramCounter hc = histogramCounters.get(i);
+            if (hc != null)
+                hc.add(writables.get(i));
         }
 
-        return analysisCounters;
+        return histogramCounters;
     }
 }
