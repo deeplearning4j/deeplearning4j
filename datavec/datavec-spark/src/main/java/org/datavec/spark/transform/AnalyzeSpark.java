@@ -124,6 +124,13 @@ public class AnalyzeSpark {
     }
 
 
+    /**
+     * Analyse the specified data - returns a DataAnalysis object with summary information about each column
+     *
+     * @param schema Schema for data
+     * @param data   Data to analyze
+     * @return       DataAnalysis for data
+     */
     public static DataAnalysis analyze(Schema schema, JavaRDD<List<Writable>> data) {
         return analyze(schema, data, DEFAULT_HISTOGRAM_BUCKETS);
     }
@@ -198,7 +205,7 @@ public class AnalyzeSpark {
     }
 
     /**
-     * Get a list of unique values from the specified column.
+     * Get a list of unique values from the specified columns.
      * For sequence data, use {@link #getUniqueSequence(String, Schema, JavaRDD)}
      *
      * @param columnNames   Names of the column to get unique values from
