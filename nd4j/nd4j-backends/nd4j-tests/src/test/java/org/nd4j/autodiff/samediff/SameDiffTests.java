@@ -2997,6 +2997,15 @@ public class SameDiffTests {
 
         exp = in.getArr().mmul(w.getArr()).addiRowVector(b.getArr());
         assertEquals(exp, out2);
+
+        //Generate gradient function, and exec
+        SDVariable loss = mmul.std(true);
+        sd.execBackwards();
+
+        in.setArray(Nd4j.linspace(1,12,12).reshape(3,4));
+        sd.execAndEndResult();
+        out2 = mmul.getArr();
+        assertArrayEquals(new long[]{3,5}, out2.shape());
     }
 
     @Test

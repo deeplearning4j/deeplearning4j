@@ -11,12 +11,11 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ExternalErrorsFunction extends DifferentialFunction {
+
+    private static final List<long[]> OUT_SHAPE = Collections.singletonList(new long[0]);
 
     private Map<String,INDArray> gradients;
     private Map<String,SDVariable> gradVariables;
@@ -107,5 +106,10 @@ public class ExternalErrorsFunction extends DifferentialFunction {
     @Override
     public String toString(){
         return "ExternalErrorsFunction(" + (gradVariables != null ? gradVariables.keySet() : "") + ")";
+    }
+
+    @Override
+    public List<long[]> calculateOutputShape(){
+        return OUT_SHAPE;
     }
 }

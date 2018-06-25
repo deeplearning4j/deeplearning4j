@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff;
 
 import com.google.common.annotations.VisibleForTesting;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import onnx.OnnxProto3;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.builder.Diff;
@@ -41,6 +42,7 @@ import java.util.logging.Logger;
  */
 @Data
 @NoArgsConstructor
+@Slf4j
 public class SDVariable extends DifferentialFunction implements Serializable {
 
 
@@ -148,7 +150,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      */
     public INDArray storeAndAllocateNewArray() {
         val shape = sameDiff.getShapeForVarName(getVarName());
-        if(getArr() != null && Arrays.equals(getArr().shape(),shape))
+        INDArray currArr = getArr();
+        if(currArr != null && Arrays.equals(currArr.shape(),shape))
             return getArr();
 
         if(varName == null)
@@ -159,7 +162,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         }
 
         val arr = getWeightInitScheme().create(shape);
-        sameDiff.putArrayForVarName(getVarName(),arr);
+        sameDiff.associateArrayWithVariable(arr, this);
+        if(log.isTraceEnabled()){
+            log.trace("Generated and stored new array for variable \"{}\": old shape: {}, new shape {}", getVarName(),
+                    (currArr == null ? "null" : Arrays.toString(currArr.shape())), Arrays.toString(arr.shape()));
+        }
         return arr;
     }
 
@@ -193,9 +200,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
         //initialize value if it's actually a scalar constant (zero or 1 typically...)
         if(getScalarValue() != null && ArrayUtil.prod(getShape()) == 1) {
-            INDArray arr = Nd4j.valueArrayOf(getShape(),
-                    getScalarValue().doubleValue());
+            INDArray arr = Nd4j.valueArrayOf(getShape(),getScalarValue().doubleValue());
             sameDiff.associateArrayWithVariable(arr,this);
+            if(log.isTraceEnabled()){
+                log.trace("getArr() for variable \"{}\" allocated new scalar array: shape {}", getVarName(), Arrays.toString(getShape()));
+            }
         }
         else if(sameDiff.getShapeForVarName(getVarName()) == null) {
             if (enforceExistence) {
@@ -207,7 +216,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
             long[] shape = sameDiff.getShapeForVarName(getVarName());
             INDArray newAlloc = getWeightInitScheme().create(shape);
             sameDiff.associateArrayWithVariable(newAlloc,this);
-
+            if(log.isTraceEnabled()){
+                log.trace("getArr() for variable \"{}\" allocated new array with shape {}", getVarName(), Arrays.toString(getShape()));
+            }
         }
 
         return sameDiff.getArrForVarName(getVarName());

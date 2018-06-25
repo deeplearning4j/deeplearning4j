@@ -6788,6 +6788,7 @@ public class SameDiff {
         List<String> funcNames = new ArrayList<>(functionInstancesById.keySet());       //LinkedHashMap, so order for both these vars should be identical
         boolean onBackward = false;
 
+
         // dequeue for Frames (nested, probably)
         val frames = new ArrayDeque<String>();
 
@@ -6799,6 +6800,17 @@ public class SameDiff {
 
         //If true: this execution includes gradient functions...
         boolean isExecBackwards = functionInstancesById.containsKey(GradientBackwardsMarker.OP_NAME);
+
+        //Before execution: set the SameDiff instance
+        //This is necessary, because the one op could be shared by both forward and backward samediff instances
+        //If the SameDiff instance isn't set, they might use wrong shapes or arrays as part of their ops
+        //And, set the SameDiff instance on all variables, for exactly the same reason
+        for(DifferentialFunction df : functionInstancesById.values()){
+            df.setSameDiff(this);
+        }
+        for(SDVariable var : variableMap.values()){
+            var.setSameDiff(this);
+        }
 
         int i = 0;
         int exec_counter = 0;
@@ -7342,7 +7354,7 @@ public class SameDiff {
                 if(!Arrays.equals(outputShape.get(0), z.shape())){
                     if(log.isTraceEnabled()){
                         log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
-                                op.getClass().getSimpleName(), Arrays.toString(outputShape.get(0)), Arrays.toString(z.shape()));
+                                op.getClass().getSimpleName(), Arrays.toString(z.shape()), Arrays.toString(outputShape.get(0)));
                     }
                     //Get output variable:
                     String fnName = funcNames.get(i);
