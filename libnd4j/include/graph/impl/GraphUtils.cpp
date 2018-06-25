@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <linux/limits.h>
 //#eldef __APPLE__
 //#include <sys/types.h>
 //#include <sys/wait.h>
@@ -92,31 +93,43 @@ GraphUtils::runPreprocessor(char const* input, char const* output) {
 //        std::string(opts_arg);
 
     FILE *f = popen("which c++", "r");
+    if(f == NULL) {
+        std::cerr << "Cannot find c++ compiler with 'which' command." << std::endl;
+        exit(1);
+    }
+#if _POSIX_C_SOURCE >= 200809L
     char* line = nullptr;
     size_t size = 0;
-    getline(&line, &size, f);
-    if (size > 0) {
-        char* p = strchr(line, '\n');
-        if (p)
-            *p = '\0';
-        size = p - line;
+    ssize_t len;
+
+    if ((len = getdelim(&line, &size, '\n', f)) < 2) {
+        std::cerr << "Cannot find c++ compiler with 'which' command." << std::endl;
+        exit(2);
     }
-    
-    if (size == 0) {
-        std::cerr << "Cannot find c++ compiler." << std::endl;
-        return 3;
-    }
-//    std::cout << "c++ path is "<< line << " with size " << size << std::endl;
+    if (line[len - 1] == '\n')
+        line[len - 1] = '\0'; 
+
     std::string cmd(line);
 
     fclose(f);
-//    char* cmdPath = realpath(line, NULL);
-//    if (cmdPath == nullptr) {
-//        perror("Cannot retrieve c++ path.");
-//        return 2;
-//    }
 
     free(line);
+#else
+    std::string cmd;
+    {
+        
+        char szLine[PATH_MAX];
+        if (NULL == fgets(szLine, sizeof(szLine), f)) {
+            std::cerr << "Cannot find c++ compiler with 'which' command." << std::endl;
+            exit(3);
+        }
+        char* p = strchr(szLine, '\n');
+        if (p) {
+            *p = '\0';
+        }
+        cmd = szLine;
+    }
+#endif
 
     char const* cxx = cmd.c_str(); //;getenv("CXX");
 //    if (cxx == nullptr) {
