@@ -820,10 +820,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 int val = tfTensor.getIntVal(0);
 
                 if (arrayShape == null || arrayShape.length == 0)
-                    arrayShape = new int[]{};
+                    return Nd4j.trueScalar((double) val);
 
-                INDArray array = Nd4j.valueArrayOf(arrayShape, (double) val);
-                return array;
+                return Nd4j.valueArrayOf(arrayShape, (double) val);
             } else if (tfTensor.getInt64ValCount() > 0) {
                 double[] jArray = new double[tfTensor.getIntValCount()];
                 for (int e = 0; e < tfTensor.getIntValCount(); e++) {
@@ -831,8 +830,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 }
 
                 // TF arrays are always C
-                INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
-                return array;
+                return Nd4j.create(jArray, arrayShape, 0, 'c');
             } else {
                 // FIXME: INT bytebuffers should be converted to floating point
                 //throw new UnsupportedOperationException("To be implemented yet");
