@@ -13,8 +13,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Conv1DConfig extends BaseConvolutionConfig {
-    @Builder.Default
-    private long k = 1;
+    @Builder.Default private long k = -1L;
     @Builder.Default
     private long s = 1;
     @Builder.Default
