@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.JvmShapeInfo;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -58,7 +59,7 @@ public class JCublasNDArray extends BaseNDArray {
 
 
     public JCublasNDArray(DataBuffer buffer, CudaLongDataBuffer shapeInfo, long[] javaShapeInfo) {
-        this.javaShapeInformation = javaShapeInfo;
+        this.jvmShapeInfo = new JvmShapeInfo(javaShapeInfo);
         this.shapeInformation = shapeInfo;
         this.data = buffer;
     }
@@ -515,7 +516,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public void setShapeInfoDataBuffer(DataBuffer buffer) {
         this.shapeInformation = buffer;
-        this.javaShapeInformation = shapeInformation.asLong();
+        this.jvmShapeInfo = new JvmShapeInfo(shapeInformation.asLong());
     }
 
     private Object writeReplace() throws java.io.ObjectStreamException {
