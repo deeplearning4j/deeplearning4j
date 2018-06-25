@@ -177,6 +177,11 @@ public class TestAnalysis extends BaseSparkTest {
         StatCounter sc2 = sc.parallelizeDoubles(l2d).stats();
         StatCounter sc3 = sc.parallelizeDoubles(l3d).stats();
 
+        org.datavec.api.transform.analysis.counter.StatCounter sc1new = new org.datavec.api.transform.analysis.counter.StatCounter();
+        for(double d : l1){
+            sc1new.add(d);
+        }
+
         List<List<Writable>> data = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             List<Writable> l = new ArrayList<>();

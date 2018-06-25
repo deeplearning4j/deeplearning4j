@@ -46,8 +46,8 @@ public class StatCounter implements Serializable {
     public void add(double x){
         double d = x - runningMean;
         count++;
-        runningMean += d / count;
-        runningM2 += d * (x - runningMean);
+        runningMean += (d / count);
+        runningM2 += (d * (x - runningMean));
         max = Math.max(max, x);
         min = Math.min(min, x);
     }
@@ -55,6 +55,9 @@ public class StatCounter implements Serializable {
     public StatCounter merge(StatCounter o){
         if(o == null || o.count == 0){
             return this;
+        }
+        if(o == this){
+            return merge(o.clone());
         }
         if(this.count == 0){
             count = o.count;
@@ -68,16 +71,26 @@ public class StatCounter implements Serializable {
 
             double d = o.runningMean - runningMean;
             if (o.count * 10 < count) {
-                runningMean = runningM2 + (d * o.count) / (count + o.count);
+                runningMean = runningMean + (d * o.count) / (count + o.count);
             } else if (count * 10 < o.count) {
-                runningMean = o.runningMean - (d *count) / (count + o.count);
+                runningMean = o.runningMean - (d * count) / (count + o.count);
             } else {
-                runningMean = (runningMean *count + o.runningMean * o.count) / (count + o.count);
+                runningMean = (runningMean * count + o.runningMean * o.count) / (count + o.count);
             }
-            runningM2 += o.runningM2 + (d * d *count * o.runningM2) / (count + o.count);
+            runningM2 += o.runningM2 + (d * d * count * o.runningM2) / (count + o.count);
             count += o.count;
         }
 
         return this;
+    }
+
+    public StatCounter clone(){
+        StatCounter ret = new StatCounter();
+        ret.count = count;
+        ret.runningMean = runningMean;
+        ret.runningM2 = runningM2;
+        ret.max = max;
+        ret.min = min;
+        return ret;
     }
 }
