@@ -758,6 +758,34 @@ void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& 
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const int axis) {
+
+    const int numOfArrs = inArrs.size();
+    const int rank  = inArrs[0]->rankOf();
+    const int rank2 = 2*rank;
+    int* indices = new int[2 * rank * numOfArrs];
+    memset(indices, 0, 2 * rank * numOfArrs * sizeof(int));
+
+    // take into account indices for first array
+    indices[2 * axis + 1] = inArrs[0]->sizeAt(axis);
+    
+    // loop through the rest of input arrays
+    for(int i = 1; i < numOfArrs; ++i) {
+        indices[i * rank2 + 2 * axis]     = indices[2 * axis + 1 + (i-1) * rank2];                                // index start from
+        indices[i * rank2 + 2 * axis + 1] = indices[2 * axis + 1 + (i-1) * rank2] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
+    }    
+
+// #pragma omp parallel for if(numOfArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)    
+// #pragma omp parallel for schedule(guided)    
+    for(int i = 0; i < numOfArrs; ++i) 
+        output((indices + i * rank2), true).assign(inArrs[i]);
+    
+    
+    delete []indices;
+}
+
 
 
 template void triu<float>(const NDArray<float>& input, NDArray<float>& output, const int diagonal);
@@ -828,6 +856,9 @@ template void mirrorPad<float>(const NDArray<float>& input, const NDArray<float>
 template void mirrorPad<float16>(const NDArray<float16>& input, const NDArray<float16>& paddings, NDArray<float16>& output, const int mode);
 template void mirrorPad<double>(const NDArray<double>& input, const NDArray<double>& paddings, NDArray<double>& output, const int mode);
 
+template void concat<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output, const int axis);
+template void concat<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output, const int axis);
+template void concat<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output, const int axis);
 
 }
 }

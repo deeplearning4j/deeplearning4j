@@ -64,6 +64,9 @@ namespace helpers {
 	template<typename T>
 	void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const int mode);
 
+	template<typename T>
+	void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const int axis);
+
 }
 }
 }
