@@ -38,7 +38,7 @@ public class TestVocLabelProvider {
     public void testVocLabelProvider() throws Exception {
 
         File f = testDir.newFolder();
-        new ClassPathResource("datavec-data-image/voc/2007").copyDirectory(f);
+        new ClassPathResource("datavec-data-image/voc/2007/").copyDirectory(f);
 
         String path = f.getAbsolutePath();  //new ClassPathResource("voc/2007/JPEGImages/000005.jpg").getFile().getParentFile().getParent();
 
