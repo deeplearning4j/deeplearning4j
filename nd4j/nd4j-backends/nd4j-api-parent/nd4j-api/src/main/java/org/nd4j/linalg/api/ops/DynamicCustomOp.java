@@ -390,7 +390,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     continue;
 
                 if (!Arrays.equals(args[i].getShape(), arrsSoFar[i].shape()))
-                    throw new ND4JIllegalStateException("Illegal array passed in. Expected shape " + Arrays.toString(args[i].getShape()) + " and received array with shape " + Arrays.toString(arg[i].shape()));
+                    throw new ND4JIllegalStateException("Illegal array passed in as argument [" + i + "]. Expected shape " + Arrays.toString(args[i].getShape()) + " and received array with shape " + Arrays.toString(arg[i].shape()));
             }
         }
     }

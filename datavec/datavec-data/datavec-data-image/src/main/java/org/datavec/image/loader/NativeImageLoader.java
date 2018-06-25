@@ -579,6 +579,7 @@ public class NativeImageLoader extends BaseImageLoader {
             int cols = image.cols();
             int channels = image.channels();
             ret = Nd4j.create(channels, rows, cols);
+            Nd4j.getMemoryManager().memset(ret);
         }
         fillNDArray(image, ret);
 
