@@ -14,17 +14,17 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality.real;
+package org.datavec.api.transform.analysis.quality.longq;
 
-import org.apache.spark.api.java.function.Function2;
-import org.datavec.api.transform.quality.columns.DoubleQuality;
+import org.datavec.api.transform.quality.columns.LongQuality;
+import org.nd4j.linalg.function.BiFunction;
 
 /**
  * Created by Alex on 5/03/2016.
  */
-public class RealQualityMergeFunction implements Function2<DoubleQuality, DoubleQuality, DoubleQuality> {
+public class LongQualityMergeFunction implements BiFunction<LongQuality, LongQuality, LongQuality> {
     @Override
-    public DoubleQuality call(DoubleQuality v1, DoubleQuality v2) throws Exception {
+    public LongQuality apply(LongQuality v1, LongQuality v2) {
         return v1.add(v2);
     }
 }

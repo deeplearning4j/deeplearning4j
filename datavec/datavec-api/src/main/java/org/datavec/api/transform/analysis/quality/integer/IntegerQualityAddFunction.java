@@ -14,32 +14,32 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality.longq;
+package org.datavec.api.transform.analysis.quality.integer;
 
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function2;
-import org.datavec.api.transform.metadata.LongMetaData;
-import org.datavec.api.transform.quality.columns.LongQuality;
+import org.datavec.api.transform.metadata.IntegerMetaData;
+import org.datavec.api.transform.quality.columns.IntegerQuality;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.function.BiFunction;
 
 /**
  * Created by Alex on 5/03/2016.
  */
 @AllArgsConstructor
-public class LongQualityAddFunction implements Function2<LongQuality, Writable, LongQuality> {
+public class IntegerQualityAddFunction implements BiFunction<IntegerQuality, Writable, IntegerQuality> {
 
-    private final LongMetaData meta;
+    private final IntegerMetaData meta;
 
     @Override
-    public LongQuality call(LongQuality v1, Writable writable) throws Exception {
+    public IntegerQuality apply(IntegerQuality v1, Writable writable) {
 
         long valid = v1.getCountValid();
         long invalid = v1.getCountInvalid();
         long countMissing = v1.getCountMissing();
         long countTotal = v1.getCountTotal() + 1;
-        long nonLong = v1.getCountNonLong();
+        long nonInteger = v1.getCountNonInteger();
 
         if (meta.isValid(writable))
             valid++;
@@ -51,11 +51,11 @@ public class LongQualityAddFunction implements Function2<LongQuality, Writable, 
 
         String str = writable.toString();
         try {
-            Long.parseLong(str);
+            Integer.parseInt(str);
         } catch (NumberFormatException e) {
-            nonLong++;
+            nonInteger++;
         }
 
-        return new LongQuality(valid, invalid, countMissing, countTotal, nonLong);
+        return new IntegerQuality(valid, invalid, countMissing, countTotal, nonInteger);
     }
 }

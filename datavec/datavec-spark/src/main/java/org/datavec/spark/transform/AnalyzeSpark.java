@@ -25,11 +25,10 @@ import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.DataVecAnalysisUtils;
 import org.datavec.api.transform.analysis.SequenceDataAnalysis;
 import org.datavec.api.transform.analysis.columns.*;
-import org.datavec.api.transform.analysis.counter.CategoricalAnalysisCounter;
-import org.datavec.api.transform.analysis.counter.DoubleAnalysisCounter;
-import org.datavec.api.transform.analysis.counter.IntegerAnalysisCounter;
-import org.datavec.api.transform.analysis.counter.LongAnalysisCounter;
 import org.datavec.api.transform.analysis.histogram.HistogramCounter;
+import org.datavec.api.transform.analysis.quality.QualityAnalysisAddFunction;
+import org.datavec.api.transform.analysis.quality.QualityAnalysisCombineFunction;
+import org.datavec.api.transform.analysis.quality.QualityAnalysisState;
 import org.datavec.api.transform.analysis.sequence.SequenceLengthAnalysis;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.quality.DataQualityAnalysis;
@@ -48,16 +47,13 @@ import org.datavec.spark.transform.analysis.seqlength.IntToDoubleFunction;
 import org.datavec.spark.transform.analysis.seqlength.SequenceLengthAnalysisAddFunction;
 import org.datavec.spark.transform.analysis.seqlength.SequenceLengthAnalysisCounter;
 import org.datavec.spark.transform.analysis.seqlength.SequenceLengthAnalysisMergeFunction;
-import org.datavec.spark.transform.analysis.string.StringAnalysisCounter;
 import org.datavec.spark.transform.analysis.unique.UniqueAddFunction;
 import org.datavec.spark.transform.analysis.unique.UniqueMergeFunction;
 import org.datavec.spark.transform.filter.FilterWritablesBySchemaFunction;
 import org.datavec.spark.transform.misc.ColumnToKeyPairTransform;
 import org.datavec.spark.transform.misc.SumLongsFunction2;
 import org.datavec.spark.transform.misc.comparator.Tuple2Comparator;
-import org.datavec.spark.transform.quality.QualityAnalysisAddFunction;
-import org.datavec.spark.transform.quality.QualityAnalysisCombineFunction;
-import org.datavec.spark.transform.quality.QualityAnalysisState;
+import org.datavec.spark.transform.utils.adapter.BiFunctionAdapter;
 import scala.Tuple2;
 
 import java.util.*;
@@ -273,40 +269,34 @@ public class AnalyzeSpark {
 
 
     /**
-     *
-     * @param schema
-     * @param data
-     * @return
+     * Analyze the data quality of sequence data - provides a report on missing values, values that don't comply with schema, etc
+     * @param schema Schema for data
+     * @param data   Data to analyze
+     * @return DataQualityAnalysis object
      */
     public static DataQualityAnalysis analyzeQualitySequence(Schema schema, JavaRDD<List<List<Writable>>> data) {
         JavaRDD<List<Writable>> fmSeq = data.flatMap(new SequenceFlatMapFunction());
         return analyzeQuality(schema, fmSeq);
     }
 
-
     /**
-     *
-     * @param schema
-     * @param data
-     * @return
+     * Analyze the data quality of data - provides a report on missing values, values that don't comply with schema, etc
+     * @param schema Schema for data
+     * @param data   Data to analyze
+     * @return DataQualityAnalysis object
      */
     public static DataQualityAnalysis analyzeQuality(final Schema schema, final JavaRDD<List<Writable>> data) {
-        data.cache();
         int nColumns = schema.numColumns();
-
-
-        List<ColumnType> columnTypes = schema.getColumnTypes();
-        List<QualityAnalysisState> states = data.aggregate(null, new QualityAnalysisAddFunction(schema),
-                        new QualityAnalysisCombineFunction());
+        List<QualityAnalysisState> states = data.aggregate(null,
+                new BiFunctionAdapter<>(new QualityAnalysisAddFunction(schema)),
+                new BiFunctionAdapter<>(new QualityAnalysisCombineFunction()));
 
         List<ColumnQuality> list = new ArrayList<>(nColumns);
 
         for (QualityAnalysisState qualityState : states) {
             list.add(qualityState.getColumnQuality());
         }
-
         return new DataQualityAnalysis(schema, list);
-
     }
 
     /**

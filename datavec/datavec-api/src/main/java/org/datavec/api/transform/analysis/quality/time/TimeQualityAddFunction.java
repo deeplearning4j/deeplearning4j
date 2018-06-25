@@ -14,32 +14,28 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality.integer;
+package org.datavec.api.transform.analysis.quality.time;
 
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function2;
-import org.datavec.api.transform.metadata.IntegerMetaData;
-import org.datavec.api.transform.quality.columns.IntegerQuality;
+import org.datavec.api.transform.metadata.TimeMetaData;
+import org.datavec.api.transform.quality.columns.TimeQuality;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.function.BiFunction;
 
-/**
- * Created by Alex on 5/03/2016.
- */
 @AllArgsConstructor
-public class IntegerQualityAddFunction implements Function2<IntegerQuality, Writable, IntegerQuality> {
+public class TimeQualityAddFunction implements BiFunction<TimeQuality, Writable, TimeQuality> {
 
-    private final IntegerMetaData meta;
+    private final TimeMetaData meta;
 
     @Override
-    public IntegerQuality call(IntegerQuality v1, Writable writable) throws Exception {
+    public TimeQuality apply(TimeQuality v1, Writable writable) {
 
         long valid = v1.getCountValid();
         long invalid = v1.getCountInvalid();
         long countMissing = v1.getCountMissing();
         long countTotal = v1.getCountTotal() + 1;
-        long nonInteger = v1.getCountNonInteger();
 
         if (meta.isValid(writable))
             valid++;
@@ -49,13 +45,6 @@ public class IntegerQualityAddFunction implements Function2<IntegerQuality, Writ
         else
             invalid++;
 
-        String str = writable.toString();
-        try {
-            Integer.parseInt(str);
-        } catch (NumberFormatException e) {
-            nonInteger++;
-        }
-
-        return new IntegerQuality(valid, invalid, countMissing, countTotal, nonInteger);
+        return new TimeQuality(valid, invalid, countMissing, countTotal);
     }
 }

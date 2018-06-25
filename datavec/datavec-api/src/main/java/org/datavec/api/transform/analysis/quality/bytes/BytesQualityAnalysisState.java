@@ -1,10 +1,10 @@
-package org.datavec.spark.transform.quality.bytes;
+package org.datavec.api.transform.analysis.quality.bytes;
 
 import lombok.Getter;
+import org.datavec.api.transform.analysis.quality.QualityAnalysisState;
 import org.datavec.api.transform.quality.columns.BytesQuality;
 import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.quality.QualityAnalysisState;
 
 /**
  * Created by huitseeker on 3/6/17.
@@ -21,11 +21,11 @@ public class BytesQualityAnalysisState implements QualityAnalysisState<BytesQual
         this.bytesQuality = new BytesQuality();
     }
 
-    public BytesQualityAnalysisState add(Writable writable) throws Exception {
+    public BytesQualityAnalysisState add(Writable writable) {
         return this;
     }
 
-    public BytesQualityAnalysisState merge(BytesQualityAnalysisState other) throws Exception {
+    public BytesQualityAnalysisState merge(BytesQualityAnalysisState other) {
         return this;
     }
 

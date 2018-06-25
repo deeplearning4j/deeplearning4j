@@ -1,11 +1,11 @@
-package org.datavec.spark.transform.quality.string;
+package org.datavec.api.transform.analysis.quality.string;
 
 import lombok.Getter;
+import org.datavec.api.transform.analysis.quality.QualityAnalysisState;
 import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.transform.quality.columns.StringQuality;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.quality.QualityAnalysisState;
 
 /**
  * Created by huitseeker on 3/6/17.
@@ -23,13 +23,13 @@ public class StringQualityAnalysisState implements QualityAnalysisState<StringQu
         this.mergeFunction = new StringQualityMergeFunction();
     }
 
-    public StringQualityAnalysisState add(Writable writable) throws Exception {
-        stringQuality = addFunction.call(stringQuality, writable);
+    public StringQualityAnalysisState add(Writable writable) {
+        stringQuality = addFunction.apply(stringQuality, writable);
         return this;
     }
 
-    public StringQualityAnalysisState merge(StringQualityAnalysisState other) throws Exception {
-        stringQuality = mergeFunction.call(stringQuality, other.getStringQuality());
+    public StringQualityAnalysisState merge(StringQualityAnalysisState other) {
+        stringQuality = mergeFunction.apply(stringQuality, other.getStringQuality());
         return this;
     }
 

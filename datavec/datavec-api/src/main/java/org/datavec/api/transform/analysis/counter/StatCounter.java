@@ -1,6 +1,8 @@
 package org.datavec.api.transform.analysis.counter;
 
-public class StatCounter {
+import java.io.Serializable;
+
+public class StatCounter implements Serializable {
 
     private long count = 0;
     private double runningMean;

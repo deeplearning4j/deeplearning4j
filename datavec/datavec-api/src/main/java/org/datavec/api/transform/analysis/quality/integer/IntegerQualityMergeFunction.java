@@ -14,17 +14,17 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality.longq;
+package org.datavec.api.transform.analysis.quality.integer;
 
-import org.apache.spark.api.java.function.Function2;
-import org.datavec.api.transform.quality.columns.LongQuality;
+import org.datavec.api.transform.quality.columns.IntegerQuality;
+import org.nd4j.linalg.function.BiFunction;
 
 /**
  * Created by Alex on 5/03/2016.
  */
-public class LongQualityMergeFunction implements Function2<LongQuality, LongQuality, LongQuality> {
+public class IntegerQualityMergeFunction implements BiFunction<IntegerQuality, IntegerQuality, IntegerQuality> {
     @Override
-    public LongQuality call(LongQuality v1, LongQuality v2) throws Exception {
+    public IntegerQuality apply(IntegerQuality v1, IntegerQuality v2) {
         return v1.add(v2);
     }
 }

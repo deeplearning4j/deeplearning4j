@@ -14,9 +14,9 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality;
+package org.datavec.api.transform.analysis.quality;
 
-import org.apache.spark.api.java.function.Function2;
+import org.nd4j.linalg.function.BiFunction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,10 +27,9 @@ import java.util.List;
  * @author Alex Black
  */
 public class QualityAnalysisCombineFunction implements
-                Function2<List<QualityAnalysisState>, List<QualityAnalysisState>, List<QualityAnalysisState>> {
+        BiFunction<List<QualityAnalysisState>, List<QualityAnalysisState>, List<QualityAnalysisState>> {
     @Override
-    public List<QualityAnalysisState> call(List<QualityAnalysisState> l1, List<QualityAnalysisState> l2)
-                    throws Exception {
+    public List<QualityAnalysisState> apply(List<QualityAnalysisState> l1, List<QualityAnalysisState> l2) {
         if (l1 == null)
             return l2;
         if (l2 == null)

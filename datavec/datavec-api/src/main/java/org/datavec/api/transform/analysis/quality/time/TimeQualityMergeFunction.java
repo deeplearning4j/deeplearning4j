@@ -14,17 +14,17 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality.time;
+package org.datavec.api.transform.analysis.quality.time;
 
-import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.quality.columns.TimeQuality;
+import org.nd4j.linalg.function.BiFunction;
 
 /**
  * Created by Alex on 5/03/2016.
  */
-public class TimeQualityMergeFunction implements Function2<TimeQuality, TimeQuality, TimeQuality> {
+public class TimeQualityMergeFunction implements BiFunction<TimeQuality, TimeQuality, TimeQuality> {
     @Override
-    public TimeQuality call(TimeQuality v1, TimeQuality v2) throws Exception {
+    public TimeQuality apply(TimeQuality v1, TimeQuality v2) {
         return v1.add(v2);
     }
 }

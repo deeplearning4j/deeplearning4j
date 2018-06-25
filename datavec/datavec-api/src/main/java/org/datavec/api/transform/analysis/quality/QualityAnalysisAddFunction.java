@@ -14,21 +14,21 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality;
+package org.datavec.api.transform.analysis.quality;
 
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.ColumnType;
+import org.datavec.api.transform.analysis.quality.bytes.BytesQualityAnalysisState;
+import org.datavec.api.transform.analysis.quality.categorical.CategoricalQualityAnalysisState;
+import org.datavec.api.transform.analysis.quality.integer.IntegerQualityAnalysisState;
+import org.datavec.api.transform.analysis.quality.longq.LongQualityAnalysisState;
+import org.datavec.api.transform.analysis.quality.real.RealQualityAnalysisState;
+import org.datavec.api.transform.analysis.quality.string.StringQualityAnalysisState;
+import org.datavec.api.transform.analysis.quality.time.TimeQualityAnalysisState;
 import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.quality.bytes.BytesQualityAnalysisState;
-import org.datavec.spark.transform.quality.categorical.CategoricalQualityAnalysisState;
-import org.datavec.spark.transform.quality.integer.IntegerQualityAnalysisState;
-import org.datavec.spark.transform.quality.longq.LongQualityAnalysisState;
-import org.datavec.spark.transform.quality.real.RealQualityAnalysisState;
-import org.datavec.spark.transform.quality.string.StringQualityAnalysisState;
-import org.datavec.spark.transform.quality.time.TimeQualityAnalysisState;
+import org.nd4j.linalg.function.BiFunction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,13 +40,12 @@ import java.util.List;
  */
 @AllArgsConstructor
 public class QualityAnalysisAddFunction
-                implements Function2<List<QualityAnalysisState>, List<Writable>, List<QualityAnalysisState>> {
+                implements BiFunction<List<QualityAnalysisState>, List<Writable>, List<QualityAnalysisState>> {
 
     private Schema schema;
 
     @Override
-    public List<QualityAnalysisState> call(List<QualityAnalysisState> analysisStates, List<Writable> writables)
-                    throws Exception {
+    public List<QualityAnalysisState> apply(List<QualityAnalysisState> analysisStates, List<Writable> writables){
         if (analysisStates == null) {
             analysisStates = new ArrayList<>();
             List<ColumnType> columnTypes = schema.getColumnTypes();

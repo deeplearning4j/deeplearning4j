@@ -1,11 +1,11 @@
-package org.datavec.spark.transform.quality.integer;
+package org.datavec.api.transform.analysis.quality.integer;
 
 import lombok.Getter;
+import org.datavec.api.transform.analysis.quality.QualityAnalysisState;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.transform.quality.columns.IntegerQuality;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.quality.QualityAnalysisState;
 
 /**
  * Created by huitseeker on 3/6/17.
@@ -23,13 +23,13 @@ public class IntegerQualityAnalysisState implements QualityAnalysisState<Integer
         this.mergeFunction = new IntegerQualityMergeFunction();
     }
 
-    public IntegerQualityAnalysisState add(Writable writable) throws Exception {
-        integerQuality = addFunction.call(integerQuality, writable);
+    public IntegerQualityAnalysisState add(Writable writable) {
+        integerQuality = addFunction.apply(integerQuality, writable);
         return this;
     }
 
-    public IntegerQualityAnalysisState merge(IntegerQualityAnalysisState other) throws Exception {
-        integerQuality = mergeFunction.call(integerQuality, other.getIntegerQuality());
+    public IntegerQualityAnalysisState merge(IntegerQualityAnalysisState other) {
+        integerQuality = mergeFunction.apply(integerQuality, other.getIntegerQuality());
         return this;
     }
 

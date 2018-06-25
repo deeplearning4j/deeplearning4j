@@ -14,26 +14,26 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality.real;
+package org.datavec.api.transform.analysis.quality.real;
 
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.quality.columns.DoubleQuality;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.function.BiFunction;
 
 /**
  * Created by Alex on 5/03/2016.
  */
 @AllArgsConstructor
-public class RealQualityAddFunction implements Function2<DoubleQuality, Writable, DoubleQuality> {
+public class RealQualityAddFunction implements BiFunction<DoubleQuality, Writable, DoubleQuality> {
 
     private final DoubleMetaData meta;
 
     @Override
-    public DoubleQuality call(DoubleQuality v1, Writable writable) throws Exception {
+    public DoubleQuality apply(DoubleQuality v1, Writable writable) {
 
         long valid = v1.getCountValid();
         long invalid = v1.getCountInvalid();

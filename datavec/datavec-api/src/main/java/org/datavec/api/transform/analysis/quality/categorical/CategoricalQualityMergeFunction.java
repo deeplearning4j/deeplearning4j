@@ -14,18 +14,18 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality.categorical;
+package org.datavec.api.transform.analysis.quality.categorical;
 
-import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.quality.columns.CategoricalQuality;
+import org.nd4j.linalg.function.BiFunction;
 
 /**
  * Created by Alex on 5/03/2016.
  */
 public class CategoricalQualityMergeFunction
-                implements Function2<CategoricalQuality, CategoricalQuality, CategoricalQuality> {
+                implements BiFunction<CategoricalQuality, CategoricalQuality, CategoricalQuality> {
     @Override
-    public CategoricalQuality call(CategoricalQuality v1, CategoricalQuality v2) throws Exception {
+    public CategoricalQuality apply(CategoricalQuality v1, CategoricalQuality v2){
         return v1.add(v2);
     }
 }

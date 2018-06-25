@@ -14,26 +14,26 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality.string;
+package org.datavec.api.transform.analysis.quality.string;
 
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.quality.columns.StringQuality;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.function.BiFunction;
 
 /**
  * Created by Alex on 5/03/2016.
  */
 @AllArgsConstructor
-public class StringQualityAddFunction implements Function2<StringQuality, Writable, StringQuality> {
+public class StringQualityAddFunction implements BiFunction<StringQuality, Writable, StringQuality> {
 
     private final StringMetaData meta;
 
     @Override
-    public StringQuality call(StringQuality v1, Writable writable) throws Exception {
+    public StringQuality apply(StringQuality v1, Writable writable) {
         long valid = v1.getCountValid();
         long invalid = v1.getCountInvalid();
         long countMissing = v1.getCountMissing();

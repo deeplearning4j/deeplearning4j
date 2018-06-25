@@ -1,6 +1,5 @@
 package org.datavec.local.transforms;
 
-import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.transform.ColumnType;
@@ -9,6 +8,11 @@ import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.DataVecAnalysisUtils;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 import org.datavec.api.transform.analysis.histogram.HistogramCounter;
+import org.datavec.api.transform.analysis.quality.QualityAnalysisAddFunction;
+import org.datavec.api.transform.analysis.quality.QualityAnalysisCombineFunction;
+import org.datavec.api.transform.analysis.quality.QualityAnalysisState;
+import org.datavec.api.transform.quality.DataQualityAnalysis;
+import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.datavec.local.transforms.analysis.aggregate.AnalysisAddFunction;
@@ -63,6 +67,54 @@ public class AnalyzeLocal {
         }
 
         return new DataAnalysis(schema, list);
+    }
+
+
+    /**
+     * Analyze the data quality of sequence data - provides a report on missing values, values that don't comply with schema, etc
+     * @param schema Schema for data
+     * @param data   Data to analyze
+     * @return DataQualityAnalysis object
+     */
+    public static DataQualityAnalysis analyzeQualitySequence(Schema schema, SequenceRecordReader data) {
+        int nColumns = schema.numColumns();
+        List<QualityAnalysisState> states = new ArrayList<>();
+        QualityAnalysisAddFunction addFn = new QualityAnalysisAddFunction(schema);
+        while(data.hasNext()){
+            List<List<Writable>> seq = data.sequenceRecord();
+            for(List<Writable> step : seq){
+                states = addFn.apply(states, step);
+            }
+        }
+
+        List<ColumnQuality> list = new ArrayList<>(nColumns);
+
+        for (QualityAnalysisState qualityState : states) {
+            list.add(qualityState.getColumnQuality());
+        }
+        return new DataQualityAnalysis(schema, list);
+    }
+
+    /**
+     * Analyze the data quality of data - provides a report on missing values, values that don't comply with schema, etc
+     * @param schema Schema for data
+     * @param data   Data to analyze
+     * @return DataQualityAnalysis object
+     */
+    public static DataQualityAnalysis analyzeQuality(final Schema schema, final RecordReader data) {
+        int nColumns = schema.numColumns();
+        List<QualityAnalysisState> states = new ArrayList<>();
+        QualityAnalysisAddFunction addFn = new QualityAnalysisAddFunction(schema);
+        while(data.hasNext()){
+            states = addFn.apply(states, data.next());
+        }
+
+        List<ColumnQuality> list = new ArrayList<>(nColumns);
+
+        for (QualityAnalysisState qualityState : states) {
+            list.add(qualityState.getColumnQuality());
+        }
+        return new DataQualityAnalysis(schema, list);
     }
 
     /**

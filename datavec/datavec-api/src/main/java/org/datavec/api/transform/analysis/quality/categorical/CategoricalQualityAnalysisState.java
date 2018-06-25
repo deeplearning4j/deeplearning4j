@@ -1,11 +1,11 @@
-package org.datavec.spark.transform.quality.categorical;
+package org.datavec.api.transform.analysis.quality.categorical;
 
 import lombok.Getter;
+import org.datavec.api.transform.analysis.quality.QualityAnalysisState;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.quality.columns.CategoricalQuality;
 import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.quality.QualityAnalysisState;
 
 /**
  * Created by huitseeker on 3/6/17.
@@ -23,13 +23,13 @@ public class CategoricalQualityAnalysisState implements QualityAnalysisState<Cat
         this.mergeFunction = new CategoricalQualityMergeFunction();
     }
 
-    public CategoricalQualityAnalysisState add(Writable writable) throws Exception {
-        categoricalQuality = addFunction.call(categoricalQuality, writable);
+    public CategoricalQualityAnalysisState add(Writable writable) {
+        categoricalQuality = addFunction.apply(categoricalQuality, writable);
         return this;
     }
 
-    public CategoricalQualityAnalysisState merge(CategoricalQualityAnalysisState other) throws Exception {
-        categoricalQuality = mergeFunction.call(categoricalQuality, other.getCategoricalQuality());
+    public CategoricalQualityAnalysisState merge(CategoricalQualityAnalysisState other) {
+        categoricalQuality = mergeFunction.apply(categoricalQuality, other.getCategoricalQuality());
         return this;
     }
 

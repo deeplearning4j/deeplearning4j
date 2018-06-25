@@ -14,14 +14,14 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality.time;
+package org.datavec.api.transform.analysis.quality.time;
 
 import lombok.Getter;
+import org.datavec.api.transform.analysis.quality.QualityAnalysisState;
 import org.datavec.api.transform.metadata.TimeMetaData;
 import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.transform.quality.columns.TimeQuality;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.quality.QualityAnalysisState;
 
 /**
  * @author Alex Black
@@ -39,13 +39,13 @@ public class TimeQualityAnalysisState implements QualityAnalysisState<TimeQualit
         this.mergeFunction = new TimeQualityMergeFunction();
     }
 
-    public TimeQualityAnalysisState add(Writable writable) throws Exception {
-        timeQuality = addFunction.call(timeQuality, writable);
+    public TimeQualityAnalysisState add(Writable writable) {
+        timeQuality = addFunction.apply(timeQuality, writable);
         return this;
     }
 
-    public TimeQualityAnalysisState merge(TimeQualityAnalysisState other) throws Exception {
-        timeQuality = mergeFunction.call(timeQuality, other.getTimeQuality());
+    public TimeQualityAnalysisState merge(TimeQualityAnalysisState other) {
+        timeQuality = mergeFunction.apply(timeQuality, other.getTimeQuality());
         return this;
     }
 

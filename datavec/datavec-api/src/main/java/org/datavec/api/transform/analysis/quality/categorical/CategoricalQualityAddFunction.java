@@ -14,26 +14,26 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.quality.categorical;
+package org.datavec.api.transform.analysis.quality.categorical;
 
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.quality.columns.CategoricalQuality;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.function.BiFunction;
 
 /**
  * Created by Alex on 5/03/2016.
  */
 @AllArgsConstructor
-public class CategoricalQualityAddFunction implements Function2<CategoricalQuality, Writable, CategoricalQuality> {
+public class CategoricalQualityAddFunction implements BiFunction<CategoricalQuality, Writable, CategoricalQuality> {
 
     private final CategoricalMetaData meta;
 
     @Override
-    public CategoricalQuality call(CategoricalQuality v1, Writable writable) throws Exception {
+    public CategoricalQuality apply(CategoricalQuality v1, Writable writable) {
 
         long valid = v1.getCountValid();
         long invalid = v1.getCountInvalid();
