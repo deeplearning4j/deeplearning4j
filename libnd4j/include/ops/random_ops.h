@@ -102,7 +102,7 @@ namespace randomOps {
 
         random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             T lambda = extraParams[0];
-            T x = helper->relativeT(idx, -nd4j::DataTypeUtils::template max<T>(), nd4j::DataTypeUtils::template max<T>());
+            T x = helper->relativeT(idx, -nd4j::DataTypeUtils::template max<T>() / 10 , nd4j::DataTypeUtils::template max<T>() / 10);
             return x <= (T)0.f ? (T)0.f : (T)1.f - nd4j::math::nd4j_pow<T>((T) M_E, -(lambda * x));
         }
 

@@ -68,33 +68,9 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
     
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistributionInv<double>>(rng, x.getBuffer(), x.getShapeInfo(), extraParams);
-    
-    // const double min = 0.;
-    // const double max = 1.;
-    // const int len = static_cast<int>(shapeArr(0));
-    // for(int i=0; i<len; ++i) {
-    //     double f = (double)rand() / RAND_MAX;
-    //     double elem = min + f * (max - min);
-    //     // x(i) = 1. - nd4j::math::nd4j_pow<double>((double) M_E, -(lambda * elem));
-    //     x(i) = -nd4j::math::nd4j_log<double>(1. - elem) / lambda;
-    // }
-
-    // double trueMean = 0.;
-    // for(int i=0; i<len; ++i)
-    //     trueMean += x(i);
-    // trueMean /= len;
-
-    // double trueStd = 0.;
-    // for(int i=0; i<len; ++i)
-    //     trueStd += (x(i) - trueMean)*(x(i) - trueMean);
-    // trueStd = nd4j::math::nd4j_sqrt<double>(trueStd/(len-1));
-
     const double actualMean = x.meanNumber();
     const double actualStd  = x.template varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true);
  
-    // printf("%f : %f\n", trueMean, actualMean);
-    // printf("%f : %f\n", trueStd, actualStd);
-
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);    
 
@@ -136,3 +112,63 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
+    
+    const int N = 50000;
+    const double lambda = 2.;
+    const double mean   = 1. / lambda; 
+    const double std    = mean;
+
+    NDArray<double> x('c', {N});
+    double extraParams[] = {lambda};
+
+    Nd4jLong *buffer = new Nd4jLong[N];
+    NativeOps nativeOps;
+    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);    
+    if (rng == nullptr)
+        throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test1: RNG initialization failed !");
+    
+    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, x.getBuffer(), x.getShapeInfo(), extraParams);
+    const double actualMean = x.meanNumber();
+    const double actualStd  = x.template varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true);
+ 
+    ASSERT_NEAR(mean, actualMean, 0.01);
+    ASSERT_NEAR(std,  actualStd, 0.01);    
+
+    nativeOps.destroyRandom((Nd4jPointer) rng);
+    delete[] buffer;       
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
+    
+    const int N = 50000;
+    const double lambda = 2.;
+    const double mean   = 1. / lambda; 
+    const double std    = mean;
+    double extraParams[] = {lambda};
+
+    NDArray<double> x('c', {N});
+    NDArray<double> y('c', {N});
+    NDArrayFactory<double>::linspace(-N/2., y);  // [-25000, 25000)
+
+
+    Nd4jLong *buffer = new Nd4jLong[N];
+    NativeOps nativeOps;
+    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);    
+    if (rng == nullptr)
+        throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test2: RNG initialization failed !");
+    
+    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, y.getBuffer(), y.getShapeInfo(), x.getBuffer(), x.getShapeInfo(), extraParams);
+
+    const double actualMean = x.meanNumber();
+    const double actualStd  = x.template varianceNumber<simdOps::SummaryStatsStandardDeviation<double>>(true);
+
+    ASSERT_NEAR(mean, actualMean, 0.01);
+    ASSERT_NEAR(std,  actualStd, 0.01);    
+
+    nativeOps.destroyRandom((Nd4jPointer) rng);
+    delete[] buffer;
+
+}
