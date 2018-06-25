@@ -667,7 +667,7 @@ Nd4jLong* ShapeUtils<T>::evalDiagShapeInfo(const Nd4jLong* shapeInfoConst, nd4j:
 
     if(shape::isVector(shapeInfo) || shape::isScalar(shapeInfo)) {
         ALLOCATE(outputShapeInfo, workspace, shape::shapeInfoLength(2), Nd4jLong);
-        outputShapeInfo[0] = rank;
+        outputShapeInfo[0] = 2;
         outputShapeInfo[1] = outputShapeInfo[2] = shape::length(shapeInfo);
     }
     else {
