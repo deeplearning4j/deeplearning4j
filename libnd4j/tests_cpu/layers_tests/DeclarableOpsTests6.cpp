@@ -1898,6 +1898,19 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test5) {
 }
 
 
+TEST_F(DeclarableOpsTests6, Test_Diag_119_1) {
+    NDArray<float> x('c', {3}, {0.15f, 0.25f, 0.35f});
+    NDArray<float> e('c', {3, 3}, {0.15f, 0.0f, 0.0f,   0.0f, 0.25f, 0.0f,   0.0f, 0.0f, 0.35f});
+
+    nd4j::ops::diag<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, deconv2d_test1) {
 
