@@ -19,10 +19,12 @@ package org.datavec.api.transform.analysis.quality.integer;
 import org.datavec.api.transform.quality.columns.IntegerQuality;
 import org.nd4j.linalg.function.BiFunction;
 
+import java.io.Serializable;
+
 /**
  * Created by Alex on 5/03/2016.
  */
-public class IntegerQualityMergeFunction implements BiFunction<IntegerQuality, IntegerQuality, IntegerQuality> {
+public class IntegerQualityMergeFunction implements BiFunction<IntegerQuality, IntegerQuality, IntegerQuality>, Serializable {
     @Override
     public IntegerQuality apply(IntegerQuality v1, IntegerQuality v2) {
         return v1.add(v2);

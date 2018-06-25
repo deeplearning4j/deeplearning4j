@@ -77,7 +77,7 @@ public class StatCounter implements Serializable {
             } else {
                 runningMean = (runningMean * count + o.runningMean * o.count) / (count + o.count);
             }
-            runningM2 += o.runningM2 + (d * d * count * o.runningM2) / (count + o.count);
+            runningM2 += o.runningM2 + (d * d * count * o.count) / (count + o.count);
             count += o.count;
         }
 
@@ -92,5 +92,11 @@ public class StatCounter implements Serializable {
         ret.max = max;
         ret.min = min;
         return ret;
+    }
+
+    @Override
+    public String toString(){
+        return "StatCounter(count=" + count + ",mean=" + runningMean + ",stdev=" + getStddev(false) +
+                ",min=" + min + ",max=" + max + ")";
     }
 }

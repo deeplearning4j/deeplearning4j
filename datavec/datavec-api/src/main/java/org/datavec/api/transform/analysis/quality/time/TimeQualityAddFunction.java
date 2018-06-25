@@ -24,8 +24,10 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.function.BiFunction;
 
+import java.io.Serializable;
+
 @AllArgsConstructor
-public class TimeQualityAddFunction implements BiFunction<TimeQuality, Writable, TimeQuality> {
+public class TimeQualityAddFunction implements BiFunction<TimeQuality, Writable, TimeQuality>, Serializable {
 
     private final TimeMetaData meta;
 

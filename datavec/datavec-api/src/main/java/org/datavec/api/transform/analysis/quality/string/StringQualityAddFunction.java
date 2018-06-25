@@ -24,11 +24,13 @@ import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.function.BiFunction;
 
+import java.io.Serializable;
+
 /**
  * Created by Alex on 5/03/2016.
  */
 @AllArgsConstructor
-public class StringQualityAddFunction implements BiFunction<StringQuality, Writable, StringQuality> {
+public class StringQualityAddFunction implements BiFunction<StringQuality, Writable, StringQuality>, Serializable {
 
     private final StringMetaData meta;
 

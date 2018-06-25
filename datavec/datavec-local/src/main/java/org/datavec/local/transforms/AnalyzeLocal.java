@@ -21,7 +21,7 @@ import org.datavec.local.transforms.analysis.histogram.HistogramAddFunction;
 import java.util.*;
 
 public class AnalyzeLocal {
-    private static final int DEFAULT_MAX_HISTOGRAM_BUCKETS = 20;
+    private static final int DEFAULT_MAX_HISTOGRAM_BUCKETS = 30;
 
     /**
      * Analyse the specified data - returns a DataAnalysis object with summary information about each column
@@ -103,7 +103,7 @@ public class AnalyzeLocal {
      */
     public static DataQualityAnalysis analyzeQuality(final Schema schema, final RecordReader data) {
         int nColumns = schema.numColumns();
-        List<QualityAnalysisState> states = new ArrayList<>();
+        List<QualityAnalysisState> states = null;
         QualityAnalysisAddFunction addFn = new QualityAnalysisAddFunction(schema);
         while(data.hasNext()){
             states = addFn.apply(states, data.next());

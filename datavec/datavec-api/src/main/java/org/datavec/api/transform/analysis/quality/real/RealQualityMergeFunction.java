@@ -19,10 +19,12 @@ package org.datavec.api.transform.analysis.quality.real;
 import org.datavec.api.transform.quality.columns.DoubleQuality;
 import org.nd4j.linalg.function.BiFunction;
 
+import java.io.Serializable;
+
 /**
  * Created by Alex on 5/03/2016.
  */
-public class RealQualityMergeFunction implements BiFunction<DoubleQuality, DoubleQuality, DoubleQuality> {
+public class RealQualityMergeFunction implements BiFunction<DoubleQuality, DoubleQuality, DoubleQuality>, Serializable {
     @Override
     public DoubleQuality apply(DoubleQuality v1, DoubleQuality v2) {
         return v1.add(v2);

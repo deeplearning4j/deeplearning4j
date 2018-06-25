@@ -30,6 +30,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.function.BiFunction;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +41,7 @@ import java.util.List;
  */
 @AllArgsConstructor
 public class QualityAnalysisAddFunction
-                implements BiFunction<List<QualityAnalysisState>, List<Writable>, List<QualityAnalysisState>> {
+                implements BiFunction<List<QualityAnalysisState>, List<Writable>, List<QualityAnalysisState>>, Serializable {
 
     private Schema schema;
 

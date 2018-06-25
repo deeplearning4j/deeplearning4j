@@ -19,11 +19,13 @@ package org.datavec.api.transform.analysis.quality.categorical;
 import org.datavec.api.transform.quality.columns.CategoricalQuality;
 import org.nd4j.linalg.function.BiFunction;
 
+import java.io.Serializable;
+
 /**
  * Created by Alex on 5/03/2016.
  */
 public class CategoricalQualityMergeFunction
-                implements BiFunction<CategoricalQuality, CategoricalQuality, CategoricalQuality> {
+                implements BiFunction<CategoricalQuality, CategoricalQuality, CategoricalQuality>, Serializable {
     @Override
     public CategoricalQuality apply(CategoricalQuality v1, CategoricalQuality v2){
         return v1.add(v2);

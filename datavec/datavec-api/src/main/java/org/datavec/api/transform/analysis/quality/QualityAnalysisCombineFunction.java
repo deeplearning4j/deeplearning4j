@@ -18,6 +18,7 @@ package org.datavec.api.transform.analysis.quality;
 
 import org.nd4j.linalg.function.BiFunction;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,7 +28,7 @@ import java.util.List;
  * @author Alex Black
  */
 public class QualityAnalysisCombineFunction implements
-        BiFunction<List<QualityAnalysisState>, List<QualityAnalysisState>, List<QualityAnalysisState>> {
+        BiFunction<List<QualityAnalysisState>, List<QualityAnalysisState>, List<QualityAnalysisState>>, Serializable {
     @Override
     public List<QualityAnalysisState> apply(List<QualityAnalysisState> l1, List<QualityAnalysisState> l2) {
         if (l1 == null)

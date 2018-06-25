@@ -24,11 +24,13 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.function.BiFunction;
 
+import java.io.Serializable;
+
 /**
  * Created by Alex on 5/03/2016.
  */
 @AllArgsConstructor
-public class LongQualityAddFunction implements BiFunction<LongQuality, Writable, LongQuality> {
+public class LongQualityAddFunction implements BiFunction<LongQuality, Writable, LongQuality>, Serializable {
 
     private final LongMetaData meta;
 
