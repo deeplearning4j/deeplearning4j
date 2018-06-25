@@ -44,7 +44,7 @@ import static org.junit.Assert.*;
 
 
 @Slf4j
-
+@Ignore
 @RunWith(Parameterized.class)
 public class TensorFlowImportTest extends BaseNd4jTest {
     private static ExecutorConfiguration configuration = ExecutorConfiguration.builder()
