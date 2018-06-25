@@ -11,6 +11,7 @@
 
 namespace nd4j {
 namespace graph {
+
 class GraphUtils {
 public:
     typedef std::vector<OpDescriptor> OpList;
@@ -18,7 +19,9 @@ public:
 public:
     static bool filterOperations(OpList& ops);
     static std::string makeCommandLine(OpList& ops);
+    static int runPreprocessor(char const* input, char const* output);
 };
+
 }
 }
 #endif
