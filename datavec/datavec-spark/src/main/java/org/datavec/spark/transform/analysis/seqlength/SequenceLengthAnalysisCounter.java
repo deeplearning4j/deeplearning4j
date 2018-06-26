@@ -18,8 +18,8 @@ package org.datavec.spark.transform.analysis.seqlength;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.analysis.AnalysisCounter;
 
 /**
  * Created by Alex on 7/03/2016.

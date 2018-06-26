@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -100,6 +101,11 @@ public class SameDiffParamInitializer implements ParamInitializer {
         for(String s : params){
             val sh = paramShapes.get(s);
             val length = ArrayUtil.prodLong(sh);
+            if(length <= 0){
+                throw new IllegalStateException("Invalid array state for parameter \"" + s + "\" in layer " + sdl.getLayerName()
+                        + " of type " + sdl.getClass().getSimpleName() + ": parameter length (" + length
+                        + ") must be > 0 - parameter array shape: " + Arrays.toString(sh));
+            }
             INDArray sub = view.get(point(0), interval(soFar, soFar + length));
 
             if(!Arrays.equals(sub.shape(), sh)){

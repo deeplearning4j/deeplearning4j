@@ -203,11 +203,14 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
         }
 
-        if(arg().getShape() == null)
+        long[] argShape = arg().getShape();
+        if (argShape == null && x() == null) {
             return Collections.emptyList();
+        }
+        long[] inputShape = (argShape == null ? x().shape() : argShape);
 
         List<long[]> ret = new ArrayList<>(1);
-        val reducedShape = Shape.getReducedShape(arg().getShape(),dimensions, isKeepDims(), newFormat);
+        val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims(), newFormat);
         ret.add(reducedShape);
         return ret;
     }

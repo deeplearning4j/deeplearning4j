@@ -775,12 +775,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     /**
      * Perform feed-forward, optionally (not) clearing the layer input arrays.<br>
-     * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
-     * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
-     * workspaces in which they were defined - potentially causing a crash. See https://deeplearning4j.org/workspaces
-     * for more details
+     * Note: when using clearInputs=false, there can be some performance and memory overhead: this is because the arrays are
+     * defined outside of workspaces (which are enabled by default) - otherwise, old/invalidated arrays could still be
+     * accessed after calling this method. Consequently: Don't use clearInputs=false unless you have a use case that
+     * requires them to remain after feed-forward has been completed
      *
-     * @param train       training mode
+     * @param train       training mode (true) or test mode (false)
      * @param clearInputs If false: don't clear the layer inputs
      * @return Activations from feed-forward
      */
