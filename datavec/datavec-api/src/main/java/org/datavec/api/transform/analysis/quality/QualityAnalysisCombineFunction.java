@@ -14,12 +14,11 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.aggregate;
+package org.datavec.api.transform.analysis.quality;
 
+import org.nd4j.linalg.function.BiFunction;
 
-import org.apache.spark.api.java.function.Function2;
-import org.datavec.api.transform.analysis.AnalysisCounter;
-
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,10 +27,10 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class AnalysisCombineFunction
-                implements Function2<List<AnalysisCounter>, List<AnalysisCounter>, List<AnalysisCounter>> {
+public class QualityAnalysisCombineFunction implements
+        BiFunction<List<QualityAnalysisState>, List<QualityAnalysisState>, List<QualityAnalysisState>>, Serializable {
     @Override
-    public List<AnalysisCounter> call(List<AnalysisCounter> l1, List<AnalysisCounter> l2) throws Exception {
+    public List<QualityAnalysisState> apply(List<QualityAnalysisState> l1, List<QualityAnalysisState> l2) {
         if (l1 == null)
             return l2;
         if (l2 == null)
@@ -41,7 +40,7 @@ public class AnalysisCombineFunction
         if (size != l2.size())
             throw new IllegalStateException("List lengths differ");
 
-        List<AnalysisCounter> out = new ArrayList<>();
+        List<QualityAnalysisState> out = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             out.add(l1.get(i).merge(l2.get(i)));
         }

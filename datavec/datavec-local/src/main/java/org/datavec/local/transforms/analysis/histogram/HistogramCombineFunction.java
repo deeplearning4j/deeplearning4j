@@ -14,24 +14,23 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.aggregate;
+package org.datavec.local.transforms.analysis.histogram;
 
-
-import org.apache.spark.api.java.function.Function2;
-import org.datavec.api.transform.analysis.AnalysisCounter;
+import org.datavec.api.transform.analysis.histogram.HistogramCounter;
+import org.nd4j.linalg.function.BiFunction;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Combine function used for undertaking analysis of a data set via Spark
+ * A combiner function used in the calculation of histograms
  *
  * @author Alex Black
  */
-public class AnalysisCombineFunction
-                implements Function2<List<AnalysisCounter>, List<AnalysisCounter>, List<AnalysisCounter>> {
+public class HistogramCombineFunction
+                implements BiFunction<List<HistogramCounter>, List<HistogramCounter>, List<HistogramCounter>> {
     @Override
-    public List<AnalysisCounter> call(List<AnalysisCounter> l1, List<AnalysisCounter> l2) throws Exception {
+    public List<HistogramCounter> apply(List<HistogramCounter> l1, List<HistogramCounter> l2) {
         if (l1 == null)
             return l2;
         if (l2 == null)
@@ -41,9 +40,19 @@ public class AnalysisCombineFunction
         if (size != l2.size())
             throw new IllegalStateException("List lengths differ");
 
-        List<AnalysisCounter> out = new ArrayList<>();
+        List<HistogramCounter> out = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            out.add(l1.get(i).merge(l2.get(i)));
+            HistogramCounter c1 = l1.get(i);
+            HistogramCounter c2 = l2.get(i);
+
+            //Normally shouldn't get null values here - but maybe for Bytes column, etc.
+            if (c1 == null) {
+                out.add(c2);
+            } else if (c2 == null) {
+                out.add(c1);
+            } else {
+                out.add(c1.merge(c2));
+            }
         }
         return out;
     }

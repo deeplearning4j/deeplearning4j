@@ -14,16 +14,15 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.aggregate;
+package org.datavec.local.transforms.analysis.aggregate;
 
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.transform.analysis.counter.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.analysis.string.StringAnalysisCounter;
+import org.nd4j.linalg.function.BiFunction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,12 +33,11 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class AnalysisAddFunction implements Function2<List<AnalysisCounter>, List<Writable>, List<AnalysisCounter>> {
+public class AnalysisAddFunction implements BiFunction<List<AnalysisCounter>, List<Writable>, List<AnalysisCounter>> {
     private Schema schema;
 
     @Override
-    public List<AnalysisCounter> call(List<AnalysisCounter> analysisCounters, List<Writable> writables)
-                    throws Exception {
+    public List<AnalysisCounter> apply(List<AnalysisCounter> analysisCounters, List<Writable> writables){
         if (analysisCounters == null) {
             analysisCounters = new ArrayList<>();
             List<ColumnType> columnTypes = schema.getColumnTypes();
