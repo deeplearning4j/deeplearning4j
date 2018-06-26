@@ -125,6 +125,11 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     }
 
     @Override
+    public int numParams(){
+        return (int)params.length();
+    }
+
+    @Override
     public void setParam(String key, INDArray val) {
         if(!paramTable.containsKey(key)){
             throw new IllegalArgumentException("Cannot set parameter, invalid/unknown parameter key: " + key);

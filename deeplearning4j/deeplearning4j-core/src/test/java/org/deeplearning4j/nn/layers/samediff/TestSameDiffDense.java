@@ -326,7 +326,6 @@ public class TestSameDiffDense {
                 .trainingWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
                 .inferenceWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
                 .updater(new Adam(0.1))
-//                .updater(new NoOp())
                 .list()
                 .layer(new SameDiffDense.Builder().nIn(nIn).nOut(5).activation(Activation.TANH).build())
                 .layer(new SameDiffDense.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
@@ -340,7 +339,6 @@ public class TestSameDiffDense {
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .updater(new Adam(0.1))
-//                .updater(new NoOp())
                 .list()
                 .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(nIn).nOut(5).build())
                 .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(5).build())
@@ -365,31 +363,14 @@ public class TestSameDiffDense {
 
         assertEquals(outStd, outSD);
 
-        for( int i=0; i<1; i++ ){
+        for( int i=0; i<3; i++ ){
             netSD.fit(ds);
             netStandard.fit(ds);
             String s = String.valueOf(i);
-            System.out.println(netStandard.getFlattenedGradients());
             assertEquals(s, netStandard.getFlattenedGradients(), netSD.getFlattenedGradients());
             assertEquals(s, netStandard.params(), netSD.params());
             assertEquals(s, netStandard.getUpdater().getStateViewArray(), netSD.getUpdater().getStateViewArray());
         }
-
-//        for( int i=0; i<3; i++ ){
-//            netSD.setInput(ds.getFeatures());
-//            netSD.setLabels(ds.getLabels());
-//
-//            netStandard.setInput(ds.getFeatures());
-//            netStandard.setLabels(ds.getLabels());
-//
-//            netSD.computeGradientAndScore();
-//            netStandard.computeGradientAndScore();
-//
-//            String s = String.valueOf(i);
-//            assertEquals(s, netStandard.params(), netSD.params());
-//            assertEquals(s, netStandard.getFlattenedGradients(), netSD.getFlattenedGradients());
-//            assertEquals(s, netStandard.getUpdater().getStateViewArray(), netSD.getUpdater().getStateViewArray());
-//        }
     }
 
     @Test
