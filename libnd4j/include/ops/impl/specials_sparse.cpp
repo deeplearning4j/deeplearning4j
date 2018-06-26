@@ -30,8 +30,8 @@ namespace nd4j {
         template <typename T>
         bool SparseUtils<T>::ltIndices(Nd4jLong *indices, int rank, Nd4jLong x, Nd4jLong y) {
             for (int e = 0; e < rank; e++) {
-                int idxX = indices[x * rank + e];
-                int idxY = indices[y * rank + e];
+                Nd4jLong idxX = indices[x * rank + e];
+                Nd4jLong idxY = indices[y * rank + e];
                 // we're comparing indices one by one, starting from outer dimension
                 if (idxX < idxY) {
                     return true;
@@ -48,8 +48,8 @@ namespace nd4j {
         bool SparseUtils<T>::gtIndices(Nd4jLong *indices, int rank, Nd4jLong x, Nd4jLong y) {
             for (int e = 0; e < rank; e++) {
                 // we're comparing indices one by one, starting from outer dimension
-                int idxX = indices[x * rank + e];
-                int idxY = indices[y * rank + e];
+                Nd4jLong idxX = indices[x * rank + e];
+                Nd4jLong idxY = indices[y * rank + e];
                 if ( idxX > idxY) {
                     return true;
                 } else if (idxX == idxY) {
@@ -64,7 +64,7 @@ namespace nd4j {
         void SparseUtils<T>::swapEverything(Nd4jLong *indices, T *array, int rank, Nd4jLong x, Nd4jLong y) {
             // swap indices
             for (int e = 0; e < rank; e++) {
-                int tmp = indices[x * rank + e];
+                Nd4jLong tmp = indices[x * rank + e];
                 indices[x * rank + e] = indices[y * rank + e];
                 indices[y * rank + e] = tmp;
             }
