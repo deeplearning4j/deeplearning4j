@@ -2,6 +2,7 @@ package org.nd4j.autodiff.functions;
 
 import lombok.Data;
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -1387,6 +1388,25 @@ public class DifferentialFunctionFactory {
     public SDVariable mmul(SDVariable x,
                            SDVariable y) {
         return mmul(x, y, MMulTranspose.allFalse());
+    }
+
+    public SDVariable batchMmul(SDVariable[] matricesA,
+                                SDVariable[] matricesB) {
+        return batchMmul(matricesA, matricesB, false, false);
+    }
+
+    public SDVariable batchMmul(SDVariable[] matricesA,
+                                SDVariable[] matricesB,
+                                boolean transposeA,
+                                boolean transposeB) {
+        return batchMmul(ArrayUtils.addAll(matricesA, matricesB), transposeA, transposeB);
+    }
+
+
+    public SDVariable batchMmul(SDVariable[] matrices,
+                                boolean transposeA,
+                                boolean transposeB) {
+        return new BatchMmul(sameDiff(), matrices, transposeA, transposeB).outputVariable();
     }
 
 
