@@ -778,7 +778,7 @@ void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const in
     }    
 
 // #pragma omp parallel for if(numOfArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)    
-#pragma omp parallel for schedule(guided)    
+// #pragma omp parallel for schedule(guided)    
     for(int i = 0; i < numOfArrs; ++i) 
         output((indices + i * rank2), true).assign(inArrs[i]);
     
