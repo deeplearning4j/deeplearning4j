@@ -109,7 +109,7 @@ public class TestImageRecordReader {
 
         //Idea: labels order should be consistent regardless of input file order
         File f = testDir.newFolder();
-        new ClassPathResource("datavec-data-image/testimages").copyDirectory(f);
+        new ClassPathResource("datavec-data-image/testimages/").copyDirectory(f);
         File f0 = new File(f, "/class0/0.jpg");
         File f1 = new File(f, "/class1/A.jpg");
 
@@ -264,7 +264,7 @@ public class TestImageRecordReader {
         ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
         ImageRecordReader rr = new ImageRecordReader(32, 32, 3, labelMaker);
         File parent = testDir.newFolder();
-        new ClassPathResource("datavec-data-image/testimages/class0").copyDirectory(parent);
+        new ClassPathResource("datavec-data-image/testimages/class0/").copyDirectory(parent);
         int numFiles = parent.list().length;
         rr.initialize(new FileSplit(parent));
         CountingListener counting = new CountingListener(new LogRecordListener());

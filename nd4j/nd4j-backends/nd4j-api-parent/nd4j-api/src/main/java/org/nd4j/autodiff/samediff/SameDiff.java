@@ -579,7 +579,8 @@ public class SameDiff {
             throw new ND4JIllegalStateException("No null names allowed!");
 
         if (variableNameToArr.containsKey(varName)) {
-            throw new ND4JIllegalStateException("Array for " + varName + " already exists!");
+//            throw new ND4JIllegalStateException("Array for " + varName + " already exists!");
+///            return;
         }
 
         variableNameToArr.put(varName, arr);
@@ -6809,7 +6810,7 @@ public class SameDiff {
 
             val args = getInputsForFunction(differentialFunction);
 
-            log.debug("Step: {}; Executing op {} for node [{}]", exec_counter, opName, ownName);
+            log.debug("Step: {}; Executing op [{}] for node [{}]", exec_counter, opName, ownName);
 
             // check if inputs are active nodes. skip step otherwise
             // please note: Exit node can't be skipped, because it's either rewind point or exit loop point
@@ -6889,6 +6890,12 @@ public class SameDiff {
 
                 if (array != null)
                     variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                else {
+                    val cleansed = name.replaceAll(":.*","");
+                    val list = lists.get(cleansed);
+                    if (list != null)
+                        lists.put(ownName, list);
+                }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
@@ -6937,7 +6944,16 @@ public class SameDiff {
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 val array = inputs[0].getArr();
-                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                val name = inputs[0].getVarName();
+
+                if (array != null)
+                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                else {
+                    val cleansed = name.replaceAll(":.*","");
+                    val list = lists.get(cleansed);
+                    if (list != null)
+                        lists.put(ownName, list);
+                }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
@@ -6953,7 +6969,16 @@ public class SameDiff {
                 val frame_name = frames.getLast();
 
                 val array = inputs[0].getArr();
-                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                val name = inputs[0].getVarName();
+
+                if (array != null)
+                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                else {
+                    val cleansed = name.replaceAll(":.*","");
+                    val list = lists.get(cleansed);
+                    if (list != null)
+                        lists.put(ownName, list);
+                }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
@@ -6994,18 +7019,32 @@ public class SameDiff {
                 if (flowPath.wasExecuted(inputs[1].getVarName())) {
                     // propagate second input
                     val array = inputs[1].getArr();
+                    val name = inputs[1].getVarName();
 
                     if (array != null)
                         variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                    else {
+                        val cleansed = name.replaceAll(":.*","");
+                        val list = lists.get(cleansed);
+                        if (list != null)
+                            lists.put(ownName, list);
+                    }
 
                     // nullify executed mark
                     flowPath.markExecuted(inputs[1].getVarName(), false);
                 } else {
                     // propagate first input
                     val array = inputs[0].getArr();
+                    val name = inputs[0].getVarName();
 
                     if (array != null)
                         variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                    else {
+                        val cleansed = name.replaceAll(":.*","");
+                        val list = lists.get(cleansed);
+                        if (list != null)
+                            lists.put(ownName, list);
+                    }
                 }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
@@ -7020,6 +7059,7 @@ public class SameDiff {
 
                 val input = inputs[0].getArr();
                 val bool = inputs[1].getArr();
+                val name = inputs[0].getVarName();
 
                 // basically we're setting one of the graph branches inactive. branch 0 for false, branch 1 for true
                 if ((int) bool.getDouble(0) == 0) {
@@ -7030,12 +7070,24 @@ public class SameDiff {
 
                     if (input != null)
                         variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
+                    else {
+                        val cleansed = name.replaceAll(":.*","");
+                        val list = lists.get(cleansed);
+                        if (list != null)
+                            lists.put(ownName, list);
+                    }
                 } else {
                     // true step, we'll propagate output:1 here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 1);
 
                     if (input != null)
                         variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
+                    else {
+                        val cleansed = name.replaceAll(":.*","");
+                        val list = lists.get(cleansed);
+                        if (list != null)
+                            lists.put(ownName, list);
+                    }
 
                     flowPath.markActive(differentialFunction.getOwnName(), false);
                     flowPath.markActive(differentialFunction.getOwnName() + ":1", true);
@@ -7181,7 +7233,23 @@ public class SameDiff {
                 if (log.isTraceEnabled())
                     log.trace("Starting execution of CustomOp op");
 
+
                 DynamicCustomOp customOp = (DynamicCustomOp) differentialFunction;
+
+                if (customOp.opName().equalsIgnoreCase("identity")) {
+                    val cleansed = args[0].replaceAll(":.*","");
+                    val list = lists.get(cleansed);
+                    if (list != null) {
+                        lists.put(ownName, list);
+
+                        flowPath.markExecuted(differentialFunction.getOwnName(), true);
+
+                        ops.add(customOp);
+
+                        continue;
+                    }
+                }
+
                 try {
                     customOp.populateInputsAndOutputsFromSameDiff();
                 } catch (Throwable t) {
