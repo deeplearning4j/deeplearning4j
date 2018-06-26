@@ -926,7 +926,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 LongRawIndexer Lindexer = (LongRawIndexer) indexer;
 
-                for (int i = 0; i < length(); i++) {
+                for (long i = 0; i < length(); i++) {
                     if (t == Type.LONG)
                         Lindexer.put(i, s.readLong());
                     else if (t == Type.INT)
@@ -955,7 +955,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 IntIndexer Iindexer = (IntIndexer) indexer;
 
-                for (int i = 0; i < length(); i++) {
+                for (long i = 0; i < length(); i++) {
                     if (t == Type.INT)
                         Iindexer.put(i, s.readInt());
                     else if (t == Type.LONG)
@@ -993,7 +993,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 DoubleIndexer Dindexer = (DoubleIndexer) indexer;
 
-                for (int i = 0; i < length(); i++) {
+                for (long i = 0; i < length(); i++) {
                     if (t == Type.DOUBLE)
                         Dindexer.put(i, s.readDouble());
                     else if (t == Type.LONG)
@@ -1019,8 +1019,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 FloatIndexer Findexer = (FloatIndexer) indexer;
 
-                for (int i = 0; i < length; i++) {
-
+                for (long i = 0; i < length; i++) {
 
                     if (t == Type.DOUBLE)
                         Findexer.put(i, (float) s.readDouble());
@@ -1048,7 +1047,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 HalfIndexer Hindexer = (HalfIndexer) indexer;
 
-                for (int i = 0; i < length; i++) {
+                for (long i = 0; i < length; i++) {
 
                     if (t == Type.DOUBLE)
                         Hindexer.put(i, (float) s.readDouble());
