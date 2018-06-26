@@ -211,6 +211,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 throw new IllegalStateException("Cannot get array for SDVariable \"" + getVarName() + "\": no array has" +
                         " been defined, and array shape cannot be calculated");
             }
+            if(log.isTraceEnabled()){
+                log.trace("SDVariable.getArr(): could not get array for variable {}: shape is null", getVarName());
+            }
             return null;
         } else {
             long[] shape = sameDiff.getShapeForVarName(getVarName());

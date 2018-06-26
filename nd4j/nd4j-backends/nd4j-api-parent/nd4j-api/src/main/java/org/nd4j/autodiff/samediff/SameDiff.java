@@ -6228,10 +6228,16 @@ public class SameDiff {
      * @return
      */
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec(String functionName) {
+        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> ret;
         if (debugMode) {
-            return sameDiffFunctionInstances.get(functionName).enableDebugMode().exec();
+            ret = sameDiffFunctionInstances.get(functionName).enableDebugMode().exec();
         } else
-            return sameDiffFunctionInstances.get(functionName).exec();
+            ret = sameDiffFunctionInstances.get(functionName).exec();
+
+        //Ensure all variables are associated with this SameDiff instance after possible execBackwards() etc
+        associateSameDiffWithOpsAndVariables();
+
+        return ret;
     }
 
     /**
@@ -6742,11 +6748,34 @@ public class SameDiff {
         return updatedVariables;
     }
 
-    /**
-     * Creates and executes a list of operations
-     *
-     * @return
-     */
+
+    protected void associateSameDiffWithOpsAndVariables(){
+        for(DifferentialFunction df : functionInstancesById.values()){
+            df.setSameDiff(this);
+
+            //TODO: This is ugly but seemingly necessary
+            //Finally, also set the SDVariable for each op
+            //Otherwise: could have an op pointing to this SameDiff instance, but op's SDVariable's sameDiff field pointing
+            // to another SameDiff instance. At which point, they could fetch shapes and arrays from some other instance
+            // (i.e., not from this one that is currently executing)
+            SDVariable[] args = df.args();
+            if(args != null){
+                for(SDVariable arg : args){
+                    arg.setSameDiff(this);
+                }
+            }
+
+            SDVariable[] outputs = df.outputVariables();
+            if(outputs != null){
+                for(SDVariable out : outputs){
+                    out.setSameDiff(this);
+                }
+            }
+        }
+        for(SDVariable var : variableMap.values()){
+            var.setSameDiff(this);
+        }
+    }
 
 
     // required for loops
@@ -6805,12 +6834,9 @@ public class SameDiff {
         //This is necessary, because the one op could be shared by both forward and backward samediff instances
         //If the SameDiff instance isn't set, they might use wrong shapes or arrays as part of their ops
         //And, set the SameDiff instance on all variables, for exactly the same reason
-        for(DifferentialFunction df : functionInstancesById.values()){
-            df.setSameDiff(this);
-        }
-        for(SDVariable var : variableMap.values()){
-            var.setSameDiff(this);
-        }
+        associateSameDiffWithOpsAndVariables();
+
+
 
         int i = 0;
         int exec_counter = 0;
@@ -7349,6 +7375,8 @@ public class SameDiff {
                 //For example, if minibatch size has changed since last op execution
                 List<long[]> outputShape = ((BaseOp)op).calculateOutputShape();
                 Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
+                //Update shape. DynamicCustomOp does this in populateInputsAndOutputsFromSameDiff(); for legacy ops, we'll do it here
+                putOrUpdateShapeForVarName(((BaseOp) op).outputVariable().getVarName(), outputShape.get(0), true);
                 INDArray z = op.z();
                 Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
                 if(!Arrays.equals(outputShape.get(0), z.shape())){
