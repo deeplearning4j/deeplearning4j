@@ -12,21 +12,21 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(concat, -1, 1, false, 0, -2) {
+CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
 
-    const int numOfArrs = block.width();
-
-    NDArray<T>* firstInArr = nullptr;
-    for(int i = 0; i < numOfArrs; ++i)
-        if(!INPUT_VARIABLE(i)->isEmpty()) {
-            firstInArr = INPUT_VARIABLE(i);
-            break;
-        }
-    REQUIRE_TRUE(firstInArr != nullptr, 0, "CONCAT op: at least one input array must be non-empty!");
+    
+    // first of all take into account possible presence of empty array
+    std::vector<NDArray<T>*> nonEmptyArrs;
+    for(int i = 0; i < block.width(); ++i) 
+        if(!INPUT_VARIABLE(i)->isEmpty())
+            nonEmptyArrs.push_back(INPUT_VARIABLE(i));
+    
+    const int numOfArrs = nonEmptyArrs.size();    
+    REQUIRE_TRUE(numOfArrs > 0, 0, "CONCAT op: at least one input array must be non-empty!");
 
     NDArray<T>* output = OUTPUT_VARIABLE(0);
     
-    const int rank = firstInArr->rankOf();
+    const int rank = nonEmptyArrs[0]->rankOf();     //  look up to first non-empty array
 
     int axis = INT_ARG(0);
     if(axis < 0)
@@ -35,44 +35,36 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, -2) {
     // ******** input validation ******** //
     REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
-    for(int i = 0; i < numOfArrs; ++i)
-        if(!INPUT_VARIABLE(i)->isEmpty())
-            REQUIRE_TRUE(INPUT_VARIABLE(i)->rankOf() == rank, 0, "CONCAT op: all input arrays must have the same rank !");
+    for(int i = 1; i < numOfArrs; ++i)        
+        REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0, "CONCAT op: all input arrays must have the same rank !");
 
-    for(int i = 0; i < numOfArrs; ++i) {
-        if(!INPUT_VARIABLE(i)->isEmpty())
-            for(int dim = 0; dim < rank; ++dim)
-                if(dim != axis)                
-                    REQUIRE_TRUE(INPUT_VARIABLE(i)->sizeAt(dim) == firstInArr->sizeAt(dim), 0, "CONCAT op: all input arrays must have the same dimensions (except input axis) !");
+    for(int i = 1; i < numOfArrs; ++i) {        
+        for(int dim = 0; dim < rank; ++dim)
+            if(dim != axis)                
+                REQUIRE_TRUE(nonEmptyArrs[i]->sizeAt(dim) == nonEmptyArrs[0]->sizeAt(dim), 0, "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
     }
     // ******** end of input validation ******** //
 
-    if(numOfArrs == 1) {
+    if(numOfArrs == 1) 
         output->assign(firstInArr);
-    }
-    else {
-        std::vector<NDArray<T>*> inArrs;
-        for(int i = 0; i < numOfArrs; ++i)
-            if(!INPUT_VARIABLE(i)->isEmpty())
-                inArrs.push_back(INPUT_VARIABLE(i));
-        helpers::concat<T>(inArrs, *output, axis);
-    }
+    else 
+        helpers::concat<T>(nonEmptyArrs, *output, axis);
 
     return Status::OK();
 }
 
 DECLARE_SHAPE_FN(concat) {
     
-    const int numOfArrs = block.width();
-    Nd4jLong* firstInputShapeInfo = nullptr;    
-    for(int i = 0; i < numOfArrs; ++i)
-        if(!INPUT_VARIABLE(i)->isEmpty()) {
-            firstInArr = inputShape->at(i);
-            break;
-        }
-    REQUIRE_TRUE(firstInputShapeInfo != nullptr, 0, "CONCAT op: at least one input array must be non-empty!");    
+    // first of all take into account possible presence of empty array
+    std::vector<Nd4jLong*> nonEmptyArrShapes;
+    for(int i = 0; i < block.width(); ++i) 
+        if(!INPUT_VARIABLE(i)->isEmpty())
+            nonEmptyArrShapes.push_back(inputShape->at(i));
+
+    const int numOfArrs = nonEmptyArrShapes.size();    
+    REQUIRE_TRUE(numOfArrs > 0, 0, "CONCAT op: at least one input array must be non-empty!");    
     
-    const int rank = firstInputShapeInfo[0];
+    const int rank = nonEmptyArrShapes[0][0];     //  look up to first non-empty array
 
     int axis = INT_ARG(0);
     if(axis < 0)
@@ -81,29 +73,29 @@ DECLARE_SHAPE_FN(concat) {
     // ******** input validation ******** //
     REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
-    for(int i = 0; i < numOfArrs; ++i)
-        if(!INPUT_VARIABLE(i)->isEmpty())
-            REQUIRE_TRUE(inputShape->at(i)[0] == rank, 0, "CONCAT op: all input arrays must have the same rank !");
+    for(int i = 1; i < numOfArrs; ++i)        
+        REQUIRE_TRUE(nonEmptyArrShapes[i][0] == rank, 0, "CONCAT op: all input arrays must have the same rank !");
 
-    for(int i = 0; i < numOfArrs; ++i)
-        if(!INPUT_VARIABLE(i)->isEmpty())
-            for(int dim = 0; dim < rank; ++dim)
-                if(dim != axis)
-                    REQUIRE_TRUE(inputShape->at(i)[dim + 1] == firstInputShapeInfo[dim + 1], 0, "CONCAT op: all input arrays must have the same dimensions (except input axis) !");
+    for(int i = 1; i < numOfArrs; ++i) {        
+        for(int dim = 0; dim < rank; ++dim)
+            if(dim != axis)                
+                REQUIRE_TRUE(nonEmptyArrShapes[i][dim+1] == nonEmptyArrShapes[0][dim+1], 0, "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
+    }
     // ******** end of input validation ******** //
+    
 
     Nd4jLong* outShapeInfo(nullptr);
-    COPY_SHAPE(firstInputShapeInfo, outShapeInfo);
+    COPY_SHAPE(nonEmptyArrShapes[0], outShapeInfo);
 
     if(numOfArrs == 1) {        
-        shape::updateStrides(outShapeInfo, shape::order(firstInputShapeInfo));
+        shape::updateStrides(outShapeInfo, shape::order(nonEmptyArrShapes[0]));
         return SHAPELIST(outShapeInfo);
     }
 
     for(int i = 1; i < numOfArrs; ++i)
-        outShapeInfo[axis + 1] += inputShape->at(i)[axis + 1];
+        outShapeInfo[axis + 1] += nonEmptyArrShapes[i][axis + 1];
 
-    shape::updateStrides(outShapeInfo, shape::order(firstInputShapeInfo));
+    shape::updateStrides(outShapeInfo, shape::order(nonEmptyArrShapes[0]));
     return SHAPELIST(outShapeInfo);
 }
 
