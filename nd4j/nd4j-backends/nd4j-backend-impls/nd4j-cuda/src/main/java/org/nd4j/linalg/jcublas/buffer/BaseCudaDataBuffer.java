@@ -260,12 +260,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, this.elementSize, dataType()), initialize);
         this.length = length;
-        //allocationPoint.attachBuffer(this);
-        //this.elementSize = elementSize;
+
         this.trackingPoint = allocationPoint.getObjectId();
         this.offset = 0;
         this.originalOffset = 0;
-
 
         if (dataType() == Type.DOUBLE) {
             this.attached = true;
@@ -363,30 +361,30 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(long length) {
-        this(length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2);
+        this(length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2);
     }
 
     public BaseCudaDataBuffer(float[] data) {
         //super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
+        this(data.length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
         set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(int[] data) {
         //super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
+        this(data.length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
         set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(long[] data) {
         //super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
+        this(data.length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
         set(data, data.length, 0, 0);
     }
 
     public BaseCudaDataBuffer(long[] data, boolean copy) {
         //super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
+        this(data.length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
 
         if (copy)
             set(data, data.length, 0, 0);
@@ -394,7 +392,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(double[] data) {
         // super(data);
-        this(data.length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
+        this(data.length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, false);
         set(data, data.length, 0, 0);
     }
 
@@ -409,7 +407,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(ByteBuffer buffer, long length, long offset) {
         //super(buffer, length, offset);
-        this(length, Nd4j.dataType() == Type.DOUBLE ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, offset);
+        this(length, (Nd4j.dataType() == Type.DOUBLE || Nd4j.dataType() == Type.LONG) ? 8 : Nd4j.dataType() == Type.FLOAT ? 4 : 2, offset);
 
         Pointer srcPtr = new CudaPointer(new Pointer(buffer.order(ByteOrder.nativeOrder())));
 

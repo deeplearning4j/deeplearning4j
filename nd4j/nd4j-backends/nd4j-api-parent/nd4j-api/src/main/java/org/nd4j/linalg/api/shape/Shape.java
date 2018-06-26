@@ -3490,6 +3490,17 @@ public class Shape {
         return true;
     }
 
+    /**
+     *
+     * @param shape
+     * @return
+     */
+    public static long lengthOf(long[] shape) {
+        if (shape.length == 0)
+            return 1L;
+        else
+            return ArrayUtil.prodLong(shape);
+    }
 
     public static boolean hasDefaultStridesForShape(INDArray input){
         if(!strideDescendingCAscendingF(input)){
