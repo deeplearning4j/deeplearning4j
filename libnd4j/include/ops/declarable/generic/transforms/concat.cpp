@@ -14,12 +14,27 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
 
-    
-    // first of all take into account possible presence of empty array
+    // first of all take into account possible presence of empty arrays
+    // also if scalar is present -> copy its value to vector with length=1
     std::vector<NDArray<T>*> nonEmptyArrs;
-    for(int i = 0; i < block.width(); ++i) 
-        if(!INPUT_VARIABLE(i)->isEmpty())
-            nonEmptyArrs.push_back(INPUT_VARIABLE(i));
+    std::vector<int> arrsToDelete;
+    int index = 0;
+    for(int i = 0; i < block.width(); ++i) {
+        
+        if(!INPUT_VARIABLE(i)->isEmpty()) {
+            
+            if(INPUT_VARIABLE(i)->rankOf() == 0) {
+                NDArray<T>* vec = new NDArray<T>('c', {1}, block.getWorkspace());
+                (*vec)(0) = (*INPUT_VARIABLE(i))(0);
+                nonEmptyArrs.push_back(vec);
+                arrsToDelete.push_back(index);
+            }
+            else{
+                nonEmptyArrs.push_back(INPUT_VARIABLE(i));
+            }
+            ++index;
+        }
+    }
     
     const int numOfArrs = nonEmptyArrs.size();    
     REQUIRE_TRUE(numOfArrs > 0, 0, "CONCAT op: at least one input array must be non-empty!");
@@ -33,7 +48,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
         axis += rank;
 
     // ******** input validation ******** //
-    REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
+    REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);    
 
     for(int i = 1; i < numOfArrs; ++i)        
         REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0, "CONCAT op: all input arrays must have the same rank !");
@@ -46,20 +61,41 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     // ******** end of input validation ******** //
 
     if(numOfArrs == 1) 
-        output->assign(firstInArr);
+        output->assign(nonEmptyArrs[0]);
     else 
         helpers::concat<T>(nonEmptyArrs, *output, axis);
+
+    // delete dynamically allocated vectors with length=1
+    for(int index : arrsToDelete)
+        delete nonEmptyArrs[index];
 
     return Status::OK();
 }
 
 DECLARE_SHAPE_FN(concat) {
     
-    // first of all take into account possible presence of empty array
+    // first of all take into account possible presence of empty arrays
+    // also if scalar is present -> use the shape of vector with length=1 instead 
     std::vector<Nd4jLong*> nonEmptyArrShapes;
-    for(int i = 0; i < block.width(); ++i) 
-        if(!INPUT_VARIABLE(i)->isEmpty())
-            nonEmptyArrShapes.push_back(inputShape->at(i));
+    std::vector<int> shapesToDelete;
+    int index = 0;
+    for(int i = 0; i < block.width(); ++i) {
+        
+        if(!INPUT_VARIABLE(i)->isEmpty()) {
+            
+            if(inputShape->at(i)[0] == 0) {
+                Nd4jLong* vecShapeInfo = nullptr;
+                ALLOCATE(vecShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
+                shape::shapeVector(1, vecShapeInfo);
+                nonEmptyArrShapes.push_back(vecShapeInfo);
+                shapesToDelete.push_back(index);
+            }
+            else{
+                nonEmptyArrShapes.push_back(inputShape->at(i));
+            }
+            ++index;
+        }
+    }
 
     const int numOfArrs = nonEmptyArrShapes.size();    
     REQUIRE_TRUE(numOfArrs > 0, 0, "CONCAT op: at least one input array must be non-empty!");    
@@ -86,8 +122,9 @@ DECLARE_SHAPE_FN(concat) {
 
     Nd4jLong* outShapeInfo(nullptr);
     COPY_SHAPE(nonEmptyArrShapes[0], outShapeInfo);
-
-    if(numOfArrs == 1) {        
+    
+    // case when we have only one input array
+    if(numOfArrs == 1) {                
         shape::updateStrides(outShapeInfo, shape::order(nonEmptyArrShapes[0]));
         return SHAPELIST(outShapeInfo);
     }
@@ -96,6 +133,11 @@ DECLARE_SHAPE_FN(concat) {
         outShapeInfo[axis + 1] += nonEmptyArrShapes[i][axis + 1];
 
     shape::updateStrides(outShapeInfo, shape::order(nonEmptyArrShapes[0]));
+
+    // delete dynamically allocated vectors shapes with length=1
+    for(int index : shapesToDelete)        
+        RELEASE(nonEmptyArrShapes[index], block.getWorkspace());
+
     return SHAPELIST(outShapeInfo);
 }
 

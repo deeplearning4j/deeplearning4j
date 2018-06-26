@@ -170,5 +170,196 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
 
     nativeOps.destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
-
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test1) {
+
+    NDArray<float> x0('c', {2,3,4});
+    NDArray<float> x1('c', {2,2,4}); 
+    NDArray<float> x2('c', {2,1,4});
+    NDArray<float> exp('c', {2,6,4}, {1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 9.f, 10.f, 11.f, 12.f, 1.f,  2.f,  3.f,  4.f, 5.f,  6.f,  7.f,  8.f, 1.f,  2.f,  3.f,  4.f,
+                                     13.f, 14.f, 15.f, 16.f,17.f, 18.f, 19.f, 20.f,21.f, 22.f, 23.f, 24.f, 9.f, 10.f, 11.f, 12.f,13.f, 14.f, 15.f, 16.f, 5.f,  6.f,  7.f,  8.});
+
+    NDArrayFactory<float>::linspace(1, x0);
+    NDArrayFactory<float>::linspace(1, x1);
+    NDArrayFactory<float>::linspace(1, x2);
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete result;    
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test2) {
+
+    NDArray<float> x0('c', {1,3,1});
+    NDArray<float> x1('c', {1,2,1}); 
+    NDArray<float> x2('c', {1,1,1});
+    NDArray<float> exp('c', {1,6,1}, {1.f, 2.f, 3.f, 1.f, 2.f, 1.f});
+
+    NDArrayFactory<float>::linspace(1, x0);
+    NDArrayFactory<float>::linspace(1, x1);
+    NDArrayFactory<float>::linspace(1, x2);
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete result;    
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test3) {
+
+    NDArray<float> x0('c', {3});
+    NDArray<float> x1('c', {2}); 
+    NDArray<float> x2('c', {1});
+    NDArray<float> exp('c', {6}, {1.f, 2.f, 3.f, 1.f, 2.f, 1.f});
+
+    NDArrayFactory<float>::linspace(1, x0);
+    NDArrayFactory<float>::linspace(1, x1);
+    NDArrayFactory<float>::linspace(1, x2);
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete result;    
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test4) {
+
+    NDArray<float> x0('c', {1,1,1}, {1.f});
+    NDArray<float> x1('c', {1,1,1}, {2.f}); 
+    NDArray<float> x2('c', {1,1,1}, {3.f});
+    NDArray<float> exp('c', {1,3,1}, {1.f, 2.f, 3.f});    
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete result;    
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test5) {
+
+    NDArray<float> x0(1.f);
+    NDArray<float> x1('c', {1}, {2.f}); 
+    NDArray<float> x2(3.f);
+    NDArray<float> exp('c', {3}, {1.f, 2.f, 3.f});    
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete result;    
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test6) {
+
+    NDArray<float> x0(1.f);
+    NDArray<float> x1('c', {2}, {2.f, 20.f}); 
+    NDArray<float> x2(3.f);
+    NDArray<float> exp('c', {4}, {1.f, 2.f, 20.f, 3.f});    
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete result;    
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test7) {
+
+    NDArray<float> x0(1.f);
+    NDArray<float> x1(2.f); 
+    NDArray<float> x2(3.f);
+    NDArray<float> exp('c', {3}, {1.f, 2.f, 3.f});    
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0, &x1, &x2}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete result;    
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test8) {
+
+    NDArray<float> x0(1.f);
+    NDArray<float> exp('c', {1}, {1.f});    
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete result;    
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test9) {
+
+    NDArray<float> x0('c', {1}, {1.f});
+    NDArray<float> exp('c', {1}, {1.f});    
+
+    nd4j::ops::concat<float> op;
+
+    auto result = op.execute({&x0}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete result;    
+}
+ 
+ 
+ 
