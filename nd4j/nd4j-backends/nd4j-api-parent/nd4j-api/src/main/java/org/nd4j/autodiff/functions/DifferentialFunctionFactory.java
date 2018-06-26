@@ -1393,13 +1393,13 @@ public class DifferentialFunctionFactory {
         return mmul(x, y, MMulTranspose.allFalse());
     }
 
-    public SDVariable batchMmul(SDVariable[] matricesA,
+    public SDVariable[] batchMmul(SDVariable[] matricesA,
                                 SDVariable[] matricesB) {
         return batchMmul(matricesA, matricesB, false, false);
     }
 
 
-    public SDVariable batchMmul(SDVariable[] matricesA,
+    public SDVariable[] batchMmul(SDVariable[] matricesA,
                                 SDVariable[] matricesB,
                                 boolean transposeA,
                                 boolean transposeB) {
@@ -1407,10 +1407,10 @@ public class DifferentialFunctionFactory {
     }
 
 
-    public SDVariable batchMmul(SDVariable[] matrices,
+    public SDVariable[] batchMmul(SDVariable[] matrices,
                                 boolean transposeA,
                                 boolean transposeB) {
-        return new BatchMmul(sameDiff(), matrices, transposeA, transposeB).outputVariable();
+        return new BatchMmul(sameDiff(), matrices, transposeA, transposeB).outputVariables();
     }
 
 
