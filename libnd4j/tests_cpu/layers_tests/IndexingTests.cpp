@@ -351,7 +351,7 @@ TEST_F(IndexingTests, Live_Slice_1) {
     matrix.setBuffer(_buff);
 
     float _expB[] = { 4.f,   4.2f,  4.3f};
-    NDArray<float> exp('c', {1, 3});
+    NDArray<float> exp('c', {3});
     exp.setBuffer(_expB);
 
     NDArray<float> begin('c', {1, 3}, {1.0f, 0.0f, 0.0f});
@@ -376,11 +376,11 @@ TEST_F(IndexingTests, Live_Slice_1) {
 
 
 TEST_F(IndexingTests, Test_StridedSlice_1) {
-    NDArray<float> x('c', {1, 2}, {5, 2});
-    NDArray<float> a('c', {1, 1}, {0});
-    NDArray<float> b('c', {1, 1}, {1});
-    NDArray<float> c('c', {1, 1}, {1});
-    NDArray<float> exp('c', {1, 1}, {5.0});
+    NDArray<float> x('c', {1, 2}, {5.f, 2.f});
+    NDArray<float> a('c', {1, 1}, {0.f});
+    NDArray<float> b('c', {1, 1}, {1.f});
+    NDArray<float> c('c', {1, 1}, {1.f});
+    NDArray<float> exp(5.0f);
 
     nd4j::ops::strided_slice<float> op;
     auto result = op.execute({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
@@ -402,7 +402,7 @@ TEST_F(IndexingTests, Test_StridedSlice_2) {
     NDArray<float> a('c', {1, 2}, {1, 1});
     NDArray<float> b('c', {1, 2}, {2, 2});
     NDArray<float> c('c', {1, 2}, {1, 1});
-    NDArray<float> exp('c', {1, 1}, {5.0});
+    NDArray<float> exp('c', {1}, {5.0});
 
     nd4j::ops::strided_slice<float> op;
     auto result = op.execute({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
@@ -425,7 +425,7 @@ TEST_F(IndexingTests, Test_StridedSlice_3) {
     NDArray<float> a('c', {1, 2}, {1, 2});
     NDArray<float> b('c', {1, 2}, {2, 3});
     NDArray<float> c('c', {1, 2}, {1, 1});
-    NDArray<float> exp('c', {1, 1}, {6.0});
+    NDArray<float> exp('c', {1}, {6.0});
 
     nd4j::ops::strided_slice<float> op;
     auto result = op.execute({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});

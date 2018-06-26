@@ -165,9 +165,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         boolean keepDims;
         boolean newFormat;
-        if(op instanceof BaseAccumulation) {
-            keepDims = ((BaseAccumulation) op).isKeepDims();
-            newFormat = ((BaseAccumulation) op).isNewFormat();
+        if(op instanceof BaseIndexAccumulation) {
+            keepDims = ((BaseIndexAccumulation) op).isKeepDims();
+            newFormat = ((BaseIndexAccumulation) op).isNewFormat();
         } else {
             keepDims = false;
             newFormat = false;
