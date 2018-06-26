@@ -2328,6 +2328,8 @@ public class Nd4j {
     }
 
     private static String writeStringForArray(INDArray write, String format) {
+        if(write.isView() || !Shape.hasDefaultStridesForShape(write))
+            write = write.dup();
         if (format.isEmpty()) format = "0.000000000000000000E0";
         String lineOne = "{\n";
         String lineTwo = "\"filefrom\": \"dl4j\",\n";

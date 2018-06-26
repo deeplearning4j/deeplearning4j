@@ -130,7 +130,7 @@ public class CustomOpsTests {
         assertEquals(exp, arrayX);
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test
     public void testNoneInplaceOp3() throws Exception {
         val arrayX = Nd4j.create(10, 10);
         val arrayY = Nd4j.create(10, 10);
@@ -147,7 +147,7 @@ public class CustomOpsTests {
 
         Nd4j.getExecutioner().exec(op);
 
-        assertEquals(exp, arrayX);
+        assertEquals(exp, op.getOutputArgument(0));
     }
 
 
