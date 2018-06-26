@@ -43,6 +43,11 @@ import java.util.*;
 /**
  * Batched matrix multiplication.
  *
+ * Matrix multiply a batch of matrices. First and second batch of matrices have to be arrays of same
+ * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
+ * respectively. The result of this operation will be a batch of multiplied matrices. The
+ * result has the same length as both input batches and each output matrix is of shape (M, K).
+ *
  * @author Max Pumperla
  */
 @EqualsAndHashCode
@@ -114,31 +119,18 @@ public class BatchMmul extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grads) {
-        List<SDVariable> ret = new ArrayList<>();
         SDVariable[] dLdOut = grads.toArray(new SDVariable[grads.size()]);
-        /*
-        In: x=[a,b], y=[b,c]
-        tX  tY  tZ  x       y       z       dz          dLdx
-        F   F   F   [a,b]   [b,c]   [a,c]   [a,c]       [a,c]*[b,c]T = [a,b]
-        T   F   F   [b,a]   [b,c]   [a,c]   [a,c]       ([a,c]*[b,c]T)T = [b,a]
-         */
 
-        //If x=[a,b] and y=[b,c] then x*y=[a,c] - no transpose case
+        SDVariable[] allArgs = args();
+        SDVariable[] matricesA = Arrays.copyOfRange(allArgs,0, batchSize);
+        SDVariable[] matricesB = Arrays.copyOfRange(allArgs, batchSize, 2 * batchSize);
 
-//        SDVariable dLdx = sameDiff.mmul(dLdOut, rarg(), MMulTranspose.builder() //No transpose: [a,c]*[b,c]^T = [a,b]
-//                .transposeA(mt.isTransposeResult()) //Transpose gradient if fwd result was transposed
-//                .transposeB(!mt.isTransposeB())
-//                .transposeResult(mt.isTransposeA())
-//                .build());
-//
-//        SDVariable dLdy = sameDiff.mmul(larg(), dLdOut, MMulTranspose.builder() //No transpose: [a,b]^T * [a,c] = [b,c]
-//                .transposeA(!mt.isTransposeA())
-//                .transposeB(mt.isTransposeResult()) //Transpose gradient if fwd result was transposed
-//                .transposeResult(mt.isTransposeB())
-//                .build());
-//
-//        ret.add(dLdx);
-//        ret.add(dLdy);
+        SDVariable[] dLdx = sameDiff.batchMmul(dLdOut, matricesB, false, transposeB == 1);
+        SDVariable[] dLdy = sameDiff.batchMmul(matricesA, dLdOut, transposeA == 1, false);
+
+        List<SDVariable> ret = new ArrayList<>();
+        Collections.addAll(ret, dLdx);
+        Collections.addAll(ret, dLdy);
         return ret;
     }
 }
