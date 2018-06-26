@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# Make sure to set $DL4J_DOCS_DIR to your local copy of https://github.com/deeplearning4j/deeplearning4j-docs
 SOURCE_DIR=$(pwd)
 cd $DL4J_DOCS_DIR
 git checkout gh-pages
