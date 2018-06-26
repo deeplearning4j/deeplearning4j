@@ -66,6 +66,10 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
+            for(String s : paramTable.keySet() ) {
+                sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+            }
+
             sameDiff.exec();
             INDArray result = sameDiff.getArrForVarName(outputKeys.get(0));
             return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
@@ -87,6 +91,11 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
             fn.updateVariable(outputVars.get(0).getVarName(), epsilon.dup());
+
+            for(String s : paramTable.keySet() ){
+                //TODO this should only be necessary, in theory, once!
+                sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+            }
 
             sameDiff.execBackwards();
             for(String s : paramTable.keySet() ){
