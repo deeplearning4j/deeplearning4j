@@ -44,7 +44,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, long[] shape) {
         checkArgument(values.length() * shape.length == indices.length());
 
-        this.values = Nd4j.createBuffer(values, 0, values.length());
+        this.values = values;
         this.indices = indices;
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
         init(shape);
