@@ -683,7 +683,7 @@ TEST_F(FlatBuffersTest, Test_Non2D_2) {
     nd4j::ops::realdiv<float> op0;
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/non2d_2.fb");
-    //graph->printOut();
+    graph->printOut();
 
     auto result = GraphExecutioner<float>::execute(graph);
     ASSERT_EQ(ND4J_STATUS_OK, result);
