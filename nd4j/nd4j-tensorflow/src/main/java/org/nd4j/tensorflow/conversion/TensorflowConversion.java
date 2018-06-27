@@ -10,13 +10,9 @@ import org.nd4j.linalg.compression.BasicNDArrayCompressor;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ReflectionUtils;
 import org.nd4j.linalg.util.ArrayUtil;
 
-
-import java.lang.ref.PhantomReference;
 import java.lang.reflect.Field;
-import java.nio.Buffer;
 
 import static org.bytedeco.javacpp.tensorflow.*;
 
