@@ -7398,14 +7398,17 @@ public class Nd4j {
         val dtype = array.dtype();
         val order = array.byteOrder();
         val rank = (int) array.shape(0);
-        val shape = new long[rank * 2 + 4];
-        for (int e = 0; e < shape.length; e++)
-            shape[e] = array.shape(e);
+        val shapeInfo = new long[Shape.shapeInfoLength(rank)];
+        for (int e = 0; e < shapeInfo.length; e++)
+            shapeInfo[e] = array.shape(e);
 
-        char ordering = shape[shape.length - 1] == 99 ? 'c' : 'f';
+        if (Shape.isEmpty(shapeInfo))
+            return Nd4j.empty();
 
-        val shapeOf = Shape.shapeOf(shape);
-        val stridesOf = Shape.stridesOf(shape);
+        char ordering = shapeInfo[shapeInfo.length - 1] == 99 ? 'c' : 'f';
+
+        val shapeOf = Shape.shapeOf(shapeInfo);
+        val stridesOf = Shape.stridesOf(shapeInfo);
 
         val _dtype = SameDiff.getDataTypeFromByte(dtype);
         val _order = SameDiff.getOrderFromByte(order);

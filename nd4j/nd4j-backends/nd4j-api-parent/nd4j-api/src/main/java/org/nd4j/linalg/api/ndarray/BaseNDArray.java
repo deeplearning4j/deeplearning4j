@@ -6467,8 +6467,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
-        int buffer = FlatArray.createBufferVector(builder, this.data().asBytes());
-        int array = FlatArray.createFlatArray(builder, shape, buffer, SameDiff.getDataTypeAsByte(this.data().dataType()), ByteOrder.BE);
+        int buffer = this.isEmpty() ? 0 : FlatArray.createBufferVector(builder, this.data().asBytes());
+        val type = this.isEmpty() ? SameDiff.getDataTypeAsByte(Nd4j.dataType()) : SameDiff.getDataTypeAsByte(this.data().dataType());
+        int array = FlatArray.createFlatArray(builder, shape, buffer, type, ByteOrder.BE);
 
         return array;
     }
@@ -6586,6 +6587,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isEmpty() {
-        return ArrayOptionsHelper.arrayType(jvmShapeInfo.javaShapeInformation) == ArrayType.EMPTY;
+        return Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
     }
 }
