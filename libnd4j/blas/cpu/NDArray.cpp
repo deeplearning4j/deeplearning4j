@@ -1957,7 +1957,7 @@ void NDArray<T>::tile(const std::vector<Nd4jLong>& reps, NDArray<T>& target) con
         delete []newShapeInfo;    
         throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
     }
-    delete[] newShapeInfo;
+    RELEASE(newShapeInfo, _workspace);
 
     // fill newBuff, loop through all elements of newBuff 
     // looping through _buffer goes automatically by means of getSubArrayIndex applying
