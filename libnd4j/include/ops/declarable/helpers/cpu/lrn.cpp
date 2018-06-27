@@ -17,7 +17,10 @@ namespace helpers {
         int totalLength = input->lengthOf();
         int lastDim = input->sizeAt(-1);
         int chunkCount = totalLength / lastDim;
-
+        std::unique_ptr<ResultSet<T>> listOut(NDArrayFactory<T>::allTensorsAlongDimension(output,  {output->rankOf() - 1}));
+        std::unique_ptr<ResultSet<T>> listInput(NDArrayFactory<T>::allTensorsAlongDimension(input, {input->rankOf() - 1}));
+        if (chunkCount != listOut->size()) 
+            return ND4J_STATUS_VALIDATION;
         for (int c = 0; c < chunkCount; c++) {
             for (int e = 0; e < lastDim; e++) {
                 int begin = nd4j::math::nd4j_max(0, e - depth);
@@ -25,11 +28,11 @@ namespace helpers {
                 T quadSum = 0;
 
                 for (int pos = begin; pos < end; ++pos) {
-                    T val = (*input)(c * lastDim + pos);
+                    T val = (*listInput->at(c))(pos);
                     quadSum += val * val;
                 }
                 T dividor = nd4j::math::nd4j_pow(bias + alpha * quadSum, beta);
-                (*output)(c * lastDim + e) = (*input)(c * lastDim + e) / dividor;
+                (*listOut->at(c))(e) = (*listInput->at(c))(e) / dividor;
             }
         }
 
@@ -41,15 +44,15 @@ namespace helpers {
     
         depth = nd4j::math::nd4j_min<Nd4jLong>(depth, input->sizeAt(1));
 
-        int halfDepth = (int) ( (T) depth / (T) 2.f);
-        halfDepth = nd4j::math::nd4j_max(halfDepth, 0);
+//        int halfDepth = (int) ( (T) depth / (T) 2.f);
+        int halfDepth = nd4j::math::nd4j_max((int) ( (T) depth / (T) 2.f), 0);
         const int channel =  input->sizeAt(1);
 
         std::unique_ptr<NDArray<T>> activitySqr(input->dup('c'));//NDArrayFactory<T>::createUninitialized(input));
         std::unique_ptr<NDArray<T>> sumPart(activitySqr->dup('c'));
 
         input->template applyPairwiseTransform<simdOps::Multiply<T>>(input, activitySqr.get(), nullptr);
-#pragma omp parallel for if (halfDepth + 1 > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
+#pragma omp parallel for if (depth + 1 > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
         for (int i = 1; i < halfDepth + 1; i++) {
             IndicesList indA({NDIndex::all(), NDIndex::interval(i, channel), NDIndex::all(), NDIndex::all()});
             IndicesList indB({NDIndex::all(), NDIndex::interval(0, channel - i), NDIndex::all(), NDIndex::all()});
