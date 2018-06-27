@@ -246,6 +246,36 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         return preOutput(training, forBackprop, workspaceMgr);
     }
 
+    protected void validateInputRank() {
+        //Input validation: expect rank 4 matrix
+        if (input.rank() != 4) {
+            String layerName = conf.getLayer().getLayerName();
+            if (layerName == null)
+                layerName = "(not named)";
+            throw new DL4JInvalidInputException("Got rank " + input.rank()
+                    + " array as input to ConvolutionLayer (layer name = " + layerName + ", layer index = "
+                    + index + ") with shape " + Arrays.toString(input.shape()) + ". "
+                    + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
+                    + (input.rank() == 2
+                    ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)"
+                    : "")
+                    + " " + layerId());
+        }
+    }
+
+    protected void validateInputDepth(int inDepth) {
+        if (input.size(1) != inDepth) {
+            String layerName = conf.getLayer().getLayerName();
+            if (layerName == null)
+                layerName = "(not named)";
+            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer (layer name = " + layerName
+                    + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
+                    + " (data input channels = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
+                    + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
+                    + layerId());
+        }
+    }
+
     /**
      * PreOutput method that also returns the im2col2d array (if being called for backprop), as this can be re-used
      * instead of being calculated again.
@@ -260,36 +290,14 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
-        //Input validation: expect rank 4 matrix
-        if (input.rank() != 4) {
-            String layerName = conf.getLayer().getLayerName();
-            if (layerName == null)
-                layerName = "(not named)";
-            throw new DL4JInvalidInputException("Got rank " + input.rank()
-                            + " array as input to ConvolutionLayer (layer name = " + layerName + ", layer index = "
-                            + index + ") with shape " + Arrays.toString(input.shape()) + ". "
-                            + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
-                            + (input.rank() == 2
-                                            ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)"
-                                            : "")
-                            + " " + layerId());
-        }
+        validateInputRank();
 
         // FIXME: int cast
         int miniBatch = (int) input.size(0);
-
         int outDepth = (int) weights.size(0);
         int inDepth = (int) weights.size(1);
-        if (input.size(1) != inDepth) {
-            String layerName = conf.getLayer().getLayerName();
-            if (layerName == null)
-                layerName = "(not named)";
-            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer (layer name = " + layerName
-                            + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
-                            + " (data input channels = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
-                            + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
-                            + layerId());
-        }
+        validateInputDepth(inDepth);
+
         int kH = (int) weights.size(2);
         int kW = (int) weights.size(3);
 

@@ -50,8 +50,13 @@ public class LocallyConnected2D extends ConvolutionLayer {
         int[] inputShape = new int[] {1, nIn, inputSize[0], inputSize[1]};
         INDArray dummyInputForShapeInference = Nd4j.ones(inputShape);
 
-        this.outputSize = ConvolutionUtils.getOutputSize(
-                dummyInputForShapeInference, kernelSize, stride, padding, convolutionMode, dilation);
+        if (convolutionMode == ConvolutionMode.Same) {
+            this.outputSize = ConvolutionUtils.getOutputSize(
+                    dummyInputForShapeInference, kernelSize, stride, null, convolutionMode, dilation);
+            this.padding = ConvolutionUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernelSize, stride, dilation);
+        } else {
+            this.outputSize = ConvolutionUtils.getOutputSize(dummyInputForShapeInference, kernelSize, stride, padding, convolutionMode, dilation); //Also performs validation
+        }
     }
 
     @Override
