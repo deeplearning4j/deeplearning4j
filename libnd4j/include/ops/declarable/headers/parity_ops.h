@@ -751,6 +751,9 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_dropout)
         DECLARE_CONFIGURABLE_OP(dropout, 1, 1, true, 1, 1);
         #endif
+        #if NOT_EXCLUDED(OP_dropout_bp)
+        DECLARE_CONFIGURABLE_OP(dropout_bp, 2, 1, false, 1, 1);
+        #endif
 
 
         /**
