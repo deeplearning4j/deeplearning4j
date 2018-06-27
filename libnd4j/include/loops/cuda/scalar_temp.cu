@@ -71,7 +71,7 @@ static inline __device__ void transformCuda(T scalar, T *dy, int *shapeInfo, T *
         int xIdx[MAX_RANK];
 
         for (Nd4jLong i = tid; i < length; i+= totalThreads) {
-            shape::ind2sub(xRank, xShape, i,xIdx);
+            shape::ind2sub(xRank, xShape, i, length, xIdx);
             int xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
             int resultOffset = shape::getOffset(0, zShape, zStride, xIdx, zRank);
             result[resultOffset] = OpType::op(dy[xOffset2],scalar, params);
