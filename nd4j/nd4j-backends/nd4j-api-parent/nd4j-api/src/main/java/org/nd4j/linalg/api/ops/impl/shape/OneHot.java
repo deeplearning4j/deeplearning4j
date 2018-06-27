@@ -12,9 +12,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by susaneraly on 3/14/18.
@@ -120,5 +118,10 @@ public class OneHot extends DynamicCustomOp {
     @Override
     public String opName() {
         return "onehot";
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 }
