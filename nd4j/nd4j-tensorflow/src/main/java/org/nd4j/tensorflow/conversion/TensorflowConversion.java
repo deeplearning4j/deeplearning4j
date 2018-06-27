@@ -253,17 +253,24 @@ public class TensorflowConversion {
         }
 
 
+        LongPointer longPointer = new LongPointer(tfShape);
+        System.out.println("About to call new tensor");
         TF_Tensor tf_tensor = TF_NewTensor(
                 type,
-                new LongPointer(tfShape),
+                longPointer,
                 tfShape.length,
                 ndArray.data().pointer(),
                 ndArray.data().length() * ndArray.data().getElementSize(),
                 new Deallocator_Pointer_long_Pointer() {
-                    public  void call(Pointer data, long length) {}
+                    public  void call(Pointer data, long length) {
+                        System.out.println("calling");
+                    }
                 },null);
 
-        return TensorflowTensorNd4jReference.builder().ndarray(ndArray).tensor(tf_tensor).build();
+        return TensorflowTensorNd4jReference.builder()
+                .tfShapePointer(longPointer)
+                .ndarray(ndArray).nd4jPointer(ndArray.data().pointer())
+                .tensor(tf_tensor).build();
     }
 
     public static TensorflowTensorNd4jReference ndArrayFromTensor(TF_Tensor tensor) {
@@ -289,6 +296,17 @@ public class TensorflowConversion {
         INDArray array = Nd4j.create(d,ndShape);
         Nd4j.getAffinityManager().tagLocation(array, AffinityManager.Location.HOST);
         return TensorflowTensorNd4jReference.builder().tensor(tensor).ndarray(array).build();
+    }
+
+
+    public static Pointer aliasPointerForType(DataBuffer.Type type,Pointer pointer) {
+        switch(type) {
+            case DOUBLE: new DoublePointer(pointer);
+            case FLOAT: return new FloatPointer(pointer);
+            case INT: return new IntPointer(pointer);
+            case LONG: return new LongPointer(pointer);
+            default: throw new IllegalArgumentException("Illegal type " + type);
+        }
     }
 
     public static Indexer indexerForType(DataBuffer.Type type,Pointer pointer) {
