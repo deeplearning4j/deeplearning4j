@@ -59,7 +59,7 @@ public class SDLayerParams implements Serializable {
      * @param paramKey   The parameter key (name) for the bias parameter
      * @param paramShape Shape of the bias parameter array
      */
-    public void addBiasParam(@NonNull String paramKey, @NonNull long[] paramShape) {
+    public void addBiasParam(@NonNull String paramKey, @NonNull long... paramShape) {
         Preconditions.checkArgument(paramShape.length > 0, "Provided mia- parameter shape is" +
                 " invalid: length 0 provided for shape. Parameter: " + paramKey);
         biasParams.put(paramKey, paramShape);

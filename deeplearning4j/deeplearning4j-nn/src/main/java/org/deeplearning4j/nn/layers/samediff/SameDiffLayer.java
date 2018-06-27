@@ -53,7 +53,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public void clearNoiseWeightParams() {
-        //TODO - properly support noise weight...
+        //TODO - properly support weight noise...
     }
 
     @Override
