@@ -22,7 +22,11 @@ import static org.bytedeco.javacpp.tensorflow.*;
 
 
 public class TensorflowConversion {
-
+    private static   Deallocator_Pointer_long_Pointer calling = new Deallocator_Pointer_long_Pointer() {
+        public void call(Pointer data, long length) {
+            System.out.println("calling");
+        }
+    };;;
     private String[] inputNames,outputNames;
 
     private tensorflow.GraphDef castGraph;
@@ -204,7 +208,7 @@ public class TensorflowConversion {
 
 
 
-    public static TensorflowTensorNd4jReference tensorFromNDArray(INDArray ndArray) throws NoSuchFieldException {
+    public static TF_Tensor tensorFromNDArray(INDArray ndArray) throws NoSuchFieldException {
         long[] ndShape = ndArray.shape();
         long[] tfShape = new long[ndShape.length];
         for (int i = 0; i < ndShape.length; i++) {
@@ -254,26 +258,18 @@ public class TensorflowConversion {
 
 
         LongPointer longPointer = new LongPointer(tfShape);
-        System.out.println("About to call new tensor");
         TF_Tensor tf_tensor = TF_NewTensor(
                 type,
                 longPointer,
                 tfShape.length,
                 ndArray.data().pointer(),
                 ndArray.data().length() * ndArray.data().getElementSize(),
-                new Deallocator_Pointer_long_Pointer() {
-                    public  void call(Pointer data, long length) {
-                        System.out.println("calling");
-                    }
-                },null);
+                calling,null);
 
-        return TensorflowTensorNd4jReference.builder()
-                .tfShapePointer(longPointer)
-                .ndarray(ndArray).nd4jPointer(ndArray.data().pointer())
-                .tensor(tf_tensor).build();
+        return tf_tensor;
     }
 
-    public static TensorflowTensorNd4jReference ndArrayFromTensor(TF_Tensor tensor) {
+    public static INDArray ndArrayFromTensor(TF_Tensor tensor) {
         int rank = TF_NumDims(tensor);
 
         int[] ndShape;
@@ -295,7 +291,7 @@ public class TensorflowConversion {
         DataBuffer d = Nd4j.createBuffer(indexer.pointer(),nd4jType,length,indexerForType(nd4jType,pointer));
         INDArray array = Nd4j.create(d,ndShape);
         Nd4j.getAffinityManager().tagLocation(array, AffinityManager.Location.HOST);
-        return TensorflowTensorNd4jReference.builder().tensor(tensor).ndarray(array).build();
+        return array;
     }
 
 
