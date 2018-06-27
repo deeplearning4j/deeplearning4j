@@ -43,7 +43,11 @@ public interface DataBuffer extends Serializable {
     }
 
     enum TypeEx {
-        FLOAT8, INT8, UINT8, FLOAT16, INT16, UINT16, FLOAT, DOUBLE, THRESHOLD, FTHRESHOLD, INT32, INT64
+        FLOAT8, INT8, UINT8,    // 1 byte
+        FLOAT16, INT16, UINT16, // 2 bytes
+        INT32, FLOAT,           // 4 bytes
+        INT64, DOUBLE,          // 8 bytes
+        THRESHOLD, FTHRESHOLD
     }
 
     long getGenerationId();

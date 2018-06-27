@@ -1308,13 +1308,13 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst) {
         int elementSize = 0;
-        if (typeDst.ordinal() <= 2)
+        if (typeDst.ordinal() <= DataBuffer.TypeEx.UINT8.ordinal())
             elementSize = 1;
-        else if (typeDst.ordinal() <= 5)
+        else if (typeDst.ordinal() <= DataBuffer.TypeEx.UINT16.ordinal())
             elementSize = 2;
-        else if (typeDst.ordinal() == 6)
+        else if (typeDst.ordinal() <= DataBuffer.TypeEx.FLOAT.ordinal())
             elementSize = 4;
-        else if (typeDst.ordinal() == 7)
+        else if (typeDst.ordinal() <= DataBuffer.TypeEx.DOUBLE.ordinal())
             elementSize = 8;
         else
             throw new UnsupportedOperationException("Unknown target TypeEx: " + typeDst.name());

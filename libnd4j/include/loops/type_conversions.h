@@ -14,12 +14,12 @@
 #define ND4J_FLOAT16 3
 #define ND4J_INT16 4
 #define ND4J_UINT16 5
-#define ND4J_FLOAT32 6
-#define ND4J_DOUBLE 7
-#define ND4J_THRESHOLD 8
-#define ND4J_FTHRESHOLD 9
-#define ND4J_INT32 10
-#define ND4J_INT64 11
+#define ND4J_INT32 6
+#define ND4J_FLOAT32 7
+#define ND4J_INT64 8
+#define ND4J_DOUBLE 9
+#define ND4J_THRESHOLD 10
+#define ND4J_FTHRESHOLD 11
 #define ND4J_FLOAT24 119 // not supported after all. might want to add support later.
 
 #define ND4J_DIRECTCAST_TYPES \
