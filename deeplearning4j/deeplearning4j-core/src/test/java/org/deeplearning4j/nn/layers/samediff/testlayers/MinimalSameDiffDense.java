@@ -1,10 +1,8 @@
 package org.deeplearning4j.nn.layers.samediff.testlayers;
 
 import lombok.Data;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -14,11 +12,10 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 @Data
-public class MinimalSameDiffDense extends BaseSameDiffLayer {
+public class MinimalSameDiffDense extends SameDiffLayer {
 
     private int nIn;
     private int nOut;
@@ -36,7 +33,7 @@ public class MinimalSameDiffDense extends BaseSameDiffLayer {
     }
 
     @Override
-    public List<SDVariable> defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+    public SDVariable defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable) {
         SDVariable weights = paramTable.get(DefaultParamInitializer.WEIGHT_KEY);
         SDVariable bias = paramTable.get(DefaultParamInitializer.BIAS_KEY);
 

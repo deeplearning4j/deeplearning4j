@@ -2,31 +2,36 @@ package org.deeplearning4j.nn.layers.samediff;
 
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 
-public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
+public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.samediff.SameDiffOutputLayer>
+    implements IOutputLayer {
 
     public static final String INPUT_KEY = "input";
+    public static final String LABELS_KEY = "labels";
 
     protected SameDiff sameDiff;
-    protected List<SDVariable> outputVars;
+    protected SDVariable outputVar;
     protected ExternalErrorsFunction fn;
-    protected List<String> outputKeys;
+    protected String outputKey;
+
+    protected INDArray labels;
 
     protected INDArray params;
     protected INDArray gradients;
@@ -34,7 +39,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     protected Map<String,INDArray> gradTable;
 
 
-    public SameDiffLayer(NeuralNetConfiguration conf){
+    public SameDiffOutputLayer(NeuralNetConfiguration conf){
         super(conf);
     }
 
@@ -58,19 +63,31 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
+
+        //Check where the output occors. If it's a simple loss layer (no params) this could
+        // just be the input!
+        if(INPUT_KEY.equals(layerConf().activationsVertexName())){
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
+        }
+
         if(sameDiff == null){
             doInit();
         }
 
+        //TODO optimize
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
+            sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
             for(String s : paramTable.keySet() ) {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
             sameDiff.exec();
-            INDArray result = sameDiff.getArrForVarName(outputKeys.get(0));
+            INDArray result = sameDiff.getArrForVarName(layerConf().activationsVertexName());
+            Preconditions.checkNotNull(result, "Activations (result) array for variable \"%s\" was" +
+                    "null - error during execution or this variable (as defined by method activationsVertexName()) " +
+                    "does not exist", layerConf().activationsVertexName());
             return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
         }
     }
@@ -79,9 +96,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
-
-        if(outputKeys.size() != 1)
-            throw new IllegalStateException();
+        Preconditions.checkState(!layerConf().labelsRequired() || labels != null, "Cannot execute backprop: Labels are not set. " +
+                "If labels are not required for this SameDiff output layer, override SameDiffOutputLayer.labelsRequired()" +
+                " to return false instead");
 
         Gradient g = new DefaultGradient();
 
@@ -89,7 +106,10 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
             sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
-            fn.updateVariable(outputVars.get(0).getVarName(), epsilon.dup());
+            if(layerConf().labelsRequired()) {
+                sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
+            }
+            fn.updateVariable(outputVar.get(0).getVarName(), epsilon.dup());
 
             for(String s : paramTable.keySet() ){
                 //TODO this should only be necessary, in theory, once!
@@ -190,13 +210,17 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     protected void doInit(){
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
+            org.deeplearning4j.nn.conf.layers.samediff.SameDiffOutputLayer bl = layerConf();
             sameDiff = SameDiff.create();
             Map<String, INDArray> p = paramTable();
 
             val inputShape = input.shape().clone();
 //        inputShape[0] = -1;                                       //TODO THIS DOESN'T ENABLE VARIABLE SIZE MINIBATCHES
             SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
+            SDVariable labelVar = null;
+            if(layerConf().labelsRequired()){
+                labelVar = sameDiff.var(LABELS_KEY, new long[0]);
+            }
             Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
             Map<String, SDVariable> params = new LinkedHashMap<>();
             for (String s : paramShapes.keySet()) {
@@ -204,24 +228,17 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
                 SDVariable v = sameDiff.var(s, ps);
                 params.put(s, v);
             }
-            List<SDVariable> layerOutputs = bl.defineLayer(sameDiff, inputVar, params);
+            SDVariable layerOutputs = bl.defineLayer(sameDiff, inputVar, labelVar, params);
             if (layerOutputs == null || layerOutputs.size() != 1) {
                 throw new IllegalStateException("Invalid outputs: " + layerOutputs);
             }
-            outputVars = layerOutputs;
+            outputVar = layerOutputs;
 
             for (Map.Entry<String, INDArray> e : p.entrySet()) {
                 sameDiff.associateArrayWithVariable(e.getValue(), sameDiff.getVariable(e.getKey()));
             }
 
-            //Define the function for external errors:
-            fn = sameDiff.f().externalErrors(layerOutputs.toArray(new SDVariable[layerOutputs.size()]));
-            fn.outputVariable();
-
-            this.outputKeys = new ArrayList<>();
-            for (SDVariable sdv : layerOutputs) {
-                outputKeys.add(sdv.getVarName());
-            }
+            this.outputKey = layerOutputs.getVarName();
 
 //        sameDiff.createGradFunction();
         }

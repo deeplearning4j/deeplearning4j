@@ -5,7 +5,6 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -13,7 +12,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,43 +39,27 @@ import java.util.Map;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public abstract class BaseSameDiffLayer extends AbstractSameDiffLayer {
+public abstract class SameDiffLayer extends AbstractSameDiffLayer {
 
     protected WeightInit weightInit;
 
-    protected BaseSameDiffLayer(Builder builder){
+    protected SameDiffLayer(Builder builder){
         super(builder);
         this.weightInit = builder.weightInit;
     }
 
-    protected BaseSameDiffLayer(){
+    protected SameDiffLayer(){
         //No op constructor for Jackson
     }
 
-    public abstract List<SDVariable> defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String,SDVariable> paramTable);
-
-    @Override
-    public void setNIn(InputType inputType, boolean override) {
-        //Default implementation: no-op
-    }
-
-    @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        //Default implementation: no-op
-        return null;
-    }
-
-    @Override
-    public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
-        //Default implementation: no op
-    }
+    public abstract SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String,SDVariable> paramTable);
 
     //==================================================================================================================
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                                                        int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        SameDiffLayer ret = new SameDiffLayer(conf);
+        org.deeplearning4j.nn.layers.samediff.SameDiffLayer ret = new org.deeplearning4j.nn.layers.samediff.SameDiffLayer(conf);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
@@ -98,6 +80,5 @@ public abstract class BaseSameDiffLayer extends AbstractSameDiffLayer {
             this.weightInit = weightInit;
             return (T)this;
         }
-
     }
 }

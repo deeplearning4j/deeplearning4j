@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.samediff;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
@@ -39,7 +40,7 @@ import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 
 @Slf4j
-public class TestSameDiffLambda {
+public class TestSameDiffLambda extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;

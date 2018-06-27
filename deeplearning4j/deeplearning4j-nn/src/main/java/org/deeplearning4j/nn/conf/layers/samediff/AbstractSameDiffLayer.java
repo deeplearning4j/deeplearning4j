@@ -69,13 +69,20 @@ public abstract class AbstractSameDiffLayer extends Layer {
     }
 
     @Override
-    public abstract InputType getOutputType(int layerIndex, InputType inputType);
+    public void setNIn(InputType inputType, boolean override) {
+        //Default implementation: no-op
+    }
 
     @Override
-    public abstract void setNIn(InputType inputType, boolean override);
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        //Default implementation: no-op
+        return null;
+    }
 
-    @Override
-    public abstract InputPreProcessor getPreProcessorForInputType(InputType inputType);
+
+    public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
+        //Default implementation: no op
+    }
 
     /**
      * Define the parameters for the network. Use {@link SDLayerParams#addWeightParam(String, int...)} and
@@ -89,12 +96,6 @@ public abstract class AbstractSameDiffLayer extends Layer {
      * @param params Parameter arrays that may be initialized
      */
     public abstract void initializeParameters(Map<String,INDArray> params);
-
-    /**
-     * Apply the global configuration (weight init, activation function, etc) to this layer
-     * @param globalConfig Global configuration
-     */
-    public abstract void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig);
 
     @Override
     public abstract org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
