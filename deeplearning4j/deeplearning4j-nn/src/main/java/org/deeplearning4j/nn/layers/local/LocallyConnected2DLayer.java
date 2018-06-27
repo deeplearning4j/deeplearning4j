@@ -5,6 +5,8 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.LocallyConnected2D;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -31,6 +33,52 @@ public class LocallyConnected2DLayer extends ConvolutionLayer {
     public LocallyConnected2DLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
+
+    @Override
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
+        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
+
+        LocallyConnected2D layerConf = (LocallyConnected2D) layerConf();
+
+        int miniBatch = (int) input.size(0);
+        int inH = (int) input.size(2);
+        int inW = (int) input.size(3);
+
+        int outDepth = (int) layerConf.getNOut();
+        int inDepth = (int) layerConf.getNIn();
+        int kH = layerConf.getKernelSize()[0];
+        int kW = layerConf.getKernelSize()[1];
+
+        int outH = layerConf.getOutputSize()[0];
+        int outW = layerConf.getOutputSize()[1];
+
+        // TODO: compute backward pass, i.e. first compute backprop for activation function
+        // TODO: then reshape epsilon from (mb, nOut, oH, oW) to (mb, nOut, oH * oW)
+        // TODO: permute to (oH * oW, mb, nOut)
+        // TODO: compute batch mmul to get gradients for kernels and output epsilons
+        // TODO: set gradient updates (reshape first)
+        // TODO: return next epsilon (reshape first) and gradients
+
+        INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
+        INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY);
+
+        INDArray delta;
+        IActivation afn = layerConf().getActivationFn();
+
+        Pair<INDArray, INDArray> p = preOutput4d(true, true, workspaceMgr);
+        delta = afn.backprop(p.getFirst(), epsilon).getFirst();
+
+        Gradient retGradient = new DefaultGradient();
+
+        weightNoiseParams.clear();
+
+        INDArray epsNext = Nd4j.create(42);
+
+        epsNext = backpropDropOutIfPresent(epsNext);
+        return new Pair<>(retGradient, epsNext);
+    }
+
 
     /**
      * Pre-output method
