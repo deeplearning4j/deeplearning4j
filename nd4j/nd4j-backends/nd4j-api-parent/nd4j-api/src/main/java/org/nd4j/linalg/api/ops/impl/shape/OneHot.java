@@ -58,8 +58,8 @@ public class OneHot extends DynamicCustomOp {
 
 
     protected void addArgs() {
-        addIArgument(depth);
         addIArgument(axis);
+        addIArgument(depth);
         addTArgument(on);
         addTArgument(off);
     }
