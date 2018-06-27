@@ -30,7 +30,7 @@ namespace ops {
         auto input = INPUT_VARIABLE(0);
 
         bool order_changed = false;
-        if (input->ordering() != 'c') {
+        if (input->ordering() != 'c' || input->ews() != 1 || input->isView()) {
             order_changed = true;
             input = input->dup('c');
         }
