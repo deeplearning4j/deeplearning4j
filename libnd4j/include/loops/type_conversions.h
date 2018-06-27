@@ -17,7 +17,16 @@
 #define ND4J_FLOAT32 6
 #define ND4J_DOUBLE 7
 #define ND4J_THRESHOLD 8
+#define ND4J_FTHRESHOLD 9
+#define ND4J_INT32 10
+#define ND4J_INT64 11
 #define ND4J_FLOAT24 119 // not supported after all. might want to add support later.
+
+#define ND4J_DIRECTCAST_TYPES \
+        float, \
+        double, \
+        int, \
+        Nd4jLong
 
 #include <ops/ops.h>
 #include <templatemath.h>
@@ -44,8 +53,18 @@ namespace nd4j {
     class TypeCast {
 
     public:
-        template<typename S, typename T>
+        template<typename S, typename T, typename I>
         static _CUDA_H void convertGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+
+        template<typename S, typename T>
+        static _CUDA_H void convertDirectGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+
+
+        template<typename S, typename T>
+        static _CUDA_H void convert32Generic(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
+
+        template<typename S, typename T>
+        static _CUDA_H void convert64Generic(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
 
         template <typename T>
         static _CUDA_H void convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
@@ -57,6 +76,7 @@ namespace nd4j {
         template<typename S, typename T>
         static _CUDA_H void convertGenericCuda(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
         #endif
+
     };
 
 

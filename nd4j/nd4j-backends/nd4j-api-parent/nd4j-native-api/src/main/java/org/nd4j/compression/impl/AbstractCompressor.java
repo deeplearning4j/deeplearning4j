@@ -82,6 +82,10 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
             return DataBuffer.TypeEx.FLOAT;
         } else if (type == DataBuffer.Type.DOUBLE) {
             return DataBuffer.TypeEx.DOUBLE;
+        } else if (type == DataBuffer.Type.INT) {
+            return DataBuffer.TypeEx.INT32;
+        } else if (type == DataBuffer.Type.LONG) {
+            return DataBuffer.TypeEx.INT64;
         } else
             throw new IllegalStateException("Unknown dataType: [" + type + "]");
     }
