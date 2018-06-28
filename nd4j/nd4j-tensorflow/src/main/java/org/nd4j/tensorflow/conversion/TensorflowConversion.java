@@ -20,7 +20,7 @@ import static org.bytedeco.javacpp.tensorflow.*;
 
 public class TensorflowConversion {
 
-    private  volatile  Deallocator_Pointer_long_Pointer calling;
+    private  volatile static Deallocator_Pointer_long_Pointer calling;
     private Object deAlloc;
     private Pointer deAllocData;
     private long address;
@@ -65,13 +65,16 @@ public class TensorflowConversion {
     @Getter private boolean logDevicePlacement = false;
 
     public TensorflowConversion() {
-        calling = new Deallocator_Pointer_long_Pointer() {
-            public void call(Pointer data, long length) {
-                deAlloc = this.deallocator();
-                deAllocData = data;
-                address = data.address();
-            }
-        };
+
+        if(calling == null)
+            calling = new Deallocator_Pointer_long_Pointer() {
+                public void call(Pointer data, long length) {
+                    deAlloc = this.deallocator();
+                    deAllocData = data;
+                    address = data.address();
+                    System.out.println("Called de allocator");
+                }
+            };
 
         TensorflowDeAllocatorHolder.addDeAllocatorRef(calling);
         anotherPointer = new PointerPointer(calling);
@@ -275,7 +278,7 @@ public class TensorflowConversion {
                 tfShape.length,
                 ndArray.data().pointer(),
                 ndArray.data().length() * ndArray.data().getElementSize(),
-                calling,null);
+                calling,new Pointer());
 
         return tf_tensor;
 
