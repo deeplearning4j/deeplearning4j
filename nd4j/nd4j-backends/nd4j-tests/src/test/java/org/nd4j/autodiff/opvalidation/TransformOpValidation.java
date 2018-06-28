@@ -441,8 +441,8 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testDiag() {
         SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new float[]{4, 2});
-        SDVariable in = sd.var("in", new int[]{1, 2});
+        INDArray ia = Nd4j.create(new float[]{4, 2}, new int[] {2});
+        SDVariable in = sd.var("in", new long[]{2});
         INDArray expOut = Nd4j.create(new int[]{2, 2});
         DynamicCustomOp diag = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut).build();
         Nd4j.getExecutioner().exec(diag);

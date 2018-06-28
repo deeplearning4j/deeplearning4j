@@ -1565,7 +1565,7 @@ public class SameDiff {
         return var(name, shape, new ZeroInitScheme());
     }
 
-    public SDVariable var(String name, int... shape) {
+    public SDVariable var(String name, int[] shape) {
         Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
