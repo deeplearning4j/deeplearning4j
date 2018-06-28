@@ -13,16 +13,19 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Field;
+import java.nio.Buffer;
 
 import static org.bytedeco.javacpp.tensorflow.*;
 
 
 public class TensorflowConversion {
-    private static   Deallocator_Pointer_long_Pointer calling = new Deallocator_Pointer_long_Pointer() {
-        public void call(Pointer data, long length) {
-            System.out.println("calling");
-        }
-    };;;
+
+    private  volatile  Deallocator_Pointer_long_Pointer calling;
+    private Object deAlloc;
+    private Pointer deAllocData;
+    private long address;
+    private Pointer anotherPointer;
+
     private String[] inputNames,outputNames;
 
     private tensorflow.GraphDef castGraph;
@@ -36,7 +39,6 @@ public class TensorflowConversion {
     @Getter private  tensorflow.GraphDef graph;
     @Getter private  byte[] graphDef;
 
-    private static Field deallocatorField;
 
     private volatile boolean isClosed = false;
 
@@ -62,7 +64,19 @@ public class TensorflowConversion {
      */
     @Getter private boolean logDevicePlacement = false;
 
+    public TensorflowConversion() {
+        calling = new Deallocator_Pointer_long_Pointer() {
+            public void call(Pointer data, long length) {
+                deAlloc = this.deallocator();
+                deAllocData = data;
+                address = data.address();
+            }
+        };
 
+        TensorflowDeAllocatorHolder.addDeAllocatorRef(calling);
+        anotherPointer = new PointerPointer(calling);
+        address = calling.address();
+    }
 
     Session openSession(GraphDef def) {
         SetDefaultDevice(defaultDevice, def);
@@ -204,7 +218,7 @@ public class TensorflowConversion {
 
 
 
-    public static TF_Tensor tensorFromNDArray(INDArray ndArray) throws NoSuchFieldException {
+    public TF_Tensor tensorFromNDArray(INDArray ndArray) throws NoSuchFieldException {
         long[] ndShape = ndArray.shape();
         long[] tfShape = new long[ndShape.length];
         for (int i = 0; i < ndShape.length; i++) {
@@ -254,6 +268,7 @@ public class TensorflowConversion {
 
 
         LongPointer longPointer = new LongPointer(tfShape);
+
         TF_Tensor tf_tensor = TF_NewTensor(
                 type,
                 longPointer,
@@ -263,9 +278,10 @@ public class TensorflowConversion {
                 calling,null);
 
         return tf_tensor;
+
     }
 
-    public static INDArray ndArrayFromTensor(TF_Tensor tensor) {
+    public INDArray ndArrayFromTensor(TF_Tensor tensor) {
         int rank = TF_NumDims(tensor);
 
         int[] ndShape;
@@ -291,7 +307,7 @@ public class TensorflowConversion {
     }
 
 
-    public static Pointer aliasPointerForType(DataBuffer.Type type,Pointer pointer) {
+    public Pointer aliasPointerForType(DataBuffer.Type type,Pointer pointer) {
         switch(type) {
             case DOUBLE: new DoublePointer(pointer);
             case FLOAT: return new FloatPointer(pointer);
@@ -301,7 +317,7 @@ public class TensorflowConversion {
         }
     }
 
-    public static Indexer indexerForType(DataBuffer.Type type,Pointer pointer) {
+    public Indexer indexerForType(DataBuffer.Type type,Pointer pointer) {
         switch(type) {
             case DOUBLE: return DoubleIndexer.create(new DoublePointer(pointer));
             case FLOAT: return FloatIndexer.create(new FloatPointer(pointer));
@@ -311,7 +327,7 @@ public class TensorflowConversion {
         }
     }
 
-    public static DataBuffer.Type typeFor(int tensorflowType) {
+    public DataBuffer.Type typeFor(int tensorflowType) {
         switch(tensorflowType) {
             case DT_DOUBLE: return DataBuffer.Type.DOUBLE;
             case DT_FLOAT: return DataBuffer.Type.FLOAT;

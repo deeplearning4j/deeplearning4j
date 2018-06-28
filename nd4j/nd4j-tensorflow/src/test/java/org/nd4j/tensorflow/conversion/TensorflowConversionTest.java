@@ -13,9 +13,9 @@ public class TensorflowConversionTest {
     @Test
     public void testConversionFromNdArray() throws Exception {
         INDArray arr = Nd4j.linspace(1,4,4);
-        TF_Tensor tf_tensor = TensorflowConversion.tensorFromNDArray(arr);
-        INDArray fromTensor = TensorflowConversion.ndArrayFromTensor(tf_tensor);
-        arr.addi(1.0);
+        TensorflowConversion tensorflowConversion = new TensorflowConversion();
+        TF_Tensor tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
+        INDArray fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
         assertEquals(arr,fromTensor);
     }
 
