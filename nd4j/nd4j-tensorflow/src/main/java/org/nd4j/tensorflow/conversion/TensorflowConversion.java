@@ -1,10 +1,8 @@
 package org.nd4j.tensorflow.conversion;
 
-import lombok.Getter;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
@@ -29,7 +27,6 @@ public class TensorflowConversion {
         if(calling == null)
             calling = DummyDeAllocator.getInstance();
 
-        TensorflowDeAllocatorHolder.addDeAllocatorRef(calling);
     }
 
 

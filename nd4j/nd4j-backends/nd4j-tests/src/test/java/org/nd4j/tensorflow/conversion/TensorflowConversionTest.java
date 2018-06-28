@@ -8,12 +8,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.tensorflow.framework.GraphDef;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
-import static org.bytedeco.javacpp.tensorflow.TF_NewGraph;
-import static org.bytedeco.javacpp.tensorflow.TF_NewStatus;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
