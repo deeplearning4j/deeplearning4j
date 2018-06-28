@@ -6500,7 +6500,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray[] expOut = new INDArray[4];
 
         expOut[0] = Nd4j.eye(3);
-        expOut[1] = Nd4j.create(new double[][]{{1,0,0},{0,1,0}});
+        expOut[1] = Nd4j.create(new double[][]{{1,0},{0,1}, {0, 0}});
         expOut[2] = Nd4j.create(4,3,2);
         for( int i=0; i<4; i++ ){
             expOut[2].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
@@ -6516,17 +6516,27 @@ public class Nd4jTestsC extends BaseNd4jTest {
         for(int i=0; i<3; i++ ) {
             INDArray out = Nd4j.create(expOut[i].shape());
 
-            DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("eye")
+            val opB = DynamicCustomOp.builder("eye")
                     .addOutputs(out)
                     .addIntegerArguments(rows[i], cols[i]);
-            if(batch[i] != null){
-                op.addIntegerArguments(batch[i]);
-            }
 
-            Nd4j.getExecutioner().exec(op.build());
+            if(batch[i] != null)
+                opB.addIntegerArguments(batch[i]);
+
+
+            val op = opB.build();
+
+            Nd4j.getExecutioner().exec(op);
 
             assertEquals(expOut[i], out);
         }
+    }
+
+    @Test
+    public void testSomething() {
+        val a = Nd4j.create(10, 20);
+
+        log.info("Shape: {}", a.mean(0).shape());
     }
 
     @Test
