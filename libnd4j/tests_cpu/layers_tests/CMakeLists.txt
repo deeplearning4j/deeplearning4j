@@ -128,8 +128,17 @@ endif ()
 
 if ($ENV{CLION_IDE})
     file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.h)
-    add_executable(runtests ${TEST_SOURCES})
 
+    # Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
+    set (EXCLUDE_DIR "/CMakeFiles/")
+    foreach (TMP_PATH ${TEST_SOURCES})
+        string (FIND ${TMP_PATH} ${EXCLUDE_DIR} EXCLUDE_DIR_FOUND)
+        if (NOT ${EXCLUDE_DIR_FOUND} EQUAL -1)
+            list (REMOVE_ITEM TEST_SOURCES ${TMP_PATH})
+        endif ()
+    endforeach(TMP_PATH)
+
+    add_executable(runtests ${TEST_SOURCES})
 endif ()
 
 

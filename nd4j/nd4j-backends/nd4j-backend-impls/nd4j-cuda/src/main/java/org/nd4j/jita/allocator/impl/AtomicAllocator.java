@@ -2,6 +2,7 @@ package org.nd4j.jita.allocator.impl;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
@@ -447,12 +448,12 @@ public class AtomicAllocator implements Allocator {
             getMemoryHandler().getCudaContext();
             point.setDeviceId(Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
-            CudaWorkspace workspace = (CudaWorkspace) Nd4j.getMemoryManager().getCurrentWorkspace();
+            val workspace = (CudaWorkspace) Nd4j.getMemoryManager().getCurrentWorkspace();
 
-            PointersPair pair = new PointersPair();
+            val pair = new PointersPair();
 
-            PagedPointer ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType(), initialize);
-            PagedPointer ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
+            val ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType(), initialize);
+            val ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
 
             pair.setHostPointer(ptrHost);
             if (ptrDev != null) {
@@ -463,8 +464,6 @@ public class AtomicAllocator implements Allocator {
                 point.setAllocationStatus(AllocationStatus.HOST);
             }
 
-
-            //if (!ptrDev.isLeaked())
             point.setAttached(true);
 
             point.setPointers(pair);
@@ -475,7 +474,7 @@ public class AtomicAllocator implements Allocator {
         }
 
         allocationsMap.put(allocId, point);
-        point.tickHostRead();
+        //point.tickHostRead();
         point.tickDeviceWrite();
         return point;
     }

@@ -48,7 +48,7 @@ namespace functions {
 
 
                 for (Nd4jLong i = 0; i < length; i++) {
-                    shape::ind2subC(xRank, xShape, i, xCoords);
+                    shape::ind2subC(xRank, xShape, i, length, xCoords);
                     auto xOffset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
 
                     SummaryStatsData<T> curr;
@@ -181,7 +181,7 @@ namespace functions {
 
 // FIXME: reduction should be fixed
                         for (int i = 1; i < tadLength; i ++) {
-                            shape::ind2subC(tadRank, tadShape, i, xCoord);
+                            shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
                             auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
                             SummaryStatsData <T> indexVal2;

@@ -1911,6 +1911,32 @@ TEST_F(DeclarableOpsTests6, Test_Diag_119_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests6, Test_Diag_119_2) {
+    NDArray<float> x('c', {1}, {0.15f});
+    NDArray<float> e('c', {1, 1}, {0.15f});
+
+    nd4j::ops::diag<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_Diag_119_3) {
+    NDArray<float> x(0.15f);
+    NDArray<float> e('c', {1, 1}, {0.15f});
+
+    nd4j::ops::diag<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, deconv2d_test1) {
 

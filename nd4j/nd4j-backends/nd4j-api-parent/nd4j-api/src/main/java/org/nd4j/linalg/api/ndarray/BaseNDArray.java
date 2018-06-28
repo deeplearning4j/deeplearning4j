@@ -3575,6 +3575,23 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public long[][] toLongMatrix() {
+        if(!isMatrix()) {
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
+        }
+
+        if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        long[][] ret = new long[(int) rows()][(int) columns()];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = getRow(i).dup().data().asLong();
+        }
+
+        return ret;
+    }
+
+    @Override
     public int[][] toIntMatrix() {
         if(!isMatrix()) {
             throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
@@ -6467,8 +6484,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
-        int buffer = FlatArray.createBufferVector(builder, this.data().asBytes());
-        int array = FlatArray.createFlatArray(builder, shape, buffer, SameDiff.getDataTypeAsByte(this.data().dataType()), ByteOrder.BE);
+        int buffer = this.isEmpty() ? 0 : FlatArray.createBufferVector(builder, this.data().asBytes());
+        val type = this.isEmpty() ? SameDiff.getDataTypeAsByte(Nd4j.dataType()) : SameDiff.getDataTypeAsByte(this.data().dataType());
+        int array = FlatArray.createFlatArray(builder, shape, buffer, type, ByteOrder.BE);
 
         return array;
     }
@@ -6586,6 +6604,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isEmpty() {
-        return ArrayOptionsHelper.arrayType(jvmShapeInfo.javaShapeInformation) == ArrayType.EMPTY;
+        return Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
     }
 }

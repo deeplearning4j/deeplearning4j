@@ -1949,9 +1949,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
-                Pointer.memcpy(array.data().addressPointer(), buffer, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType());
+                Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType());
 
-                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
                 //newMap.put(keySet.get(e), array);
 //                if (map.containsKey(nodeName))
@@ -1986,9 +1986,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
-                Pointer.memcpy(array.data().addressPointer(), buffer, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType());
+                Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType());
 
-                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
                 //newMap.put(keySet.get(nodeId), array);
                 val nodeName = var.getName().getString();
@@ -2024,9 +2024,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
-                Pointer.memcpy(array.data().addressPointer(), buffer, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType());
+                Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType());
 
-                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
                 //newMap.put(keySet.get(nodeId), array);
                 val nodeName = var.getName().getString();

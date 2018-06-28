@@ -4125,6 +4125,70 @@ public class SameDiff {
         return mmul(null, x, y);
     }
 
+
+
+    /**
+     * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
+     * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
+     * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.
+     * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).
+     *
+     *
+     * The result of this operation will be a batch of multiplied matrices. The
+     * result has the same length as both input batches and each output matrix is of shape (M, K).
+     *
+     * @param matricesA First array of input matrices, all of shape (M, N) or (N, M)
+     * @param matricesB Second array of input matrices, all of shape (N, K) or (K, N)
+     * @param transposeA whether first batch of matrices is transposed.
+     * @param transposeB whether second batch of matrices is transposed.
+     * @param names names for all provided SDVariables
+     *
+     * @return Array of multiplied SDVariables of shape (M, K)
+     */
+    public SDVariable[] batchMmul(String[] names, SDVariable[] matricesA, SDVariable[] matricesB,
+                                boolean transposeA, boolean transposeB) {
+        SDVariable[] result = functionFactory.batchMmul(matricesA, matricesB, transposeA, transposeB);
+        return updateVariableNamesAndReferences(result, names);
+    }
+
+
+    /**
+     * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
+     * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
+     * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.
+     * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).
+     *
+     *
+     * The result of this operation will be a batch of multiplied matrices. The
+     * result has the same length as both input batches and each output matrix is of shape (M, K).
+     *
+     * @param matricesA First array of input matrices, all of shape (M, N) or (N, M)
+     * @param matricesB Second array of input matrices, all of shape (N, K) or (K, N)
+     * @param transposeA whether first batch of matrices is transposed.
+     * @param transposeB whether second batch of matrices is transposed.
+     *
+     * @return Array of multiplied SDVariables of shape (M, K)
+     */
+    public SDVariable[] batchMmul(SDVariable[] matricesA, SDVariable[] matricesB,
+                                  boolean transposeA, boolean transposeB) {
+        return batchMmul(null, matricesA, matricesB, transposeA, transposeB);
+    }
+
+    /**
+     * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
+     * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
+     * respectively. The result of this operation will be a batch of multiplied matrices. The
+     * result has the same length as both input batches and each output matrix is of shape (M, K).
+     *
+     * @param matricesA First array of input matrices, all of shape (M, N)
+     * @param matricesB Second array of input matrices, all of shape (N, K)
+     * @return Array of multiplied SDVariables of shape (M, K)
+     */
+    public SDVariable[] batchMmul(SDVariable[] matricesA, SDVariable[] matricesB) {
+        return batchMmul(null, matricesA, matricesB, false, false);
+    }
+
+
     /**
      * @param x
      * @param y
@@ -8047,9 +8111,15 @@ public class SameDiff {
             return 100L;
         } else if (type == Op.Type.CUSTOM) {
             val name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
-            if (name2 == null)
-                return 0;
-            return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
+            if (name2 == null) {
+                val name3 = Nd4j.getExecutioner().getCustomOperations().get(name);
+                if (name3 == null)
+                    return 0;
+                else
+                    return name3.getHash();
+            } else
+                return name2.getHash();
+            //return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
 
         } else
             return (long) Nd4j.getOpFactory().getOpNumByName(name);

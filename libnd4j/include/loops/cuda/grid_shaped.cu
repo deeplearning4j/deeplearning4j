@@ -135,6 +135,10 @@ extern "C" __global__ void invertedMetaPairwiseShapedNumericHalf(const int opTyp
 namespace functions {
     namespace grid {
 
+        __device__ void _ind2subC(int rank, Nd4jLong *shape, Nd4jLong idx, Nd4jLong length, Nd4jLong *coords) {
+            shape::ind2subC(rank, shape, idx, length, coords);
+        }
+
         __device__ void _ind2subC(int rank, Nd4jLong *shape, Nd4jLong idx, Nd4jLong *coords) {
             shape::ind2subC(rank, shape, idx, coords);
         }
@@ -258,8 +262,8 @@ namespace functions {
                 Nd4jLong yCoord[MAX_RANK];
 
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-                    _ind2subC(xRank, xShape, i, xCoord);
-                    _ind2subC(yRank, yShape, i, yCoord);
+                    _ind2subC(xRank, xShape, i, n, xCoord);
+                    _ind2subC(yRank, yShape, i, n, yCoord);
 
                     auto xOffset = _getOffset(0, xShape, xStride, xCoord, xRank);
                     auto yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);
@@ -272,9 +276,9 @@ namespace functions {
                 Nd4jLong resultCoord[MAX_RANK];
 
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-                    _ind2subC(xRank, xShape, i, xCoord);
-                    _ind2subC(yRank, yShape, i, yCoord);
-                    _ind2subC(resultRank, zShape, i, resultCoord);
+                    _ind2subC(xRank, xShape, i, n, xCoord);
+                    _ind2subC(yRank, yShape, i, n, yCoord);
+                    _ind2subC(resultRank, zShape, i, n, resultCoord);
 
                     auto xOffset = _getOffset(0, xShape, xStride, xCoord, xRank);
                     auto yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);
@@ -326,8 +330,8 @@ namespace functions {
                 Nd4jLong yCoord[MAX_RANK];
 
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-                    _ind2subC(xRank, xShape, i, xCoord);
-                    _ind2subC(yRank, yShape, i, yCoord);
+                    _ind2subC(xRank, xShape, i, n, xCoord);
+                    _ind2subC(yRank, yShape, i, n, yCoord);
 
                     auto xOffset = _getOffset(0, xShape, xStride, xCoord, xRank);
                     auto yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);
@@ -339,9 +343,9 @@ namespace functions {
                 Nd4jLong resultCoord[MAX_RANK];
 
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-                    _ind2subC(xRank, xShape, i, xCoord);
-                    _ind2subC(yRank, yShape, i, yCoord);
-                    _ind2subC(resultRank, zShape, i, resultCoord);
+                    _ind2subC(xRank, xShape, i, n, xCoord);
+                    _ind2subC(yRank, yShape, i, n, yCoord);
+                    _ind2subC(resultRank, zShape, i, n, resultCoord);
 
                     auto xOffset = _getOffset(0, xShape, xStride, xCoord, xRank);
                     auto yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);
