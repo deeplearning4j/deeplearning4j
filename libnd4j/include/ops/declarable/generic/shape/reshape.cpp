@@ -26,7 +26,7 @@ namespace nd4j {
                     e = 0;
                 }
 
-                REQUIRE_TRUE(argsSize - e >= 1, 0, "Reshape arguments should at least 1 dimension");
+                REQUIRE_TRUE(argsSize - e >= 1, 0, "Reshape arguments should have at least 1 dimension");
 
                 std::vector<Nd4jLong> shapeNew;
                 int e2 = e;
@@ -39,11 +39,11 @@ namespace nd4j {
                         for(e2 = e + 1; e2 < arguments->size(); e2++){
                             shapeLength *= arguments->at(e2);
                         }
-                        int realShape = nd4j::math::nd4j_abs<int>((int) x->lengthOf() / shapeLength);
+                        long realShape = x->lengthOf() / shapeLength;
                         shapeNew.push_back(realShape);
                     }
                     else{
-                        shapeNew.push_back((int) arguments->at(e));
+                        shapeNew.push_back(arguments->at(e));
                     }
 
                 }
@@ -88,7 +88,7 @@ namespace nd4j {
                             REQUIRE_TRUE(static_cast<Nd4jLong>(s->getScalar(e2)) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
                             shapeLength *= static_cast<Nd4jLong>(s->getScalar(e2));
                         }
-                        int realShape = nd4j::math::nd4j_abs<int>((int) x->lengthOf() / shapeLength);
+                        long realShape = x->lengthOf() / shapeLength;
                         shapeNew[e] = realShape;
                     }
                     else{
@@ -151,11 +151,11 @@ namespace nd4j {
                             shapeLength *= arguments->at(e2);
                         }
 
-                        int realShape = nd4j::math::nd4j_abs<int>((int) shape::length(inp) / shapeLength);
+                        long realShape = shape::length(inp) / shapeLength;
                         shapeNew.push_back(realShape);
                     }
                     else{
-                        shapeNew.push_back((int) arguments->at(e));
+                        shapeNew.push_back(arguments->at(e));
                     }
                 }
 
@@ -187,17 +187,17 @@ namespace nd4j {
                 std::vector<Nd4jLong> shapeNew(y->lengthOf());
 
                 for (int e = 0; e < (int) y->lengthOf(); e++) {
-                    auto dim = (int)y->getIndexedScalar(e);
+                    auto dim = (long)y->getIndexedScalar(e);
                     if (dim == -1){
                         long shapeLength = 1;
                         for(int e2 = 0; e2 < e; e2++){
-                            shapeLength *= (int)y->getIndexedScalar(e2);
+                            shapeLength *= (long)y->getIndexedScalar(e2);
                         }
                         for(int e2 = e + 1; e2 < (int)y->lengthOf(); e2++){
                             REQUIRE_TRUE((int)y->getIndexedScalar(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-                            shapeLength *= (int)y->getIndexedScalar(e2);
+                            shapeLength *= (long)y->getIndexedScalar(e2);
                         }
-                        int realShape = nd4j::math::nd4j_abs<int>((int) shape::length(inp) / shapeLength);
+                        long realShape = shape::length(inp) / shapeLength;
                         shapeNew[e] = realShape;
                     }else {
                         shapeNew[e] = dim;
