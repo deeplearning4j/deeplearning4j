@@ -86,9 +86,7 @@ import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 
@@ -3739,4 +3737,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
         return false;
     }
+
+    private void writeObject(ObjectOutputStream oos) throws IOException {
+        ModelSerializer.writeModel(this, oos, true);
+    }
+
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        val mln = ModelSerializer.restoreMultiLayerNetwork(ois, true);
+
+        this.layerWiseConfigurations = mln.layerWiseConfigurations;
+        this.flattenedParams = mln.flattenedParams;
+        this.initCalled = mln.initCalled;
+        this.initDone = mln.initDone;
+        this.setUpdater(mln.getUpdater());
+    }
+
 }
