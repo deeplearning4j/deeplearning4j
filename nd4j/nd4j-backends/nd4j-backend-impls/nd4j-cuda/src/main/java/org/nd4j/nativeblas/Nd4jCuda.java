@@ -12881,13 +12881,13 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2sub(int rank,  @Cast("Nd4jLong*") LongPointer shape,int index,int numIndices);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2sub(int rank,  @Cast("Nd4jLong*") LongBuffer shape,int index,int numIndices);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2sub(int rank,  @Cast("Nd4jLong*") long[] shape,int index,int numIndices);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2sub(int rank,  @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2sub(int rank,  @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2sub(int rank,  @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2sub(int rank,  @Cast("Nd4jLong*") LongPointer shape,int index);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2sub(int rank,  @Cast("Nd4jLong*") LongBuffer shape,int index);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2sub(int rank,  @Cast("Nd4jLong*") long[] shape,int index);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ind2sub(int rank,  @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ind2sub(int rank,  @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ind2sub(int rank,  @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index);
 
     /**
      * Convert a linear index to
@@ -12897,9 +12897,9 @@ public static final int PREALLOC_SIZE = 33554432;
      * @param numIndices the number of total indices (typically prod of shape(
      * @return the mapped indexes along each dimension
      */
-    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") LongPointer shape,int index,int numIndices,@Cast("Nd4jLong*") LongPointer out);
-    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") LongBuffer shape,int index,int numIndices,@Cast("Nd4jLong*") LongBuffer out);
-    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") long[] shape,int index,int numIndices,@Cast("Nd4jLong*") long[] out);
+    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") LongPointer out);
+    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") LongBuffer out);
+    @Namespace("shape") public static native void ind2sub(int rank,@Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") long[] out);
 
 /**
      * Convert a linear index to
@@ -12910,9 +12910,9 @@ public static final int PREALLOC_SIZE = 33554432;
      * @param index the index to map
      * @return the mapped indexes along each dimension
      */
-    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") LongPointer shape, int index, @Cast("Nd4jLong*") LongPointer out);
-    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") LongBuffer shape, int index, @Cast("Nd4jLong*") LongBuffer out);
-    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") long[] shape, int index, @Cast("Nd4jLong*") long[] out);
+    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") LongPointer out);
+    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") LongBuffer out);
+    @Namespace("shape") public static native void ind2sub(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong") long index, @Cast("Nd4jLong*") long[] out);
 
     /**
   * Convert a linear index to
@@ -12998,9 +12998,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongPointer shapeInfo,int index,int numIndices,@Cast("Nd4jLong*") LongPointer out);
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo,int index,int numIndices,@Cast("Nd4jLong*") LongBuffer out);
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") long[] shapeInfo,int index,int numIndices,@Cast("Nd4jLong*") long[] out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") LongPointer out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") LongBuffer out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long index, @Cast("Nd4jLong") long numIndices,@Cast("Nd4jLong*") long[] out);
 
     /**
  * Convert a linear index to
@@ -13010,9 +13010,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param numIndices the number of total indices (typically prod of shape(
  * @return the mapped indexes along each dimension
  */
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongPointer shapeInfo,int index,@Cast("Nd4jLong*") LongPointer out);
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo,int index,@Cast("Nd4jLong*") LongBuffer out);
-    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") long[] shapeInfo,int index,@Cast("Nd4jLong*") long[] out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong") long index,@Cast("Nd4jLong*") LongPointer out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong") long index,@Cast("Nd4jLong*") LongBuffer out);
+    @Namespace("shape") public static native void ind2subOrder(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong") long index,@Cast("Nd4jLong*") long[] out);
 
     @Namespace("shape") public static native void printShapeInfo(@Cast("Nd4jLong*") LongPointer shapeInfo);
     @Namespace("shape") public static native void printShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeInfo);

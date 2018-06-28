@@ -537,7 +537,7 @@ Nd4jLong* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vec
     // evaluate new shapeInfo
     Nd4jLong* newShapeInfo = nullptr;    
     if(diff < 0) {      
-        ALLOCATE(newShapeInfo, workspace, dim*2 + 4, Nd4jLong);
+        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(dim), Nd4jLong);
         newShapeInfo[0] = dim;                  // set new rank
         for(int i=1; i <= -diff; ++i)
             newShapeInfo[i] = 1;                // set unities to be new dimensions at left-hand side of newShapeInfo shape place
@@ -546,8 +546,8 @@ Nd4jLong* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vec
             newShapeInfo[i] *= reps[i - 1];     // set new shape by multiplying old dimensions by corresponding numbers from reps 
     }
     else {      
-        ALLOCATE(newShapeInfo, workspace, rankOld*2 + 4, Nd4jLong);
-        memcpy(newShapeInfo, arr.getShapeInfo(), (rankOld*2 + 4)*sizeof(Nd4jLong));      // copy all elements of _shapeInfo to newShapeInfo
+        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rankOld), Nd4jLong);
+        memcpy(newShapeInfo, arr.getShapeInfo(), shape::shapeInfoByteLength(rankOld));      // copy all elements of _shapeInfo to newShapeInfo
         for(int i=1; i <= dim; ++i)
             newShapeInfo[rankOld + 1 - i] *= reps[dim - i];     // set new shape by multiplying old dimensions by corresponding numbers from reps 
     }
@@ -666,8 +666,8 @@ Nd4jLong* ShapeUtils<T>::evalDiagShapeInfo(const Nd4jLong* shapeInfoConst, nd4j:
     Nd4jLong* outputShapeInfo = nullptr;
 
     if(shape::isVector(shapeInfo) || shape::isScalar(shapeInfo)) {
-        ALLOCATE(outputShapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
-        outputShapeInfo[0] = rank;
+        ALLOCATE(outputShapeInfo, workspace, shape::shapeInfoLength(2), Nd4jLong);
+        outputShapeInfo[0] = 2;
         outputShapeInfo[1] = outputShapeInfo[2] = shape::length(shapeInfo);
     }
     else {

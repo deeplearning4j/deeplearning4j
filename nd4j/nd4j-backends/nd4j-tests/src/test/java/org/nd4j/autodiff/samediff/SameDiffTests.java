@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.Mean;
 import org.nd4j.linalg.api.ops.impl.accum.bp.MeanBp;
+import org.nd4j.linalg.api.ops.impl.accum.bp.StandardDeviationBp;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
@@ -2847,4 +2848,223 @@ public class SameDiffTests {
         assertEquals(expOut, result.eval());
     }
 
+
+    @Test
+    public void testUpdatingInplaceFwd(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        SDVariable w = sd.var("w", Nd4j.linspace(1,20,20).reshape(4,5));
+        SDVariable out = sd.mmul(in, w);
+        SDVariable loss = out.std("out", true);
+
+        INDArray outArr = sd.execAndEndResult().dup();
+        sd.execBackwards();
+
+        Map<String,INDArray> origGrad = new HashMap<>();
+        origGrad.put("in", in.gradient().getArr().dup());
+        origGrad.put("w", w.gradient().getArr().dup());
+        origGrad.put("out", out.gradient().getArr().dup());
+
+        in.getArr().muli(5);
+
+        //check gradient function copy of array
+        SameDiff sdGrad = sd.getFunction("grad");
+        INDArray gradArrIn = sdGrad.getVariable("in").getArr();
+        assertEquals(in.getArr(), gradArrIn);
+    }
+
+    @Test
+    public void testUpdatingAssociateFwd(){
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        SDVariable w = sd.var("w", Nd4j.linspace(1,20,20).reshape(4,5));
+        SDVariable out = sd.mmul(in, w);
+        SDVariable loss = out.std("out", true);
+
+        INDArray outArr = sd.execAndEndResult().dup();
+        sd.execBackwards();
+
+        Map<String,INDArray> origGrad = new HashMap<>();
+        origGrad.put("in", in.gradient().getArr().dup());
+        origGrad.put("w", w.gradient().getArr().dup());
+        origGrad.put("out", out.gradient().getArr().dup());
+
+        INDArray newIn = in.getArr().dup().muli(5);
+        in.setArray(newIn);
+
+        //check gradient function copy of array
+        SameDiff sdGrad = sd.getFunction("grad");
+        INDArray gradArrIn = sdGrad.getVariable("in").getArr();
+        assertEquals(newIn, gradArrIn);
+    }
+
+    @Test
+    public void testUpdatingGradient(){
+        Nd4j.getRandom().setSeed(12345);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        SDVariable w = sd.var("w", Nd4j.linspace(1,20,20).reshape(4,5));
+        SDVariable out = sd.mmul(in, w);
+        SDVariable loss = out.std("out", true);
+
+        INDArray outArr = sd.execAndEndResult().dup();
+        sd.execBackwards();
+
+        Map<String,INDArray> origGrad = new HashMap<>();
+        origGrad.put("in", in.gradient().getArr().dup());
+        origGrad.put("w", w.gradient().getArr().dup());
+        origGrad.put("out", out.gradient().getArr().dup());
+
+        in.getArr().assign(Nd4j.rand(in.getArr().shape()));
+        INDArray outArr2 = sd.execAndEndResult();
+        sd.execBackwards();
+
+        assertNotEquals(outArr, outArr2);
+
+        //Ensure gradients are also changed:
+        assertNotEquals(origGrad.get("in"), in.gradient().getArr());
+        assertNotEquals(origGrad.get("w"), w.gradient().getArr());
+        assertNotEquals(origGrad.get("out"), out.gradient().getArr());
+    }
+
+    @Test
+    public void testUpdatingGradientSimple() throws Exception {
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        SDVariable out = in.mul(2.0);
+        SDVariable loss = out.std("out", true);
+
+        INDArray outArr = sd.execAndEndResult().dup();
+        sd.execBackwards();
+
+        SameDiff sdGrad = sd.getFunction("grad");
+
+        Field f = SameDiff.class.getDeclaredField("variableNameToArr");
+        f.setAccessible(true);
+        Map<String,INDArray> before = (Map<String, INDArray>) f.get(sdGrad);
+        for(Map.Entry<String,INDArray> e : before.entrySet()){
+            System.out.println(e.getKey());
+            System.out.println(e.getValue());
+        }
+
+        Map<String,INDArray> origGrad = new HashMap<>();
+        origGrad.put("in", in.gradient().getArr().dup());
+        origGrad.put("out", out.gradient().getArr().dup());
+
+        double stdBefore = in.getArr().stdNumber().doubleValue();
+        in.getArr().assign(Nd4j.rand(in.getArr().shape()));
+        double stdAfter = in.getArr().stdNumber().doubleValue();
+        System.out.println("Before vs. after: " + stdBefore + ", " + stdAfter);
+        INDArray outArr2 = sd.execAndEndResult();
+        sd.execBackwards();
+
+        assertNotEquals(outArr, outArr2);
+
+        System.out.println("=======================================================");
+        Map<String,INDArray> after = (Map<String, INDArray>) f.get(sdGrad);
+        for(Map.Entry<String,INDArray> e : after.entrySet()){
+            System.out.println(e.getKey());
+            System.out.println(e.getValue());
+        }
+
+        //Ensure gradients are also changed:
+        assertNotEquals(origGrad.get("in"), in.gradient().getArr());
+        assertNotEquals(origGrad.get("out"), out.gradient().getArr());
+    }
+
+
+    @Test
+    public void testExecutionDifferentShapesDynamicCustom(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+        SDVariable w = sd.var("w", Nd4j.linspace(1,20,20).reshape(4,5));
+        SDVariable b = sd.var("b", Nd4j.linspace(1,5,5).reshape(1,5));
+
+        SDVariable mmul = sd.mmul(in,w).addi(b);
+        INDArray exp = in.getArr().mmul(w.getArr()).addiRowVector(b.getArr());
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(exp, out);
+
+        //Now, replace with minibatch 5:
+        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        INDArray out2 = sd.execAndEndResult();
+        assertArrayEquals(new long[]{5,5}, out2.shape());
+
+        exp = in.getArr().mmul(w.getArr()).addiRowVector(b.getArr());
+        assertEquals(exp, out2);
+
+        //Generate gradient function, and exec
+        SDVariable loss = mmul.std(true);
+        sd.execBackwards();
+
+        in.setArray(Nd4j.linspace(1,12,12).reshape(3,4));
+        sd.execAndEndResult();
+        out2 = mmul.getArr();
+        assertArrayEquals(new long[]{3,5}, out2.shape());
+    }
+
+    @Test
+    public void testExecutionDifferentShapesTransform(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+
+        SDVariable tanh = sd.tanh(in);
+        INDArray exp = Transforms.tanh(in.getArr(), true);
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(exp, out);
+
+        //Now, replace with minibatch 5:
+        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        INDArray out2 = sd.execAndEndResult();
+        assertArrayEquals(new long[]{5,4}, out2.shape());
+
+        exp = Transforms.tanh(in.getArr(), true);
+        assertEquals(exp, out2);
+    }
+
+    @Test
+    public void testExecutionDifferentShapesAccumAlongDim(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+
+        SDVariable sum = in.sum(1);
+        INDArray exp = in.getArr().sum(1).reshape(3);
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(exp, out);
+
+        //Now, replace with minibatch 5:
+        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        INDArray out2 = sd.execAndEndResult();
+        assertArrayEquals(new long[]{5}, out2.shape());
+
+        exp = in.getArr().sum(1).reshape(5);
+        assertEquals(exp, out2);
+    }
+
+    @Test
+    public void testExecutionDifferentShapesIndexAccumAlongDim(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape(3,4));
+
+        SDVariable sum = in.argmax(1);
+        INDArray exp = in.getArr().argMax(1).reshape(3);
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(exp, out);
+
+        //Now, replace with minibatch 5:
+        in.setArray(Nd4j.linspace(1,20,20).reshape(5,4));
+        INDArray out2 = sd.execAndEndResult();
+        assertArrayEquals(new long[]{5}, out2.shape());
+
+        exp = in.getArr().argMax(1).reshape(5);
+        assertEquals(exp, out2);
+    }
 }

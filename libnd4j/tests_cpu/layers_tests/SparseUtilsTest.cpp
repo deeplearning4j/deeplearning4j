@@ -107,47 +107,10 @@ TEST_F(SparseUtilsTest, SortCOOindices_Test) {
 
     NDArray<float> values ('c', {40}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
                                       22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39});
-    NDArray<float> expValues ('c', {40}, {
-                                          0,
-                                          1,
-                                          2,
-                                          4,
-                                          5,
-                                          6,
-                                          9,
-                                          12,
-                                          3,
-                                          16,
-                                          17,
-                                          18,
-                                          19,
-                                          23,
-                                          26,
-                                          28,
-                                          7,
-                                          8,
-                                          10,
-                                          11,
-                                          13,
-                                          14,
-                                          15,
-                                          21,
-                                          22,
-                                          31,
-                                          20,
-                                          24,
-                                          25,
-                                          27,
-                                          29,
-                                          30,
-                                          32,
-                                          33,
-                                          34,
-                                          35,
-                                          36,
-                                          37,
-                                          38,
-                                          39,
+    
+    NDArray<float> expValues ('c', {40}, {0,  1,  2,  8,  3,  4,  5, 16, 17,  6, 18, 19,  7, 20, 21, 22,  9,
+                                          10, 11, 12, 26, 23, 24, 13, 27, 28, 14, 29, 15, 30, 31, 25, 32, 33,
+                                          34, 35, 36, 37, 38, 39
                                           });
 
     nd4j::sparse::SparseUtils<float >::sortCooIndicesGeneric(indicesArr, values.getBuffer(), nnz, rank);
@@ -156,8 +119,7 @@ TEST_F(SparseUtilsTest, SortCOOindices_Test) {
         ASSERT_EQ(expIndicesArr[i], indicesArr[i]);
     }
 
-    // FIXME: this test fails on windows
-    //ASSERT_TRUE(expValues.equalsTo(values));
+    ASSERT_TRUE(expValues.equalsTo(values));
 
 
     delete[] indicesArr;

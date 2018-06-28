@@ -8,6 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -73,8 +74,13 @@ public class Gather extends DynamicCustomOp {
         super.resolvePropertiesFromSameDiffBeforeExecution();
         if (indices != null && numInputArguments() < 2) {
             if (numInputArguments() == 0) {
-                addInputArgument(args()[0].getArr(), Nd4j.create(ArrayUtil.toFloats(indices)).reshape(indices.length));
+                INDArray a = Nd4j.create(ArrayUtil.toFloats(indices));
+                if (indices.length > 1)
+                    a = a.reshape(indices.length);
+                else
+                    a = a.reshape(new int[]{});
 
+                addInputArgument(args()[0].getArr(), a);
             } else if (numInputArguments() == 1) {
                 addInputArgument(Nd4j.create(ArrayUtil.toFloats(indices)));
             }

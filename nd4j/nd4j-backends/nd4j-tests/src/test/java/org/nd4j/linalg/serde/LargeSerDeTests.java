@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -40,6 +41,36 @@ public class LargeSerDeTests extends BaseNd4jTest {
             assertEquals(arrayA.length(), arrayB.length());
             assertEquals(arrayA, arrayB);
         }
+    }
+
+
+    @Test
+    public void testLargeArraySerDe_2() throws Exception {
+        INDArray arrayA = Nd4j.createUninitialized(100000, 12500);
+        log.info("Shape: {}; Length: {}", arrayA.shape(), arrayA.length());
+
+        val tmpFile = File.createTempFile("sdsds", "sdsd");
+        tmpFile.deleteOnExit();
+
+        log.info("Starting serialization...");
+        val sS = System.currentTimeMillis();
+        try (val fos = new FileOutputStream(tmpFile); val bos = new BufferedOutputStream(fos); val dos = new DataOutputStream(bos)) {
+            Nd4j.write(arrayA, dos);
+            arrayA = null;
+            System.gc();
+        }
+        System.gc();
+
+        val sE = System.currentTimeMillis();
+
+        log.info("Starting deserialization...");
+        val dS = System.currentTimeMillis();
+        try (val fis = new FileInputStream(tmpFile); val bis = new BufferedInputStream(fis); val dis = new DataInputStream(bis)) {
+            arrayA = Nd4j.read(dis);
+        }
+        val dE = System.currentTimeMillis();
+
+        log.info("Timings: {Ser : {} ms; De: {} ms;}", sE - sS, dE - dS);
     }
 
     @Override

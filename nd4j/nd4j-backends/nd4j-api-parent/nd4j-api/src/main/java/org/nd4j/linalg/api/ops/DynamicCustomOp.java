@@ -390,7 +390,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     continue;
 
                 if (!Arrays.equals(args[i].getShape(), arrsSoFar[i].shape()))
-                    throw new ND4JIllegalStateException("Illegal array passed in. Expected shape " + Arrays.toString(args[i].getShape()) + " and received array with shape " + Arrays.toString(arg[i].shape()));
+                    throw new ND4JIllegalStateException("Illegal array passed in as argument [" + i + "]. Expected shape " + Arrays.toString(args[i].getShape()) + " and received array with shape " + Arrays.toString(arg[i].shape()));
             }
         }
     }
@@ -535,29 +535,19 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         if (descriptor == null)
             throw new NoOpNameFoundException("No descriptor found for op name " + opName());
 
-
         if (descriptor.getNumInputs() > 0 && numInputArguments() < descriptor.getNumInputs())
-            throw new ND4JIllegalStateException("Op failure for " + opName() + ": Number of inputs is invalid for execution. Specified " + numInputArguments() + " but should be " + descriptor.getNumInputs());
+            throw new ND4JIllegalStateException("Op [" + opName() +"] failure for [" + this.getOwnName() + "]: Number of inputs is invalid for execution. Specified [" + numInputArguments() + "] but should be [" + descriptor.getNumInputs()  +"]");
 
         if (descriptor.getNumOutputs() > 0 && numOutputArguments() < descriptor.getNumOutputs())
-            throw new ND4JIllegalStateException("Op failure for " + opName() + ": Number of outputs is invalid for execution. Specified " + numOutputArguments() + " but should be " + descriptor.getNumOutputs());
+            throw new ND4JIllegalStateException("Op [" + opName() +"] failure for [" + this.getOwnName() + "]: Number of outputs is invalid for execution. Specified [" + numOutputArguments() + "] but should be [" + descriptor.getNumOutputs()  +"]");
 
         //< 0 means dynamic size
         if (descriptor.getNumIArgs() >= 0 && numIArguments() < descriptor.getNumIArgs())
-            throw new ND4JIllegalStateException("Op failure for " + opName() + ": Number of integer arguments is invalid for execution. Specified " + numIArguments() + " but should be " + descriptor.getNumIArgs());
+            throw new ND4JIllegalStateException("Op [" + opName() +"] failure for [" + this.getOwnName() + "]: Number of integer arguments is invalid for execution. Specified [" + numIArguments() + "] but should be [" + descriptor.getNumIArgs()  +"]");
 
         if (descriptor.getNumTArgs() >= 0 && numTArguments() < descriptor.getNumTArgs())
-            throw new ND4JIllegalStateException("Op failure for " + opName() + ": Number of inputs is invalid for execution. Specified " + numTArguments() + " but should be " + descriptor.getNumTArgs());
+            throw new ND4JIllegalStateException("Op [" + opName() + "] failure for [" + this.getOwnName() + "]: Number of inputs is invalid for execution. Specified [" + numTArguments() + "] but should be [" + descriptor.getNumTArgs() +"]");
 
-    }
-
-    public void updateInputsFromSameDiff() {
-        val inputs = sameDiff.getInputsForFunction(this);
-
-        inputArguments.clear();;
-
-        for (val input: inputs)
-            inputArguments.add(sameDiff.getArrForVarName(input));
     }
 
     @Override
@@ -568,76 +558,58 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         log.debug("Op <{}>, isInplace: {}", opName(), isInplaceCall());
 
-
-        if (isInplaceCall()) {
-            if (numInputArguments() != descriptor.getNumInputs()) {
-                //clear just in case
-                val args = args();
-                inputArguments.clear();
-                for (val arg : args) {
-                    inputArguments.add(arg.getArr());
-                }
+        //Always update the inputs, if possible - they may have changed in SameDiff since last execution
+        //(example: different minibatch size since last execution)
+        inputArguments.clear();
+        boolean nullArr = false;
+        for (val arg : args()) {
+            //we should not attempt to resolve
+            //outputs when null inputs exist
+            if (arg.getArr() == null) {
+                nullArr = true;
+                log.warn("No input found for " + arg.getVarName() + " and op name " + opName());
             }
-
-            if (numOutputArguments() != descriptor.getNumOutputs()) {
-                //clear just in case
-                val arg = args()[0];
-                outputArguments.clear();
-                outputArguments.add(arg.getArr());
-
-            }
-        } else {
-            if (numInputArguments() != descriptor.getNumInputs()) {
-                //clear just in case
-                val args = args();
-                inputArguments.clear();
-                boolean nullArr = false;
-                for (val arg : args()) {
-                    //we should not attempt to resolve
-                    //outputs when null inputs exist
-                    if (arg.getArr() == null) {
-                        nullArr = true;
-                        log.warn("No input found for " + arg.getVarName() + " and op name " + opName());
-                        continue;
-                    }
-                }
-
-
-                if (!nullArr) {
-                    for (val arg : args) {
-                        inputArguments.add(arg.getArr());
-                    }
-                }
-            }
-
-            val numOutputs = numOutputArguments();
-            val dO = descriptor.getNumOutputs();
-
-            if (numOutputArguments() != descriptor.getNumOutputs()) {
-                //clear just in case
-                val outputVars = outputVariables();
-                outputArguments.clear();
-                for (val arg : outputVars) {
-                    INDArray arr = arg.getArr();
-                    if (arr == null) {
-                        outputArguments.clear();
-                        //placeholder case,  will try to resolve shapes one more time
-                        val shapes = calculateOutputShape();
-                        for (int i = 0; i < shapes.size(); i++) {
-                            if (outputVars[i].getArr() != null)
-                                outputArguments.add(outputVars[i].getArr());
-                            else if (outputVars[i].getShape() == null) {
-                                sameDiff.putShapeForVarName(outputVars[i].getVarName(), shapes.get(i));
-                                outputArguments.add(outputVars[i].storeAndAllocateNewArray());
-                            } else
-                                throw new ND4JIllegalStateException("Unable to resolve for variable " + outputVars[i].getVarName());
-                        }
-                    } else
-                        outputArguments.add(arr);
-                }
+        }
+        if (!nullArr) {
+            for (val arg : args()) {
+                inputArguments.add(arg.getArr());
             }
         }
 
+
+        //Always update output arrays - checking shape
+        //Note that any time the input changes (not just shapes - but content also) the output array shape could change
+        outputArguments.clear();
+        if(!nullArr){
+            List<long[]> shapes = calculateOutputShape();
+            SDVariable[] outputVars = outputVariables();
+            Preconditions.checkState(shapes.size() == outputVars.length, "Mismatch between number of shapes (%s)" +
+                    " and number of output variables (%s) - these must match", shapes.size(), outputVars.length);
+
+            outputArguments.clear();
+            for( int i=0; i<outputVars.length; i++ ){
+                INDArray currArr = outputVars[i].getArr();
+                long[] calculatedShape = shapes.get(i);
+
+                if(currArr == null && calculatedShape == null){
+                    throw new ND4JIllegalStateException("Unable to resolve shape for variable " + outputVars[i].getVarName());
+                }
+
+                //Generate a new output array if:
+                //(a) No array exists, OR
+                //(b) The output shape doesn't match what we need at present
+                if(currArr == null || !Arrays.equals(currArr.shape(), calculatedShape)){
+                    sameDiff.putOrUpdateShapeForVarName(outputVars[i].getVarName(), shapes.get(i), true);
+                    currArr = outputVars[i].storeAndAllocateNewArray();
+                }
+
+                outputArguments.add(currArr);
+            }
+        }
+
+        if(log.isTraceEnabled()){
+            log.trace("Populating inputs and outputs for op {}: {}", opName, (nullArr ? "Unsuccessful" : "Successful"));
+        }
     }
 
 
