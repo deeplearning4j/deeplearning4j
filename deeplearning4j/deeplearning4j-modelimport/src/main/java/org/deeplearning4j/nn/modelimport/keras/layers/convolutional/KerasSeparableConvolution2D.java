@@ -145,9 +145,10 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
         this.weights = new HashMap<>();
 
         INDArray dW;
-        if (weights.containsKey(conf.getLAYER_PARAM_NAME_DEPTH_WISE_KERNEL()))
+        if (weights.containsKey(conf.getLAYER_PARAM_NAME_DEPTH_WISE_KERNEL())) {
             dW = weights.get(conf.getLAYER_PARAM_NAME_DEPTH_WISE_KERNEL());
-        else
+            dW = dW.permute(3, 2, 0, 1);
+        } else
             throw new InvalidKerasConfigurationException(
                     "Keras SeparableConvolution2D layer does not contain parameter "
                             + conf.getLAYER_PARAM_NAME_DEPTH_WISE_KERNEL());
@@ -155,8 +156,10 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
         this.weights.put(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, dW);
 
         INDArray pW;
-        if (weights.containsKey(conf.getLAYER_PARAM_NAME_POINT_WISE_KERNEL()))
+        if (weights.containsKey(conf.getLAYER_PARAM_NAME_POINT_WISE_KERNEL())) {
             pW = weights.get(conf.getLAYER_PARAM_NAME_POINT_WISE_KERNEL());
+            pW = pW.permute(3, 2, 0, 1);
+        }
         else
             throw new InvalidKerasConfigurationException(
                     "Keras SeparableConvolution2D layer does not contain parameter "
