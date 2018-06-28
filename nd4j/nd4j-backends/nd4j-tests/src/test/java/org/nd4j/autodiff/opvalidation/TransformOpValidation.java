@@ -468,7 +468,8 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable in = sd.var("in", input);
         SDVariable t = sd.diagPart("dp", in);
 
-        SDVariable loss = sd.standardDeviation("loss", t, true, 0, 1);
+        // dimension is 0 here, because output of diagPart is vector, not matrix
+        SDVariable loss = sd.standardDeviation("loss", t, true, 0);
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("dp", expOut)
