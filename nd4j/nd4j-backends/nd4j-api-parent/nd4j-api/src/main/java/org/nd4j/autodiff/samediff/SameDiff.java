@@ -8111,9 +8111,15 @@ public class SameDiff {
             return 100L;
         } else if (type == Op.Type.CUSTOM) {
             val name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
-            if (name2 == null)
-                return 0;
-            return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
+            if (name2 == null) {
+                val name3 = Nd4j.getExecutioner().getCustomOperations().get(name);
+                if (name3 == null)
+                    return 0;
+                else
+                    return name3.getHash();
+            } else
+                return name2.getHash();
+            //return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
 
         } else
             return (long) Nd4j.getOpFactory().getOpNumByName(name);
