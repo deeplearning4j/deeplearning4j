@@ -17,9 +17,17 @@ import java.nio.file.Paths;
 
 import static org.bytedeco.javacpp.tensorflow.*;
 
-
+/**
+ * Interop between nd4j {@link INDArray}
+ * and {@link TF_Tensor}
+ *
+ * @author Adam Gibson
+ */
 public class TensorflowConversion {
 
+    //used for passing to tensorflow: this dummy de allocator
+    //allows us to use nd4j buffers for memory management
+    //rather than having them managed by tensorflow
     private   static Deallocator_Pointer_long_Pointer calling;
 
 
@@ -31,9 +39,13 @@ public class TensorflowConversion {
 
 
     /**
-     *
-     * @param ndArray
-     * @return
+     * Convert an {@link INDArray}
+     * to a {@link TF_Tensor}
+     * with zero copy.
+     * Uses a direct pointer to the underlying ndarray's
+     * data
+     * @param ndArray the ndarray to use
+     * @return the equivalent {@link TF_Tensor}
      */
     public TF_Tensor tensorFromNDArray(INDArray ndArray) {
         long[] ndShape = ndArray.shape();
@@ -99,8 +111,12 @@ public class TensorflowConversion {
     }
 
     /**
-     *
-     * @param tensor
+     * Convert a {@link INDArray}
+     * to a {@link TF_Tensor}
+     *  using zero copy.
+     *  It will use the underlying
+     *  pointer with in nd4j.
+     * @param tensor the tensor to use
      * @return
      */
     public INDArray ndArrayFromTensor(TF_Tensor tensor) {
@@ -130,17 +146,9 @@ public class TensorflowConversion {
     }
 
 
-    public Pointer aliasPointerForType(DataBuffer.Type type,Pointer pointer) {
-        switch(type) {
-            case DOUBLE: new DoublePointer(pointer);
-            case FLOAT: return new FloatPointer(pointer);
-            case INT: return new IntPointer(pointer);
-            case LONG: return new LongPointer(pointer);
-            default: throw new IllegalArgumentException("Illegal type " + type);
-        }
-    }
 
-    public Indexer indexerForType(DataBuffer.Type type,Pointer pointer) {
+
+    private Indexer indexerForType(DataBuffer.Type type,Pointer pointer) {
         switch(type) {
             case DOUBLE: return DoubleIndexer.create(new DoublePointer(pointer));
             case FLOAT: return FloatIndexer.create(new FloatPointer(pointer));
@@ -150,7 +158,7 @@ public class TensorflowConversion {
         }
     }
 
-    public DataBuffer.Type typeFor(int tensorflowType) {
+    private DataBuffer.Type typeFor(int tensorflowType) {
         switch(tensorflowType) {
             case DT_DOUBLE: return DataBuffer.Type.DOUBLE;
             case DT_FLOAT: return DataBuffer.Type.FLOAT;
@@ -160,12 +168,35 @@ public class TensorflowConversion {
         }
     }
 
+    /**
+     * Get an initialized {@link TF_Graph}
+     * based on the passed in file
+     * (the file must be a binary protobuf/pb file)
+     * The graph will be modified to be associated
+     * with the device associated with this current thread.
+     *
+     * Depending on the active {@link Nd4j#getBackend()}
+     * the device will either be the gpu pinned to the current thread
+     * or the cpu
+     * @param filePath the path to the file to read
+     * @return the initialized graph
+     * @throws IOException
+     */
     public TF_Graph getInitializedGraphForNd4jDevices(String filePath) throws IOException {
         byte[] bytes = Files.readAllBytes(Paths.get(filePath));
         bytes = setDeviceForGraphDef(bytes);
         return getInitializedGraphForNd4jDevices(bytes);
     }
 
+    /**
+     * Infers the device for the given thread
+     * based on the {@link Nd4j#getAffinityManager()}
+     * Usually, this will either be a gpu or cpu
+     * reserved for the current device.
+     * You can think of the "current thread"
+     * as a worker. This is mainly useful with multiple gpus
+     * @return
+     */
     public String defaultDeviceForThread() {
         Integer deviceForThread = Nd4j.getAffinityManager().getDeviceForThread(Thread.currentThread());
         String deviceName = null;
@@ -181,6 +212,19 @@ public class TensorflowConversion {
         return deviceName;
     }
 
+
+    /**
+     * Returns a byte array of {@link GraphDef}
+     * initialized with the current device for the thread.
+     *
+     * Depending on the active {@link Nd4j#getBackend()}
+     * the device will either be the gpu pinned to the current thread
+     * or the cpu
+     * @param bytes the bytes of {@link GraphDef} protobuf
+     *              to modify
+     * @return the modified {@link GraphDef} definition with raw bytes
+     * @throws IOException
+     */
     public byte[] setDeviceForGraphDef(byte[] bytes) throws IOException {
         GraphDef graph = new GraphDef();
 
@@ -206,6 +250,20 @@ public class TensorflowConversion {
     }
 
 
+    /**
+     * Get an initialized {@link TF_Graph}
+     * based on the passed in byte array content
+     * (the content must be a binary protobuf/pb file)
+     * The graph will be modified to be associated
+     * with the device associated with this current thread.
+     *
+     * Depending on the active {@link Nd4j#getBackend()}
+     * the device will either be the gpu pinned to the current thread
+     * or the content
+     * @param content the path to the file to read
+     * @return the initialized graph
+     * @throws IOException
+     */
 
     public TF_Graph getInitializedGraphForNd4jDevices(byte[] content) throws IOException {
         TF_Buffer graph_def = TF_NewBufferFromString(new BytePointer(content), content.length);
