@@ -410,6 +410,26 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createLong(int[] data, boolean copy) {
+        return new LongBuffer(ArrayUtil.toLongArray(data), copy);
+    }
+
+    @Override
+    public DataBuffer createDouble(long[] data, boolean copy) {
+        return new DoubleBuffer(ArrayUtil.toDouble(data), copy);
+    }
+
+    @Override
+    public DataBuffer createFloat(long[] data, boolean copy) {
+        return new FloatBuffer(ArrayUtil.toFloats(data), copy);
+    }
+
+    @Override
+    public DataBuffer createInt(long[] data, boolean copy) {
+        return new IntBuffer(ArrayUtil.toInts(data), copy);
+    }
+
+    @Override
     public DataBuffer createLong(long[] data) {
         return createLong(data, true);
     }
@@ -417,6 +437,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createLong(long[] data, boolean copy) {
         return new LongBuffer(data, copy);
+    }
+
+    @Override
+    public DataBuffer createLong(long[] data, MemoryWorkspace workspace) {
+        return new LongBuffer(data, true, workspace);
     }
 
     @Override

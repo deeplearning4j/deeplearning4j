@@ -298,6 +298,23 @@ public abstract class BaseDataBuffer implements DataBuffer {
         //wrappedBuffer = pointer.asByteBuffer();
     }
 
+    public BaseDataBuffer(long[] data, boolean copy, MemoryWorkspace workspace) {
+        allocationMode = AllocUtil.getAllocationModeFromContext();
+        length = data.length;
+        underlyingLength = data.length;
+        attached = true;
+        parentWorkspace = workspace;
+
+        initTypeAndSize();
+
+        //log.info("Allocating FloatPointer from array of {} elements", data.length);
+
+        pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asLongPointer().put(data);
+        workspaceGenerationId = workspace.getGenerationId();
+        indexer = LongIndexer.create((LongPointer) pointer);
+        //wrappedBuffer = pointer.asByteBuffer();
+    }
+
 
     /**
      *
@@ -776,6 +793,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
+    @Override
+    public void setData(long[] data) {
+        for (int i = 0; i < data.length; i++) {
+            put(i, data[i]);
+        }
+    }
 
     @Override
     public void assign(long[] indices, double[] data, boolean contiguous, long inc) {
@@ -825,10 +848,26 @@ public abstract class BaseDataBuffer implements DataBuffer {
         assign(value, 0);
     }
 
+    @Override
+    public double[] getDoublesAt(long offset, long inc, int length) {
+        if (offset + length > length())
+            length -= offset;
+
+        double[] ret = new double[length];
+        for (int i = 0; i < length; i++) {
+            ret[i] = getDouble(i + offset);
+        }
+        return ret;
+    }
 
     @Override
     public double[] getDoublesAt(long offset, int length) {
         return getDoublesAt(offset, 1, length);
+    }
+
+    @Override
+    public float[] getFloatsAt(long offset, int length) {
+        return getFloatsAt(offset, 1, length);
     }
 
     @Override
@@ -842,6 +881,37 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return ret;
     }
 
+    @Override
+    public long[] getLongsAt(long offset, int length) {
+        return getLongsAt(offset, 1, length);
+    }
+
+    @Override
+    public long[] getLongsAt(long offset, long inc, int length) {
+        if (offset + length > length())
+            length -= offset;
+        long[] ret = new long[length];
+        for (int i = 0; i < length; i++) {
+            ret[i] = getLong(i + offset);
+        }
+        return ret;
+    }
+
+    @Override
+    public int[] getIntsAt(long offset, int length) {
+        return getIntsAt(offset, 1, length);
+    }
+
+    @Override
+    public int[] getIntsAt(long offset, long inc, int length) {
+        if (offset + length > length())
+            length -= offset;
+        int[] ret = new int[length];
+        for (int i = 0; i < length; i++) {
+            ret[i] = getInt(i + offset);
+        }
+        return ret;
+    }
 
     @Override
     public DataBuffer dup() {
@@ -887,24 +957,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public abstract DataBuffer create(int[] data);
 
-    @Override
-    public double[] getDoublesAt(long offset, long inc, int length) {
-        if (offset + length > length())
-            length -= offset;
-
-        double[] ret = new double[length];
-        for (int i = 0; i < length; i++) {
-            ret[i] = getDouble(i + offset);
-        }
-
-
-        return ret;
-    }
-
-    @Override
-    public float[] getFloatsAt(long offset, int length) {
-        return getFloatsAt(offset, 1, length);
-    }
 
     @Override
     public abstract IComplexFloat getComplexFloat(long i);
@@ -1717,6 +1769,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 case INT:
                     pointer = getParentWorkspace().alloc(capacity, Type.INT, false).asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);
+                case LONG:
+                    pointer = getParentWorkspace().alloc(capacity, Type.LONG, false).asLongPointer();
+                    indexer = LongIndexer.create((LongPointer) pointer);
 
                     break;
             }
@@ -1735,6 +1790,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 case FLOAT:
                     pointer = new FloatPointer(length);
                     indexer = FloatIndexer.create((FloatPointer) pointer);
+                    break;
+                case LONG:
+                    pointer = new LongPointer(length);
+                    indexer = LongIndexer.create((LongPointer) pointer);
                     break;
             }
         }
