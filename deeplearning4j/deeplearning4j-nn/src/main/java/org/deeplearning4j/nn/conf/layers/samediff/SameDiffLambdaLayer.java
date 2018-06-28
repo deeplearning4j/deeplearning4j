@@ -21,7 +21,7 @@ public abstract class SameDiffLambdaLayer extends SameDiffLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         //TODO let's try to infer output shape from input shape, using SameDiff + DefineLayer
-        throw new UnsupportedOperationException("Override SameDiffLamdaLayer.getOutputType to use OutputType functionality";)
+        throw new UnsupportedOperationException("Override SameDiffLamdaLayer.getOutputType to use OutputType functionality");
     }
 
     @Override

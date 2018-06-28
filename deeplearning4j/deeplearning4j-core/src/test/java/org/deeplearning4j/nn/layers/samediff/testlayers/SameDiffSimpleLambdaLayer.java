@@ -7,6 +7,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 public class SameDiffSimpleLambdaLayer extends SameDiffLambdaLayer {
     @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput) {
-        return layerInput.add(1.0).div(2.0);
+        return layerInput.add(1.0).mul(2.0);
     }
 }

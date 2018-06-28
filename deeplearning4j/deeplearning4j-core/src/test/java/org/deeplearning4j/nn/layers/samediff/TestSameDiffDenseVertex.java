@@ -66,6 +66,7 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
                             .addVertex("1", new SameDiffDenseVertex(nIn, nOut, a, WeightInit.XAVIER), "0")
                             .layer("2", new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
                                     .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "1")
+                            .setOutputs("2")
                             .build();
 
                     ComputationGraph netSD = new ComputationGraph(conf);
@@ -80,6 +81,7 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
                             .addLayer("1", new DenseLayer.Builder().nIn(nOut).nOut(nOut).activation(a).build(), "1")
                             .layer("2", new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
                                     .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "1")
+                            .setOutputs("2")
                             .build();
 
                     ComputationGraph netStandard = new ComputationGraph(conf2);

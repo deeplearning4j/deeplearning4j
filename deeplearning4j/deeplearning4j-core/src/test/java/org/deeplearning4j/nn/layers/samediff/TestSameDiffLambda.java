@@ -56,7 +56,7 @@ public class TestSameDiffLambda extends BaseDL4JTest {
                 .updater(new Adam(0.01))
                 .graphBuilder()
                 .addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "1")
+                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in")
                 .addLayer("1", new SameDiffSimpleLambdaLayer(), "0")
                 .addLayer("2", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "1")
@@ -69,18 +69,18 @@ public class TestSameDiffLambda extends BaseDL4JTest {
                 .updater(new Adam(0.01))
                 .graphBuilder()
                 .addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "1")
+                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in")
                 .addVertex("1", new ShiftVertex(1.0), "0")
-                .addVertex("2", new ScaleVertex(0.5), "1")
+                .addVertex("2", new ScaleVertex(2.0), "1")
                 .addLayer("3", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "2")
-                .setOutputs("2")
+                .setOutputs("3")
                 .build();
 
         ComputationGraph lambda = new ComputationGraph(conf);
         lambda.init();
 
-        ComputationGraph std = new ComputationGraph(conf);
+        ComputationGraph std = new ComputationGraph(confStd);
         std.init();
 
         lambda.setParams(std.params());
@@ -123,8 +123,8 @@ public class TestSameDiffLambda extends BaseDL4JTest {
                 .updater(new Adam(0.01))
                 .graphBuilder()
                 .addInputs("in1", "in2")
-                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in0")
-                .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in1")
+                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in1")
+                .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in2")
                 .addVertex("lambda", new SameDiffSimpleLambdaVertex(), "0", "1")
                 .addLayer("2", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "lambda")
@@ -136,14 +136,13 @@ public class TestSameDiffLambda extends BaseDL4JTest {
                 .seed(12345)
                 .updater(new Adam(0.01))
                 .graphBuilder()
-                .addInputs("in")
                 .addInputs("in1", "in2")
-                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in0")
-                .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in1")
+                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in1")
+                .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in2")
                 .addVertex("elementwise", new ElementWiseVertex(ElementWiseVertex.Op.Product), "0", "1")
                 .addLayer("3", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "elementwise")
-                .setOutputs("2")
+                .setOutputs("3")
                 .build();
 
         ComputationGraph lambda = new ComputationGraph(conf);

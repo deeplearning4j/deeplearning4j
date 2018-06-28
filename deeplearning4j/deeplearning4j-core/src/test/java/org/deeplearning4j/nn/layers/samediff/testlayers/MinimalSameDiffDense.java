@@ -39,7 +39,7 @@ public class MinimalSameDiffDense extends SameDiffLayer {
 
         SDVariable mmul = sd.mmul("mmul", layerInput, weights);
         SDVariable z = mmul.add("z", bias);
-        return Collections.singletonList(activation.asSameDiff("out", sd, z));
+        return activation.asSameDiff("out", sd, z);
     }
 
     @Override
@@ -49,8 +49,8 @@ public class MinimalSameDiffDense extends SameDiffLayer {
 
     @Override
     public void defineParameters(SDLayerParams params) {
-        params.addWeightParam(DefaultParamInitializer.WEIGHT_KEY, new long[]{nIn, nOut});
-        params.addBiasParam(DefaultParamInitializer.BIAS_KEY, new long[]{1, nOut});
+        params.addWeightParam(DefaultParamInitializer.WEIGHT_KEY, nIn, nOut);
+        params.addBiasParam(DefaultParamInitializer.BIAS_KEY, 1, nOut);
     }
 
     @Override

@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn.layers.samediff;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -15,6 +17,8 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -31,6 +35,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
     protected ExternalErrorsFunction fn;
     protected String outputKey;
 
+    @Getter @Setter
     protected INDArray labels;
 
     protected INDArray params;
@@ -62,11 +67,15 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return activate(true, workspaceMgr);
+    }
+
+    private INDArray activateHelper(boolean activations, LayerWorkspaceMgr workspaceMgr){
         assertInputSet(false);
 
         //Check where the output occors. If it's a simple loss layer (no params) this could
         // just be the input!
-        if(INPUT_KEY.equals(layerConf().activationsVertexName())){
+        if(activations && INPUT_KEY.equals(layerConf().activationsVertexName())){
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
         }
 
@@ -78,17 +87,23 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
-            sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
+            if(layerConf().labelsRequired()) {
+                sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
+            }
             for(String s : paramTable.keySet() ) {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            sameDiff.exec();
-            INDArray result = sameDiff.getArrForVarName(layerConf().activationsVertexName());
-            Preconditions.checkNotNull(result, "Activations (result) array for variable \"%s\" was" +
-                    "null - error during execution or this variable (as defined by method activationsVertexName()) " +
-                    "does not exist", layerConf().activationsVertexName());
-            return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
+            INDArray score = sameDiff.execAndEndResult();
+            if(activations) {
+                INDArray result = sameDiff.getArrForVarName(layerConf().activationsVertexName());
+                Preconditions.checkNotNull(result, "Activations (result) array for variable \"%s\" was" +
+                        "null - error during execution or this variable (as defined by method activationsVertexName()) " +
+                        "does not exist", layerConf().activationsVertexName());
+                return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
+            } else {
+                return score;
+            }
         }
     }
 
@@ -109,7 +124,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             if(layerConf().labelsRequired()) {
                 sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
             }
-            fn.updateVariable(outputVar.get(0).getVarName(), epsilon.dup());
+            fn.updateVariable(outputVar.getVarName(), epsilon.dup());
 
             for(String s : paramTable.keySet() ){
                 //TODO this should only be necessary, in theory, once!
@@ -228,19 +243,82 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
                 SDVariable v = sameDiff.var(s, ps);
                 params.put(s, v);
             }
-            SDVariable layerOutputs = bl.defineLayer(sameDiff, inputVar, labelVar, params);
-            if (layerOutputs == null || layerOutputs.size() != 1) {
-                throw new IllegalStateException("Invalid outputs: " + layerOutputs);
-            }
-            outputVar = layerOutputs;
+            SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, labelVar, params);
+            Preconditions.checkNotNull(layerOutput, "Invalid output: layer output is null");
+            outputVar = layerOutput;
 
             for (Map.Entry<String, INDArray> e : p.entrySet()) {
                 sameDiff.associateArrayWithVariable(e.getValue(), sameDiff.getVariable(e.getKey()));
             }
 
-            this.outputKey = layerOutputs.getVarName();
+            this.outputKey = layerOutput.getVarName();
 
 //        sameDiff.createGradFunction();
         }
+    }
+
+    @Override
+    public boolean needsLabels() {
+        return layerConf().labelsRequired();
+    }
+
+    @Override
+    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return activateHelper(false, workspaceMgr).getDouble(0) + fullNetworkL1 + fullNetworkL1;
+    }
+
+    @Override
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public double f1Score(DataSet data) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public double f1Score(INDArray examples, INDArray labels) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public int numLabels() {
+        return 0;
+    }
+
+    @Override
+    public void fit(DataSetIterator iter) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public int[] predict(INDArray examples) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public List<String> predict(DataSet dataSet) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public INDArray labelProbabilities(INDArray examples) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public void fit(INDArray examples, INDArray labels) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public void fit(DataSet data) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public void fit(INDArray examples, int[] labels) {
+        throw new UnsupportedOperationException("Not supported");
     }
 }
