@@ -102,10 +102,10 @@ public class KerasWeightSettingTests {
                     importGraphSpaceToDepth(graphSpaceToBatchPath);
                 }
 
-//                if (backend.equals("tensorflow") && version == 2) {
-//                    String sepConvPath = "modelimport/keras/weights/sepconv2d_" + backend + "_" + version + ".h5";
-//                    importSepConv2D(sepConvPath);
-//                }
+                if (backend.equals("tensorflow") && version == 2) {
+                    String sepConvPath = "modelimport/keras/weights/sepconv2d_" + backend + "_" + version + ".h5";
+                    importSepConv2D(sepConvPath);
+                }
             }
         }
     }
