@@ -17,8 +17,13 @@ public class TensorflowConversionTest {
         TF_Tensor tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
         INDArray fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
         assertEquals(arr,fromTensor);
-        Thread.sleep(5000);
-    }
+        arr.addi(1.0);
+        assertEquals(arr,fromTensor);
+        tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
+        fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
+        assertEquals(arr,fromTensor);
 
+
+    }
 
 }

@@ -62,7 +62,11 @@
         </plugins>
     </build>
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/org.springframework/spring-core -->
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-tensorflow</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>

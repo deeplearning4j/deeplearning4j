@@ -38,6 +38,7 @@
             <artifactId>tensorflow</artifactId>
             <version>${tensorflow.version}</version>
             <classifier>linux-x86_64-gpu</classifier>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
