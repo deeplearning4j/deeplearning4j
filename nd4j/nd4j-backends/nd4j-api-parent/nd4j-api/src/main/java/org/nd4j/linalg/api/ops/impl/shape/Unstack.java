@@ -80,6 +80,10 @@ public class Unstack extends DynamicCustomOp {
         val attrAxis = nodeDef.getAttrOrThrow("axis");
         int axis = (int) attrAxis.getI();
         this.axis = axis;
+        val attrNum = nodeDef.getAttrOrDefault("num", null);
+        if(attrNum != null){
+            this.num = (int) attrNum.getI();
+        }
         addArgs();
     }
 
