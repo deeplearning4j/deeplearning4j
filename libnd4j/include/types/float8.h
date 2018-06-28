@@ -1,7 +1,7 @@
 //
 // Created by raver119 on 10.08.16.
 //
-
+#include <limits>
 #ifndef LIBND4J_FLOAT8_H
 #define LIBND4J_FLOAT8_H
 
@@ -18,6 +18,11 @@
 */
 
 #include <op_boilerplate.h>
+#include "float16.h"
+#include "uint16.h"
+#include "int8.h"
+#include "uint8.h"
+#include "int16.h"
 
 
 namespace nd4j {
@@ -31,10 +36,13 @@ namespace nd4j {
     quarter _CUDA_HD FORCEINLINE cpu_float2quarter_rn(float f);
     float _CUDA_HD FORCEINLINE  cpu_quarter2float(quarter b);
 
+    int _CUDA_HD FORCEINLINE  cpu_quarter2int(quarter b);
+
     struct float8 {
         quarter data;
 
         _CUDA_HD FORCEINLINE float8();
+        _CUDA_HD FORCEINLINE float8(quarter data);
 
         template <class T>
         _CUDA_HD FORCEINLINE float8(const T& rhs);
@@ -42,7 +50,27 @@ namespace nd4j {
         template <class T>
         _CUDA_HD FORCEINLINE float8& operator=(const T& rhs);
 
-        _CUDA_HD FORCEINLINE operator float() const;
+        //// INTEGER CASTING ////
+
+        _CUDA_HD FORCEINLINE explicit operator int8() const;
+
+        _CUDA_HD FORCEINLINE explicit operator uint8() const;
+
+        _CUDA_HD FORCEINLINE explicit operator int16() const;
+
+        _CUDA_HD FORCEINLINE explicit operator uint16() const;
+
+        _CUDA_HD FORCEINLINE explicit operator int() const;
+
+        _CUDA_HD FORCEINLINE explicit operator Nd4jLong() const;
+
+        //// FLOAT CASTING ////
+
+        _CUDA_HD FORCEINLINE explicit operator float16() const;
+
+        _CUDA_HD FORCEINLINE explicit operator float() const;
+
+        _CUDA_HD FORCEINLINE explicit operator double() const;
 
         _CUDA_HD FORCEINLINE void assign(double rhs);
 
@@ -137,6 +165,43 @@ namespace nd4j {
         return ret;
     }
 
+    int cpu_quarter2int(quarter b) {
+        unsigned sign = ((b.x >> 7) & 1);
+        unsigned exponent = ((b.x >> 4) & 0x7);
+        unsigned mantissa = (b.x & 0xf);
+
+        if (exponent == 0x7) {  /* NaN or Inf */
+            return std::numeric_limits<int>::min(); // min value of int is used for "undefined" values.
+        } else if (!exponent) {  /* Zero or Denorm*/
+            return 0; // normalized is used to describe values between -1 to 1, this will always yield 0 in int anyways
+        }
+
+        // add implicit leading one of mantissa
+        mantissa = mantissa | 0b10000;
+        // mantissa is now 1XXXX
+
+        unsigned absret;
+        // first bit of exponent is sign
+        bool posExp = exponent & 0b100;
+
+        // result is 1.XXXX * 2^exp ==> 1XXXX * 2^-3 * 2^exp ==> 1XXXX * 2^(exponent - 3)
+        if (posExp){ // negative exponent is always closer to 0 than 1, just return zero.
+            exponent = exponent & 0b011;
+            absret = mantissa >> (3 - exponent);
+        } else {
+            exponent = 0b100 - exponent;
+            absret = mantissa >> (3 + exponent);
+        }
+
+        if (sign){
+            return -absret;
+        }
+        return absret;
+    }
+
+    float8::float8(quarter data) {
+        this->data = data;
+    }
 
     float8::float8() {
         data = cpu_float2quarter_rn(0.0f);
@@ -147,14 +212,46 @@ namespace nd4j {
         assign(rhs);
     }
 
-    template <class T>
-    float8& float8::operator=(const T& rhs) {
-        assign(rhs); return *this;
+    float8::operator int8() const {
+        return static_cast<int8>(cpu_quarter2float(data));
+    }
+
+    float8::operator uint8() const {
+        return static_cast<uint8>(cpu_quarter2float(data));
+    }
+
+    float8::operator int16() const {
+        return static_cast<int16>(cpu_quarter2float(data));
+    }
+
+    float8::operator uint16() const {
+        return static_cast<uint16>(cpu_quarter2float(data));
+    }
+
+    float8::operator int() const {
+        return cpu_quarter2int(data);
+    }
+
+    float8::operator Nd4jLong() const {
+        return static_cast<Nd4jLong>(cpu_quarter2int(data));
     }
 
 
+    float8::operator float16() const {
+        return static_cast<float16>(cpu_quarter2float(data));
+    }
+
     float8::operator float() const {
         return cpu_quarter2float(data);
+    }
+
+    float8::operator double() const {
+        return static_cast<double>(cpu_quarter2float(data));
+    }
+
+    template <class T>
+    float8& float8::operator=(const T& rhs) {
+        assign(rhs); return *this;
     }
 
     void float8::assign(double rhs) {

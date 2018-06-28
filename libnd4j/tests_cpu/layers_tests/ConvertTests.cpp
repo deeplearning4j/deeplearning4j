@@ -7,6 +7,7 @@
 #include <NDArray.h>
 #include <NDArrayFactory.h>
 #include <NativeOps.h>
+#include <types/float8.h>
 #include "type_conversions.h"
 using namespace nd4j;
 
@@ -50,4 +51,24 @@ TEST_F(ConverTests, LongToFloat_Test) {
     delete[] A;
     delete[] B;
     delete[] Bexp;
+}
+
+TEST_F(ConverTests, QuartToInt_Test) {
+    // Test that quarter to int works. (assuming quarter to float works)
+    quarter data = quarter();
+
+    // Loop over all possible binary representations
+    for (unsigned char x = 0x00; x != 0xff; ++x) {
+        data.x = x;
+        float8 val = float8(data);
+        float floatVal = (float) val;
+        int expInt = static_cast<int>(floatVal);
+        int foundInt = static_cast<int>(val);
+
+        if (std::isnan(floatVal) || std::isinf(floatVal)){
+            ASSERT_EQ(foundInt, INT32_MIN);
+        } else {
+            ASSERT_EQ(foundInt, expInt);
+        }
+    }
 }
