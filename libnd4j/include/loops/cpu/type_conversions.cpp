@@ -8,8 +8,8 @@
 
 namespace nd4j {
 
-    template <typename T>
-    void TypeCast::convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
+    template<typename T>
+    void TypeCast::convertToThreshold(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
         // we suppose that first 4 bytes are integer, second 4 bytes are float
         // integer: enc length
         // integer: dec length
@@ -30,7 +30,7 @@ namespace nd4j {
         volatile int cnt = 4;
         volatile bool flag = false;
 #pragma omp parallel for schedule(guided) default(shared)
-        for (int e = 0; e < l;  e++) {
+        for (int e = 0; e < l; e++) {
             bool flag_load;
 #pragma omp atomic read
             flag_load = flag;
@@ -68,8 +68,8 @@ namespace nd4j {
         }
     }
 
-    template <typename T>
-    void TypeCast::convertFromThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
+    template<typename T>
+    void TypeCast::convertFromThreshold(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
         FloatBits fb;
         auto z = reinterpret_cast<T *>(dz);
         auto x = reinterpret_cast<int *>(dx);
@@ -88,46 +88,17 @@ namespace nd4j {
         }
     }
 
-    /**
- * This is cpu version, so leave it here as inline, to avoid templates instantiation
- *
- * @tparam S source type
- * @tparam T target type
- * @tparam T intermediate type
- * @param dx
- * @param N
- * @param dz
- */
-    template<typename S, typename T>
-    void TypeCast::convertDirectGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
-        auto x = reinterpret_cast<S *>(dx);
-        auto z = reinterpret_cast<T *>(dz);
-
-        if (N < nd4j::Environment::getInstance()->elementwiseThreshold()) {
-#pragma omp simd
-            for (int i = 0; i < N; i++) {
-                z[i] = static_cast<T>(x[i]);
-            }
-        } else {
-
-#pragma omp parallel for
-            for (int i = 0; i < N; i++) {
-                z[i] = static_cast<T>(x[i]);
-            }
-        }
-    };
 
     /**
      * This is cpu version, so leave it here as inline, to avoid templates instantiation
      *
-     * @tparam S source type
-     * @tparam T target type
-     * @tparam T intermediate type
+     * @tparam S
+     * @tparam T
      * @param dx
      * @param N
      * @param dz
      */
-    template<typename S, typename T, typename I>
+    template<typename S, typename T>
     void TypeCast::convertGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
         auto x = reinterpret_cast<S *>(dx);
         auto z = reinterpret_cast<T *>(dz);
@@ -135,60 +106,31 @@ namespace nd4j {
         if (N < nd4j::Environment::getInstance()->elementwiseThreshold()) {
 #pragma omp simd
             for (int i = 0; i < N; i++) {
-                // FIXME: get rid of through-I though
-                z[i] = static_cast<T>(static_cast<I>(x[i]));
+                // FIXME: get rid of through-float though
+                z[i] = static_cast<T>(static_cast<float>(x[i]));
             }
         } else {
 
 #pragma omp parallel for
             for (int i = 0; i < N; i++) {
-                // FIXME: get rid of through-I though
-                z[i] = static_cast<T>(static_cast<I>(x[i]));
+                // FIXME: get rid of through-float though
+                z[i] = static_cast<T>(static_cast<float>(x[i]));
             }
         }
     };
 
-    /**
-     * This is cpu version, so leave it here as inline, to avoid templates instantiation
-     *
-     * convert to datatype, preserving up 32 bits of information
-     * @tparam S source type
-     * @tparam T target type
-     * @param dx
-     * @param N
-     * @param dz
-     */
-    template<typename S, typename T>
-    void TypeCast::convert32Generic(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
-        TypeCast::convertGeneric<S,T,float>(extras, dx, N, dz);
-    };
 
-    /**
-     * This is cpu version, so leave it here as inline, to avoid templates instantiation
-     *
-     * convert to datatype, preserving up 64 bits of information
-     * @tparam S source type
-     * @tparam T target type
-     * @param dx
-     * @param N
-     * @param dz
-     */
-    template<typename S, typename T>
-    void TypeCast::convert64Generic(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz) {
-        TypeCast::convertGeneric<S,T,double>(extras, dx, N, dz);
-    };
+    template void TypeCast::convertFromThreshold<float>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
 
+    template void TypeCast::convertFromThreshold<float16>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
 
-    template void TypeCast::convertFromThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertFromThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertFromThreshold<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertFromThreshold<double>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
 
-    template void TypeCast::convertToThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertToThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-    template void TypeCast::convertToThreshold<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+    template void TypeCast::convertToThreshold<float>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
 
-    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertDirectGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), ND4J_DIRECTCAST_TYPES , ND4J_DIRECTCAST_TYPES)
+    template void TypeCast::convertToThreshold<float16>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
 
-    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convert32Generic, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
-    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convert64Generic, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES)
+    template void TypeCast::convertToThreshold<double>(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
+
+    BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGeneric, (Nd4jPointer * extras, void * dx, Nd4jLong N, void * dz), LIBND4J_TYPES, LIBND4J_TYPES)
 }

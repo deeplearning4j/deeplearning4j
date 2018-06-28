@@ -53,18 +53,8 @@ namespace nd4j {
     class TypeCast {
 
     public:
-        template<typename S, typename T, typename I>
+        template<typename S, typename T>
         static _CUDA_H void convertGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-
-        template<typename S, typename T>
-        static _CUDA_H void convertDirectGeneric(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
-
-
-        template<typename S, typename T>
-        static _CUDA_H void convert32Generic(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
-
-        template<typename S, typename T>
-        static _CUDA_H void convert64Generic(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);
 
         template <typename T>
         static _CUDA_H void convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
