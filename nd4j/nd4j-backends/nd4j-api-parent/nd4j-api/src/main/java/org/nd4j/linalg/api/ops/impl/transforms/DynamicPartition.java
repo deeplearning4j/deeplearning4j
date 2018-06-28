@@ -99,4 +99,9 @@ public class DynamicPartition extends DynamicCustomOp {
         return "Dynamic partitioning currently not supported by ONNX";
     }
 
+    @Override
+    public int getNumOutputs(){
+        return numPartitions;
+    }
+
 }

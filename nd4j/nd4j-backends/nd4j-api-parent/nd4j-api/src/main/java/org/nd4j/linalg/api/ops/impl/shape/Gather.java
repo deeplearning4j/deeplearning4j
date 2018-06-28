@@ -105,8 +105,6 @@ public class Gather extends DynamicCustomOp {
                 addOutputArgument(output);
             }
         }
-
-
     }
 
     @Override
@@ -157,12 +155,16 @@ public class Gather extends DynamicCustomOp {
             inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v.get(0));
         } else {
             int ndim = arg(0).getShape().length;
+            int a = this.axis;
+            if (a < 0) {
+                a += ndim;
+            }
             int[] permDims = new int[ndim];
-            permDims[0] = axis;
-            for(int i=0; i<axis; i++){
+            permDims[0] = a;
+            for(int i=0; i<a; i++){
                 permDims[i+1] = i;
             }
-            for(int i=axis+1; i<ndim; i++){
+            for(int i=a+1; i<ndim; i++){
                 permDims[i] = i;
             }
             inputGrad = sameDiff.permute(inputGrad, permDims);

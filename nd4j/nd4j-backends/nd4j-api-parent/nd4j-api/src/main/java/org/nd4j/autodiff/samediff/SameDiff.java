@@ -8279,12 +8279,9 @@ public class SameDiff {
         List<String> dfOutputStr = new ArrayList<>();
         int maxInLength = 10;       //Length of "- Inputs -"
         int maxOutLength = 11;      //Length of "- Outputs -"
-        int maxOpNameLength = 10;   //Default to min of 10
+        int maxOpNameLength = 17;   //Default to min of 17 - length of "- Function Name -"
         int maxDfClassNameLength = 10;  //Default to min of 10
         for (DifferentialFunction df : functions) {
-            SDVariable[] args = df.args();
-            SDVariable[] outputs = df.outputVariables();
-
             String[] argNames = df.argNames();
             String[] outNames = df.outputVariablesNames();
 
