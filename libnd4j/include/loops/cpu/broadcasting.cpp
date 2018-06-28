@@ -130,17 +130,17 @@ namespace functions {
                         // all this stuff already happens within thread
                         for (int f = 0; f < tadLength; f++) {
                             if (shape::order(tadShapeShapeInfo) == 'c') {
-                                shape::ind2subC(xRank, xShape, f, xCoord);
-                                shape::ind2subC(yRank, yShape, f, yCoord);
+                                shape::ind2subC(xRank, xShape, f, tadLength, xCoord);
+                                shape::ind2subC(yRank, yShape, f, tadLength, yCoord);
                             } else {
-                                shape::ind2sub(xRank, xShape, f, xCoord);
-                                shape::ind2sub(yRank, yShape, f, yCoord);
+                                shape::ind2sub(xRank, xShape, f, tadLength, xCoord);
+                                shape::ind2sub(yRank, yShape, f, tadLength, yCoord);
                             }
 
                             if (shape::order(tadShapeInfoZ) == 'c')
-                                shape::ind2subC(zRank, zShape, f, zCoord);
+                                shape::ind2subC(zRank, zShape, f, tadLength, zCoord);
                             else
-                                shape::ind2sub(zRank, zShape, f, zCoord);
+                                shape::ind2sub(zRank, zShape, f, tadLength, zCoord);
 
                             auto xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
                             auto zOffset = shape::getOffset(offsetZ, zShape, zStride, zCoord, zRank);

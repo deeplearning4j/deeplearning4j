@@ -307,7 +307,7 @@ namespace nd4j {
          * 1: axis
          */
         #if NOT_EXCLUDED(OP_onehot)
-        DECLARE_CUSTOM_OP(onehot, 1, 1, false, 2, 2);
+        DECLARE_CUSTOM_OP(onehot, 1, 1, false, -2, -2);
         #endif
 
 

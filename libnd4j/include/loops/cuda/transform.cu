@@ -212,7 +212,7 @@ namespace functions {
 			        Nd4jLong xCoord[MAX_RANK];
 			
 		    	    for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-						shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, xCoord);
+						shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, length, xCoord);
 						
 				        auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
 						auto resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xCoord,xRank);
