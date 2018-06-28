@@ -1,10 +1,7 @@
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
-import lombok.NonNull;
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -48,5 +45,10 @@ public class Switch extends BaseCompatOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+    }
+
+    @Override
+    public int getNumOutputs(){
+        return 2;   //2 outputs - 2 branches
     }
 }
