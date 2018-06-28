@@ -4,6 +4,7 @@ import lombok.Getter;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
@@ -87,8 +88,8 @@ public class TensorflowConversion {
                 type,
                 longPointer,
                 tfShape.length,
-                aliasPointerForType(dataType,data.pointer()),
-                data.length() * ndArray.data().getElementSize(),
+                data.pointer(),
+                data.length() * data.getElementSize(),
                 calling,null);
 
         return tf_tensor;
@@ -114,10 +115,11 @@ public class TensorflowConversion {
             }
         }
 
-        int length = ArrayUtil.prod(ndShape);
-        Pointer pointer = TF_TensorData(tensor);
         int tfType = TF_TensorType(tensor);
         DataBuffer.Type nd4jType = typeFor(tfType);
+
+        int length = ArrayUtil.prod(ndShape);
+        Pointer pointer = TF_TensorData(tensor).capacity(length);
         Indexer indexer = indexerForType(nd4jType,pointer);
         DataBuffer d = Nd4j.createBuffer(indexer.pointer(),nd4jType,length,indexer);
         INDArray array = Nd4j.create(d,ndShape);

@@ -18,7 +18,6 @@ public class TensorflowConversionTest {
         INDArray fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
         assertEquals(arr,fromTensor);
         arr.addi(1.0);
-        assertEquals(arr,fromTensor);
         tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
         fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
         assertEquals(arr,fromTensor);
