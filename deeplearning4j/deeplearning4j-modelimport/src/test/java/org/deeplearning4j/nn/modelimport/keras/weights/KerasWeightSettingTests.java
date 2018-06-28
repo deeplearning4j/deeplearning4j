@@ -115,6 +115,12 @@ public class KerasWeightSettingTests {
                     importGraphSpaceToDepth(graphSpaceToBatchPath);
                     log.info("***** Successfully imported " + graphSpaceToBatchPath);
                 }
+
+//                if (backend.equals("tensorflow") && version == 2) {
+//                    String sepConvPath = "modelimport/keras/weights/sepconv2d_" + backend + "_" + version + ".h5";
+//                    importSepConv2D(sepConvPath);
+//                    log.info("**** Successfully imported " + sepConvPath);
+//                }
             }
         }
     }
@@ -126,6 +132,35 @@ public class KerasWeightSettingTests {
         val weightShape = weights.shape();
         assert (weightShape[0] == 4);
         assert (weightShape[1] == 6);
+
+        INDArray bias = model.getLayer(0).getParam("b");
+        assert (bias.length() == 6);
+    }
+
+    private void importSepConv2D(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+
+        INDArray depthWeights = model.getLayer(0).getParam("W");
+        val depthWeightShape = depthWeights.shape();
+
+        long depthMult = 2;
+        long kernel = 3;
+        long nIn = 5;
+        long nOut = 6;
+
+        assert (depthWeightShape[0] == depthMult);
+        assert (depthWeightShape[1] == nIn);
+        assert (depthWeightShape[2] == kernel);
+        assert (depthWeightShape[3] == kernel);
+
+        INDArray weights = model.getLayer(0).getParam("pW");
+        val weightShape = weights.shape();
+
+
+        assert (weightShape[0] == nOut);
+        assert (weightShape[1] == nIn * depthMult);
+        assert (weightShape[2] == 1);
+        assert (weightShape[3] == 1);
 
         INDArray bias = model.getLayer(0).getParam("b");
         assert (bias.length() == 6);
