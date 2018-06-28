@@ -174,10 +174,10 @@ public class TensorflowConversion {
         String deviceName = null;
         //gpu
         if(Nd4j.getBackend().getClass().getName().contains("JCublasBackend")) {
-            deviceName = "/gpu:" + deviceForThread;
+            deviceName = "/device:gpu:" + deviceForThread;
         }
         else {
-            deviceName = "/cpu:" + deviceForThread;
+            deviceName = "/device:cpu:" + deviceForThread;
         }
 
 
@@ -186,6 +186,7 @@ public class TensorflowConversion {
 
     public byte[] setDeviceForGraphDef(byte[] bytes) throws IOException {
         GraphDef graph = new GraphDef();
+
         if (!graph.ParseFromArray(new BytePointer(bytes), bytes.length)) {
             throw new IOException("Could not import GraphDef");
         }
