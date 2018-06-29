@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.updater;
 import lombok.Getter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
@@ -56,7 +57,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      */
     public BaseMultiLayerUpdater(T network, INDArray updaterState) {
         this.network = network;
-        Layer[] layers = getOrderedLayers();
+        Trainable[] layers = getOrderedLayers();    //May also include vertices
 
         int updaterStateSize = 0;
         //Iterate through layers, and variables for each layer.
@@ -172,7 +173,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @return Array of layers, in the correct order (i.e., same order as the parameter/gradient/updater flattening
      * order - input to output for MultiLayerNetwork, or topological order for ComputationGraph)
      */
-    protected abstract Layer[] getOrderedLayers();
+    protected abstract Trainable[] getOrderedLayers();
 
     /**
      * @return The flattened gradient view array for the model
@@ -317,6 +318,13 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @param iteration The current iteration (i.e., number of parameter updates so far)
      */
     public void preApply(Layer layer, Gradient gradient, int iteration) {
+
+        if(layer == null){
+            //May be null for vertices!
+            //TODO support gradient normalization for graph vertices
+            //Need to work out how to do the configuration, however!
+            return;
+        }
 
         if (!(layer.conf().getLayer() instanceof BaseLayer)) {
             //Layer does not have parameters -> no gradient

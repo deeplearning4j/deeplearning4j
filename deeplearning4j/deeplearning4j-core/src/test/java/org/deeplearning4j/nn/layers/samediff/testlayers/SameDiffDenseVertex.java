@@ -1,5 +1,8 @@
 package org.deeplearning4j.nn.layers.samediff.testlayers;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.layers.samediff.SDVertexParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -13,6 +16,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collections;
 import java.util.Map;
 
+@NoArgsConstructor
+@Data
 public class SameDiffDenseVertex extends SameDiffVertex {
 
     private int nIn;

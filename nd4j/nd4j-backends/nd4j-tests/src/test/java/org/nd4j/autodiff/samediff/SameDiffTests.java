@@ -2929,7 +2929,7 @@ public class SameDiffTests {
         sd.execBackwards();
         INDArray inGrad = in.getGradient().getArr();
         assertArrayEquals(new long[]{2,5}, inGrad.shape());
-
+        
     }
 
 }
