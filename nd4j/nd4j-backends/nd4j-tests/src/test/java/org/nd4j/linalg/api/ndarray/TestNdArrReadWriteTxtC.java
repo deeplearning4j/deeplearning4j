@@ -2,14 +2,18 @@
 package org.nd4j.linalg.api.ndarray;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.string.NDArrayStrings;
 
+import static org.junit.Assert.assertEquals;
 import static org.nd4j.linalg.api.ndarray.TestNdArrReadWriteTxt.compareArrays;
 
 /**
@@ -35,6 +39,7 @@ public class TestNdArrReadWriteTxtC extends BaseNd4jTest {
             compareArrays(ranksToCheck[i], ordering(), testDir);
         }
     }
+
 
     @Override
     public char ordering() {

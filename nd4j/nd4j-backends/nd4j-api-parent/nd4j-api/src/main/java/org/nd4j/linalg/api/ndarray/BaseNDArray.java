@@ -2751,7 +2751,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             i += this.length();
 
         long idx = this.isVector() ? i : Shape.getOffset(jvmShapeInfo.javaShapeInformation, Shape.ind2subC(this.shape(), i));
-        val buffer = Nd4j.createBuffer(this.data(), idx, 1);
+        val buffer = Nd4j.createBuffer( this.data(), this.data().originalOffset() + idx, 1);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],0,1,'c');
         return Nd4j.createArrayFromShapeBuffer(buffer, shape);
     }

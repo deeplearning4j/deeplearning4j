@@ -49,6 +49,7 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
     public static void compareArrays(int rank, char ordering, TemporaryFolder testDir) throws Exception {
         List<Pair<INDArray, String>> all = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,ordering);
         Iterator<Pair<INDArray,String>> iter = all.iterator();
+        int cnt = 0;
         while (iter.hasNext()) {
             File dir = testDir.newFolder();
             Pair<INDArray,String> currentPair = iter.next();
@@ -57,10 +58,12 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
             origArray.tensorAlongDimension(0,0).muli(0).addi(100000);
             origArray.putScalar(0,10001.1234);
             log.info("\nChecking shape ..." + currentPair.getSecond());
-            log.info("\n"+ origArray.dup('c').toString());
+            //log.info("C:\n"+ origArray.dup('c').toString());
+            log.info("F:\n"+ origArray.toString());
             Nd4j.writeTxt(origArray, new File(dir, "someArr.txt").getAbsolutePath());
             INDArray readBack = Nd4j.readTxt(new File(dir, "someArr.txt").getAbsolutePath());
             assertEquals("\nNot equal on shape " + ArrayUtils.toString(origArray.shape()), origArray, readBack);
+            cnt++;
         }
     }
 
