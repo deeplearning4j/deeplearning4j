@@ -2590,7 +2590,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
          */
         // length/data.length can be different in case of Threshold conversion
         return Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
-                || (length() < data().length() && data.dataType() != DataBuffer.Type.LONG)
+                || (length() < data().length() && data.dataType() != DataBuffer.Type.INT)
                 || data().originalDataBuffer() != null;
     }
 
