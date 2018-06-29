@@ -7,11 +7,13 @@
 
 #include <stdint.h>
 #include <op_boilerplate.h>
+#include "uint16.h"
 
 
 namespace nd4j {
 
     float _CUDA_HD FORCEINLINE cpu_uint82float(uint8_t data);
+    double _CUDA_HD FORCEINLINE cpu_uint82double(uint8_t data);
     uint8_t _CUDA_HD FORCEINLINE cpu_float2uint8(float data);
 
     struct uint8 {
@@ -27,7 +29,30 @@ namespace nd4j {
         _CUDA_HD FORCEINLINE uint8& operator=(const T& rhs);
 
 
-        _CUDA_HD FORCEINLINE operator float() const;
+        //// INTEGER CASTING ////
+
+        _CUDA_HD FORCEINLINE operator uint16() const;
+
+        _CUDA_HD FORCEINLINE explicit operator int() const;
+
+        _CUDA_HD FORCEINLINE explicit operator Nd4jLong() const;
+
+        //// INTEGER ASSIGNING ////
+        _CUDA_HD FORCEINLINE void assign(uint8_t rhs);
+        
+        _CUDA_HD FORCEINLINE void assign(uint16 rhs);
+
+        _CUDA_HD FORCEINLINE void assign(int rhs);
+
+        _CUDA_HD FORCEINLINE void assign(Nd4jLong rhs);
+
+        //// FLOAT CASTING ////
+
+        _CUDA_HD FORCEINLINE explicit operator float() const;
+
+        _CUDA_HD FORCEINLINE explicit operator double() const;
+
+        //// FLOAT ASSIGNING ////
 
         _CUDA_HD FORCEINLINE void assign(double rhs);
 
@@ -41,6 +66,10 @@ namespace nd4j {
 
     float cpu_uint82float(uint8_t data) {
         return static_cast<float>(static_cast<int>(data));
+    }
+
+    double cpu_uint82double(uint8_t data) {
+        return static_cast<double>(static_cast<int>(data));
     }
 
     uint8_t cpu_float2uint8(float data) {
@@ -62,9 +91,52 @@ namespace nd4j {
     uint8& uint8::operator=(const T& rhs) { assign(rhs); return *this; }
 
 
+
+
+    ///////  CAST INT TYPES
+
+    uint8::operator uint16() const {
+        return uint16(static_cast<uint16_t>(data));
+    }
+
+    uint8::operator int() const {
+        return static_cast<int>(data);
+    }
+
+    uint8::operator Nd4jLong() const {
+        return static_cast<Nd4jLong>(data);
+    }
+
+    ///////  ASSIGN INT TYPES
+    
+    void uint8::assign(uint8_t rhs) {
+        data = rhs;
+    }
+
+
+    void uint8::assign(uint16 rhs) {
+        assign(static_cast<uint8_t>(rhs.data));
+    }
+
+    void uint8::assign(int rhs) {
+        assign(static_cast<uint8_t>(rhs));
+    }
+
+    void uint8::assign(Nd4jLong rhs) {
+        assign(static_cast<uint8_t>(rhs));
+    }
+
+    ///////  CAST FLOAT TYPES
+
     uint8::operator float() const {
         return cpu_uint82float(data);
     }
+
+    uint8::operator double() const {
+        return cpu_uint82double(data);
+    }
+
+    ///////  ASSIGN FLOAT TYPES
 
     void uint8::assign(double rhs) {
         assign(static_cast<float>(rhs));

@@ -52,21 +52,33 @@ namespace nd4j {
 
         //// INTEGER CASTING ////
 
-        _CUDA_HD FORCEINLINE explicit operator int8() const;
+        _CUDA_HD FORCEINLINE operator int8() const;
 
-        _CUDA_HD FORCEINLINE explicit operator uint8() const;
+        _CUDA_HD FORCEINLINE operator uint8() const;
 
-        _CUDA_HD FORCEINLINE explicit operator int16() const;
+        _CUDA_HD FORCEINLINE operator int16() const;
 
-        _CUDA_HD FORCEINLINE explicit operator uint16() const;
+        _CUDA_HD FORCEINLINE operator uint16() const;
 
         _CUDA_HD FORCEINLINE explicit operator int() const;
 
         _CUDA_HD FORCEINLINE explicit operator Nd4jLong() const;
 
+        _CUDA_HD FORCEINLINE void assign(int8 rhs);
+
+        _CUDA_HD FORCEINLINE void assign(uint8 rhs);
+
+        _CUDA_HD FORCEINLINE void assign(int16 rhs);
+
+        _CUDA_HD FORCEINLINE void assign(uint16 rhs);
+
+        _CUDA_HD FORCEINLINE void assign(int rhs);
+
+        _CUDA_HD FORCEINLINE void assign(Nd4jLong rhs);
+
         //// FLOAT CASTING ////
 
-        _CUDA_HD FORCEINLINE explicit operator float16() const;
+        _CUDA_HD FORCEINLINE operator float16() const;
 
         _CUDA_HD FORCEINLINE explicit operator float() const;
 
@@ -165,40 +177,6 @@ namespace nd4j {
         return ret;
     }
 
-    int cpu_quarter2int(quarter b) {
-        unsigned sign = ((b.x >> 7) & 1);
-        unsigned exponent = ((b.x >> 4) & 0x7);
-        unsigned mantissa = (b.x & 0xf);
-
-        if (exponent == 0x7) {  /* NaN or Inf */
-            return std::numeric_limits<int>::min(); // min value of int is used for "undefined" values.
-        } else if (!exponent) {  /* Zero or Denorm*/
-            return 0; // normalized is used to describe values between -1 to 1, this will always yield 0 in int anyways
-        }
-
-        // add implicit leading one of mantissa
-        mantissa = mantissa | 0b10000;
-        // mantissa is now 1XXXX
-
-        unsigned absret;
-        // first bit of exponent is sign
-        bool posExp = exponent & 0b100;
-
-        // result is 1.XXXX * 2^exp ==> 1XXXX * 2^-3 * 2^exp ==> 1XXXX * 2^(exponent - 3)
-        if (posExp){ // negative exponent is always closer to 0 than 1, just return zero.
-            exponent = exponent & 0b011;
-            absret = mantissa >> (3 - exponent);
-        } else {
-            exponent = 0b100 - exponent;
-            absret = mantissa >> (3 + exponent);
-        }
-
-        if (sign){
-            return -absret;
-        }
-        return absret;
-    }
-
     float8::float8(quarter data) {
         this->data = data;
     }
@@ -208,9 +186,16 @@ namespace nd4j {
     }
 
     template <class T>
+    float8& float8::operator=(const T& rhs) {
+        assign(rhs); return *this;
+    }
+
+    template <class T>
     float8::float8(const T& rhs) {
         assign(rhs);
     }
+
+    ///////  CAST INT TYPES
 
     float8::operator int8() const {
         return static_cast<int8>(cpu_quarter2float(data));
@@ -229,13 +214,40 @@ namespace nd4j {
     }
 
     float8::operator int() const {
-        return cpu_quarter2int(data);
+        return static_cast<int>(cpu_quarter2float(data));
     }
 
     float8::operator Nd4jLong() const {
-        return static_cast<Nd4jLong>(cpu_quarter2int(data));
+        return static_cast<Nd4jLong>(cpu_quarter2float(data));
     }
 
+    ///////  ASSIGN INT TYPES
+
+    void float8::assign(int8 rhs) {
+        assign((float)rhs);
+    }
+
+    void float8::assign(uint8 rhs) {
+        assign((float)rhs);
+    }
+
+    void float8::assign(int16 rhs) {
+        assign((float)rhs);
+    }
+
+    void float8::assign(uint16 rhs) {
+        assign((float)rhs);
+    }
+
+    void float8::assign(int rhs) {
+        assign((float)rhs);
+    }
+
+    void float8::assign(Nd4jLong rhs) {
+        assign((float)rhs);
+    }
+
+    ///////  CAST FLOAT TYPES
 
     float8::operator float16() const {
         return static_cast<float16>(cpu_quarter2float(data));
@@ -249,10 +261,7 @@ namespace nd4j {
         return static_cast<double>(cpu_quarter2float(data));
     }
 
-    template <class T>
-    float8& float8::operator=(const T& rhs) {
-        assign(rhs); return *this;
-    }
+    ///////  ASSIGN FLOAT TYPES
 
     void float8::assign(double rhs) {
         assign((float)rhs);

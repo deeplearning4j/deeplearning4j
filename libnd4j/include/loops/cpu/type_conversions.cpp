@@ -106,15 +106,13 @@ namespace nd4j {
         if (N < nd4j::Environment::getInstance()->elementwiseThreshold()) {
 #pragma omp simd
             for (int i = 0; i < N; i++) {
-                // FIXME: get rid of through-float though
-                z[i] = static_cast<T>(static_cast<float>(x[i]));
+                z[i] = static_cast<T>(x[i]);
             }
         } else {
 
 #pragma omp parallel for
             for (int i = 0; i < N; i++) {
-                // FIXME: get rid of through-float though
-                z[i] = static_cast<T>(static_cast<float>(x[i]));
+                z[i] = static_cast<T>(x[i]);
             }
         }
     };
