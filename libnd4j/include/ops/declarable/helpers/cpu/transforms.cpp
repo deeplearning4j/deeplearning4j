@@ -759,26 +759,56 @@ void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& 
 }
 
 //////////////////////////////////////////////////////////////////////////
+template<typename T>
+void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const int axis) {
+
+    const int numOfArrs = inArrs.size();
+    const int rank  = inArrs[0]->rankOf();
+    const int rank2 = 2*rank;
+    int* indices = new int[2 * rank * numOfArrs];
+    memset(indices, 0, 2 * rank * numOfArrs * sizeof(int));
+
+    // take into account indices for first array
+    indices[2 * axis + 1] = inArrs[0]->sizeAt(axis);
+
+    // loop through the rest of input arrays
+    for(int i = 1; i < numOfArrs; ++i) {
+        indices[i * rank2 + 2 * axis]     = indices[2 * axis + 1 + (i-1) * rank2];                                // index start from
+        indices[i * rank2 + 2 * axis + 1] = indices[2 * axis + 1 + (i-1) * rank2] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
+    }
+
+// #pragma omp parallel for if(numOfArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+#pragma omp parallel for schedule(guided)
+    for(int i = 0; i < numOfArrs; ++i) {
+        NDArray<T> temp = output((indices + i * rank2), true);
+        temp.assign(inArrs[i]);
+    }
+
+
+    delete []indices;
+}
+
+//////////////////////////////////////////////////////////////////////////
 template <typename T>
 void tileBP(const NDArray<T>& gradO /*input*/, NDArray<T>& gradI /*output*/, const std::vector<Nd4jLong> reps) {
-    
+
     T* gradIBuff      = gradI.getBuffer();
     const T* gradOBuff      = gradO.getBuffer();
     const Nd4jLong gradILen = gradI.lengthOf();
-    const Nd4jLong gradOLen = gradO.lengthOf();  // gradOLen >= gradILen    
+    const Nd4jLong gradOLen = gradO.lengthOf();  // gradOLen >= gradILen
     const Nd4jLong gradIEWS = nd4j::math::nd4j_abs<Nd4jLong>(gradI.ews());
     const Nd4jLong gradOEWS = gradO.ews();
 
     // initial zeroing of gradI content
     if(gradIEWS == 1)
         memset(gradIBuff, 0, gradILen * sizeof(T));
-    else 
+    else
 #pragma omp parallel for schedule(static) proc_bind(close)
-        for (int i = 0; i < gradILen * gradIEWS; i += gradIEWS) 
+        for (int i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gradIBuff[i] = static_cast<T>(0.f);
 
-    
-    if(gradO.ordering() == 'c' && gradOEWS == 1) {           
+
+    if(gradO.ordering() == 'c' && gradOEWS == 1) {
 #pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i=0;  i<gradOLen; ++i)
             gradI(shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i)) += gradOBuff[i];
@@ -874,6 +904,10 @@ template void mirrorPad<double>(const NDArray<double>& input, const NDArray<doub
 template void tileBP<float>(const NDArray<float>& gradO, NDArray<float>& gradI, const std::vector<Nd4jLong> reps);
 template void tileBP<float16>(const NDArray<float16>& gradO, NDArray<float16>& gradI, const std::vector<Nd4jLong> reps);
 template void tileBP<double>(const NDArray<double>& gradO, NDArray<double>& gradI, const std::vector<Nd4jLong> reps);
+
+template void concat<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output, const int axis);
+template void concat<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output, const int axis);
+template void concat<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output, const int axis);
 
 }
 }

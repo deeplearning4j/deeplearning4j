@@ -341,6 +341,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_cumsum.class,
         float_cumprod.class,
         float_tile.class,
+        float_tile_bp.class,
         float_repeat.class,
         float_invert_permutation.class,
         float_concat.class,
@@ -700,6 +701,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_cumsum.class,
         half_cumprod.class,
         half_tile.class,
+        half_tile_bp.class,
         half_repeat.class,
         half_invert_permutation.class,
         half_concat.class,
@@ -1059,6 +1061,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_cumsum.class,
         double_cumprod.class,
         double_tile.class,
+        double_tile_bp.class,
         double_repeat.class,
         double_invert_permutation.class,
         double_concat.class,
@@ -26308,6 +26311,51 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public double_tile() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+        @Name("nd4j::ops::tile_bp<float>") public static class float_tile_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_tile_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_tile_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_tile_bp position(long position) {
+                return (float_tile_bp)super.position(position);
+            }
+        
+                                                                                    public float_tile_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::tile_bp<float16>") public static class half_tile_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_tile_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_tile_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_tile_bp position(long position) {
+                return (half_tile_bp)super.position(position);
+            }
+        
+                                                                                    public half_tile_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::tile_bp<double>") public static class double_tile_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_tile_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_tile_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_tile_bp position(long position) {
+                return (double_tile_bp)super.position(position);
+            }
+        
+                                                                                    public double_tile_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
