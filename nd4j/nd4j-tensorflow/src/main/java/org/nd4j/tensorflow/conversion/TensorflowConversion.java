@@ -275,6 +275,8 @@ public class TensorflowConversion {
             throw new RuntimeException("ERROR: Unable to import graph " + TF_Message(status).getString());
         }
 
+        TF_DeleteImportGraphDefOptions(opts);
+
 
         return graphC;
     }
