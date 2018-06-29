@@ -35,7 +35,6 @@ import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
  * Created by susaneraly on 11/6/17.
  */
 @Slf4j
-@RunWith(Parameterized.class)
 public class TFGraphTestAllHelper {
 
     public enum ExecuteWith {

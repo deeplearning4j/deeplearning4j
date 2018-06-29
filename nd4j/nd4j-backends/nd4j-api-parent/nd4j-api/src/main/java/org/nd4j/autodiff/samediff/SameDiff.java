@@ -1565,7 +1565,7 @@ public class SameDiff {
         return var(name, shape, new ZeroInitScheme());
     }
 
-    public SDVariable var(String name, int... shape) {
+    public SDVariable var(String name, int[] shape) {
         Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
@@ -1849,7 +1849,15 @@ public class SameDiff {
      * @return the gradient for this variable or null
      */
     public SDVariable getGradForVariable(String varName) {
-        return gradients.get(varName);
+        //TODO 2018/06/26 - Review this?
+        //Gradients are being placed in the inner "grad" function SameDiff instance, but not the outer one
+        // should they be synced and we just use the map in this instance?
+        if (gradients.containsKey(varName)) {
+            return gradients.get(varName);
+        } else if(sameDiffFunctionInstances.containsKey("grad") && sameDiffFunctionInstances.get("grad").gradients.containsKey(varName)){
+            return sameDiffFunctionInstances.get("grad").gradients.get(varName);
+        }
+        return null;
     }
 
 
