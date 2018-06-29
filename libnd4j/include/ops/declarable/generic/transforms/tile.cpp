@@ -116,7 +116,7 @@ CUSTOM_OP_IMPL(tile_bp, 1, 1, false, 0, -2) {
 DECLARE_SHAPE_FN(tile_bp) {
     
     Nd4jLong* inShape    = inputShape->at(0);
-    Nd4jLong* gradOShape = inputShape->at(0);
+    Nd4jLong* gradOShape = inputShape->at(1);
     const int inRank = inShape[0];
 
     REQUIRE_TRUE(inRank == gradOShape[0], 0, "TILE_BP op: the ranks of input array and output's gradients array (next epsilon) must be equal, but got %i and %i correspondingly !", inRank, gradOShape[0]);
@@ -139,7 +139,7 @@ DECLARE_SHAPE_FN(tile_bp) {
     
     for (int i = 0; i < inRank; ++i)
         REQUIRE_TRUE(shape::sizeAt(gradOShape, i) == shape::sizeAt(inShape, i) * reps[i], 0, "TILE_BP op: shapes of input array and output's gradients array (next epsilon) are inconsistent !");
-       
+
     Nd4jLong *gradIShape;
     COPY_SHAPE(inShape, gradIShape);
 
