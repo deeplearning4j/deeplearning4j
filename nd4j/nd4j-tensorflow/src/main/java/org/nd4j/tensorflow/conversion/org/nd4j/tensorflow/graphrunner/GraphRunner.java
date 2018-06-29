@@ -40,14 +40,18 @@ public class GraphRunner {
             TF_DeleteSessionOptions(options);
         }
 
-        tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, inputOrder.get(0));
-        tensorflow.TF_Output inputOut = new tensorflow.TF_Output().oper(inputOp).index(0);
+        tensorflow.TF_Output inputOut = new tensorflow.TF_Output(inputOrder.size());
 
-        tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, outputOrder.get(0));
-        tensorflow.TF_Output outputOut = new tensorflow.TF_Output().oper(outputOp).index(0);
+
+        tensorflow.TF_Output outputOut = new tensorflow.TF_Output(outputOrder.size());
+
+
         List<TF_Operation> inputsOps = new ArrayList<>();
         List<TF_Tensor> inputTensors = new ArrayList<>();
+
         for(int i = 0; i < inputOrder.size(); i++) {
+            tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, inputOrder.get(i));
+            inputOut.oper(inputOp).index(i);
             inputTensors.add(conversion.tensorFromNDArray(inputs.get(inputOrder.get(i))));
             inputsOps.add(TF_GraphOperationByName(graph, inputOrder.get(i)));
         }
@@ -56,6 +60,8 @@ public class GraphRunner {
         List<TF_Tensor> outputTensors = new ArrayList<>();
         List<TF_Operation> outputOps = new ArrayList<>();
         for(int i = 0; i < outputOps.size(); i++) {
+            tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, outputOrder.get(i));
+            outputOut.oper(outputOp).index(i);
             outputTensors.add(conversion.tensorFromNDArray(outputArrays.get(outputOrder.get(i))));
             outputOps.add(TF_GraphOperationByName(graph, outputOrder.get(i)));
         }
@@ -63,7 +69,6 @@ public class GraphRunner {
         PointerPointer<TF_Tensor> inputTensorsPointer = new PointerPointer<>(inputTensors.toArray(new TF_Tensor[inputTensors.size()]));
         PointerPointer<TF_Tensor> outputTensorsPointer = new PointerPointer<>(outputTensors.toArray(new TF_Tensor[inputTensors.size()]));
         PointerPointer<TF_Operation> opsToRun = new PointerPointer<>(outputOps.toArray(new TF_Operation[outputOps.size()]));
-        PointerPointer<TF_Operation> inputsToRun = new PointerPointer<>(inputsOps.toArray(new TF_Operation[outputOps.size()]));
 
 
 
