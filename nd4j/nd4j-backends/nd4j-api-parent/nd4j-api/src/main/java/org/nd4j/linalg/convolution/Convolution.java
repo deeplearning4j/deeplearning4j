@@ -86,7 +86,7 @@ public class Convolution {
 
         val cfg = Conv2DConfig.builder()
                 .sH(sH)
-                .sH(sW)
+                .sW(sW)
                 .dH(1)
                 .dW(1)
                 .kH(kH)
@@ -100,10 +100,6 @@ public class Convolution {
                 .outputs(new INDArray[]{output})
                 .conv2DConfig(cfg)
                 .build();
-
-
-        assert cfg.getSH() == sH;
-        assert cfg.getSW() == sW;
 
         Nd4j.getExecutioner().exec(col2Im);
         return col2Im.outputArguments()[0];
