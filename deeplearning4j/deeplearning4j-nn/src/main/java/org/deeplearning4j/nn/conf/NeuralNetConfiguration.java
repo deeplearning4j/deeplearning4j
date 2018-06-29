@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
+import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -1092,8 +1093,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             else
                 layerName = layer.getLayerName();
 
-            if(layer instanceof SameDiffLayer){
-                SameDiffLayer sdl = (SameDiffLayer)layer;
+            if(layer instanceof AbstractSameDiffLayer){
+                AbstractSameDiffLayer sdl = (AbstractSameDiffLayer)layer;
                 sdl.applyGlobalConfig(this);
             }
 

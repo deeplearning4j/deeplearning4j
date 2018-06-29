@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -17,6 +18,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.learning.config.IUpdater;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,8 +79,9 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 for (int j = 0; j < variables.size(); j++) {
                     String var = variables.get(j);
                     long paramSizeThisVariable = layerParamTable.get(var).length();
-                    int updaterStateSizeThisVariable = (int) layers[i].conf().getLayer().getUpdaterByParam(var)
-                                    .stateSize(paramSizeThisVariable);
+                    IUpdater u = layers[i].conf().getLayer().getUpdaterByParam(var);
+                    Preconditions.checkNotNull(u, "Updater for parameter %s, layer \"%s\" was null", var, layers[i].conf().getLayer().getLayerName());
+                    int updaterStateSizeThisVariable = (int) u.stateSize(paramSizeThisVariable);
 
                     INDArray gradientViewSubset = null;
                     INDArray paramsViewSubset = null;

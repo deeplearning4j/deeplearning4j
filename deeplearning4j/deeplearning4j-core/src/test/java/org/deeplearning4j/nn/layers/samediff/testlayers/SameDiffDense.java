@@ -99,7 +99,7 @@ public class SameDiffDense extends SameDiffLayer {
     }
 
     public char paramReshapeOrder(String param){
-        //To match DL4J
+        //To match DL4J for easy comparison
         return 'f';
     }
 

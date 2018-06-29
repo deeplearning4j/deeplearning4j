@@ -86,7 +86,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             sameDiff.clearExecutionCache();
             sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
-            if(layerConf().labelsRequired()) {
+            if(layerConf().labelsRequired() && labels != null) {
                 sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
             }
             for(String s : paramTable.keySet() ) {
@@ -96,7 +96,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             INDArray score = sameDiff.execAndEndResult();
             if(activations) {
                 INDArray result = sameDiff.getArrForVarName(layerConf().activationsVertexName());
-                Preconditions.checkNotNull(result, "Activations (result) array for variable \"%s\" was" +
+                Preconditions.checkNotNull(result, "Activations (result) array for variable \"%s\" was " +
                         "null - error during execution or this variable (as defined by method activationsVertexName()) " +
                         "does not exist", layerConf().activationsVertexName());
                 return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
@@ -232,7 +232,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
             SDVariable labelVar = null;
             if(layerConf().labelsRequired()){
-                long[] labelShape = labels.shape().clone();
+                long[] labelShape = labels == null ? new long[]{1} : labels.shape().clone();
                 labelVar = sameDiff.var(LABELS_KEY, labelShape);
             }
             Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
@@ -263,7 +263,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return activateHelper(false, workspaceMgr).getDouble(0) + fullNetworkL1 + fullNetworkL1;
+        return (activateHelper(false, workspaceMgr).getDouble(0) + fullNetworkL1 + fullNetworkL1) / input.size(0);
     }
 
     @Override
