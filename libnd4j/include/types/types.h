@@ -7,6 +7,16 @@
 
 #include <pointercast.h>
 
+//// Forward declarations of custom types
+struct float16;
+namespace nd4j {
+    struct float8;
+    struct int8;
+    struct uint8;
+    struct int16;
+    struct uint16;
+}
+
 #define LIBND4J_TYPES \
         float, \
         float16, \

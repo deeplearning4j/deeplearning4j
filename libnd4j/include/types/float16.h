@@ -10,6 +10,7 @@
 #include <cfloat>
 #include <iosfwd>
 #include <iostream>
+#include <types/float8.h>
 #include <types/int8.h>
 #include <types/uint8.h>
 #include <types/int16.h>
@@ -344,6 +345,10 @@ local_def ihalf cpu_float2ihalf_rn(float f)
     }
 
     ///////  ASSIGN FLOAT TYPES
+    local_def void assign(nd4j::float8 rhs) {
+        assign((float)rhs);
+    }
+
     local_def void assign(double rhs) {
       assign((float)rhs);
     }

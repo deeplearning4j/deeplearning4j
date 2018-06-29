@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 #include <op_boilerplate.h>
-#include "uint8.h"
+#include <types/types.h>
 
 
 namespace nd4j {
@@ -31,9 +31,11 @@ namespace nd4j {
 
         //// INTEGER CASTING ////
 
-        _CUDA_HD FORCEINLINE operator uint8() const;
+        _CUDA_HD operator int8() const;
 
-        _CUDA_HD FORCEINLINE operator uint16() const;
+        _CUDA_HD operator uint8() const;
+
+        _CUDA_HD operator uint16() const;
 
         _CUDA_HD FORCEINLINE explicit operator int() const;
 
@@ -43,9 +45,11 @@ namespace nd4j {
 
         _CUDA_HD FORCEINLINE void assign(int16_t rhs);
 
-        _CUDA_HD FORCEINLINE void assign(uint8 rhs);
+        _CUDA_HD void assign(const int8&  rhs);
 
-        _CUDA_HD FORCEINLINE void assign(uint16 rhs);
+        _CUDA_HD void assign(const uint8& rhs);
+
+        _CUDA_HD void assign(const uint16&  rhs);
 
         _CUDA_HD FORCEINLINE void assign(int rhs);
 
@@ -53,11 +57,19 @@ namespace nd4j {
 
         //// FLOAT CASTING ////
 
+        _CUDA_HD operator float16() const;
+
+        _CUDA_HD operator float8() const;
+
         _CUDA_HD FORCEINLINE explicit operator float() const;
 
         _CUDA_HD FORCEINLINE explicit operator double() const;
 
         //// FLOAT ASSIGNING ////
+
+        _CUDA_HD void assign(const float8& rhs);
+
+        _CUDA_HD void assign(const float16& rhs);
 
         _CUDA_HD FORCEINLINE void assign(double rhs);
 
@@ -99,15 +111,6 @@ namespace nd4j {
 
     ///////  CAST INT TYPES
 
-    int16::operator uint8() const {
-        return uint8(static_cast<uint8_t>(data));
-    }
-
-
-    int16::operator uint16() const {
-        return uint16(static_cast<uint16_t>(data));
-    }
-
     int16::operator int() const {
         return static_cast<int>(data);
     }
@@ -119,14 +122,6 @@ namespace nd4j {
     ///////  ASSIGN INT TYPES
     void int16::assign(int16_t rhs) {
         data = rhs;
-    }
-
-    void int16::assign(uint8 rhs) {
-        assign(static_cast<int16_t>(rhs.data));
-    }
-
-    void int16::assign(uint16 rhs) {
-        assign(static_cast<int16_t>(rhs.data));
     }
 
     void int16::assign(int rhs) {

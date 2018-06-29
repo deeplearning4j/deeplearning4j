@@ -29,12 +29,26 @@ namespace nd4j {
 
         //// INTEGER CASTING ////
 
+        _CUDA_HD operator int8() const;
+
+        _CUDA_HD operator uint8() const;
+
+        _CUDA_HD operator int16() const;
+
         _CUDA_HD FORCEINLINE explicit operator int() const;
 
         _CUDA_HD FORCEINLINE explicit operator Nd4jLong() const;
 
         //// INTEGER ASSIGNING ////
+
         _CUDA_HD FORCEINLINE void assign(uint16_t rhs);
+
+        _CUDA_HD void assign(const int8&  rhs);
+
+        _CUDA_HD void assign(const uint8& rhs);
+
+        _CUDA_HD void assign(const int16&  rhs);
+
 
         _CUDA_HD FORCEINLINE void assign(int rhs);
 
@@ -42,11 +56,19 @@ namespace nd4j {
 
         //// FLOAT CASTING ////
 
+        _CUDA_HD operator float16() const;
+
+        _CUDA_HD operator float8() const;
+
         _CUDA_HD FORCEINLINE explicit operator float() const;
 
         _CUDA_HD FORCEINLINE explicit operator double() const;
 
         //// FLOAT ASSIGNING ////
+
+        _CUDA_HD void assign(const float8& rhs);
+
+        _CUDA_HD void assign(const float16& rhs);
 
         _CUDA_HD FORCEINLINE void assign(double rhs);
 
@@ -107,11 +129,11 @@ namespace nd4j {
 
 
     void uint16::assign(int rhs) {
-        assign(static_cast<int8_t>(rhs));
+        assign(static_cast<uint16_t>(rhs));
     }
 
     void uint16::assign(Nd4jLong rhs) {
-        assign(static_cast<int8_t>(rhs));
+        assign(static_cast<uint16_t>(rhs));
     }
 
     ///////  CAST FLOAT TYPES

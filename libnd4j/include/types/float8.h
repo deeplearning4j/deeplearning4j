@@ -18,11 +18,7 @@
 */
 
 #include <op_boilerplate.h>
-#include "float16.h"
-#include "uint16.h"
-#include "int8.h"
-#include "uint8.h"
-#include "int16.h"
+#include <types/types.h>
 
 
 namespace nd4j {
@@ -52,25 +48,25 @@ namespace nd4j {
 
         //// INTEGER CASTING ////
 
-        _CUDA_HD FORCEINLINE operator int8() const;
+        _CUDA_HD operator int8() const;
 
-        _CUDA_HD FORCEINLINE operator uint8() const;
+        _CUDA_HD operator uint8() const;
 
-        _CUDA_HD FORCEINLINE operator int16() const;
+        _CUDA_HD operator int16() const;
 
-        _CUDA_HD FORCEINLINE operator uint16() const;
+        _CUDA_HD operator uint16() const;
 
         _CUDA_HD FORCEINLINE explicit operator int() const;
 
         _CUDA_HD FORCEINLINE explicit operator Nd4jLong() const;
 
-        _CUDA_HD FORCEINLINE void assign(int8 rhs);
+        _CUDA_HD void assign(const int8& rhs);
 
-        _CUDA_HD FORCEINLINE void assign(uint8 rhs);
+        _CUDA_HD void assign(const uint8& rhs);
 
-        _CUDA_HD FORCEINLINE void assign(int16 rhs);
+        _CUDA_HD void assign(const int16&  rhs);
 
-        _CUDA_HD FORCEINLINE void assign(uint16 rhs);
+        _CUDA_HD void assign(const uint16&  rhs);
 
         _CUDA_HD FORCEINLINE void assign(int rhs);
 
@@ -78,11 +74,15 @@ namespace nd4j {
 
         //// FLOAT CASTING ////
 
-        _CUDA_HD FORCEINLINE operator float16() const;
+        _CUDA_HD operator float16() const;
 
         _CUDA_HD FORCEINLINE explicit operator float() const;
 
         _CUDA_HD FORCEINLINE explicit operator double() const;
+
+        //// FLOAT ASSIGNING ////
+
+        _CUDA_HD void assign(const float16& rhs);
 
         _CUDA_HD FORCEINLINE void assign(double rhs);
 
@@ -195,23 +195,7 @@ namespace nd4j {
         assign(rhs);
     }
 
-    ///////  CAST INT TYPES
-
-    float8::operator int8() const {
-        return static_cast<int8>(cpu_quarter2float(data));
-    }
-
-    float8::operator uint8() const {
-        return static_cast<uint8>(cpu_quarter2float(data));
-    }
-
-    float8::operator int16() const {
-        return static_cast<int16>(cpu_quarter2float(data));
-    }
-
-    float8::operator uint16() const {
-        return static_cast<uint16>(cpu_quarter2float(data));
-    }
+    /////// CAST INT TYPES
 
     float8::operator int() const {
         return static_cast<int>(cpu_quarter2float(data));
@@ -223,35 +207,15 @@ namespace nd4j {
 
     ///////  ASSIGN INT TYPES
 
-    void float8::assign(int8 rhs) {
-        assign((float)rhs);
-    }
-
-    void float8::assign(uint8 rhs) {
-        assign((float)rhs);
-    }
-
-    void float8::assign(int16 rhs) {
-        assign((float)rhs);
-    }
-
-    void float8::assign(uint16 rhs) {
-        assign((float)rhs);
-    }
-
     void float8::assign(int rhs) {
         assign((float)rhs);
     }
 
     void float8::assign(Nd4jLong rhs) {
-        assign((float)rhs);
+        assign((float) rhs);
     }
 
     ///////  CAST FLOAT TYPES
-
-    float8::operator float16() const {
-        return static_cast<float16>(cpu_quarter2float(data));
-    }
 
     float8::operator float() const {
         return cpu_quarter2float(data);
@@ -260,7 +224,6 @@ namespace nd4j {
     float8::operator double() const {
         return static_cast<double>(cpu_quarter2float(data));
     }
-
     ///////  ASSIGN FLOAT TYPES
 
     void float8::assign(double rhs) {

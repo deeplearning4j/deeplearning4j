@@ -72,3 +72,20 @@ TEST_F(ConverTests, QuartToInt_Test) {
         }
     }
 }
+
+TEST_F(ConverTests, QuartToInt8_Test) {
+    // Test that quarter to int works. (assuming quarter to float works)
+    float8 src;
+    int8 dst;
+    src = float8();
+    dst = src;
+    ASSERT_EQ(dst.data, static_cast<int8_t>(0));
+
+    src = dst;
+    ASSERT_EQ(static_cast<float>(src), 0.0f);
+
+    src.assign(16.0f);
+    dst = src;
+
+
+}
