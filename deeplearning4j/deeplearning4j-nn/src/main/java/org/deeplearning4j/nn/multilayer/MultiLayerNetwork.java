@@ -525,6 +525,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (initCalled)
             return;
 
+        if (layerMap == null)
+            layerMap = new LinkedHashMap<>();
+
         if (layerWiseConfigurations.getTrainingWorkspaceMode() == null)
             layerWiseConfigurations.setTrainingWorkspaceMode(WorkspaceMode.NONE);
 
