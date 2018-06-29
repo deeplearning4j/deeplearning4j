@@ -85,9 +85,7 @@ import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -4533,5 +4531,21 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return paramsEquals && confEquals && updaterEquals;
         }
         return false;
+    }
+
+    private void writeObject(ObjectOutputStream oos) throws IOException {
+        ModelSerializer.writeModel(this, oos, true);
+    }
+
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        val cg = ModelSerializer.restoreComputationGraph(ois, true);
+
+        this.defaultConfiguration = cg.defaultConfiguration.clone();
+        this.configuration = cg.configuration.clone();
+        this.init();
+        this.flattenedParams.assign(cg.flattenedParams);
+
+        if (cg.getUpdater() != null && cg.getUpdater(false).getStateViewArray() != null)
+            this.getUpdater(true).getStateViewArray().assign(cg.getUpdater(false).getStateViewArray());
     }
 }
