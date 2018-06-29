@@ -20,6 +20,7 @@
 package org.nd4j.linalg.convolution;
 
 
+import lombok.val;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
@@ -83,20 +84,26 @@ public class Convolution {
 
         INDArray output = Nd4j.create(new long[]{col.size(0), col.size(1), kH, kW});
 
+        val cfg = Conv2DConfig.builder()
+                .sH(sH)
+                .sH(sW)
+                .dH(1)
+                .dW(1)
+                .kH(kH)
+                .kW(kW)
+                .pH(ph)
+                .pW(pW)
+                .build();
+
         Col2Im col2Im = Col2Im.builder()
                 .inputArrays(new INDArray[]{col})
                 .outputs(new INDArray[]{output})
-                .conv2DConfig(Conv2DConfig.builder()
-                        .sH(sH)
-                        .sH(sW)
-                        .dH(1)
-                        .dW(1)
-                        .kH(kH)
-                        .kW(kW)
-                        .pH(ph)
-                        .pW(pW)
-                        .build())
+                .conv2DConfig(cfg)
                 .build();
+
+
+        assert cfg.getSH() == sH;
+        assert cfg.getSW() == sW;
 
         Nd4j.getExecutioner().exec(col2Im);
         return col2Im.outputArguments()[0];
