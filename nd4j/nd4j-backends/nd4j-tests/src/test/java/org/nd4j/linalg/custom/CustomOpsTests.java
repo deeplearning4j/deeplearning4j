@@ -110,7 +110,7 @@ public class CustomOpsTests {
         assertEquals(exp, arrayX);
     }
 
-    @Test
+    @Test(expected = ND4JIllegalStateException.class)
     public void testInplaceOp1() throws Exception {
         val arrayX = Nd4j.create(10, 10);
         val arrayY = Nd4j.create(10, 10);
@@ -148,31 +148,6 @@ public class CustomOpsTests {
         Nd4j.getExecutioner().exec(op);
 
         assertEquals(exp, op.getOutputArgument(0));
-    }
-
-
-    @Test
-    public void testInplaceOp2() throws Exception {
-        val arrayX = Nd4j.create(10, 10);
-        val arrayY = Nd4j.create(10, 10);
-        val arrayZ = Nd4j.create(10, 10);
-
-        arrayX.assign(3.0);
-        arrayY.assign(1.0);
-
-        val exp = Nd4j.create(10,10).assign(4.0);
-        val expZ = Nd4j.create(10,10);
-
-        CustomOp op = DynamicCustomOp.builder("add")
-                .addInputs(arrayX, arrayY)
-                .addOutputs(arrayZ)
-                .callInplace(true)
-                .build();
-
-        Nd4j.getExecutioner().exec(op);
-
-        assertEquals(exp, arrayX);
-        assertEquals(expZ, arrayZ);
     }
 
 
