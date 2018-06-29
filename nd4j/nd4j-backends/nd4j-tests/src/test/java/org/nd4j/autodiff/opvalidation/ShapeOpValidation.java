@@ -822,7 +822,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             Nd4j.getExecutioner().exec(DynamicCustomOp.builder("reshape")
                     .addInputs(inArr)
                     .addOutputs(out)
-                    .addIntegerArguments('c')
+                    .addIntegerArguments(-((int) 'c'))
                     .addIntegerArguments(toShape)
                     .build());
 
