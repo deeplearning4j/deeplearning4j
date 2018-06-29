@@ -50,4 +50,9 @@ public class SameDiffDenseVertex extends SameDiffVertex {
         WeightInitUtil.initWeights(nIn, nOut, new long[]{nIn, nOut}, weightInit, null, 'f', params.get("W"));
         params.get("b").assign(0.0);
     }
+
+    @Override
+    public char paramReshapeOrder(String paramName){
+        return 'f';     //To match DL4J DenseLayer - for easy comparison
+    }
 }

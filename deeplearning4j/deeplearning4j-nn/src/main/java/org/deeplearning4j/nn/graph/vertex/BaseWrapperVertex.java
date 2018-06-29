@@ -7,6 +7,8 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.util.Map;
+
 /**
  * A base class for wrapper vertices: i.e., those vertices that have another vertex inside.
  * Use this as the basis of such wrapper vertices, which can selectively override only
@@ -155,5 +157,10 @@ public abstract class BaseWrapperVertex implements GraphVertex {
     @Override
     public void clearVertex() {
         underlying.clearVertex();
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable(boolean backpropOnly) {
+        return underlying.paramTable(backpropOnly);
     }
 }

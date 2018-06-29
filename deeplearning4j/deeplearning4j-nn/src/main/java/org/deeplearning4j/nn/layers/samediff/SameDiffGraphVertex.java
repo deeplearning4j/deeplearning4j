@@ -179,6 +179,12 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             this.outputKey = outputVar.getVarName();
         }
     }
+
+
+    @Override
+    public Map<String, INDArray> paramTable(boolean backpropOnly) {
+        return paramTable;
+    }
 }
 
 

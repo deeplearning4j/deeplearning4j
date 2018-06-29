@@ -26,6 +26,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /** A GraphVertex is a vertex in the computation graph. It may contain Layer, or define some arbitrary forward/backward pass
  * behaviour based on the inputs.<br>
@@ -154,4 +155,11 @@ public interface GraphVertex extends Serializable {
      * This method clears inpjut for this vertex
      */
     void clearVertex();
+
+    /**
+     * Get the parameter table for the vertex
+     * @param backpropOnly If true: exclude unsupervised training parameters
+     * @return Parameter table
+     */
+    Map<String,INDArray> paramTable(boolean backpropOnly);
 }

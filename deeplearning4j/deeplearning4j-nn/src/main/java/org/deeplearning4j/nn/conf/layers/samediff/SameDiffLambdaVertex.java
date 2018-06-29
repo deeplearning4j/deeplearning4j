@@ -13,7 +13,7 @@ import java.util.*;
 //i.e., works for both, but fail at runtime if user tries to do multiple inputs in CompGraph
 public abstract class SameDiffLambdaVertex extends SameDiffVertex {
 
-    protected VertexInputs inputs;
+    protected transient VertexInputs inputs;
 
     public abstract SDVariable defineVertex(SameDiff sameDiff, VertexInputs inputs);
 

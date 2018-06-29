@@ -37,6 +37,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * LayerVertex is a GraphVertex with a neural network Layer (and, optionally an {@link InputPreProcessor}) in it
@@ -86,6 +87,11 @@ public class LayerVertex extends BaseGraphVertex {
 
         this.layer = new FrozenLayer(this.layer);
         this.layer.conf().getLayer().setLayerName(vertexName);
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable(boolean backpropOnly) {
+        return layer.paramTable(backpropOnly);
     }
 
     @Override

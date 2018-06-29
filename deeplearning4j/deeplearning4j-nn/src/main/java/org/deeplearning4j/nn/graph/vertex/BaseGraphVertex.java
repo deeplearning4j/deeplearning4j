@@ -26,6 +26,9 @@ import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
+import java.util.Collections;
+import java.util.Map;
+
 /** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
  */
 @Data
@@ -186,5 +189,10 @@ public abstract class BaseGraphVertex implements GraphVertex {
     @Override
     public void clearVertex() {
         clear();
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable(boolean backpropOnly) {
+        return Collections.emptyMap();
     }
 }
