@@ -6,8 +6,26 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
-set(CMAKE_CXX_FLAGS_RELEASE  " -O3 -std=c++11 -fassociative-math -funsafe-math-optimizations")
-set(CMAKE_CXX_FLAGS_DEBUG " -g -O0 -std=c++11")
+option(BUILD_TESTS "Build tests" OFF)
+if(BUILD_TESTS)
+  # tests are always compiled with all ops included
+  set(LIBND4J_ALL_OPS true)
+  set(LIBND4J_BUILD_MINIFIER true)
+  add_subdirectory(tests_cpu)
+endif()
+
+# -fsanitize=address
+# -fsanitize=leak
+if (APPLE)
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
+elseif(WIN32)
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+else()
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
+endif()
 
 if(NATIVE)
     IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
