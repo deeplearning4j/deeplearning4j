@@ -2436,7 +2436,7 @@ public class Shape {
      * @return true if c+descending, f+ascending, false otherwise
      */
     public static boolean strideDescendingCAscendingF(INDArray array) {
-        if(array.rank() == 0)
+        if(array.rank() <= 1)
             return true;
         long[] strides = array.stride();
         if (array.isVector() && strides[0] == 1 && strides[1] == 1)
