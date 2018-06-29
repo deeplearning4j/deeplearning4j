@@ -3745,13 +3745,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
         val mln = ModelSerializer.restoreMultiLayerNetwork(ois, true);
 
-        this.defaultConfiguration = mln.defaultConfiguration;
-        this.layerWiseConfigurations = mln.layerWiseConfigurations;
-        this.flattenedParams = mln.flattenedParams;
-        this.initCalled = mln.initCalled;
-        this.initDone = mln.initDone;
-        if (mln.getUpdater() != null)
-            this.setUpdater(mln.getUpdater());
+        this.defaultConfiguration = mln.defaultConfiguration.clone();
+        this.layerWiseConfigurations = mln.layerWiseConfigurations.clone();
+        this.init();
+        this.flattenedParams.assign(mln.flattenedParams);
+
+        if (mln.getUpdater() != null && mln.getUpdater(false).getStateViewArray() != null)
+            this.getUpdater(true).getStateViewArray().assign(mln.getUpdater(false).getStateViewArray());
     }
 
 }

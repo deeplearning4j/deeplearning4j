@@ -4540,12 +4540,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
         val cg = ModelSerializer.restoreComputationGraph(ois, true);
 
-        this.defaultConfiguration = cg.defaultConfiguration;
-        this.configuration = cg.configuration;
-        this.flattenedParams = cg.flattenedParams;
-        this.initCalled = cg.initCalled;
-        this.initDone = cg.initDone;
-        if (cg.getUpdater() != null)
-            this.setUpdater(cg.getUpdater());
+        this.defaultConfiguration = cg.defaultConfiguration.clone();
+        this.configuration = cg.configuration.clone();
+        this.init();
+        this.flattenedParams.assign(cg.flattenedParams);
+
+        if (cg.getUpdater() != null && cg.getUpdater(false).getStateViewArray() != null)
+            this.getUpdater(true).getStateViewArray().assign(cg.getUpdater(false).getStateViewArray());
     }
 }
