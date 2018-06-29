@@ -36,6 +36,12 @@ public class ParallelConcat extends DynamicCustomOp {
         return "ParallelConcat";
     }
 
+
+    @Override
+    public int getNumOutputs() {
+        return 1;
+    }
+
     @Override
     public String tensorflowName() {
         return "ParallelConcat";

@@ -72,6 +72,10 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
     return Status::OK();
 }
 
+    DECLARE_SYN(ParallelConcat, concat);
+    DECLARE_SYN(concat_v2, concat);
+    DECLARE_SYN(concatv2, concat);
+
 DECLARE_SHAPE_FN(concat) {
     
     // first of all take into account possible presence of empty arrays
