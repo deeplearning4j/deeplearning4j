@@ -19,6 +19,13 @@ public abstract class SameDiffLambdaVertex extends SameDiffVertex {
 
     @Override
     public SDVariable defineVertex(SameDiff sameDiff, Map<String, SDVariable> layerInput, Map<String, SDVariable> paramTable) {
+        VertexInputs vi = getInputs(sameDiff);
+        int i=0;
+        if(vi.map.size() == 0 && layerInput.size() > 0){
+            for(SDVariable v : layerInput.values()){
+                vi.map.put(i++, v);
+            }
+        }
         return defineVertex(sameDiff, getInputs(sameDiff));
     }
 
@@ -62,7 +69,7 @@ public abstract class SameDiffLambdaVertex extends SameDiffVertex {
 
             if(!map.containsKey(inputNum)){
                 //Lazily define extra input variable as required
-                SDVariable var = sameDiff.var("var_" + inputNum, (long[])null);
+                SDVariable var = sameDiff.var("var_" + inputNum, 1);    //TODO is this shape safe?
                 map.put(inputNum, var);
             }
 

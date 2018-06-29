@@ -11,6 +11,7 @@ public class SameDiffSimpleLambdaVertex extends SameDiffLambdaVertex {
     public SDVariable defineVertex(SameDiff sameDiff, VertexInputs inputs) {
         SDVariable in1 = inputs.getInput(0);
         SDVariable in2 = inputs.getInput(1);
-        return in1.mul(in2);
+        SDVariable ret = in1.mul(in2);
+        return ret;
     }
 }

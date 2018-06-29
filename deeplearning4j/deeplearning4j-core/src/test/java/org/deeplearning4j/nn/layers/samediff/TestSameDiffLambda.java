@@ -148,7 +148,7 @@ public class TestSameDiffLambda extends BaseDL4JTest {
         ComputationGraph lambda = new ComputationGraph(conf);
         lambda.init();
 
-        ComputationGraph std = new ComputationGraph(conf);
+        ComputationGraph std = new ComputationGraph(confStd);
         std.init();
 
         lambda.setParams(std.params());

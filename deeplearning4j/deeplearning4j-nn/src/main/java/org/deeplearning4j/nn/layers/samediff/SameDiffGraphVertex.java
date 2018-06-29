@@ -149,7 +149,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             sameDiff = SameDiff.create();
 
-            inputVars = new HashMap<>();
+            inputVars = new LinkedHashMap<>();
             int i=0;
             for(String s : config.getVertexParams().getInputs()){
                 val inputShape = inputs[i++].shape().clone();
