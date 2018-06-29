@@ -216,7 +216,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                     for (int kh : sizeH) {
                                         for (int kw : sizeW) {
 
-                                            INDArray in = Nd4j.rand(new int[]{m, d, h, w});
+                                            INDArray in = Nd4j.linspace(1, (m * d * h * w), (m * d * h * w)).reshape(new int[]{m, d, h, w});
 
                                             int[] outSize = getOutputSize(in, new int[]{kh, kw}, new int[]{sh, sw}, null, true);
 
@@ -271,10 +271,9 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                                     break;
                                             }
 
-                                            reduced = reduced.reshape('c',m,d, outSize[0], outSize[1]);
+                                            reduced = reduced.reshape('c',m,d, outSize[0], outSize[1]).dup('c');
 
                                             assertEquals("Failed opType: " + type, reduced, output);
-                                            log.info("-----------");
                                         }
                                     }
                                 }
