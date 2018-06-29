@@ -1,10 +1,12 @@
 package org.deeplearning4j.nn.conf.layers.samediff;
 
+import lombok.Data;
 import org.nd4j.base.Preconditions;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Data
 public class SDVertexParams extends SDLayerParams {
 
     protected List<String> inputs;

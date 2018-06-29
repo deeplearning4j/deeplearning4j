@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.samediff.SameDiffGraphVertex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -70,8 +71,9 @@ public abstract class SameDiffVertex extends GraphVertex {
     }
 
     @Override
-    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx, INDArray paramsView, boolean initializeParams) {
-        return null;
+    public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
+                                                                      INDArray paramsView, boolean initializeParams) {
+        return new SameDiffGraphVertex(this, graph, name, idx, paramsView, initializeParams );
     }
 
     @Override
@@ -82,5 +84,10 @@ public abstract class SameDiffVertex extends GraphVertex {
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         return null;
+    }
+
+
+    public char paramReshapeOrder(String paramName){
+        return 'c';
     }
 }

@@ -7,8 +7,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 //TODO is is possible to have a Lambda class that works as BOTH a Layer and a Vertex?
 //i.e., works for both, but fail at runtime if user tries to do multiple inputs in CompGraph
@@ -20,12 +19,20 @@ public abstract class SameDiffLambdaVertex extends SameDiffVertex {
 
     @Override
     public SDVariable defineVertex(SameDiff sameDiff, Map<String, SDVariable> layerInput, Map<String, SDVariable> paramTable) {
-        return defineVertex(sameDiff, inputs);
+        return defineVertex(sameDiff, getInputs(sameDiff));
     }
 
     @Override
     public void defineParametersAndInputs(SDVertexParams params) {
-        //No op, for lamda vertex
+        //Parameters are no op, for lamda vertex - but inputs are NOT
+        SameDiff temp = SameDiff.create();
+        VertexInputs tempInputs = new VertexInputs(temp);
+        defineVertex(temp, tempInputs);
+        List<String> list = new ArrayList<>();
+        for(Integer i : tempInputs.map.keySet()){
+            list.add(tempInputs.map.get(i).getVarName());
+        }
+        params.defineInputs(list.toArray(new String[list.size()]));
     }
 
     @Override
@@ -43,7 +50,7 @@ public abstract class SameDiffLambdaVertex extends SameDiffVertex {
     public class VertexInputs {
 
         private SameDiff sameDiff;
-        private Map<Integer,SDVariable> map = new HashMap<>();
+        private Map<Integer,SDVariable> map = new LinkedHashMap<>();
 
         protected VertexInputs(SameDiff sd){
             this.sameDiff = sd;

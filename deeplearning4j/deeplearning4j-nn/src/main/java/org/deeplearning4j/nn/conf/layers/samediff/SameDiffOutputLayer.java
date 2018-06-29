@@ -41,7 +41,7 @@ public abstract class SameDiffOutputLayer extends AbstractSameDiffLayer {
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                                                        int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.samediff.SameDiffLayer ret = new org.deeplearning4j.nn.layers.samediff.SameDiffLayer(conf);
+        org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer ret = new org.deeplearning4j.nn.layers.samediff.SameDiffOutputLayer(conf);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);

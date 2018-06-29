@@ -32,7 +32,6 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
     protected SameDiff sameDiff;
     protected SDVariable outputVar;
-    protected ExternalErrorsFunction fn;
     protected String outputKey;
 
     @Getter @Setter
@@ -67,7 +66,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return activate(true, workspaceMgr);
+        return activateHelper(true, workspaceMgr);
     }
 
     private INDArray activateHelper(boolean activations, LayerWorkspaceMgr workspaceMgr){
@@ -124,7 +123,6 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             if(layerConf().labelsRequired()) {
                 sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
             }
-            fn.updateVariable(outputVar.getVarName(), epsilon.dup());
 
             for(String s : paramTable.keySet() ){
                 //TODO this should only be necessary, in theory, once!
@@ -160,7 +158,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
     @Override
     public int numParams(){
-        return (int)params.length();
+        return params == null ? 0 : (int)params.length();
     }
 
     @Override
@@ -234,7 +232,8 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
             SDVariable labelVar = null;
             if(layerConf().labelsRequired()){
-                labelVar = sameDiff.var(LABELS_KEY, new long[0]);
+                long[] labelShape = labels.shape().clone();
+                labelVar = sameDiff.var(LABELS_KEY, labelShape);
             }
             Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
             Map<String, SDVariable> params = new LinkedHashMap<>();
