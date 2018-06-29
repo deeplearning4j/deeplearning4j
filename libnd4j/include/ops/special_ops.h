@@ -1029,7 +1029,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
             else 
 #pragma omp parallel for schedule(static) proc_bind(close)
                 for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS) 
-                    imBuff[i] = 0.f;           
+                    imBuff[i] = static_cast<T>(0.f);
             
 
             T *col, *im;

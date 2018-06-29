@@ -758,6 +758,49 @@ void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& 
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void tileBP(const NDArray<T>& gradO /*input*/, NDArray<T>& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+    
+    T* gradIBuff      = gradI.getBuffer();
+    const T* gradOBuff      = gradO.getBuffer();
+    const Nd4jLong gradILen = gradI.lengthOf();
+    const Nd4jLong gradOLen = gradO.lengthOf();  // gradOLen >= gradILen    
+    const Nd4jLong gradIEWS = nd4j::math::nd4j_abs<Nd4jLong>(gradI.ews());
+    const Nd4jLong gradOEWS = gradO.ews();
+
+    // initial zeroing of gradI content
+    if(gradIEWS == 1)
+        memset(gradIBuff, 0, gradILen * sizeof(T));
+    else 
+#pragma omp parallel for schedule(static) proc_bind(close)
+        for (int i = 0; i < gradILen * gradIEWS; i += gradIEWS) 
+            gradIBuff[i] = static_cast<T>(0.f);
+
+    
+    if(gradO.ordering() == 'c' && gradOEWS == 1) {           
+#pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        for(Nd4jLong i=0;  i<gradOLen; ++i)
+            gradI(shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i)) += gradOBuff[i];
+    }
+    else if(gradO.ordering() == 'c' && gradOEWS > 1) {
+#pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        for(Nd4jLong i=0;  i<gradOLen; ++i)
+            gradI(shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i)) += gradOBuff[i*gradOEWS];
+    }
+    else {
+        Nd4jLong idx[MAX_RANK];
+        Nd4jLong* gradOShape   = gradO.shapeOf();
+        Nd4jLong* gradOStrides = gradO.stridesOf();
+        const int gradORank    = gradO.rankOf();
+#pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
+        for(Nd4jLong i=0;  i<gradOLen; ++i) {
+            shape::ind2subC(gradORank, gradOShape, i, gradOLen, idx);
+            gradI(shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i)) += gradOBuff[shape::getOffset(0, gradOShape, gradOStrides, idx, gradORank)];
+        }
+    }
+}
+
 
 
 template void triu<float>(const NDArray<float>& input, NDArray<float>& output, const int diagonal);
@@ -828,6 +871,9 @@ template void mirrorPad<float>(const NDArray<float>& input, const NDArray<float>
 template void mirrorPad<float16>(const NDArray<float16>& input, const NDArray<float16>& paddings, NDArray<float16>& output, const int mode);
 template void mirrorPad<double>(const NDArray<double>& input, const NDArray<double>& paddings, NDArray<double>& output, const int mode);
 
+template void tileBP<float>(const NDArray<float>& gradO, NDArray<float>& gradI, const std::vector<Nd4jLong> reps);
+template void tileBP<float16>(const NDArray<float16>& gradO, NDArray<float16>& gradI, const std::vector<Nd4jLong> reps);
+template void tileBP<double>(const NDArray<double>& gradO, NDArray<double>& gradI, const std::vector<Nd4jLong> reps);
 
 }
 }
