@@ -64,6 +64,9 @@ namespace helpers {
 	template<typename T>
 	void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& output, const int mode);
 
+	template<typename T>
+	void tileBP(const NDArray<T>& gradO /*input*/, NDArray<T>& gradI /*output*/, const std::vector<Nd4jLong> reps);
+
 }
 }
 }
