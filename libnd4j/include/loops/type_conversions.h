@@ -22,12 +22,6 @@
 #define ND4J_FTHRESHOLD 11
 #define ND4J_FLOAT24 119 // not supported after all. might want to add support later.
 
-#define ND4J_DIRECTCAST_TYPES \
-        float, \
-        double, \
-        int, \
-        Nd4jLong
-
 #include <ops/ops.h>
 #include <templatemath.h>
 #include <types/float16.h>
