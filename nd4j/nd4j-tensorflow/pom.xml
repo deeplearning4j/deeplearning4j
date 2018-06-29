@@ -41,19 +41,6 @@
             <artifactId>tensorflow-platform</artifactId>
             <version>${tensorflow.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <classifier>linux-x86_64-avx2</classifier>
-            <scope>test</scope>
-        </dependency>
              <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
