@@ -18,7 +18,6 @@ import org.nd4j.linalg.api.ops.impl.shape.Permute;
 import org.nd4j.linalg.api.ops.impl.shape.Transpose;
 import org.nd4j.linalg.api.ops.impl.shape.Unstack;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
-import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;

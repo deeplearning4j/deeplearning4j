@@ -152,18 +152,14 @@ public class Gather extends DynamicCustomOp {
         SDVariable inputGrad = sameDiff.zerosLike(arg(0));
 
         int ndim = arg(0).getShape().length;
-        if(axis < 0){
-            axis += ndim;
+        int a = axis;
+        if(a < 0){
+            a += ndim;
         }
 
-        if(axis == 0){
+        if(a == 0){
             inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v.get(0));
         } else {
-            int ndim = arg(0).getShape().length;
-            int a = this.axis;
-            if (a < 0) {
-                a += ndim;
-            }
             int[] permDims = new int[ndim];
             permDims[0] = a;
             for(int i=0; i<a; i++){
