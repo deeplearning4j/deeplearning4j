@@ -16,18 +16,22 @@ namespace ops  {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 
-	NDArray<T>* input   = INPUT_VARIABLE(0);
-    NDArray<T>* indices = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
-	NDArray<T>* output  = OUTPUT_VARIABLE(0);
+	auto input   = INPUT_VARIABLE(0);
+    auto indices = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
+	auto output  = OUTPUT_VARIABLE(0);
 
 	const int numOfIntArgs = block.numI();
 
     std::vector<int> intArgs;
-    if(numOfIntArgs == 0)
-        intArgs.emplace_back(0);
-    else
-        for(int i=0; i<numOfIntArgs; ++i)
-            intArgs.emplace_back(block.getIArguments()->at(i));
+    if (block.width() > 2) {
+    	intArgs = INPUT_VARIABLE(2)->template asVectorT<int>();
+    } else {
+		if (numOfIntArgs == 0)
+			intArgs.emplace_back(0);
+		else
+			for (int i = 0; i < numOfIntArgs; ++i)
+				intArgs.emplace_back(block.getIArguments()->at(i));
+	}
 
     const int inputRank = input->rankOf();
 	if(intArgs[0] < 0)
@@ -49,8 +53,14 @@ DECLARE_SHAPE_FN(gather) {
 	auto inputShapeInfo  = inputShape->at(0);
 	Nd4jLong* outputShapeInfo = nullptr;
 
-	int axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
-	int inputRank = inputShapeInfo[0];
+	int axis = 0;
+
+	if (block.width() > 2) {
+		axis = static_cast<int>(INPUT_VARIABLE(2)->getScalar(0));
+	} else
+		axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
+
+	int inputRank = shape::rank(inputShapeInfo);
 	if(axis < 0)
 		axis += inputRank;
 
@@ -59,7 +69,7 @@ DECLARE_SHAPE_FN(gather) {
 	if (block.width() > 1) {
 		auto indicesShapeInfo = inputShape->at(1);
     
-    	int indicesRank = indicesShapeInfo[0];
+    	int indicesRank = shape::rank(indicesShapeInfo);
         
     	if(shape::isScalar(indicesShapeInfo))
     		indicesRank = 0;

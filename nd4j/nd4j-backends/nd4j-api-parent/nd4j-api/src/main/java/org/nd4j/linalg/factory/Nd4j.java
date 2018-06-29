@@ -58,7 +58,6 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
-import org.nd4j.linalg.api.ops.impl.controlflow.Select;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
@@ -85,7 +84,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -1484,6 +1482,19 @@ public class Nd4j {
     public static DataBuffer createBuffer(int[] data) {
         DataBuffer ret;
         ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(data) : DATA_BUFFER_FACTORY_INSTANCE.createInt(data, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a buffer equal of length prod(shape)
+     *
+     * @param data the shape of the buffer to create
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(long[] data) {
+        DataBuffer ret;
+        ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createLong(data) : DATA_BUFFER_FACTORY_INSTANCE.createLong(data, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5789,7 +5800,7 @@ public class Nd4j {
      * @param shape
      * @return a INDArray
      * */
-    public static INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public static INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
 
         return matrix;
@@ -5803,7 +5814,7 @@ public class Nd4j {
      * @param shape
      * @return a INDArray
      * */
-    public static INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public static INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
 
         return matrix;
@@ -5818,23 +5829,18 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE,
-                                           int[] shape) {
+                                           long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
 
         return matrix;
     }
-
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
     public static INDArray createSparseCOO(double[] data, int[][] indices, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @param data
-     * @param indices
-     * @param shape
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCOO(double[] data, int[][] indices, int[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
 
         return matrix;
@@ -5846,7 +5852,7 @@ public class Nd4j {
      * @param shape
      * @return a INDArray
      * */
-    public static INDArray createSparseCOO(float[] data, int[][] indices, int[] shape) {
+    public static INDArray createSparseCOO(float[] data, int[][] indices, long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
 
         return matrix;
@@ -5858,7 +5864,31 @@ public class Nd4j {
      * @param shape
      * @return a INDArray
      * */
-    public static INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] shape) {
+    public static INDArray createSparseCOO(double[] data, long[][] indices, long[] shape) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
+
+        return matrix;
+    }
+
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCOO(float[] data, long[][] indices, long[] shape) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
+
+        return matrix;
+    }
+
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCOO(DataBuffer data, DataBuffer indices, long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
 
         return matrix;
@@ -5872,7 +5902,7 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation,
-                                           int[] shape) {
+                                           long[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseInformation, shape);
         return matrix;
     }
@@ -5882,13 +5912,13 @@ public class Nd4j {
      * @param indices a DataBuffer with the indexes of the values
      * @param sparseOffsets the sparse
      * @param flags an array that define the inactive dimension
+     * @param shape
      * @param hiddenDimensions an array containing the position of the hidden dimensions
      * @param underlyingRank the rank of the original ndarray
-     * @param shape
      * @return a INDArray
      * */
     public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags,
-                                           int[] shape, int[] hiddenDimensions, int underlyingRank) {
+                                           long[] shape, int[] hiddenDimensions, int underlyingRank) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseOffsets, flags, hiddenDimensions,
                 underlyingRank, shape);
         return matrix;

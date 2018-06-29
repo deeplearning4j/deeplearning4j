@@ -151,6 +151,11 @@ public class Gather extends DynamicCustomOp {
         SDVariable indicesGrad = sameDiff.zerosLike(arg(1));
         SDVariable inputGrad = sameDiff.zerosLike(arg(0));
 
+        int ndim = arg(0).getShape().length;
+        if(axis < 0){
+            axis += ndim;
+        }
+
         if(axis == 0){
             inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v.get(0));
         } else {
@@ -168,7 +173,8 @@ public class Gather extends DynamicCustomOp {
                 permDims[i] = i;
             }
             inputGrad = sameDiff.permute(inputGrad, permDims);
-            inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v.get(0));
+            SDVariable i_v_transposed = sameDiff.permute(i_v.get(0), permDims);
+            inputGrad = sameDiff.scatterAdd(inputGrad, arg(1), i_v_transposed);
             int[] reverseDims = new int[ndim];
             for(int i=0; i<ndim; i++){
                 reverseDims[permDims[i]] = i;
