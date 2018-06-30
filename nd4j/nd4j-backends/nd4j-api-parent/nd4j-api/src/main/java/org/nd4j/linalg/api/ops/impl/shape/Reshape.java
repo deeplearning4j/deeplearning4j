@@ -51,13 +51,11 @@ public class Reshape extends DynamicCustomOp {
     public Reshape(SameDiff sameDiff, SDVariable i_v, long[] shape) {
         super(null, sameDiff, new SDVariable[]{i_v});
         this.shape = shape;
-        addIArgument('c');
         addIArgument(shape);
     }
 
     public Reshape(SameDiff sameDiff, SDVariable i_v, SDVariable shape) {
         super(null, sameDiff, new SDVariable[]{i_v, shape});
-        addIArgument('c');
     }
 
     public Reshape(INDArray in, INDArray shape, INDArray out){
@@ -84,10 +82,13 @@ public class Reshape extends DynamicCustomOp {
             }
 
             val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", shapeNodeInGraph, graph);
-            if (arr != null) {
+            if (arr != null && arr.isEmpty()) {
+                // special case: empty array
+                this.shape = new long[0];
+
+            } else if (arr != null) {
                 this.shape = arr.data().asLong();
                 //all TF is c
-                addIArgument('c');
                 if (!ArrayUtil.containsAnyNegative(this.shape))
                     addIArgument(this.shape);
                 else {
@@ -120,7 +121,6 @@ public class Reshape extends DynamicCustomOp {
             //all TF is c
 
             if (this.shape != null) {
-                addIArgument('c');
                 addIArgument(this.shape);
             }
 

@@ -69,8 +69,12 @@ public class StringQuality extends ColumnQuality {
                         new HyperLogLogPlus((int) Math.ceil(2.0 * Math.log(1.054 / relativeSD) / Math.log(2)), 0));
     }
 
-    public StringQuality add(StringQuality other) throws CardinalityMergeException {
-        hll.addAll(other.hll);
+    public StringQuality add(StringQuality other) {
+        try {
+            hll.addAll(other.hll);
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
         return new StringQuality(countValid + other.countValid, countInvalid + other.countInvalid,
                         countMissing + other.countMissing, countTotal + other.countTotal,
                         countEmptyString + other.countEmptyString, countAlphabetic + other.countAlphabetic,

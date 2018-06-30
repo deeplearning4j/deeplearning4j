@@ -1,5 +1,8 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -16,6 +19,9 @@ import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
  *
  */
 @Slf4j
+@Getter
+@Setter
+@EqualsAndHashCode
 public class ImagePreProcessingScaler implements DataNormalization {
 
     private double minRange, maxRange;

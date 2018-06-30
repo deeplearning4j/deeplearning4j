@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 import java.util.List;
@@ -51,6 +52,9 @@ public class SoftMax extends BaseDynamicTransformOp {
         super(sameDiff, args, inPlace);
     }
 
+    public SoftMax(INDArray input, INDArray result){
+        super(new INDArray[]{input}, new INDArray[]{result});
+    }
 
     @Override
     public String opName() {

@@ -5,7 +5,7 @@
 #else
     #include <unistd.h>
 #endif
-
+#include <cstdlib>
 #include "graphopt.h"
 #include <GraphExecutioner.h>
 #include <ops/declarable/CustomOperations.h>
@@ -71,7 +71,7 @@ main(int argc, char *argv[]) {
 
     if (opt.hasParam('a'))
         arch_arg = opt.arch();
-
+    
     std::vector<OpDescriptor> descriptors;
     nd4j_printf("Total available operations: %i\n", OpRegistrator::getInstance()->numberOfOperations());
 
@@ -121,20 +121,17 @@ main(int argc, char *argv[]) {
     }
     nd4j_printf("\n","");
 
-    // just stacking everything together
-    std::string cmdline = "./buildnativeoperations.sh " + name_arg + build_arg + arch_arg + opts_arg;
+    std::string output(opt.outputName());
 
-    std::string cppLine(" -I../include -I../blas -I../include/ops -I../include/helpers -I../include/types -I../include/array -I../include/cnpy -I../include/ops/declarable ../include/ops/declarable/CustomOperations.h -o ");
-    cppLine += opt.outputName();
-    nd4j_printf("Run preprocessor as \ncpp %s\n", cppLine.c_str());
-//    int err;
-    if (0 > (err = execl("/usr/bin/cpp", cppLine.c_str()))) {
-        perror("\nCannot run CPP properly due \n");
+    std::string input("../include/ops/declarable/CustomOperations.h");
+
+    if (0 == GraphUtils::runPreprocessor(input.c_str(), output.c_str())) {
+        nd4j_printf("All done successfully.\n", "");
     }
+
     //nd4j_printf("Command line: %s\n", cmdline.c_str());
     // FIXME: do this in cross-platform way
     nd4j_printf("Building minified library...\n", "");
-    //system(cmdline.c_str());
 
     return EXIT_SUCCESS;
 }

@@ -339,7 +339,7 @@ namespace nd4j {
                     auto array = vs->getVariable(block->nodeId(), e)->getNDArray();
 
                     auto shape = ShapeUtils<T>::shapeAsString(array);
-                    auto first = array->asString(32);
+                    auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(32);
 
                     nd4j_printf("node_%i:%i result shape: %s; first values %s\n", block->nodeId(), e, shape.c_str(), first.c_str());
                 }
@@ -476,6 +476,10 @@ namespace nd4j {
 
                 if (v->variableType() == VariableType::NDARRAY) {
                     NDArray<T> *aV = v->getNDArray();
+
+                    // if array is empty intentionally - we're ok with that
+                    if (v->isEmpty())
+                        continue;
 
                     if (aV == nullptr || !aV->nonNull()) {
                         if (this->getOpName() != nullptr) {

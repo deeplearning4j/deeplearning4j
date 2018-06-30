@@ -439,10 +439,11 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testDiag() {
+        OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
-        INDArray ia = Nd4j.create(new float[]{4, 2});
-        SDVariable in = sd.var("in", new int[]{1, 2});
+        INDArray ia = Nd4j.create(new float[]{4, 2}, new int[] {2});
+        SDVariable in = sd.var("in", new long[]{2});
         INDArray expOut = Nd4j.create(new int[]{2, 2});
         DynamicCustomOp diag = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut).build();
         Nd4j.getExecutioner().exec(diag);
@@ -460,6 +461,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testDiagPart() {
+        OpValidationSuite.ignoreFailing();
         SameDiff sd = SameDiff.create();
 
         INDArray input = Nd4j.linspace(1,16,16).reshape(4,4);
@@ -468,7 +470,8 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable in = sd.var("in", input);
         SDVariable t = sd.diagPart("dp", in);
 
-        SDVariable loss = sd.standardDeviation("loss", t, true, 0, 1);
+        // dimension is 0 here, because output of diagPart is vector, not matrix
+        SDVariable loss = sd.standardDeviation("loss", t, true, 0);
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("dp", expOut)
@@ -1221,10 +1224,9 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testReplaceWhereScalar(){
-        OpValidationSuite.ignoreFailing();
-        fail(); //JVM crash
         for(Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}){
 
+            log.info("Testing condition: " + c.getClass().getName());
             INDArray inArr = Nd4j.rand(3,4);
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", inArr);
@@ -1244,8 +1246,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testReplaceWhereArray(){
-        OpValidationSuite.ignoreFailing();
-        fail(); //JVM crash
         for(Condition c : new Condition[]{Conditions.lessThan(0.5), Conditions.greaterThan(0.5), Conditions.equals(0.5)}){
 
             INDArray inArr = Nd4j.rand(3,4);

@@ -1996,7 +1996,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test1) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests8, reduceMeanBP_test3) {
+TEST_F(DeclarableOpsTests8, reduceMeanBP_test2) {
 
     NDArray<float> x('c', {3,4});
     NDArray<float> gradO1('c', {4},  {1.f, 2.f, 3.f, 4.f});
@@ -2023,7 +2023,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test3) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
+TEST_F(DeclarableOpsTests8, reduceMeanBP_test3) {
 
     NDArray<float> x('c', {3,4});
     NDArray<float> gradO1('c', {3}, {1.f, 2.f, 3.f});
@@ -2038,7 +2038,7 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());    
     auto output = result->at(0);
     ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
+    ASSERT_TRUE(exp.equalsTo(output)); 
     delete result;
 
     result = op.execute({&x, &gradO2}, {1}, {1});
@@ -2099,5 +2099,680 @@ TEST_F(DeclarableOpsTests8, avgpool2d_test13) {
 }
 
  
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test1) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,0,0,1,0,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> expected('c', {2,3}, {2.78507, 1.34254, 4.12761, 2.88507, 2.78507, 2.88507});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
 
-  
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test2) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,0,0,1,0,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> expected('c', {3,4}, {0.26328, 1.46328, 1.72656, 0.     , 0.26328, 0.     , 1.46328, 0.26328, 1.72656, 0.     , 1.72656, 1.46328});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test3) {
+    
+    NDArray<double> labels('c', {2,3,4},{0,1,1,0,0,0,1,0,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,0});
+    NDArray<double> logits('c', {2,3,4});
+    NDArray<double> expected('c', {2,4}, {0.75125, 1.55125, 3.45375, 0.75125, 3.45375, 0.     , 2.3025 , 1.15125});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test4) {
+    
+    NDArray<double> labels('c', {2,3},{0,1,1,0,0,1});
+    NDArray<double> logits('c', {2,3});
+    NDArray<double> expected('c', {2}, {2.10389, 1.00194});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test5) {
+    
+    NDArray<double> labels('c', {2,3},{0,1,1,0,0,1});
+    NDArray<double> logits('c', {2,3});
+    NDArray<double> expected('c', {3}, {0., 0.85436, 1.40871});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test6) {
+    
+    NDArray<double> labels('c', {2,1}, {0,1});
+    NDArray<double> logits('c', {2,1});
+    NDArray<double> expected('c', {1}, {0.6444});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test7) {
+    
+    NDArray<double> labels('c', {2,1}, {0,1});
+    NDArray<double> logits('c', {2,1});
+    NDArray<double> expected('c', {2}, {0., 0.});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test8) {
+    
+    NDArray<double> labels('c', {2}, {0,1});
+    NDArray<double> logits('c', {2});
+    NDArray<double> expected(0.6444);
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test9) {
+    
+    NDArray<double> labels('c', {1}, {0});
+    NDArray<double> logits('c', {1}, {0.2});
+    NDArray<double> expected(0.);
+                                               
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, softmax_cross_entropy_loss_with_logits_test10) {
+    
+    NDArray<double> labels('c', {1,2}, {0,1});
+    NDArray<double> logits('c', {1,2});
+    NDArray<double> expected('c', {2}, {0., 0.});
+                                            
+    NDArrayFactory<double>::linspace(0.1, logits, 0.1);
+
+    nd4j::ops::softmax_cross_entropy_loss_with_logits<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&logits, &labels}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *output = results->at(0);    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test4) {
+    
+    NDArray<double> x('c', {3, 5}, {0.7044955, 0.55606544, 0.15833677, 0.001874401, 0.61595726, 0.3924779, 0.7414847, 0.4127324, 0.24026828, 0.26093036, 0.46741188, 0.01863421, 0.08528871, 0.529365, 0.5510694});
+    NDArray<double> exp('c', {3, 5}, {0.405392, 0.319980, 0.091113, 0.001079, 0.354444, 0.225846, 0.426676, 0.237501, 0.138259, 0.150149, 0.268965, 0.010723, 0.049078, 0.304615, 0.317105});    
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {1.f}, {});
+    auto output = result->at(0);
+        
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test5) {
+    
+    NDArray<double> x('c', {3, 5});
+    NDArray<double> exp('c', {3, 5}, {1.,  2.,  2.89271,  3.50524,  4.00892, 6.,  7.,  7.71389,  7.88678,  8.01784, 11., 12., 12.53507, 12.26833, 12.02676});    
+
+    NDArrayFactory<double>::linspace(1, x);
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {15.f}, {0});
+    auto output = result->at(0);
+        
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test6) {
+    
+    NDArray<double> x('c', {3, 5});
+    NDArray<double> exp('c', {3, 5}, {1., 2., 3., 4., 5., 4.95434, 5.78006, 6.60578, 7.43151, 8.25723, 5.64288, 6.15587, 6.66886, 7.18185, 7.69484});    
+
+    NDArrayFactory<double>::linspace(1, x);
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {15.f}, {1});
+    auto output = result->at(0);
+        
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test7) {
+    
+    NDArray<double> x('c', {3, 5});
+    NDArray<double> exp('c', {3, 5}, {0.42597, 0.85194, 1.27791, 1.70389, 2.12986, 2.55583, 2.9818 , 3.40777, 3.83374, 4.25971, 4.68569, 5.11166, 5.53763, 5.9636 , 6.38957});
+
+    NDArrayFactory<double>::linspace(1, x);
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {15.f}, {0,1});
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test8) {
+    
+    NDArray<double> x('c', {3, 5});
+    NDArray<double> exp('c', {3, 5}, {0.42597, 0.85194, 1.27791, 1.70389, 2.12986, 2.55583, 2.9818 , 3.40777, 3.83374, 4.25971, 4.68569, 5.11166, 5.53763, 5.9636 , 6.38957});
+
+    NDArrayFactory<double>::linspace(1, x);
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {15.}, {});
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test9) {
+    
+    NDArray<double> x('c', {2}, {3., 4.});
+    NDArray<double> exp('c', {2}, {2.4, 3.2});    
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {4.}, {});
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test10) {
+    
+    NDArray<double> x(6.);
+    NDArray<double> exp(5.);    
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {5.}, {});
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, clipbynorm_test11) {
+    
+    NDArray<double> x('c', {2, 3, 4});
+    NDArray<double> exp('c', {2, 3, 4}, {1.,  2.,  3.,  4.,  4.44787,  5.33745,  6.22702,  7.1166 , 6.33046,  7.03384,  7.73723,  8.44061,
+                                        13., 14., 15., 16., 15.12277, 16.01235, 16.90192, 17.7915 ,14.77107, 15.47446, 16.17784, 16.88123});
+
+    NDArrayFactory<double>::linspace(1, x);
+
+    nd4j::ops::clipbynorm<double> op;
+    auto result = op.execute({&x}, {35.}, {0, 2});
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+ 
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceMeanBP_test4) {
+
+    NDArray<double> x('c', {3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. });
+    NDArray<double> gradO1('c', {4}, {1., 2., 3., 4.});
+    NDArray<double> gradO2('c', {1, 4}, {1., 2., 3., 4.});
+    NDArray<double> exp('c', {3,4}, {0.333333, 0.666667, 1.000000, 1.333333, 0.333333, 0.666667, 1.000000, 1.333333, 0.333333, 0.666667, 1.000000, 1.333333});
+                                     
+    nd4j::ops::reduce_mean_bp<double> op;
+
+    auto result = op.execute({&x, &gradO1}, {0}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO2}, {1}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    output = result->at(0);    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
+
+    NDArray<double> x('c', {3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. });
+    NDArray<double> gradO1('c', {3}, {1., 2., 3.});
+    NDArray<double> gradO2('c', {3, 1}, {1., 2., 3.});
+    NDArray<double> exp('c', {3,4}, {0.2500,0.2500,0.2500,0.2500, 0.5000,0.5000,0.5000,0.5000, 0.7500,0.7500,0.7500,0.7500});
+                                     
+    nd4j::ops::reduce_mean_bp<double> op;
+    
+    auto result = op.execute({&x, &gradO1}, {0}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO2}, {1}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    output = result->at(0);    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, reduceStDevBP_test5) {
+
+    NDArray<double> x('c', {3, 4}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. });
+    NDArray<double> gradO1('c', {4}, {1., 2., 3., 4.});
+    NDArray<double> gradO2('c', {1, 4}, {1., 2., 3., 4.});
+    NDArray<double> exp('c', {3,4}, {-0.408248, -0.816497, -1.224745, -1.632993, 0.000000, 0.000000, 0.000000, 0.000000, 0.408248, 0.816497, 1.224745, 1.632993});
+                                                                          
+    nd4j::ops::reduce_stdev_bp<double> op;
+
+    auto result = op.execute({&x, &gradO1}, {0}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    auto output = result->at(0);        
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+
+    result = op.execute({&x, &gradO2}, {1}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+    output = result->at(0);    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, zeros_as_test1) {
+
+    NDArray<double> x(10.);
+    NDArray<double> y(100.);
+    NDArray<double> exp(0.);
+                                                                          
+    nd4j::ops::zeros_as<double> op;
+
+    Nd4jStatus status = op.execute({&x}, {&y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);    
+    
+    ASSERT_TRUE(y.isSameShape(exp));
+    ASSERT_TRUE(y.equalsTo(exp));
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, ones_as_test1) {
+
+    NDArray<double> x(10.);
+    NDArray<double> y(100.);
+    NDArray<double> exp(1.);
+
+    nd4j::ops::ones_as<double> op;
+
+    Nd4jStatus status = op.execute({&x}, {&y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);    
+    
+    ASSERT_TRUE(y.isSameShape(exp));
+    ASSERT_TRUE(y.equalsTo(exp));
+        
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
+
+    NDArray<double> data  ('c', {10, 10});
+    NDArrayFactory<double>::linspace(1, data);
+    
+    NDArray<double>* means = data.sum({0});
+    NDArray<double>* deviance = data.varianceAlongDimension<simdOps::SummaryStatsVariance<double>>(true, {0}); //('c', {10, 10});
+
+    NDArray<double> counts(10.0);
+
+//    NDArray<double> expMeans('c', {10, 10});
+
+//    NDArray<double> expDeviance('c', {10, 10});
+
+    nd4j::ops::normalize_moments<double> op;
+    ResultSet<double>* results = op.execute({&counts, means, deviance}, {0.0}, {});
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(results->size(), 2);
+
+    NDArray<double>* outputMeans = results->at(0);    
+    NDArray<double>* outputDeviance = results->at(1);    
+
+//    outputMeans->printIndexedBuffer("Means");
+//    outputDeviance->printIndexedBuffer("Variance");
+    delete means;
+    delete deviance;
+//    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
+//    ASSERT_TRUE(expMeans.equalsTo(outputMeans));    
+//    ASSERT_TRUE(expMeans.isSameShape(outputDeviance));
+//    ASSERT_TRUE(expDeviance.equalsTo(outputDeviance));    
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_1) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> expMeans('c', {4}, {11.f, 12.f, 13.f, 14.f});
+    NDArray<float> expVariance('c', {4}, {46.666668f, 46.666668f, 46.66666f, 46.666668f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {}, {0, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputVariance = result->at(1);    
+
+//    outputMeans->printIndexedBuffer("Means");
+//    outputVariance->printIndexedBuffer("Variance");
+//    outputMeans->printShapeInfo("Result shape");
+
+
+//    ASSERT_TRUE(exp.isSameShape(output));
+//    ASSERT_TRUE(exp.equalsTo(output));
+    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
+    ASSERT_TRUE(expMeans.equalsTo(outputMeans));
+    ASSERT_TRUE(expVariance.isSameShape(outputVariance));
+    ASSERT_TRUE(expVariance.equalsTo(outputVariance));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_2) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> expMeans('c', {1,1,4}, {11.f, 12.f, 13.f, 14.f});
+    NDArray<float> expVariance('c', {1,1,4}, {46.666668f, 46.666668f, 46.66666f, 46.666668f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {1.}, {0, 1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputVariance = result->at(1);    
+
+//    outputMeans->printIndexedBuffer("Means");
+//    outputVariance->printIndexedBuffer("Variance");
+//    outputMeans->printShapeInfo("Result shape");
+
+//    ASSERT_TRUE(exp.isSameShape(output));
+//    ASSERT_TRUE(exp.equalsTo(output));
+    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
+    ASSERT_TRUE(expMeans.equalsTo(outputMeans));
+    ASSERT_TRUE(expVariance.isSameShape(outputVariance));
+    ASSERT_TRUE(expVariance.equalsTo(outputVariance));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_3) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> expMeans('c', {3}, {8.5f, 12.5f, 16.5f});
+    NDArray<float> expVariance('c', {3}, {37.25f, 37.25f, 37.25f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {}, {0, 2});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputVariance = result->at(1);    
+
+//    outputMeans->printIndexedBuffer("Means");
+//    outputVariance->printIndexedBuffer("Variance");
+//    outputMeans->printShapeInfo("Result shape");
+
+//    ASSERT_TRUE(exp.isSameShape(output));
+//    ASSERT_TRUE(exp.equalsTo(output));
+    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
+    ASSERT_TRUE(expMeans.equalsTo(outputMeans));
+    ASSERT_TRUE(expVariance.isSameShape(outputVariance));
+    ASSERT_TRUE(expVariance.equalsTo(outputVariance));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_4) {
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArray<float> expMeans('c', {1,3,1}, {8.5f, 12.5f, 16.5f});
+    NDArray<float> expVariance('c', {1,3,1}, {37.25f, 37.25f, 37.25f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {1.}, {0, 2});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputVariance = result->at(1);    
+
+//    outputMeans->printIndexedBuffer("Means");
+//    outputVariance->printIndexedBuffer("Variance");
+//    outputMeans->printShapeInfo("Result shape");
+
+//    ASSERT_TRUE(exp.isSameShape(output));
+//    ASSERT_TRUE(exp.equalsTo(output));
+    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
+    ASSERT_TRUE(expMeans.equalsTo(outputMeans));
+    ASSERT_TRUE(expVariance.isSameShape(outputVariance));
+    ASSERT_TRUE(expVariance.equalsTo(outputVariance));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_6) {
+    NDArray<float> expMeans(12.5f);
+    NDArray<float> expVariance(47.916668f);
+
+    NDArray<float> x('c', {2, 3, 4});
+    NDArrayFactory<float>::linspace(1, x);
+           
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {}, {0,1,2});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputVariance = result->at(1);    
+
+//    outputMeans->printIndexedBuffer("Means");
+//    outputVariance->printIndexedBuffer("Variance");
+//    outputMeans->printShapeInfo("Result shape");
+
+    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
+    ASSERT_TRUE(expMeans.equalsTo(outputMeans));
+    ASSERT_TRUE(expVariance.isSameShape(outputVariance));
+    ASSERT_TRUE(expVariance.equalsTo(outputVariance));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, Test_Moments_7) {
+
+    NDArray<float> x('c', {2, 3, 4});
+
+    NDArray<float> expMeans('c', {1,1,1}, {12.5f});
+    NDArray<float> expVariance('c', {1,1,1}, {47.916668f});
+
+    NDArrayFactory<float>::linspace(1, x);
+    // x.printIndexedBuffer("Input with shape (2, 3, 4) is");       
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {1.}, {0,1,2});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());    
+
+    NDArray<float>* outputMeans = result->at(0);    
+    NDArray<float>* outputVariance = result->at(1);    
+
+//    outputMeans->printIndexedBuffer("Means");
+//    outputVariance->printIndexedBuffer("Variance");
+//    outputMeans->printShapeInfo("Result shape");
+    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
+    ASSERT_TRUE(expMeans.equalsTo(outputMeans));
+    ASSERT_TRUE(expVariance.isSameShape(outputVariance));
+    ASSERT_TRUE(expVariance.equalsTo(outputVariance));
+
+    delete result;
+}

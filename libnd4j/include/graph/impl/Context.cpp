@@ -189,8 +189,16 @@ namespace nd4j {
             auto v = variable(p);
 
             if (Environment::getInstance()->isDebugAndVerbose() && v != nullptr &&  v->getNDArray() != nullptr) {
-                std::string shape_ = ShapeUtils<T>::shapeAsString(v->getNDArray());
-                nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), v->getNDArray()->ews(), v->getNDArray()->ordering(), (float) v->getNDArray()->meanNumber());
+                auto array = v->getNDArray();
+                std::string shape_ = ShapeUtils<T>::shapeAsString(array);
+
+                float m = std::numeric_limits<float>::quiet_NaN();
+                if (!array->isEmpty()) {
+                    auto values = array->asIndexedString(16);
+                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; first values: %s\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), values.c_str());
+                } else {
+                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), m);
+                }
             }
 
             return v;

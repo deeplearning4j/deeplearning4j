@@ -25,9 +25,11 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
+import org.nd4j.linalg.api.buffer.LongBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.JvmShapeInfo;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
@@ -61,6 +63,13 @@ public class NDArray extends BaseNDArray {
 
     public NDArray() {
         super();
+    }
+
+
+    public NDArray(DataBuffer buffer, LongBuffer shapeInfo, long[] javaShapeInfo) {
+        this.jvmShapeInfo = new JvmShapeInfo(javaShapeInfo);
+        this.shapeInformation = shapeInfo;
+        this.data = buffer;
     }
 
     public NDArray(DataBuffer buffer) {

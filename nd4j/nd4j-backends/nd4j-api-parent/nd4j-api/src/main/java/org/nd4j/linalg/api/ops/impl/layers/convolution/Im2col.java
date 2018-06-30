@@ -22,9 +22,8 @@ public class Im2col extends DynamicCustomOp {
 
     @Builder(builderMethodName = "builder")
     public Im2col(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
-        super(null,inputArrays,outputs);
-
-        if(sameDiff != null) {
+        super(null, inputArrays, outputs);
+        if (sameDiff != null) {
             this.sameDiff = sameDiff;
         }
 
@@ -66,7 +65,7 @@ public class Im2col extends DynamicCustomOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(sameDiff.col2Im(f1.get(0), conv2DConfig));
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
+        return Collections.singletonList(f().im2ColBp(arg(), grad.get(0), conv2DConfig));
     }
 }

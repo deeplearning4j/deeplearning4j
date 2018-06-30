@@ -3144,7 +3144,10 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 
     for (int e = 0; e < numInputShapes; e++) {
         auto shape_ = reinterpret_cast<Nd4jLong *>(inputShapes[e]);
-        auto buffer_ = reinterpret_cast<T *>(inputBuffers[e]);
+
+        // we shouldn't copy buffer if that's empty array
+        T *buffer_ = nd4j::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : reinterpret_cast<T *>(inputBuffers[e]);
+
         auto array = new nd4j::NDArray<T>(buffer_, shape_);
         array->triggerAllocationFlag(false, false);
 
@@ -3232,8 +3235,8 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 
     // filling block now with inputs
     for (int e = 0; e < numInputs; e++) {
-        auto buffer = reinterpret_cast<T *>(inputBuffers[e]);
         auto shape = reinterpret_cast<Nd4jLong *>(inputShapes[e]);
+        T *buffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : reinterpret_cast<T *>(inputBuffers[e]);
 
         inputs[e] = new nd4j::NDArray<T>(buffer, shape);
     }
@@ -3242,10 +3245,9 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, 
 
     if (!isInplace)
         for (int e = 0; e < numOutputs; e++) {
-            auto buffer = reinterpret_cast<T *>(outputBuffers[e]);
-
             // we want to keep original output shape intact
             auto shape = shape::copyShape(reinterpret_cast<Nd4jLong *>(outputShapes[e]));
+            T *buffer = nd4j::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : reinterpret_cast<T *>(outputBuffers[e]);
 
             auto array = new nd4j::NDArray<T>(buffer, shape);
             outputs[e] = array;

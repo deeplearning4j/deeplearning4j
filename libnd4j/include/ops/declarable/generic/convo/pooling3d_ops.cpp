@@ -24,6 +24,8 @@ namespace nd4j {
             int padH = INT_ARG(8);
             bool ceil_mode = INT_ARG(9) != 0;
 
+            REQUIRE_TRUE(dT != 0 && dH != 0 && dW != 0, 0, "AVGPOOL3D op: dilation must not be zero, but got instead {%i, %i, %i}", dT, dH, dW);
+
             Nd4jLong nslices;
             Nd4jLong itime;
             Nd4jLong iheight;
@@ -112,6 +114,7 @@ namespace nd4j {
             bool count_include_pad  = INT_ARG(10) != 0;
 
             REQUIRE_TRUE(output->isSameShape(input), 0, "Output gradients should have the same dimensionality as input");
+            REQUIRE_TRUE(dT != 0 && dH != 0 && dW != 0, 0, "AVGPOOL3D_BP op: dilation must not be zero, but got instead {%i, %i, %i}", dT, dH, dW);
 
             int dimN = 1;
             int dimt = 2;
@@ -152,6 +155,7 @@ namespace nd4j {
             bool ceil_mode = INT_ARG(9) != 0;
             bool count_include_pad  = INT_ARG(10) != 0;
 
+            REQUIRE_TRUE(dT != 0 && dH != 0 && dW != 0, 0, "AVGPOOL3D op: dilation must not be zero, but got instead {%i, %i, %i}", dT, dH, dW);
 
             Nd4jLong bS;
             Nd4jLong nslices;
@@ -373,6 +377,8 @@ namespace nd4j {
             int pT = INT_ARG(6);
             int pW = INT_ARG(7);
             int pH = INT_ARG(8);
+
+            REQUIRE_TRUE(dilationT != 0 && dilationH != 0 && dilationW != 0, 0, "MAXPOOL3D op: dilation must not be zero, but got instead {%i, %i, %i}", dilationT, dilationH, dilationW);
 
             bool ceilMode = INT_ARG(12) != 0;
             

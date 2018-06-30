@@ -165,9 +165,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         boolean keepDims;
         boolean newFormat;
-        if(op instanceof BaseAccumulation) {
-            keepDims = ((BaseAccumulation) op).isKeepDims();
-            newFormat = ((BaseAccumulation) op).isNewFormat();
+        if(op instanceof BaseIndexAccumulation) {
+            keepDims = ((BaseIndexAccumulation) op).isKeepDims();
+            newFormat = ((BaseIndexAccumulation) op).isNewFormat();
         } else {
             keepDims = false;
             newFormat = false;
@@ -721,8 +721,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             st = profilingHookIn(op, tadBuffers.getFirst());
         } else
             st = profilingHookIn(op);
-
-
 
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op.y() != null) {
@@ -1674,10 +1672,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int cnt= 0;
         val inputArgs = op.inputArguments();
         for (val in: inputArgs) {
-            if(in == null){
+            if(in == null)
                 throw new NullPointerException("Input argument is null for op " + op.getClass().getName());
-            }
-            inputBuffers.put(cnt, in.data().addressPointer());
+
+            if (!in.isEmpty())
+                inputBuffers.put(cnt, in.data().addressPointer());
+
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
         }
 
@@ -1797,7 +1797,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val inputArgs = op.inputArguments();
         int cnt= 0;
         for (val in: inputArgs) {
-            inputBuffers.put(cnt, in.data().addressPointer());
+            if (!in.isEmpty())
+                inputBuffers.put(cnt, in.data().addressPointer());
+
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
         }
 
@@ -1947,9 +1949,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
-                Pointer.memcpy(array.data().addressPointer(), buffer, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType());
+                Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType());
 
-                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
                 //newMap.put(keySet.get(e), array);
 //                if (map.containsKey(nodeName))
@@ -1984,9 +1986,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
-                Pointer.memcpy(array.data().addressPointer(), buffer, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType());
+                Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType());
 
-                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
                 //newMap.put(keySet.get(nodeId), array);
                 val nodeName = var.getName().getString();
@@ -2022,9 +2024,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
-                Pointer.memcpy(array.data().addressPointer(), buffer, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType());
+                Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType());
 
-                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
                 //newMap.put(keySet.get(nodeId), array);
                 val nodeName = var.getName().getString();

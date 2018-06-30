@@ -370,7 +370,7 @@ Nd4jLong* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>&
 template <typename T>
 bool ShapeUtils<T>::areShapesBroadcastable(const NDArray<T> &arr1, const NDArray<T> &arr2)
 {
-    return areShapesBroadcastable((Nd4jLong *) arr1.getShapeInfo(), (Nd4jLong *) arr2.getShapeInfo());   
+    return areShapesBroadcastable(arr1.getShapeInfo(), arr2.getShapeInfo());
 }
 
 template <typename T>
@@ -537,7 +537,7 @@ Nd4jLong* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vec
     // evaluate new shapeInfo
     Nd4jLong* newShapeInfo = nullptr;    
     if(diff < 0) {      
-        ALLOCATE(newShapeInfo, workspace, dim*2 + 4, Nd4jLong);
+        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(dim), Nd4jLong);
         newShapeInfo[0] = dim;                  // set new rank
         for(int i=1; i <= -diff; ++i)
             newShapeInfo[i] = 1;                // set unities to be new dimensions at left-hand side of newShapeInfo shape place
@@ -546,8 +546,8 @@ Nd4jLong* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vec
             newShapeInfo[i] *= reps[i - 1];     // set new shape by multiplying old dimensions by corresponding numbers from reps 
     }
     else {      
-        ALLOCATE(newShapeInfo, workspace, rankOld*2 + 4, Nd4jLong);
-        memcpy(newShapeInfo, arr.getShapeInfo(), (rankOld*2 + 4)*sizeof(Nd4jLong));      // copy all elements of _shapeInfo to newShapeInfo
+        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rankOld), Nd4jLong);
+        memcpy(newShapeInfo, arr.getShapeInfo(), shape::shapeInfoByteLength(rankOld));      // copy all elements of _shapeInfo to newShapeInfo
         for(int i=1; i <= dim; ++i)
             newShapeInfo[rankOld + 1 - i] *= reps[dim - i];     // set new shape by multiplying old dimensions by corresponding numbers from reps 
     }
@@ -635,6 +635,25 @@ Nd4jLong* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vec
     }
 
 
+    template<typename T>
+    std::string ShapeUtils<T>::shapeAsString(const int rank, const Nd4jLong* shapeInfo) {
+
+        if(!shapeInfo)
+            throw std::runtime_error("ShapeUtils<T>::shapeAsString method: input shapeInfo must not be nullptr !");
+
+        std::string result;
+
+        result.append("[");
+        for (int e = 0; e < rank; e++) {
+            result += flatbuffers::NumToString(shapeInfo[e]);
+            if (e < rank - 1)
+                result.append(", ");
+        }
+        result.append("]");
+
+        return result;
+    }
+
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
 template<typename T>
@@ -647,8 +666,8 @@ Nd4jLong* ShapeUtils<T>::evalDiagShapeInfo(const Nd4jLong* shapeInfoConst, nd4j:
     Nd4jLong* outputShapeInfo = nullptr;
 
     if(shape::isVector(shapeInfo) || shape::isScalar(shapeInfo)) {
-        ALLOCATE(outputShapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
-        outputShapeInfo[0] = rank;
+        ALLOCATE(outputShapeInfo, workspace, shape::shapeInfoLength(2), Nd4jLong);
+        outputShapeInfo[0] = 2;
         outputShapeInfo[1] = outputShapeInfo[2] = shape::length(shapeInfo);
     }
     else {
@@ -775,6 +794,10 @@ Nd4jLong* ShapeUtils<T>::matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* t
         shape[0] = 1;
         shape[1] = (int) nd4j::math::nd4j_max<Nd4jLong>(shape::length(tmpA), shape::length(tmpB));
     } else if (shape::isRowVector(tmpA) && shape::isRowVector(tmpB)) {
+        // dot case
+        shape[0] = 1;
+        shape[1] = 1;
+    } else if (shape::isRowVector(tmpA) && shape::isColumnVector(tmpB)) {
         // dot case
         shape[0] = 1;
         shape[1] = 1;

@@ -11,13 +11,14 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
 @NoArgsConstructor
 public class NormalizeMoments extends DynamicCustomOp {
 
-    private double shift; // reporting for duty
+    private double shift = 0.0;  // reporting for duty
 
     public NormalizeMoments(SameDiff sameDiff, SDVariable counts, SDVariable means, SDVariable variances) {
         this(sameDiff, counts, means, variances, 0.0);
@@ -31,7 +32,9 @@ public class NormalizeMoments extends DynamicCustomOp {
 
     public NormalizeMoments(INDArray counts, INDArray ssSum, INDArray ssSqSum, INDArray outMean, INDArray outVar) {
         super(null, new INDArray[]{counts, ssSum, ssSqSum}, new INDArray[]{outMean, outVar},
-                Collections.<Double>emptyList(), Collections.<Integer>emptyList());
+                new ArrayList<Double>(), new ArrayList<Integer>());
+
+        addArgs();
     }
 
     private void addArgs() {

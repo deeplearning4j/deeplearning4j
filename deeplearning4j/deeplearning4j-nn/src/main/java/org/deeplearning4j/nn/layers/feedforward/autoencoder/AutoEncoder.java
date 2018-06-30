@@ -64,7 +64,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, v.size(0), W.size(1));
         INDArray preAct = v.mmuli(W, ret).addiRowVector(hBias);
         ret = layerConf().getActivationFn().getActivation(preAct, training);
-        return ret;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
     }
 
     // Decode
@@ -72,7 +72,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true, workspaceMgr);
         INDArray vBias = getParamWithNoise(PretrainParamInitializer.VISIBLE_BIAS_KEY, true, workspaceMgr);
         INDArray preAct = y.mmul(W.transposei()).addiRowVector(vBias);
-        return layerConf().getActivationFn().getActivation(preAct, true);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, layerConf().getActivationFn().getActivation(preAct, true));
 
     }
 
@@ -89,7 +89,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return decode(encode(input, training, workspaceMgr), workspaceMgr);
+        return encode(input, training, workspaceMgr);
     }
 
     @Override

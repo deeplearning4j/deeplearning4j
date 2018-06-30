@@ -143,6 +143,9 @@ public class KerasSequentialModel extends KerasModel {
             importWeights(weightsArchive, weightsRoot, layers, kerasMajorVersion, kerasBackend);
     }
 
+    /**
+     * Default constructor
+     */
     public KerasSequentialModel() {
         super();
     }

@@ -52,6 +52,17 @@
 <!--            <version>${mkl.version}-${javacpp-presets.version}</version>-->
 <!--            <classifier>${dependency.platform}</classifier>-->
 <!--        </dependency>-->
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>mkl-dnn</artifactId>
+            <version>${mkl-dnn.version}-${javacpp-presets.version}</version>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.bytedeco.javacpp-presets</groupId>-->
+<!--            <artifactId>mkl-dnn</artifactId>-->
+<!--            <version>${mkl-dnn.version}-${javacpp-presets.version}</version>-->
+<!--            <classifier>${dependency.platform}</classifier>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -155,7 +166,7 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <properties>${javacpp.platform}</properties>
+                    <properties>${javacpp.platform.properties}</properties>
                     <propertyKeysAndValues>
                         <property>
                             <name>platform.root</name>

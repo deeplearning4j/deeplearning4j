@@ -28,6 +28,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -2434,6 +2436,8 @@ public class Shape {
      * @return true if c+descending, f+ascending, false otherwise
      */
     public static boolean strideDescendingCAscendingF(INDArray array) {
+        if(array.rank() <= 1)
+            return true;
         long[] strides = array.stride();
         if (array.isVector() && strides[0] == 1 && strides[1] == 1)
             return true;
@@ -2742,6 +2746,10 @@ public class Shape {
         return rank * 2 + 4;
     }
 
+    public static int shapeInfoLength(long[] shape) {
+        return shapeInfoLength((int) shape[0]);
+    }
+
     /**
      * Get the stride for the given
      * shape information buffer
@@ -2964,6 +2972,16 @@ public class Shape {
         return 0;
     }
 
+    public static long options(long[] buffer) {
+        int length = shapeInfoLength(rank(buffer));
+        long ret = buffer[length - 3];
+        return ret;
+    }
+
+    public static long extras(long[] buffer) {
+        return options(buffer);
+    }
+
     /**
      * Get the offset for the buffer
      *
@@ -2988,10 +3006,12 @@ public class Shape {
      * @param buffer the shape info buffer to get the offset for
      * @return
      */
+    @Deprecated
     public static int offset(IntBuffer buffer) {
         return 0;
     }
 
+    @Deprecated
     public static long offset(LongBuffer buffer) {
         return 0L;
     }
@@ -3020,6 +3040,18 @@ public class Shape {
     public static int elementWiseStride(IntBuffer buffer) {
         int length2 = shapeInfoLength(buffer.get(0));
         return buffer.get(length2 - 2);
+    }
+
+    /**
+     * Get the element wise stride for the
+     * shape info buffer
+     * @param buffer the buffer to get the element
+     *               wise stride from
+     * @return the element wise stride for the buffer
+     */
+    public static long elementWiseStride(long[] buffer) {
+        int length2 = shapeInfoLength(buffer);
+        return buffer[length2 - 2];
     }
 
 
@@ -3462,8 +3494,21 @@ public class Shape {
         return true;
     }
 
+    /**
+     *
+     * @param shape
+     * @return
+     */
+    public static long lengthOf(long[] shape) {
+        if (shape.length == 0)
+            return 1L;
+        else
+            return ArrayUtil.prodLong(shape);
+    }
 
     public static boolean hasDefaultStridesForShape(INDArray input){
+        if(input.rank() == 0)
+            return true;
         if(!strideDescendingCAscendingF(input)){
             return false;
         }
@@ -3475,5 +3520,10 @@ public class Shape {
             defaultStrides = ArrayUtil.calcStrides(input.shape());
         }
         return Arrays.equals(input.stride(), defaultStrides);
+    }
+
+
+    public static boolean isEmpty(long[] shapeInfo) {
+        return ArrayOptionsHelper.arrayType(shapeInfo) == ArrayType.EMPTY;
     }
 }

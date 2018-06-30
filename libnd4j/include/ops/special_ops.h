@@ -239,6 +239,11 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
     Nd4jLong poolingMode = (int)extraParams[9];
     T extraParam0 = extraParams[10];
 
+    if(dH == 0 || dW == 0) {
+       printf("Special_ops pooling2d:: dilation must not be zero, but got instead {%lld, %lld} \n", dH, dW);
+       throw "";
+    }
+
     const Nd4jLong kHEff = kH + (kH-1)*(dH-1);
     const Nd4jLong kWEff = kW + (kW-1)*(dW-1);
 
@@ -1024,7 +1029,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, T *out, Nd4jLong *outSha
             else 
 #pragma omp parallel for schedule(static) proc_bind(close)
                 for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS) 
-                    imBuff[i] = 0.f;           
+                    imBuff[i] = static_cast<T>(0.f);
             
 
             T *col, *im;

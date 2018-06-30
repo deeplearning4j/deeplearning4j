@@ -1519,6 +1519,15 @@ public interface INDArray extends Serializable {
 
     long[] toLongVector();
 
+    /**
+     * Convert this ndarray to a 2d int matrix.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 2d int array
+     */
+    long[][] toLongMatrix();
 
     /**
      * Convert this ndarray to a 2d int matrix.
@@ -3040,4 +3049,11 @@ public interface INDArray extends Serializable {
     INDArray convertToHalfs();
     INDArray convertToFloats();
     INDArray convertToDoubles();
+
+
+    /**
+     * This method returns true if this INDArray is special case: no-value INDArray
+     * @return
+     */
+    boolean isEmpty();
 }

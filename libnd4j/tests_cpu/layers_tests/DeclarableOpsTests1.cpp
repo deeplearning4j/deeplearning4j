@@ -1370,7 +1370,7 @@ TEST_F(DeclarableOpsTests1, Reshape1) {
     Context<float>* block = new Context<float>(1, variableSpace, true);
     block->fillInputs({-1});    
     std::vector<int>* arguments = block->getIArguments();
-    arguments->push_back(y->ordering());
+    arguments->push_back(-y->ordering());
     arguments->push_back(3);
     arguments->push_back(5);
     arguments->push_back(4);
@@ -1401,7 +1401,7 @@ TEST_F(DeclarableOpsTests1, Reshape2) {
     Context<float>* block = new Context<float>(1, variableSpace, false);
     block->fillInputs({-1});    
     std::vector<int>* arguments = block->getIArguments();
-    arguments->push_back(y->ordering());
+    arguments->push_back(-y->ordering());
     arguments->push_back(3);
     arguments->push_back(5);
     arguments->push_back(4);
@@ -1423,7 +1423,7 @@ TEST_F(DeclarableOpsTests1, Reshape3) {
     NDArray<float> x('c', {3, 4, 5});
 
     nd4j::ops::reshape<float> op;
-    auto result = op.execute({&x}, {}, {99, 3, 4, 5});
+    auto result = op.execute({&x}, {}, {-99, 3, 4, 5});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -3114,19 +3114,13 @@ TEST_F(DeclarableOpsTests1, SquareTests1) {
 }
 
 TEST_F(DeclarableOpsTests1, OneHotTests_1) {
-    NDArray<float> indices('c', {1, 4});
-    indices.putScalar(0, 0.0);
-    indices.putScalar(1, 2.0);
-    indices.putScalar(2, -1.0);
-    indices.putScalar(3, 1.0);
+    NDArray<float> indices('c', {1, 4}, {0.0f, 2.0f, -1.0f, 1.0f});
 
-    float _expB[] = {1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0.};
-    NDArray<float> exp('c', {4, 3});
-    exp.setBuffer(_expB);
+    NDArray<float> exp('c', {4, 3}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f});
 
     nd4j::ops::onehot<float> op;
 
-    auto result = op.execute({&indices}, {1.0f, 0.0f}, {3, -1});
+    auto result = op.execute({&indices}, {1.0f, 0.0f}, {-1, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -3138,18 +3132,12 @@ TEST_F(DeclarableOpsTests1, OneHotTests_1) {
 }
 
 TEST_F(DeclarableOpsTests1, OneHotTests_2) {
-    NDArray<float> indices('c', {2, 2});
-    indices.putScalar(0, 0.0);
-    indices.putScalar(1, 2.0);
-    indices.putScalar(2, 1.0);
-    indices.putScalar(3, -1.0);
+    NDArray<float> indices('c', {2, 2}, {0.f, 2.f, 1.f, -1.f});
 
-    float _expB[] = {1., 0., 0., 0., 0., 1., 0., 1., 0., 0., 0., 0.};
-    NDArray<float> exp('c', {2, 2, 3});
-    exp.setBuffer(_expB);
+    NDArray<float> exp('c', {2, 2, 3}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f});
 
     nd4j::ops::onehot<float> op;
-    auto result = op.execute({&indices}, {1.0f, 0.0f}, {3, -1});
+    auto result = op.execute({&indices}, {1.0f, 0.0f}, {-1, 3});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -3157,6 +3145,64 @@ TEST_F(DeclarableOpsTests1, OneHotTests_2) {
 
     ASSERT_TRUE(exp.isSameShape(z));
 
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests1, OneHotTests_3) {
+    NDArray<float> indices('c', {4}, {0.0f, 2.0f, -1.0f, 1.0f});
+
+    NDArray<float> exp('c', {4, 3}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f});
+
+    nd4j::ops::onehot<float> op;
+
+    auto result = op.execute({&indices}, {1.0f, 0.0f}, {-1, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests1, OneHotTests_4) {
+    NDArray<float> indices('c', {4}, {0.0f, 2.0f, -1.0f, 1.0f});
+    NDArray<float> depth(3.0f);
+
+    NDArray<float> exp('c', {4, 3}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f});
+
+    nd4j::ops::onehot<float> op;
+
+    auto result = op.execute({&indices, &depth}, {1.0f, 0.0f}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests1, OneHotTests_5) {
+    NDArray<float> indices('c', {4}, {0.0f, 2.0f, -1.0f, 1.0f});
+    NDArray<float> depth(3.0f);
+    NDArray<float> on(1.0f);
+    NDArray<float> off(0.0f);
+
+    NDArray<float> exp('c', {4, 3}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f});
+
+    nd4j::ops::onehot<float> op;
+
+    auto result = op.execute({&indices, &depth, &on, &off}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
@@ -3414,6 +3460,26 @@ TEST_F(DeclarableOpsTests1, Stack_10) {
 
     //expected.printShapeInfo("exp");
     //output->printShapeInfo("out");
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests1, Stack_11) {
+
+    float buff1[]   = {1};
+    float expBuff[] = {1, 1, 1};
+    Nd4jLong shape1[]    = {1, 1, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {2, 3, 1, 1, 1, 0, 1, 99};
+
+    NDArray<float> input1(buff1, shape1);
+    NDArray<float> expected(expBuff, expShape);
+
+    nd4j::ops::stack<float> op;
+    nd4j::ResultSet<float>*  results = op.execute({&input1, &input1, &input1}, {}, {});
+    NDArray<float>* output = results->at(0);
 
     ASSERT_TRUE(expected.isSameShapeStrict(output));
     ASSERT_TRUE(expected.equalsTo(output));

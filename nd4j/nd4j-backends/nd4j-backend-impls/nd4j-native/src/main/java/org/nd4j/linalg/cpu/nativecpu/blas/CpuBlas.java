@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.mkl_rt;
 import org.nd4j.nativeblas.Nd4jBlas;
 
-import static org.bytedeco.javacpp.openblas.*;
+import static org.bytedeco.javacpp.openblas_nolapack.*;
 
 /**
  * Implementation of Nd4jBlas with OpenBLAS/MKL

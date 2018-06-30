@@ -26,17 +26,17 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
  * @param pointerE An integer array that contains row indices, such that pointerE(j)-pointerB(1) is the index of the
  *                 element in the values array that is last non-zero element in a row j of A.
  * @param shape Shape of the matrix A
-*/
-    public SparseNDArrayCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+ */
+    public SparseNDArrayCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
 
         super(data, columns, pointerB, pointerE, shape);
     }
-    public SparseNDArrayCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public SparseNDArrayCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
 
         super(data, columns, pointerB, pointerE, shape);
     }
 
-    public SparseNDArrayCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public SparseNDArrayCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
 
         super(data, columns, pointerB, pointerE, shape);
     }
@@ -102,5 +102,15 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
     @Override
     public INDArray convertToDoubles() {
         return null;
+    }
+
+    /**
+     * This method returns true if this INDArray is special case: no-value INDArray
+     *
+     * @return
+     */
+    @Override
+    public boolean isEmpty() {
+        return false;
     }
 }

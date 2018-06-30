@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.CumProd;
 import org.nd4j.linalg.api.ops.impl.accum.CumSum;
+import org.nd4j.linalg.api.ops.impl.accum.Mmul;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
@@ -308,9 +309,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testScatterOpGradients() {
-        OpValidationSuite.ignoreFailing();
-
-
         List<String> failed = new ArrayList<>();
 
         for (int i = 0; i < 5; i++) {
@@ -381,8 +379,9 @@ public class MiscOpValidation extends BaseOpValidation {
             SDVariable loss = sd.sum(scatter);  //.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
             sd.execAndEndResult();
 
-            TestCase tc = new TestCase(sd);
-            tc.expected(scatter, exp);
+            TestCase tc = new TestCase(sd)
+                    .expected(scatter, exp)
+                    .gradCheckSkipVariables(indices.getVarName());
 
             String error = OpValidation.validate(tc);
             if(error != null){
@@ -529,7 +528,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
 
     @Test
-    public void testMmulGradient() {
+    public void testMmulGradientManual() {
         SameDiff sameDiff = SameDiff.create();
         INDArray sumInput = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         Map<String, INDArray> inputs = new HashMap<>();
@@ -573,6 +572,91 @@ public class MiscOpValidation extends BaseOpValidation {
 
         assertEquals(xGradAssertion, gradWrtX.getArr());
         assertEquals(yGradAssertion, gradWrtY.getArr());
+    }
+
+    @Test
+    public void testMmulGradients(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/5648
+
+        int[] aShape = new int[]{2,3};
+        int[] bShape = new int[]{3,4};
+        List<String> failed = new ArrayList<>();
+
+        for( char aOrder : new char[]{'c', 'f'}) {
+            for (char bOrder : new char[]{'c', 'f'}) {
+                for (boolean transposeA : new boolean[]{false, true}) {
+                    for (boolean transposeB : new boolean[]{false, true}) {
+                        for (boolean transposeResult : new boolean[]{false, true}) {    //https://github.com/deeplearning4j/deeplearning4j/issues/5648
+                            Nd4j.getRandom().setSeed(12345);
+
+                            INDArray aArr = Nd4j.rand(t(transposeA, aShape)).dup(aOrder);
+                            INDArray bArr = Nd4j.rand(t(transposeB, bShape)).dup(bOrder);
+
+                            SameDiff sd = SameDiff.create();
+                            SDVariable a = sd.var("a", aArr);
+                            SDVariable b = sd.var("b", bArr);
+
+                            MMulTranspose mt = MMulTranspose.builder()
+                                    .transposeA(transposeA)
+                                    .transposeB(transposeB)
+                                    .transposeResult(transposeResult)
+                                    .build();
+
+                            SDVariable mmul = sd.mmul(a, b, mt);
+
+                            INDArray exp = (transposeA ? aArr.transpose() : aArr);
+                            exp = exp.mmul(transposeB ? bArr.transpose() : bArr);
+                            exp = (transposeResult ? exp.transpose() : exp);
+
+                            SDVariable loss = mmul.std(true);
+
+                            String name = aOrder + "," + bOrder + ",tA=" + transposeA + ",tB=" + transposeB +
+                                    ",tRes=" + transposeResult;
+                            TestCase tc = new TestCase(sd).testName(name)
+                                    .expected(mmul, exp);
+
+                            String err = OpValidation.validate(tc, true);
+                            if(err != null)
+                                failed.add(err);
+                        }
+                    }
+                }
+            }
+        }
+
+        assertEquals(failed.toString(), 0, failed.size());
+    }
+
+    private static int[] t(boolean transpose, int[] orig){
+        if(!transpose)
+            return orig;
+        return new int[]{orig[1], orig[0]};
+    }
+
+    @Test
+    public void testBatchMmulBasic() {
+        OpValidationSuite.ignoreFailing();
+
+        int M = 5;
+        int N = 3;
+        int K = 4;
+
+        INDArray A = Nd4j.create(new int[] {M, N}, new float[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15});
+        INDArray B = Nd4j.create(new int[] {N, K}, new float[]{1,2,3,4,5,6,7,8,9,10,11,12});
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable A1 = sd.var("A1", A);
+        SDVariable A2 = sd.var("A2", A);
+        SDVariable B1 = sd.var("B1", B);
+        SDVariable B2 = sd.var("B2", B);
+
+        SDVariable[] batchMul = sd.batchMmul(new SDVariable[] {A1, A2}, new SDVariable[] {B1, B2});
+        sd.exec();
+
+        INDArray resultingMatrix = batchMul[0].getArr();
+        System.out.print(resultingMatrix);
+
     }
 
 
@@ -631,6 +715,81 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testClipByNorm(){
+        //Expected: if array.norm2(1) is less than 1.0, not modified
+        //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.rand(3,5);
+        INDArray norm2_1 = arr.norm2(1);
+        arr.diviColumnVector(norm2_1);
+
+        norm2_1 = arr.norm2(1);
+        assertEquals(Nd4j.ones(3), norm2_1);
+
+        INDArray scale = Nd4j.create(new double[]{1.1, 1.0, 0.9}, new int[]{3,1});
+        arr.muliColumnVector(scale);
+        norm2_1 = arr.norm2(1);
+
+        INDArray out = Nd4j.create(arr.shape());
+
+        Nd4j.getExecutioner().exec(DynamicCustomOp.builder("clipbynorm")
+                .addInputs(arr)
+                .addOutputs(out)
+                .addIntegerArguments(1)
+                .addFloatingPointArguments(1.0)
+                .build());
+
+        INDArray norm2_1b = out.norm2(1);
+        INDArray exp = Nd4j.create(new double[]{1.0, 1.0, norm2_1.getDouble(2)}, new int[]{3,1});
+
+        assertEquals(exp, norm2_1b);
+    }
+
+    @Test
+    public void testClipByNorm2(){
+        //Expected: if array.norm2(1) is less than 1.0, not modified
+        //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.rand(3,5);
+        INDArray norm2_1 = arr.norm2(1);
+        arr.diviColumnVector(norm2_1);
+
+        norm2_1 = arr.norm2(1);
+        assertEquals(Nd4j.ones(3), norm2_1);
+
+        INDArray scale = Nd4j.create(new double[]{1.1, 1.0, 0.9}, new int[]{3,1});
+        arr.muliColumnVector(scale);
+        norm2_1 = arr.norm2(1);
+
+        INDArray out = Nd4j.createUninitialized(arr.shape());
+
+        OpTestCase op = new OpTestCase(DynamicCustomOp.builder("clipbynorm")
+                .addInputs(arr)
+                .addOutputs(out)
+                .addIntegerArguments(1)
+                .addFloatingPointArguments(1.0)
+                .build());
+
+        INDArray expNorm2 = Nd4j.create(new double[]{1.0, 1.0, norm2_1.getDouble(2)}, new int[]{3,1});
+
+        INDArray expOut = arr.divColumnVector(norm2_1).muliColumnVector(expNorm2);
+        op.expectedOutput(0, expOut);
+
+        System.out.println("Input");
+        System.out.println(arr.shapeInfoToString());
+        System.out.println(Arrays.toString(arr.data().asFloat()));
+
+        System.out.println("Expected");
+        System.out.println(expOut.shapeInfoToString());
+        System.out.println(Arrays.toString(expOut.data().asFloat()));
+
+        String err = OpValidation.validate(op);
+        assertNull(err);
+    }
+
+    @Test
     public void testClipByNorm1(){
         //Expected: if array.norm2(1) is less than 1.0, not modified
         //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
@@ -672,7 +831,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testClipByNorm0(){
-        //Expected: if array.norm2(1) is less than 1.0, not modified
+        //Expected: if array.norm2(0) is less than 1.0, not modified
         //Otherwise: array.tad(x,1) = array.tad(x,1) * 1.0 / array.tad(x,1).norm2()
 
         Nd4j.getRandom().setSeed(12345);
@@ -966,6 +1125,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMergeRank1(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/5648
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", Nd4j.create(new long[]{1}).assign(5));
 

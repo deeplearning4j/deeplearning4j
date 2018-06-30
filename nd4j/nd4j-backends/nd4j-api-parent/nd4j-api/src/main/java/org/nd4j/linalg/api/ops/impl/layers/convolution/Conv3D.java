@@ -13,6 +13,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.ConditionalFieldValueNDArrayShapeAdapter;
 import org.nd4j.imports.descriptors.properties.adapters.IntArrayIntIndexAdpater;
 import org.nd4j.imports.descriptors.properties.adapters.StringEqualsAdapter;
+import org.nd4j.imports.descriptors.properties.adapters.StringNotEqualsAdapter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -189,7 +190,7 @@ public class Conv3D extends DynamicCustomOp {
         val dataFormat = PropertyMapping.builder()
                 .onnxAttrName("data_format")
                 .tfAttrName("data_format")
-                .propertyNames(new String[]{"dataFormat"})
+                .propertyNames(new String[]{"isNCDHW"})
                 .build();
 
 
@@ -224,7 +225,7 @@ public class Conv3D extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-
+        addArgs();
     }
 
     @Override

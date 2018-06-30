@@ -172,7 +172,7 @@ TEST_F(ScalarTests, Test_Reshape_1) {
     NDArray<float> exp('c', {1, 1, 1}, {2.0f});
 
     nd4j::ops::reshape<float> op;
-    auto result = op.execute({&x}, {}, {99, 1, 1, 1});
+    auto result = op.execute({&x}, {}, {-99, 1, 1, 1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -252,7 +252,7 @@ TEST_F(ScalarTests, Test_Concat_Scalar_1) {
     auto result = op.execute({&t, &u, &v, &w}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto z = result->at(0);
+    auto z = result->at(0);    
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

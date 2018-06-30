@@ -616,35 +616,51 @@ void mergeAdd(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output) {
 template<typename T>
 void clipByNorm(NDArray<T>& input, NDArray<T>& output, const std::vector<int>& dimensions, const T clipNorm, const bool isInplace) {
     
-    if (dimensions.size() == 0) {
-        // all-reduce
-        const T n2 = input.template reduceNumber<simdOps::Norm2<T>>();
-        if (n2 <= clipNorm) {
-            if (!isInplace)
-                output.assign(input);
-        } 
+        
+    NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions, true);
+
+    if (isInplace) {
+
+        if(dimensions.empty()) {
+
+            if(norm2(0) > clipNorm)
+                input *= (clipNorm / norm2(0));
+        }
         else {
-            const T factor = clipNorm / n2;
-            auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
-            input.applyLambda(lambda, &output);
+
+            ResultSet<T>* inTads = NDArrayFactory<T>::allTensorsAlongDimension(&input, dimensions);
+// #pragma omp parallel for if(inTads->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) proc_bind(close)
+            for (int e = 0; e < inTads->size(); e++) {                
+                if (norm2(e) > clipNorm) 
+                    (*inTads->at(e)) *= (clipNorm / norm2(e));                    
+            }
+            delete inTads;
         }
     }
     else {
-        // along dimension
-        NDArray<T> norm2 = input.template reduceAlongDims<simdOps::Norm2<T>>(dimensions, false);
-        if (!isInplace)
-            output.assign(input);
-        ResultSet<T>* tads = NDArrayFactory<T>::allTensorsAlongDimension(&output, dimensions);
-        // TODO: make this CUDA-compliant somehow
-        for (int e = 0; e < tads->size(); e++) {
-            T n2 = norm2(e);
-            T factor = clipNorm / n2;
-            if (n2 > clipNorm) {
-                auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
-                tads->at(e)->applyLambda(lambda, &output);
-            }
+        
+        if(dimensions.empty()) {
+
+            if(norm2(0) > clipNorm)
+                output.assign( input * (clipNorm / norm2(0)));
+            else
+                output.assign( input );
         }
-        delete tads;
+        else {
+
+            ResultSet<T>* inTads  = NDArrayFactory<T>::allTensorsAlongDimension(&input,  dimensions);
+            ResultSet<T>* outTads = NDArrayFactory<T>::allTensorsAlongDimension(&output, dimensions);
+            const int numTads = inTads->size();
+ // #pragma omp parallel for schedule(guided) proc_bind(close)
+            for (int e = 0; e < numTads; e++) {                
+                if (norm2(e) > clipNorm) 
+                    outTads->at(e)->assign( (*inTads->at(e)) * (clipNorm / norm2(e)) );
+                else
+                    outTads->at(e)->assign( inTads->at(e) );
+            }
+            delete inTads;
+            delete outTads;
+        }
     }
 }
 
@@ -742,6 +758,79 @@ void mirrorPad(const NDArray<T>& input, const NDArray<T>& paddings, NDArray<T>& 
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+void concat(const std::vector<NDArray<T>*>& inArrs, NDArray<T>& output, const int axis) {
+
+    const int numOfArrs = inArrs.size();
+    const int rank  = inArrs[0]->rankOf();
+    const int rank2 = 2*rank;
+    int* indices = new int[2 * rank * numOfArrs];
+    memset(indices, 0, 2 * rank * numOfArrs * sizeof(int));
+
+    // take into account indices for first array
+    indices[2 * axis + 1] = inArrs[0]->sizeAt(axis);
+
+    // loop through the rest of input arrays
+    for(int i = 1; i < numOfArrs; ++i) {
+        indices[i * rank2 + 2 * axis]     = indices[2 * axis + 1 + (i-1) * rank2];                                // index start from
+        indices[i * rank2 + 2 * axis + 1] = indices[2 * axis + 1 + (i-1) * rank2] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
+    }
+
+// #pragma omp parallel for if(numOfArrs > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+#pragma omp parallel for schedule(guided)
+    for(int i = 0; i < numOfArrs; ++i) {
+        NDArray<T> temp = output((indices + i * rank2), true);
+        temp.assign(inArrs[i]);
+    }
+
+
+    delete []indices;
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void tileBP(const NDArray<T>& gradO /*input*/, NDArray<T>& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+
+    T* gradIBuff      = gradI.getBuffer();
+    const T* gradOBuff      = gradO.getBuffer();
+    const Nd4jLong gradILen = gradI.lengthOf();
+    const Nd4jLong gradOLen = gradO.lengthOf();  // gradOLen >= gradILen
+    const Nd4jLong gradIEWS = nd4j::math::nd4j_abs<Nd4jLong>(gradI.ews());
+    const Nd4jLong gradOEWS = gradO.ews();
+
+    // initial zeroing of gradI content
+    if(gradIEWS == 1)
+        memset(gradIBuff, 0, gradILen * sizeof(T));
+    else
+#pragma omp parallel for schedule(static) proc_bind(close)
+        for (int i = 0; i < gradILen * gradIEWS; i += gradIEWS)
+            gradIBuff[i] = static_cast<T>(0.f);
+
+
+    if(gradO.ordering() == 'c' && gradOEWS == 1) {
+#pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        for(Nd4jLong i=0;  i<gradOLen; ++i)
+            gradI(shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i)) += gradOBuff[i];
+    }
+    else if(gradO.ordering() == 'c' && gradOEWS > 1) {
+#pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
+        for(Nd4jLong i=0;  i<gradOLen; ++i)
+            gradI(shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i)) += gradOBuff[i*gradOEWS];
+    }
+    else {
+        Nd4jLong idx[MAX_RANK];
+        Nd4jLong* gradOShape   = gradO.shapeOf();
+        Nd4jLong* gradOStrides = gradO.stridesOf();
+        const int gradORank    = gradO.rankOf();
+#pragma omp parallel for simd if(gradOLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
+        for(Nd4jLong i=0;  i<gradOLen; ++i) {
+            shape::ind2subC(gradORank, gradOShape, i, gradOLen, idx);
+            gradI(shape::subArrayIndex(gradO.getShapeInfo(), gradI.getShapeInfo(), i)) += gradOBuff[shape::getOffset(0, gradOShape, gradOStrides, idx, gradORank)];
+        }
+    }
+}
+
 
 
 template void triu<float>(const NDArray<float>& input, NDArray<float>& output, const int diagonal);
@@ -812,6 +901,13 @@ template void mirrorPad<float>(const NDArray<float>& input, const NDArray<float>
 template void mirrorPad<float16>(const NDArray<float16>& input, const NDArray<float16>& paddings, NDArray<float16>& output, const int mode);
 template void mirrorPad<double>(const NDArray<double>& input, const NDArray<double>& paddings, NDArray<double>& output, const int mode);
 
+template void tileBP<float>(const NDArray<float>& gradO, NDArray<float>& gradI, const std::vector<Nd4jLong> reps);
+template void tileBP<float16>(const NDArray<float16>& gradO, NDArray<float16>& gradI, const std::vector<Nd4jLong> reps);
+template void tileBP<double>(const NDArray<double>& gradO, NDArray<double>& gradI, const std::vector<Nd4jLong> reps);
+
+template void concat<float>(const std::vector<NDArray<float>*>& inArrs, NDArray<float>& output, const int axis);
+template void concat<float16>(const std::vector<NDArray<float16>*>& inArrs, NDArray<float16>& output, const int axis);
+template void concat<double>(const std::vector<NDArray<double>*>& inArrs, NDArray<double>& output, const int axis);
 
 }
 }

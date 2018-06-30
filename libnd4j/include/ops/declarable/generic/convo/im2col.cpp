@@ -8,6 +8,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
+#include <ops/declarable/helpers/col2im.h>
 
 namespace nd4j {
     namespace ops {
@@ -85,6 +86,44 @@ namespace nd4j {
 
             return SHAPELIST(zShape);
         }
+		CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
+            auto input = INPUT_VARIABLE(0);
+			auto gradAtOutput = INPUT_VARIABLE(1);
+            auto z = OUTPUT_VARIABLE(0);
+
+            REQUIRE_TRUE(input->rankOf() == 4, 0, "im2col_bp input should be 4D, but got %i instead", input->rankOf());
+			REQUIRE_TRUE(gradAtOutput->rankOf() == 6, 0, "im2col_bp gradient at output (input idx 1) should be 6D, but got %i instead", gradAtOutput->rankOf());
+            REQUIRE_TRUE(z->rankOf() == 4, 0, "im2col_bp output (grad at input) should be 4D, but got %i instead", z->rankOf());
+
+            int kernelHeight = INT_ARG(0);
+            int kernelWidth = INT_ARG(1);
+            int strideY = INT_ARG(2);
+            int strideX = INT_ARG(3);
+            int pH = INT_ARG(4);
+            int pW = INT_ARG(5);
+            int dY = INT_ARG(6);			//Dilation, height/y dimension
+            int dX = INT_ARG(7);			//Dilation, width/x dimension
+            bool isSameMode = INT_ARG(8) > 0;
+            T zeroPadVal = 0.0;
+            if (block.getTArguments()->size() > 0)
+                zeroPadVal = T_ARG(0);
+
+			//Assuming NCHW format here
+			int imgH = input->sizeAt(2);
+			int imgW = input->sizeAt(3);
+			
+            LaunchContext ctx;
+			nd4j::ops::helpers::_col2im(ctx, z->specialBuffer(), gradAtOutput->specialBuffer(), z->specialShapeInfo(), gradAtOutput->specialShapeInfo(), strideY, strideX, pH, pW, imgH, imgW, dY, dX);
+
+            STORE_RESULT(*z);
+
+            return ND4J_STATUS_OK;
+        }
+		
+		DECLARE_SHAPE_FN(im2col_bp) {
+            auto inShape = inputShape->at(0);
+			return SHAPELIST(inShape);
+		}
     }
 }
 

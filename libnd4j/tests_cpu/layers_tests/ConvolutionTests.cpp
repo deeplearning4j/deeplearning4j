@@ -2363,6 +2363,33 @@ TEST_F(ConvolutionTests, maxpool_test6) {
     delete results;
 }
 
+TEST_F(ConvolutionTests, conv2D_input_BP_test1) {
+    
+    NDArray<double> inputShape('c', {4}, {2, 1, 4, 4});
+    NDArray<double> weights('c', {2, 1, 3, 3});
+    NDArray<double> epsilonNext('c', {2, 2, 4, 4});
+    NDArray<double> shapeArr('c', {2, 1, 4, 4});
+
+
+    double _expEpsB[] = {952.0, 1540.0, 1636.0, 1180.0, 1791.0, 2886.0, 3057.0, 2193.0, 2223.0, 3570.0, 3741.0, 2673.0, 1900.0, 3028.0, 3160.0, 2240.0, 2872.0, 4612.0, 4708.0, 3356.0, 5247.0, 8358.0, 8529.0, 6033.0, 5679.0, 9042.0, 9213.0, 6513.0, 4588.0, 7252.0, 7384.0, 5184.0};
+    NDArray<double> expEps(_expEpsB, shapeArr.getShapeInfo());
+
+    nd4j::NDArrayFactory<double>::linspace(1, weights);
+    nd4j::NDArrayFactory<double>::linspace(1, epsilonNext);
+
+    nd4j::ops::conv2d_input_bp<double> op;
+
+    auto results = op.execute({&inputShape, &weights, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1});
+
+    ASSERT_TRUE(results->size() == 1);
+
+    auto epsilon = results->at(0);    
+
+    ASSERT_TRUE(shapeArr.isSameShape(epsilon));   
+    ASSERT_TRUE(expEps.equalsTo(epsilon));
+
+    delete results;
+}
 
 #endif //LIBND4J_CONVOLUTIONTESTS_H
 

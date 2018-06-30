@@ -21,6 +21,8 @@ package org.nd4j.linalg.jcublas;
 
 import lombok.val;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
 import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
 import org.nd4j.linalg.memory.MemcpyDirection;
@@ -1696,6 +1698,14 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
+    public INDArray empty() {
+        long extras  = ArrayOptionsHelper.setOptionBit(0L, ArrayType.EMPTY);
+        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new int[0], new int[0],0,1,'c', extras);
+        return new JCublasNDArray(null, (CudaLongDataBuffer) shape.getFirst(), shape.getSecond());
+    }
+
+
+    @Override
     public INDArray sort(INDArray x, boolean descending, int... dimension) {
         if (x.isScalar())
             return x;
@@ -1846,42 +1856,52 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @Override
-    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(double[] values, int[][] indices, int[] shape) {
+    public INDArray createSparseCOO(double[] values, long[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(float[] values, int[][] indices, int[] shape) {
+    public INDArray createSparseCOO(float[] values, long[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape) {
+    public INDArray createSparseCOO(double[] values, int[][] indices, long[] shape) {
+        return new JCusparseNDArrayCOO(values, indices, shape);
+    }
+
+    @Override
+    public INDArray createSparseCOO(float[] values, int[][] indices, long[] shape) {
+        return new JCusparseNDArrayCOO(values, indices, shape);
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape) {
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape) {
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, long[] shape) {
         throw new UnsupportedOperationException();
     }
 

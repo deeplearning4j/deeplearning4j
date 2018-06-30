@@ -54,4 +54,15 @@ public class Conv3DDerivative extends Conv3D {
         throw new UnsupportedOperationException("Unable to differentiate from a derivative op");
     }
 
+    @Override
+    public int getNumOutputs(){
+        //Fwd inputs: input, weight, optional bias
+        //Bwd inputs: input, input grad, weight, optional bias
+        if(args().length == 4){
+            return 3;   //Includes bias
+        } else {
+            return 2;   //No bias - only input + weight grads
+        }
+    }
+
 }

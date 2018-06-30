@@ -771,21 +771,19 @@ public class MathUtils {
     }//end rootMeansSquaredError
 
     /**
-     * This returns the entropy (information gain, or uncertainty of a random variable).
+     * This returns the entropy (information gain, or uncertainty of a random variable): -sum(x*log(x))
      *
      * @param vector the vector of values to getFromOrigin the entropy for
      * @return the entropy of the given vector
      */
     public static double entropy(double[] vector) {
-        if (vector == null)
-            return 0;
-        else if (vector.length < 1)
+        if (vector == null || vector.length == 0)
             return 0;
         else {
             double ret = 0;
             for (double d : vector)
                 ret += d * Math.log(d);
-            return ret;
+            return -ret;
 
         }
     }//end entropy

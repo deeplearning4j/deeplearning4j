@@ -116,7 +116,8 @@ public class Concat extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         int concatDimension = -1;
         String input = null;
-        for(int i = 0; i < nodeDef.getInputCount(); i++) {
+        val inputCount = nodeDef.getInputCount();
+        for(int i = 0; i < inputCount; i++) {
             if(nodeDef.getInput(i).contains("/concat_dim")) {
                 input = nodeDef.getInput(i);
                 break;
@@ -141,7 +142,7 @@ public class Concat extends DynamicCustomOp {
 
             this.concatDimension = concatDimension;
             addIArgument(this.concatDimension);
-            log.debug("Concat dimension: {}", concatDimension);
+            log.trace("Concat dimension: {}", concatDimension);
 
         }
 

@@ -14,10 +14,8 @@ import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.graph.SubsetVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.misc.TestGraphVertex;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -38,17 +36,17 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
     @Test
     public void testJSONBasic() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(new NoOp())
-                        .graphBuilder().addInputs("input")
-                        .addLayer("firstLayer",
-                                        new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
-                                        "input")
-                        .addLayer("outputLayer",
-                                        new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                                                        .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),
-                                        "firstLayer")
-                        .setOutputs("outputLayer").pretrain(false).backprop(true).build();
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).updater(new NoOp())
+                .graphBuilder().addInputs("input")
+                .addLayer("firstLayer",
+                        new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
+                        "input")
+                .addLayer("outputLayer",
+                        new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                                .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),
+                        "firstLayer")
+                .setOutputs("outputLayer").pretrain(false).backprop(true).build();
 
         String json = conf.toJson();
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
@@ -60,30 +58,30 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
     @Test
     public void testJSONBasic2() {
         ComputationGraphConfiguration conf =
-                        new NeuralNetConfiguration.Builder()
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .graphBuilder().addInputs("input")
-                                        .addLayer("cnn1",
-                                                        new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
-                                                                        .build(),
-                                                        "input")
-                                        .addLayer("cnn2",
-                                                        new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
-                                                                        .build(),
-                                                        "input")
-                                        .addLayer("max1",
-                                                        new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                                                                        .kernelSize(2, 2).build(),
-                                                        "cnn1", "cnn2")
-                                        .addLayer("dnn1", new DenseLayer.Builder().nOut(7).build(), "max1")
-                                        .addLayer("max2", new SubsamplingLayer.Builder().build(), "max1")
-                                        .addLayer("output", new OutputLayer.Builder().nIn(7).nOut(10).build(), "dnn1",
-                                                        "max2")
-                                        .setOutputs("output")
-                                        .inputPreProcessor("cnn1", new FeedForwardToCnnPreProcessor(32, 32, 3))
-                                        .inputPreProcessor("cnn2", new FeedForwardToCnnPreProcessor(32, 32, 3))
-                                        .inputPreProcessor("dnn1", new CnnToFeedForwardPreProcessor(8, 8, 5))
-                                        .pretrain(false).backprop(true).build();
+                new NeuralNetConfiguration.Builder()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .graphBuilder().addInputs("input")
+                        .addLayer("cnn1",
+                                new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
+                                        .build(),
+                                "input")
+                        .addLayer("cnn2",
+                                new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
+                                        .build(),
+                                "input")
+                        .addLayer("max1",
+                                new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                        .kernelSize(2, 2).build(),
+                                "cnn1", "cnn2")
+                        .addLayer("dnn1", new DenseLayer.Builder().nOut(7).build(), "max1")
+                        .addLayer("max2", new SubsamplingLayer.Builder().build(), "max1")
+                        .addLayer("output", new OutputLayer.Builder().nIn(7).nOut(10).build(), "dnn1",
+                                "max2")
+                        .setOutputs("output")
+                        .inputPreProcessor("cnn1", new FeedForwardToCnnPreProcessor(32, 32, 3))
+                        .inputPreProcessor("cnn2", new FeedForwardToCnnPreProcessor(32, 32, 3))
+                        .inputPreProcessor("dnn1", new CnnToFeedForwardPreProcessor(8, 8, 5))
+                        .pretrain(false).backprop(true).build();
 
         String json = conf.toJson();
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
@@ -96,25 +94,25 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
     public void testJSONWithGraphNodes() {
 
         ComputationGraphConfiguration conf =
-                        new NeuralNetConfiguration.Builder()
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .graphBuilder().addInputs("input1", "input2")
-                                        .addLayer("cnn1",
-                                                        new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
-                                                                        .build(),
-                                                        "input1")
-                                        .addLayer("cnn2",
-                                                        new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
-                                                                        .build(),
-                                                        "input2")
-                                        .addVertex("merge1", new MergeVertex(), "cnn1", "cnn2")
-                                        .addVertex("subset1", new SubsetVertex(0, 1), "merge1")
-                                        .addLayer("dense1", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
-                                        .addLayer("dense2", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
-                                        .addVertex("add", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1",
-                                                        "dense2")
-                                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "add")
-                                        .setOutputs("out").build();
+                new NeuralNetConfiguration.Builder()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .graphBuilder().addInputs("input1", "input2")
+                        .addLayer("cnn1",
+                                new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
+                                        .build(),
+                                "input1")
+                        .addLayer("cnn2",
+                                new ConvolutionLayer.Builder(2, 2).stride(2, 2).nIn(1).nOut(5)
+                                        .build(),
+                                "input2")
+                        .addVertex("merge1", new MergeVertex(), "cnn1", "cnn2")
+                        .addVertex("subset1", new SubsetVertex(0, 1), "merge1")
+                        .addLayer("dense1", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
+                        .addLayer("dense2", new DenseLayer.Builder().nIn(20).nOut(5).build(), "subset1")
+                        .addVertex("add", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1",
+                                "dense2")
+                        .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "add")
+                        .setOutputs("out").build();
 
         String json = conf.toJson();
         System.out.println(json);
@@ -131,9 +129,9 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         //Test no inputs for a layer:
         try {
             new NeuralNetConfiguration.Builder().graphBuilder().addInputs("input1")
-                            .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1")
-                            .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build()).setOutputs("out")
-                            .build();
+                    .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1")
+                    .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build()).setOutputs("out")
+                    .build();
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK - exception is good
@@ -143,9 +141,9 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         //Test no network inputs
         try {
             new NeuralNetConfiguration.Builder().graphBuilder()
-                            .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1")
-                            .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build(), "dense1")
-                            .setOutputs("out").build();
+                    .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1")
+                    .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build(), "dense1")
+                    .setOutputs("out").build();
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK - exception is good
@@ -155,8 +153,8 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         //Test no network outputs
         try {
             new NeuralNetConfiguration.Builder().graphBuilder().addInputs("input1")
-                            .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1")
-                            .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build(), "dense1").build();
+                    .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1")
+                    .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build(), "dense1").build();
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK - exception is good
@@ -166,9 +164,9 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         //Test: invalid input
         try {
             new NeuralNetConfiguration.Builder().graphBuilder().addInputs("input1")
-                            .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1")
-                            .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build(), "thisDoesntExist")
-                            .setOutputs("out").build();
+                    .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1")
+                    .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build(), "thisDoesntExist")
+                    .setOutputs("out").build();
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK - exception is good
@@ -178,11 +176,11 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         //Test: graph with cycles
         try {
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("input1")
-                            .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1", "dense3")
-                            .addLayer("dense2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "dense1")
-                            .addLayer("dense3", new DenseLayer.Builder().nIn(2).nOut(2).build(), "dense2")
-                            .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build(), "dense1")
-                            .setOutputs("out").build();
+                    .addLayer("dense1", new DenseLayer.Builder().nIn(2).nOut(2).build(), "input1", "dense3")
+                    .addLayer("dense2", new DenseLayer.Builder().nIn(2).nOut(2).build(), "dense1")
+                    .addLayer("dense3", new DenseLayer.Builder().nIn(2).nOut(2).build(), "dense2")
+                    .addLayer("out", new OutputLayer.Builder().nIn(2).nOut(2).build(), "dense1")
+                    .setOutputs("out").build();
             //Cycle detection happens in ComputationGraph.init()
             ComputationGraph graph = new ComputationGraph(conf);
             graph.init();
@@ -203,8 +201,8 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         //Check a standard GraphVertex implementation, plus a static inner graph vertex
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                        .addVertex("test", new TestGraphVertex(3, 7), "in")
-                        .addVertex("test2", new StaticInnerGraphVertex(4, 5), "in").setOutputs("test", "test2").build();
+                .addVertex("test", new TestGraphVertex(3, 7), "in")
+                .addVertex("test2", new StaticInnerGraphVertex(4, 5), "in").setOutputs("test", "test2").build();
 
         String json = conf.toJson();
         System.out.println(json);
@@ -226,10 +224,10 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
     @Test
     public void testOutputOrderDoesntChangeWhenCloning() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
-                        .addLayer("out1", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
-                        .addLayer("out2", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
-                        .addLayer("out3", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
-                        .setOutputs("out1", "out2", "out3").build();
+                .addLayer("out1", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
+                .addLayer("out2", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
+                .addLayer("out3", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
+                .setOutputs("out1", "out2", "out3").build();
 
         ComputationGraphConfiguration cloned = conf.clone();
 
@@ -237,6 +235,26 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
         String jsonCloned = cloned.toJson();
 
         assertEquals(json, jsonCloned);
+    }
+
+    @Test
+    public void testBidirectionalGraphSummary() {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                .addLayer("bidirectional",
+                        new Bidirectional(new LSTM.Builder().activation(Activation.TANH).nOut(10).build()),
+                        "in")
+                .addLayer("out", new RnnOutputLayer.Builder().nOut(6)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX)
+                        .build(), "bidirectional")
+                .setOutputs("out")
+                .setInputTypes(new InputType.InputTypeRecurrent(10, 12))
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+        graph.summary();
+
     }
 
     @AllArgsConstructor
@@ -270,7 +288,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
 
         @Override
         public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                        INDArray paramsView, boolean initializeParams) {
+                                                                          INDArray paramsView, boolean initializeParams) {
             throw new UnsupportedOperationException("Not supported");
         }
 

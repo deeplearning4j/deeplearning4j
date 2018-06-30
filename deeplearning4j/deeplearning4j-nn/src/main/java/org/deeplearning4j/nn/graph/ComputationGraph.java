@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
@@ -44,6 +45,7 @@ import org.deeplearning4j.nn.graph.vertex.impl.InputVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
+import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -83,9 +85,7 @@ import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -1480,10 +1480,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     /**
      * Conduct forward pass using an array of inputs. This overload allows the forward pass to be conducted, optionally
      * (not) clearing the layer input arrays.<br>
-     * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
-     * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
-     * workspaces in which they were defined - potentially causing a crash. See https://deeplearning4j.org/workspaces
-     * for more details
+     * Note: when using clearInputs=false, there can be some performance and memory overhead: this is because the arrays are
+     * defined outside of workspaces (which are enabled by default) - otherwise, old/invalidated arrays could still be
+     * accessed after calling this method. Consequently: Don't use clearInputs=false unless you have a use case that
+     * requires them to remain after feed-forward has been completed
      *
      * @param input An array of ComputationGraph inputs
      * @param layerTillIndex the index of the layer to feed forward to
@@ -4153,8 +4153,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     //layer with params
                     if (currentLayer.numParams() > 0) {
                         paramShape = "";
-                        in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
-                        out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                        if (currentLayer instanceof BidirectionalLayer) { // Bidirectional layer is not an FFL
+                            BidirectionalLayer bi = (BidirectionalLayer) currentLayer;
+                            in = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNIn());
+                            out = String.valueOf(((Bidirectional)bi.conf().getLayer()).getNOut());
+                        } else {
+                            in = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNIn());
+                            out = String.valueOf(((FeedForwardLayer) currentLayer.conf().getLayer()).getNOut());
+                        }
                         List<String> paraNames = currentLayer.conf().variables();
                         for (String aP : paraNames) {
                             String paramS = ArrayUtils.toString(currentLayer.paramTable().get(aP).shape());
@@ -4525,5 +4531,21 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return paramsEquals && confEquals && updaterEquals;
         }
         return false;
+    }
+
+    private void writeObject(ObjectOutputStream oos) throws IOException {
+        ModelSerializer.writeModel(this, oos, true);
+    }
+
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        val cg = ModelSerializer.restoreComputationGraph(ois, true);
+
+        this.defaultConfiguration = cg.defaultConfiguration.clone();
+        this.configuration = cg.configuration.clone();
+        this.init();
+        this.flattenedParams.assign(cg.flattenedParams);
+
+        if (cg.getUpdater() != null && cg.getUpdater(false).getStateViewArray() != null)
+            this.getUpdater(true).getStateViewArray().assign(cg.getUpdater(false).getStateViewArray());
     }
 }
