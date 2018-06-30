@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.samediff;
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.conf.layers.samediff.SDVertexParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -22,6 +23,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -50,6 +52,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         if(initParams){
             config.initializeParameters(paramTable);
         }
+        this.params = paramsView;
     }
 
     @Override
@@ -180,10 +183,29 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         }
     }
 
+    @Override
+    public void clearVertex() {
+        clear();
+    }
 
     @Override
     public Map<String, INDArray> paramTable(boolean backpropOnly) {
         return paramTable;
+    }
+
+    @Override
+    public TrainingConfig getConfig() {
+        return config;
+    }
+
+    @Override
+    public INDArray params() {
+        return params;
+    }
+
+    @Override
+    public INDArray getGradientsViewArray() {
+        return gradients;
     }
 }
 

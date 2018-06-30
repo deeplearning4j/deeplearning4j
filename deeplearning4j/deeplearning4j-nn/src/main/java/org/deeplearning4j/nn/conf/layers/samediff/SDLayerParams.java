@@ -69,8 +69,8 @@ public class SDLayerParams implements Serializable {
     }
 
     /**
-     * @return Get a list of parameter names / keys (previously added via {@link #addWeightParam(String, int...)} and
-     * {@link #addBiasParam(String, int[])}
+     * @return Get a list of parameter names / keys (previously added via {@link #addWeightParam(String, long...)} and
+     * {@link #addBiasParam(String, long...)}
      */
     @JsonIgnore
     public List<String> getParameterKeys() {
@@ -85,7 +85,7 @@ public class SDLayerParams implements Serializable {
 
     /**
      * @return Get a list of parameter names / keys for weight parameters only, previously added via
-     * {@link #addWeightParam(String, int...)}
+     * {@link #addWeightParam(String, long...)}
      */
     @JsonIgnore
     public List<String> getWeightParameterKeys() {
@@ -97,7 +97,7 @@ public class SDLayerParams implements Serializable {
 
     /**
      * @return Get a list of parameter names / keys for weight parameters only, previously added via
-     * {@link #addWeightParam(String, int...)}
+     * {@link #addWeightParam(String, long...)}
      */
     @JsonIgnore
     public List<String> getBiasParameterKeys() {
@@ -129,6 +129,14 @@ public class SDLayerParams implements Serializable {
         paramsList = null;
         weightParamsList = null;
         biasParamsList = null;
+    }
+
+    public boolean isWeightParam(String param){
+        return weightParams.containsKey(param);
+    }
+
+    public boolean isBiasParam(String param){
+        return biasParams.containsKey(param);
     }
 
     @Override
