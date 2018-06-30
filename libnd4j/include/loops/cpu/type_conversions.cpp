@@ -25,7 +25,8 @@ namespace nd4j {
         auto l = static_cast<int>(N);
         z[1] = l;
 
-        int span = (int) (N / 6) + 8;
+        int threads = omp_get_max_threads();
+        int span = (int) (N / threads) + 8;
 
         T tt = static_cast<T>(threshold);
         T mtt = -tt;
@@ -34,7 +35,7 @@ namespace nd4j {
         int flimit = limit + 4;
         volatile int cnt = 4;
         volatile bool flag = false;
-#pragma omp parallel default(shared)
+#pragma omp parallel num_threads(threads) default(shared)
         {
             int tid = omp_get_thread_num();
             int start = span * tid;
