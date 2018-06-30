@@ -131,6 +131,8 @@ public class TFGraphTestAllHelper {
             log.info("\n\tTEST " + modelName + " PASSED...");
             log.info("\n========================================================\n");
         }
+
+        Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, ExecuteWith execType) throws IOException {
@@ -161,6 +163,8 @@ public class TFGraphTestAllHelper {
                 }
             }
         }
+
+        Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
     public static SameDiff getGraphAfterExec(String baseDir, String modelName, Map<String, INDArray> inputs, ExecuteWith executeWith) throws IOException {

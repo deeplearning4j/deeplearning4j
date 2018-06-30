@@ -580,6 +580,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
 
     @Test
     public void testEpsStuff_1() throws Exception {
+        val dtype = Nd4j.dataType();
         val array = Nd4j.create(new float[]{0.001f, 5e-6f, 5e-6f, 5e-6f, 5e-6f});
         val exp = Nd4j.create(new float[]{0.001f, 1.0f, 1.0f, 1.0f, 1.0f});
         BooleanIndexing.replaceWhere(array, 1.0f, Conditions.epsEquals(0));
