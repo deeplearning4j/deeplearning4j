@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -30,6 +31,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
     protected double l2Bias;
     protected IUpdater updater;
     protected IUpdater biasUpdater;
+    protected GradientNormalization gradientNormalization;
+    protected double gradientNormalizationThreshold = Double.NaN;
 
     private SDLayerParams layerParams;
 
@@ -85,8 +88,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
     }
 
     /**
-     * Define the parameters for the network. Use {@link SDLayerParams#addWeightParam(String, int...)} and
-     * {@link SDLayerParams#addBiasParam(String, int[])}
+     * Define the parameters for the network. Use {@link SDLayerParams#addWeightParam(String, long...)} and
+     * {@link SDLayerParams#addBiasParam(String, long...)}
      * @param params Object used to set parameters for this layer
      */
     public abstract void defineParameters(SDLayerParams params);
@@ -134,6 +137,11 @@ public abstract class AbstractSameDiffLayer extends Layer {
     }
 
     @Override
+    public boolean isPretrain() {
+        return false;
+    }
+
+    @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         return new LayerMemoryReport(); //TODO
     }
@@ -170,6 +178,12 @@ public abstract class AbstractSameDiffLayer extends Layer {
         }
         if(biasUpdater == null){
             biasUpdater = b.getBiasUpdater();
+        }
+        if(gradientNormalization == null){
+            gradientNormalization = b.getGradientNormalization();
+        }
+        if(Double.isNaN(gradientNormalizationThreshold)){
+            gradientNormalizationThreshold = b.getGradientNormalizationThreshold();
         }
 
         applyGlobalConfigToLayer(b);

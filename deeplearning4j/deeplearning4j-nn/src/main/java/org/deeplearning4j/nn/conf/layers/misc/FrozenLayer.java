@@ -119,8 +119,8 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public GradientNormalization getGradientNormalization(String param) {
-        return layer.getGradientNormalization(param);
+    public GradientNormalization getGradientNormalization() {
+        return layer.getGradientNormalization();
     }
 
     @Override

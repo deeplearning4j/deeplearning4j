@@ -113,7 +113,7 @@ public class LocalResponseNormalization extends Layer {
     }
 
     @Override
-    public GradientNormalization getGradientNormalization(String param) {
+    public GradientNormalization getGradientNormalization() {
         return GradientNormalization.None;
     }
 

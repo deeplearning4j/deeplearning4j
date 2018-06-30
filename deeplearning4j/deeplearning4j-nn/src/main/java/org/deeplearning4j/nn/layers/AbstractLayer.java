@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -79,6 +80,11 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     protected LayerConfT layerConf() {
         return (LayerConfT) this.conf.getLayer();
+    }
+
+    @Override
+    public TrainingConfig getConfig(){
+        return conf.getLayer();
     }
 
     protected String layerId() {

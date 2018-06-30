@@ -14,4 +14,6 @@ public interface Trainable {
 
     Map<String,INDArray> paramTable(boolean backpropOnly);
 
+    INDArray getGradientsViewArray();
+
 }

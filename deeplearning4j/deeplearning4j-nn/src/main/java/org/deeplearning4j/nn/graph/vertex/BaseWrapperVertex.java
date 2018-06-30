@@ -141,6 +141,11 @@ public abstract class BaseWrapperVertex implements GraphVertex {
     }
 
     @Override
+    public INDArray getGradientsViewArray() {
+        return underlying.getGradientsViewArray();
+    }
+
+    @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {
         underlying.setBackpropGradientsViewArray(backpropGradientsViewArray);
     }

@@ -207,8 +207,8 @@ public class Bidirectional extends Layer {
     }
 
     @Override
-    public GradientNormalization getGradientNormalization(String param) {
-        return fwd.getGradientNormalization(param.substring(1));
+    public GradientNormalization getGradientNormalization() {
+        return fwd.getGradientNormalization();
     }
 
     @Override

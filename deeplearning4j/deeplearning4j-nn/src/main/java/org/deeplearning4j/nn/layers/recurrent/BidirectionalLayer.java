@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -261,6 +262,11 @@ public class BidirectionalLayer implements RecurrentLayer {
     @Override
     public INDArray params() {
         return paramsView;
+    }
+
+    @Override
+    public TrainingConfig getConfig() {
+        return conf.getLayer();
     }
 
     @Override

@@ -49,7 +49,7 @@ public interface TrainingConfig {
      */
     IUpdater getUpdaterByParam(String paramName);
 
-    GradientNormalization getGradientNormalization(String param);
+    GradientNormalization getGradientNormalization();
 
     double getGradientNormalizationThreshold();
 

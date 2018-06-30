@@ -59,8 +59,8 @@ public abstract class BaseWrapperLayer extends Layer {
     }
 
     @Override
-    public GradientNormalization getGradientNormalization(String param) {
-        return underlying.getGradientNormalization(param);
+    public GradientNormalization getGradientNormalization() {
+        return underlying.getGradientNormalization();
     }
 
     @Override

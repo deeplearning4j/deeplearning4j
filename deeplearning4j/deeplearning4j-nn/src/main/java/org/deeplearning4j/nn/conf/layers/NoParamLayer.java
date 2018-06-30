@@ -34,7 +34,7 @@ public abstract class NoParamLayer extends Layer {
     }
 
     @Override
-    public GradientNormalization getGradientNormalization(String param) {
+    public GradientNormalization getGradientNormalization() {
         return GradientNormalization.None;
     }
 

@@ -130,7 +130,7 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @Override
-    public GradientNormalization getGradientNormalization(String param) {
+    public GradientNormalization getGradientNormalization() {
         return GradientNormalization.None;
     }
 

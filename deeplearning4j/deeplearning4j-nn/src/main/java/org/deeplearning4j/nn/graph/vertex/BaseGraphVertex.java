@@ -211,4 +211,9 @@ public abstract class BaseGraphVertex implements GraphVertex {
     public INDArray params() {
         return null;
     }
+
+    @Override
+    public INDArray getGradientsViewArray() {
+        return null;
+    }
 }

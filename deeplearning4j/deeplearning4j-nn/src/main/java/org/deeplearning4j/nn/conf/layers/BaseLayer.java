@@ -115,7 +115,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     }
 
     @Override
-    public GradientNormalization getGradientNormalization(String param){
+    public GradientNormalization getGradientNormalization(){
         return gradientNormalization;
     }
 
