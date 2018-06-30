@@ -2941,13 +2941,27 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_7) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests7, Test_Matmum_Once_Again) {
+TEST_F(DeclarableOpsTests7, Test_Matmul_Once_Again) {
     NDArray<float> x('c', {1, 2}, {2.0f, 2.0f});
     NDArray<float> y('c', {2, 1}, {2.0f, 2.0f});
     NDArray<float> exp('c', {1, 1}, {8.0f});
 
     nd4j::ops::matmul<float> op;
     auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(exp, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests7, Test_Pnorm_Once_Again) {
+    NDArray<double> input('c', {1, 1, 5, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0});
+    NDArray<double> exp('c', {1, 1, 5, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0});
+
+    nd4j::ops::pnormpool2d<double> op;
+    auto result = op.execute({&input}, {}, {1,1,  1,1,  0,0,  1,1,1,  3,  0});
+    ASSERT_EQ(Status::OK(), result->status());
 
     ASSERT_EQ(exp, *result->at(0));
 
