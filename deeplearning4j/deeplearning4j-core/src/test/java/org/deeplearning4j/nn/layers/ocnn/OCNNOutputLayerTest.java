@@ -32,9 +32,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.io.File;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class OCNNOutputLayerTest {
 
@@ -52,6 +50,7 @@ public class OCNNOutputLayerTest {
 
     @Test
     public void testLayer() {
+        fail("JVM crash");
         DataSetIterator dataSetIterator = getNormalizedIterator();
         boolean doLearningFirst = true;
         MultiLayerNetwork network = getGradientCheckNetwork(2);
@@ -101,6 +100,7 @@ public class OCNNOutputLayerTest {
 
     @Test
     public void testLabelProbabilities() throws Exception {
+        fail("JVM Crash");
         Nd4j.getRandom().setSeed(42);
         DataSetIterator dataSetIterator = getNormalizedIterator();
         MultiLayerNetwork network = getSingleLayer();

@@ -54,11 +54,12 @@ public class BidirectionalLayer implements RecurrentLayer {
     private INDArray outFwd;
     private INDArray outBwd;
 
-    public BidirectionalLayer(@NonNull NeuralNetConfiguration conf, @NonNull Layer fwd, @NonNull Layer bwd) {
+    public BidirectionalLayer(@NonNull NeuralNetConfiguration conf, @NonNull Layer fwd, @NonNull Layer bwd, @NonNull INDArray paramsView) {
         this.conf = conf;
         this.fwd = fwd;
         this.bwd = bwd;
         this.layerConf = (Bidirectional) conf.getLayer();
+        this.paramsView = paramsView;
     }
 
     @Override

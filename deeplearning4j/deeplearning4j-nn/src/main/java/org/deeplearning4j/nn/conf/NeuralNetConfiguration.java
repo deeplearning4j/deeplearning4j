@@ -177,6 +177,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     }
 
     public void setPretrain(boolean pretrain){
+        this.pretrain = pretrain;
         if(layer != null){
             layer.setPretrain(pretrain);
         }

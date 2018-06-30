@@ -811,7 +811,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         @Override
         public TrainingConfig getConfig() {
-            return null;
+            return conf.getLayer();
         }
 
         /**

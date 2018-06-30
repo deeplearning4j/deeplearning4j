@@ -125,7 +125,7 @@ public class Bidirectional extends Layer {
         org.deeplearning4j.nn.api.Layer b
                 = bwd.instantiate(c2, trainingListeners, layerIndex, bp, initializeParams);
 
-        BidirectionalLayer ret = new BidirectionalLayer(conf, f, b);
+        BidirectionalLayer ret = new BidirectionalLayer(conf, f, b, layerParamsView);
         Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
         ret.setParamTable(paramTable);
         ret.setConf(conf);
