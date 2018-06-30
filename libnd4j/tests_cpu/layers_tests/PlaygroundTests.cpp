@@ -8,6 +8,8 @@
 #include <Node.h>
 #include <ops/declarable/CustomOperations.h>
 #include <graph/profiling/GraphProfilingHelper.h>
+#include <type_conversions.h>
+#include <helpers/threshold.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -518,7 +520,8 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
 
 
 TEST_F(PlaygroundTests, loop_test_1) {
-    NDArray<float> f('c', {2}, {5000, 5000});
+
+    NDArray<float> f('c', {2}, {5000, 10000});
     nd4j::ops::randomuniform<float> op;
 
     auto result = op.execute({&f}, {-1.0f, 1.0f}, {});
@@ -537,10 +540,25 @@ TEST_F(PlaygroundTests, loop_test_1) {
 
     NativeOps ops;
 
+    auto t = new int[1000000];
+
+
     auto permStart = std::chrono::system_clock::now();
 
+    FloatBits fb;
+    float threshold = 0.99f;
+    fb.f_ = threshold;
+    int le =  ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
+
+    t[0] = le;
+    t[1] = length;
+    t[2] = fb.i_;
+
+    nd4j_printf("number of elements: [%i]\n", le);
+
     for (int x = 0; x < iterations; x++) {
-        //ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), 0.995f);
+        TypeCast::convertToThreshold<float>(nullptr, buffer, array->lengthOf(), t);
+
         /*
 #pragma omp parallel reduction(+:cnt)
         {
@@ -574,6 +592,7 @@ TEST_F(PlaygroundTests, loop_test_1) {
     nd4j_printf("Permuted time: %lld us; Counter: %i;\n", permTime, cnt);
 
     delete result;
+    delete[] t;
 }
 
 //////////////////////////////////////////////////////////////////////
