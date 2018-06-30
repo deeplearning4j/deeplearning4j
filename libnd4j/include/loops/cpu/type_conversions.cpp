@@ -75,7 +75,7 @@ namespace nd4j {
                     }
 
                     z[idx] = -e - 1;
-                    x[e] += static_cast<T>(threshold);
+                    x[e] += tt;
                 }
             }
         }
