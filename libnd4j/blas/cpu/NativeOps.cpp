@@ -3122,6 +3122,37 @@ const char* NativeOps::getAllCustomOps() {
     return nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
 }
 
+template <typename T>
+FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer x, int N, T threshold) {
+    auto buffer = reinterpret_cast<T *>(x);
+
+    int span = (N / 6) + 8;
+    int cnt = 0;
+
+#pragma omp parallel reduction(+:cnt)
+    {
+        int tid = omp_get_thread_num();
+        int start = span * tid;
+        int stop = span * (tid + 1);
+        if (stop > N)
+            stop = N;
+
+#pragma omp simd
+        for (int e = start; e < stop; e++) {
+            auto v = nd4j::math::nd4j_abs<T>(buffer[e]);
+            if (v >= threshold)
+                cnt++;
+        }
+    }
+
+    return cnt;
+}
+
+int NativeOps::estimateThresholdFloat(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+    return estimateThresholdGeneric<float>(extraPointers, x, N, threshold);
+}
+
+
 
 void NativeOps::deleteShapeList(Nd4jPointer shapeList) {
     auto list = reinterpret_cast<nd4j::ShapeList*>(shapeList);

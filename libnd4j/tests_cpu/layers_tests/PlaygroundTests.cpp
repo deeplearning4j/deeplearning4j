@@ -517,6 +517,65 @@ TEST_F(PlaygroundTests, Test_Im2Col_3) {
 }
 
 
+TEST_F(PlaygroundTests, loop_test_1) {
+    NDArray<float> f('c', {2}, {5000, 5000});
+    nd4j::ops::randomuniform<float> op;
+
+    auto result = op.execute({&f}, {-1.0f, 1.0f}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto array = result->at(0);
+
+    auto buffer = array->buffer();
+    int cnt = 0;
+    int iterations = 1000;
+
+    nd4j_printf("Array length: %lld\n", array->lengthOf());
+
+    int length = (int) array->lengthOf();
+    int span = (int) (array->lengthOf() / 6) + 8;
+
+    NativeOps ops;
+
+    auto permStart = std::chrono::system_clock::now();
+
+    for (int x = 0; x < iterations; x++) {
+        //ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), 0.995f);
+        /*
+#pragma omp parallel reduction(+:cnt)
+        {
+            int tid = omp_get_thread_num();
+            int start = span * tid;
+            int stop = span * (tid + 1);
+            if (stop > length)
+                stop = length;
+
+#pragma omp simd
+            for (int e = start; e < stop; e++) {
+                auto v = fabsf(buffer[e]);
+                if (v >= 0.995f)
+                    cnt++;
+            }
+        }
+         */
+/*
+#pragma omp parallel for simd reduction(+:cnt)
+        for (int e = 0; e < length; e++) {
+            auto v = fabsf(buffer[e]);
+            if (v >= 0.995f)
+                cnt++;
+        }
+        */
+    }
+
+    auto permEnd = std::chrono::system_clock::now();
+    auto permTime = std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count() / iterations;
+
+    nd4j_printf("Permuted time: %lld us; Counter: %i;\n", permTime, cnt);
+
+    delete result;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, ndarray_tile_test1) {
 

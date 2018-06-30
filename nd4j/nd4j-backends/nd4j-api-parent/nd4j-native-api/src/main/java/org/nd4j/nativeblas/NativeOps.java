@@ -1625,6 +1625,8 @@ public abstract class NativeOps extends Pointer {
     public abstract void deleteGraphStateFloat(Pointer state);
     public abstract void deleteGraphStateDouble(Pointer state);
 
+    public abstract  int estimateThresholdFloat(PointerPointer extraPointers, Pointer x, int N, float threshold);
+
     // this method executes op that requires scope to be present: if/while/cond/whatever
     public abstract int execCustomOpWithScopeHalf(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);
     public abstract int execCustomOpWithScopeFloat(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);
