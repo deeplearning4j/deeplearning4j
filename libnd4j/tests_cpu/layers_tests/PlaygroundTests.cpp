@@ -543,12 +543,12 @@ TEST_F(PlaygroundTests, loop_test_1) {
     auto t = new int[1000000];
 
 
-    auto permStart = std::chrono::system_clock::now();
+
 
     FloatBits fb;
     float threshold = 0.99f;
     fb.f_ = threshold;
-    int le =  ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
+    int le = ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
 
     t[0] = le;
     t[1] = length;
@@ -556,7 +556,11 @@ TEST_F(PlaygroundTests, loop_test_1) {
 
     nd4j_printf("number of elements: [%i]\n", le);
 
+    long permTime = 0;
+
     for (int x = 0; x < iterations; x++) {
+        auto permStart = std::chrono::system_clock::now();
+        ops.estimateThresholdFloat(nullptr, reinterpret_cast<void *>(array->buffer()), static_cast<int>(array->lengthOf()), threshold);
         TypeCast::convertToThreshold<float>(nullptr, buffer, array->lengthOf(), t);
 
         /*
@@ -584,12 +588,14 @@ TEST_F(PlaygroundTests, loop_test_1) {
                 cnt++;
         }
         */
+
+        auto permEnd = std::chrono::system_clock::now();
+        permTime += std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count();
     }
 
-    auto permEnd = std::chrono::system_clock::now();
-    auto permTime = std::chrono::duration_cast<std::chrono::microseconds> (permEnd - permStart).count() / iterations;
 
-    nd4j_printf("Permuted time: %lld us; Counter: %i;\n", permTime, cnt);
+
+    nd4j_printf("Permuted time: %lld us; Counter: %i;\n", permTime / iterations, cnt);
 
     delete result;
     delete[] t;
