@@ -13,7 +13,9 @@ namespace nd4j {
     public:
         static Nd4jLong betterSpan(Nd4jLong N);
         static Nd4jLong betterSpan(Nd4jLong N, Nd4jLong numThreads);
+        
         static int betterThreads(Nd4jLong N);
+        static int betterThreads(Nd4jLong N, int maxThreads);
     };
 }
 
