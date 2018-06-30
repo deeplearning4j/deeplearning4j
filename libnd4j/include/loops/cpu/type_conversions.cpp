@@ -27,6 +27,9 @@ namespace nd4j {
 
         int span = (int) (N / 6) + 8;
 
+        T tt = static_cast<T>(threshold);
+        T mtt = -tt;
+
         // we use 3 as offset, since first 12 bytes are occupied with header
         int flimit = limit + 4;
         volatile int cnt = 4;
@@ -44,10 +47,10 @@ namespace nd4j {
 #pragma omp atomic read
                 flag_load = flag;
                 if (flag_load)
-                    continue;
+                    break;
 
                 T cUpd = x[e];
-                if (cUpd >= static_cast<T>(threshold)) {
+                if (cUpd >= tt) {
                     int idx;
 #pragma omp atomic capture
                     idx = cnt++;
@@ -55,12 +58,12 @@ namespace nd4j {
                     if (idx >= flimit) {
 #pragma omp atomic write
                         flag = true;
-                        continue;
+                        break;
                     }
 
                     z[idx] = e + 1;
-                    x[e] -= static_cast<T>(threshold);
-                } else if (cUpd <= static_cast<T>(-threshold)) {
+                    x[e] -= tt;
+                } else if (cUpd <= mtt) {
                     int idx;
 #pragma omp atomic capture
                     idx = cnt++;
@@ -68,7 +71,7 @@ namespace nd4j {
                     if (idx >= flimit) {
 #pragma omp atomic write
                         flag = true;
-                        continue;
+                        break;
                     }
 
                     z[idx] = -e - 1;
