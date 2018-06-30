@@ -53,4 +53,6 @@ public interface TrainingConfig {
 
     double getGradientNormalizationThreshold();
 
+    void setPretrain(boolean pretrain);
+
 }

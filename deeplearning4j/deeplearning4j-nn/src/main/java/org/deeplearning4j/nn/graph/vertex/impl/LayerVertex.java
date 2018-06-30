@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -265,4 +266,20 @@ public class LayerVertex extends BaseGraphVertex {
         IOutputLayer ol = (IOutputLayer)layer;
         return ol.computeScoreForExamples(l1, l2, workspaceMgr);
     }
+
+    @Override
+    public TrainingConfig getConfig(){
+        return getLayer().getConfig();
+    }
+
+    @Override
+    public INDArray params(){
+        return layer.params();
+    }
+
+    @Override
+    public INDArray getGradientsViewArray(){
+        return layer.getGradientsViewArray();
+    }
 }
+

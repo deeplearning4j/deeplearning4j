@@ -199,6 +199,11 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
                 "Not supported: all layers with parameters should override this method");
     }
 
+    @Override
+    public void setPretrain(boolean pretrain){
+        //No op for most layers
+    }
+
     /**
      * This is a report of the estimated memory consumption for the given layer
      *

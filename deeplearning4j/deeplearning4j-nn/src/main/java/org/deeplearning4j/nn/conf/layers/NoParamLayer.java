@@ -52,4 +52,5 @@ public abstract class NoParamLayer extends Layer {
     public boolean isPretrain() {
         return false;
     }
+
 }

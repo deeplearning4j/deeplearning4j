@@ -176,6 +176,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         return l2ByParam.get(variable);
     }
 
+    public void setPretrain(boolean pretrain){
+        if(layer != null){
+            layer.setPretrain(pretrain);
+        }
+    }
+
     /**
      * Fluent interface for building a list of configurations
      */
