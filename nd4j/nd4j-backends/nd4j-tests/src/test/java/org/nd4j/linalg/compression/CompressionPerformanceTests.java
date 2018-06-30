@@ -9,6 +9,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -29,10 +30,11 @@ public class CompressionPerformanceTests extends BaseNd4jTest {
         val params = Nd4j.rand(new long[]{1, 50000000}, -1.0, 1.0, Nd4j.getRandom());
         val original = params.dup(params.ordering());
 
-        int iterations = 1000;
+        int iterations = 10000;
 
         long timeE = 0;
         long timeS = 0;
+        long timeD = 0;
         int s = 0;
         for (int e = 0; e < iterations; e++) {
             val timeES = System.currentTimeMillis();
@@ -51,11 +53,17 @@ public class CompressionPerformanceTests extends BaseNd4jTest {
 
             timeS += (timeSE - timeSS);
 
+            val ba = bs.toByteArray();
+            val timeDS = System.currentTimeMillis();
+            NDArray deserialized = SerializationUtils.deserialize(ba);
+            val timeDE = System.currentTimeMillis();
+            timeD += (timeDE - timeDS);
+
             s = bs.size();
         }
 
 
-        log.info("Encoding time: {} ms; Serialization time: {} ms; Serialized bytes: {}", timeE / iterations, timeS / iterations, s);
+        log.info("Encoding time: {} ms; Serialization time: {} ms; Deserialized time: {} ms; Serialized bytes: {}", timeE / iterations, timeS / iterations, timeD / iterations, s);
     }
 
     @Test
