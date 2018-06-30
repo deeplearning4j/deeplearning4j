@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -79,6 +80,7 @@ public class FrozenLayerWithBackprop extends BaseWrapperLayer {
     public ParamInitializer initializer() {
         return FrozenLayerWithBackpropParamInitializer.getInstance();
     }
+
     @Override
     public double getL1ByParam(String paramName) {
         return 0;

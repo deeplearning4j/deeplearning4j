@@ -8,8 +8,10 @@ public interface Trainable {
 
     TrainingConfig getConfig();
 
+    int numParams();
+
     INDArray params();
 
-    Map<String,INDArray> paramTable();
+    Map<String,INDArray> paramTable(boolean backpropOnly);
 
 }

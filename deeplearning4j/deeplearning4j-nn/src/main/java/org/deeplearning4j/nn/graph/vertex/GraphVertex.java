@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.graph.vertex;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
@@ -36,7 +37,7 @@ import java.util.Map;
  * 3. To allow forward pass and backward pass to be conducted, once the intermediate results are set
  * @author Alex Black
  */
-public interface GraphVertex extends Serializable {
+public interface GraphVertex extends Trainable, Serializable {
 
     /** Get the name/label of the GraphVertex
      */

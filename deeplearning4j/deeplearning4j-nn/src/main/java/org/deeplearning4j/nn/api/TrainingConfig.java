@@ -5,6 +5,10 @@ import org.nd4j.linalg.learning.config.IUpdater;
 
 public interface TrainingConfig {
 
+    String getLayerName();
+
+    boolean isPretrain();
+
     /**
      * Get the L1 coefficient for the given parameter.
      * Different parameters may have different L1 values, even for a single .l1(x) configuration.

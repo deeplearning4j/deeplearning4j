@@ -27,7 +27,7 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class SubsamplingLayer extends Layer {
+public class SubsamplingLayer extends NoParamLayer {
 
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate; //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
     protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType;

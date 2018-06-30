@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.layers.wrapper;
 import lombok.Data;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
@@ -58,6 +59,16 @@ public abstract class BaseWrapperLayer extends Layer {
     }
 
     @Override
+    public GradientNormalization getGradientNormalization(String param) {
+        return underlying.getGradientNormalization(param);
+    }
+
+    @Override
+    public double getGradientNormalizationThreshold() {
+        return underlying.getGradientNormalizationThreshold();
+    }
+
+    @Override
     public boolean isPretrainParam(String paramName) {
         return underlying.isPretrainParam(paramName);
     }
@@ -74,5 +85,10 @@ public abstract class BaseWrapperLayer extends Layer {
             //May be null at some points during JSON deserialization
             underlying.setLayerName(layerName);
         }
+    }
+
+    @Override
+    public boolean isPretrain() {
+        return underlying.isPretrain();
     }
 }

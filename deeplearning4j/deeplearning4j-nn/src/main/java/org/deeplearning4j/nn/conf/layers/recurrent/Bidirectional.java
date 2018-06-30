@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.conf.layers.recurrent;
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -173,6 +174,11 @@ public class Bidirectional extends Layer {
     }
 
     @Override
+    public boolean isPretrain() {
+        return fwd.isPretrain();
+    }
+
+    @Override
     public double getL1ByParam(String paramName) {
         //Strip forward/backward prefix from param name
         return fwd.getL1ByParam(paramName.substring(1));
@@ -198,6 +204,16 @@ public class Bidirectional extends Layer {
     public IUpdater getUpdaterByParam(String paramName) {
         String sub = paramName.substring(1);
         return fwd.getUpdaterByParam(sub);
+    }
+
+    @Override
+    public GradientNormalization getGradientNormalization(String param) {
+        return fwd.getGradientNormalization(param.substring(1));
+    }
+
+    @Override
+    public double getGradientNormalizationThreshold() {
+        return fwd.getGradientNormalizationThreshold();
     }
 
     @Override

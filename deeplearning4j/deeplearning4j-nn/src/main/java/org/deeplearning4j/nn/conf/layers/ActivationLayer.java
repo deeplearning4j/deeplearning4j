@@ -23,7 +23,7 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
+public class ActivationLayer extends NoParamLayer {
 
     protected IActivation activationFn;
 

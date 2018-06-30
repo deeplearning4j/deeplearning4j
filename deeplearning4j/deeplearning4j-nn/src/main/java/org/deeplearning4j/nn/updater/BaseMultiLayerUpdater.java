@@ -74,14 +74,14 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         int paramsViewSoFar = 0;
         int currentUpdaterOffset = 0;
         for (int i = 0; i < layers.length; i++) {
-            Map<String, INDArray> layerParamTable = layers[i].paramTable();
+            Map<String, INDArray> layerParamTable = layers[i].paramTable(true);
             if (layerParamTable != null) {
                 List<String> variables = new ArrayList<>(layerParamTable.keySet()); //Is from a set, but iteration order should be fixed per layer as it's a from a LinkedHashSet
                 for (int j = 0; j < variables.size(); j++) {
                     String var = variables.get(j);
                     long paramSizeThisVariable = layerParamTable.get(var).length();
-                    IUpdater u = layers[i].conf().getLayer().getUpdaterByParam(var);
-                    Preconditions.checkNotNull(u, "Updater for parameter %s, layer \"%s\" was null", var, layers[i].conf().getLayer().getLayerName());
+                    IUpdater u = layers[i].getConfig().getUpdaterByParam(var);
+                    Preconditions.checkNotNull(u, "Updater for parameter %s, layer \"%s\" was null", var, layers[i].getConfig().getLayerName());
                     int updaterStateSizeThisVariable = (int) u.stateSize(paramSizeThisVariable);
 
                     INDArray gradientViewSubset = null;

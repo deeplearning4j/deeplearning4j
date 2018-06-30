@@ -54,7 +54,7 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class SpaceToDepthLayer extends Layer {
+public class SpaceToDepthLayer extends NoParamLayer {
 
     public enum DataFormat {
         NCHW, NHWC

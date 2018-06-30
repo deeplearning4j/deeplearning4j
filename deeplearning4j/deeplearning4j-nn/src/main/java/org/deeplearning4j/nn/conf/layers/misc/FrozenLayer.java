@@ -4,6 +4,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -115,6 +116,21 @@ public class FrozenLayer extends Layer {
     @Override
     public IUpdater getUpdaterByParam(String paramName) {
         return null;
+    }
+
+    @Override
+    public GradientNormalization getGradientNormalization(String param) {
+        return layer.getGradientNormalization(param);
+    }
+
+    @Override
+    public double getGradientNormalizationThreshold() {
+        return layer.getGradientNormalizationThreshold();
+    }
+
+    @Override
+    public boolean isPretrain() {
+        return layer.isPretrain();
     }
 
     @Override
