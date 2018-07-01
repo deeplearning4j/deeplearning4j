@@ -12,6 +12,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.IOException;
 import java.lang.Thread;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -244,8 +245,10 @@ public class TensorflowConversion {
 
 
         SetDefaultDevice(deviceName, graph);
-        BytePointer bytePointer = graph.SerializeAsString();
-        return bytePointer.getStringBytes();
+        ByteBuffer bytePointer = graph.asByteBuffer();
+        byte[] ret = new byte[bytePointer.capacity()];
+        bytePointer.get(ret);
+        return ret;
 
     }
 
@@ -266,7 +269,9 @@ public class TensorflowConversion {
      */
 
     public TF_Graph getInitializedGraphForNd4jDevices(byte[] content) throws IOException {
-        TF_Buffer graph_def = TF_NewBufferFromString(new BytePointer(content), content.length);
+        byte[] toLoad = content;
+        // byte[] toLoad = setDeviceForGraphDef(content);
+        TF_Buffer graph_def = TF_NewBufferFromString(new BytePointer(toLoad), content.length);
         TF_Status status = TF_NewStatus();
         TF_Graph graphC = TF_NewGraph();
         TF_ImportGraphDefOptions opts = TF_NewImportGraphDefOptions();
@@ -275,8 +280,9 @@ public class TensorflowConversion {
             throw new RuntimeException("ERROR: Unable to import graph " + TF_Message(status).getString());
         }
 
-        TF_DeleteImportGraphDefOptions(opts);
 
+        TF_DeleteImportGraphDefOptions(opts);
+        TF_DeleteStatus(status);
 
         return graphC;
     }

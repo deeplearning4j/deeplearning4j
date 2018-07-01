@@ -31,7 +31,6 @@ public class TensorflowConversionTest {
 
     @Test
     public void testCudaIfAvailable() throws Exception {
-        INDArray arr = Nd4j.linspace(1,4,4);
         TensorflowConversion tensorflowConversion = new TensorflowConversion();
         byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
         //byte[] content = Files.readAllBytes(Paths.get(new File("/home/agibsonccc/code/dl4j-test-resources/src/main/resources/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").toURI()));
@@ -53,6 +52,8 @@ public class TensorflowConversionTest {
             assertEquals(deviceName,graphDef1.getNode(i).getDevice());
         System.out.println(graphDef1);
     }
+
+
 
 
 }
