@@ -59,10 +59,10 @@ public class GraphRunnerTest {
         DataBuffer floatBufferOne = Nd4j.createBuffer(new float[]{in_val_one});
         float const_two = 2.0f;
         DataBuffer floatBufferTwo = Nd4j.createBuffer(new float[]{const_two});
-
+        DataBuffer outBuffer = Nd4j.createBuffer(new float[]{-1});
 
         TF_Tensor  tensor_in =  TF_NewTensor(TF_FLOAT,new long[]{1},0,floatBufferOne.pointer(),4L,new DummyDeAllocator(),null);
-        TF_Tensor  tensor_out =  TF_NewTensor(TF_FLOAT,new long[]{1},0,floatBufferTwo.pointer(),4L,new DummyDeAllocator(),null);
+        TF_Tensor  tensor_out =  TF_NewTensor(TF_FLOAT,new long[]{1},0,outBuffer.pointer(),4L,new DummyDeAllocator(),null);
         TF_Tensor  tensor_const_two = TF_NewTensor(TF_FLOAT,new long[]{1},0,floatBufferTwo.pointer(),4L,new DummyDeAllocator(),null);
 
         // Operations
@@ -71,7 +71,10 @@ public class GraphRunnerTest {
         TF_Operation  add = Add(graph, status, feed, two, "add");
 
         // Session Inputs
-        TF_Output input_operations = new TF_Output().oper(feed).index(0);
+        TF_Output input_operations = new TF_Output(2).oper(feed).index(0);
+        input_operations.position(0).oper(feed).index(0);
+        input_operations.position(1).oper(two).index(0);
+
         input_operations.position(0);
 
         PointerPointer<TF_Tensor> input_tensors = new PointerPointer<>(tensor_in,tensor_const_two);
@@ -84,13 +87,14 @@ public class GraphRunnerTest {
 
         TF_SessionRun(session, null,
                 // Inputs
-                input_operations, input_tensors, 1,
+                input_operations, input_tensors, 2,
                 // Outputs
                 output_operations, output_tensors, 1,
                 // Target operations
                 null, 0, null,
                 status);
 
+        assertEquals(TF_Message(status).getString(),TF_OK,TF_GetCode(status));
         System.out.printf("Session Run Status: %d - %s\n",TF_GetCode(status), TF_Message(status));
         System.out.printf("Output Tensor Type: %d\n", TF_TensorType(tensor_out));
         Pointer outval = TF_TensorData(tensor_out).capacity(4);
