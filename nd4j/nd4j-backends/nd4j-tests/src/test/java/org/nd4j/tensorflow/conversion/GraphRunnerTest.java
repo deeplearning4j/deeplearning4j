@@ -62,8 +62,8 @@ public class GraphRunnerTest {
         DataBuffer outBuffer = Nd4j.createBuffer(new float[]{-1});
 
         TF_Tensor  tensor_in =  TF_NewTensor(TF_FLOAT,new long[]{1},0,floatBufferOne.pointer(),4L,new DummyDeAllocator(),null);
-        TF_Tensor  tensor_out =  TF_NewTensor(TF_FLOAT,new long[]{1},0,outBuffer.pointer(),4L,new DummyDeAllocator(),null);
         TF_Tensor  tensor_const_two = TF_NewTensor(TF_FLOAT,new long[]{1},0,floatBufferTwo.pointer(),4L,new DummyDeAllocator(),null);
+        TF_Tensor  tensor_out =  TF_NewTensor(TF_FLOAT,new long[]{1},0,outBuffer.pointer(),4L,new DummyDeAllocator(),null);
 
         // Operations
         TF_Operation  feed = PlaceHolder(graph, status, TF_FLOAT, "feed");
@@ -71,7 +71,7 @@ public class GraphRunnerTest {
         TF_Operation  add = Add(graph, status, feed, two, "add");
 
         // Session Inputs
-        TF_Output input_operations = new TF_Output(2).oper(feed).index(0);
+        TF_Output input_operations = new TF_Output(2);
         input_operations.position(0).oper(feed).index(0);
         input_operations.position(1).oper(two).index(0);
 
@@ -85,13 +85,15 @@ public class GraphRunnerTest {
         PointerPointer<TF_Tensor> output_tensors = new PointerPointer<>(tensor_out);
         output_tensors.position(0);
 
+        PointerPointer<TF_Operation> ops = new PointerPointer<>(add);
+        ops.position(0);
         TF_SessionRun(session, null,
                 // Inputs
                 input_operations, input_tensors, 2,
                 // Outputs
                 output_operations, output_tensors, 1,
                 // Target operations
-                null, 0, null,
+                ops, 1, null,
                 status);
 
         assertEquals(TF_Message(status).getString(),TF_OK,TF_GetCode(status));
