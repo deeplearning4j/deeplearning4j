@@ -89,11 +89,11 @@ public class GraphRunnerTest {
         ops.position(0);
         TF_SessionRun(session, null,
                 // Inputs
-                input_operations, input_tensors, 2,
+                input_operations, input_tensors, 1,
                 // Outputs
                 output_operations, output_tensors, 1,
                 // Target operations
-                ops, 1, null,
+                null, 0, null,
                 status);
 
         assertEquals(TF_Message(status).getString(),TF_OK,TF_GetCode(status));
