@@ -8,7 +8,10 @@ import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.tensorflow;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.tensorflow.conversion.TensorflowConversion;
+import org.tensorflow.framework.ConfigProto;
+import org.tensorflow.framework.GPUOptions;
 import org.tensorflow.framework.NodeDef;
 
 import java.io.Closeable;
@@ -40,17 +43,16 @@ public class GraphRunner implements Closeable {
     private Set<String> inputsForGraph,outputsForGraph;
     private List<String> inputOrder,outputOrder;
     @Getter
-    private org.bytedeco.javacpp.tensorflow.ConfigProto sessionOptionsConfiguration;
-    @Getter
     private org.tensorflow.framework.ConfigProto protoBufConfigProto;
+
+
     /**
      * Initialize with the graph content to use
      * @param graphToUse the raw byte content
      *                   of a protobuf file saved by tensorflow
      */
     public GraphRunner(byte[] graphToUse) {
-        this.graphToUse = graphToUse;
-        initSessionAndStatusIfNeeded();
+        this(graphToUse,getAlignedWithNd4j());
     }
 
     /**
@@ -60,18 +62,21 @@ public class GraphRunner implements Closeable {
      * @param sessionOptionsConfiguration the session options to use
      *                                    for running sessions
      */
-    public GraphRunner(byte[] graphToUse,org.bytedeco.javacpp.tensorflow.ConfigProto sessionOptionsConfiguration) {
+    public GraphRunner(byte[] graphToUse,org.tensorflow.framework.ConfigProto sessionOptionsConfiguration) {
         this.graphToUse = graphToUse;
-        this.sessionOptionsConfiguration = sessionOptionsConfiguration;
 
         try {
-            this.protoBufConfigProto = org.tensorflow.framework.ConfigProto.parseFrom(sessionOptionsConfiguration.SerializeAsString().getStringBytes());
+            this.protoBufConfigProto = sessionOptionsConfiguration;
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse protobuf",e);
         }
 
         initSessionAndStatusIfNeeded();
     }
+
+
+
+
 
 
     /**
@@ -143,7 +148,7 @@ public class GraphRunner implements Closeable {
 
         //these are references to the nd4j ndarrays wrapped for tensorflow
         PointerPointer<TF_Tensor> inputTensorsPointer = new PointerPointer<>(inputTensors);
-       //note that these are the result pointers
+        //note that these are the result pointers
         //the result pointers are null, and will be populated automatically by the session run
         PointerPointer<TF_Tensor> outputTensorsPointer = new PointerPointer<>(outputOrder.size());
 
@@ -220,8 +225,8 @@ public class GraphRunner implements Closeable {
             graph = conversion.getInitializedGraphForNd4jDevices(graphToUse);
 
             options = TF_NewSessionOptions();
-            if(sessionOptionsConfiguration != null) {
-                BytePointer bytePointer = sessionOptionsConfiguration.SerializeAsString();
+            if(protoBufConfigProto != null) {
+                BytePointer bytePointer = new BytePointer(protoBufConfigProto.toByteArray());
                 TF_SetConfig(options,bytePointer,bytePointer.getStringBytes().length,status);
                 if (TF_GetCode(status) != TF_OK) {
                     throw new RuntimeException("ERROR: Unable to set value configuration:" + TF_Message(status).getString());
@@ -240,6 +245,28 @@ public class GraphRunner implements Closeable {
 
     }
 
+    public static org.tensorflow.framework.ConfigProto getAlignedWithNd4j() {
+        org.tensorflow.framework.ConfigProto configProto = org.tensorflow.framework.ConfigProto.getDefaultInstance();
+        ConfigProto.Builder builder1 = configProto.toBuilder().addDeviceFilters(TensorflowConversion.defaultDeviceForThread());
+        try {
+            //cuda
+            if(Nd4j.getBackend().getClass().getName().toLowerCase().contains("jcu")) {
+                builder1.setGpuOptions(GPUOptions.newBuilder()
+                        .setAllowGrowth(true)
+                        .setPerProcessGpuMemoryFraction(0.5)
+                        .build());
+            }
+            //cpu
+            else {
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return builder1.build();
+    }
+
 
     /**
      * Convert a json string written out
@@ -251,7 +278,7 @@ public class GraphRunner implements Closeable {
     public static org.tensorflow.framework.ConfigProto fromJson(String json) {
         org.tensorflow.framework.ConfigProto.Builder builder = org.tensorflow.framework.ConfigProto.newBuilder();
         try {
-          JsonFormat.parser().merge(json,builder);
+            JsonFormat.parser().merge(json,builder);
             org.tensorflow.framework.ConfigProto build = builder.build();
             ByteString serialized = build.toByteString();
             byte[] binaryString = serialized.toByteArray();

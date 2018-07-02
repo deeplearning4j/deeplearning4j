@@ -1,5 +1,6 @@
 package org.nd4j.tensorflow.conversion;
 
+import com.github.os72.protobuf351.util.JsonFormat;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -19,18 +20,13 @@ public class GraphRunnerTest {
     @Test
     public void testGraphRunner() throws Exception {
         byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
-        ConfigProto configProto = new ConfigProto();
-        configProto.set_log_device_placement(true);
 
-
-
-        try(GraphRunner graphRunner = new GraphRunner(content,configProto)) {
+        try(GraphRunner graphRunner = new GraphRunner(content)) {
             org.tensorflow.framework.ConfigProto.Builder builder = org.tensorflow.framework.ConfigProto.newBuilder();
             String json = graphRunner.sessionOptionsToJson();
-            com.google.protobuf.util.JsonFormat.parser().merge(json,builder);
+            JsonFormat.parser().merge(json,builder);
             org.tensorflow.framework.ConfigProto build = builder.build();
             assertEquals(build,graphRunner.getProtoBufConfigProto());
-            assertEquals(new String(build.toByteArray()),graphRunner.getSessionOptionsConfiguration().SerializeAsString().getString());
             assertNotNull(graphRunner.getInputsForGraph());
             assertNotNull(graphRunner.getOutputsForGraph());
 

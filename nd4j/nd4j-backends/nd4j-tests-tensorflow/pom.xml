@@ -61,6 +61,12 @@
 
     <profiles>
         <profile>
+            <id>testresources</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
             <id>tf-cpu</id>
             <dependencies>
                 <dependency>
@@ -119,6 +125,13 @@
                     </plugin>
                 </plugins>
             </build>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-9.2</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
         </profile>
         <profile>
             <id>nd4j-tf-cpu</id>
@@ -148,10 +161,18 @@
                                         Depending on a build machine, default value is not always enough.
                                     -->
                             <argLine>-Xmx6g</argLine>
+                            <skipTests>false</skipTests>
                         </configuration>
                     </plugin>
                 </plugins>
             </build>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 

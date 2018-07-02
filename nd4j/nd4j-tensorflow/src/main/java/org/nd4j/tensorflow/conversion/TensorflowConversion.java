@@ -198,7 +198,7 @@ public class TensorflowConversion {
      * as a worker. This is mainly useful with multiple gpus
      * @return
      */
-    public String defaultDeviceForThread() {
+    public static String defaultDeviceForThread() {
         Integer deviceForThread = Nd4j.getAffinityManager().getDeviceForThread(Thread.currentThread());
         String deviceName = null;
         //gpu
