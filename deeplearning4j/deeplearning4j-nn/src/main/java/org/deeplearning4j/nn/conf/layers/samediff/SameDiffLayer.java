@@ -16,11 +16,11 @@ import java.util.Map;
 
 /**
  * A base layer used for implementing Deeplearning4j layers using SameDiff. These layers are not scoring/output layers:
- * that is, they should be used as the intermediate layer in a network only. Deeplearning4j SameDiff output layers will
- * be added at a later date.<br>
- * NOTE: At present, only forward pass is supported. Backward pass will be added at a future date.<br>
+ * that is, they should be used as the intermediate layer in a network only.<br>
+ * To implement an output layer, extend {@link SameDiffOutputLayer} instead.<br>
+ * Note also that if multiple inputs are required, it is possible to implement a vertex instead: {@link SameDiffVertex}<br>
  * <br>
- * To implement a Deeplearinng layer using SameDiff, extend this class.<br>
+ * To implement a Deeplearning layer using SameDiff, extend this class.<br>
  * There are 4 required methods:<br>
  * - defineLayer: Defines the forward pass for the layer<br>
  * - defineParameters: Define the layer's parameters in a way suitable for DL4J<br>
@@ -52,6 +52,13 @@ public abstract class SameDiffLayer extends AbstractSameDiffLayer {
         //No op constructor for Jackson
     }
 
+    /**
+     * Define the layer
+     * @param sameDiff   SameDiff instance
+     * @param layerInput Input to the layer
+     * @param paramTable Parameter table - keys as defined by {@link #defineParameters(SDLayerParams)}
+     * @return The final layer variable corresponding to the activations/output from the forward pass
+     */
     public abstract SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String,SDVariable> paramTable);
 
     //==================================================================================================================

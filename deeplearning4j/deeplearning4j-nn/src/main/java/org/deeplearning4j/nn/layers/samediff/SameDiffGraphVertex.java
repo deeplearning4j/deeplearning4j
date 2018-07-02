@@ -28,6 +28,12 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Implementation of a SameDiff graph vertex.
+ * Note that users should not be extending this directly - instead, use {@link SameDiffVertex}
+ *
+ * @author Alex Black
+ */
 public class SameDiffGraphVertex extends BaseGraphVertex {
 
     protected SameDiffVertex config;

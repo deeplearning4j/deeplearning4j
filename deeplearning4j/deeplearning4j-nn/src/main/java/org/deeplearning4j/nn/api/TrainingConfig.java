@@ -3,10 +3,21 @@ package org.deeplearning4j.nn.api;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.nd4j.linalg.learning.config.IUpdater;
 
+/**
+ * Simple interface for the training configuration (updater, L1/L2 values, etc) for trainable layers/vertices.
+ *
+ * @author Alex Black
+ */
 public interface TrainingConfig {
 
+    /**
+     * @return Name of the layer
+     */
     String getLayerName();
 
+    /**
+     * @return True if the layer is set up for layerwise pretraining
+     */
     boolean isPretrain();
 
     /**
@@ -49,10 +60,19 @@ public interface TrainingConfig {
      */
     IUpdater getUpdaterByParam(String paramName);
 
+    /**
+     * @return The gradient normalization configuration
+     */
     GradientNormalization getGradientNormalization();
 
+    /**
+     * @return The gradient normalization threshold
+     */
     double getGradientNormalizationThreshold();
 
+    /**
+     * @param pretrain Whether the layer is currently undergoing layerwise unsupervised training, or multi-layer backprop
+     */
     void setPretrain(boolean pretrain);
 
 }
