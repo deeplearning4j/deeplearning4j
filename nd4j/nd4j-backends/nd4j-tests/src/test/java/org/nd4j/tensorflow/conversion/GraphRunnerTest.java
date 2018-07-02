@@ -147,6 +147,8 @@ public class GraphRunnerTest {
             assertEquals(new String(build.toByteArray()),graphRunner.getSessionOptionsConfiguration().SerializeAsString().getString());
             assertNotNull(graphRunner.getInputsForGraph());
             assertNotNull(graphRunner.getOutputsForGraph());
+            org.tensorflow.framework.ConfigProto configProto1 = GraphRunner.fromJson(json);
+            assertEquals(graphRunner.getProtoBufConfigProto(),configProto1);
             assertEquals(2,graphRunner.getInputsForGraph().size());
             assertEquals(1,graphRunner.getOutputsForGraph().size());
             INDArray input1 = Nd4j.linspace(1,4,4).reshape(4);
