@@ -54,12 +54,15 @@ public class GraphRunnerTest {
         TF_SessionOptions  options = TF_NewSessionOptions();
         TF_Status  status = TF_NewStatus();
         TF_Session session = TF_NewSession(graph, options, status);
+        TensorflowConversion tensorflowConversion = new TensorflowConversion();
 
         float in_val_one = 4.0f;
         DataBuffer floatBufferOne = Nd4j.createBuffer(new float[]{in_val_one});
         float const_two = 2.0f;
         DataBuffer floatBufferTwo = Nd4j.createBuffer(new float[]{const_two});
-        DataBuffer outBuffer = Nd4j.createBuffer(new float[]{-1});
+        INDArray outArr = Nd4j.create(new float[]{-1});
+        DataBuffer outBuffer = outArr.data();
+
 
         TF_Tensor  tensor_in =  TF_NewTensor(TF_FLOAT,new long[]{1},0,floatBufferOne.pointer(),4L,DummyDeAllocator.getInstance(),null);
         TF_Tensor  tensor_const_two = TF_NewTensor(TF_FLOAT,new long[]{1},0,floatBufferTwo.pointer(),4L,DummyDeAllocator.getInstance(),null);
@@ -82,6 +85,9 @@ public class GraphRunnerTest {
         // Session Outputs
         TF_Output output_operations  = new TF_Output().oper(add).index(0);
         output_operations.position(0);
+
+
+
         PointerPointer<TF_Tensor> output_tensors = new PointerPointer<>(1);
         output_tensors.position(0);
 
@@ -100,7 +106,6 @@ public class GraphRunnerTest {
         assertEquals(TF_FLOAT,TF_TensorType(tensor_out));
         System.out.printf("Session Run Status: %d - %s\n",TF_GetCode(status), TF_Message(status));
         TF_Tensor result = new TF_Tensor(output_tensors.position(0).get());
-        TensorflowConversion tensorflowConversion = new TensorflowConversion();
         INDArray arr = tensorflowConversion.ndArrayFromTensor(result);
         System.out.printf("Output Tensor Type: %d\n", TF_TensorType(new TF_Tensor(output_tensors.position(0).get())));
         Pointer outval = TF_TensorData(tensor_out).capacity(4);
@@ -126,13 +131,11 @@ public class GraphRunnerTest {
         try(GraphRunner graphRunner = new GraphRunner(content)) {
             INDArray input1 = Nd4j.linspace(1,4,4).reshape(4);
             INDArray input2 = Nd4j.linspace(1,4,4).reshape(4);
-            INDArray result = Nd4j.create(input1.shape());
             Map<String,INDArray> inputs = new LinkedHashMap<>();
             inputs.put("input_0",input1);
             inputs.put("input_1",input2);
 
             Map<String,INDArray> outputs = new HashMap<>();
-            outputs.put("output",result);
 
             graphRunner.run(inputs, Arrays.asList("input_0","input_1"),outputs,Arrays.asList("output"));
 
@@ -141,7 +144,7 @@ public class GraphRunnerTest {
 
 
             INDArray assertion = input1.add(input2);
-            assertEquals(assertion,result);
+            assertEquals(assertion,outputs.get("output"));
         }
     }
 

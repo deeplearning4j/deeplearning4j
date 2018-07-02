@@ -83,13 +83,10 @@ public class GraphRunner implements Closeable {
         inputOut.position(0);
 
         TF_Output outputOut = new tensorflow.TF_Output(outputOrder.size());
-        TF_Tensor[] outputTensors = new TF_Tensor[outputOrder.size()];
         for(int i = 0; i < outputOrder.size(); i++) {
             tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, outputOrder.get(i));
             opsByName.put(outputOrder.get(i),outputOp);
             outputOut.position(i).oper(outputOp).position(i).index(0);
-            TF_Tensor to = conversion.tensorFromNDArray(outputArrays.get(outputOrder.get(i)));
-            outputTensors[i] = to;
         }
 
         //reset the position of the pointer for execution
@@ -97,15 +94,15 @@ public class GraphRunner implements Closeable {
 
 
 
-        PointerPointer<TF_Tensor> inputTensorsPointer = new PointerPointer<>(inputTensors).position(0);
-        PointerPointer<TF_Tensor> outputTensorsPointer = new PointerPointer<>(outputTensors).position(0);
+        PointerPointer<TF_Tensor> inputTensorsPointer = new PointerPointer<>(inputTensors);
+        PointerPointer<TF_Tensor> outputTensorsPointer = new PointerPointer<>(outputOrder.size());
 
 
         TF_SessionRun(
                 session,
                 null,
                 inputOut, inputTensorsPointer, inputTensors.length,
-                outputOut, outputTensorsPointer, outputTensors.length,
+                outputOut, outputTensorsPointer, outputOrder.size(),
                 null
                 , 0,
                 null,
@@ -115,20 +112,11 @@ public class GraphRunner implements Closeable {
         if (TF_GetCode(status) != TF_OK) {
             throw new RuntimeException("ERROR: Unable to run session " + TF_Message(status).getString());
         } else {
-            Pointer pointer = TF_TensorData(outputTensors[0]).capacity(4);
-            FloatPointer floatPointer = new FloatPointer(pointer);
-            FloatIndexer floatIndexer = FloatIndexer.create(floatPointer);
+            for(int i = 0; i < outputOrder.size(); i++) {
+                INDArray to = conversion.ndArrayFromTensor(new TF_Tensor(outputTensorsPointer.get(i)));
+                outputArrays.put(outputOrder.get(i),to);
+            }
 
-            Pointer input1Pointer = TF_TensorData(inputTensors[0]).capacity(4);
-            FloatPointer floatPointer2 = new FloatPointer(input1Pointer);
-            FloatIndexer floatIndexer2 = FloatIndexer.create(floatPointer2);
-
-
-            Pointer input1Pointer3 = TF_TensorData(inputTensors[1]).capacity(4);
-            FloatPointer floatPointer3 = new FloatPointer(input1Pointer3);
-            FloatIndexer floatIndexer3 = FloatIndexer.create(floatPointer3);
-
-            System.out.println(TF_Message(status).getString());
         }
 
     }
