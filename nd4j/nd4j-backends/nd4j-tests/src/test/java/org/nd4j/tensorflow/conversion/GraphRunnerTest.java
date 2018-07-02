@@ -64,6 +64,7 @@ public class GraphRunnerTest {
         TF_Tensor  tensor_in =  TF_NewTensor(TF_FLOAT,new long[]{1},0,floatBufferOne.pointer(),4L,new DummyDeAllocator(),null);
         TF_Tensor  tensor_const_two = TF_NewTensor(TF_FLOAT,new long[]{1},0,floatBufferTwo.pointer(),4L,new DummyDeAllocator(),null);
         TF_Tensor  tensor_out =  TF_NewTensor(TF_FLOAT,new long[]{1},0,outBuffer.pointer(),4L,new DummyDeAllocator(),null);
+        System.out.printf("Output Tensor Type: %d\n", TF_TensorType(tensor_out));
 
         // Operations
         TF_Operation  feed = PlaceHolder(graph, status, TF_FLOAT, "feed");
