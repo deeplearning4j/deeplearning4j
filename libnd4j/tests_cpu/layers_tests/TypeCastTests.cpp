@@ -31,4 +31,8 @@ TEST_F(TypeCastTests, Test_Cast_1) {
     for (int e = 0; e < limit; e++) {
         ASSERT_NEAR(exp[e], z[e], 1e-5f);
     }
+
+    delete[] src;
+    delete[] z;
+    delete[] exp;
 }
