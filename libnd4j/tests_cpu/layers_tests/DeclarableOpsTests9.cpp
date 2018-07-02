@@ -206,3 +206,75 @@ TEST_F(DeclarableOpsTests9, TestDropout_1) {
 
     delete ress;
 }
+
+TEST_F(DeclarableOpsTests9, Test_Dropout_01) {
+    NDArray<float> x0('c', {10, 10});
+    NDArray<float> x1('c', {10, 10});
+
+    NDArrayFactory<float>::linspace(1, x0);
+    NDArrayFactory<float>::linspace(1, x1);
+    NativeOps nativeOps;
+
+    Nd4jLong* _bufferA = new Nd4jLong[100000];
+    long _seed = 119L;
+    auto _rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
+
+    float prob[] = {0.5f};
+
+    x0.template applyRandom<randomOps::DropOut<float>>(_rngA, nullptr, &x0, prob);
+//    x1.template applyRandom<randomOps::DropOut<float>>(_rngB, nullptr, &x1, prob);
+    x0.printIndexedBuffer("Result1");
+//    ASSERT_TRUE(x0.equalsTo(&x1));
+
+    // this check is required to ensure we're calling wrong signature
+//    ASSERT_FALSE(x0.equalsTo(nexp0));
+//    ASSERT_FALSE(x0.equalsTo(nexp1));
+//    ASSERT_FALSE(x0.equalsTo(nexp2));
+    nativeOps.destroyRandom(_rngA);
+    delete [] _bufferA;
+}
+
+TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
+    NDArray<float> x0('c', {10, 10});
+    NDArray<float> x1('c', {10, 10});
+
+    NDArrayFactory<float>::linspace(1, x0);
+    NDArrayFactory<float>::linspace(1, x1);
+    NativeOps nativeOps;
+
+    float prob[] = {0.5f};
+    Nd4jLong* _bufferA = new Nd4jLong[100000];
+    long _seed = 119L;
+    auto _rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
+
+    x0.template applyRandom<randomOps::DropOutInverted<float>>(_rngA, nullptr, &x0, prob);
+//    x1.template applyRandom<randomOps::DropOutInverted<float>>(_rngB, nullptr, &x1, prob);
+    x0.printIndexedBuffer("Result1");
+    int count = 0;
+    for (int e = 0; e < x0.lengthOf(); e++)
+        if (x0.getScalar(e) != 0.f)
+            count++;
+    nd4j_printf("X0 count %i\n", count);
+//    ASSERT_TRUE(x0.equalsTo(&x1));
+
+    // this check is required to ensure we're calling wrong signature
+//    ASSERT_FALSE(x0.equalsTo(nexp0));
+//    ASSERT_FALSE(x0.equalsTo(nexp1));
+//    ASSERT_FALSE(x0.equalsTo(nexp2));
+    nativeOps.destroyRandom(_rngA);
+    delete [] _bufferA;
+
+    nd4j::ops::dropout<float> op;
+
+    auto ress = op.execute({&x0}, {0.98f}, {119});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+    ress->at(0)->printIndexedBuffer("Dropout result is ");
+    count = 0;
+    for (int e = 0; e < ress->at(0)->lengthOf(); e++)
+        if (ress->at(0)->getScalar(e) != 0.f)
+            count++;
+    nd4j_printf("Dropout count %i\n", count);
+
+    delete ress;
+}
