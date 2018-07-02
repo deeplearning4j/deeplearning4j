@@ -1769,10 +1769,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 case INT:
                     pointer = getParentWorkspace().alloc(capacity, Type.INT, false).asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);
+                    break;
                 case LONG:
                     pointer = getParentWorkspace().alloc(capacity, Type.LONG, false).asLongPointer();
                     indexer = LongIndexer.create((LongPointer) pointer);
-
                     break;
             }
 

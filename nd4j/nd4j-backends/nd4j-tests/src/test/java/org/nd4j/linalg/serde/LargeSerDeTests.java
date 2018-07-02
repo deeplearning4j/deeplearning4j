@@ -2,6 +2,7 @@ package org.nd4j.linalg.serde;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -45,6 +46,7 @@ public class LargeSerDeTests extends BaseNd4jTest {
 
 
     @Test
+    @Ignore // this should be commented out, since it requires approx 10GB ram to run
     public void testLargeArraySerDe_2() throws Exception {
         INDArray arrayA = Nd4j.createUninitialized(100000, 12500);
         log.info("Shape: {}; Length: {}", arrayA.shape(), arrayA.length());

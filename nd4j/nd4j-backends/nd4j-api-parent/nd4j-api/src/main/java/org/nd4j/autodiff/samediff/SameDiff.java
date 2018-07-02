@@ -1565,7 +1565,7 @@ public class SameDiff {
         return var(name, shape, new ZeroInitScheme());
     }
 
-    public SDVariable var(String name, int... shape) {
+    public SDVariable var(String name, int[] shape) {
         Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
@@ -1849,7 +1849,15 @@ public class SameDiff {
      * @return the gradient for this variable or null
      */
     public SDVariable getGradForVariable(String varName) {
-        return gradients.get(varName);
+        //TODO 2018/06/26 - Review this?
+        //Gradients are being placed in the inner "grad" function SameDiff instance, but not the outer one
+        // should they be synced and we just use the map in this instance?
+        if (gradients.containsKey(varName)) {
+            return gradients.get(varName);
+        } else if(sameDiffFunctionInstances.containsKey("grad") && sameDiffFunctionInstances.get("grad").gradients.containsKey(varName)){
+            return sameDiffFunctionInstances.get("grad").gradients.get(varName);
+        }
+        return null;
     }
 
 
@@ -5647,8 +5655,8 @@ public class SameDiff {
         }
 
         //need to find a new name
-        int count = 1;
-        String name = baseName + "_" + count + (argIndex > 0 ? ":" + argIndex : "");
+        int count = 0;
+        String name = baseName + (count == 0 ? "" : "_" + count) + (argIndex > 0 ? ":" + argIndex : "");
         while (getVariable(name) != null) {
             name = baseName + "_" + (++count) + (argIndex > 0 ? ":" + argIndex : "");
         }
@@ -5873,23 +5881,19 @@ public class SameDiff {
                     ordering = function.args()[0].getArr().ordering();
                 }
                 SDVariable[] ret = new SDVariable[num_outputs];
+
                 //dynamic shapes
+                //When importing from TF: convention seem to be names like "unstack", "unstack:1", "unstack:2", ...
+                //TODO validate this!
                 for (int i = 0; i < ret.length; i++) {
-                    SDVariable checkGet = getVariable(baseName);
-                    if (checkGet == null) {
-                        checkGet = var(generateNewVarName(baseName, i), null, new ZeroInitScheme(ordering));
-                    } else if (i > 0 && !importedVarName.contains(baseName)) {
-                        //need to find a new name
-                        String newName = generateNewVarName(baseName, i);
-                        checkGet = getVariable(newName);
+                    SDVariable var = (i == 0 ? getVariable(baseName) : getVariable(baseName + ":" + i));
+                    if (var == null) {
+                        //Generate new variable name if one with the specified name doesn't exist
+                        var = var(generateNewVarName(baseName, i), null, new ZeroInitScheme(ordering));
                     }
-                    if (checkGet == null) {
-                        String newName = generateNewVarName(baseName, i);
-                        checkGet = var(newName, null, new ZeroInitScheme(ordering));
-                    }
-                    checkGet.setOutputIndex(i);
-                    checkGet.setCreator(function);
-                    ret[i] = checkGet;
+                    var.setOutputIndex(i);
+                    var.setCreator(function);
+                    ret[i] = var;
                 }
 
                 //Update the internal state: outgoing variables for function
@@ -8234,6 +8238,7 @@ public class SameDiff {
         //Work out which function - if any - this arg is an output of...
         Map<String, String> outputOfFn = new HashMap<>();
         int maxLengthOutputOf = 22;     //Length of "- Output Of Function -"
+        int maxLengthOfName = 8;       //Length of "- Name -"
         for (String s : varMap.keySet()) {
             String outputOf = null;
             for (Map.Entry<String, String[]> dfToArgs : outgoingArgsReverse.entrySet()) {
@@ -8251,11 +8256,13 @@ public class SameDiff {
             }
             outputOfFn.put(s, outputOf);
             maxLengthOutputOf = Math.max(maxLengthOutputOf, outputOf.length());
+            maxLengthOfName = Math.max(maxLengthOfName, s.length());
         }
         maxLengthOutputOf += 2;
+        maxLengthOfName += 2;
 
         //Create the output for values:
-        format = "%-20s%-20s%-" + maxLengthOutputOf + "s%-20s";
+        format = "%-" + maxLengthOfName + "s%-20s%-" + maxLengthOutputOf + "s%-20s";
         sb.append(String.format(format, "- Name -", "- Array Shape -", "- Output Of Function -", "- Inputs To Functions -")).append("\n");
         for (String s : varMap.keySet()) {
             INDArray arr = getArrForVarName(s);
@@ -8286,12 +8293,9 @@ public class SameDiff {
         List<String> dfOutputStr = new ArrayList<>();
         int maxInLength = 10;       //Length of "- Inputs -"
         int maxOutLength = 11;      //Length of "- Outputs -"
-        int maxOpNameLength = 10;   //Default to min of 10
+        int maxOpNameLength = 17;   //Default to min of 17 - length of "- Function Name -"
         int maxDfClassNameLength = 10;  //Default to min of 10
         for (DifferentialFunction df : functions) {
-            SDVariable[] args = df.args();
-            SDVariable[] outputs = df.outputVariables();
-
             String[] argNames = df.argNames();
             String[] outNames = df.outputVariablesNames();
 

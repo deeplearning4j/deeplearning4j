@@ -86,9 +86,7 @@ import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 
@@ -526,6 +524,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             intializeConfigurations();
         if (initCalled)
             return;
+
+        if (layerMap == null)
+            layerMap = new LinkedHashMap<>();
 
         if (layerWiseConfigurations.getTrainingWorkspaceMode() == null)
             layerWiseConfigurations.setTrainingWorkspaceMode(WorkspaceMode.NONE);
@@ -3739,4 +3740,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
         return false;
     }
+
+    private void writeObject(ObjectOutputStream oos) throws IOException {
+        ModelSerializer.writeModel(this, oos, true);
+    }
+
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        val mln = ModelSerializer.restoreMultiLayerNetwork(ois, true);
+
+        this.defaultConfiguration = mln.defaultConfiguration.clone();
+        this.layerWiseConfigurations = mln.layerWiseConfigurations.clone();
+        this.init();
+        this.flattenedParams.assign(mln.flattenedParams);
+
+        if (mln.getUpdater() != null && mln.getUpdater(false).getStateViewArray() != null)
+            this.getUpdater(true).getStateViewArray().assign(mln.getUpdater(false).getStateViewArray());
+    }
+
 }

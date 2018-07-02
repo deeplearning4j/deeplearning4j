@@ -181,7 +181,7 @@
         <mkl.version>2018.3</mkl.version>
         <mkl-dnn.version>0.14</mkl-dnn.version>
         <opencv.version>3.4.1</opencv.version>
-        <ffmpeg.version>4.0</ffmpeg.version>
+        <ffmpeg.version>4.0.1</ffmpeg.version>
         <leptonica.version>1.76.0</leptonica.version>
         <hdf5.version>1.10.2</hdf5.version>
         <ale.version>0.6.0</ale.version>
@@ -208,7 +208,7 @@
         <typesafe.config.version>1.3.0</typesafe.config.version>
         <lombok.version>1.16.20</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
-        <lucene-solr.version>7.3.0</lucene-solr.version>
+        <lucene-solr.version>7.4.0</lucene-solr.version>
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>
