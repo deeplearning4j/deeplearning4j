@@ -1,6 +1,8 @@
 package org.nd4j.tensorflow.conversion.graphrunner;
 
 import com.github.os72.protobuf351.InvalidProtocolBufferException;
+import com.github.os72.protobuf351.util.JsonFormat;
+import com.google.protobuf.ByteString;
 import lombok.Getter;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -33,8 +35,9 @@ public class GraphRunner implements Closeable {
     private Set<String> inputsForGraph,outputsForGraph;
     private List<String> inputOrder,outputOrder;
     @Getter
-    private ConfigProto sessionOptionsConfiguration;
-
+    private org.bytedeco.javacpp.tensorflow.ConfigProto sessionOptionsConfiguration;
+    @Getter
+    private org.tensorflow.framework.ConfigProto protoBufConfigProto;
     /**
      * Initialize with the graph content to use
      * @param graphToUse the raw byte content
@@ -52,9 +55,15 @@ public class GraphRunner implements Closeable {
      * @param sessionOptionsConfiguration the session options to use
      *                                    for running sessions
      */
-    public GraphRunner(byte[] graphToUse,ConfigProto sessionOptionsConfiguration) {
+    public GraphRunner(byte[] graphToUse,org.bytedeco.javacpp.tensorflow.ConfigProto sessionOptionsConfiguration) {
         this.graphToUse = graphToUse;
         this.sessionOptionsConfiguration = sessionOptionsConfiguration;
+
+        try {
+            this.protoBufConfigProto = org.tensorflow.framework.ConfigProto.parseFrom(sessionOptionsConfiguration.SerializeAsString().getStringBytes());
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            throw new IllegalArgumentException("Unable to parse protobuf",e);
+        }
 
         initSessionAndStatusIfNeeded();
     }
@@ -212,11 +221,50 @@ public class GraphRunner implements Closeable {
     }
 
 
+    /**
+     * Convert a json string written out
+     * by {@link com.github.os72.protobuf351.util.JsonFormat}
+     * to a {@link org.bytedeco.javacpp.tensorflow.ConfigProto}
+     * @param json the json to read
+     * @return the config proto to use
+     */
+    public static org.tensorflow.framework.ConfigProto fromJson(String json) {
+        org.tensorflow.framework.ConfigProto.Builder builder = org.tensorflow.framework.ConfigProto.newBuilder();
+        try {
+            com.google.protobuf.util.JsonFormat.parser().merge(json,builder);
+            org.tensorflow.framework.ConfigProto build = builder.build();
+            ByteString serialized = build.toByteString();
+            byte[] binaryString = serialized.toByteArray();
+            org.tensorflow.framework.ConfigProto configProto = org.tensorflow.framework.ConfigProto.parseFrom(binaryString);
+            return configProto;
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            e.printStackTrace();
+        }
 
+        return null;
+    }
+
+
+    /**
+     * Write out the session options used
+     * by this {@link GraphRunner}
+     * a s a  json string using the
+     * {@link com.google.protobuf.util.JsonFormat}
+     * @return
+     */
+    public  String sessionOptionsToJson() {
+        try {
+            return com.google.protobuf.util.JsonFormat.printer().print(protoBufConfigProto);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
 
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         if(session != null && status != null) {
             TF_CloseSession(session, status);
             TF_DeleteSession(session,status);

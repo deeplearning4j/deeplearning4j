@@ -137,7 +137,14 @@ public class GraphRunnerTest {
         configProto.set_log_device_placement(true);
 
 
+
         try(GraphRunner graphRunner = new GraphRunner(content,configProto)) {
+            org.tensorflow.framework.ConfigProto.Builder builder = org.tensorflow.framework.ConfigProto.newBuilder();
+            String json = graphRunner.sessionOptionsToJson();
+            com.google.protobuf.util.JsonFormat.parser().merge(json,builder);
+            org.tensorflow.framework.ConfigProto build = builder.build();
+            assertEquals(build,graphRunner.getProtoBufConfigProto());
+            assertEquals(new String(build.toByteArray()),graphRunner.getSessionOptionsConfiguration().SerializeAsString().getString());
             assertNotNull(graphRunner.getInputsForGraph());
             assertNotNull(graphRunner.getOutputsForGraph());
             assertEquals(2,graphRunner.getInputsForGraph().size());
