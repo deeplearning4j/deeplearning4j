@@ -20,17 +20,16 @@ namespace nd4j {
 
         template<typename T>
         NDArray<T> *FlatUtils::fromFlatArray(const nd4j::graph::FlatArray *flatArray) {
-            auto newShape = new Nd4jLong[shape::shapeInfoLength(static_cast<int>(flatArray->shape()->Get(0)))];
-            memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength((Nd4jLong *)flatArray->shape()->data()));
+            auto rank = static_cast<int>(flatArray->shape()->Get(0));
+            auto newShape = new Nd4jLong[shape::shapeInfoLength(rank)];
+            memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength(rank));
 
             auto length = shape::length(newShape);
-
             auto newBuffer = new T[length];
-            shape::printShapeInfoLinear("shape restored", newShape);
-            nd4j_printf("bufferT length [%lld]\n", length);
-            nd4j_printf("bufferB length [%i]\n", (int) flatArray->buffer()->size());
+            auto dtype = DataTypeUtils::fromFlatDataType(flatArray->dtype());
 
-            DataTypeConversions<T>::convertType(newBuffer, (void *)flatArray->buffer()->data(), DataTypeUtils::fromFlatDataType(flatArray->dtype()), ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length);
+            DataTypeConversions<T>::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length);
+
             auto array = new NDArray<T>(newBuffer, newShape);
             array->triggerAllocationFlag(true, true);
 

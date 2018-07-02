@@ -47,23 +47,26 @@ namespace nd4j {
                         if (std::is_same<T, double>::value && canKeep) {
                             memcpy(buffer, src, length * sizeof(T));
                         } else {
+                            auto tmpB = new double[length];
                             auto tmp = reinterpret_cast<double *>(src);
 
+//                            memcpy(tmpB, tmp, length * sizeof(double));
 
-//                            TypeCast::convertGeneric<double, T>(nullptr, tmp, length, buffer);
+
+                            TypeCast::convertGeneric<double, T>(nullptr, tmp, length, buffer);
 
 //#if __GNUC__ <= 4
 //                            if (!canKeep)
 //                                for (Nd4jLong e = 0; e < length; e++)
 //                                    buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
 //                            else
-
+/*
                                 for (int e = 0; e < 16; e++) {
                                     //printf("trying e: [%i]\n", (int) e);
                                     auto x = static_cast<T>(tmp[e]) + T(1);
                                     buffer[e] = x;
                                 }
-
+*/
 //#else
 //                            //#pragma omp parallel for simd schedule(guided)
 //                            for (Nd4jLong e = 0; e < length; e++)
