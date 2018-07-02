@@ -23,12 +23,17 @@ import static org.bytedeco.javacpp.tensorflow.*;
  * @author Adam Gibson
  */
 public class GraphRunner implements Closeable {
-
+    //stored temporarily: this should  be null by end of initialization
     private byte[] graphToUse;
+    //the in memory representation parsed from protobuf
     private tensorflow.TF_Graph graph;
+    //the conversion between nd4j and tensorflow
     private TensorflowConversion conversion = new TensorflowConversion();
+    //a persistent session to be used when running the graph
     private tensorflow.TF_Session session;
+    //the options for the model
     private tensorflow.TF_SessionOptions options;
+    //a status object used
     private tensorflow.TF_Status status;
     @Getter
     private Set<String> inputsForGraph,outputsForGraph;
@@ -123,6 +128,7 @@ public class GraphRunner implements Closeable {
         inputOut.position(0);
 
         TF_Output outputOut = new tensorflow.TF_Output(outputOrder.size());
+        //only setup the output ops
         for(int i = 0; i < outputOrder.size(); i++) {
             tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, outputOrder.get(i));
             opsByName.put(outputOrder.get(i),outputOp);
@@ -134,17 +140,22 @@ public class GraphRunner implements Closeable {
 
 
 
+        //these are references to the nd4j ndarrays wrapped for tensorflow
         PointerPointer<TF_Tensor> inputTensorsPointer = new PointerPointer<>(inputTensors);
+       //note that these are the result pointers
+        //the result pointers are null, and will be populated automatically by the session run
         PointerPointer<TF_Tensor> outputTensorsPointer = new PointerPointer<>(outputOrder.size());
 
 
         TF_SessionRun(
                 session,
                 null,
+                //inputs
                 inputOut, inputTensorsPointer, inputTensors.length,
+                //outputs
                 outputOut, outputTensorsPointer, outputOrder.size(),
-                null
-                , 0,
+                //targets
+                null, 0,
                 null,
                 status);
 
@@ -164,9 +175,11 @@ public class GraphRunner implements Closeable {
 
     private void initSessionAndStatusIfNeeded() {
         try {
+            //use the protobuf api to load the graph definition and load the node metadata
             org.tensorflow.framework.GraphDef graphDef1 = org.tensorflow.framework.GraphDef.parseFrom(graphToUse);
             inputsForGraph = new LinkedHashSet<>();
             outputsForGraph = new LinkedHashSet<>();
+            //infer the inputs and outputs for the graph
             Set<String> seenAsInput = new LinkedHashSet<>();
             for(int i = 0; i < graphDef1.getNodeCount(); i++) {
                 NodeDef node = graphDef1.getNode(i);
@@ -178,13 +191,14 @@ public class GraphRunner implements Closeable {
                     seenAsInput.add(node.getInput(input));
                 }
             }
-
+            //find the nodes that were not inputs to any  nodes: these are the outputs
             for(int i = 0; i < graphDef1.getNodeCount(); i++) {
                 if(!seenAsInput.contains(graphDef1.getNode(i).getName())) {
                     outputsForGraph.add(graphDef1.getNode(i).getName());
                 }
             }
 
+            //used for random access
             inputOrder = new ArrayList<>(inputsForGraph);
             outputOrder = new ArrayList<>(outputsForGraph);
 
@@ -193,11 +207,14 @@ public class GraphRunner implements Closeable {
         }
 
 
+        //setup the status object to be used for all tensorflow calls
         if(status == null) {
             status = TF_NewStatus();
         }
 
 
+        //setup and configure the session, factoring
+        //in the ConfigObject as needed
         if(session == null) {
             graph = conversion.getInitializedGraphForNd4jDevices(graphToUse);
 
@@ -216,6 +233,9 @@ public class GraphRunner implements Closeable {
             }
 
         }
+
+        //get rid of the graph representation once used
+        graphToUse = null;
 
     }
 

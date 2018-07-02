@@ -12,7 +12,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -153,14 +152,18 @@ public class GraphRunnerTest {
             assertEquals(1,graphRunner.getOutputsForGraph().size());
             INDArray input1 = Nd4j.linspace(1,4,4).reshape(4);
             INDArray input2 = Nd4j.linspace(1,4,4).reshape(4);
+
             Map<String,INDArray> inputs = new LinkedHashMap<>();
             inputs.put("input_0",input1);
             inputs.put("input_1",input2);
 
-            Map<String,INDArray> outputs = graphRunner.run(inputs);
+            for(int i = 0; i < 2; i++) {
+                Map<String,INDArray> outputs = graphRunner.run(inputs);
 
-            INDArray assertion = input1.add(input2);
-            assertEquals(assertion,outputs.get("output"));
+                INDArray assertion = input1.add(input2);
+                assertEquals(assertion,outputs.get("output"));
+            }
+
         }
     }
 
