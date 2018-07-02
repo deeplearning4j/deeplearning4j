@@ -82,7 +82,7 @@ public class GraphRunnerTest {
         // Session Outputs
         TF_Output output_operations  = new TF_Output().oper(add).index(0);
         output_operations.position(0);
-        PointerPointer<TF_Tensor> output_tensors = new PointerPointer<>(tensor_out);
+        PointerPointer<TF_Tensor> output_tensors = new PointerPointer<>(1);
         output_tensors.position(0);
 
         PointerPointer<TF_Operation> ops = new PointerPointer<>(add);
@@ -99,7 +99,10 @@ public class GraphRunnerTest {
         assertEquals(TF_Message(status).getString(),TF_OK,TF_GetCode(status));
         assertEquals(TF_FLOAT,TF_TensorType(tensor_out));
         System.out.printf("Session Run Status: %d - %s\n",TF_GetCode(status), TF_Message(status));
-        System.out.printf("Output Tensor Type: %d\n", TF_TensorType(tensor_out));
+        TF_Tensor result = new TF_Tensor(output_tensors.position(0).get());
+        TensorflowConversion tensorflowConversion = new TensorflowConversion();
+        INDArray arr = tensorflowConversion.ndArrayFromTensor(result);
+        System.out.printf("Output Tensor Type: %d\n", TF_TensorType(new TF_Tensor(output_tensors.position(0).get())));
         Pointer outval = TF_TensorData(tensor_out).capacity(4);
         System.out.printf("Output Tensor Value: %.2f\n", outval.asByteBuffer().asFloatBuffer().get());
 
