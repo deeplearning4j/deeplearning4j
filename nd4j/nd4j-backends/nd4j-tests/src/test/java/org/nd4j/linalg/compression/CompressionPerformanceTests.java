@@ -9,7 +9,6 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -55,7 +54,7 @@ public class CompressionPerformanceTests extends BaseNd4jTest {
 
             val ba = bs.toByteArray();
             val timeDS = System.currentTimeMillis();
-            NDArray deserialized = SerializationUtils.deserialize(ba);
+            val deserialized = SerializationUtils.deserialize(ba);
             val timeDE = System.currentTimeMillis();
             timeD += (timeDE - timeDS);
 
