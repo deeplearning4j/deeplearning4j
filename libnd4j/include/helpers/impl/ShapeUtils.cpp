@@ -895,6 +895,53 @@ std::vector<Nd4jLong> ShapeUtils<T>::composeShapeUsingDimsAndIdx(const std::vect
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+std::vector<Nd4jLong> evalShapeForBatchedMmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY) {
+
+    const int xRank = xShapeInfo[0];
+    const int yRank = yShapeInfo[0];
+        
+    
+    // ******* input validation ******* //
+    if(xRank = yRank) {
+        nd4j_printf("ShapeUtils::evalShapeForBatchedMmul static method: the ranks of arrays must be the same, but got xRank = %i and yRank = %i ! \n", xRank, yRank);
+        throw std::invalid_argument("");
+    }
+
+    if(xRank < 2) {
+        nd4j_printf("ShapeUtils::evalShapeForBatchedMmul static method: the ranks of arrays must be >= 2, but got xRank = %i and yRank = %i ! \n", xRank, yRank);
+        throw std::invalid_argument("");
+    }
+
+    const Nd4jLong x0Dim = transX ? xShapeInfo[xRank]   : xShapeInfo[xRank-1];
+    const Nd4jLong y0Dim = transY ? yShapeInfo[yRank]   : yShapeInfo[yRank-1];
+    const Nd4jLong x1Dim = transX ? xShapeInfo[xRank-1] : xShapeInfo[xRank];
+    const Nd4jLong y1Dim = transY ? yShapeInfo[yRank-1] : yShapeInfo[yRank];
+
+    if(x1Dim != y0Dim) {
+        nd4j_printf("ShapeUtils::evalShapeForBatchedMmul static method: input shapes are inconsistent: xDim %i != yDim %i \n", x1Dim, y0Dim);
+        throw std::invalid_argument("");       
+    }
+
+    for(int i = 0; i < xRank - 2; ++i)
+        if(xShapeInfo[i+1] != yShapeInfo[i+1]) {
+            nd4j_printf("ShapeUtils::evalShapeForBatchedMmul static method: input shapes are inconsistent: xShape = %s, yShape = %s ! \n", ShapeUtils<T>::shapeAsString(xShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(yShapeInfo).c_str());
+            throw std::invalid_argument("");       
+        }
+    // ******* end of input validation ******* //
+
+    std::vector<Nd4jLong> cShape(xRank);
+
+    // copy batch part of shape (if present)
+    for(int i = 0; i < xRank - 2; ++i)
+        cShape[i] = xShapeInfo[i+1];
+    // copy rest part of shape (two dims: multiplication part)
+    cShape[xRank-2] = x0Dim;
+    cShape[xRank-1] = y1Dim;
+
+    return cShape;
+}
 
 
 template class ND4J_EXPORT ShapeUtils<float>;

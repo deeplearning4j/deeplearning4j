@@ -102,6 +102,10 @@ namespace nd4j {
         */
         static std::vector<Nd4jLong> composeShapeUsingDimsAndIdx(const std::vector<int>& dimsAndIdx);
 
+        // x * y = c,  evaluate shape for array resulting from mmul operation, when input arrays have the same rank and it is > 2, outer dimensions (that is 0,1,...,rank-3) of input arrays should match 
+        // also this method works when both ranks = 2
+        static std::vector<Nd4jLong> evalShapeForBatchedMmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY);
+
         /**
         *  method returns false if permut == {0,1,2,...permut.size()-1} - in that case permutation is unnecessary
         */

@@ -66,6 +66,8 @@ namespace nd4j {
         static NDArray<T>* concat(const std::vector<NDArray<T> *>& vectors, int axis = 0, NDArray<T>* target = nullptr);
 
         static NDArray<T>* simpleMMul(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c , const T alpha, const T beta);
+
+        static void batchedMmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>* y, nd4j::NDArray<T>* z, const bool transX, const bool transY);
     };
 }
 

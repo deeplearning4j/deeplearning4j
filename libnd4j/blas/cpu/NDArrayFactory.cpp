@@ -805,6 +805,26 @@ NDArray<T>* NDArrayFactory<T>::simpleMMul(const NDArray<T>* a, const NDArray<T>*
     return c;
 }
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void NDArrayFactory<T>::batchedMmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>* y, nd4j::NDArray<T>* z, const bool transX, const bool transY) {
+
+    std::vector<Nd4jLong> outShape = evalShapeForBatchedMmul<T>(x->getShapeInfo(), y->getShapeInfo(), transX, transY);
+    if(!z->isSameShape(outShape)) {
+        nd4j_printf("NDArrayFactory::batchedMmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils<T>::shapeAsString(z).c_str(), ShapeUtils<T>::shapeAsString(outShape).c_str());
+        throw std::invalid_argument("");       
+    }
+
+    const int rank = x->rankOf();
+
+    if(rank == 2) {
+        mmulHelper(x, y, z, (T)1., (T)0.);
+        return;
+    }
+
+    
+
+}
 
     template class ND4J_EXPORT NDArrayFactory<float>;
     template class ND4J_EXPORT NDArrayFactory<float16>;
