@@ -215,6 +215,7 @@ public class RandomMultiDataSetIterator implements MultiDataSetIterator {
                 } else {
                     throw new RuntimeException("Not supported: rank 6+ arrays. Shape: " + Arrays.toString(shape));
                 }
+                return out;
             case ZEROS:
                 return Nd4j.create(shape,order);
             case ONES:
