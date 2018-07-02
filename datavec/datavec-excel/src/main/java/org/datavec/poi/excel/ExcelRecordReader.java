@@ -113,7 +113,7 @@ public class ExcelRecordReader extends FileRecordReader {
             Sheet sheet = sheetIterator.next();
             rows = sheet.rowIterator();
             Row currRow = rows.next();
-            Record record = new org.datavec.api.records.impl.Record(rowToRecord(rows.next()),
+            Record record = new org.datavec.api.records.impl.Record(rowToRecord(currRow),
                                 new RecordMetaDataIndex(
                                     currRow.getRowNum(),
                                     super.currentFile.toURI(),
@@ -136,7 +136,7 @@ public class ExcelRecordReader extends FileRecordReader {
             Sheet sheet = sheetIterator.next();
             rows = sheet.rowIterator();
             Row currRow = rows.next();
-            Record record = new org.datavec.api.records.impl.Record(rowToRecord(rows.next()),
+            Record record = new org.datavec.api.records.impl.Record(rowToRecord(currRow),
                     new RecordMetaDataIndex(
                             currRow.getRowNum(),
                             super.currentFile.toURI(),
