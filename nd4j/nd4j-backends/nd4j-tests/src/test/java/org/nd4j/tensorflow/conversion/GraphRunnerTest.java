@@ -1,20 +1,24 @@
 package org.nd4j.tensorflow.conversion;
 
 import org.apache.commons.io.IOUtils;
-import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.tensorflow;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
-import org.tensorflow.framework.GraphDef;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.bytedeco.javacpp.tensorflow.*;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 public class GraphRunnerTest {
 
@@ -49,6 +53,7 @@ public class GraphRunnerTest {
     }
 
     @Test
+    @Ignore
     public void testStandalone() {
         TF_Graph  graph = TF_NewGraph();
         TF_SessionOptions  options = TF_NewSessionOptions();
@@ -129,19 +134,17 @@ public class GraphRunnerTest {
     public void testGraphRunner() throws Exception {
         byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
         try(GraphRunner graphRunner = new GraphRunner(content)) {
+            assertNotNull(graphRunner.getInputsForGraph());
+            assertNotNull(graphRunner.getOutputsForGraph());
+            assertEquals(2,graphRunner.getInputsForGraph().size());
+            assertEquals(1,graphRunner.getOutputsForGraph().size());
             INDArray input1 = Nd4j.linspace(1,4,4).reshape(4);
             INDArray input2 = Nd4j.linspace(1,4,4).reshape(4);
             Map<String,INDArray> inputs = new LinkedHashMap<>();
             inputs.put("input_0",input1);
             inputs.put("input_1",input2);
 
-            Map<String,INDArray> outputs = new HashMap<>();
-
-            graphRunner.run(inputs, Arrays.asList("input_0","input_1"),outputs,Arrays.asList("output"));
-
-            List<String> tensorflowDeviceList = graphRunner.getTensorflowDeviceList();
-            assertTrue(!tensorflowDeviceList.isEmpty());
-
+            Map<String,INDArray> outputs = graphRunner.run(inputs);
 
             INDArray assertion = input1.add(input2);
             assertEquals(assertion,outputs.get("output"));

@@ -1,70 +1,84 @@
 package org.nd4j.tensorflow.conversion.graphrunner;
 
 import com.github.os72.protobuf351.InvalidProtocolBufferException;
-import org.apache.commons.io.IOUtils;
-import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.FloatIndexer;
-import org.bytedeco.javacpp.indexer.Indexer;
+import lombok.Getter;
+import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.tensorflow;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.tensorflow.conversion.TensorflowConversion;
-import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.bytedeco.javacpp.tensorflow.*;
 
+/**
+ * Runs a tensorflow session based on zero copy
+ * {@link INDArray}
+ *
+ * @author Adam Gibson
+ */
 public class GraphRunner implements Closeable {
 
     private byte[] graphToUse;
     private tensorflow.TF_Graph graph;
     private TensorflowConversion conversion = new TensorflowConversion();
     private tensorflow.TF_Session session;
-    private TF_DeviceList tf_deviceList;
     private tensorflow.TF_SessionOptions options;
     private tensorflow.TF_Status status;
-    private Pair<List<String>,List<String>> opNames;
-
+    @Getter
+    private Set<String> inputsForGraph,outputsForGraph;
+    private List<String> inputOrder,outputOrder;
+    /**
+     * Initialize with the graph content to use
+     * @param graphToUse the raw byte content
+     *                   of a protobuf file saved by tensorflow
+     */
     public GraphRunner(byte[] graphToUse) {
         this.graphToUse = graphToUse;
-    }
-
-    public Pair<List<String>,List<String>> loadOpNames() throws InvalidProtocolBufferException {
-        if(this.opNames != null)
-            return this.opNames;
-
-        GraphDef graphDef1 = GraphDef.parseFrom(graphToUse);
-        List<String>  opNames = new ArrayList<>();
-        List<String> ops = new ArrayList<>();
-        for(int i = 0; i < graphDef1.getNodeCount(); i++) {
-            opNames.add(graphDef1.getNode(i).getName());
-            ops.add(graphDef1.getNode(i).getOp());
-        }
-
-        this.opNames = Pair.of(opNames,ops);
-        return this.opNames;
-    }
-
-    public void run(Map<String,INDArray> inputs,
-                    List<String> inputOrder,
-                    Map<String,INDArray> outputArrays,
-                    List<String> outputOrder) throws IOException {
-        if(graph == null) {
-            graph = conversion.getInitializedGraphForNd4jDevices(graphToUse);
-        }
-
-
         initSessionAndStatusIfNeeded();
+    }
+
+
+    /**
+     * Returns a map of the output names
+     * to the ndarrays matching each output.
+     *
+     * Note that {@link IllegalArgumentException}
+     * will be thrown if there are any invalid states such as:
+     * the graph being null
+     *
+     *
+     * the inputs resolved from the graph do not match
+     * the inputs passed in
+     *
+     *
+     *
+     * @param inputs the inputs to use for each
+     *               {@link INDArray}
+     * @return a map of the output names to the
+     * ndarrays matching each output specified in the graph
+     * @throws IOException
+     */
+    public Map<String,INDArray> run(Map<String,INDArray> inputs) {
+        if(graph == null) {
+            throw new IllegalStateException("Graph not initialized.");
+        }
 
 
 
+        if(inputOrder.size() != inputsForGraph.size()) {
+            throw new IllegalArgumentException("Input order specified does not match inferred inputs from graph definition. Missing inputs?");
+        }
+
+        if(inputs.size() != inputOrder.size()) {
+            throw new IllegalArgumentException("Number of inputs specified do not match number of arrays specified.");
+        }
+
+
+        Map<String,INDArray> outputArrays = new LinkedHashMap<>();
 
         Map<String,TF_Operation> opsByName = new HashMap<>();
         tensorflow.TF_Output inputOut = new tensorflow.TF_Output(inputOrder.size());
@@ -119,15 +133,52 @@ public class GraphRunner implements Closeable {
 
         }
 
+        return outputArrays;
     }
 
     private void initSessionAndStatusIfNeeded() {
+        try {
+            org.tensorflow.framework.GraphDef graphDef1 = org.tensorflow.framework.GraphDef.parseFrom(graphToUse);
+            inputsForGraph = new LinkedHashSet<>();
+            outputsForGraph = new LinkedHashSet<>();
+            Set<String> seenAsInput = new LinkedHashSet<>();
+            for(int i = 0; i < graphDef1.getNodeCount(); i++) {
+                NodeDef node = graphDef1.getNode(i);
+                if(node.getInputCount() < 1) {
+                    inputsForGraph.add(node.getName());
+                }
+
+                for(int input = 0; input < node.getInputCount(); input++) {
+                    seenAsInput.add(node.getInput(input));
+                }
+            }
+
+            for(int i = 0; i < graphDef1.getNodeCount(); i++) {
+                if(!seenAsInput.contains(graphDef1.getNode(i).getName())) {
+                    outputsForGraph.add(graphDef1.getNode(i).getName());
+                }
+            }
+
+            inputOrder = new ArrayList<>(inputsForGraph);
+            outputOrder = new ArrayList<>(outputsForGraph);
+
+        } catch (InvalidProtocolBufferException e) {
+            e.printStackTrace();
+        }
+
+
         if(status == null) {
             status = TF_NewStatus();
         }
 
 
         if(session == null) {
+            try {
+                graph = conversion.getInitializedGraphForNd4jDevices(graphToUse);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
             options = TF_NewSessionOptions();
             session = tensorflow.TF_NewSession(graph, options, status);
             if (TF_GetCode(status) != TF_OK) {
@@ -136,45 +187,6 @@ public class GraphRunner implements Closeable {
 
         }
 
-        if(tf_deviceList == null) {
-            tf_deviceList = TF_SessionListDevices(session, status);
-        }
-    }
-
-    private String getOpName(TF_Operation operation) {
-        ByteBuffer byteBuffer = operation.asByteBuffer();
-        byte[] ret = new byte[byteBuffer.capacity()];
-        byteBuffer.get(ret);
-        return new String(ret);
-    }
-
-
-    /**
-     * Mainly used for debugging:
-     * Checks the number of devices for tensorflow
-     * @return
-     */
-    public int getNumDevicesForTensorflow() {
-        initSessionAndStatusIfNeeded();
-        int count = TF_DeviceListCount(tf_deviceList);
-        return count;
-    }
-
-
-    public List<String> getTensorflowDeviceList() {
-        initSessionAndStatusIfNeeded();
-        List<String> ret = new ArrayList<>();
-        int devices = getNumDevicesForTensorflow();
-        for(int i = 0; i < devices; i++) {
-            BytePointer bytePointer = TF_DeviceListName(tf_deviceList, i, status);
-            if(status != null && TF_GetCode(status) != TF_OK) {
-                throw new RuntimeException("ERROR: Unable to obtain name for device " + TF_Message(status).getString());
-            }
-
-            ret.add(new String(bytePointer.getStringBytes()));
-        }
-
-        return ret;
     }
 
 
@@ -183,15 +195,6 @@ public class GraphRunner implements Closeable {
 
     @Override
     public void close() throws IOException {
-        if(status != null && tf_deviceList != null) {
-            TF_DeleteDeviceList(tf_deviceList);
-        }
-
-        if(status != null && TF_GetCode(status) != TF_OK) {
-            throw new RuntimeException("ERROR: Unable to delete device list " + TF_Message(status).getString());
-        }
-
-
         if(session != null && status != null) {
             TF_CloseSession(session, status);
             TF_DeleteSession(session,status);
