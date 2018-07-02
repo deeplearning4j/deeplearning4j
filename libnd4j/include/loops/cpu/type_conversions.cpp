@@ -5,6 +5,7 @@
 #include <types/types.h>
 #include <op_boilerplate.h>
 #include <loops/type_conversions.h>
+#include <OmpLaunchHelper.h>
 
 namespace nd4j {
 
@@ -25,8 +26,8 @@ namespace nd4j {
         auto l = static_cast<int>(N);
         z[1] = l;
 
-        int threads = omp_get_max_threads();
-        int span = (int) (N / threads) + 8;
+        int threads = OmpLaunchHelper::betterThreads(N);
+        int span = OmpLaunchHelper::betterSpan(N, threads);
 
         T tt = static_cast<T>(threshold);
         T mtt = -tt;
@@ -74,6 +75,7 @@ namespace nd4j {
                         flag = true;
                         break;
                     }
+
 
                     z[idx] = -e - 1;
                     x[e] += tt;

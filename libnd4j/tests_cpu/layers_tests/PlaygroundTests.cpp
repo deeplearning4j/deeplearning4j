@@ -531,7 +531,7 @@ TEST_F(PlaygroundTests, loop_test_1) {
 
     auto buffer = array->buffer();
     int cnt = 0;
-    int iterations = 1000;
+    int iterations = 1;
 
     nd4j_printf("Array length: %lld\n", array->lengthOf());
 
