@@ -1513,7 +1513,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(INDArray[] input, int layerTillIndex,boolean train) {
-        return feedForward(input, train, true);
+        setInputs(input);
+        return feedForward(train, layerTillIndex);
     }
 
 
