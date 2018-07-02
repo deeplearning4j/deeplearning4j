@@ -97,6 +97,7 @@ public class GraphRunnerTest {
                 status);
 
         assertEquals(TF_Message(status).getString(),TF_OK,TF_GetCode(status));
+        assertEquals(TF_FLOAT,TF_TensorType(tensor_out));
         System.out.printf("Session Run Status: %d - %s\n",TF_GetCode(status), TF_Message(status));
         System.out.printf("Output Tensor Type: %d\n", TF_TensorType(tensor_out));
         Pointer outval = TF_TensorData(tensor_out).capacity(4);
