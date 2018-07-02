@@ -72,9 +72,8 @@ public class GraphRunnerTest {
         TF_Operation  add = Add(graph, status, feed, two, "add");
 
         // Session Inputs
-        TF_Output input_operations = new TF_Output(2);
+        TF_Output input_operations = new TF_Output(1 );
         input_operations.position(0).oper(feed).index(0);
-        input_operations.position(1).oper(two).index(0);
 
         input_operations.position(0);
 
