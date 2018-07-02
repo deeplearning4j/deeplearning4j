@@ -6533,6 +6533,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void deleteResultWrapper(@Cast("Nd4jPointer") Pointer ptr);
 
     public native int estimateThresholdFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, int N, float threshold);
+    public native int estimateThresholdDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, int N, float threshold);
+    public native int estimateThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, int N, float threshold);
 
     // this method executes op that requires scope to be present: if/while/cond/whatever
     public native @Cast("Nd4jStatus") int execCustomOpWithScopeHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongPointer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);

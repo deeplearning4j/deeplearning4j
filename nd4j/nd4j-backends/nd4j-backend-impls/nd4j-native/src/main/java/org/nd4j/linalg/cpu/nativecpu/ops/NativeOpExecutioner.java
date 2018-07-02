@@ -1421,7 +1421,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         //val condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
         //long t1 = System.currentTimeMillis();
-        int cntAbs = loop.estimateThresholdFloat(null, input.data().addressPointer(), (int) input.length(), (float) threshold); //Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+        int cntAbs = input.data().dataType() == DataBuffer.Type.FLOAT ? loop.estimateThresholdFloat(null, input.data().addressPointer(), (int) input.length(), (float) threshold)
+                : input.data().dataType() == DataBuffer.Type.DOUBLE ? loop.estimateThresholdDouble(null, input.data().addressPointer(), (int) input.length(), (float) threshold)
+                : loop.estimateThresholdHalf(null, input.data().addressPointer(), (int) input.length(), (float) threshold);
         //long t2 = System.currentTimeMillis();
 
         if (cntAbs < 2)
