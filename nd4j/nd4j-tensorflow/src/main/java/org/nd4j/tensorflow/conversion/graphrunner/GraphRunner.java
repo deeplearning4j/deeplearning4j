@@ -1,8 +1,8 @@
 package org.nd4j.tensorflow.conversion.graphrunner;
 
+import com.github.os72.protobuf351.ByteString;
 import com.github.os72.protobuf351.InvalidProtocolBufferException;
 import com.github.os72.protobuf351.util.JsonFormat;
-import com.google.protobuf.ByteString;
 import lombok.Getter;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
@@ -66,7 +66,7 @@ public class GraphRunner implements Closeable {
 
         try {
             this.protoBufConfigProto = org.tensorflow.framework.ConfigProto.parseFrom(sessionOptionsConfiguration.SerializeAsString().getStringBytes());
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse protobuf",e);
         }
 
@@ -251,13 +251,13 @@ public class GraphRunner implements Closeable {
     public static org.tensorflow.framework.ConfigProto fromJson(String json) {
         org.tensorflow.framework.ConfigProto.Builder builder = org.tensorflow.framework.ConfigProto.newBuilder();
         try {
-            com.google.protobuf.util.JsonFormat.parser().merge(json,builder);
+          JsonFormat.parser().merge(json,builder);
             org.tensorflow.framework.ConfigProto build = builder.build();
             ByteString serialized = build.toByteString();
             byte[] binaryString = serialized.toByteArray();
             org.tensorflow.framework.ConfigProto configProto = org.tensorflow.framework.ConfigProto.parseFrom(binaryString);
             return configProto;
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -269,13 +269,13 @@ public class GraphRunner implements Closeable {
      * Write out the session options used
      * by this {@link GraphRunner}
      * a s a  json string using the
-     * {@link com.google.protobuf.util.JsonFormat}
+     * {@link JsonFormat}
      * @return
      */
     public  String sessionOptionsToJson() {
         try {
-            return JsonFormat.printer().print(sessionOptionsConfiguration);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            return JsonFormat.printer().print(protoBufConfigProto);
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

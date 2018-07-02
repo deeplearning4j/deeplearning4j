@@ -35,10 +35,5 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.tensorflow</groupId>
-            <artifactId>proto</artifactId>
-            <version>${tensorflow.version}</version>
-        </dependency>
     </dependencies>
 </project>
