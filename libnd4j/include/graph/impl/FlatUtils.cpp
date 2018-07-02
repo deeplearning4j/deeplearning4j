@@ -28,11 +28,18 @@ namespace nd4j {
             auto newBuffer = new T[length];
             auto dtype = DataTypeUtils::fromFlatDataType(flatArray->dtype());
 
-            DataTypeConversions<T>::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length);
+            auto bLength = flatArray->buffer()->size();
+
+            // this is ugly fix for x86_64 crash
+            auto tmp = new int8_t[bLength];
+            memcpy(tmp, (void *)flatArray->buffer()->data(), bLength);
+
+            DataTypeConversions<T>::convertType(newBuffer, tmp, dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length);
 
             auto array = new NDArray<T>(newBuffer, newShape);
             array->triggerAllocationFlag(true, true);
 
+            delete[] tmp;
             return array;
         }
 
