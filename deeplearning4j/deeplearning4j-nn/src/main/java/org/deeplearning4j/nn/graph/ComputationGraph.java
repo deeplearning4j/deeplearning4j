@@ -4387,6 +4387,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
+     * Get the current learning rate, for the specified layer, from the network.
+     * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
+     * @param layerNumber   Layer number to get the learning rate for
+     * @return Learning rate for the specified layer, or null
+     */
+    public Double getLearningRate(String layerName){
+        return NetworkUtils.getLearningRate(this, layerName);
+    }
+
+    /**
      * Return the layer size (number of units) for the specified layer.
      * Note that the meaning of the "layer size" can depend on the type of layer. For example:<br>
      * - DenseLayer, OutputLayer, recurrent layers: number of units (nOut configuration option)<br>
