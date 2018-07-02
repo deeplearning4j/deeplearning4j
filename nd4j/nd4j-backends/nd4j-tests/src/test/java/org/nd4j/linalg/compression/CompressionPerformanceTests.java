@@ -3,6 +3,7 @@ package org.nd4j.linalg.compression;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.SerializationUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -15,6 +16,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import java.io.ByteArrayOutputStream;
 
 @Slf4j
+@Ignore
 @RunWith(Parameterized.class)
 public class CompressionPerformanceTests extends BaseNd4jTest {
 
@@ -29,7 +31,7 @@ public class CompressionPerformanceTests extends BaseNd4jTest {
         val params = Nd4j.rand(new long[]{1, 50000000}, -1.0, 1.0, Nd4j.getRandom());
         val original = params.dup(params.ordering());
 
-        int iterations = 10000;
+        int iterations = 1000;
 
         long timeE = 0;
         long timeS = 0;
