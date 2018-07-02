@@ -268,9 +268,8 @@ public class TensorflowConversion {
      * @throws IOException
      */
 
-    public TF_Graph getInitializedGraphForNd4jDevices(byte[] content) throws IOException {
+    public TF_Graph getInitializedGraphForNd4jDevices(byte[] content) {
         byte[] toLoad = content;
-        // byte[] toLoad = setDeviceForGraphDef(content);
         TF_Buffer graph_def = TF_NewBufferFromString(new BytePointer(toLoad), content.length);
         TF_Status status = TF_NewStatus();
         TF_Graph graphC = TF_NewGraph();

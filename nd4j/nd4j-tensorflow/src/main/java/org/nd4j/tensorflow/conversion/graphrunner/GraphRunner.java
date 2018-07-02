@@ -2,6 +2,7 @@ package org.nd4j.tensorflow.conversion.graphrunner;
 
 import com.github.os72.protobuf351.InvalidProtocolBufferException;
 import lombok.Getter;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.tensorflow;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,6 +32,9 @@ public class GraphRunner implements Closeable {
     @Getter
     private Set<String> inputsForGraph,outputsForGraph;
     private List<String> inputOrder,outputOrder;
+    @Getter
+    private ConfigProto sessionOptionsConfiguration;
+
     /**
      * Initialize with the graph content to use
      * @param graphToUse the raw byte content
@@ -38,6 +42,20 @@ public class GraphRunner implements Closeable {
      */
     public GraphRunner(byte[] graphToUse) {
         this.graphToUse = graphToUse;
+        initSessionAndStatusIfNeeded();
+    }
+
+    /**
+     * Initialize with the graph content to use
+     * @param graphToUse the raw byte content
+     *                   of a protobuf file saved by tensorflow
+     * @param sessionOptionsConfiguration the session options to use
+     *                                    for running sessions
+     */
+    public GraphRunner(byte[] graphToUse,ConfigProto sessionOptionsConfiguration) {
+        this.graphToUse = graphToUse;
+        this.sessionOptionsConfiguration = sessionOptionsConfiguration;
+
         initSessionAndStatusIfNeeded();
     }
 
@@ -173,13 +191,17 @@ public class GraphRunner implements Closeable {
 
 
         if(session == null) {
-            try {
-                graph = conversion.getInitializedGraphForNd4jDevices(graphToUse);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            graph = conversion.getInitializedGraphForNd4jDevices(graphToUse);
 
             options = TF_NewSessionOptions();
+            if(sessionOptionsConfiguration != null) {
+                BytePointer bytePointer = sessionOptionsConfiguration.SerializeAsString();
+                TF_SetConfig(options,bytePointer,bytePointer.getStringBytes().length,status);
+                if (TF_GetCode(status) != TF_OK) {
+                    throw new RuntimeException("ERROR: Unable to set value configuration:" + TF_Message(status).getString());
+                }
+            }
+
             session = tensorflow.TF_NewSession(graph, options, status);
             if (TF_GetCode(status) != TF_OK) {
                 throw new RuntimeException("ERROR: Unable to open session " + TF_Message(status).getString());

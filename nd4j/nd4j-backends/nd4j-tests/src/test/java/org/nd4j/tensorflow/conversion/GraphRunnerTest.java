@@ -133,7 +133,11 @@ public class GraphRunnerTest {
     @Test
     public void testGraphRunner() throws Exception {
         byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
-        try(GraphRunner graphRunner = new GraphRunner(content)) {
+        ConfigProto configProto = new ConfigProto();
+        configProto.set_log_device_placement(true);
+
+
+        try(GraphRunner graphRunner = new GraphRunner(content,configProto)) {
             assertNotNull(graphRunner.getInputsForGraph());
             assertNotNull(graphRunner.getOutputsForGraph());
             assertEquals(2,graphRunner.getInputsForGraph().size());
