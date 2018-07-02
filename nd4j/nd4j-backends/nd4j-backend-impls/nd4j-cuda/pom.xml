@@ -214,12 +214,6 @@
             <classifier>${dependency.platform}</classifier>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-tensorflow</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>

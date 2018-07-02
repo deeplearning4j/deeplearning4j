@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>nd4j-backends</artifactId>
+        <groupId>org.nd4j</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>nd4j-tests-tensorflow</artifactId>
+
+    <name>nd4j-tests-tensorflow</name>
+
+
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <scala.binary.version>2.11</scala.binary.version>
+        <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
+        <maven.compiler.testSource>1.8</maven.compiler.testSource>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.19.1</version>
+                <configuration>
+                    <skipTests>true</skipTests>
+                </configuration>
+
+            </plugin>
+        </plugins>
+    </build>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-tensorflow</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>tf-cpu</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <artifactId>tensorflow-platform</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>linux-x86_64</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>tf-gpu</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco.javacpp-presets</groupId>
+                    <artifactId>tensorflow</artifactId>
+                    <version>${tensorflow.javacpp.version}</version>
+                    <classifier>linux-x86_64-gpu</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>nd4j-tf-gpu</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.surefire</groupId>
+                                <artifactId>surefire-junit47</artifactId>
+                                <version>2.19.1</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <testSourceDirectory>src/test/gpujava</testSourceDirectory>
+                            <includes>
+                                <include>*.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.tests.backendstorun>
+                            </systemPropertyVariables>
+                            <!--
+                                Maximum heap size was set to 6g, as a minimum required value for tests run.
+                                Depending on a build machine, default value is not always enough.
+                            -->
+                            <argLine>-Xmx6g</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>nd4j-tf-cpu</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.surefire</groupId>
+                                <artifactId>surefire-junit47</artifactId>
+                                <version>2.19.1</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <testSourceDirectory>src/test/cpujava</testSourceDirectory>
+                            <includes>
+                                <include>*.java</include>
+                            </includes>
+                            <systemPropertyVariables>
+                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
+                            </systemPropertyVariables>
+                            <!--
+                                        Maximum heap size was set to 6g, as a minimum required value for tests run.
+                                        Depending on a build machine, default value is not always enough.
+                                    -->
+                            <argLine>-Xmx6g</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

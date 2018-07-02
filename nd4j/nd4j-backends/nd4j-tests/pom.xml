@@ -62,41 +62,7 @@
         </plugins>
     </build>
     <dependencies>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>tensorflow-platform</artifactId>
-            <version>${tensorflow.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>tensorflow</artifactId>
-            <version>${tensorflow.version}</version>
-            <classifier>linux-x86_64-gpu</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>tensorflow</artifactId>
-            <version>${tensorflow.version}</version>
-            <classifier>linux-x86_64-gpu</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>tensorflow</artifactId>
-            <version>${tensorflow.version}</version>
-            <classifier>linux-x86_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>tensorflow</artifactId>
-            <version>${tensorflow.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-tensorflow</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
+         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
             <version>5.0.2.RELEASE</version>

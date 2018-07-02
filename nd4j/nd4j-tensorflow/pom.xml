@@ -13,11 +13,7 @@
 
     <name>nd4j-tensorflow</name>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
-    </properties>
+
 
     <dependencies>
         <dependency>
@@ -33,13 +29,7 @@
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>tensorflow</artifactId>
-            <version>${tensorflow.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>tensorflow-platform</artifactId>
-            <version>${tensorflow.version}</version>
+            <version>${tensorflow.javacpp.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -48,12 +38,7 @@
         <dependency>
             <groupId>org.tensorflow</groupId>
             <artifactId>proto</artifactId>
-            <version>1.9.0-rc1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java-util</artifactId>
-            <version>3.5.1</version>
+            <version>${tensorflow.version}</version>
         </dependency>
     </dependencies>
 </project>

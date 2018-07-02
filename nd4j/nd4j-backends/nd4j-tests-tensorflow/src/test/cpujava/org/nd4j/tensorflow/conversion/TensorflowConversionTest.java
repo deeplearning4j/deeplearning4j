@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.tensorflow.conversion.TensorflowConversion;
 import org.tensorflow.framework.GraphDef;
 
 import static org.junit.Assert.assertEquals;
@@ -18,7 +19,7 @@ public class TensorflowConversionTest {
     public void testConversionFromNdArray() throws Exception {
         INDArray arr = Nd4j.linspace(1,4,4);
         TensorflowConversion tensorflowConversion = new TensorflowConversion();
-        tensorflow.TF_Tensor tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
+       tensorflow.TF_Tensor tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
         INDArray fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
         assertEquals(arr,fromTensor);
         arr.addi(1.0);
