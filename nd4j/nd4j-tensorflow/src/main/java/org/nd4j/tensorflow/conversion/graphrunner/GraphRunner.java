@@ -1,7 +1,6 @@
 package org.nd4j.tensorflow.conversion.graphrunner;
 
 import com.github.os72.protobuf351.InvalidProtocolBufferException;
-import com.github.os72.protobuf351.util.JsonFormat;
 import com.google.protobuf.ByteString;
 import lombok.Getter;
 import org.bytedeco.javacpp.BytePointer;
