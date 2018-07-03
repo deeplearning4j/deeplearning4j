@@ -897,14 +897,14 @@ std::vector<Nd4jLong> ShapeUtils<T>::composeShapeUsingDimsAndIdx(const std::vect
 
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
-std::vector<Nd4jLong> evalShapeForBatchedMmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY) {
+std::vector<Nd4jLong> ShapeUtils<T>::evalShapeForBatchedMmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY) {
 
     const int xRank = xShapeInfo[0];
     const int yRank = yShapeInfo[0];
         
     
     // ******* input validation ******* //
-    if(xRank = yRank) {
+    if(xRank != yRank) {
         nd4j_printf("ShapeUtils::evalShapeForBatchedMmul static method: the ranks of arrays must be the same, but got xRank = %i and yRank = %i ! \n", xRank, yRank);
         throw std::invalid_argument("");
     }
@@ -943,6 +943,43 @@ std::vector<Nd4jLong> evalShapeForBatchedMmul(const Nd4jLong* xShapeInfo, const 
     return cShape;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+Nd4jLong ShapeUtils<T>::getNumOfSubArrs(const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude) {
+
+    Nd4jLong numOfSubArrs = 1;
+
+    for(const auto& dim : dimsToExclude)
+        numOfSubArrs *= shapeInfo[dim + 1];
+
+    return numOfSubArrs;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+void ShapeUtils<T>::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude, Nd4jLong* idxRanges) {
+
+    const int rank  = shapeInfo[0];    
+    const int subArrRank = dimsToExclude.size();
+
+    if(subArrRank == 0 || subArrRank > rank)
+        throw std::invalid_argument("ShapeUtils::evalIdxRangesForSubArr static method: dimsToExclude is empty or has size > rank of array !");
+    
+    std::vector<Nd4jLong> shapeOfSubArr(subArrRank), indexes(subArrRank);    
+    for(int i = 0; i < subArrRank; ++i)
+        shapeOfSubArr[i] = shapeInfo[dimsToExclude[i] + 1];
+
+    shape::ind2sub(subArrRank, shapeOfSubArr.data(), subArrIdx, indexes.data());
+
+    memset(idxRanges, 0, 2 * rank * sizeof(Nd4jLong));
+    
+    for(int i = 0; i < subArrRank; ++i) {
+        
+        int currIdx = 2 * dimsToExclude[i];
+        idxRanges[currIdx]    = indexes[i];
+        idxRanges[currIdx +1] = indexes[i] + 1;
+    }
+}
 
 template class ND4J_EXPORT ShapeUtils<float>;
 template class ND4J_EXPORT ShapeUtils<float16>;

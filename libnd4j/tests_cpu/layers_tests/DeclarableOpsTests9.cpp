@@ -616,13 +616,14 @@ TEST_F(DeclarableOpsTests9, matmul_test6) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, matmul_test7) {
 
-    NDArray<double> x ('c', {2,2,  3,4});
-    NDArray<double> y ('f', {2,2,  3,4});
-    NDArray<double> exp('f',{2,2,  3,3}, {15., 1407., 423., 2967.,  35., 1619., 539., 3275.,  55., 1831., 655., 3583.,  35., 1619., 539., 3275.,  87., 1863., 687., 
-                                          3615., 139., 2107., 835., 3955.,  55., 1831., 655., 3583., 139., 2107., 835., 3955., 223., 2383.,1015., 4327.});
+    NDArray<double> x ('c', {5,  3,4});
+    NDArray<double> y ('f', {5,  3,4});
+    NDArray<double> exp('f',{5,  3,3}, {3. ,  84.6, 281.4, 593.4, 1020.6, 7. , 107.8, 323.8, 655. , 1101.4,11. , 131. , 366.2, 716.6, 1182.2,
+                                        7. , 107.8, 323.8, 655. , 1101.4,17.4, 137.4, 372.6, 723. , 1188.6,27.8, 167. , 421.4, 791. , 1275.8,
+                                       11. , 131. , 366.2, 716.6, 1182.2,27.8, 167. , 421.4, 791. , 1275.8,44.6, 203. , 476.6, 865.4, 1369.4,});
 
     NDArrayFactory<double>::linspace(1., x);
-    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+    NDArrayFactory<double>::linspace(0.1, y, 0.1);
  
     nd4j::ops::matmul<double> op;
     ResultSet<double>* results = op.execute({&x, &y}, {}, {0, 1});
@@ -634,4 +635,208 @@ TEST_F(DeclarableOpsTests9, matmul_test7) {
 
     delete results;
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test8) {
+
+    NDArray<double> x ('c', {2,5,  3,4});
+    NDArray<double> y ('f', {2,5,  3,4});
+    NDArray<double> exp('f',{2,5,  3,3}, {3. , 1563. ,  84.6, 2220.6, 281.4, 2993.4, 593.4, 3881.4,1020.6, 4884.6,   7. , 1663. , 107.8, 2339.8, 323.8, 3131.8, 655. , 4039. ,1101.4, 5061.4,
+                                          11. , 1763. , 131. , 2459. , 366.2, 3270.2, 716.6, 4196.6,1182.2, 5238.2,   7. , 1663. , 107.8, 2339.8, 323.8, 3131.8, 655. , 4039. ,1101.4, 5061.4,
+                                          17.4, 1769.4, 137.4, 2465.4, 372.6, 3276.6, 723. , 4203. ,1188.6, 5244.6,  27.8, 1875.8, 167. , 2591. , 421.4, 3421.4, 791. , 4367. ,1275.8, 5427.8,
+                                          11. , 1763. , 131. , 2459. , 366.2, 3270.2, 716.6, 4196.6,1182.2, 5238.2,  27.8, 1875.8, 167. , 2591. , 421.4, 3421.4, 791. , 4367. ,1275.8, 5427.8,
+                                          44.6, 1988.6, 203. , 2723. , 476.6, 3572.6, 865.4, 4537.4,1369.4, 5617.4});
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {0, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+ 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test9) {
+
+    NDArray<double> x ('c', {2,5,  4,3});
+    NDArray<double> y ('f', {2,5,  3,4});
+    NDArray<double> exp('f',{2,5,  3,3}, {7. , 1639. , 103. , 2311. , 314.2, 3098.2, 640.6, 4000.6,1082.2, 5018.2,   8. , 1664. , 108.8, 2340.8, 324.8, 3132.8, 656. , 4040. ,1102.4, 5062.4,
+                                          9. , 1689. , 114.6, 2370.6, 335.4, 3167.4, 671.4, 4079.4,1122.6, 5106.6,  15.8, 1743.8, 131. , 2435. , 361.4, 3241.4, 707. , 4163. ,1167.8, 5199.8,
+                                          18.4, 1770.4, 138.4, 2466.4, 373.6, 3277.6, 724. , 4204. ,1189.6, 5245.6,  21. , 1797. , 145.8, 2497.8, 385.8, 3313.8, 741. , 4245. ,1211.4, 5291.4,
+                                          24.6, 1848.6, 159. , 2559. , 408.6, 3384.6, 773.4, 4325.4,1253.4, 5381.4,  28.8, 1876.8, 168. , 2592. , 422.4, 3422.4, 792. , 4368. ,1276.8, 5428.8,
+                                          33. , 1905. , 177. , 2625. , 436.2, 3460.2, 810.6, 4410.6,1300.2, 5476.2});
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+   
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test10) {
+
+    NDArray<double> x ('c', {1, 4, 3});
+    NDArray<double> y ('f', {1, 3, 4});
+    NDArray<double> exp('f', {1, 3, 3}, {35.,  40.,  45., 79.,  92., 105., 123., 144., 165.});
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test11) {
+
+    NDArray<double> x ('c', {4, 1});
+    NDArray<double> y ('f', {1, 4});
+    NDArray<double> exp('f', {1, 1}, {15});
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test12) {
+
+    NDArray<double> x ('c', {1, 4, 1});
+    NDArray<double> y ('f', {1, 1, 4});
+    NDArray<double> exp('f', {1, 1, 1}, {15});
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test13) {
+
+    NDArray<double> x ('c', {2, 3});
+    NDArray<double> y ('c', {3, 5});
+    NDArray<double> exp('f', {5, 2}, {23. , 26. , 29. , 32. , 35., 50. , 57.5, 65. , 72.5, 80.});
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {0, 0, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test14) {
+
+    NDArray<double> x ('c', {3, 2});
+    NDArray<double> y ('c', {3, 5});
+    NDArray<double> exp('f', {5, 2}, {37. , 41.5, 46. , 50.5, 55., 46. , 52. , 58. , 64. , 70.});
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 0, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test15) {
+
+    NDArray<double> x ('c', {3, 2});
+    NDArray<double> y ('c', {3, 5});
+    NDArray<double> exp('f', {5, 2}, {37. , 41.5, 46. , 50.5, 55., 46. , 52. , 58. , 64. , 70.});
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.5, y, 0.5);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 0, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test16) {
+
+    NDArray<double> x ('c', {2,2,  3,5});
+    NDArray<double> y ('c', {2,2,  4,3});
+    NDArray<double> exp('f',{2,2,  4,5}, {4.6, 281.8, 89.2, 582.4, 10. , 314.2,108.1, 628.3, 15.4, 346.6,127. , 674.2, 20.8, 379. ,145.9, 720.1,  5.2, 289.6, 93.4, 593.8,
+                                          11.5, 322.9,113.2, 640.6, 17.8, 356.2,133. , 687.4, 24.1, 389.5,152.8, 734.2,  5.8, 297.4, 97.6, 605.2, 13. , 331.6,118.3, 652.9,
+                                          20.2, 365.8,139. , 700.6, 27.4, 400. ,159.7, 748.3,  6.4, 305.2,101.8, 616.6, 14.5, 340.3,123.4, 665.2, 22.6, 375.4,145. , 713.8,
+                                          30.7, 410.5,166.6, 762.4,  7. , 313. ,106. , 628. , 16. , 349. ,128.5, 677.5, 25. , 385. ,151. , 727. , 34. , 421. ,173.5, 776.5});
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+
+
+
 

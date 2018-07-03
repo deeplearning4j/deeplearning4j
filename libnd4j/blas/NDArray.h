@@ -784,7 +784,7 @@ namespace nd4j {
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        NDArray<T> operator()(const int* idx, bool keepUnitiesInShape = false)  const;
+        NDArray<T> operator()(const Nd4jLong* idx, bool keepUnitiesInShape = false)  const;
 
         /**
         *  addition operator: array + other
