@@ -2,11 +2,13 @@ package org.datavec.arrow;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.arrow.flatbuf.Tensor;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.dictionary.Dictionary;
 import org.apache.arrow.vector.dictionary.DictionaryProvider;
+import org.apache.arrow.vector.holders.VarBinaryHolder;
 import org.apache.arrow.vector.ipc.ArrowFileReader;
 import org.apache.arrow.vector.ipc.ArrowFileWriter;
 import org.apache.arrow.vector.ipc.SeekableReadChannel;
@@ -27,6 +29,7 @@ import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.*;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.datavec.arrow.recordreader.ArrowWritableRecordTimeSeriesBatch;
+import org.nd4j.arrow.ArrowSerde;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
@@ -759,7 +762,11 @@ public class ArrowConverter {
                     setLongInTime(fieldVector, row, timeSet);
                     break;
                 case NDArray:
-                    INDArray
+                    INDArray arr = (INDArray) value;
+                    VarBinaryVector nd4jArrayVector = (VarBinaryVector) fieldVector;
+                    ByteBuffer byteBuffer = ArrowSerde.toTensor(arr).getByteBuffer();
+                    nd4jArrayVector.set(row,byteBuffer,0,byteBuffer.capacity());
+                    break;
 
             }
         }catch(Exception e) {
@@ -843,6 +850,17 @@ public class ArrowConverter {
 
 
 
+    public static VarBinaryVector vectorFor(BufferAllocator bufferAllocator,String name,INDArray[] data) {
+        VarBinaryVector ret = new VarBinaryVector(name,bufferAllocator);
+        ret.allocateNew();
+        for(int i = 0; i < data.length; i++) {
+            ByteBuffer byteBuffer = ArrowSerde.toTensor(data[i]).getByteBuffer();
+            ret.set(i,byteBuffer,0,byteBuffer.capacity());
+        }
+
+        return ret;
+    }
+
 
 
     /**
@@ -864,6 +882,23 @@ public class ArrowConverter {
         return float4Vector;
     }
 
+
+    /**
+     * Create an ndarray vector that stores structs
+     * of {@link INDArray}
+     * based on the {@link org.apache.arrow.flatbuf.Tensor}
+     * format
+     * @param allocator the allocator to use
+     * @param name the name of the vector
+     * @param length the number of vectors to store
+     * @return
+     */
+    public static VarBinaryVector ndarrayVectorOf(BufferAllocator allocator,String name,int length) {
+        VarBinaryVector ret = new VarBinaryVector(name,allocator);
+        ret.allocateNew();
+        ret.setValueCount(length);
+        return ret;
+    }
 
     /**
      *
