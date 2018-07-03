@@ -223,11 +223,6 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int inputColumns() {
         return this.featureKeys.length;
     }
@@ -255,16 +250,6 @@ public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
     @Override
     public int batch() {
         return this.batch;
-    }
-
-    @Override
-    public int cursor() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int numExamples() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
