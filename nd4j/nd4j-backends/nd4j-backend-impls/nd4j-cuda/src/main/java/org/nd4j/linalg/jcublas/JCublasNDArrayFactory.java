@@ -20,6 +20,8 @@
 package org.nd4j.linalg.jcublas;
 
 import lombok.val;
+import lombok.var;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
@@ -1418,12 +1420,28 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
                     long length) {
-
         val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
 
         val p = new PointerPointer<>(new Pointer[]{null, stream});
+        Pointer devPtr = null;
 
-        nativeOps.convertTypes(p, typeSrc.ordinal(), source, length, typeDst.ordinal(), target);
+        // we have to replace pointer here, temporary
+        if (Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()) {
+            val ws = Nd4j.getMemoryManager().getCurrentWorkspace();
+            devPtr = ws.alloc(target.capacity(), MemoryKind.DEVICE, DataBuffer.Type.HALF, false);
+        } else {
+            log.info("Allocating capacity: {}", target.capacity());
+            devPtr = nativeOps.mallocDevice(target.capacity(), null, 0);
+        }
+
+        nativeOps.convertTypes(p, typeSrc.ordinal(), source, length, typeDst.ordinal(), devPtr);
+        nativeOps.memcpyAsync(target, devPtr, target.capacity(),  CudaConstants.cudaMemcpyDeviceToHost, stream);
+
+        if (Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()) {
+            // no-op, workspace was used
+        } else {
+            nativeOps.freeDevice(devPtr, null);
+        }
     }
 
 
@@ -1431,7 +1449,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst,
                     DataBuffer target) {
-        convertDataEx(typeSrc, source.addressPointer(), typeDst, target.addressPointer(), target.length());
+        convertDataEx(typeSrc, AtomicAllocator.getInstance().getPointer(source), typeDst, target.addressPointer(), target.length());
     }
 
     @Override
@@ -1458,7 +1476,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         if (CompressionUtils.goingToCompress(typeSrc, typeDst)) {
             // all types below 8 are compression modes
-            BytePointer pointer = new BytePointer(source.length() * elementSize);
+            Pointer pointer = new BytePointer(source.length() * elementSize);
             CompressionDescriptor descriptor = new CompressionDescriptor(source, typeDst.name());
             descriptor.setCompressionType(CompressionType.LOSSY);
             descriptor.setCompressedLength(source.length() * elementSize);
