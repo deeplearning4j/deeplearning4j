@@ -63,12 +63,7 @@ CONFIGURABLE_OP_IMPL(dropout_bp, 2, 1, false, 1, 1) {
     if (rng == nullptr)
         return ND4J_STATUS_BAD_RNG;
 
-    REQUIRE_TRUE(helpers::dropOutFunctor(rng, input, output, reduceShape, seed, probValue) == ND4J_STATUS_OK, 0, "dropout_bp: Cannot backprop dropout." );
-
-    for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
-        if ((*output)(e) == T(0.f)) (*output)(e) = (*gradOut)(e) / probValue;
-        else (*output)(e) = T(0.f);
-    }
+    REQUIRE_TRUE(helpers::dropOutFunctorBP(rng, input, gradOut, output, reduceShape, seed, probValue) == ND4J_STATUS_OK, 0, "dropout_bp: Cannot backprop dropout." );
 
     return ND4J_STATUS_OK;
 }

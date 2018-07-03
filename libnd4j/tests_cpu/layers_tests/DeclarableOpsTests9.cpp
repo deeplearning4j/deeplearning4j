@@ -575,7 +575,7 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
 
     nd4j::ops::dropout<float> op;
 
-    auto ress = op.execute({&x1}, {1.f}, {119});
+    auto ress = op.execute({&x1}, {0.5f}, {119});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
     ress->at(0)->printIndexedBuffer("01Dropout result is ");
@@ -585,5 +585,12 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
             count++;
     nd4j_printf("\n01Dropout count %i\n\n", count);
 
+    nd4j::ops::dropout_bp<float> op2;
+
+    auto ressX = op2.execute({&x1, &x0}, {0.5f}, {119});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ressX->status());
+    ressX->at(0)->printIndexedBuffer("02Dropout result is ");
+    delete ressX;
     delete ress;
 }

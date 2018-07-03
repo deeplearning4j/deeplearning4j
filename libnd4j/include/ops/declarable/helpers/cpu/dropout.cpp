@@ -23,7 +23,7 @@ namespace helpers {
 
   
         if (reduceShape == nullptr)
-            input->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, nullptr, &probValue);
+            input->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, output, &probValue);
         else {
             REQUIRE_TRUE(reduceShape->lengthOf() <= input->rankOf(), 0, "dropout: Noise shape should be fittable to input");
         
@@ -60,6 +60,24 @@ namespace helpers {
     template int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue);
     template int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue);
     template int dropOutFunctor(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue);
+
+    template <typename T>
+    int dropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<T>* input, NDArray<T>* gradOut, NDArray<T>* output, NDArray<T>* reduceShape, int seed, T probValue) {
+        NativeOps native;
+
+        int res = dropOutFunctor(rng, input, output, reduceShape, seed, probValue);
+
+        if (ND4J_STATUS_OK == res)
+        for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
+            if ((*output)(e) == T(0.f)) (*output)(e) = (*gradOut)(e) / probValue;
+            else (*output)(e) = T(0.f);
+        }
+
+        return res;
+    }
+    template int dropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<float>* input, NDArray<float>* gradOut, NDArray<float>* output, NDArray<float>* reduceShape, int seed, float probValue);
+    template int dropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<float16>* input, NDArray<float16>* gradOut, NDArray<float16>* output, NDArray<float16>* reduceShape, int seed, float16 probValue);
+    template int dropOutFunctorBP(nd4j::random::RandomBuffer* rng, NDArray<double>* input, NDArray<double>* gradOut, NDArray<double>* output, NDArray<double>* reduceShape, int seed, double probValue);
 
 }
 }
