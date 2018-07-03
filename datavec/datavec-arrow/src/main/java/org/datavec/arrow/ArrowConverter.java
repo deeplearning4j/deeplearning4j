@@ -751,7 +751,7 @@ public class ArrowConverter {
                 case String:
                     String stringSet = TypeConversion.getInstance().convertString(value);
                     VarCharVector textVector = (VarCharVector) fieldVector;
-                    textVector.set(row, stringSet.getBytes());
+                    textVector.setSafe(row, stringSet.getBytes());
                     break;
                 case Time:
                     //all timestamps are long based, just directly convert it to the super type
