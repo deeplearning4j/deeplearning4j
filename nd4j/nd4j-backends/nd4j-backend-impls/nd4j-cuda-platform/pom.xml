@@ -6,13 +6,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>nd4j-cuda-9.1-platform</artifactId>
+    <artifactId>nd4j-cuda-9.0-platform</artifactId>
     <name>nd4j-cuda-platform</name>
 
     <properties>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
-        <cuda.version>9.1</cuda.version>
-        <cudnn.version>7.1</cudnn.version>
+        <cuda.version>9.0</cuda.version>
+        <cudnn.version>7.0</cudnn.version>
         <javacpp-presets.cuda.version>1.4.1</javacpp-presets.cuda.version>
         <nd4j.backend>nd4j-cuda-${cuda.version}</nd4j.backend>
     </properties>
