@@ -1495,7 +1495,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     elementSize = 2;
 
                 if (currentType != DataTypeUtil.getDtypeFromContext() && currentType != Type.HALF && currentType != Type.INT
-                        && !(DataTypeUtil.getDtypeFromContext() == Type.DOUBLE)) {
+                        && currentType != Type.LONG && !(DataTypeUtil.getDtypeFromContext() == Type.DOUBLE)) {
                     log.warn("Loading a data stream with opType different from what is set globally. Expect precision loss");
                     if (DataTypeUtil.getDtypeFromContext() == Type.INT)
                         log.warn("Int to float/double widening UNSUPPORTED!!!");

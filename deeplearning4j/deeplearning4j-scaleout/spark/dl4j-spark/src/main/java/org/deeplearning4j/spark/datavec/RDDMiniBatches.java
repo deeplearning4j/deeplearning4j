@@ -70,9 +70,8 @@ public class RDDMiniBatches implements Serializable {
                 }
             }
 
-            //edge cases with map partitions where one will be left over.
-            //this is due to race conditions.
-            if (temp.size() > 1)
+            //Add remaining ('left over') data
+            if (temp.size() > 0)
                 ret.add(DataSet.merge(temp));
 
             return ret;
