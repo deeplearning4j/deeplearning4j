@@ -117,7 +117,7 @@ namespace nd4j {
 
         /**
         *  evaluate indexes ranges that define sub-array of array having shape=shapeInfo
-        *  subArrIdx - index of current sub-array, if (i.e.) shapeInfo[0]=3 then counting is following : [0,0,0], [0,0,1], [0,0,2], ... [0,1,0], [0,1,1], [0,1,2], ..., [2,2,2]
+        *  subArrIdx - index of current sub-array
         *  shapeInfo - shapeInfo of array for which to evaluate sub-arrays 
         *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-arrays along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
         *  idxRanges - where to put result, the length of idxRanges must be equal to 2*shapeInfo[0]
