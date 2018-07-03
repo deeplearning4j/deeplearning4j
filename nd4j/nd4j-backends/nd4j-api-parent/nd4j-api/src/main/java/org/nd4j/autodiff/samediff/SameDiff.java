@@ -50,6 +50,7 @@ import org.nd4j.linalg.api.ops.impl.shape.Eye;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayV3;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
+import org.nd4j.linalg.api.ops.impl.transforms.temp.ExternalErrorsFunction;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
@@ -579,7 +580,8 @@ public class SameDiff {
             throw new ND4JIllegalStateException("No null names allowed!");
 
         if (variableNameToArr.containsKey(varName)) {
-            throw new ND4JIllegalStateException("Array for " + varName + " already exists!");
+//            throw new ND4JIllegalStateException("Array for " + varName + " already exists!");
+///            return;
         }
 
         variableNameToArr.put(varName, arr);
@@ -617,12 +619,24 @@ public class SameDiff {
      * @param shape   the shape to associate with
      */
     public void updateShapeForVarName(String varName, long[] shape) {
+        updateShapeForVarName(varName, shape, false);
+    }
+
+    public void updateShapeForVarName(String varName, long[] shape, boolean clearArrayOnShapeMismatch) {
         if (shape == null) {
             throw new ND4JIllegalStateException("Null shapes not allowed!");
         }
 
         if (variableNameToArr.containsKey(varName) && !Arrays.equals(variableNameToArr.get(varName).shape(), shape)) {
-            throw new ND4JIllegalStateException("Already found an existing array!");
+            if(clearArrayOnShapeMismatch){
+                if(log.isTraceEnabled()){
+                    log.trace("Clearing array for variable {}: array shape {}, new shape {}", varName,
+                            Arrays.toString(variableNameToArr.get(varName).shape()), Arrays.toString(shape));
+                }
+                variableNameToArr.remove(varName);
+            } else {
+                throw new ND4JIllegalStateException("Already found an existing array!");
+            }
         }
 
 
@@ -663,6 +677,14 @@ public class SameDiff {
         }
 
         variableNameToShape.put(varName, shape);
+    }
+
+    public void putOrUpdateShapeForVarName(String varName, @NonNull long[] shape, boolean clearArrayOnShapeMismatch){
+        if(variableNameToArr.containsKey(varName)){
+            updateShapeForVarName(varName, shape, clearArrayOnShapeMismatch);
+        } else {
+            putShapeForVarName(varName, shape);
+        }
     }
 
 
@@ -734,6 +756,16 @@ public class SameDiff {
         }
         // invalidate exec cache
         exec_cache = null;
+
+        //Also update nested SameDiff instances (such as gradient function)
+        if(sameDiffFunctionInstances != null && sameDiffFunctionInstances.size() > 0){
+            for(Map.Entry<String,SameDiff> e : sameDiffFunctionInstances.entrySet()){
+                SameDiff sd = e.getValue();
+                if(sd.variableNameToArr != null && sd.variableNameToArr.containsKey(variable.getVarName())){
+                    sd.associateArrayWithVariable(arr, variable);
+                }
+            }
+        }
     }
 
 
@@ -1533,7 +1565,7 @@ public class SameDiff {
         return var(name, shape, new ZeroInitScheme());
     }
 
-    public SDVariable var(String name, int... shape) {
+    public SDVariable var(String name, int[] shape) {
         Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
@@ -1817,7 +1849,15 @@ public class SameDiff {
      * @return the gradient for this variable or null
      */
     public SDVariable getGradForVariable(String varName) {
-        return gradients.get(varName);
+        //TODO 2018/06/26 - Review this?
+        //Gradients are being placed in the inner "grad" function SameDiff instance, but not the outer one
+        // should they be synced and we just use the map in this instance?
+        if (gradients.containsKey(varName)) {
+            return gradients.get(varName);
+        } else if(sameDiffFunctionInstances.containsKey("grad") && sameDiffFunctionInstances.get("grad").gradients.containsKey(varName)){
+            return sameDiffFunctionInstances.get("grad").gradients.get(varName);
+        }
+        return null;
     }
 
 
@@ -4093,6 +4133,70 @@ public class SameDiff {
         return mmul(null, x, y);
     }
 
+
+
+    /**
+     * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
+     * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
+     * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.
+     * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).
+     *
+     *
+     * The result of this operation will be a batch of multiplied matrices. The
+     * result has the same length as both input batches and each output matrix is of shape (M, K).
+     *
+     * @param matricesA First array of input matrices, all of shape (M, N) or (N, M)
+     * @param matricesB Second array of input matrices, all of shape (N, K) or (K, N)
+     * @param transposeA whether first batch of matrices is transposed.
+     * @param transposeB whether second batch of matrices is transposed.
+     * @param names names for all provided SDVariables
+     *
+     * @return Array of multiplied SDVariables of shape (M, K)
+     */
+    public SDVariable[] batchMmul(String[] names, SDVariable[] matricesA, SDVariable[] matricesB,
+                                boolean transposeA, boolean transposeB) {
+        SDVariable[] result = functionFactory.batchMmul(matricesA, matricesB, transposeA, transposeB);
+        return updateVariableNamesAndReferences(result, names);
+    }
+
+
+    /**
+     * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
+     * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
+     * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.
+     * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).
+     *
+     *
+     * The result of this operation will be a batch of multiplied matrices. The
+     * result has the same length as both input batches and each output matrix is of shape (M, K).
+     *
+     * @param matricesA First array of input matrices, all of shape (M, N) or (N, M)
+     * @param matricesB Second array of input matrices, all of shape (N, K) or (K, N)
+     * @param transposeA whether first batch of matrices is transposed.
+     * @param transposeB whether second batch of matrices is transposed.
+     *
+     * @return Array of multiplied SDVariables of shape (M, K)
+     */
+    public SDVariable[] batchMmul(SDVariable[] matricesA, SDVariable[] matricesB,
+                                  boolean transposeA, boolean transposeB) {
+        return batchMmul(null, matricesA, matricesB, transposeA, transposeB);
+    }
+
+    /**
+     * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
+     * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
+     * respectively. The result of this operation will be a batch of multiplied matrices. The
+     * result has the same length as both input batches and each output matrix is of shape (M, K).
+     *
+     * @param matricesA First array of input matrices, all of shape (M, N)
+     * @param matricesB Second array of input matrices, all of shape (N, K)
+     * @return Array of multiplied SDVariables of shape (M, K)
+     */
+    public SDVariable[] batchMmul(SDVariable[] matricesA, SDVariable[] matricesB) {
+        return batchMmul(null, matricesA, matricesB, false, false);
+    }
+
+
     /**
      * @param x
      * @param y
@@ -5551,8 +5655,8 @@ public class SameDiff {
         }
 
         //need to find a new name
-        int count = 1;
-        String name = baseName + "_" + count + (argIndex > 0 ? ":" + argIndex : "");
+        int count = 0;
+        String name = baseName + (count == 0 ? "" : "_" + count) + (argIndex > 0 ? ":" + argIndex : "");
         while (getVariable(name) != null) {
             name = baseName + "_" + (++count) + (argIndex > 0 ? ":" + argIndex : "");
         }
@@ -5777,23 +5881,19 @@ public class SameDiff {
                     ordering = function.args()[0].getArr().ordering();
                 }
                 SDVariable[] ret = new SDVariable[num_outputs];
+
                 //dynamic shapes
+                //When importing from TF: convention seem to be names like "unstack", "unstack:1", "unstack:2", ...
+                //TODO validate this!
                 for (int i = 0; i < ret.length; i++) {
-                    SDVariable checkGet = getVariable(baseName);
-                    if (checkGet == null) {
-                        checkGet = var(generateNewVarName(baseName, i), null, new ZeroInitScheme(ordering));
-                    } else if (i > 0 && !importedVarName.contains(baseName)) {
-                        //need to find a new name
-                        String newName = generateNewVarName(baseName, i);
-                        checkGet = getVariable(newName);
+                    SDVariable var = (i == 0 ? getVariable(baseName) : getVariable(baseName + ":" + i));
+                    if (var == null) {
+                        //Generate new variable name if one with the specified name doesn't exist
+                        var = var(generateNewVarName(baseName, i), null, new ZeroInitScheme(ordering));
                     }
-                    if (checkGet == null) {
-                        String newName = generateNewVarName(baseName, i);
-                        checkGet = var(newName, null, new ZeroInitScheme(ordering));
-                    }
-                    checkGet.setOutputIndex(i);
-                    checkGet.setCreator(function);
-                    ret[i] = checkGet;
+                    var.setOutputIndex(i);
+                    var.setCreator(function);
+                    ret[i] = var;
                 }
 
                 //Update the internal state: outgoing variables for function
@@ -6196,10 +6296,16 @@ public class SameDiff {
      * @return
      */
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec(String functionName) {
+        Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> ret;
         if (debugMode) {
-            return sameDiffFunctionInstances.get(functionName).enableDebugMode().exec();
+            ret = sameDiffFunctionInstances.get(functionName).enableDebugMode().exec();
         } else
-            return sameDiffFunctionInstances.get(functionName).exec();
+            ret = sameDiffFunctionInstances.get(functionName).exec();
+
+        //Ensure all variables are associated with this SameDiff instance after possible execBackwards() etc
+        associateSameDiffWithOpsAndVariables();
+
+        return ret;
     }
 
     /**
@@ -6710,11 +6816,34 @@ public class SameDiff {
         return updatedVariables;
     }
 
-    /**
-     * Creates and executes a list of operations
-     *
-     * @return
-     */
+
+    protected void associateSameDiffWithOpsAndVariables(){
+        for(DifferentialFunction df : functionInstancesById.values()){
+            df.setSameDiff(this);
+
+            //TODO: This is ugly but seemingly necessary
+            //Finally, also set the SDVariable for each op
+            //Otherwise: could have an op pointing to this SameDiff instance, but op's SDVariable's sameDiff field pointing
+            // to another SameDiff instance. At which point, they could fetch shapes and arrays from some other instance
+            // (i.e., not from this one that is currently executing)
+            SDVariable[] args = df.args();
+            if(args != null){
+                for(SDVariable arg : args){
+                    arg.setSameDiff(this);
+                }
+            }
+
+            SDVariable[] outputs = df.outputVariables();
+            if(outputs != null){
+                for(SDVariable out : outputs){
+                    out.setSameDiff(this);
+                }
+            }
+        }
+        for(SDVariable var : variableMap.values()){
+            var.setSameDiff(this);
+        }
+    }
 
 
     // required for loops
@@ -6723,6 +6852,10 @@ public class SameDiff {
 
 
     private Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec_cache;
+
+    public void clearExecutionCache(){
+        exec_cache = null;
+    }
 
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec() {
 
@@ -6749,7 +6882,9 @@ public class SameDiff {
 
         Map<SDVariable, DifferentialFunction> opMap = new HashMap<>();
         val funcs = new ArrayList<DifferentialFunction>(functionInstancesById.values());
+        List<String> funcNames = new ArrayList<>(functionInstancesById.keySet());       //LinkedHashMap, so order for both these vars should be identical
         boolean onBackward = false;
+
 
         // dequeue for Frames (nested, probably)
         val frames = new ArrayDeque<String>();
@@ -6759,6 +6894,17 @@ public class SameDiff {
 
         // yet another flag, to remove LastFrame once we really left last frame
         boolean frameLeft = false;
+
+        //If true: this execution includes gradient functions...
+        boolean isExecBackwards = functionInstancesById.containsKey(GradientBackwardsMarker.OP_NAME);
+
+        //Before execution: set the SameDiff instance
+        //This is necessary, because the one op could be shared by both forward and backward samediff instances
+        //If the SameDiff instance isn't set, they might use wrong shapes or arrays as part of their ops
+        //And, set the SameDiff instance on all variables, for exactly the same reason
+        associateSameDiffWithOpsAndVariables();
+
+
 
         int i = 0;
         int exec_counter = 0;
@@ -6795,6 +6941,14 @@ public class SameDiff {
                 continue;
 
             DifferentialFunction differentialFunction = funcs.get(i);
+
+            if((differentialFunction instanceof ExternalErrorsFunction)) {
+                if(isExecBackwards)
+                    ((ExternalErrorsFunction) differentialFunction).updateBeforeExecution();
+
+                continue;
+            }
+
             val ownName = differentialFunction.getOwnName();
 
             // just registering function for this pass
@@ -6809,7 +6963,7 @@ public class SameDiff {
 
             val args = getInputsForFunction(differentialFunction);
 
-            log.debug("Step: {}; Executing op {} for node [{}]", exec_counter, opName, ownName);
+            log.debug("Step: {}; Executing op [{}] for node [{}]", exec_counter, opName, ownName);
 
             // check if inputs are active nodes. skip step otherwise
             // please note: Exit node can't be skipped, because it's either rewind point or exit loop point
@@ -6889,6 +7043,12 @@ public class SameDiff {
 
                 if (array != null)
                     variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                else {
+                    val cleansed = name.replaceAll(":.*","");
+                    val list = lists.get(cleansed);
+                    if (list != null)
+                        lists.put(ownName, list);
+                }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
@@ -6937,7 +7097,16 @@ public class SameDiff {
                 val inputs = getInputVariablesForFunction(differentialFunction);
 
                 val array = inputs[0].getArr();
-                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                val name = inputs[0].getVarName();
+
+                if (array != null)
+                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                else {
+                    val cleansed = name.replaceAll(":.*","");
+                    val list = lists.get(cleansed);
+                    if (list != null)
+                        lists.put(ownName, list);
+                }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
@@ -6953,7 +7122,16 @@ public class SameDiff {
                 val frame_name = frames.getLast();
 
                 val array = inputs[0].getArr();
-                variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                val name = inputs[0].getVarName();
+
+                if (array != null)
+                    variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                else {
+                    val cleansed = name.replaceAll(":.*","");
+                    val list = lists.get(cleansed);
+                    if (list != null)
+                        lists.put(ownName, list);
+                }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
 
@@ -6994,18 +7172,32 @@ public class SameDiff {
                 if (flowPath.wasExecuted(inputs[1].getVarName())) {
                     // propagate second input
                     val array = inputs[1].getArr();
+                    val name = inputs[1].getVarName();
 
                     if (array != null)
                         variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                    else {
+                        val cleansed = name.replaceAll(":.*","");
+                        val list = lists.get(cleansed);
+                        if (list != null)
+                            lists.put(ownName, list);
+                    }
 
                     // nullify executed mark
                     flowPath.markExecuted(inputs[1].getVarName(), false);
                 } else {
                     // propagate first input
                     val array = inputs[0].getArr();
+                    val name = inputs[0].getVarName();
 
                     if (array != null)
                         variableNameToArr.put(differentialFunction.getOwnName(), array.dup(array.ordering()));
+                    else {
+                        val cleansed = name.replaceAll(":.*","");
+                        val list = lists.get(cleansed);
+                        if (list != null)
+                            lists.put(ownName, list);
+                    }
                 }
 
                 flowPath.markExecuted(differentialFunction.getOwnName(), true);
@@ -7020,6 +7212,7 @@ public class SameDiff {
 
                 val input = inputs[0].getArr();
                 val bool = inputs[1].getArr();
+                val name = inputs[0].getVarName();
 
                 // basically we're setting one of the graph branches inactive. branch 0 for false, branch 1 for true
                 if ((int) bool.getDouble(0) == 0) {
@@ -7030,12 +7223,24 @@ public class SameDiff {
 
                     if (input != null)
                         variableNameToArr.put(differentialFunction.getOwnName(), input.dup(input.ordering()));
+                    else {
+                        val cleansed = name.replaceAll(":.*","");
+                        val list = lists.get(cleansed);
+                        if (list != null)
+                            lists.put(ownName, list);
+                    }
                 } else {
                     // true step, we'll propagate output:1 here
                     flowPath.setActiveBranch(differentialFunction.getOwnName(), 1);
 
                     if (input != null)
                         variableNameToArr.put(differentialFunction.getOwnName() + ":1", input.dup(input.ordering()));
+                    else {
+                        val cleansed = name.replaceAll(":.*","");
+                        val list = lists.get(cleansed);
+                        if (list != null)
+                            lists.put(ownName, list);
+                    }
 
                     flowPath.markActive(differentialFunction.getOwnName(), false);
                     flowPath.markActive(differentialFunction.getOwnName() + ":1", true);
@@ -7181,7 +7386,23 @@ public class SameDiff {
                 if (log.isTraceEnabled())
                     log.trace("Starting execution of CustomOp op");
 
+
                 DynamicCustomOp customOp = (DynamicCustomOp) differentialFunction;
+
+                if (customOp.opName().equalsIgnoreCase("identity")) {
+                    val cleansed = args[0].replaceAll(":.*","");
+                    val list = lists.get(cleansed);
+                    if (list != null) {
+                        lists.put(ownName, list);
+
+                        flowPath.markExecuted(differentialFunction.getOwnName(), true);
+
+                        ops.add(customOp);
+
+                        continue;
+                    }
+                }
+
                 try {
                     customOp.populateInputsAndOutputsFromSameDiff();
                 } catch (Throwable t) {
@@ -7189,8 +7410,6 @@ public class SameDiff {
                             + "\" of type " + differentialFunction.getClass().getName(), t);
                 }
                 customOp.assertValidForExecution();
-
-                customOp.updateInputsFromSameDiff();
 
                 Nd4j.getExecutioner().exec(customOp);
 
@@ -7220,6 +7439,30 @@ public class SameDiff {
                         op.setY(inputs[1].getArr());
                 }
 
+                //Check output shape; allocate a new Z if required
+                //For example, if minibatch size has changed since last op execution
+                List<long[]> outputShape = ((BaseOp)op).calculateOutputShape();
+                Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
+                //Update shape. DynamicCustomOp does this in populateInputsAndOutputsFromSameDiff(); for legacy ops, we'll do it here
+                putOrUpdateShapeForVarName(((BaseOp) op).outputVariable().getVarName(), outputShape.get(0), true);
+                INDArray z = op.z();
+                Preconditions.checkNotNull(z, "Could not get output array for op: %s", op.getClass());
+                if(!Arrays.equals(outputShape.get(0), z.shape())){
+                    if(log.isTraceEnabled()){
+                        log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
+                                op.getClass().getSimpleName(), Arrays.toString(z.shape()), Arrays.toString(outputShape.get(0)));
+                    }
+                    //Get output variable:
+                    String fnName = funcNames.get(i);
+                    String outputName = outgoingArgsReverse.get(fnName)[0];
+                    SDVariable outputVar = getVariable(outputName);
+
+                    putOrUpdateShapeForVarName(outputName, outputShape.get(0), true);
+                    INDArray newZ = outputVar.storeAndAllocateNewArray();
+                    op.setZ(newZ);
+                }
+
+
                 if (differentialFunction.getDimensions() == null)
                     Nd4j.getExecutioner().exec(op);
                 else if (op.isExecSpecial()) {
@@ -7231,7 +7474,7 @@ public class SameDiff {
 
                         Nd4j.getExecutioner().exec(accumulation, axes);
 
-                        if (differentialFunction.outputVariables()[0].getArr() == null) {
+                        if (differentialFunction.outputVariable().getArr() == null) {
                             val var = differentialFunction.outputVariables()[0];
                             updateVariable(var.getVarName(), accumulation.z());
                             updateShapeForVarName(var.getVarName(), accumulation.z().shape());
@@ -7872,9 +8115,15 @@ public class SameDiff {
             return 100L;
         } else if (type == Op.Type.CUSTOM) {
             val name2 = Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase());
-            if (name2 == null)
-                return 0;
-            return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
+            if (name2 == null) {
+                val name3 = Nd4j.getExecutioner().getCustomOperations().get(name);
+                if (name3 == null)
+                    return 0;
+                else
+                    return name3.getHash();
+            } else
+                return name2.getHash();
+            //return Nd4j.getExecutioner().getCustomOperations().get(name.toLowerCase()).getHash();
 
         } else
             return (long) Nd4j.getOpFactory().getOpNumByName(name);
@@ -7989,6 +8238,7 @@ public class SameDiff {
         //Work out which function - if any - this arg is an output of...
         Map<String, String> outputOfFn = new HashMap<>();
         int maxLengthOutputOf = 22;     //Length of "- Output Of Function -"
+        int maxLengthOfName = 8;       //Length of "- Name -"
         for (String s : varMap.keySet()) {
             String outputOf = null;
             for (Map.Entry<String, String[]> dfToArgs : outgoingArgsReverse.entrySet()) {
@@ -8006,11 +8256,13 @@ public class SameDiff {
             }
             outputOfFn.put(s, outputOf);
             maxLengthOutputOf = Math.max(maxLengthOutputOf, outputOf.length());
+            maxLengthOfName = Math.max(maxLengthOfName, s.length());
         }
         maxLengthOutputOf += 2;
+        maxLengthOfName += 2;
 
         //Create the output for values:
-        format = "%-20s%-20s%-" + maxLengthOutputOf + "s%-20s";
+        format = "%-" + maxLengthOfName + "s%-20s%-" + maxLengthOutputOf + "s%-20s";
         sb.append(String.format(format, "- Name -", "- Array Shape -", "- Output Of Function -", "- Inputs To Functions -")).append("\n");
         for (String s : varMap.keySet()) {
             INDArray arr = getArrForVarName(s);
@@ -8041,12 +8293,9 @@ public class SameDiff {
         List<String> dfOutputStr = new ArrayList<>();
         int maxInLength = 10;       //Length of "- Inputs -"
         int maxOutLength = 11;      //Length of "- Outputs -"
-        int maxOpNameLength = 10;   //Default to min of 10
+        int maxOpNameLength = 17;   //Default to min of 17 - length of "- Function Name -"
         int maxDfClassNameLength = 10;  //Default to min of 10
         for (DifferentialFunction df : functions) {
-            SDVariable[] args = df.args();
-            SDVariable[] outputs = df.outputVariables();
-
             String[] argNames = df.argNames();
             String[] outNames = df.outputVariablesNames();
 

@@ -201,7 +201,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int[] sizeH = {1, 2, 3};
         int[] padH = {0};
         int[] padW = {0};
-        Pooling2D.Pooling2DType[] types = new Pooling2D.Pooling2DType[]{Pooling2D.Pooling2DType.AVG, Pooling2D.Pooling2DType.PNORM, Pooling2D.Pooling2DType.MAX,};
+        Pooling2D.Pooling2DType[] types = new Pooling2D.Pooling2DType[]{Pooling2D.Pooling2DType.PNORM, Pooling2D.Pooling2DType.AVG, Pooling2D.Pooling2DType.MAX};
 
         int cnt = 0;
 
@@ -216,7 +216,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                     for (int kh : sizeH) {
                                         for (int kw : sizeW) {
 
-                                            INDArray in = Nd4j.rand(new int[]{m, d, h, w});
+                                            INDArray in = Nd4j.linspace(1, (m * d * h * w), (m * d * h * w)).reshape(new int[]{m, d, h, w});
 
                                             int[] outSize = getOutputSize(in, new int[]{kh, kw}, new int[]{sh, sw}, null, true);
 
@@ -271,7 +271,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                                     break;
                                             }
 
-                                            reduced = reduced.reshape('c',m,d, outSize[0], outSize[1]);
+                                            reduced = reduced.reshape('c',m,d, outSize[0], outSize[1]).dup('c');
 
                                             assertEquals("Failed opType: " + type, reduced, output);
                                         }

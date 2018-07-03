@@ -86,6 +86,10 @@ public class LongBuffer extends BaseDataBuffer {
         super(data, copy);
     }
 
+    public LongBuffer(long[] data, boolean copy, MemoryWorkspace workspace) {
+        super(data, copy, workspace);
+    }
+
     public LongBuffer(float[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }

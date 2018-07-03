@@ -359,7 +359,7 @@ namespace functions {
             Nd4jLong xIdx[MAX_RANK];
 
             for (Nd4jLong i = tid; i < length; i+= totalThreads) {
-                shape::ind2sub(xRank, xShape, i,xIdx);
+                shape::ind2sub(xRank, xShape, i, length, xIdx);
                 auto  xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
                 auto resultOffset = shape::getOffset(0, zShape, zStride, xIdx, zRank);
 

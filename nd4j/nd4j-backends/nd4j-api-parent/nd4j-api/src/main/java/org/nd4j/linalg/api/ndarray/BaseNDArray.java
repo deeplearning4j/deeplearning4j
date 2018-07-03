@@ -2590,7 +2590,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
          */
         // length/data.length can be different in case of Threshold conversion
         return Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
-                || (length() < data().length() && data.dataType() != DataBuffer.Type.LONG)
+                || (length() < data().length() && data.dataType() != DataBuffer.Type.INT)
                 || data().originalDataBuffer() != null;
     }
 
@@ -2751,7 +2751,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             i += this.length();
 
         long idx = this.isVector() ? i : Shape.getOffset(jvmShapeInfo.javaShapeInformation, Shape.ind2subC(this.shape(), i));
-        val buffer = Nd4j.createBuffer(this.data(), idx, 1);
+        val buffer = Nd4j.createBuffer( this.data(), this.data().originalOffset() + idx, 1);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],0,1,'c');
         return Nd4j.createArrayFromShapeBuffer(buffer, shape);
     }
@@ -3572,6 +3572,23 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
         }
         return dup().data().asLong();
+    }
+
+    @Override
+    public long[][] toLongMatrix() {
+        if(!isMatrix()) {
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
+        }
+
+        if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        long[][] ret = new long[(int) rows()][(int) columns()];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = getRow(i).dup().data().asLong();
+        }
+
+        return ret;
     }
 
     @Override
@@ -6467,8 +6484,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
-        int buffer = FlatArray.createBufferVector(builder, this.data().asBytes());
-        int array = FlatArray.createFlatArray(builder, shape, buffer, SameDiff.getDataTypeAsByte(this.data().dataType()), ByteOrder.BE);
+        int buffer = this.isEmpty() ? 0 : FlatArray.createBufferVector(builder, this.data().asBytes());
+        val type = this.isEmpty() ? SameDiff.getDataTypeAsByte(Nd4j.dataType()) : SameDiff.getDataTypeAsByte(this.data().dataType());
+        int array = FlatArray.createFlatArray(builder, shape, buffer, type, ByteOrder.BE);
 
         return array;
     }
@@ -6586,6 +6604,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isEmpty() {
-        return ArrayOptionsHelper.arrayType(jvmShapeInfo.javaShapeInformation) == ArrayType.EMPTY;
+        return Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
     }
 }

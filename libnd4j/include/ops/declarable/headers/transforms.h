@@ -30,7 +30,8 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_tile)
-        DECLARE_CUSTOM_OP(tile, 1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(tile,    1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(tile_bp, 2, 1, false, 0, -2);
         #endif
 
         #if NOT_EXCLUDED(OP_repeat)
@@ -41,7 +42,7 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(invert_permutation, 1, 1, false, 0, 0);
         #endif
 
-        DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(concat_bp, -1, -1, false, 0, 1);
 
         #if NOT_EXCLUDED(OP_mergemax)

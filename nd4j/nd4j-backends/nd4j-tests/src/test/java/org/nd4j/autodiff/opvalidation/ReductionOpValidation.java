@@ -686,17 +686,16 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testMomentsOp(){
-        OpValidationSuite.ignoreFailing();
         int[] axes = new int[]{0};
         INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
         INDArray outMean = Nd4j.createUninitialized(new long[]{4});
-        INDArray outStd = Nd4j.createUninitialized(new long[]{4});
+        INDArray outVar = Nd4j.createUninitialized(new long[]{4});
 
-        OpTestCase tc = new OpTestCase(new Moments(input, outMean, outStd, axes));
+        OpTestCase tc = new OpTestCase(new Moments(input, outMean, outVar, axes));
 
         tc.expectedOutput(0, input.mean(axes).reshape(4));
-        tc.expectedOutput(1, input.std(axes).reshape(4));
+        tc.expectedOutput(1, input.var(false, axes).reshape(4));
 
         String err = OpValidation.validate(tc);
         assertNull(err);
@@ -704,14 +703,12 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testNormalizeMomentsOp(){
-        OpValidationSuite.ignoreFailing();
-
         INDArray data = Nd4j.linspace(1, 100, 100).reshape(10,10);
         INDArray ssSum = data.sum(0);
         INDArray ssSqSum = data.mul(data).sum(0);
 
         INDArray meanExp = data.mean(0);
-        INDArray varExp = data.var(true, 0);
+        INDArray varExp = data.var(false, 0);
 
         INDArray mean = Nd4j.createUninitialized(meanExp.shape());
         INDArray var = Nd4j.createUninitialized(varExp.shape());

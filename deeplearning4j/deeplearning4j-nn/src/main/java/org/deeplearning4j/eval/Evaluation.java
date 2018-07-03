@@ -379,8 +379,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         }
 
         // Length of real labels must be same as length of predicted labels
-        if (realOutcomes.length() != guesses.length())
-            throw new IllegalArgumentException("Unable to evaluate. Outcome matrices not same length");
+        if (!Arrays.equals(realOutcomes.shape(),guesses.shape())) {
+            throw new IllegalArgumentException("Unable to evaluate. Predictions and labels arrays are not same shape." +
+                    " Predictions shape: " + Arrays.toString(guesses.shape()) + ", Labels shape: " + Arrays.toString(realOutcomes.shape()));
+        }
 
         // For each row get the most probable label (column) from prediction and assign as guessMax
         // For each row get the column of the true label and assign as currMax
