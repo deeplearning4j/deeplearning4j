@@ -11,8 +11,14 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import org.nd4j.linalg.api.ops.impl.shape.Unstack;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -31,6 +37,71 @@ public class LocallyConnected2DLayer extends ConvolutionLayer {
 
     public LocallyConnected2DLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+    }
+
+
+    /**
+     * Pre-output method
+     *
+     * @param training    Train or test time (impacts dropout)
+     * @param forBackprop If true: return the im2col2d array for re-use during backprop. False: return null for second
+     *                    pair entry. Note that it may still be null in the case of CuDNN and the like.
+     * @return            Pair of arrays: preOutput (activations) and optionally the im2col2d array
+     */
+    @Override
+    protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
+        validateInputRank();
+
+        INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
+        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
+
+        LocallyConnected2D layerConf = (LocallyConnected2D) layerConf();
+
+
+        int miniBatch = (int) input.size(0);
+        int outDepth = (int) layerConf.getNOut();
+        int inDepth = (int) layerConf.getNIn();
+        validateInputDepth(inDepth);
+
+        int kH = layerConf.getKernelSize()[0];
+        int kW = layerConf.getKernelSize()[1];
+
+        int featureDim = inDepth * kH * kW;
+
+        int sH = layerConf.getStride()[0];
+        int sW = layerConf.getStride()[1];
+
+        int outH = layerConf.getOutputSize()[0];
+        int outW = layerConf.getOutputSize()[1];
+
+        List<INDArray> arrayList = new ArrayList<>();
+        for (int i = 0; i < outH; i++) { // iterate over all output patches
+            for (int j = 0; j < outW; j++) {
+                INDArray arr = input.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(i * sH, i * sH + kH),
+                        NDArrayIndex.interval(j * sW, j * sW + kW));
+                arrayList.add(arr.reshape(1, miniBatch, featureDim));
+            }
+        }
+        INDArray[] inputArray = arrayList.toArray(new INDArray[outH * outW]);
+        for (int i = 0; i < inputArray.length; i ++) {
+            inputArray[i] = Nd4j.create(new int[] {featureDim, outDepth});
+        }
+        INDArray[] weightArray = new INDArray[outH * outW];
+        Nd4j.getExecutioner().exec(new Unstack(weights, weightArray, 0));
+        System.out.println(weightArray[0]);
+
+
+        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new long[]{10, 16, 6, 6});
+
+        // TODO: permute & reshape input to (oH * oW, mb, kH * kW * nIn)
+        // TODO kernel is of shape (oH * oW, kH * kW * nIn, nOut)
+        // TODO: compute batched mmul, resulting in output shape (oH * oW, mb, nOut)
+        // TODO: permute output to (mb, nOut, oH * oW)
+        // TODO: reshape output to expected (mb, nOut, oH, oW)
+
+        return new Pair<>(z, null);
     }
 
     @Override
@@ -78,45 +149,5 @@ public class LocallyConnected2DLayer extends ConvolutionLayer {
         return new Pair<>(retGradient, epsNext);
     }
 
-
-    /**
-     * Pre-output method
-     *
-     * @param training    Train or test time (impacts dropout)
-     * @param forBackprop If true: return the im2col2d array for re-use during backprop. False: return null for second
-     *                    pair entry. Note that it may still be null in the case of CuDNN and the like.
-     * @return            Pair of arrays: preOutput (activations) and optionally the im2col2d array
-     */
-    protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
-        assertInputSet(false);
-        validateInputRank();
-
-        INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
-        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
-
-        LocallyConnected2D layerConf = (LocallyConnected2D) layerConf();
-
-
-        int miniBatch = (int) input.size(0);
-        int outDepth = (int) layerConf.getNOut();
-        int inDepth = (int) layerConf.getNIn();
-        validateInputDepth(inDepth);
-
-        int kH = layerConf.getKernelSize()[0];
-        int kW = layerConf.getKernelSize()[1];
-
-        int outH = layerConf.getOutputSize()[0];
-        int outW = layerConf.getOutputSize()[1];
-
-        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new long[]{42, 1337, 'f'});
-
-        // TODO: reshape input to (oH * oW, mb, kH * kW * nIn)
-        // TODO kernel is of shape (oH * oW, kH * kW * nIn, nOut)
-        // TODO: compute batched mmul, resulting in output shape (oH * oW, mb, nOut)
-        // TODO: permute output to (mb, nOut, oH * oW)
-        // TODO: reshape output to expected (mb, nOut, oH, oW)
-
-        return new Pair<>(z, null);
-    }
 
 }

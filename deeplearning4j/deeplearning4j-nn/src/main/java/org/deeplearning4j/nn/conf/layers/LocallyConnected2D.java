@@ -17,6 +17,7 @@ import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import sun.plugin.dom.exception.InvalidStateException;
 
 import java.util.Collection;
 import java.util.Map;
@@ -45,7 +46,11 @@ public class LocallyConnected2D extends ConvolutionLayer {
     }
 
     private void computeOutputSize() {
-        int nIn = (int) getNIn();
+        int nIn = (int) getNIn(); // TODO nIn in general not available here
+
+        if (inputSize == null) {
+            throw new InvalidStateException("Input size has to be specified for locally connected layers.");
+        }
 
         int[] inputShape = new int[] {1, nIn, inputSize[0], inputSize[1]};
         INDArray dummyInputForShapeInference = Nd4j.ones(inputShape);
@@ -100,11 +105,37 @@ public class LocallyConnected2D extends ConvolutionLayer {
 
         int[] inputSize;
 
-        protected Builder(int[] kernelSize, int[] stride, int[] padding, int[] inputSize) {
+        public Builder() {
+            super();
+        }
+
+        public Builder(int[] kernelSize, int[] stride, int[] padding, int[] inputSize) {
             this.kernelSize = kernelSize;
             this.stride = stride;
             this.padding = padding;
             this.inputSize = inputSize;
+        }
+
+        /**
+         * Size of the convolution
+         * rows/columns
+         * @param kernelSize the height and width of the
+         *                   kernel
+         * @return
+         */
+        public Builder kernelSize(int... kernelSize) {
+            this.kernelSize = kernelSize;
+            return this;
+        }
+
+        public Builder stride(int... stride) {
+            this.stride = stride;
+            return this;
+        }
+
+        public Builder padding(int... padding) {
+            this.padding = padding;
+            return this;
         }
 
         /**
@@ -113,7 +144,7 @@ public class LocallyConnected2D extends ConvolutionLayer {
          * @param inputSize pair of height and width of the input filters to this layer
          * @return Builder
          */
-        public Builder setInputSize(int[] inputSize){
+        public Builder setInputSize(int... inputSize){
             Preconditions.checkState(inputSize.length == 2, "Input size argument of a locally connected" +
                     "layer has to have length 2, got " + inputSize.length);
             this.inputSize = inputSize;
