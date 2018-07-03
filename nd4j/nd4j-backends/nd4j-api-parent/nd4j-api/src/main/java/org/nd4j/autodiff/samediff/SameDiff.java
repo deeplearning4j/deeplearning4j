@@ -2264,9 +2264,9 @@ public class SameDiff {
     }
 
     /**
-     * Upsampling 2d - same scale for both dimensions. NCHW input format.
+     * 2D Convolution layer operation - Upsampling 2d with same scale for both dimensions. NCHW input format.
      *
-     * @param input Input, in NCHW format
+     * @param input Input - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width])
      * @param scale Scale to upsample in both H and W dimensions
      * @return Upsampled input
      */
@@ -2275,9 +2275,9 @@ public class SameDiff {
     }
 
     /**
-     * Upsampling 2d - same scale for both dimensions. NCHW input format.
+     * 2D Convolution layer operation - Upsampling 2d with same scale for both dimensions. NCHW input format.
      *
-     * @param input Input, in NCHW format
+     * @param input Input - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width])
      * @param scale Scale to upsample in both H and W dimensions
      * @return Upsampled input
      */
@@ -2286,9 +2286,10 @@ public class SameDiff {
     }
 
     /**
-     * Upsampling 2d
+     * 2D Convolution layer operation - Upsampling 2d
      *
-     * @param input  Input, in NCHW format
+     * @param input Input - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width])
+     *              or NHWC format (shape [minibatch, height, width, channels])
      * @param nchw   If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
      * @param scaleH Scale to upsample in height dimension
      * @param scaleW Scale to upsample in width dimension
@@ -2299,7 +2300,7 @@ public class SameDiff {
     }
 
     /**
-     * Upsampling 2d
+     * 2D Convolution layer operation - Upsampling 2d
      *
      * @param input  Input, in NCHW format
      * @param nchw   If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
@@ -2313,23 +2314,25 @@ public class SameDiff {
     }
 
     /**
-     * Average pooling 2d operation.
+     * 2D Convolution layer operation - average pooling 2d
      *
-     * @param input           the input to average pooling 2d
-     * @param pooling2DConfig the configuration
-     * @return
+     * @param input           the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format
+     *                        (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
+     * @param pooling2DConfig the configuration for
+     * @return Result after applying average pooling on the input
      */
     public SDVariable avgPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
         return avgPooling2d(null, input, pooling2DConfig);
     }
 
     /**
-     * Average pooling 2d operation.
+     * 2D Convolution layer operation - average pooling 2d
      *
      * @param name            name of the operation in SameDiff
-     * @param input           the input to average pooling 2d
+     * @param input           the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format
+     *                        (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
      * @param pooling2DConfig the configuration
-     * @return
+     * @return Result after applying average pooling on the input
      */
     public SDVariable avgPooling2d(String name, SDVariable input, Pooling2DConfig pooling2DConfig) {
         SDVariable ret = f().avgPooling2d(input, pooling2DConfig);
@@ -2337,23 +2340,25 @@ public class SameDiff {
     }
 
     /**
-     * Max pooling 2d operation.
+     * 2D Convolution layer operation - max pooling 2d
      *
-     * @param input           the input to max pooling 2d
+     * @param input           the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+     *                        (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
      * @param pooling2DConfig the configuration
-     * @return
+     * @return Result after applying max pooling on the input
      */
     public SDVariable maxPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
         return maxPooling2d(null, input, pooling2DConfig);
     }
 
     /**
-     * Max pooling 2d operation.
+     * 2D Convolution layer operation - max pooling 2d
      *
      * @param name            name of the operation in SameDiff
-     * @param input           the input to max pooling 2d
+     * @param input           the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+     *                        (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
      * @param pooling2DConfig the configuration
-     * @return
+     * @return Result after applying max pooling on the input
      */
     public SDVariable maxPooling2d(String name, SDVariable input, Pooling2DConfig pooling2DConfig) {
         SDVariable ret = f().maxPooling2d(input, pooling2DConfig);
@@ -2361,23 +2366,27 @@ public class SameDiff {
     }
 
     /**
-     * Average pooling 3d operation.
+     * 3D convolution layer operation - average pooling 3d
      *
-     * @param input           the input to average pooling 3d
+     * @param input           the input to average pooling 3d operation - 5d activations in NCDHW format
+     *                        (shape [minibatch, channels, depth, height, width]) or NDHWC format
+     *                        (shape [minibatch, depth, height, width, channels])
      * @param pooling3DConfig the configuration
-     * @return
+     * @return Result after applying average pooling on the input
      */
     public SDVariable avgPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
         return avgPooling3d(null, input, pooling3DConfig);
     }
 
     /**
-     * Average pooling 3d operation.
+     * 3D convolution layer operation - average pooling 3d
      *
      * @param name            name of the operation in SameDiff
-     * @param input           the input to average pooling 3d
+     * @param input           the input to average pooling 3d operation - 5d activations in NCDHW format
+     *                        (shape [minibatch, channels, depth, height, width]) or NDHWC format
+     *                        (shape [minibatch, depth, height, width, channels])
      * @param pooling3DConfig the configuration
-     * @return
+     * @return Result after applying average pooling on the input
      */
     public SDVariable avgPooling3d(String name, SDVariable input, Pooling3DConfig pooling3DConfig) {
         SDVariable ret = f().avgPooling3d(input, pooling3DConfig);
@@ -2385,23 +2394,27 @@ public class SameDiff {
     }
 
     /**
-     * Max pooling 3d operation.
+     * 3D convolution layer operation - max pooling 3d operation.
      *
-     * @param input           the input to max pooling 3d
+     * @param input           the input to average pooling 3d operation - 5d activations in NCDHW format
+     *                        (shape [minibatch, channels, depth, height, width]) or NDHWC format
+     *                        (shape [minibatch, depth, height, width, channels])
      * @param pooling3DConfig the configuration
-     * @return
+     * @return Result after applying max pooling on the input
      */
     public SDVariable maxPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
         return maxPooling3d(null, input, pooling3DConfig);
     }
 
     /**
-     * Max pooling 3d operation.
+     * 3D convolution layer operation - max pooling 3d operation.
      *
      * @param name            name of the operation in SameDiff
-     * @param input           the inputs to max pooling 3d
+     * @param input           the input to average pooling 3d operation - 5d activations in NCDHW format
+     *                        (shape [minibatch, channels, depth, height, width]) or NDHWC format
+     *                        (shape [minibatch, depth, height, width, channels])
      * @param pooling3DConfig the configuration
-     * @return
+     * @return Result after applying max pooling on the input
      */
     public SDVariable maxPooling3d(String name, SDVariable input, Pooling3DConfig pooling3DConfig) {
         SDVariable ret = f().maxPooling3d(input, pooling3DConfig);
@@ -2409,9 +2422,9 @@ public class SameDiff {
     }
 
     /**
-     * Conv1d operation.
+     * 1D Convolution layer operation - Conv1d
      *
-     * @param input        the input array to conv1d op
+     * @param input        the input array/activations for the conv1d op
      * @param weights      weights for conv1d op
      * @param conv1DConfig the configuration
      * @return
@@ -2436,7 +2449,7 @@ public class SameDiff {
 
 
     /**
-     * Local response normalization operation.
+     * 2D convolution layer operation - local response normalization
      *
      * @param inputs    the inputs to lrn
      * @param lrnConfig the configuration
@@ -2447,7 +2460,7 @@ public class SameDiff {
     }
 
     /**
-     * Local response normalization operation.
+     * 2D convolution layer operation - local response normalization
      *
      * @param name      name of the operation in SameDiff
      * @param input    the inputs to lrn
@@ -2461,11 +2474,14 @@ public class SameDiff {
     }
 
     /**
-     * 2D convolution operation
+     * 2D Convolution operation (without bias)
      *
-     * @param layerInput input tensor to conv 2D op
-     * @param weights conv 2D weights
-     * @param config Conv2DConfig configuration
+     * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
+     * @param weights    Weights for the convolution operation. 4 dimensions.
+     *                   If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
+     *                   If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param config     Conv2DConfig configuration
      * @return result of conv2d op
      */
     public SDVariable conv2d(SDVariable layerInput, SDVariable weights, Conv2DConfig config) {
@@ -2474,12 +2490,15 @@ public class SameDiff {
 
 
     /**
-     * 2D convolution operation
+     * 2D Convolution operation with optional bias
      *
-     * @param layerInput input tensor to conv 2D op
-     * @param weights conv 2D weights
-     * @param bias conv 2D bias
-     * @param config Conv2DConfig configuration
+     * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
+     * @param weights    Weights for the convolution operation. 4 dimensions.
+     *                   If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
+     *                   If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param bias       Optional 1D bias array with shape [outputChannels]. May be null.
+     * @param config     Conv2DConfig configuration
      * @return result of conv2d op
      */
     public SDVariable conv2d(SDVariable layerInput, SDVariable weights, SDVariable bias, Conv2DConfig config) {
@@ -2492,35 +2511,40 @@ public class SameDiff {
     }
 
     /**
-     * Conv2d operation.
+     * 2D Convolution operation with optional bias
      *
-     * @param inputs       the inputs to conv2d
-     * @param conv2DConfig the configuration
-     * @return
+     * @param inputs an array with either 2 elements (layerInput, weights) or 3 elements (layerInput, weights, bias) as
+     *               described in {@link #conv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)}
+     * @param config     Conv2DConfig configuration
+     * @return result of convolution 2d operation
      */
-    public SDVariable conv2d(SDVariable[] inputs, Conv2DConfig conv2DConfig) {
-        return conv2d(null, inputs, conv2DConfig);
+    public SDVariable conv2d(SDVariable[] inputs, Conv2DConfig config) {
+        return conv2d(null, inputs, config);
     }
 
     /**
-     * Conv2d operation.
+     * 2D Convolution operation with optional bias
      *
-     * @param name         name of the operation in SameDiff
-     * @param inputs       the inputs to conv2d
-     * @param conv2DConfig the configuration
-     * @return
+     * @param name   Name of the output SDVariable
+     * @param inputs an array with either 2 elements (layerInput, weights) or 3 elements (layerInput, weights, bias) as
+     *               described in {@link #conv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)}
+     * @param config Conv2DConfig configuration
+     * @return result of convolution 2d operation
      */
-    public SDVariable conv2d(String name, SDVariable[] inputs, Conv2DConfig conv2DConfig) {
-        SDVariable ret = f().conv2d(inputs, conv2DConfig);
+    public SDVariable conv2d(String name, SDVariable[] inputs, Conv2DConfig config) {
+        SDVariable ret = f().conv2d(inputs, config);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * Depth-wise 2D convolution operation
+     * Depth-wise 2D convolution operation without bias
      *
-     * @param layerInput input tensor to conv 2D op
-     * @param depthWeights depth-wise conv 2D weights
-     * @param config Conv2DConfig configuration
+     * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+     *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
+     * @param depthWeights depth-wise conv 2D weights. 4 dimensions.
+     *                     If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
+     *                     If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param config       Conv2DConfig configuration
      * @return result of conv2d op
      */
     public SDVariable depthWiseConv2d(SDVariable layerInput, SDVariable depthWeights, Conv2DConfig config) {
@@ -2529,13 +2553,16 @@ public class SameDiff {
 
 
     /**
-     * Depth-wise 2D convolution operation
+     * Depth-wise 2D convolution operation with optional bias
      *
-     * @param layerInput input tensor to conv 2D op
-     * @param depthWeights depth-wise conv 2D weights
-     * @param bias conv 2D bias
-     * @param config Conv2DConfig configuration
-     * @return result of conv2d op
+     * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+     *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
+     * @param depthWeights depth-wise conv 2D weights. 4 dimensions.
+     *                     If layer input data is in NCHW format, weights should have format [outputChannels, inputChannels, kernelHeight, kernelWidth].
+     *                     If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, inputChannels, outputChannels]
+     * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
+     * @param config       Conv2DConfig configuration
+     * @return result of depthwise conv2d op
      */
     public SDVariable depthWiseConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable bias, Conv2DConfig config) {
         SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
@@ -2548,11 +2575,13 @@ public class SameDiff {
 
 
     /**
-     * Depth-wise Conv2d operation.
+     * Depth-wise convolution 2D operation.
      *
-     * @param inputs            the inputs to depth-wise conv2d
+     * @param inputs            the inputs to depth-wise conv2d. An array with either 2 elements (layerInput, depthWeights)
+     *                          or 3 elements (layerInput, depthWeights, bias) as described in
+     *                          {@link #depthWiseConv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)}
      * @param depthConv2DConfig the configuration
-     * @return
+     * @return result of depthwise conv2d op
      */
     public SDVariable depthWiseConv2d(SDVariable[] inputs, Conv2DConfig depthConv2DConfig) {
         return depthWiseConv2d(null, inputs, depthConv2DConfig);
@@ -2560,12 +2589,14 @@ public class SameDiff {
 
 
     /**
-     * Depth-wise Conv2d operation.
+     * Depth-wise convolution 2D operation.
      *
-     * @param name              name of the operation in SameDiff
-     * @param inputs            the inputs to sconv2d
+     * @param name              name of the output variable
+     * @param inputs            the inputs to depth-wise conv2d. An array with either 2 elements (layerInput, depthWeights)
+     *                          or 3 elements (layerInput, depthWeights, bias) as described in
+     *                          {@link #depthWiseConv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)}
      * @param depthConv2DConfig the configuration
-     * @return
+     * @return result of depthwise conv2d op
      */
     public SDVariable depthWiseConv2d(String name, SDVariable[] inputs, Conv2DConfig depthConv2DConfig) {
         SDVariable ret = f().depthWiseConv2d(inputs, depthConv2DConfig);
@@ -2574,12 +2605,18 @@ public class SameDiff {
 
 
     /**
-     * Separable 2D convolution operation
+     * Separable 2D convolution operation without bias
      *
-     * @param layerInput input tensor to conv 2D op
-     * @param depthWeights conv 2D weights
-     * @param config Conv2DConfig configuration
-     * @return result of conv2d op
+     * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+     *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
+     * @param depthWeights Depth weights, rank 4.
+     *                     If layer input is in NCHW format, depth weights should have format [outputChannels, depthMultiplier, kernelHeight, kernelWidth].
+     *                     If layer input is in NHWC format, depth weights should have format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
+     * @param pointWeights Point weights, rank 4.
+     *                     If layer input is in NCHW format, point weights should have format [outputChannels, inputChannels*depthMultiplier, 1, 1].
+     *                     If layer input is in NHWC format, point weights should have format [1, 1, inputChannels*depthMultiplier, outputChannels]
+     * @param config       Conv2DConfig configuration
+     * @return result of separable convolution 2d operation
      */
     public SDVariable separableConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable pointWeights,
                                       Conv2DConfig config) {
@@ -2588,14 +2625,19 @@ public class SameDiff {
 
 
     /**
-     * Separable 2D convolution operation
+     * Separable 2D convolution operation with optional bias
      *
-     * @param layerInput input tensor to conv 2D op
-     * @param depthWeights depth-wise conv 2D weights
-     * @param pointWeights point-wise conv 2D weights
-     * @param bias conv 2D bias
-     * @param config Conv2DConfig configuration
-     * @return result of conv2d op
+     * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+     *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
+     * @param depthWeights Depth weights, rank 4.
+     *                     If layer input is in NCHW format, depth weights should have format [outputChannels, depthMultiplier, kernelHeight, kernelWidth].
+     *                     If layer input is in NHWC format, depth weights should have format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
+     * @param pointWeights Point weights, rank 4.
+     *                     If layer input is in NCHW format, point weights should have format [outputChannels, inputChannels*depthMultiplier, 1, 1].
+     *                     If layer input is in NHWC format, point weights should have format [1, 1, inputChannels*depthMultiplier, outputChannels]
+     * @param bias         Optional bias, rank 1 with shape [outputChannels]. May be null.
+     * @param config       Conv2DConfig configuration
+     * @return result of separable convolution 2d operation
      */
     public SDVariable separableConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable pointWeights,
                                       SDVariable bias, Conv2DConfig config) {
@@ -2609,11 +2651,12 @@ public class SameDiff {
     }
 
     /**
-     * Separable Conv2d operation.
+     * Separable 2D convolution operation with/without optional bias
      *
-     * @param inputs       the inputs to conv2d
+     * @param inputs       the inputs to separable conv2 operation. Should be length 3 (layerInput, depthWeights, pointWeights)
+     *                     or length 4 (layerInput, depthWeights, pointWeights, bias) as described in {@link #separableConv2d(SDVariable, SDVariable, SDVariable, SDVariable, Conv2DConfig)}
      * @param conv2DConfig the configuration
-     * @return
+     * @return result of separable convolution 2d operation
      */
     public SDVariable sconv2d(SDVariable[] inputs, Conv2DConfig conv2DConfig) {
         return sconv2d(null, inputs, conv2DConfig);
@@ -2621,12 +2664,13 @@ public class SameDiff {
 
 
     /**
-     * Separable Conv2d operation.
+     * Separable 2D convolution operation with/without optional bias
      *
-     * @param name         name of the operation in SameDiff
-     * @param inputs       the inputs to sconv2d
+     * @param name         name of the output variable
+     * @param inputs       the inputs to separable conv2 operation. Should be length 3 (layerInput, depthWeights, pointWeights)
+     *                     or length 4 (layerInput, depthWeights, pointWeights, bias) as described in {@link #separableConv2d(SDVariable, SDVariable, SDVariable, SDVariable, Conv2DConfig)}
      * @param conv2DConfig the configuration
-     * @return
+     * @return result of separable convolution 2d operation
      */
     public SDVariable sconv2d(String name, SDVariable[] inputs, Conv2DConfig conv2DConfig) {
         SDVariable ret = f().sconv2d(inputs, conv2DConfig);
@@ -2635,10 +2679,13 @@ public class SameDiff {
 
 
     /**
-     * 2D deconvolution operation
+     * 2D deconvolution operation without bias
      *
-     * @param layerInput input tensor to conv 2D op
-     * @param weights conv 2D weights
+     * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
+     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
+     * @param weights    Weights for the 2d deconvolution operation. 4 dimensions.
+     *                   If layer input data is in NCHW format, weights should have format [inputChannels, outputChannels, kernelHeight, kernelWidth].
+     *                   If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, outputChannels, inputChannels]
      * @param deconv2DConfig DeConv2DConfig configuration
      * @return result of deconv2d op
      */
@@ -2648,11 +2695,14 @@ public class SameDiff {
 
 
     /**
-     * 2D deconvolution operation
+     * 2D deconvolution operation with optional bias
      *
-     * @param layerInput input tensor to conv 2D op
-     * @param weights conv 2D weights
-     * @param bias conv 2D bias
+     * @param layerInput     the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
+     *                       (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
+     * @param weights        Weights for the 2d deconvolution operation. 4 dimensions.
+     *                       If layer input data is in NCHW format, weights should have format [inputChannels, outputChannels, kernelHeight, kernelWidth].
+     *                       If layer input data is in NHWC format, weight should have format [kernelHeight, kernelWidth, outputChannels, inputChannels]
+     * @param bias           Optional 1D bias array with shape [outputChannels]. May be null.
      * @param deconv2DConfig DeConv2DConfig configuration
      * @return result of deconv2d op
      */
@@ -2666,11 +2716,12 @@ public class SameDiff {
     }
 
     /**
-     * Deconv2d operation.
+     * 2D deconvolution operation with or without optional bias
      *
-     * @param inputs         the inputs to sconv2d
+     * @param inputs         Inputs to the deconvolution 2d operation - input array of length 2 (layerInput, weights)
+     *                       or length 3 (layerInput, weights, bias) as described in {@link #deconv2d(SDVariable[], DeConv2DConfig)}
      * @param deconv2DConfig the configuration
-     * @return
+     * @return result of deconv2d op
      */
     public SDVariable deconv2d(SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
         return deconv2d(null, inputs, deconv2DConfig);
@@ -2678,12 +2729,13 @@ public class SameDiff {
 
 
     /**
-     * Deconv2d operation.
+     * 2D deconvolution operation with or without optional bias
      *
-     * @param name           name of the operation in SameDiff
-     * @param inputs         the inputs to sconv2d
+     * @param name           Name of the output variable
+     * @param inputs         Inputs to the deconvolution 2d operation - input array of length 2 (layerInput, weights)
+     *                       or length 3 (layerInput, weights, bias) as described in {@link #deconv2d(SDVariable[], DeConv2DConfig)}
      * @param deconv2DConfig the configuration
-     * @return
+     * @return result of deconv2d op
      */
     public SDVariable deconv2d(String name, SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
         SDVariable ret = f().deconv2d(inputs, deconv2DConfig);
@@ -2692,10 +2744,14 @@ public class SameDiff {
 
 
     /**
-     * Conv3d operation.
+     * Convolution 3D operation without bias
      *
-     * @param input        the input activations to conv3d
-     * @param weights      Weights for conv3d
+     * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
+     *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
+     *                     (shape [minibatch, depth, height, width, channels])
+     * @param weights      Weights for conv3d. Rank 5.
+     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
+     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
      * @param conv3DConfig the configuration
      * @return Conv3d output variable
      */
@@ -2704,11 +2760,15 @@ public class SameDiff {
     }
 
     /**
-     * Conv3d operation.
+     * Convolution 3D operation with optional bias
      *
-     * @param input        the input activations to conv3d
-     * @param weights      Weights for conv3d
-     * @param bias         bias for the Conv3d op. May be null if not present/used
+     * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
+     *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
+     *                     (shape [minibatch, depth, height, width, channels])
+     * @param weights      Weights for conv3d. Rank 5.
+     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
+     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
+     * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
      * @param conv3DConfig the configuration
      * @return Conv3d output variable
      */
@@ -2717,25 +2777,33 @@ public class SameDiff {
     }
 
     /**
-     * Conv3d operation.
+     * Convolution 3D operation without bias
      *
-     * @param name         name of the operation in SameDiff
-     * @param input        the input activations to conv3d
-     * @param weights      Weights for conv3d
+     * @param name         Name of the output variable
+     * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
+     *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
+     *                     (shape [minibatch, depth, height, width, channels])
+     * @param weights      Weights for conv3d. Rank 5.
+     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
+     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
      * @param conv3DConfig the configuration
      * @return Conv3d output variable
      */
     public SDVariable conv3d(String name, SDVariable input, SDVariable weights, Conv3DConfig conv3DConfig) {
-        return conv3d(null, input, weights, null, conv3DConfig);
+        return conv3d(name, input, weights, null, conv3DConfig);
     }
 
     /**
-     * Conv3d operation.
+     * Convolution 3D operation with optional bias
      *
-     * @param name         name of the operation in SameDiff
-     * @param input        the input activations to conv3d
-     * @param weights      Weights for conv3d
-     * @param bias         bias for the Conv3d op. May be null if not present/used
+     * @param name         Name of the output variable
+     * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
+     *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
+     *                     (shape [minibatch, depth, height, width, channels])
+     * @param weights      Weights for conv3d. Rank 5.
+     *                     If input data is in NCDHW fomat, weights should have shape [outputChannels, inputChannels, kernelDepth, kernelHeight, kernelWidth].
+     *                     If input data is in NDHWC fomat, weights should have shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
+     * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
      * @param conv3DConfig the configuration
      * @return Conv3d output variable
      */
@@ -2771,19 +2839,53 @@ public class SameDiff {
         return updateVariableNameAndReference(res, name);
     }
 
+    /**
+     * im2col operation for use in 2D convolution operations. Outputs a 6d array with shape
+     * [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]
+     *
+     * @param in     Input - rank 4 input with shape [minibatch, inputChannels, height, width]
+     * @param config Convolution configuration for the im2col operation
+     * @return Im2Col output variable
+     */
     public SDVariable im2Col(SDVariable in, Conv2DConfig config) {
         return im2Col(null, in, config);
     }
 
+    /**
+     * im2col operation for use in 2D convolution operations. Outputs a 6d array with shape
+     * [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]
+     *
+     * @param name   Name of the output variable
+     * @param in     Input - rank 4 input with shape [minibatch, inputChannels, height, width]
+     * @param config Convolution configuration for the im2col operation
+     * @return Im2Col output variable
+     */
     public SDVariable im2Col(String name, SDVariable in, Conv2DConfig config) {
         SDVariable ret = f().im2Col(in, config);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * col2im operation for use in 2D convolution operations. Outputs a 4d array with shape
+     * [minibatch, inputChannels, height, width]
+     *
+     * @param in     Input - rank 6 input with shape [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]
+     * @param config Convolution configuration for the col2im operation
+     * @return Col2Im output variable
+     */
     public SDVariable col2Im(SDVariable in, Conv2DConfig config) {
         return col2Im(null, in, config);
     }
 
+    /**
+     * col2im operation for use in 2D convolution operations. Outputs a 4d array with shape
+     * [minibatch, inputChannels, height, width]
+     *
+     * @param name   Name of the output variable
+     * @param in     Input - rank 6 input with shape [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]
+     * @param config Convolution configuration for the col2im operation
+     * @return Col2Im output variable
+     */
     public SDVariable col2Im(String name, SDVariable in, Conv2DConfig config) {
         SDVariable ret = f().col2Im(in, config);
         return updateVariableNameAndReference(ret, name);
