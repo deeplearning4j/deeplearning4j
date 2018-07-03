@@ -558,12 +558,12 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
 
     x0.template applyRandom<randomOps::DropOutInverted<float>>(_rngA, nullptr, &x0, prob);
 //    x1.template applyRandom<randomOps::DropOutInverted<float>>(_rngB, nullptr, &x1, prob);
-    x0.printIndexedBuffer("Result1");
+    x0.printIndexedBuffer("01Result1");
     int count = 0;
     for (int e = 0; e < x0.lengthOf(); e++)
         if (x0.getScalar(e) != 0.f)
             count++;
-    nd4j_printf("X0 count %i\n", count);
+    nd4j_printf("\nX0 count %i\n", count);
 //    ASSERT_TRUE(x0.equalsTo(&x1));
 
     // this check is required to ensure we're calling wrong signature
@@ -575,15 +575,15 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
 
     nd4j::ops::dropout<float> op;
 
-    auto ress = op.execute({&x0}, {0.98f}, {119});
+    auto ress = op.execute({&x1}, {1.f}, {119});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-    ress->at(0)->printIndexedBuffer("Dropout result is ");
+    ress->at(0)->printIndexedBuffer("01Dropout result is ");
     count = 0;
     for (int e = 0; e < ress->at(0)->lengthOf(); e++)
         if (ress->at(0)->getScalar(e) != 0.f)
             count++;
-    nd4j_printf("Dropout count %i\n", count);
+    nd4j_printf("\n01Dropout count %i\n\n", count);
 
     delete ress;
 }

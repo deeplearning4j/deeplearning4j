@@ -23,7 +23,7 @@ namespace helpers {
 
   
         if (reduceShape == nullptr)
-            input->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, output, &probValue);
+            input->template applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, nullptr, &probValue);
         else {
             REQUIRE_TRUE(reduceShape->lengthOf() <= input->rankOf(), 0, "dropout: Noise shape should be fittable to input");
         
