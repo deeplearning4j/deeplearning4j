@@ -1,28 +1,27 @@
 package org.deeplearning4j.nn.layers.local;
 
-import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.conf.CacheMode;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.LocallyConnected2D;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.convolution.Convolution;
+
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Arrays;
 
+/**
+ * A 2D locally connected layer computes a convolution with unshared weights. In a regular
+ * convolution operation for each input filter there is one kernel that moves over patches
+ * of the filter. In a locally connected layer, there is a separate kernel for each patch.
+ *
+ * @author Max Pumperla
+ */
 public class LocallyConnected2DLayer extends ConvolutionLayer {
 
     public LocallyConnected2DLayer(NeuralNetConfiguration conf) {
