@@ -35,19 +35,6 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
-        <!-- start: temporary addition - TODO: remove it -->
-        <repository>
-            <id>apache-nexus-snapshots</id>
-            <name>Apache Nexus Snapshots</name>
-            <url>https://repository.apache.org/content/groups/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <!--   end: temporary addition - TODO: remove it -->
     </repositories>
 
     <scm>
