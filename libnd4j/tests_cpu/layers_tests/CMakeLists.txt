@@ -33,7 +33,7 @@ else()
         if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
             set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
         else()
-            set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=native -mtune=native")
+            set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
         endif()
     else()
         set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
@@ -123,7 +123,7 @@ if (NOT DEFINED ENV{CLION_IDE})
                    LegacyOpsTests.cpp ContextTests.cpp IndexingTests.cpp ShapeUtilsTests.cpp NDArrayListTests.cpp ListOperationsTests.cpp NDArrayFactoryTests.cpp BitwiseUtilsTests.cpp 
                    SanityTests.cpp PlaygroundTests.cpp BroadcastableOpsTests.cpp GraphExecutionerTests.cpp GraphHolderTests.cpp OpTrackerTests.cpp HelpersTests1.cpp 
                    DeclarableOpsTests5.cpp DeclarableOpsTests6.cpp CnpyTests.cpp BrodcastTests.cpp Reduce3Tests.cpp ReduceTests.cpp ShapeTests2.cpp PairwiseTests.cpp 
-                   DeclarableOpsTests7.cpp MmapTests.cpp DeclarableOpsTests8.cpp DeclarableOpsTests9.cpp EmptyTests.cpp)
+                   DeclarableOpsTests7.cpp MmapTests.cpp DeclarableOpsTests8.cpp DeclarableOpsTests9.cpp EmptyTests.cpp TypeCastTests.cpp)
 endif ()
 
 if ($ENV{CLION_IDE})
