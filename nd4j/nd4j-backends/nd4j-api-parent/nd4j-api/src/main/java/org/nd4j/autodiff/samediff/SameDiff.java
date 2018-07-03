@@ -1534,10 +1534,36 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #meshgrid(List, SDVariable...)
+     */
     public SDVariable[] meshgrid(SDVariable... inputs){
         return meshgrid(null, inputs);
     }
 
+    /**
+     * Broadcast the 1D input variables onto an n-dimensional grid.<br>
+     * The resulting variable can be used for example for evaluating functions at all locations on a grid.<br>
+     * Example:<br>
+     * <pre>
+     * {@code input1 = [1, 2, 3]
+     * input2 = [4, 5, 6]
+     * SDVariable[] out = meshgrid(input1, input2)
+     * out[0]:
+     * [ 1, 2, 3]
+     * [ 1, 2, 3]
+     * [ 1, 2, 3]
+     *
+     * out[1]:
+     * [ 4, 4, 4]
+     * [ 5, 5, 5]
+     * [ 6, 6, 6]}
+     * </pre>
+     * <br>
+     * @param names List of names for the output variables. Must have exactly N names for N input arrays
+     * @param inputs N x 1D input variables
+     * @return an array of exactly N SDVariables (for N inputs), of rank N
+     */
     public SDVariable[] meshgrid(List<String> names, SDVariable... inputs){
         return meshgrid(names, true, inputs);
     }
@@ -1553,12 +1579,11 @@ public class SameDiff {
     }
 
     /**
-     * Variable initialization
-     * with a specified {@link WeightInitScheme}
+     * Variable initialization with a specified {@link WeightInitScheme}
      *
-     * @param name             the opName of the variable
+     * @param name             the name of the variable
      * @param shape            the shape of the array to be created
-     * @param weightInitScheme the weight init scheme
+     * @param weightInitScheme the weight initialization scheme
      * @return the created variable
      */
     public SDVariable var(String name, long[] shape, WeightInitScheme weightInitScheme) {
@@ -1589,11 +1614,10 @@ public class SameDiff {
 
 
     /**
-     * Creates a {@link SDVariable}
-     * with the given shape
-     * and a depth of 0.
+     * Creates a {@link SDVariable} with the given shape and name<br>
+     * Any array will be generated with all zeros for the values
      *
-     * @param name  the opName of the variable
+     * @param name  the name of the variable
      * @param shape the shape of the variable
      * @return the created variable
      */
@@ -1602,19 +1626,24 @@ public class SameDiff {
         return var(name, shape, new ZeroInitScheme());
     }
 
-    public SDVariable var(String name, int[] shape) {
+    /**
+     * Creates a {@link SDVariable} with the given shape and name<br>
+     * Any array will be generated with all zeros for the values
+     *
+     * @param name  the name of the variable
+     * @param shape the shape of the variable
+     * @return the created variable
+     */
+    public SDVariable var(String name, int... shape) {
         Preconditions.checkArgument(shape != null && shape.length > 0, "Invalid shape: %s", shape);
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
 
 
     /**
-     * Initialize a {@link SDVariable}
-     * reference tying this variable to this
-     * samediff instance.
+     * Initialize a {@link SDVariable} reference tying this variable to this samediff instance.
      * <p>
-     * {@link NDArraySupplierInitScheme} is used
-     * to ensure that if the array is allocated anywhere
+     * {@link NDArraySupplierInitScheme} is used to ensure that if the array is allocated anywhere
      * and {@link SameDiff} instance to exist as a copy of the variable.
      *
      * @param arr
@@ -1657,11 +1686,9 @@ public class SameDiff {
 
         variableMap.put(arr.getVarName(), ret);
         return ret;
-
     }
 
     // auto naming
-
     private int _var_id = 0;
 
     private String getNewVarName() {
@@ -1673,156 +1700,54 @@ public class SameDiff {
         return varName;
     }
 
+    /**
+     * Creates a {@link SDVariable} with the specified shape and a generated name<br>
+     * Any array will be generated with all zeros for the values
+     *
+     * @param shape the shape of the variable
+     * @return the created variable
+     */
     public SDVariable var(int... shape) {
         return var(getNewVarName(), shape);
     }
 
+    /**
+     * Creates a {@link SDVariable} with the specified shape and a generated name<br>
+     * Any array will be generated with all zeros for the values
+     *
+     * @param shape the shape of the variable
+     * @return the created variable
+     */
     public SDVariable var(long... shape) {
         return var(getNewVarName(), shape);
     }
 
+    /**
+     * Creates a {@link SDVariable} with the specified shape and a generated name. The associated array will
+     * then be generated using the specified weight initialization scheme
+     *
+     * @param weightInitScheme The weight initialization scheme to use when generating an INDArray
+     * @param shape            the shape of the variable
+     * @return the created variable
+     */
     public SDVariable var(WeightInitScheme weightInitScheme, long... shape) {
         return var(getNewVarName(), shape, weightInitScheme);
     }
 
+    /**
+     * Create an {@link SDVariable} with a generated name, and assocate the specified array with it
+     * @param arr Array to associate with the new variable
+     * @return New SDVariable
+     * @see #var(String, INDArray)
+     */
     public SDVariable var(INDArray arr) {
         return var(getNewVarName(), arr);
     }
 
-
     /**
-     * Generate a square identity matrix with the specified number of rows
-     *
-     * @param rows Number of rows
-     */
-    public SDVariable eye(int rows) {
-        return eye(rows, rows);
-    }
-
-    /**
-     * Generate an identity matrix with the specified number of rows and columns
-     *
-     * @param rows Number of rows
-     */
-    public SDVariable eye(String name, int rows) {
-        return eye(name, rows, rows);
-    }
-
-    /**
-     * Generate an identity matrix with the specified number of rows and columns
-     *
-     * @param rows Number of rows
-     * @param cols Number of columns
-     */
-    public SDVariable eye(int rows, int cols) {
-        return eye(null, rows, cols);
-    }
-
-    /**
-     * Generate an identity matrix with the specified number of rows and columns
-     *
-     * @param rows Number of rows
-     * @param cols Number of columns
-     */
-    public SDVariable eye(String name, int rows, int cols) {
-        return eye(name, rows, cols, null);
-    }
-
-    /**
-     * see {@link #eye(String, int, int, int...)}
-     */
-    public SDVariable eye(int rows, int cols, int... batchDimension) {
-        return eye(null, rows, cols, batchDimension);
-    }
-
-    /**
-     * Generate an identity matrix with the specified number of rows and columns, with optional leading dims<br>
-     * Example:<br>
-     * batchShape: [3,3]<br>
-     * numRows: 2<br>
-     * numCols: 4<br>
-     * returns a tensor of shape (3, 3, 2, 4) that consists of 3 * 3 batches of (2,4)-shaped identity matrices:<br>
-     * 1 0 0 0<br>
-     * 0 1 0 0<br>
-     *
-     * @param rows           Number of rows
-     * @param cols           Number of columns
-     * @param batchDimension Batch dimensions. May be null
-     */
-    public SDVariable eye(String name, int rows, int cols, int... batchDimension) {
-        SDVariable eye = new Eye(this, rows, cols, batchDimension).outputVariables()[0];
-        return updateVariableNameAndReference(eye, name);
-    }
-
-    public SDVariable eye(String name, SDVariable rows, SDVariable cols, SDVariable batchDimension){
-        SDVariable eye = new Eye(this, rows, cols, batchDimension).outputVariables()[0];
-        return updateVariableNameAndReference(eye, name);
-    }
-
-    public SDVariable eye(SDVariable rows, SDVariable cols, SDVariable batchDimension){
-        return eye(null, rows, cols, batchDimension);
-    }
-
-
-    public SDVariable eye(String name, SDVariable rows, SDVariable cols){
-        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
-        return updateVariableNameAndReference(eye, name);
-    }
-
-    public SDVariable eye(SDVariable rows, SDVariable cols){
-        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
-        return updateVariableNameAndReference(eye, null);
-    }
-
-    public SDVariable eye(String name, SDVariable rows){
-        SDVariable eye = new Eye(this, rows).outputVariables()[0];
-        return updateVariableNameAndReference(eye, name);
-    }
-
-    public SDVariable eye(SDVariable rows){
-        SDVariable eye = new Eye(this, rows).outputVariables()[0];
-        return updateVariableNameAndReference(eye, null);
-    }
-
-    /**
-     * Remove an argument for a function. Note that if this function
-     * does not contain the argument, it will just be a no op.
-     *
-     * @param varName  the variable name to remove
-     * @param function the function to remove the argument from
-     */
-    public void removeArgFromFunction(String varName, DifferentialFunction function) {
-        val args = function.args();
-
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].getVarName().equals(varName)) {
-                /**
-                 * Since we are removing the variable reference
-                 * from the arguments we need to  update both
-                 * the reverse and forward arguments.
-                 */
-                val reverseArgs = incomingArgsReverse.get(function.getOwnName());
-                incomingArgsReverse.remove(function.getOwnName());
-                val newArgs = new ArrayList<String>(args.length - 1);
-                for (int arg = 0; arg < args.length; arg++) {
-                    if (!reverseArgs[arg].equals(varName)) {
-                        newArgs.add(reverseArgs[arg]);
-                    }
-                }
-
-                val newArgsArr = newArgs.toArray(new String[newArgs.size()]);
-                incomingArgsReverse.put(function.getOwnName(), newArgsArr);
-                //no further need to scan
-                break;
-            }
-        }
-    }
-
-
-    /**
-     * @param name
-     * @param arr
-     * @return
+     * Create an {@link SDVariable} with the specified name, and assocate the specified array with it
+     * @param arr Array to associate with the new variable
+     * @return New SDVariable with the specified name and array
      */
     public SDVariable var(String name, INDArray arr) {
         if (variableMap.containsKey(name) && variableMap.get(name).getArr() != null)
@@ -1869,6 +1794,160 @@ public class SameDiff {
     }
 
     /**
+     * Generate a square identity matrix with the specified number of rows.
+     *
+     * @param rows Number of rows (and columns)
+     * @return SDVariable with an identity matrix array
+     */
+    public SDVariable eye(int rows) {
+        return eye(rows, rows);
+    }
+
+    /**
+     * Generate an identity matrix with the specified number of rows and columns.
+     *
+     * @param rows Number of rows
+     */
+    public SDVariable eye(String name, int rows) {
+        return eye(name, rows, rows);
+    }
+
+    /**
+     * @see #eye(String, int, int)
+     */
+    public SDVariable eye(int rows, int cols) {
+        return eye(null, rows, cols);
+    }
+
+    /**
+     * Generate an identity matrix with the specified number of rows and columns
+     * Example:<br>
+     * <pre>
+     * {@code SDVariable eye = eye(3,2)
+     * eye:
+     * [ 1, 0]
+     * [ 0, 1]
+     * [ 0, 0]}
+     * </pre>
+     *
+     * @param name Name of the new SDVariable
+     * @param rows Number of rows
+     * @param cols Number of columns
+     * @return SDVaribable identity matrix
+     */
+    public SDVariable eye(String name, int rows, int cols) {
+        return eye(name, rows, cols, null);
+    }
+
+    /**
+     * see {@link #eye(String, int, int, int...)}
+     */
+    public SDVariable eye(int rows, int cols, int... batchDimension) {
+        return eye(null, rows, cols, batchDimension);
+    }
+
+    /**
+     * Generate an identity matrix with the specified number of rows and columns, with optional leading dims<br>
+     * Example:<br>
+     * batchShape: [3,3]<br>
+     * numRows: 2<br>
+     * numCols: 4<br>
+     * returns a tensor of shape (3, 3, 2, 4) that consists of 3 * 3 batches of (2,4)-shaped identity matrices:<br>
+     * 1 0 0 0<br>
+     * 0 1 0 0<br>
+     *
+     * @param rows           Number of rows
+     * @param cols           Number of columns
+     * @param batchDimension Batch dimensions. May be null
+     */
+    public SDVariable eye(String name, int rows, int cols, int... batchDimension) {
+        SDVariable eye = new Eye(this, rows, cols, batchDimension).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    /**
+     * As per {@link #eye(String, int, int, int...)} bit with the number of rows/columns specified as scalar SDVariables,
+     * and the batch dimension specified as a 1D SDVariable
+     */
+    public SDVariable eye(String name, SDVariable rows, SDVariable cols, SDVariable batchDimension){
+        SDVariable eye = new Eye(this, rows, cols, batchDimension).outputVariable();
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    /**
+     * As per {@link #eye(int, int, int...)} bit with the number of rows/columns specified as scalar SDVariables,
+     * and the batch dimension specified as a 1D SDVariable
+     */
+    public SDVariable eye(SDVariable rows, SDVariable cols, SDVariable batchDimension){
+        return eye(null, rows, cols, batchDimension);
+    }
+
+    /**
+     * As per {@link #eye(String, int, int)} bit with the number of rows/columns specified as scalar SDVariables
+     */
+    public SDVariable eye(String name, SDVariable rows, SDVariable cols){
+        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    /**
+     * As per {@link #eye(int, int)} bit with the number of rows/columns specified as scalar SDVariables
+     */
+    public SDVariable eye(SDVariable rows, SDVariable cols){
+        SDVariable eye = new Eye(this, rows, cols).outputVariables()[0];
+        return updateVariableNameAndReference(eye, null);
+    }
+
+    /**
+     * As per {@link #eye(String, int)} but with the number of rows specified as a scalar SDVariable
+     */
+    public SDVariable eye(String name, SDVariable rows){
+        SDVariable eye = new Eye(this, rows).outputVariables()[0];
+        return updateVariableNameAndReference(eye, name);
+    }
+
+    /**
+     * As per {@link #eye(int)} but with the number of rows specified as a scalar SDVariable
+     */
+    public SDVariable eye(SDVariable rows){
+        SDVariable eye = new Eye(this, rows).outputVariables()[0];
+        return updateVariableNameAndReference(eye, null);
+    }
+
+    /**
+     * Remove an argument for a function. Note that if this function does not contain the argument, it will just be a no op.
+     *
+     * @param varName  the variable name to remove
+     * @param function the function to remove the argument from
+     */
+    public void removeArgFromFunction(String varName, DifferentialFunction function) {
+        val args = function.args();
+
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].getVarName().equals(varName)) {
+                /**
+                 * Since we are removing the variable reference
+                 * from the arguments we need to  update both
+                 * the reverse and forward arguments.
+                 */
+                val reverseArgs = incomingArgsReverse.get(function.getOwnName());
+                incomingArgsReverse.remove(function.getOwnName());
+                val newArgs = new ArrayList<String>(args.length - 1);
+                for (int arg = 0; arg < args.length; arg++) {
+                    if (!reverseArgs[arg].equals(varName)) {
+                        newArgs.add(reverseArgs[arg]);
+                    }
+                }
+
+                val newArgsArr = newArgs.toArray(new String[newArgs.size()]);
+                incomingArgsReverse.put(function.getOwnName(), newArgsArr);
+                //no further need to scan
+                break;
+            }
+        }
+    }
+
+    /**
      * Get the variable based on the opName
      *
      * @param name the opName of the variable
@@ -1899,25 +1978,21 @@ public class SameDiff {
 
 
     /**
-     * Assign a vertex id
-     * to a gradient
+     * Assign a SDVariable to represent the gradient of the SDVariable with the specified name
      *
-     * @param variableName the vertex id
-     *                     to assign
-     * @param variable     the variable
+     * @param variableName the variable name to assign the gradient variable for
+     * @param variable     the gradient variable
      */
     public void setGradientForVariableName(String variableName, SDVariable variable) {
         if (variable == null) {
             throw new ND4JIllegalStateException("Unable to set null gradient for variable name " + variableName);
         }
-
         gradients.put(variableName, variable);
     }
 
 
     /**
-     * Get the forward variable for gradient
-     * based on the gradient's vertex id
+     * Get the forward variable for gradient based on the gradient's vertex id
      *
      * @param vertexId the vertex id
      * @return the gradient for the variable or null
@@ -1936,14 +2011,12 @@ public class SameDiff {
     }
 
     /**
-     * Gradient with respect
-     * to the given variable opName.
-     * Note that in order to run this function,
-     * {@link #execBackwards()} must be executed first.
-     * All gradient functions are obtained within that time.
+     * Get the gradient for the variable with the specified variable name.
+     * Note that in order to run this function, {@link #execBackwards()} must be executed first.
+     * All gradient functions are obtained from the results of the execBackwards call.
      *
-     * @param varName the variable opName to get the gradient for.
-     * @return
+     * @param varName the variable name to get the gradient variable for.
+     * @return The gradient variable for the specified variable
      */
     public SDVariable grad(String varName) {
         if (!sameDiffFunctionInstances.containsKey("grad")) {
@@ -1955,103 +2028,235 @@ public class SameDiff {
         return getFunction("grad").getGradForVariable(var.getVarName());
     }
 
+
+    /**
+     * @see #randomUniform(String, double, double, SDVariable)
+     */
     public SDVariable randomUniform(double min, double max, SDVariable shape){
         return randomUniform(null, min, max, shape);
     }
 
+    /**
+     * Generate a new random SDVariable, where values are randomly sampled according to a uniform distribution,
+     * U(min,max)<br>
+     * See {@link #randomUniform(double, double, long...)} for the equivalent function where the shape is
+     * specified as a long[] instead
+     *
+     * @param name  Name of the new SDVariable
+     * @param min   Minimum value
+     * @param max   Maximum value. Must satisfy max >= min
+     * @param shape  Shape of the new random SDVariable, as a 1D array
+     * @return New SDVariable
+     */
     public SDVariable randomUniform(String name, double min, double max, SDVariable shape){
         SDVariable ret = f().randomUniform(min, max, shape);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #randomUniform(String, double, double, long...)
+     */
     public SDVariable randomUniform(double min, double max, long... shape){
         return randomUniform(null, min, max, shape);
     }
 
+    /**
+     * Generate a new random SDVariable, where values are randomly sampled according to a uniform distribution,
+     * U(min,max)<br>
+     * See {@link #randomUniform(double, double, long...)} for the equivalent function where the shape is
+     * specified as a SDVariable instead
+     *
+     * @param name  Name of the new SDVariable
+     * @param min   Minimum value
+     * @param max   Maximum value. Must satisfy max >= min
+     * @param shape Shape of the new random SDVariable
+     * @return New SDVariable
+     */
     public SDVariable randomUniform(String name, double min, double max, long... shape){
         SDVariable ret = f().randomUniform(min, max, shape);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #randomNormal(String, double, double, SDVariable)
+     */
     public SDVariable randomNormal(double mean, double stddev, SDVariable shape){
         return randomNormal(null, mean, stddev, shape);
     }
 
+    /**
+     * Generate a new random SDVariable, where values are randomly sampled according to a Gaussian (normal) distribution,
+     * N(mean, stdev)<br>
+     * See {@link #randomNormal(String, double, double, long...)} for the equivalent function where the shape is
+     * specified as a long[] instead
+     *
+     * @param name   Name of the new SDVariable
+     * @param mean   Mean value for the random array
+     * @param stddev Standard deviation for the random array
+     * @param shape  Shape of the new random SDVariable, as a 1D array
+     * @return New SDVariable
+     */
     public SDVariable randomNormal(String name, double mean, double stddev, SDVariable shape){
         SDVariable ret = f().randomNormal(mean, stddev, shape);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #randomNormal(String, double, double, long...)
+     */
     public SDVariable randomNormal(double mean, double stddev, long... shape){
         return randomNormal(null, mean, stddev, shape);
     }
 
+    /**
+     * Generate a new random SDVariable, where values are randomly sampled according to a Gaussian (normal) distribution,
+     * N(mean, stdev)<br>
+     * See {@link #randomNormal(String, double, double, SDVariable)} for the equivalent function where the shape is
+     * specified as a long[] instead
+     *
+     * @param name   Name of the new SDVariable
+     * @param mean   Mean value for the random array
+     * @param stddev Standard deviation for the random array
+     * @param shape  Shape of the new random SDVariable
+     * @return New SDVariable
+     */
     public SDVariable randomNormal(String name, double mean, double stddev, long... shape){
         SDVariable ret = f().randomNormal(mean, stddev, shape);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #randomLogNormal(String, double, double, long...)
+     */
     public SDVariable randomLogNormal(double mean, double stddev, long... shape){
         return randomLogNormal(null, mean, stddev, shape);
     }
 
+    /**
+     * Generate a new random SDVariable, where values are randomly sampled according to a Log Normal distribution,
+     * i.e., {@code log(x) ~ N(mean, stdev)}<br>
+     *
+     * @param name   Name of the new SDVariable
+     * @param mean   Mean value for the random array
+     * @param stddev Standard deviation for the random array
+     * @param shape  Shape of the new random SDVariable
+     * @return New SDVariable
+     */
     public SDVariable randomLogNormal(String name, double mean, double stddev, long... shape){
         SDVariable ret = f().randomLogNormal(mean, stddev, shape);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #randomNormalTruncated(String, double, double, long...)
+     */
     public SDVariable randomNormalTruncated(double mean, double stddev, long... shape){
         return randomNormalTruncated(null, mean, stddev, shape);
     }
 
+    /**
+     * Generate a new random SDVariable, where values are randomly sampled according to a Gaussian (normal) distribution,
+     * N(mean, stdev). However, any values more than 1 standard deviation from the mean are dropped and re-sampled<br>
+     *
+     * @param name   Name of the new SDVariable
+     * @param mean   Mean value for the random array
+     * @param stddev Standard deviation for the random array
+     * @param shape  Shape of the new random SDVariable
+     * @return New SDVariable
+     */
     public SDVariable randomNormalTruncated(String name, double mean, double stddev, long... shape){
         SDVariable ret = f().randomNormalTruncated(mean, stddev, shape);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #randomBernoulli(String, double, SDVariable)
+     */
     public SDVariable randomBernoulli(double p, SDVariable shape){
         return randomBernoulli(null, p, shape);
     }
 
+    /**
+     * Generate a new random SDVariable, where values are randomly sampled according to a Bernoulli distribution,
+     * with the specified probability. Array values will have value 1 with probability P and value 0 with probability
+     * 1-P.<br>
+     * See {@link #randomBernoulli(String, double, long...)}  for the equivalent function where the shape is
+     * specified as a long[] instead
+     *
+     * @param name   Name of the new SDVariable
+     * @param p      Probability of value 1
+     * @param shape  Shape of the new random SDVariable, as a 1D array
+     * @return New SDVariable
+     */
     public SDVariable randomBernoulli(String name, double p, SDVariable shape){
         SDVariable ret = f().randomBernoulli(p, shape);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #randomBernoulli(String, double, long...)
+     */
     public SDVariable randomBernoulli(double p, long... shape){
         return randomBernoulli(null, p, shape);
     }
 
+    /**
+     * Generate a new random SDVariable, where values are randomly sampled according to a Bernoulli distribution,
+     * with the specified probability. Array values will have value 1 with probability P and value 0 with probability
+     * 1-P.<br>
+     * See {@link #randomBernoulli(String, double, SDVariable)}  for the equivalent function where the shape is
+     * specified as a SDVarible instead
+     *
+     * @param name   Name of the new SDVariable
+     * @param p      Probability of value 1
+     * @param shape  Shape of the new random SDVariable, as a 1D array
+     * @return New SDVariable
+     */
     public SDVariable randomBernoulli(String name, double p, long... shape){
         SDVariable ret = f().randomBernoulli(p, shape);
         return updateVariableNameAndReference(ret, name);
     }
 
+
     public SDVariable randomBinomial(int nTrials, double p, long... shape){
         return randomBinomial(null, nTrials, p, shape);
     }
 
+    /**
+     * Generate a new random SDVariable, where values are randomly sampled according to a Binomial distribution,
+     * with the specified number of trials and probability.
+     *
+     * @param name    Name of the new SDVariable
+     * @param nTrials Number of trials parameter for the binomial distribution
+     * @param p       Probability of success for each trial
+     * @param shape   Shape of the new random SDVariable, as a 1D array
+     * @return New SDVariable
+     */
     public SDVariable randomBinomial(String name, int nTrials, double p, long... shape){
         SDVariable ret = f().randomBinomial(nTrials, p, shape);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * Exponential distribution: P(x) = lambda * exp(-lambda * x)
+     * Generate a new random SDVariable, where values are randomly sampled according to a exponential distribution:
+     * P(x) = lambda * exp(-lambda * x)
      *
      * @param lambda Must be > 0
      * @param shape  Shape of the output
+     * @return new SDVariable
      */
     public SDVariable randomExponential(double lambda, SDVariable shape) {
         return randomExponential(null, lambda, shape);
     }
 
     /**
-     * Exponential distribution: P(x) = lambda * exp(-lambda * x)
+     * Generate a new random SDVariable, where values are randomly sampled according to a exponential distribution:
+     * P(x) = lambda * exp(-lambda * x)
      *
      * @param name   Name of the output variable
      * @param lambda Must be > 0
-     * @param shape  Shape of the output
+     * @param shape  Shape of the new variable
+     * @return new SDVaribale
      */
     public SDVariable randomExponential(String name, double lambda, SDVariable shape) {
         SDVariable ret = f().randomExponential(lambda, shape);
