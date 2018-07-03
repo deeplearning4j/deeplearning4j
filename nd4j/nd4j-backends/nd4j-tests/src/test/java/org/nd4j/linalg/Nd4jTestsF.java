@@ -33,6 +33,9 @@ public class Nd4jTestsF extends BaseNd4jTest {
 
     @Test
     public void testConcat3D_Vstack_F() throws Exception {
+        //Nd4j.getExecutioner().enableVerboseMode(true);
+        //Nd4j.getExecutioner().enableDebugMode(true);
+
         int[] shape = new int[] {1, 1000, 150};
         //INDArray cOrder =  Nd4j.rand(shape,123);
 
