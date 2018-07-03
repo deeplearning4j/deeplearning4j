@@ -528,16 +528,16 @@ NDArray<T>::NDArray(const NDArray<T> *other, const bool copyStrides, nd4j::memor
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
     std::vector<int8_t> NDArray<T>::asByteVector() {
-        std::vector<int8_t> result((unsigned long) this->lengthOf() * sizeOfT());
+        std::vector<int8_t> result((unsigned long long) this->lengthOf() * sizeOfT());
 
         if (this->isView()) {
-            auto tmp = this->dup();
+            auto tmp = this->dup(this->ordering());
 
-            memcpy(result.data(), tmp->_buffer, (unsigned long) tmp->lengthOf() * sizeOfT());
+            memcpy(result.data(), tmp->_buffer, (unsigned long long) tmp->lengthOf() * sizeOfT());
 
             delete tmp;
         } else {
-            memcpy(result.data(), _buffer, (unsigned long) this->lengthOf() * sizeOfT());
+            memcpy(result.data(), _buffer, (unsigned long long) this->lengthOf() * sizeOfT());
         }
 
         return result;

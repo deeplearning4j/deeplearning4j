@@ -1513,7 +1513,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(INDArray[] input, int layerTillIndex,boolean train) {
-        return feedForward(input, train, true);
+        setInputs(input);
+        return feedForward(train, layerTillIndex);
     }
 
 
@@ -4383,6 +4384,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public void setLearningRate(String layerName, ISchedule newLr) {
         NetworkUtils.setLearningRate(this, layerName, newLr);
+    }
+
+    /**
+     * Get the current learning rate, for the specified layer, from the network.
+     * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
+     * @param layerNumber   Layer number to get the learning rate for
+     * @return Learning rate for the specified layer, or null
+     */
+    public Double getLearningRate(String layerName){
+        return NetworkUtils.getLearningRate(this, layerName);
     }
 
     /**
