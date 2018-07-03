@@ -28,11 +28,14 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+
+import java.util.Arrays;
 
 import static org.nd4j.linalg.api.shape.Shape.hasDefaultStridesForShape;
 
@@ -58,18 +61,17 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
         INDArray z = preOutput(true, workspaceMgr);
-        INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst();
+        INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //Shape: [mb, vector, seqLength]
+
+        if (maskArray != null) {
+            delta = Broadcast.mul(delta, maskArray, delta, 0, 2);
+        }
 
         int inputLength = layerConf().getInputLength();
         int numSamples = input.rows();
         val nOut = layerConf().getNOut();
         delta = delta.permute(2, 0, 1);
         delta = delta.reshape(inputLength * numSamples, nOut);
-
-        if (maskArray != null) {
-            INDArray maskDelta = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.shape(), 'f');
-            delta = Broadcast.mul(delta, maskArray, maskDelta, 0, 2);
-        }
 
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
@@ -155,7 +157,14 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         INDArray ret = layerConf().getActivationFn().getActivation(rows, training);
         if (maskArray != null) {
-            ret.muliColumnVector(maskArray);
+            if(maskArray.rank() != 2 || !maskArray.equalShapes(input)){
+                throw new IllegalStateException("Mask array for EmbeddingSequenceLayer (when defined) must be rank 2 and" +
+                        "have shape equal to input shape. Input shape: " + Arrays.toString(input.shape()) +
+                        ", mask shape: " + Arrays.toString(maskArray.shape()));
+            }
+            //Returned array: rank 3, shape [mb, vector, seqLength]. mask shape: [mb, seqLength]
+            Broadcast.mul(ret, maskArray, ret, 0, 2);
+//            ret.muliColumnVector(maskArray);
         }
         return ret;
     }

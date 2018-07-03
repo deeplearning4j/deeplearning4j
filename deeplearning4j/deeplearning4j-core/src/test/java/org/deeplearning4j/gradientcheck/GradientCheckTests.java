@@ -20,6 +20,9 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
@@ -30,6 +33,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Random;
 
@@ -495,5 +499,44 @@ public class GradientCheckTests extends BaseDL4JTest {
 
             TestUtils.testModelSerialization(netGraph);
         }
+    }
+
+
+    @Test
+    public void testEmbeddingSequenceLayer(){
+
+        for(boolean maskArray : new boolean[]{false, true}){
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .updater(new NoOp())
+                    .weightInit(new NormalDistribution(0,1))
+                    .list()
+                    .layer(new EmbeddingSequenceLayer.Builder()
+                            .nIn(8)
+                            .nOut(4)
+                            .build())
+                    .layer(new RnnOutputLayer.Builder().nIn(4).nOut(3).activation(Activation.TANH)
+                            .lossFunction(LossFunction.MSE).build())
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            INDArray in = Transforms.floor(Nd4j.rand(3, 6).muli(8));    //Integers 0 to 7 inclusive
+            INDArray label = Nd4j.rand(new int[]{3, 3, 6});
+
+            INDArray fMask = null;
+            if(maskArray){
+                fMask = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.create(3,6), 0.5));
+            }
+
+            String msg = "mask=" + maskArray;
+            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, label, fMask, null);
+            assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(net);
+        }
+
     }
 }
