@@ -103,6 +103,28 @@ namespace nd4j {
         static std::vector<Nd4jLong> composeShapeUsingDimsAndIdx(const std::vector<int>& dimsAndIdx);
 
         /**
+        *  x * y = c,  evaluate shape for array resulting from mmul operation, corresponds to case when input arrays have the same rank and rank is >= 2, outer (batch) dimensions (that is 0,1,...,rank-3) of input arrays should match 
+        *  also this method works when both ranks = 2
+        */
+        static std::vector<Nd4jLong> evalShapeForBatchedMmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY);
+
+        
+        /**
+        *  evaluate number of sub-arrays along dimensions stored in dimsToExclude
+        *  i.e. if shape is [2,3,4,5] and dimsToExclude={0,2}, then number of sub-arrays = 8
+        */
+        static Nd4jLong getNumOfSubArrs(const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude);
+
+        /**
+        *  evaluate indexes ranges that define sub-array of array having shape=shapeInfo
+        *  subArrIdx - index of current sub-array
+        *  shapeInfo - shapeInfo of array for which to evaluate sub-arrays 
+        *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-arrays along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5]
+        *  idxRanges - where to put result, the length of idxRanges must be equal to 2*shapeInfo[0]
+        */
+        static void evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude, Nd4jLong* idxRanges);
+
+        /**
         *  method returns false if permut == {0,1,2,...permut.size()-1} - in that case permutation is unnecessary
         */
         FORCEINLINE static bool isPermutNecessary(const std::vector<int>& permut);

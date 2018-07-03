@@ -2925,7 +2925,7 @@ bool NDArray<T>::isUnitary() {
     ////////////////////////////////////////////////////////////////////////
     // operator returns sub-array with buffer pointing at this->_buffer + certain offset
     template<typename T>
-    NDArray<T> NDArray<T>::operator()(const int* idx, bool keepUnitiesInShape)  const {
+    NDArray<T> NDArray<T>::operator()(const Nd4jLong* idx, bool keepUnitiesInShape)  const {
 
         const int rank = rankOf();
         Nd4jLong *newShape;
@@ -2937,7 +2937,7 @@ bool NDArray<T>::isUnitary() {
         auto stridesOf = shape::stride(newShape);
 
         Nd4jLong offset = 0;
-        int first, last;
+        Nd4jLong first, last;
         for (int d = 0; d < rank; ++d) {
             // building new shape first
             if (idx[2*d] != idx[2*d+1]) {

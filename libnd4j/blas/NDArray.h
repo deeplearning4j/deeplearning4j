@@ -784,7 +784,7 @@ namespace nd4j {
         *        when (dimStart == dimEnd) then whole range will be used for current dimension
         *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        NDArray<T> operator()(const int* idx, bool keepUnitiesInShape = false)  const;
+        NDArray<T> operator()(const Nd4jLong* idx, bool keepUnitiesInShape = false)  const;
 
         /**
         *  addition operator: array + other
@@ -1554,14 +1554,13 @@ Nd4jLong  NDArray<T>::memoryFootprint() {
 }
 
 //////////////////////////////////////////////////////////////////////////
-// returns true if these two NDArrays have same shape
 // still the definition of inline function must be in header file
 template<typename T>
- bool NDArray<T>::isSameShape(const std::vector<Nd4jLong>& other) const{
-    if (this->rankOf() != (int) other.size())
+bool NDArray<T>::isSameShape(const std::vector<Nd4jLong>& shape) const{
+    if (this->rankOf() != (int) shape.size())
         return false;
     for (int e = 0; e < this->rankOf(); e++) {
-        if (this->shapeOf()[e] != other.at(e) && other.at(e) != -1)
+        if (this->shapeOf()[e] != shape.at(e) && shape.at(e) != -1)
             return false;
     }
     return true;

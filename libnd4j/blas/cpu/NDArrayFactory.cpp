@@ -805,10 +805,68 @@ NDArray<T>* NDArrayFactory<T>::simpleMMul(const NDArray<T>* a, const NDArray<T>*
     return c;
 }
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+void NDArrayFactory<T>::batchedMmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>* y, nd4j::NDArray<T>* z, const bool transX, const bool transY) {
 
-    template class ND4J_EXPORT NDArrayFactory<float>;
-    template class ND4J_EXPORT NDArrayFactory<float16>;
-    template class ND4J_EXPORT NDArrayFactory<double>;
+    std::vector<Nd4jLong> outShape = ShapeUtils<T>::evalShapeForBatchedMmul(x->getShapeInfo(), y->getShapeInfo(), transX, transY);
+    if(!z->isSameShape(outShape)) {
+        nd4j_printf("NDArrayFactory::batchedMmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils<T>::shapeAsString(z).c_str(), ShapeUtils<T>::shapeAsString(outShape).c_str());
+        throw std::invalid_argument("");       
+    }
+
+    const int rank = x->rankOf();
+    NDArray<T>* xT(const_cast<NDArray<T>*>(x)), *yT(const_cast<NDArray<T>*>(y));
+    
+    if(transX || transY) {
+        
+        std::vector<int> permut(rank);
+        for (int i = 0; i < rank-2; ++i)
+            permut[i] = i;        
+        permut[rank-2] = rank - 1;
+        permut[rank-1] = rank - 2;
+        
+        if(transX)
+            xT = x->permute(permut);
+
+        if(transY)
+            yT = y->permute(permut);
+    }
+
+    if(rank == 2) {
+        mmulHelper(xT, yT, z, (T)1., (T)0.);        
+    }
+    else {
+        const int batchRank = rank - 2;    
+        std::vector<int> dimsToExclude(batchRank);
+        for(int i = 0; i < batchRank; ++i)
+            dimsToExclude[i] = i;
+
+        const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
+        Nd4jLong idxRanges[2 * rank];
+
+#pragma omp parallel for schedule(guided) private(idxRanges)
+        for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+
+            ShapeUtils<T>::evalIdxRangesForSubArr(i, xT->getShapeInfo(), dimsToExclude, idxRanges);
+            NDArray<T> xSubArr = (*xT)(idxRanges, false);
+            NDArray<T> ySubArr = (*yT)(idxRanges, false);
+            NDArray<T> zSubArr = (*z)(idxRanges, false);
+            mmulHelper(&xSubArr, &ySubArr, &zSubArr, (T)1., (T)0.);
+        }
+    }
+
+    if(xT != x)
+        delete xT;
+    if(yT != y)
+        delete yT;
+}
+
+
+
+template class ND4J_EXPORT NDArrayFactory<float>;
+template class ND4J_EXPORT NDArrayFactory<float16>;
+template class ND4J_EXPORT NDArrayFactory<double>;
 }
 
 
