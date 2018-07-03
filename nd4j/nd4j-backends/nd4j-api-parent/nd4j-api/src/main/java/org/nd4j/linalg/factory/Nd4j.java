@@ -63,10 +63,8 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.transforms.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
-import org.nd4j.linalg.api.ops.random.impl.Choice;
-import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
-import org.nd4j.linalg.api.ops.random.impl.Linspace;
-import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
+import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
+import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -3537,6 +3535,82 @@ public class Nd4j {
      */
     public static INDArray randn(INDArray target, org.nd4j.linalg.api.rng.Random rng) {
         return getExecutioner().exec(new GaussianDistribution(target), rng);
+    }
+
+    /**
+     * Generate a random array according to a binomial distribution with probability p: i.e., values 0 with probability
+     * (1-p) or value 1 with probability p
+     *
+     * @param p     Probability. Must be in range 0 to 1
+     * @param shape Shape of the result array
+     * @return Result array
+     */
+    public static INDArray randomBernoulli(double p, long... shape) {
+        return randomBernoulli(p, Nd4j.createUninitialized(shape));
+    }
+
+    /**
+     * Fill the specified array with values generated according to a binomial distribution with probability p: i.e.,
+     * values 0 with probability (1-p) or value 1 with probability p
+     *
+     * @param p      Probability. Must be in range 0 to 1
+     * @param target Result array to place generated values in
+     * @return Result array
+     */
+    public static INDArray randomBernoulli(double p, @NonNull INDArray target) {
+        Preconditions.checkArgument(p >= 0 && p <= 1.0, "Invalid probability: must be in range 0 to 1, got %s", p);
+        return Nd4j.getExecutioner().exec(new BernoulliDistribution(target, p));
+    }
+
+    /**
+     * Generate an array with random values generated according to a binomial distribution with the specified
+     * number of trials and probability
+     *
+     * @param nTrials Number of trials. Must be >= 0
+     * @param p       Probability. Must be in range 0 to 1
+     * @param shape   Shape of the result array
+     * @return Result array
+     */
+    public static INDArray randomBinomial(int nTrials, double p, long... shape) {
+        return randomBinomial(nTrials, p, Nd4j.createUninitialized(shape));
+    }
+
+    /**
+     * Fill the target array with random values generated according to a binomial distribution with the specified
+     * number of trials and probability
+     *
+     * @param nTrials Number of trials. Must be >= 0
+     * @param p       Probability. Must be in range 0 to 1
+     * @param target  Result array
+     * @return Result array
+     */
+    public static INDArray randomBinomial(int nTrials, double p, INDArray target) {
+        Preconditions.checkArgument(p >= 0 && p <= 1.0, "Invalid probability: must be in range 0 to 1, got %s", p);
+        Preconditions.checkArgument(nTrials >= 0, "Number of trials must be positive: got %s", nTrials);
+        return Nd4j.getExecutioner().exec(new BinomialDistribution(target, nTrials, p));
+    }
+
+    /**
+     * Exponential distribution: P(x) = lambda * exp(-lambda * x)
+     *
+     * @param lambda Must be > 0
+     * @param shape  Shape of the array to generate
+     */
+    public static INDArray randomExponential(double lambda, long... shape) {
+        return randomExponential(lambda, Nd4j.createUninitialized(shape));
+    }
+
+    /**
+     * Exponential distribution: P(x) = lambda * exp(-lambda * x)
+     *
+     * @param lambda Must be > 0
+     * @param target Array to hold the result
+     */
+    public static INDArray randomExponential(double lambda, INDArray target) {
+        Preconditions.checkArgument(lambda > 0, "Lambda argument must be >= 0 - got %s", lambda);
+        INDArray shapeArr = Nd4j.create(ArrayUtil.toDouble(target.shape()));
+        Nd4j.getExecutioner().exec(new RandomExponential(shapeArr, target, lambda));
+        return target;
     }
 
     ////////////////////// CREATE ///////////////////////////////
