@@ -200,6 +200,9 @@ public class SameDiff {
         }
     }
 
+    /**
+     * @return New cloner object. NOTE: INTENDED FOR DEVELOPER USE ONLY
+     */
     public static Cloner newCloner() {
         Cloner cloner = new Cloner();
 
@@ -343,8 +346,7 @@ public class SameDiff {
 
 
     /**
-     * Clears debugging state
-     * and disables debug mode.
+     * Clears debugging state and disables debug mode.
      */
     public SameDiff disableDebugging() {
         debugMode = false;
@@ -360,8 +362,7 @@ public class SameDiff {
     }
 
     /**
-     * Returns this samediff instance's
-     * {@link DifferentialFunctionFactory}
+     * Returns this samediff instance's {@link DifferentialFunctionFactory}
      *
      * @return
      */
@@ -462,9 +463,9 @@ public class SameDiff {
 
 
     /**
-     * Put the function for id
+     * Put the function for the given id
      *
-     * @param id       the id
+     * @param id       the id of the function
      * @param function the function
      */
     public void putFunctionForId(String id, DifferentialFunction function) {
@@ -479,10 +480,9 @@ public class SameDiff {
 
 
     /**
-     * Returns the inputs for the given function
+     * Returns the name(s) of the inputs for the given function
      *
-     * @param function the function to get the
-     *                 inputs for
+     * @param function the function to get the inputs for
      * @return the input ids for a given function
      */
     public String[] getInputsForFunction(DifferentialFunction function) {
@@ -492,10 +492,9 @@ public class SameDiff {
     }
 
     /**
-     * Returns the outputs for the given function
+     * Returns the name(s) of the outputs for the given function
      *
-     * @param function the function to get the
-     *                 inputs for
+     * @param function the function to get the outputs for
      * @return the outputs ids for a given function
      */
     public String[] getOutputsForFunction(DifferentialFunction function) {
@@ -504,10 +503,9 @@ public class SameDiff {
 
 
     /**
-     * Get the output variables given a set of ids
-     * from {@link #getOutputsForFunction(DifferentialFunction)}
+     * Get the output variable(s) for the specified differential function
      *
-     * @param function the function reference to get the id for
+     * @param function the function reference to get the output variable(s) for
      * @return the output variables for the given function
      */
     public SDVariable[] getOutputVariablesForFunction(DifferentialFunction function) {
@@ -526,11 +524,10 @@ public class SameDiff {
 
 
     /**
-     * Get the input variables given a set of ids
-     * from {@link #getInputVariablesForFunction(DifferentialFunction)}
+     * Get the input variable(s) for the specified differential function
      *
-     * @param function the function reference to get the id for
-     * @return the output variables for the given function
+     * @param function the function reference to get the input variable(s) for
+     * @return the input variables for the given function
      */
     public SDVariable[] getInputVariablesForFunction(DifferentialFunction function) {
         val inputs = getInputsForFunction(function);
@@ -551,11 +548,13 @@ public class SameDiff {
 
 
     /**
-     * Update the ndarray for the given vertex id.
+     * Update the INDArray for the given variable. Note that the array must exist to use this method.
      *
-     * @param varName
-     * @param arr
-     * @throws {@link ND4JIllegalStateException} when the array does not exist.
+     * @param varName Name of the variable to update the array for
+     * @param arr     Array to update
+     * @throws ND4JIllegalStateException when the array does not exist.
+     * @see #putArrayForVarName(String, INDArray)
+     * @see #putOrUpdateShapeForVarName(String, long[], boolean)
      */
     public void updateArrayForVarName(String varName, INDArray arr) {
         if (!variableNameToArr.containsKey(varName)) {
@@ -567,21 +566,20 @@ public class SameDiff {
     }
 
     /**
-     * Adds an ndarray for a given vertex id.
-     * Use {@link #updateArrayForVarName(String, INDArray)}
-     * if the array already exists.
+     * Adds an INDArray for a given variable name.
+     * Use {@link #updateArrayForVarName(String, INDArray)} if the array already exists.
      *
      * @param varName the vertex id to add
      * @param arr     the array to add
-     * @throws {@link ND4JIllegalStateException} when the array already exists.
+     * @throws ND4JIllegalStateException when the array already exists.
+     * @see #putOrUpdateShapeForVarName(String, long[], boolean)
      */
     public void putArrayForVarName(String varName, INDArray arr) {
         if (varName == null)
             throw new ND4JIllegalStateException("No null names allowed!");
 
         if (variableNameToArr.containsKey(varName)) {
-//            throw new ND4JIllegalStateException("Array for " + varName + " already exists!");
-///            return;
+            throw new ND4JIllegalStateException("Array for " + varName + " already exists!");
         }
 
         variableNameToArr.put(varName, arr);
@@ -590,7 +588,7 @@ public class SameDiff {
 
     /**
      * Get the shape for the given vertex id.
-     * Note that if an array is defined, it will use that shape instead.
+     * Note that if an array is defined, it will use the shape of the array instead.
      * <p>
      * A shape *and* an array should not be defined at the same time.
      * This wastes memory. The internal map used for tracking shapes for particular
@@ -603,20 +601,19 @@ public class SameDiff {
         if (variableNameToArr.containsKey(varName)) {
             return variableNameToArr.get(varName).shape();
         }
-
         return variableNameToShape.get(varName);
     }
 
 
     /**
-     * Update a vertex id with the given shape.
-     * Note that you should use {@link #putShapeForVarName(String, long[])}
-     * if you want to add a new shape.
-     * Update is meant to be an in place replacement
-     * of the shape for the vertex id *only*.
+     * Update a vertex id with the given shape.<br>
+     * Note that you should use {@link #putShapeForVarName(String, long[])} if you want to add a new shape.
+     * Update is meant to be an in place replacement of the shape for the vertex id *only*.
      *
      * @param varName the vertex id to associate
      * @param shape   the shape to associate with
+     * @see #putShapeForVarName(String, long[])
+     * @see #putOrUpdateShapeForVarName(String, long[], boolean)
      */
     public void updateShapeForVarName(String varName, long[] shape) {
         updateShapeForVarName(varName, shape, false);
@@ -639,7 +636,6 @@ public class SameDiff {
             }
         }
 
-
         for (int i = 0; i < shape.length; i++) {
             if (shape[i] < 1) {
                 addAsPlaceHolder(varName);
@@ -647,7 +643,6 @@ public class SameDiff {
                 return;
             }
         }
-
 
         variableNameToShape.put(varName, shape);
     }
@@ -658,6 +653,8 @@ public class SameDiff {
      *
      * @param varName the vertex id to associate
      * @param shape   the shape to associate with
+     * @see #putShapeForVarName(String, long[])
+     * @see #putOrUpdateShapeForVarName(String, long[], boolean)
      */
     public void putShapeForVarName(String varName, long[] shape) {
         if (shape == null) {
@@ -679,6 +676,15 @@ public class SameDiff {
         variableNameToShape.put(varName, shape);
     }
 
+    /**
+     * Put or update the shape for the given variable name. Optionally supports clearing the specified variable's
+     * INDArray if it's shape does not match the new shape
+     * @param varName                   Variable name
+     * @param shape                     Shape to put
+     * @param clearArrayOnShapeMismatch If false: no change to arrays. If true: if an INDArray is defined for the specified
+     *                                  variable name, it will be removed from the graph (to be later re-generated) if
+     *                                  its shape does not match the specified shape
+     */
     public void putOrUpdateShapeForVarName(String varName, @NonNull long[] shape, boolean clearArrayOnShapeMismatch){
         if(variableNameToArr.containsKey(varName)){
             updateShapeForVarName(varName, shape, clearArrayOnShapeMismatch);
@@ -689,8 +695,7 @@ public class SameDiff {
 
 
     /**
-     * Returns true if the given vertex id
-     * and shape already exist.
+     * Returns true if the given vertex id and shape already exist.
      *
      * @param varName the vertex id
      * @return true if the ndarray and vertex id already exist
@@ -701,22 +706,20 @@ public class SameDiff {
 
 
     /**
-     * Returns true if the given vertex id
-     * and {@link INDArray} already exist.
+     * Returns true if the given vertex id and {@link INDArray} already exist.
      *
      * @param varName the vertex id
-     * @return true if the ndarray and vertex id already exist
+     * @return true if a vertex with the given INDArray exists, and it has an INDArray associated with it
      */
     public boolean arrayAlreadyExistsForVarName(String varName) {
         return variableNameToArr.containsKey(varName);
     }
 
     /**
-     * Get an {@link INDArray}
-     * for a given vertex id
+     * Get an {@link INDArray} for a given vertex id, or null if none exists
      *
-     * @param varName
-     * @return
+     * @param varName Variable name to get the array for
+     * @return Array, or null if none exists
      */
     public INDArray getArrForVarName(String varName) {
         return variableNameToArr.get(varName);
@@ -726,7 +729,7 @@ public class SameDiff {
      * Associate the array with the given variable.
      *
      * @param arr      the array to get the variable for
-     * @param variable the variable to associate
+     * @param variable the name of the variable to associate the array with
      */
     public void associateArrayWithVariable(INDArray arr, @NonNull String variable) {
         associateArrayWithVariable(arr, this.getVariable(variable));
@@ -736,7 +739,7 @@ public class SameDiff {
      * Associate the array with the given variable.
      *
      * @param arr      the array to get the variable for
-     * @param variable the variable to associate
+     * @param variable the variable to associate the array with
      */
     public void associateArrayWithVariable(INDArray arr, SDVariable variable) {
         if (variable == null) {
@@ -770,8 +773,7 @@ public class SameDiff {
 
 
     /**
-     * Associate a {@link SameDiff}
-     * namespace as a sub function.
+     * Associate a {@link SameDiff} namespace as a sub function.
      *
      * @param name      the opName of the function
      * @param nameSpace the namespace
@@ -788,7 +790,7 @@ public class SameDiff {
     /**
      * Return the internal variable map
      *
-     * @return
+     * @return Map of variables by name
      */
     public Map<String, SDVariable> variableMap() {
         return variableMap;
@@ -823,15 +825,12 @@ public class SameDiff {
         }
 
         throw new ND4JIllegalStateException("Illegal method opName " + op.opName());
-
     }
 
 
     /**
-     * Get an {@link SDVariable}
-     * for an array reference.
-     * Internally samediff associates array references
-     * with variables. This will typically be a shortcut
+     * Get an {@link SDVariable} for an array reference.
+     * Internally samediff associates array references with variables. This will typically be a shortcut
      * for the array associated with {@link SDVariable#getArr()}
      *
      * @param arr the array reference
@@ -843,9 +842,10 @@ public class SameDiff {
 
 
     /**
-     * The set of defined function names
+     * The set of defined SameDiff function names. SameDiff function instances should not be confused
+     * with DifferentialFunction ops; an example of a SameDiff function instance is the gradient "grad" function
      *
-     * @return
+     * @return Set of defined SameDiff function instance names
      */
     public Collection<String> definedFunctionNames() {
         return this.sameDiffFunctionInstances.keySet();
@@ -853,10 +853,9 @@ public class SameDiff {
 
 
     /**
-     * Returns the number of bytes
-     * for the graph
+     * Returns the number of bytes for the graph. Calculated as sum_i prod(shapeOf(variable[i]))
      *
-     * @return
+     * @return Bytes for all of the arrays in the graph for the current variable shapes
      */
     public long memoryForGraph() {
         return numElements() * DataTypeUtil.lengthForDtype(Nd4j.dataType());
@@ -921,7 +920,6 @@ public class SameDiff {
             List<String> newVal = propertiesToResolve.get(forFunction.getOwnName());
             newVal.add(arrayName);
         }
-
     }
 
     /**
@@ -941,8 +939,7 @@ public class SameDiff {
 
 
     /**
-     * Returns true if the given function
-     * has ndarray properties to resolve.
+     * Returns true if the given function has ndarray properties to resolve.
      *
      * @param function the function to check
      * @return true if the function has yet to be resolved properties
@@ -1012,11 +1009,8 @@ public class SameDiff {
 
 
     /**
-     * Adds a field name -> variable name
-     * mapping for a given function.
-     * This is used for model import
-     * where there is an unresolved variable
-     * at the time of calling any
+     * Adds a field name -> variable name mapping for a given function.<br>
+     * This is used for model import where there is an unresolved variable at the time of calling any
      * {@link org.nd4j.imports.graphmapper.GraphMapper#importGraph(File)}
      * .
      * <p>
@@ -1098,21 +1092,14 @@ public class SameDiff {
 
 
     /**
-     * Attempts to insert the {@link DifferentialFunction}
-     * reference in to this {@link SameDiff}
-     * instance.
-     * If the given array field with the given
-     * index already exists, it will do a reference
-     * check to ensure that the 2 array fields are the same.
-     * <p>
-     * If not, an exception is thrown.
-     * If the instances are the same (by semantics, not reference)
-     * then it will just return the original instance.
-     * This is to ensure that instances that are created are unique
-     * and reference checked.
+     * Attempts to insert the {@link DifferentialFunction} reference in to this {@link SameDiff} instance.
+     * If the given array field with the given index already exists, it will do a reference check to ensure that the 2
+     * array fields are the same. If not, an exception is thrown.<br>
+     * If the instances are the same (by semantics, not reference) then it will just return the original instance.
+     * This is to ensure that instances that are created are unique and reference checked.
      *
      * @param function the array field to attempt to create
-     * @return
+     * @return Original instance
      */
     public <X extends SDVariable> X setupFunction(X function) {
         Preconditions.checkNotNull(function, "Passed in function must not be null!");
@@ -1127,10 +1114,11 @@ public class SameDiff {
 
 
     /**
-     * Adds outgoing args to the graph
+     * Adds outgoing arguments to the graph for the specified DifferentialFunction
+     * Also checks for input arguments and updates the graph adding an appropriate edge when the full graph is declared.
      *
-     * @param variables
-     * @param function
+     * @param variables Variables - arguments for the specified differential function
+     * @param function Differential function
      */
     public void addOutgoingFor(SDVariable[] variables, DifferentialFunction function) {
         String[] varNames = new String[variables.length];
@@ -1143,13 +1131,11 @@ public class SameDiff {
 
 
     /**
-     * Adds outgoing arguments to the graph.
-     * Also checks for input arguments
-     * and updates the graph adding an appropriate edge
-     * when the full graph is declared.
+     * Adds outgoing arguments to the graph for the specified DifferentialFunction
+     * Also checks for input arguments and updates the graph adding an appropriate edge when the full graph is declared.
      *
-     * @param varNames
-     * @param function
+     * @param varNames Name of the variables that are outputs of the specified differential function
+     * @param function Differential function
      */
     public void addOutgoingFor(String[] varNames, DifferentialFunction function) {
 
@@ -1177,17 +1163,16 @@ public class SameDiff {
                 funcs = new ArrayList<>();
                 functionOutputFor.put(resultName, funcs);
             }
-
             funcs.add(function);
         }
 
     }
 
     /**
-     * Adds incoming args to the graph
+     * Adds incoming arguments for the specified differential function to the graph
      *
-     * @param variables
-     * @param function
+     * @param variables Name of the variables that are arguments (inputs) to the specified function
+     * @param function  Function
      */
     public void addArgsFor(String[] variables, DifferentialFunction function) {
         if (function.getOwnName() == null)
@@ -1210,15 +1195,14 @@ public class SameDiff {
 
             funcs.add(function);
         }
-
     }
 
 
     /**
-     * Adds incoming args to the graph
+     * Adds incoming arguments for the specified differential function to the graph
      *
-     * @param variables
-     * @param function
+     * @param variables variables that are arguments (inputs) to the specified function
+     * @param function  Function
      */
     public void addArgsFor(SDVariable[] variables, DifferentialFunction function) {
         String[] varNames = new String[variables.length];
@@ -1256,18 +1240,20 @@ public class SameDiff {
 
 
     /**
-     * Returns true if this function already
-     * has defined arguments
+     * Returns true if this function already has defined arguments
      *
      * @param function the function to check
-     * @return true if the function has args false otherwise
+     * @return true if the function has args, false otherwise
      */
     public boolean hasArgs(DifferentialFunction function) {
         String[] vertexIdArgs = incomingArgsReverse.get(function.getOwnName());
         return vertexIdArgs != null && vertexIdArgs.length > 0;
     }
 
-
+    /**
+     * Get an array of differential functions that have been defined for this SameDiff instance
+     * @return Array of differential functions
+     */
     public DifferentialFunction[] functions() {
         val ret = functionInstancesById.values();
         return ret.toArray(new DifferentialFunction[ret.size()]);
@@ -1283,8 +1269,11 @@ public class SameDiff {
 
 
     /**
-     * @param originalSameDiff
-     * @return
+     * Create a new SameDiff instance from an existing instance.
+     * Note that state (variables and functions) is shared between the two SameDiff instance
+     *
+     * @param originalSameDiff Original SameDiff instance
+     * @return Copy
      */
     public static SameDiff create(SameDiff originalSameDiff) {
         SameDiff ret = SameDiff.builder()
@@ -1292,9 +1281,7 @@ public class SameDiff {
                 .sameDiffFunctionInstances(originalSameDiff.sameDiffFunctionInstances)
                 .build();
         //ensuring proper sameDiff reference
-        DifferentialFunctionFactory differentialFunctionFactory =
-                new
-                        DifferentialFunctionFactory(ret);
+        DifferentialFunctionFactory differentialFunctionFactory = new DifferentialFunctionFactory(ret);
         ret.functionFactory = differentialFunctionFactory;
         return ret;
     }
@@ -1314,7 +1301,8 @@ public class SameDiff {
     }
 
     /**
-     * @return
+     * Create a new (empty) SameDiff instance without any functions or variables
+     * @return New SameDiff instance
      */
     public static SameDiff create() {
         return new SameDiff();
@@ -1322,8 +1310,7 @@ public class SameDiff {
 
 
     /**
-     * Evaluate the given inputs
-     * based on the current graph
+     * Evaluate the given inputs based on the current graph
      *
      * @param inputs the inputs to evaluate
      * @return
@@ -1347,27 +1334,26 @@ public class SameDiff {
 
 
     /**
-     * @return
+     * Clone/duplicate the SameDiff instance, including arrays etc. The returned SameDiff instance should have no
+     * shared state with the original instance
+     * @return The cloned SameDiff instance
      */
     public SameDiff dup() {
         Cloner cloner = newCloner();
         val clone = cloner.deepClone(this);
-        //clone.exec_cache = this.exec_cache;
-        //clone.parent = this;
         return clone;
-
     }
 
 
     /**
-     * @return
+     * Count the number of elements in all arrays, according to {@link SDVariable#getShape()}
+     * @return Number of array elements for all variables
      */
     public long numElements() {
         long ret = 0;
         for (SDVariable variable : variables()) {
             ret += ArrayUtil.prod(variable.getShape());
         }
-
         return ret;
     }
 
@@ -1380,26 +1366,22 @@ public class SameDiff {
                         .policyLearning(LearningPolicy.FIRST_LOOP)
                         .build());
         Nd4j.getWorkspaceManager().setWorkspaceForCurrentThread(workspace);
-
-
     }
 
 
     /**
-     * The list of available
-     * variables in the graph
+     * The list of all variables in the graph
      *
-     * @return
+     * @return All variables in the graph
      */
     public List<SDVariable> variables() {
         return new ArrayList<>(variableMap.values());
     }
 
     /**
-     * Variable initialization
-     * with 1.0
+     * Create a new variable with the specified shape, with all values initialized to 1.0
      *
-     * @param name  the opName of the variable
+     * @param name  the name of the variable to create
      * @param shape the shape of the array to be created
      * @return the created variable
      */
@@ -1407,25 +1389,35 @@ public class SameDiff {
         return var(name, ArrayUtil.toLongArray(shape), new ConstantInitScheme('f', 1.0));
     }
 
+    /**
+     * Create a new variable with the specified shape, with all values initialized to 1.0
+     *
+     * @param name  the name of the variable to create
+     * @param shape the shape of the array to be created
+     * @return the created variable
+     */
     public SDVariable one(String name, long[] shape) {
         return var(name, shape, new ConstantInitScheme('f', 1.0));
     }
 
     /**
-     * Return a variable of all 1s, with the same shape as the input
+     * Return a variable of all 1s, with the same shape as the input variable. Note that this is dynamic:
+     * if the input shape changes in later execution, the returned variable's shape will also be updated
      *
-     * @param input
-     * @return
+     * @param input Input SDVariable
+     * @return A new SDVariable with the same (dynamic) shape as the input
      */
     public SDVariable onesLike(SDVariable input) {
         return onesLike(null, input);
     }
 
     /**
-     * Return a variable of all 1s, with the same shape as the input
+     * Return a variable of all 1s, with the same shape as the input variable. Note that this is dynamic:
+     * if the input shape changes in later execution, the returned variable's shape will also be updated
      *
-     * @param input
-     * @return
+     * @param name  Name of the new SDVariable
+     * @param input Input SDVariable
+     * @return A new SDVariable with the same (dynamic) shape as the input
      */
     public SDVariable onesLike(String name, SDVariable input) {
         SDVariable ret = f().onesLike(name, input);
@@ -1434,10 +1426,9 @@ public class SameDiff {
 
 
     /**
-     * Variable initialization
-     * with 0.0
+     * Create a new variable with the specified shape, with all values initialized to 0
      *
-     * @param name  the opName of the variable
+     * @param name  the name of the variable to create
      * @param shape the shape of the array to be created
      * @return the created variable
      */
@@ -1445,25 +1436,35 @@ public class SameDiff {
         return var(name, shape, new ZeroInitScheme());
     }
 
+    /**
+     * Create a new variable with the specified shape, with all values initialized to 0
+     *
+     * @param name  the name of the variable to create
+     * @param shape the shape of the array to be created
+     * @return the created variable
+     */
     public SDVariable zero(String name, int[] shape) {
         return var(name, ArrayUtil.toLongArray(shape), new ZeroInitScheme());
     }
 
     /**
-     * Return a variable of all 0s with the same shape as the input
+     * Return a variable of all 0s, with the same shape as the input variable. Note that this is dynamic:
+     * if the input shape changes in later execution, the returned variable's shape will also be updated
      *
-     * @param input
-     * @return
+     * @param input Input SDVariable
+     * @return A new SDVariable with the same (dynamic) shape as the input
      */
     public SDVariable zerosLike(SDVariable input) {
         return zerosLike(null, input);
     }
 
     /**
-     * Return a variable of all 0s, with the same shape as the input
+     * Return a variable of all 0s, with the same shape as the input variable. Note that this is dynamic:
+     * if the input shape changes in later execution, the returned variable's shape will also be updated
      *
-     * @param input
-     * @return
+     * @param name  Name of the new SDVariable
+     * @param input Input SDVariable
+     * @return A new SDVariable with the same (dynamic) shape as the input
      */
     public SDVariable zerosLike(String name, SDVariable input) {
         SDVariable ret = f().zerosLike(name, input);
@@ -1479,19 +1480,55 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
+     * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
+     * @param start  Start value
+     * @param stop   Stop value
+     * @param number Number of values to generate
+     * @return SDVariable with linearly spaced elements
+     */
     public SDVariable linspace(double start, double stop, long number) {
         return linspace(null, start, stop, number);
     }
 
+    /**
+     * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
+     * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
+     * @param name Name of the new variable
+     * @param start  Start value
+     * @param stop   Stop value
+     * @param number Number of values to generate
+     * @return SDVariable with linearly spaced elements
+     */
     public SDVariable linspace(String name, double start, double stop, long number) {
         SDVariable ret = f().linspace(start, stop, number);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * Create a new variable with a 1d array, where the values start at {@code from} and increment by {@code step}
+     * up to (but not including) limit.<br>
+     * For example, {@code range(1.0, 3.0, 0.5)} will return {@code [1.0, 1.5, 2.0, 2.5]}
+     * @param from Initial/smallest value
+     * @param to   Largest value (exclusive)
+     * @param step Step size
+     * @return 1D SDVariable with the specified values
+     */
     public SDVariable range(double from, double to, double step){
         return range(null, from, to, step);
     }
 
+    /**
+     * Create a new variable with a 1d array, where the values start at {@code from} and increment by {@code step}
+     * up to (but not including) limit.<br>
+     * For example, {@code range(1.0, 3.0, 0.5)} will return {@code [1.0, 1.5, 2.0, 2.5]}
+     * @param name Name of the new variable
+     * @param from Initial/smallest value
+     * @param to   Largest value (exclusive)
+     * @param step Step size
+     * @return 1D SDVariable with the specified values
+     */
     public SDVariable range(String name, double from, double to, double step){
         SDVariable ret = f().range(from, to, step);
         return updateVariableNameAndReference(ret, name);
