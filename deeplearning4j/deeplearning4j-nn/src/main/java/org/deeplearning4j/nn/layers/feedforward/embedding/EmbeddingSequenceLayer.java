@@ -57,6 +57,8 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         super(conf);
     }
 
+    private int[] indexes;
+
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
@@ -70,15 +72,19 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         int inputLength = layerConf().getInputLength();
         int numSamples = input.rows();
         val nOut = layerConf().getNOut();
-        delta = delta.permute(2, 0, 1);
-        delta = delta.reshape(inputLength * numSamples, nOut);
+
+        if (delta.ordering() != 'c' || delta.isView() || !hasDefaultStridesForShape(delta)){
+            delta = delta.dup('c');
+        }
+
+        delta = delta.permute(0, 2, 1); //From [minibatch, nOut, length] to [minibatch, length, nOut]
+        delta = delta.reshape('c',inputLength * numSamples, nOut);
 
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
         if (!hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
-        int[] indexes = input.data().asInt();
 
         ScatterUpdate op = new ScatterUpdate(weightGradients, delta, indexes, WEIGHT_DIM, ScatterUpdate.UpdateOp.ADD);
         Nd4j.getExecutioner().exec(op);
@@ -115,15 +121,14 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         }
 
         val nIn = layerConf().getNIn();
-        val numRows = input.rows();
+        val minibatch = input.rows();
         val inputLength = layerConf().getInputLength();
-        if (!hasDefaultStridesForShape(input))
-            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
+        if (input.ordering() != 'c' || input.isView() || !hasDefaultStridesForShape(input))
+            input = workspaceMgr.dup(ArrayType.INPUT, input, 'c');
 
-        int[] indexes = input.data().asInt();
+        indexes = input.data().asInt();   //C order: minibatch dimension changes least rapidly when iterating over buffer
 
         for (int i = 0; i < indexes.length; i++) {
-            indexes[i] = input.getInt(i % numRows, i / numRows);
             if (indexes[i] < 0 || indexes[i] >= nIn) {
                 throw new DL4JInvalidInputException("Invalid index for embedding layer: got index " + indexes[i]
                         + " for entry " + i + " in minibatch; indexes must be between 0 and nIn-1 inclusive (0 to "
@@ -135,7 +140,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         val nOut = layerConf().getNOut();
         INDArray destination = workspaceMgr.createUninitialized(
-                ArrayType.ACTIVATIONS, numRows * inputLength, nOut);
+                ArrayType.ACTIVATIONS, new long[]{minibatch * inputLength, nOut}, 'c');
         INDArray rows = Nd4j.pullRows(weights, destination, 1, indexes);
 
         if (hasBias()) {
@@ -143,12 +148,9 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
             rows.addiRowVector(bias);
         }
 
-
-        val shape = new long[]{inputLength, numRows, nOut};
-        INDArray ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, rows.reshape('c', shape));
-        ret = ret.permute(1, 2 , 0);
-
-        return ret;
+        val shape = new long[]{minibatch, inputLength, nOut};
+        INDArray ret = rows.reshape('c', shape).permute(0, 2, 1);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
     }
 
     @Override
@@ -188,5 +190,11 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
     @Override
     public Type type() {
         return Type.RECURRENT;
+    }
+
+    @Override
+    public void clear(){
+        super.clear();
+        indexes = null;
     }
 }

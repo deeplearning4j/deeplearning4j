@@ -504,6 +504,7 @@ public class GradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void testEmbeddingSequenceLayer(){
+        Nd4j.getRandom().setSeed(12345);
 
         for(boolean maskArray : new boolean[]{false, true}){
 
@@ -528,7 +529,10 @@ public class GradientCheckTests extends BaseDL4JTest {
 
             INDArray fMask = null;
             if(maskArray){
-                fMask = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.create(3,6), 0.5));
+                fMask = Nd4j.create(new double[][]{{1,1,1,1,1,1},
+                        {1,1,0,0,0,0},
+                        {1,0,0,0,0,0}});
+
             }
 
             String msg = "mask=" + maskArray;
@@ -536,6 +540,23 @@ public class GradientCheckTests extends BaseDL4JTest {
                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, label, fMask, null);
             assertTrue(msg, gradOK);
             TestUtils.testModelSerialization(net);
+
+
+            //Also: if mask is present, double check that the masked steps don't impact score
+            if(maskArray){
+                DataSet ds = new DataSet(in, label, fMask, null);
+                double score = net.score(ds);
+                in.putScalar(1,2, 0);
+                in.putScalar(2,1,0);
+                in.putScalar(2,2,0);
+                double score2 = net.score(ds);
+                assertEquals(score, score2,1e-6);
+                in.putScalar(1,2, 1);
+                in.putScalar(2,1,1);
+                in.putScalar(2,2,1);
+                double score3 = net.score(ds);
+                assertEquals(score, score3,1e-6);
+            }
         }
 
     }
