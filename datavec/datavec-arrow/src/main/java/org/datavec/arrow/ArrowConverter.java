@@ -758,6 +758,8 @@ public class ArrowConverter {
                     long timeSet = TypeConversion.getInstance().convertLong(value);
                     setLongInTime(fieldVector, row, timeSet);
                     break;
+                case NDArray:
+                    INDArray
 
             }
         }catch(Exception e) {
