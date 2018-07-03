@@ -1,5 +1,5 @@
 //
-//  @author raver119@gmail.com
+//  @author sgazeos@gmail.com
 //
 
 #include <ops/declarable/helpers/random_crop.h>
