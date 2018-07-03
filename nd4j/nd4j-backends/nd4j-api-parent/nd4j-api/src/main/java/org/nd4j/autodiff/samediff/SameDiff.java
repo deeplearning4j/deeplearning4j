@@ -2892,9 +2892,10 @@ public class SameDiff {
     }
 
     /**
-     * @param name
-     * @param value
-     * @return
+     * Create a new scalar (rank 0) SDVariable with the specified value
+     * @param name  Name of the SDVariable
+     * @param value Value to initialize the variable with
+     * @return SDVariable
      */
     public SDVariable scalar(String name, double value) {
         return var(name, Nd4j.scalar(value));
@@ -2902,145 +2903,274 @@ public class SameDiff {
 
 
     /**
-     * @param iX
-     * @return
+     * Greater than or equals operation: elementwise x >= y<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param x Input array
+     * @param y Double value argument to use in operation
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable gte(SDVariable iX, double iy) {
-        return gte(null, iX, iy);
+    public SDVariable gte(SDVariable x, double y) {
+        return gte(null, x, y);
 
     }
 
     /**
-     * @param iX
-     * @return
+     * Less than or equals operation: elementwise x <= y<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param x Input array
+     * @param y Double value argument to use in operation
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable lte(SDVariable iX, double iy) {
-        return lte(null, iX, iy);
+    public SDVariable lte(SDVariable x, double y) {
+        return lte(null, x, y);
     }
 
 
     /**
-     * @param iX
-     * @return
+     * Greater than operation: elementwise x > y<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param x Input array
+     * @param y Double value argument to use in operation
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable gt(SDVariable iX, double iy) {
-        return gt(null, iX, iy);
+    public SDVariable gt(SDVariable x, double y) {
+        return gt(null, x, y);
     }
 
     /**
-     * @param iX
-     * @return
+     * Less than operation: elementwise x < y<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param x Input array
+     * @param y Double value argument to use in operation
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable lt(SDVariable iX, double iy) {
-        return lt(null, iX, iy);
-    }
-
-
-    /**
-     * @param iX
-     * @return
-     */
-    public SDVariable neq(SDVariable iX, double iy) {
-        return neq(null, iX, iy);
-    }
-
-    /**
-     * @param iX
-     * @return
-     */
-    public SDVariable eq(SDVariable iX, double iy) {
-        return eq(null, iX, iy);
-    }
-
-    /**
-     * @param iX
-     * @return
-     */
-    public SDVariable gte(SDVariable iX, SDVariable iy) {
-        return gte(null, iX, iy);
-    }
-
-    /**
-     * @param iX
-     * @return
-     */
-    public SDVariable lte(SDVariable iX, SDVariable iy) {
-        return lte(null, iX, iy);
+    public SDVariable lt(SDVariable x, double y) {
+        return lt(null, x, y);
     }
 
 
     /**
-     * @param iX
-     * @return
+     * Not equals operation: elementwise x != y<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param x Input array
+     * @param y Double value argument to use in operation
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable gt(SDVariable iX, SDVariable iy) {
-        return gt(null, iX, iy);
+    public SDVariable neq(SDVariable x, double y) {
+        return neq(null, x, y);
+    }
+
+    /**
+     * Equals operation: elementwise x == y<br>
+     * Returns an array with the same shape/size as the input, with values 1 where condition is satisfied, or
+     * value 0 otherwise
+     *
+     * @param x Input array
+     * @param y Double value argument to use in operation
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable eq(SDVariable x, double y) {
+        return eq(null, x, y);
+    }
+
+    /**
+     * Greater than or equal to operation: elementwise x >= y<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable gte(SDVariable x, SDVariable y) {
+        return gte(null, x, y);
+    }
+
+    /**
+     * Less than or equal to operation: elementwise x <= y<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable lte(SDVariable x, SDVariable x) {
+        return lte(null, x, x);
+    }
+
+
+    /**
+     * Greater than operation: elementwise x > y<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable gt(SDVariable x, SDVariable y) {
+        return gt(null, x, y);
 
     }
 
     /**
-     * @param iX
-     * @return
+     * Less than operation: elementwise x < y<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable lt(SDVariable iX, SDVariable iy) {
-        return lt(null, iX, iy);
+    public SDVariable lt(SDVariable x, SDVariable y) {
+        return lt(null, x, y);
     }
 
 
     /**
-     * @param iX
-     * @return
+     * Not equal to operation: elementwise x != y<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable neq(SDVariable iX, SDVariable iy) {
-        return neq(null, iX, iy);
+    public SDVariable neq(SDVariable x, SDVariable y) {
+        return neq(null, x, y);
     }
 
     /**
-     * @param iX
-     * @return
+     * Equal to operation: elementwise x == y<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable eq(SDVariable iX, SDVariable iy) {
-        return eq(null, iX, iy);
+    public SDVariable eq(SDVariable x, SDVariable y) {
+        return eq(null, x, y);
     }
 
     /**
-     * @param iX
-     * @return
+     * Boolean OR operation: elementwise (x != 0) || (y != 0)<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
      */
-    public SDVariable or(SDVariable iX, SDVariable iy) {
-        return or(null, iX, iy);
+    public SDVariable or(SDVariable x, SDVariable y) {
+        return or(null, x, y);
     }
 
-    public SDVariable and(SDVariable iX, SDVariable iY) {
-        return and(null, iX, iY);
+    /**
+     * Boolean AND operation: elementwise (x != 0) && (y != 0)<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable and(SDVariable x, SDVariable y) {
+        return and(null, x, y);
     }
 
-    public SDVariable and(String name, SDVariable ix, SDVariable iy) {
-        SDVariable result = f().and(ix, iy);
+    /**
+     * Boolean AND operation: elementwise (x != 0) && (y != 0)<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param name Name of the output variable
+     * @param x    Input 1
+     * @param y    Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
+    public SDVariable and(String name, SDVariable x, SDVariable y) {
+        SDVariable result = f().and(x, y);
         return updateVariableNameAndReference(result, name);
     }
 
+    /**
+     * Boolean XOR (exclusive OR) operation: elementwise (x != 0) XOR (y != 0)<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param x Input 1
+     * @param y Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
     public SDVariable xor(SDVariable ix, SDVariable iy) {
         return xor(null, ix, iy);
     }
 
+    /**
+     * Boolean XOR (exclusive OR) operation: elementwise (x != 0) XOR (y != 0)<br>
+     * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
+     * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+     * Returns an array with values 1 where condition is satisfied, or value 0 otherwise.
+     *
+     * @param name Name of the output variable
+     * @param x    Input 1
+     * @param y    Input 2
+     * @return Output SDVariable with values 0 and 1 based on where the condition is satisfied
+     */
     public SDVariable xor(String name, SDVariable ix, SDVariable iy) {
         SDVariable result = f().xor(ix, iy);
         return updateVariableNameAndReference(result, name);
     }
 
+    /**
+     * Elementwise absolute value operation: out = abs(x)
+     *
+     * @param ix Input variable
+     * @return Output variable
+     */
     public SDVariable abs(SDVariable ix) {
         return abs(null, ix);
     }
 
+    /**
+     * Elementwise absolute value operation: out = abs(x)
+     *
+     * @param name Name of the output variable
+     * @param ix   Input variable
+     * @return Output variable
+     */
     public SDVariable abs(String name, SDVariable ix) {
         SDVariable result = f().abs(ix);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
-     * @param iX
-     * @return
+     * Elementwise negative operation: out = -x
+     *
+     * @param iX Input variable
+     * @return Output variable
      */
     public SDVariable neg(SDVariable iX) {
         return neg(null, iX);
@@ -3048,33 +3178,52 @@ public class SameDiff {
 
 
     /**
-     * @param iX
-     * @return
+     * Elementwise cosine operation: out = cos(x)
+     *
+     * @param iX Input variable
+     * @return Output variable
      */
     public SDVariable cos(SDVariable iX) {
         return cos(null, iX);
     }
 
     /**
-     * @param iX
-     * @return
+     * Elementwise sine operation: out = sin(x)
+     *
+     * @param iX Input variable
+     * @return Output variable
      */
     public SDVariable sin(SDVariable iX) {
         return sin(null, iX);
     }
 
     /**
-     * @param iX
-     * @return
+     * Elementwise tangent operation: out = tan(x)
+     *
+     * @param iX Input variable
+     * @return Output variable
      */
     public SDVariable tan(SDVariable iX) {
         return tan(null, iX);
     }
 
+    /**
+     * Elementwise identity operation: out = x
+     *
+     * @param input Input variable
+     * @return Output variable
+     */
     public SDVariable identity(SDVariable input) {
         return identity(null, input);
     }
 
+    /**
+     * Elementwise identity operation: out = x
+     *
+     * @param name  name of the output variable
+     * @param input Input variable
+     * @return Output variable
+     */
     public SDVariable identity(String name, SDVariable input) {
         SDVariable s = f().identity(input);
         return updateVariableNameAndReference(s, name);
