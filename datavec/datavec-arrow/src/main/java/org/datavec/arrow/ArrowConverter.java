@@ -765,7 +765,7 @@ public class ArrowConverter {
                 case NDArray:
                     NDArrayWritable arr = (NDArrayWritable) value;
                     VarBinaryVector nd4jArrayVector = (VarBinaryVector) fieldVector;
-                    ByteBuffer byteBuffer = ArrowSerde.toTensor(arr.get()).getByteBuffer();
+                    ByteBuffer byteBuffer = ArrowSerde.toTensor(arr.get()).getByteBuffer().slice();
                     nd4jArrayVector.set(row,byteBuffer,0,byteBuffer.capacity());
                     break;
 
@@ -850,12 +850,21 @@ public class ArrowConverter {
     }
 
 
-
+    /**
+     * Returns a vector representing a tensor view
+     * of each ndarray.
+     * Each ndarray will be a "row" represented as a tensor object
+     * with in the return {@link VarBinaryVector}
+     * @param bufferAllocator the buffer allocator to use
+     * @param name the name of the column
+     * @param data the input arrays
+     * @return
+     */
     public static VarBinaryVector vectorFor(BufferAllocator bufferAllocator,String name,INDArray[] data) {
         VarBinaryVector ret = new VarBinaryVector(name,bufferAllocator);
         ret.allocateNew();
         for(int i = 0; i < data.length; i++) {
-            ByteBuffer byteBuffer = ArrowSerde.toTensor(data[i]).getByteBuffer();
+            ByteBuffer byteBuffer = ArrowSerde.toTensor(data[i]).getByteBuffer().slice();
             ret.set(i,byteBuffer,0,byteBuffer.capacity());
         }
 
