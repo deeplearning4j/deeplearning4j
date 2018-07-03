@@ -690,6 +690,7 @@ public class ArrowConverter {
                 case String: ret.add(stringVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 case Categorical: ret.add(stringVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 case Time: ret.add(timeVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
+                case NDArray: ret.add(ndarrayVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 default: throw new IllegalArgumentException("Illegal type found " + schema.getType(i));
 
             }
@@ -762,9 +763,9 @@ public class ArrowConverter {
                     setLongInTime(fieldVector, row, timeSet);
                     break;
                 case NDArray:
-                    INDArray arr = (INDArray) value;
+                    NDArrayWritable arr = (NDArrayWritable) value;
                     VarBinaryVector nd4jArrayVector = (VarBinaryVector) fieldVector;
-                    ByteBuffer byteBuffer = ArrowSerde.toTensor(arr).getByteBuffer();
+                    ByteBuffer byteBuffer = ArrowSerde.toTensor(arr.get()).getByteBuffer();
                     nd4jArrayVector.set(row,byteBuffer,0,byteBuffer.capacity());
                     break;
 
@@ -1169,6 +1170,12 @@ public class ArrowConverter {
             case Time:
                 //TODO: need to look at closer
                 return new LongWritable(getLongFromFieldVector(item,from));
+            case NDArray:
+                VarBinaryVector valueVector = (VarBinaryVector) from;
+                byte[] bytes = valueVector.get(item);
+                Tensor tensor = Tensor.getRootAsTensor(ByteBuffer.wrap(bytes));
+                INDArray fromTensor = ArrowSerde.fromTensor(tensor);
+                return new NDArrayWritable(fromTensor);
             default:
                 throw new IllegalArgumentException("Illegal type " + from.getClass().getName());
         }
