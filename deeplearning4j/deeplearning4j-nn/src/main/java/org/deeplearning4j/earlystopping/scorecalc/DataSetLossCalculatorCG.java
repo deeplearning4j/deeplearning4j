@@ -97,6 +97,11 @@ public class DataSetLossCalculatorCG implements ScoreCalculator<ComputationGraph
     }
 
     @Override
+    public boolean minimizeScore() {
+        return true;
+    }
+
+    @Override
     public String toString() {
         return "DataSetLossCalculatorCG(" + dataSetIterator + ",average=" + average + ")";
     }

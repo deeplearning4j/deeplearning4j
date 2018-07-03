@@ -2,9 +2,9 @@ package com.atilika.kuromoji.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.common.resources.DL4JResources;
+import org.deeplearning4j.common.resources.ResourceType;
 import org.nd4j.util.ArchiveUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,26 +17,29 @@ import java.util.List;
  */
 @Slf4j
 public class KuromojiBinFilesFetcher {
-    protected static final String TEMP_ROOT = System.getProperty("user.home");
-    protected static final String KUROMOJI_BIN_ROOT;
-    static {
-        KUROMOJI_BIN_ROOT = TEMP_ROOT + File.separator + ".dl4j-kuromoji" + File.separator;
-    }
+
+    private static final String KUROMOJI_RESOURCE_NAME = "kuromoji";
 
     private KuromojiBinFilesFetcher(){ }
 
+    public static File getKuromojiRoot(){
+        return DL4JResources.getDirectory(ResourceType.RESOURCE, KUROMOJI_RESOURCE_NAME);
+    }
+
     public static boolean kuromojiExist() {
+        File root = getKuromojiRoot();
+
         List<File> binFileList = new ArrayList<>();
 
-        binFileList.add(new File(KUROMOJI_BIN_ROOT));
-        binFileList.add(new File(KUROMOJI_BIN_ROOT, "characterDefinitions.bin"));
-        binFileList.add(new File(KUROMOJI_BIN_ROOT, "connectionCosts.bin"));
-        binFileList.add(new File(KUROMOJI_BIN_ROOT, "doubleArrayTrie.bin"));
-        binFileList.add(new File(KUROMOJI_BIN_ROOT, "tokenInfoDictionary.bin"));
-        binFileList.add(new File(KUROMOJI_BIN_ROOT, "tokenInfoFeaturesMap.bin"));
-        binFileList.add(new File(KUROMOJI_BIN_ROOT, "tokenInfoPartOfSpeechMap.bin"));
-        binFileList.add(new File(KUROMOJI_BIN_ROOT, "tokenInfoTargetMap.bin"));
-        binFileList.add(new File(KUROMOJI_BIN_ROOT, "unknownDictionary.bin"));
+        binFileList.add(root);
+        binFileList.add(new File(root, "characterDefinitions.bin"));
+        binFileList.add(new File(root, "connectionCosts.bin"));
+        binFileList.add(new File(root, "doubleArrayTrie.bin"));
+        binFileList.add(new File(root, "tokenInfoDictionary.bin"));
+        binFileList.add(new File(root, "tokenInfoFeaturesMap.bin"));
+        binFileList.add(new File(root, "tokenInfoPartOfSpeechMap.bin"));
+        binFileList.add(new File(root, "tokenInfoTargetMap.bin"));
+        binFileList.add(new File(root, "unknownDictionary.bin"));
 
         for (File f : binFileList) {
             if (f.exists() == false) {
@@ -47,28 +50,29 @@ public class KuromojiBinFilesFetcher {
     }
 
     public static File downloadAndUntar() throws IOException {
-        File rootFile = new File(KUROMOJI_BIN_ROOT);
-        if (rootFile.exists()) {
-            throw new IOException("remove exist directory : " + KUROMOJI_BIN_ROOT);
+        File rootDir = getKuromojiRoot();
+        if (rootDir.exists()) {
+            throw new IOException("remove exist directory : " + rootDir);
         } else {
-            rootFile.mkdir();
+            rootDir.mkdir();
 
             log.info("Downloading Kuromoji bin files...");
 
             // download kuromoji bin file from azure blob
-            File tarFile = new File(KUROMOJI_BIN_ROOT, "kuromoji_bin_files.tar.gz");
+            File tarFile = new File(rootDir, "kuromoji_bin_files.tar.gz");
             if (!tarFile.isFile()) {
                 FileUtils.copyURLToFile(
                                 new URL("https://dhkuromoji.blob.core.windows.net/kuromoji/kuromoji_bin_files.tar.gz"),
                                 tarFile);
             }
-            ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(), rootFile.getAbsolutePath());
+            ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(), rootDir.getAbsolutePath());
         }
 
         return null;
     }
 
+    @Deprecated
     public static String getRootPath() {
-        return KUROMOJI_BIN_ROOT;
+        return getKuromojiRoot().getAbsolutePath();
     }
 }

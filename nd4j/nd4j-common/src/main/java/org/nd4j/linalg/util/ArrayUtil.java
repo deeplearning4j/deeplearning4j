@@ -820,6 +820,16 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static List<Integer> toList(int... ints){
+        if(ints == null){
+            return null;
+        }
+        List<Integer> ret = new ArrayList<>();
+        for (int anInt : ints) {
+            ret.add(anInt);
+        }
+        return ret;
+    }
 
     public static int[] toArray(List<Integer> list) {
         int[] ret = new int[list.size()];
@@ -1956,6 +1966,16 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static long[] flatten(long[][] arr) {
+        long[] ret = new long[arr.length * arr[0].length];
+        int count = 0;
+        for (int i = 0; i < arr.length; i++)
+            for (int j = 0; j < arr[i].length; j++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+
+
     /**
      * Convert a 2darray in to a flat
      * array (row wise)
@@ -2004,6 +2024,15 @@ public class ArrayUtil {
         return ret;
     }
 
+
+    public static long[] flattenF(long[][] arr) {
+        long[] ret = new long[arr.length * arr[0].length];
+        int count = 0;
+        for (int j = 0; j < arr[0].length; j++)
+            for (int i = 0; i < arr.length; i++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
 
     /**
      * Cast an int array to a double array

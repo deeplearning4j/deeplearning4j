@@ -158,7 +158,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                             for (int ph : padH) {
                                                 for (int pw : padW) {
                                                     if ((w - kw + 2 * pw) % sw != 0 || (h - kh + 2 * ph) % sh != 0)
-                                                        continue; //(w-kp+2*pw)/sw + 1 is not an integer,  i.e., number of outputs doesn't fit
+                                                        continue; //(w-kp+2*pW)/sw + 1 is not an integer,  i.e., number of outputs doesn't fit
 
                                                     System.out.println("Running " + m + " " + d + " " + h + " " + w);
                                                     for (boolean cAll : coverall) {
@@ -201,7 +201,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int[] sizeH = {1, 2, 3};
         int[] padH = {0};
         int[] padW = {0};
-        Pooling2D.Pooling2DType[] types = new Pooling2D.Pooling2DType[]{Pooling2D.Pooling2DType.AVG, Pooling2D.Pooling2DType.PNORM, Pooling2D.Pooling2DType.MAX,};
+        Pooling2D.Pooling2DType[] types = new Pooling2D.Pooling2DType[]{Pooling2D.Pooling2DType.PNORM, Pooling2D.Pooling2DType.AVG, Pooling2D.Pooling2DType.MAX};
 
         int cnt = 0;
 
@@ -216,7 +216,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                     for (int kh : sizeH) {
                                         for (int kw : sizeW) {
 
-                                            INDArray in = Nd4j.rand(new int[]{m, d, h, w});
+                                            INDArray in = Nd4j.linspace(1, (m * d * h * w), (m * d * h * w)).reshape(new int[]{m, d, h, w});
 
                                             int[] outSize = getOutputSize(in, new int[]{kh, kw}, new int[]{sh, sw}, null, true);
 
@@ -228,7 +228,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
                                             INDArray col = Nd4j.create(new int[]{m, d, outSize[0], outSize[1], kh, kw}, 'c');
                                             INDArray col2 = col.permute(0, 1, 4, 5, 2, 3);
-                                            //INDArray col = Nd4j.createUninitialized(new int[]{m, d, kh, kw, outSize[0], outSize[1]}, 'c');
+                                            //INDArray col = Nd4j.createUninitialized(new int[]{m, d, kH, kW, outSize[0], outSize[1]}, 'c');
                                             //INDArray col2 = col;
 
                                             Convolution.im2col(in, kh, kw, sh, sw, padTop, padLeft, true, col2);
@@ -271,7 +271,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                                     break;
                                             }
 
-                                            reduced = reduced.reshape('c',m,d, outSize[0], outSize[1]);
+                                            reduced = reduced.reshape('c',m,d, outSize[0], outSize[1]).dup('c');
 
                                             assertEquals("Failed opType: " + type, reduced, output);
                                         }

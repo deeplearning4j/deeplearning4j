@@ -898,7 +898,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @return
          */
         public Builder dropOut(IDropout dropout){
-            this.idropOut = dropout;
+            //Clone: Dropout is stateful usually - don't want to have the same instance shared in multiple places
+            this.idropOut = (dropout == null ? null : dropout.clone());
             return this;
         }
 
@@ -1140,8 +1141,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         private void copyConfigToLayer(String layerName, Layer layer) {
 
-            if (layer.getIDropout() == null)
-                layer.setIDropout(idropOut);
+            if (layer.getIDropout() == null) {
+                //Dropout is stateful usually - don't want to have the same instance shared by multiple layers
+                layer.setIDropout(idropOut == null ? null : idropOut.clone());
+            }
 
             if (layer instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) layer;

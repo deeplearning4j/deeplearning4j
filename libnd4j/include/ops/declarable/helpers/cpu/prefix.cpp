@@ -13,15 +13,16 @@ namespace nd4j {
         namespace helpers {
             template <typename T, typename OpName>
             void _prefix(T* x, Nd4jLong* xShapeInfo, T* z, Nd4jLong* zShapeInfo, bool exclusive, bool reverse) {
-                auto length = (int) shape::length(xShapeInfo);
+                auto length = shape::length(xShapeInfo);
 
+                T prevSum = OpName::startingValue();
+                T sum = prevSum;
+                                
                 if (reverse) {
                     if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 &&
                         shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
-                        T prevSum = (T) 0;
-                        T sum = (T) 0;
 
-                        for (int e = length - 1; e >= 0; --e) {
+                        for (Nd4jLong e = length - 1; e >= 0; --e) {
                             sum = OpName::op(sum, x[e]);
                             if (!exclusive)
                                 prevSum = sum;
@@ -33,8 +34,6 @@ namespace nd4j {
                     } else {
                         Nd4jLong xCoord[MAX_RANK];
                         Nd4jLong zCoord[MAX_RANK];
-                        T prevSum = (T) 0;
-                        T sum = (T) 0;
 
                         int xRank = shape::rank(xShapeInfo);
                         int zRank = shape::rank(zShapeInfo);
@@ -46,11 +45,11 @@ namespace nd4j {
                         auto zStride = shape::stride(zShapeInfo);
 
                         for (Nd4jLong e = length - 1; e >= 0; --e) {
-                            shape::ind2subC(xRank, xShape, e, xCoord);
-                            shape::ind2subC(zRank, zShape, e, zCoord);
+                            shape::ind2subC(xRank, xShape, e, length, xCoord);
+                            shape::ind2subC(zRank, zShape, e, length, zCoord);
 
-                            Nd4jLong xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                            Nd4jLong zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+                            auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
 
                             sum = OpName::op(sum, x[xOffset]);
                             if (!exclusive)
@@ -63,9 +62,7 @@ namespace nd4j {
                     }
                 } else {
                     if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 &&
-                        shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
-                        T prevSum = (T) 0;
-                        T sum = (T) 0;
+                        shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {                        
 
                         for (int e = 0; e < length; e++) {
                             sum = OpName::op(sum, x[e]);
@@ -81,11 +78,8 @@ namespace nd4j {
                         Nd4jLong xCoord[MAX_RANK];
                         Nd4jLong zCoord[MAX_RANK];
 
-                        T prevSum = (T) 0;
-                        T sum = (T) 0;
-
-                        int xRank = shape::rank(xShapeInfo);
-                        int zRank = shape::rank(zShapeInfo);
+                        auto xRank = shape::rank(xShapeInfo);
+                        auto zRank = shape::rank(zShapeInfo);
 
                         auto xShape = shape::shapeOf(xShapeInfo);
                         auto zShape = shape::shapeOf(zShapeInfo);
@@ -94,8 +88,8 @@ namespace nd4j {
                         auto zStride = shape::stride(zShapeInfo);
 
                         for (int e = 0; e < length; e++) {
-                            shape::ind2subC(xRank, xShape, e, xCoord);
-                            shape::ind2subC(zRank, zShape, e, zCoord);
+                            shape::ind2subC(xRank, xShape, e, length, xCoord);
+                            shape::ind2subC(zRank, zShape, e, length, zCoord);
 
                             auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                             auto zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
@@ -117,9 +111,9 @@ namespace nd4j {
             void _prefix(NDArray<T>* x, NDArray<T>* z, std::vector<int>& dims, bool exclusive, bool reverse) {
                 auto xTads = NDArrayFactory<T>::allTensorsAlongDimension(x, dims);
                 auto zTads = NDArrayFactory<T>::allTensorsAlongDimension(z, dims);
-                int t = xTads->size();
+                auto t = xTads->size();
 
-#pragma omp parallel for schedule(guided)
+// #pragma omp parallel for schedule(guided)
                 for (int e = 0; e < t; e++) {
                     auto tx = xTads->at(e);
                     auto tz = zTads->at(e);

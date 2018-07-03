@@ -29,9 +29,14 @@ elseif(WIN32)
     set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
 else()
     if ("${_RELEASE}")
-        set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -march=native -mtune=native")
+        set(CMAKE_CXX_FLAGS  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
+        if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
+            set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
+        else()
+            set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}")
+        endif()
     else()
-        set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
+        set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -fsanitize=address")
     endif()
 endif()
 
@@ -111,13 +116,29 @@ endif()
 
 if (NOT DEFINED ENV{CLION_IDE})
     message("NOT CLION")
-    add_executable(runtests ArrayOptionsTests.cpp GraphStateTests.cpp SingleDimTests.cpp ScalarTests.cpp BackpropTests.cpp RNGTests.cpp ShapeTests.cpp StashTests.cpp VariableProxyTests.cpp SessionLocalTests.cpp FlatBuffersTests.cpp ConvolutionTests.cpp DeclarableOpsTests1.cpp DeclarableOpsTests2.cpp DeclarableOpsTests3.cpp DeclarableOpsTests4.cpp GraphTests.cpp HashUtilsTests.cpp NDArrayTests.cpp NDArrayTests2.cpp TadTests.cpp VariableSpaceTests.cpp VariableTests.cpp WorkspaceTests.cpp JavaInteropTests.cpp MemoryUtilsTests.cpp OpsArena.cpp OpTupleTests.cpp ParityOpsTests.cpp BooleanOpsTests.cpp SwitchTests.cpp ScopeTests.cpp ConditionalTests.cpp LegacyOpsTests.cpp ContextTests.cpp IndexingTests.cpp ShapeUtilsTests.cpp NDArrayListTests.cpp ListOperationsTests.cpp NDArrayFactoryTests.cpp BitwiseUtilsTests.cpp SanityTests.cpp PlaygroundTests.cpp BroadcastableOpsTests.cpp GraphExecutionerTests.cpp GraphHolderTests.cpp OpTrackerTests.cpp HelpersTests1.cpp DeclarableOpsTests5.cpp DeclarableOpsTests6.cpp CnpyTests.cpp BrodcastTests.cpp Reduce3Tests.cpp ReduceTests.cpp ShapeTests2.cpp PairwiseTests.cpp DeclarableOpsTests7.cpp MmapTests.cpp)
+    add_executable(runtests ArrayOptionsTests.cpp GraphStateTests.cpp SingleDimTests.cpp ScalarTests.cpp BackpropTests.cpp RNGTests.cpp ShapeTests.cpp StashTests.cpp 
+                   VariableProxyTests.cpp SessionLocalTests.cpp FlatBuffersTests.cpp ConvolutionTests.cpp DeclarableOpsTests1.cpp DeclarableOpsTests2.cpp DeclarableOpsTests3.cpp 
+                   DeclarableOpsTests4.cpp GraphTests.cpp HashUtilsTests.cpp NDArrayTests.cpp NDArrayTests2.cpp TadTests.cpp VariableSpaceTests.cpp VariableTests.cpp WorkspaceTests.cpp 
+                   JavaInteropTests.cpp MemoryUtilsTests.cpp OpsArena.cpp OpTupleTests.cpp ParityOpsTests.cpp BooleanOpsTests.cpp SwitchTests.cpp ScopeTests.cpp ConditionalTests.cpp 
+                   LegacyOpsTests.cpp ContextTests.cpp IndexingTests.cpp ShapeUtilsTests.cpp NDArrayListTests.cpp ListOperationsTests.cpp NDArrayFactoryTests.cpp BitwiseUtilsTests.cpp 
+                   SanityTests.cpp PlaygroundTests.cpp BroadcastableOpsTests.cpp GraphExecutionerTests.cpp GraphHolderTests.cpp OpTrackerTests.cpp HelpersTests1.cpp 
+                   DeclarableOpsTests5.cpp DeclarableOpsTests6.cpp CnpyTests.cpp BrodcastTests.cpp Reduce3Tests.cpp ReduceTests.cpp ShapeTests2.cpp PairwiseTests.cpp 
+                   DeclarableOpsTests7.cpp MmapTests.cpp DeclarableOpsTests8.cpp DeclarableOpsTests9.cpp EmptyTests.cpp TypeCastTests.cpp)
 endif ()
 
 if ($ENV{CLION_IDE})
     file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.h)
-    add_executable(runtests ${TEST_SOURCES})
 
+    # Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
+    set (EXCLUDE_DIR "/CMakeFiles/")
+    foreach (TMP_PATH ${TEST_SOURCES})
+        string (FIND ${TMP_PATH} ${EXCLUDE_DIR} EXCLUDE_DIR_FOUND)
+        if (NOT ${EXCLUDE_DIR_FOUND} EQUAL -1)
+            list (REMOVE_ITEM TEST_SOURCES ${TMP_PATH})
+        endif ()
+    endforeach(TMP_PATH)
+
+    add_executable(runtests ${TEST_SOURCES})
 endif ()
 
 

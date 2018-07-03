@@ -140,7 +140,7 @@ namespace functions {
             char resultOrdering = shape::order(resultShapeInfo);
             int xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
-            nd4j_logger("Launching scalar: xOrder: %i; zOrder: %i; xEWS: %i\n", xOrdering, resultOrdering, xElementWiseStride);
+            // nd4j_logger("Launching scalar: xOrder: %i; zOrder: %i; xEWS: %i\n", xOrdering, resultOrdering, xElementWiseStride);
 
             if (xElementWiseStride == 1 && shape::elementWiseStride(resultShapeInfo) == 1 && xOrdering == resultOrdering) {
                 transform<OpType>(x, 1, result, 1, scalar, extraParams, shape::length(xShapeInfo));
@@ -196,6 +196,9 @@ namespace functions {
                     transform<OpType>(x,xElementWiseStride,result,resultElementWiseStride,scalar,extraParams,n);
                 }
                 else {
+                    Nd4jLong xIdx[MAX_RANK];
+                    Nd4jLong resultIdx[MAX_RANK];
+
                     auto xShape = shape::shapeOf(xShapeInfo);
                     auto resultShape = shape::shapeOf(resultShapeInfo);
 
@@ -204,19 +207,15 @@ namespace functions {
                     int xRank = shape::rank(xShapeInfo);
                     int resultRank = shape::rank(resultShapeInfo);
 
-#pragma omp parallel for simd schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
+#pragma omp parallel for schedule(guided) if (n > ELEMENT_THRESHOLD) proc_bind(AFFINITY) default(shared)
                     for (Nd4jLong i = 0; i < n; i++) {
-                        auto xIdx = shape::ind2sub(xRank, xShape, i);
-                        auto resultIdx = shape::ind2sub(resultRank, resultShape, i);
+                        shape::ind2sub(xRank, xShape, i, n, xIdx);
+                        shape::ind2sub(resultRank, resultShape, i, n, resultIdx);
+
                         auto xOffset2 = shape::getOffset(0, xShape, xStride, xIdx, xRank);
-                        auto resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx,
-                                                                   resultRank);
+                        auto resultOffset2 = shape::getOffset(0, resultShape, resultStride, resultIdx, resultRank);
 
                         result[resultOffset2] = OpType::op(x[xOffset2], scalar, extraParams);
-
-                        delete[] xIdx;
-                        delete[] resultIdx;
-
                     }
                 }
 

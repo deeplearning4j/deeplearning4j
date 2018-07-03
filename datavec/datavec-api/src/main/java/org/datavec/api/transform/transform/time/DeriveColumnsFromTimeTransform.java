@@ -352,7 +352,7 @@ public class DeriveColumnsFromTimeTransform implements Transform {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    @EqualsAndHashCode
+    @EqualsAndHashCode(exclude = "dateTimeFormatter")
     @Data
     @JsonIgnoreProperties({"dateTimeFormatter"})
     public static class DerivedColumn implements Serializable {

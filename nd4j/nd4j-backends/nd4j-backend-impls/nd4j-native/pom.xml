@@ -9,15 +9,6 @@
     <artifactId>nd4j-native</artifactId>
     <name>nd4j-native</name>
 
-    <properties>
-        <openblas.version>0.2.20</openblas.version>
-        <mkl.version>2018.1</mkl.version>
-        <maven.compiler.target>1.7</maven.compiler.target>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
-        <maven.compiler.testSource>1.8</maven.compiler.testSource>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>${dependency.groupId}</groupId>
@@ -59,6 +50,17 @@
 <!--            <groupId>org.bytedeco.javacpp-presets</groupId>-->
 <!--            <artifactId>mkl</artifactId>-->
 <!--            <version>${mkl.version}-${javacpp-presets.version}</version>-->
+<!--            <classifier>${dependency.platform}</classifier>-->
+<!--        </dependency>-->
+        <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>mkl-dnn</artifactId>
+            <version>${mkl-dnn.version}-${javacpp-presets.version}</version>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.bytedeco.javacpp-presets</groupId>-->
+<!--            <artifactId>mkl-dnn</artifactId>-->
+<!--            <version>${mkl-dnn.version}-${javacpp-presets.version}</version>-->
 <!--            <classifier>${dependency.platform}</classifier>-->
 <!--        </dependency>-->
 
@@ -164,7 +166,7 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <properties>${javacpp.platform}</properties>
+                    <properties>${javacpp.platform.properties}</properties>
                     <propertyKeysAndValues>
                         <property>
                             <name>platform.root</name>
@@ -263,6 +265,9 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
         <profile>
             <id>avx2</id>
             <activation>

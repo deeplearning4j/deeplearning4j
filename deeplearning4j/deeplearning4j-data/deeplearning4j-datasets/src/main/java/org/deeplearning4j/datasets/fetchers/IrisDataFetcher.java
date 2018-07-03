@@ -50,9 +50,8 @@ public class IrisDataFetcher extends BaseDataFetcher {
             initializeCurrFromList(IrisUtils.loadIris(from, to));
             cursor += numExamples;
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to load iris.dat");
+            throw new IllegalStateException("Unable to load iris.dat", e);
         }
-
     }
 
 

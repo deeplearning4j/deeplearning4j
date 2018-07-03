@@ -2,6 +2,8 @@ package org.nd4j.linalg.activations;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
+
 /**
  * Base IActivation for activation functions without parameters
  *
@@ -32,5 +34,12 @@ public abstract class BaseActivationFunction implements IActivation {
     @Override
     public INDArray getGradientViewArray() {
         return null;
+    }
+
+    protected void assertShape(INDArray in, INDArray epsilon){
+        if(!in.equalShapes(epsilon)){
+            throw new IllegalStateException("Shapes must be equal during backprop: in.shape{} = " + Arrays.toString(in.shape())
+                    + ", epsilon.shape() = " + Arrays.toString(epsilon.shape()));
+        }
     }
 }

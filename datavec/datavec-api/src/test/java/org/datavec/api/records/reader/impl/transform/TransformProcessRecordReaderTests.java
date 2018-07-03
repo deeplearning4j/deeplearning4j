@@ -32,7 +32,7 @@ public class TransformProcessRecordReaderTests {
                 .build();
         TransformProcess transformProcess = new TransformProcess.Builder(schema).removeColumns("0").build();
         CSVRecordReader csvRecordReader = new CSVRecordReader();
-        csvRecordReader.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
+        csvRecordReader.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
         TransformProcessRecordReader rr =
                         new TransformProcessRecordReader(csvRecordReader, transformProcess);
         int count = 0;

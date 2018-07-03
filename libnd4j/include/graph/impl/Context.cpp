@@ -181,7 +181,7 @@ namespace nd4j {
         Variable<T>* Context<T>::getVariable(int idx) {
             if (idx >= this->_inputs.size()) {
                 nd4j_printf("Node %i; Variable [%i] requested, but only %i inputs available\n", this->_nodeId, idx, this->_inputs.size());
-                throw "Bad index";
+                throw std::runtime_error("Bad index");
             }
 
             auto p = this->_inputs[idx];
@@ -189,8 +189,16 @@ namespace nd4j {
             auto v = variable(p);
 
             if (Environment::getInstance()->isDebugAndVerbose() && v != nullptr &&  v->getNDArray() != nullptr) {
-                std::string shape_ = ShapeUtils<T>::shapeAsString(v->getNDArray());
-                nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), v->getNDArray()->ews(), v->getNDArray()->ordering(), (float) v->getNDArray()->meanNumber());
+                auto array = v->getNDArray();
+                std::string shape_ = ShapeUtils<T>::shapeAsString(array);
+
+                float m = std::numeric_limits<float>::quiet_NaN();
+                if (!array->isEmpty()) {
+                    auto values = array->asIndexedString(16);
+                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; first values: %s\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), values.c_str());
+                } else {
+                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), m);
+                }
             }
 
             return v;
@@ -204,7 +212,7 @@ namespace nd4j {
         template <typename T>
         Variable<T>* Context<T>::variable(std::initializer_list<int> p) {
             if (p.size() != 2)
-                throw "Variable address should have size of 2";
+                throw std::runtime_error("Variable address should have size of 2");
 
             // FIXME: lol
             std::vector<int> vec(p);
@@ -222,7 +230,7 @@ namespace nd4j {
         Variable<T>* Context<T>::variable(std::pair<int,int>& p) {
             if (!_variableSpace->hasVariable(p)) {
                 nd4j_printf("Node %i; Non-existent variable requested: [%i:%i]\n", this->_nodeId, p.first, p.second);
-                throw "Bad variable";
+                throw std::runtime_error("Bad variable");
             }
 
             return _variableSpace->getVariable(p);

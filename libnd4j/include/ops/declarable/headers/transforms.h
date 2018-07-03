@@ -22,15 +22,16 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_cumsum)
-        DECLARE_CONFIGURABLE_OP(cumsum, 1, 1, true, 0, -2);
+        DECLARE_CONFIGURABLE_OP(cumsum, 1, 1, true, 0, 2);
         #endif
 
         #if NOT_EXCLUDED(OP_cumprod)
-        DECLARE_CONFIGURABLE_OP(cumprod, 1, 1, true, 0, -2);
+        DECLARE_CONFIGURABLE_OP(cumprod, 1, 1, true, 0, 2);
         #endif
 
         #if NOT_EXCLUDED(OP_tile)
-        DECLARE_CUSTOM_OP(tile, 1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(tile,    1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(tile_bp, 2, 1, false, 0, -2);
         #endif
 
         #if NOT_EXCLUDED(OP_repeat)
@@ -41,7 +42,7 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(invert_permutation, 1, 1, false, 0, 0);
         #endif
 
-        DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(concat_bp, -1, -1, false, 0, 1);
 
         #if NOT_EXCLUDED(OP_mergemax)
@@ -74,6 +75,7 @@ namespace nd4j {
 
         #if NOT_EXCLUDED(OP_reverse)
         DECLARE_CONFIGURABLE_OP(reverse, 1, 1, true, 0, -2);
+        DECLARE_CUSTOM_OP(reverse_bp, 2, 1, false, 0, -2);
         #endif
 
         #if NOT_EXCLUDED(OP_gather)
@@ -97,7 +99,7 @@ namespace nd4j {
          * IArgs[3,4,...] - optional, shape of batch, output matrix will have leading batch dimensions of this shape         
          */
         #if NOT_EXCLUDED(OP_eye)
-        DECLARE_CUSTOM_OP(eye, 1, 1, false, 0, 2);
+        DECLARE_CUSTOM_OP(eye, -2, 1, false, 0, 2);
         #endif
 
         #if NOT_EXCLUDED(OP_gather_nd)
@@ -137,6 +139,18 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(triu, 1, 1, false, 0, 0);
 
         DECLARE_CUSTOM_OP(triu_bp, 2, 1, false, 0, 0);
+
+        #if NOT_EXCLUDED(OP_mirror_pad)
+        DECLARE_CUSTOM_OP(mirror_pad, 2, 1, false, 0, 1);
+        #endif
+
+        #if NOT_EXCLUDED(OP_cumsum_bp)
+        DECLARE_CONFIGURABLE_OP(cumsum_bp, 2, 1, true, 0, 2);
+        #endif
+
+        #if NOT_EXCLUDED(OP_cumprod)
+        DECLARE_CONFIGURABLE_OP(cumprod_bp, 2, 1, true, 0, 2);
+        #endif
 
     }
 }

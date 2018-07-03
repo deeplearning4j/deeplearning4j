@@ -27,9 +27,6 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
     }
 
     @Override
-    public abstract int totalExamples();
-
-    @Override
     public int inputColumns() {
         if (inputColumns == -1)
             preloadDataSet();
@@ -40,7 +37,10 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
     public int totalOutcomes() {
         if (totalOutcomes == -1)
             preloadDataSet();
-        return totalExamples();
+        if(preloadedDataSet == null || preloadedDataSet.getLabels() == null){
+            return 0;
+        }
+        return (int)preloadedDataSet.getLabels().size(1);
     }
 
     @Override
@@ -66,16 +66,6 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
         if (batch == -1)
             preloadDataSet();
         return batch;
-    }
-
-    @Override
-    public int cursor() {
-        return cursor;
-    }
-
-    @Override
-    public int numExamples() {
-        return 0;
     }
 
     @Override

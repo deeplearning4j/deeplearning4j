@@ -24,7 +24,9 @@ import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.recordreader.ArrowRecordReader;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -42,6 +44,9 @@ import static org.junit.Assert.assertEquals;
 public class ArrowConverterTest {
 
     private static BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
 
     @Test
@@ -177,7 +182,9 @@ public class ArrowConverterTest {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         ArrowConverter.writeRecordBatchTo(recordsToWrite.getRight(),recordsToWrite.getFirst(),byteArrayOutputStream);
 
-        File tmpFile = new File("tmp-arrow-file-" + UUID.randomUUID().toString() + ".arrorw");
+        File f = testDir.newFolder();
+
+        File tmpFile = new File(f, "tmp-arrow-file-" + UUID.randomUUID().toString() + ".arrorw");
         FileOutputStream outputStream = new FileOutputStream(tmpFile);
         tmpFile.deleteOnExit();
         ArrowConverter.writeRecordBatchTo(recordsToWrite.getRight(),recordsToWrite.getFirst(),outputStream);
@@ -380,12 +387,12 @@ public class ArrowConverterTest {
         assertEquals(2,record.getRecord().size());
     }
 
-
-
-
     private File tmpDataFile(Pair<Schema,List<List<Writable>>> recordsToWrite) throws IOException {
+
+        File f = testDir.newFolder();
+
         //send file
-        File tmp = new File(System.getProperty("java.io.tmpdir"),"tmp-file-" + UUID.randomUUID().toString());
+        File tmp = new File(f,"tmp-file-" + UUID.randomUUID().toString());
         tmp.mkdirs();
         File tmpFile = new File(tmp,"data.arrow");
         tmpFile.deleteOnExit();

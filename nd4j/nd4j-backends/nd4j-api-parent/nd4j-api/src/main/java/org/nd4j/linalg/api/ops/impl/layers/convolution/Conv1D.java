@@ -65,6 +65,14 @@ public class Conv1D extends DynamicCustomOp {
     }
 
     @Override
+    public long[] iArgs() {
+        if (iArguments.size() == 0)
+            addArgs();
+
+        return super.iArgs();
+    }
+
+    @Override
     public Object getValue(Field property) {
         if (config == null) {
             config = Conv1DConfig.builder().build();
@@ -113,21 +121,21 @@ public class Conv1D extends DynamicCustomOp {
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
 
-        tfMappings.put("kh", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 2, 0, fields.get("dataFormat")));
-        tfMappings.put("kw", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 3, 1, fields.get("dataFormat")));
-        tfMappings.put("sy", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
-        tfMappings.put("sx", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
+        tfMappings.put("kH", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 2, 0, fields.get("dataFormat")));
+        tfMappings.put("kW", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 3, 1, fields.get("dataFormat")));
+        tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
+        tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
         tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
         tfMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 
 
         Map<String, AttributeAdapter> onnxMappings = new HashMap<>();
-        onnxMappings.put("kh", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("kw", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
-        onnxMappings.put("dh", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("dw", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
-        onnxMappings.put("sy", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("sx", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("kH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
+        onnxMappings.put("kW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("dH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
+        onnxMappings.put("dW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
+        onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
         onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
         onnxMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 

@@ -21,16 +21,16 @@
 
 set -e
 
-VALID_VERSIONS=( 8.0 9.0 9.1 )
+VALID_VERSIONS=( 8.0 9.0 9.1 9.2 )
 CUDA_80_VERSION="8\.0"
 CUDA_90_VERSION="9\.0"
 CUDA_91_VERSION="9\.1"
+CUDA_92_VERSION="9\.2"
 CUDNN_60_VERSION="6\.0"
 CUDNN_70_VERSION="7\.0"
 CUDNN_71_VERSION="7\.1"
-JAVACPP_13_VERSION="1\.3"
-JAVACPP_14_VERSION="1\.4"
 JAVACPP_141_VERSION="1\.4\.1"
+JAVACPP_142_VERSION="1\.4\.2-SNAPSHOT"
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <cuda version to be used>
@@ -57,6 +57,11 @@ check_cuda_version() {
 check_cuda_version "$VERSION"
 
 case $VERSION in
+  9.2)
+    VERSION=$CUDA_92_VERSION
+    VERSION2=$CUDNN_71_VERSION
+    VERSION3=$JAVACPP_142_VERSION
+    ;;
   9.1)
     VERSION=$CUDA_91_VERSION
     VERSION2=$CUDNN_71_VERSION
@@ -65,12 +70,12 @@ case $VERSION in
   9.0)
     VERSION=$CUDA_90_VERSION
     VERSION2=$CUDNN_70_VERSION
-    VERSION3=$JAVACPP_13_VERSION
+    VERSION3=$JAVACPP_141_VERSION
     ;;
   8.0)
     VERSION=$CUDA_80_VERSION
     VERSION2=$CUDNN_60_VERSION
-    VERSION3=$JAVACPP_13_VERSION
+    VERSION3=$JAVACPP_141_VERSION
     ;;
 esac
 
@@ -87,6 +92,10 @@ BASEDIR=$(dirname $0)
 #Artifact ids, ending with "-8.0", "-9.0", etc. nd4j-cuda, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(artifactId>nd4j-cuda-\)...<\/artifactId>/\1'$VERSION'<\/artifactId>/g' {}" \;
+
+#Artifact ids, ending with "-8.0-platform", "-9.0-platform", etc. nd4j-cuda-platform, etc.
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
+  -exec bash -c "sed_i 's/\(artifactId>nd4j-cuda-\)...-platform<\/artifactId>/\1'$VERSION'-platform<\/artifactId>/g' {}" \;
 
 #Profiles ids, ending with "-8.0", "-9.0", etc. test-nd4j-cuda, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \

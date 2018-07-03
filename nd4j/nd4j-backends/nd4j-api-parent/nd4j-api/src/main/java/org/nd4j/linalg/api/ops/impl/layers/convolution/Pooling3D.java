@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -27,6 +28,13 @@ public class Pooling3D extends DynamicCustomOp {
         MAX, AVG, PNORM,
     }
 
+    @Override
+    public long[] iArgs() {
+        if (iArguments.size() == 0)
+            addArgs();
+
+        return super.iArgs();
+    }
 
     public Pooling3D() {}
 
@@ -34,8 +42,12 @@ public class Pooling3D extends DynamicCustomOp {
     public Pooling3D(SameDiff sameDiff, SDVariable[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace,
                      Pooling3DConfig pooling3DConfig, Pooling3DType type) {
         super(null,sameDiff, inputs, inPlace);
+        Preconditions.checkState(pooling3DConfig.getDD() > 0 && pooling3DConfig.getDH() > 0 && pooling3DConfig.getDW() > 0,
+                "Dilation values must all be > 0: got dD/H/W = %s/%s/%s", pooling3DConfig.getDD(), pooling3DConfig.getDH(), pooling3DConfig.getDW());
 
-        pooling3DConfig.setType(type);
+        if(type != null) {
+            pooling3DConfig.setType(type);
+        }
 
         this.config = pooling3DConfig;
         this.sameDiff = sameDiff;
@@ -71,18 +83,20 @@ public class Pooling3D extends DynamicCustomOp {
     }
 
     private void addArgs() {
-        addIArgument(config.getKT());
+        addIArgument(config.getKD());
         addIArgument(config.getKW());
         addIArgument(config.getKH());
-        addIArgument(config.getST());
+        addIArgument(config.getSD());
         addIArgument(config.getSW());
         addIArgument(config.getSH());
-        addIArgument(config.getPT());
+        addIArgument(config.getPD());
         addIArgument(config.getPW());
         addIArgument(config.getPH());
-        addIArgument(config.getDilationT());
-        addIArgument(config.getDilationW());
-        addIArgument(config.getDilationH());
+        addIArgument(config.getDD());
+        addIArgument(config.getDW());
+        addIArgument(config.getDH());
+        addIArgument(config.isCeilingMode() ? 1 : 0);       //Ceiling mode == same mode???
+        addIArgument(config.isNCDHW() ? 1 : 0);
 
     }
 

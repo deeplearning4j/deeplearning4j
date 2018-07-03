@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -50,6 +51,10 @@ public class ZerosLike extends DynamicCustomOp {
 
     public ZerosLike(String name, SameDiff sameDiff, SDVariable input, boolean inPlace) {
         super(name, sameDiff, new SDVariable[]{input}, inPlace);
+    }
+
+    public ZerosLike(INDArray in, INDArray out){
+        super(null, in, out, null, null);
     }
 
 

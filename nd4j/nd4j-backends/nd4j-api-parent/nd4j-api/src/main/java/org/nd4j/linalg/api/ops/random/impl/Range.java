@@ -33,6 +33,10 @@ public class Range extends DynamicCustomOp {
         // no-op
     }
 
+    public Range(SameDiff sd, double from, double to, double step){
+        super(null, sd, new SDVariable[0]);
+        addTArgument(from, to, step);
+    }
 
 
     @Override
@@ -198,7 +202,7 @@ public class Range extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Unable to differentiate array creation routine");
+        return Collections.emptyList();
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -50,10 +51,16 @@ public class Reshape extends DynamicCustomOp {
     public Reshape(SameDiff sameDiff, SDVariable i_v, long[] shape) {
         super(null, sameDiff, new SDVariable[]{i_v});
         this.shape = shape;
-        addIArgument('c');
         addIArgument(shape);
     }
 
+    public Reshape(SameDiff sameDiff, SDVariable i_v, SDVariable shape) {
+        super(null, sameDiff, new SDVariable[]{i_v, shape});
+    }
+
+    public Reshape(INDArray in, INDArray shape, INDArray out){
+        super(null, new INDArray[]{in, shape}, new INDArray[]{out}, null, (List<Integer>)null);
+    }
 
     public Reshape() {
     }
@@ -75,10 +82,13 @@ public class Reshape extends DynamicCustomOp {
             }
 
             val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", shapeNodeInGraph, graph);
-            if (arr != null) {
+            if (arr != null && arr.isEmpty()) {
+                // special case: empty array
+                this.shape = new long[0];
+
+            } else if (arr != null) {
                 this.shape = arr.data().asLong();
                 //all TF is c
-                addIArgument('c');
                 if (!ArrayUtil.containsAnyNegative(this.shape))
                     addIArgument(this.shape);
                 else {
@@ -111,7 +121,6 @@ public class Reshape extends DynamicCustomOp {
             //all TF is c
 
             if (this.shape != null) {
-                addIArgument('c');
                 addIArgument(this.shape);
             }
 
@@ -172,12 +181,6 @@ public class Reshape extends DynamicCustomOp {
         ret.put(onnxName(), map);
 
         return ret;
-    }
-
-
-    @Override
-    public List<long[]> calculateOutputShape() {
-        return Arrays.asList(shape);
     }
 
 

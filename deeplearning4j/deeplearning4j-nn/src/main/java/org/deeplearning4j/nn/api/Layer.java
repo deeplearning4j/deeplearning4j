@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -224,6 +225,16 @@ public interface Layer extends Serializable, Cloneable, Model {
 
     void clearNoiseWeightParams();
 
+    /**
+     * A performance optimization: mark whether the layer is allowed to modify its input array in-place. In many cases,
+     * this is totally safe - in others, the input array will be shared by multiple layers, and hence it's not safe to
+     * modify the input array.
+     * This is usually used by ops such as dropout.
+     * @param allow If true: the input array is safe to modify. If false: the input array should be copied before it
+     *              is modified (i.e., in-place modifications are un-safe)
+     */
+    void allowInputModification(boolean allow);
+
 
     /**
      * Feed forward the input mask array, setting in in the layer as appropriate. This allows different layers to
@@ -240,4 +251,9 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return New mask array after this layer, along with the new mask state.
      */
     Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
+
+    /**
+     * @return Get the layer helper, if any
+     */
+    LayerHelper getHelper();
 }

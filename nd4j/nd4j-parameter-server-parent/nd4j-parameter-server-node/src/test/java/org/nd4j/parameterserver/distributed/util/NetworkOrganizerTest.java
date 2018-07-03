@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.*;
 
@@ -24,6 +26,10 @@ public class NetworkOrganizerTest {
     public void tearDown() throws Exception {
 
     }
+
+    @Rule
+    public Timeout globalTimeout = Timeout.seconds(20); // 20 seconds max per method tested
+
 
     @Test
     public void testSimpleSelection1() throws Exception {

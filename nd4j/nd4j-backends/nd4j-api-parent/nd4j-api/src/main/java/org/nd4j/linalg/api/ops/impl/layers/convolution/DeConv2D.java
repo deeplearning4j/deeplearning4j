@@ -55,19 +55,27 @@ public class DeConv2D extends DynamicCustomOp {
     }
 
     @Override
+    public long[] iArgs() {
+        if (iArguments.size() == 0)
+            addArgs();
+
+        return super.iArgs();
+    }
+
+    @Override
     public Map<String, Object> propertiesForFunction() {
         return config.toProperties();
     }
 
     private void addArgs() {
-        addIArgument(config.getKY());
-        addIArgument(config.getKX());
-        addIArgument(config.getSY());
-        addIArgument(config.getSX());
-        addIArgument(config.getPY());
-        addIArgument(config.getPX());
-        addIArgument(config.getDY());
-        addIArgument(config.getDX());
+        addIArgument(config.getKH());
+        addIArgument(config.getKW());
+        addIArgument(config.getSH());
+        addIArgument(config.getSW());
+        addIArgument(config.getPH());
+        addIArgument(config.getPW());
+        addIArgument(config.getDH());
+        addIArgument(config.getDW());
         addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));
 
     }
@@ -108,14 +116,14 @@ public class DeConv2D extends DynamicCustomOp {
                 .build();
 
         val kernelMapping = PropertyMapping.builder()
-                .propertyNames(new String[]{"kh", "kw"})
+                .propertyNames(new String[]{"kH", "kW"})
                 .tfInputPosition(1)
                 .onnxAttrName("kernel_shape")
                 .build();
 
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dw", "dh"})
+                .propertyNames(new String[]{"dW", "dH"})
                 .tfAttrName("rates")
                 .build();
 
@@ -127,18 +135,18 @@ public class DeConv2D extends DynamicCustomOp {
 
         val paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
-                .propertyNames(new String[]{"ph", "pw"})
+                .propertyNames(new String[]{"pH", "pW"})
                 .build();
 
-        map.put("sx", strideMapping);
-        map.put("sy", strideMapping);
-        map.put("kh", kernelMapping);
-        map.put("kw", kernelMapping);
-        map.put("dw", dilationMapping);
-        map.put("dh", dilationMapping);
+        map.put("sW", strideMapping);
+        map.put("sH", strideMapping);
+        map.put("kH", kernelMapping);
+        map.put("kW", kernelMapping);
+        map.put("dW", dilationMapping);
+        map.put("dH", dilationMapping);
         map.put("isSameMode", sameMode);
-        map.put("ph", paddingWidthHeight);
-        map.put("pw", paddingWidthHeight);
+        map.put("pH", paddingWidthHeight);
+        map.put("pW", paddingWidthHeight);
 
         ret.put(onnxName(), map);
         ret.put(tensorflowName(), map);
@@ -149,10 +157,10 @@ public class DeConv2D extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val aStrides = nodeDef.getAttrOrThrow("strides");
         val tfStrides = aStrides.getList().getIList();
-        int sY = 1;
-        int sX = 1;
-        int kY = 1;
-        int kX = 1;
+        int sH = 1;
+        int sW = 1;
+        int kH = 1;
+        int kW = 1;
 
         val aPadding = nodeDef.getAttrOrDefault("padding", null);
 
@@ -181,26 +189,26 @@ public class DeConv2D extends DynamicCustomOp {
 
 
         if (dataFormat.equalsIgnoreCase("nchw")) {
-            sY = tfStrides.get(2).intValue();
-            sX = tfStrides.get(3).intValue();
+            sH = tfStrides.get(2).intValue();
+            sW = tfStrides.get(3).intValue();
 
-            kY = (int) arr.size(2);
-            kX = (int) arr.size(3);
+            kH = (int) arr.size(2);
+            kW = (int) arr.size(3);
         } else {
-            sY = tfStrides.get(1).intValue();
-            sX = tfStrides.get(2).intValue();
+            sH = tfStrides.get(1).intValue();
+            sW = tfStrides.get(2).intValue();
 
-            kY = (int) arr.size(0);
-            kX = (int) arr.size(1);
+            kH = (int) arr.size(0);
+            kW = (int) arr.size(1);
         }
 
 
         boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
         DeConv2DConfig conv2DConfig = DeConv2DConfig.builder()
-                .kY(kY)
-                .kX(kX)
-                .sX(sX)
-                .sY(sY)
+                .kH(kH)
+                .kW(kW)
+                .sH(sW)
+                .sW(sH)
                 .isSameMode(isSameMode)
                 //c++ check checks for nchw
                 .isNHWC(dataFormat.equalsIgnoreCase("nhwc"))
@@ -221,8 +229,8 @@ public class DeConv2D extends DynamicCustomOp {
         val group = attributesForNode.get("group");
 
         val kernelShape = attributesForNode.get("kernel_shape");
-        int kY = kernelShape.getIntsList().get(0).intValue();
-        int kX = kernelShape.getIntsList().size() < 2 ? kY : kernelShape.getIntsList().get(1).intValue();
+        int kH = kernelShape.getIntsList().get(0).intValue();
+        int kW = kernelShape.getIntsList().size() < 2 ? kH : kernelShape.getIntsList().get(1).intValue();
 
         val vertexId = args()[0];
 
@@ -233,17 +241,17 @@ public class DeConv2D extends DynamicCustomOp {
         String dataFormat = "nhwc";
 
         val strides = attributesForNode.get("strides");
-        val sY = strides.getIntsList().get(0);
-        val sX = strides.getIntsList().size() < 2 ? sY : strides.getIntsList().get(1);
+        val sH = strides.getIntsList().get(0);
+        val sW = strides.getIntsList().size() < 2 ? sH : strides.getIntsList().get(1);
         boolean isSameMode = autoPad
                 .equalsIgnoreCase("SAME");
 
 
         DeConv2DConfig conv2DConfig = DeConv2DConfig.builder()
-                .kY(kY)
-                .kX(kX)
-                .sX(sX.intValue())
-                .sY(sY.intValue())
+                .kH(kH)
+                .kW(kW)
+                .sH(sH.intValue())
+                .sW(sW.intValue())
                 .isSameMode(isSameMode)
                 //c++ check checks for nchw
                 .isNHWC(dataFormat.equalsIgnoreCase("nhwc"))

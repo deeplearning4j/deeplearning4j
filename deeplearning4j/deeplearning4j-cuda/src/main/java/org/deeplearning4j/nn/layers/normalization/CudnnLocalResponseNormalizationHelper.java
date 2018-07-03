@@ -37,6 +37,9 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Collections;
+import java.util.Map;
+
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
 
@@ -219,4 +222,9 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
         return activations;
     }
 
+    @Override
+    public Map<String, Long> helperMemoryUse() {
+        //No persistent memory use other than the structs (which are small)
+        return Collections.emptyMap();
+    }
 }

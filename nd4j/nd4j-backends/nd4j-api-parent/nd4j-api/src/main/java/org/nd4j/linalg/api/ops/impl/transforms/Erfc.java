@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -95,9 +95,9 @@ public class Erfc extends BaseTransformOp {
         // erfc(z) = 1 - erf(z)
         // Derivative of erf(z) is 2 / sqrt(pi) * e^(-z^2), so have to multiply by -1.
         SDVariable gradient = i_v.get(0);
-        SDVariable constant = sameDiff.onesLike(gradient).mul(-2).div(Math.sqrt(Math.PI));
-        SDVariable ret = constant.mul(sameDiff.exp(gradient.mul(gradient).mul(-1)));
-        return Arrays.asList(ret);
+        SDVariable z = arg();
+        SDVariable constant = sameDiff.onesLike(gradient).mul(-2.0 / Math.sqrt(Math.PI));
+        SDVariable ret = constant.mul(sameDiff.exp(z.mul(z).mul(-1))).mul(gradient);
+        return Collections.singletonList(ret);
     }
-
 }

@@ -20,6 +20,7 @@
 package org.nd4j.linalg.convolution;
 
 
+import lombok.val;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
@@ -35,7 +36,6 @@ import org.nd4j.linalg.factory.Nd4j;
  * code for applying
  * the convolution operator.
  *
- *
  * @author Adam Gibson
  */
 public class Convolution {
@@ -49,10 +49,10 @@ public class Convolution {
     /**
      * Default no-arg constructor.
      */
-    private Convolution() {}
+    private Convolution() {
+    }
 
     /**
-     *
      * @param col
      * @param stride
      * @param padding
@@ -67,59 +67,62 @@ public class Convolution {
     /**
      * Rearrange matrix
      * columns into blocks
-
+     *
      * @param col the column
      *            transposed image to convert
-     * @param sy stride y
-     * @param sx stride x
-     * @param ph padding height
-     * @param pw padding width
-     * @param h height
-     * @param w width
+     * @param sH  stride height
+     * @param sW  stride width
+     * @param ph  padding height
+     * @param pW  padding width
+     * @param kH  height
+     * @param kW  width
      * @return
      */
-    public static INDArray col2im(INDArray col, int sy, int sx, int ph, int pw, int h, int w) {
+    public static INDArray col2im(INDArray col, int sH, int sW, int ph, int pW, int kH, int kW) {
         if (col.rank() != 6)
             throw new IllegalArgumentException("col2im input array must be rank 6");
 
-        INDArray output = Nd4j.create(new long[]{col.size(0), col.size(1), h, w});
+        INDArray output = Nd4j.create(new long[]{col.size(0), col.size(1), kH, kW});
+
+        val cfg = Conv2DConfig.builder()
+                .sH(sH)
+                .sW(sW)
+                .dH(1)
+                .dW(1)
+                .kH(kH)
+                .kW(kW)
+                .pH(ph)
+                .pW(pW)
+                .build();
 
         Col2Im col2Im = Col2Im.builder()
-                .inputArrays(new  INDArray[]{col})
+                .inputArrays(new INDArray[]{col})
                 .outputs(new INDArray[]{output})
-                .conv2DConfig(Conv2DConfig.builder()
-                        .sy(sy)
-                        .sx(sx)
-                        .dw(1)
-                        .dh(1)
-                        .kh(h)
-                        .kw(w)
-                        .ph(ph)
-                        .pw(pw)
-                        .build())
+                .conv2DConfig(cfg)
                 .build();
 
         Nd4j.getExecutioner().exec(col2Im);
         return col2Im.outputArguments()[0];
     }
 
-    public static INDArray col2im(INDArray col, INDArray z, int sy, int sx, int ph, int pw, int h, int w, int dh, int dw ) {
+    public static INDArray col2im(INDArray col, INDArray z, int sH, int sW, int pH, int pW, int kH, int kW,
+                                  int dH, int dW) {
         if (col.rank() != 6)
             throw new IllegalArgumentException("col2im input array must be rank 6");
         if (z.rank() != 4)
             throw new IllegalArgumentException("col2im output array must be rank 4");
         Col2Im col2Im = Col2Im.builder()
-                .inputArrays(new  INDArray[]{col})
+                .inputArrays(new INDArray[]{col})
                 .outputs(new INDArray[]{z})
                 .conv2DConfig(Conv2DConfig.builder()
-                        .sy(sy)
-                        .sx(sx)
-                        .dw(dw)
-                        .dh(dh)
-                        .kh(h)
-                        .kw(w)
-                        .ph(ph)
-                        .pw(pw)
+                        .sH(sH)
+                        .sW(sW)
+                        .dH(dH)
+                        .dW(dW)
+                        .kH(kH)
+                        .kW(kW)
+                        .pH(pH)
+                        .pW(pW)
                         .build())
                 .build();
 
@@ -129,7 +132,6 @@ public class Convolution {
     }
 
     /**
-     *
      * @param img
      * @param kernel
      * @param stride
@@ -143,16 +145,16 @@ public class Convolution {
 
     /**
      * Implement column formatted images
-     * @param img the image to process
-     * @param kh the kernel height
-     * @param kw the kernel width
-     * @param sy the stride along y
-     * @param sx the stride along x
-     * @param ph the padding width
-     * @param pw the padding height
+     *
+     * @param img        the image to process
+     * @param kh         the kernel height
+     * @param kw         the kernel width
+     * @param sy         the stride along y
+     * @param sx         the stride along x
+     * @param ph         the padding width
+     * @param pw         the padding height
      * @param isSameMode whether to cover the whole image or not
      * @return the column formatted image
-     *
      */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode) {
         return im2col(img, kh, kw, sy, sx, ph, pw, 1, 1, isSameMode);
@@ -173,19 +175,19 @@ public class Convolution {
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode,
                                   INDArray out) {
-        Im2col im2col =  Im2col.builder()
+        Im2col im2col = Im2col.builder()
                 .outputs(new INDArray[]{out})
                 .inputArrays(new INDArray[]{img})
                 .conv2DConfig(Conv2DConfig.builder()
-                        .kh(kh)
-                        .pw(pw)
-                        .ph(ph)
-                        .sy(sy)
-                        .sx(sx)
-                        .kw(kw)
-                        .kh(kh)
-                        .dw(1)
-                        .dh(1)
+                        .kH(kh)
+                        .pW(pw)
+                        .pH(ph)
+                        .sH(sy)
+                        .sW(sx)
+                        .kH(kh)
+                        .kW(kw)
+                        .dH(1)
+                        .dW(1)
                         .isSameMode(isSameMode)
                         .build()).build();
 
@@ -195,19 +197,18 @@ public class Convolution {
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dH, int dW, boolean isSameMode,
                                   INDArray out) {
-        Im2col im2col =  Im2col.builder()
+        Im2col im2col = Im2col.builder()
                 .outputs(new INDArray[]{out})
                 .inputArrays(new INDArray[]{img})
                 .conv2DConfig(Conv2DConfig.builder()
-                        .kh(kh)
-                        .pw(pw)
-                        .ph(ph)
-                        .sy(sy)
-                        .sx(sx)
-                        .kw(kw)
-                        .kh(kh)
-                        .dw(dW)
-                        .dh(dH)
+                        .pW(pw)
+                        .pH(ph)
+                        .sH(sy)
+                        .sW(sx)
+                        .kW(kw)
+                        .kH(kh)
+                        .dW(dW)
+                        .dH(dH)
                         .isSameMode(isSameMode)
                         .build()).build();
 
@@ -217,6 +218,7 @@ public class Convolution {
 
     /**
      * Pooling 2d implementation
+     *
      * @param img
      * @param kh
      * @param kw
@@ -228,7 +230,7 @@ public class Convolution {
      * @param dw
      * @param isSameMode
      * @param type
-     * @param extra optional argument. I.e. used in pnorm pooling.
+     * @param extra         optional argument. I.e. used in pnorm pooling.
      * @param virtualHeight
      * @param virtualWidth
      * @param out
@@ -239,18 +241,18 @@ public class Convolution {
                                      double extra, int virtualHeight, int virtualWidth, INDArray out) {
         Pooling2D pooling = Pooling2D.builder()
                 .arrayInputs(new INDArray[]{img})
-                .arrayOutputs(new INDArray[] {out})
+                .arrayOutputs(new INDArray[]{out})
                 .config(Pooling2DConfig.builder()
-                        .dh(dh)
-                        .dw(dw)
+                        .dH(dh)
+                        .dW(dw)
                         .extra(extra)
-                        .kh(kh)
-                        .kw(kw)
-                        .ph(ph)
-                        .pw(pw)
+                        .kH(kh)
+                        .kW(kw)
+                        .pH(ph)
+                        .pW(pw)
                         .isSameMode(isSameMode)
-                        .sx(sx)
-                        .sy(sy)
+                        .sH(sy)
+                        .sW(sx)
                         .virtualHeight(virtualHeight)
                         .virtualWidth(virtualWidth)
                         .type(type)
@@ -263,49 +265,47 @@ public class Convolution {
 
     /**
      * Implement column formatted images
-     * @param img the image to process
-     * @param kh the kernel height
-     * @param kw the kernel width
-     * @param sy the stride along y
-     * @param sx the stride along x
-     * @param ph the padding width
-     * @param pw the padding height
-     * @param pval the padding value (not used)
+     *
+     * @param img        the image to process
+     * @param kh         the kernel height
+     * @param kw         the kernel width
+     * @param sy         the stride along y
+     * @param sx         the stride along x
+     * @param ph         the padding width
+     * @param pw         the padding height
+     * @param pval       the padding value (not used)
      * @param isSameMode whether padding mode is 'same'
      * @return the column formatted image
-     *
      */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int pval,
                                   boolean isSameMode) {
         INDArray output = null;
 
-        if(isSameMode) {
+        if (isSameMode) {
             int oH = (int) Math.ceil(img.size(2) * 1.f / sy);
             int oW = (int) Math.ceil(img.size(3) * 1.f / sx);
 
-            output = Nd4j.createUninitialized(new long[] {img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
-        }
-        else {
+            output = Nd4j.createUninitialized(new long[]{img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
+        } else {
             // FIXME: int cast
-            int oH = ((int) img.size(2) - (kh + (kh-1)*(1-1)) + 2* ph)/sy + 1;
-            int oW = ((int) img.size(3) - (kw + (kw-1)*(1-1)) + 2*pw)/sx + 1;
+            int oH = ((int) img.size(2) - (kh + (kh - 1) * (1 - 1)) + 2 * ph) / sy + 1;
+            int oW = ((int) img.size(3) - (kw + (kw - 1) * (1 - 1)) + 2 * pw) / sx + 1;
 
-            output = Nd4j.createUninitialized(new long[] {img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
+            output = Nd4j.createUninitialized(new long[]{img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
         }
 
-        Im2col im2col =  Im2col.builder()
+        Im2col im2col = Im2col.builder()
                 .inputArrays(new INDArray[]{img})
                 .outputs(new INDArray[]{output})
                 .conv2DConfig(Conv2DConfig.builder()
-                        .kh(kh)
-                        .pw(pw)
-                        .ph(ph)
-                        .sy(sy)
-                        .sx(sx)
-                        .kw(kw)
-                        .kh(kh)
-                        .dw(1)
-                        .dh(1)
+                        .pW(pw)
+                        .pH(ph)
+                        .sH(sy)
+                        .sW(sx)
+                        .kW(kw)
+                        .kH(kh)
+                        .dW(1)
+                        .dH(1)
                         .isSameMode(isSameMode)
                         .build()).build();
 
@@ -314,8 +314,8 @@ public class Convolution {
     }
 
     /**
-     *
      * The out size for a convolution
+     *
      * @param size
      * @param k
      * @param s
@@ -333,18 +333,18 @@ public class Convolution {
             return (size + p * 2 - k) / s + 1;
     }
 
-    public static int outputSize(int size, int k, int s, int p, int dilation, boolean isSameMode){
+    public static int outputSize(int size, int k, int s, int p, int dilation, boolean isSameMode) {
         k = effectiveKernelSize(k, dilation);
 
-        if(isSameMode) {
+        if (isSameMode) {
             return (int) Math.ceil(size * 1.f / s);
         } else {
-            return (size - k + 2 * p)/s + 1;
+            return (size - k + 2 * p) / s + 1;
         }
     }
 
-    public static int effectiveKernelSize(int kernel, int dilation){
-        return kernel + (kernel - 1)*(dilation-1);
+    public static int effectiveKernelSize(int kernel, int dilation) {
+        return kernel + (kernel - 1) * (dilation - 1);
     }
 
 
@@ -361,7 +361,6 @@ public class Convolution {
     }
 
     /**
-     *
      * @param input
      * @param kernel
      * @param type

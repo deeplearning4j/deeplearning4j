@@ -35,7 +35,7 @@ public class TestDeepWalk {
     public void testBasic() throws IOException {
         //Very basic test. Load graph, build tree, call fit, make sure it doesn't throw any exceptions
 
-        ClassPathResource cpr = new ClassPathResource("testgraph_7vertices.txt");
+        ClassPathResource cpr = new ClassPathResource("deeplearning4j-graph/testgraph_7vertices.txt");
 
         Graph<String, String> graph = GraphLoader
                         .loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(), 7, ",");
@@ -190,7 +190,7 @@ public class TestDeepWalk {
 
         int nVertices = 13;
 
-        ClassPathResource cpr = new ClassPathResource("graph13.txt");
+        ClassPathResource cpr = new ClassPathResource("deeplearning4j-graph/graph13.txt");
         Graph<String, String> graph = GraphLoader
                         .loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(), 13, ",");
 
@@ -223,7 +223,7 @@ public class TestDeepWalk {
     public void testDeepWalkWeightedParallel() throws IOException {
 
         //Load graph
-        String path = new ClassPathResource("WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
+        String path = new ClassPathResource("deeplearning4j-graph/WeightedGraph.txt").getTempFileFromArchive().getAbsolutePath();
         int numVertices = 9;
         String delim = ",";
         String[] ignoreLinesStartingWith = new String[] {"//"}; //Comment lines start with "//"

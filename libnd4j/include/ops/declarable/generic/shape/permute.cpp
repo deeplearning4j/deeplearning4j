@@ -51,10 +51,11 @@ namespace nd4j {
             } else {	
                 if (!replace) {			// not-in-place        
                     NDArray<T>* output = OUTPUT_VARIABLE(0);
-                    nd4j_printv("permute shape", *arguments);
-                    x->permute(*arguments, *output);
-
+                    // nd4j_printv("permute shape", *arguments);
+                    auto result = x->permute(*arguments);
+                    output->assign(result);
                     STORE_RESULT(output);
+                    delete result;
                 } else {
                     auto output = x->dup();
                     output->permutei(*arguments);

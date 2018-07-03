@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.layers.recurrent;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.LayerHelper;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
@@ -32,7 +33,7 @@ import java.util.Map;
  *
  * @author saudet
  */
-public interface LSTMHelper {
+public interface LSTMHelper extends LayerHelper {
     boolean checkSupported(IActivation gateActivationFn, IActivation activationFn, boolean hasPeepholeConnections);
 
     Pair<Gradient, INDArray> backpropGradient(final NeuralNetConfiguration conf, final IActivation gateActivationFn,

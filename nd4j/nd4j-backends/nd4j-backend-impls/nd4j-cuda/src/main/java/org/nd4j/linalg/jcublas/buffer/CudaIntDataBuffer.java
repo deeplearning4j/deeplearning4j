@@ -82,6 +82,11 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         setData(data);
     }
 
+    public CudaIntDataBuffer(long[] data) {
+        this(data.length);
+        setData(data);
+    }
+
     public CudaIntDataBuffer(int[] data, MemoryWorkspace workspace) {
         this(data.length, workspace);
         setData(data);

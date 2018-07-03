@@ -27,7 +27,7 @@ public class FrameTest {
     /**
      * Simple test for Frame functionality
      */
-    @Test
+    @Test(timeout = 30000L)
     public void testFrame1() {
         final AtomicInteger count = new AtomicInteger(0);
 
@@ -142,7 +142,7 @@ public class FrameTest {
     }
 
 
-    @Test
+    @Test(timeout = 30000L)
     public void testJoin1() throws Exception {
         SkipGramRequestMessage sgrm = new SkipGramRequestMessage(0, 1, new int[] {3, 4, 5}, new byte[] {0, 1, 0},
                         (short) 0, 0.01, 119L);

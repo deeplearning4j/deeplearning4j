@@ -29,7 +29,7 @@ public class RandomPathFilter implements PathFilter {
 
     protected Random random;
     protected String[] extensions;
-    protected int maxPaths = 0;
+    protected long maxPaths = 0;
 
     /** Calls {@code this(random, extensions, 0)}. */
     public RandomPathFilter(Random random, String... extensions) {
@@ -43,7 +43,7 @@ public class RandomPathFilter implements PathFilter {
      * @param extensions of files to keep
      * @param maxPaths   max number of paths to return (0 == unlimited)
      */
-    public RandomPathFilter(Random random, String[] extensions, int maxPaths) {
+    public RandomPathFilter(Random random, String[] extensions, long maxPaths) {
         this.random = random;
         this.extensions = extensions;
         this.maxPaths = maxPaths;

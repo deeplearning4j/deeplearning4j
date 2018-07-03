@@ -5,6 +5,7 @@
 #include <helpers/shape.h>
 #include "testlayers.h"
 #include <NDArrayFactory.h>
+#include <ops/declarable/headers/shape.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -286,4 +287,61 @@ TEST_F(ShapeTests, Test_Remove_Index_6) {
     shape::removeIndex(array, idx, 3, 2, result);
 
     ASSERT_EQ(1, result[0]);
+}
+
+TEST_F(ShapeTests, Tests_Transpose_119_1) {
+    NDArray<float> x('c', {3, 2});
+    NDArray<float> y('c', {2}, {1.0f, 0.0f});
+    NDArray<float> z('c', {2, 3});
+
+    NDArrayFactory<float>::linspace(1.0, x);
+
+    auto e = x.permute({1, 0});
+    e->streamline('c');
+
+    nd4j::ops::transpose<float> op;
+    auto result = op.execute({&x, &y}, {&z}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_TRUE(e->isSameShape(z));
+    ASSERT_TRUE(e->equalsTo(z));
+
+    delete e;
+}
+
+TEST_F(ShapeTests, Tests_Transpose_119_2) {
+    NDArray<float> x('c', {3, 5});
+    NDArrayFactory<float>::linspace(1.0f, x);
+
+    auto exp = x.transpose();
+
+    nd4j::ops::transpose<float> op;
+    auto result = op.execute({&x},{}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp->isSameShape(z));
+    ASSERT_TRUE(exp->equalsTo(z));
+
+    delete exp;
+    delete result;
+}
+
+TEST_F(ShapeTests, Tests_Transpose_119_3) {
+    NDArray<float> x('c', {3, 5});
+    NDArrayFactory<float>::linspace(1.0f, x);
+
+    NDArray<float> z('c', {5, 3});
+
+    auto exp = x.transpose();
+
+    nd4j::ops::transpose<float> op;
+    auto result = op.execute({&x}, {&z}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+
+    ASSERT_TRUE(exp->isSameShape(z));
+    ASSERT_TRUE(exp->equalsTo(z));
+
+    delete exp;
 }

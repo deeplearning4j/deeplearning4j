@@ -19,6 +19,7 @@ import org.nd4j.graph.FlatGraph;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
@@ -33,6 +34,7 @@ import org.tensorflow.framework.GraphDef;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -958,6 +960,75 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/reduce_dim_true.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
     }
 
+    @Test
+    public void testTensorArray_119_1() throws Exception {
+        Nd4j.create(1);
+
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array.pb.txt").getInputStream());
+        assertNotNull(tg);
+
+        val input_matrix = Nd4j.ones(3, 2);
+        tg.associateArrayWithVariable(input_matrix, "input_matrix");
+
+        val array = tg.execAndEndResult();
+
+        val exp = Nd4j.create(new float[] {1, 1, 2, 2, 3, 3}, new int[]{3, 2});
+
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testTensorArray_119_2() throws Exception {
+        Nd4j.create(1);
+
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array_read.pb.txt").getInputStream());
+        assertNotNull(tg);
+
+        val input_matrix = Nd4j.ones(3, 2);
+        tg.associateArrayWithVariable(input_matrix, "input_matrix");
+
+        val array = tg.execAndEndResult();
+
+        val exp = Nd4j.create(new float[] {2, 2}, new int[]{2});
+
+        assertEquals(exp, array);
+    }
+
+
+    @Test
+    public void testTensorArray_119_3() throws Exception {
+        Nd4j.create(1);
+
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array_unstack.pb.txt").getInputStream());
+        assertNotNull(tg);
+
+        val array = tg.execAndEndResult();
+
+        val exp = Nd4j.create(new float[] {5, 6, 7, 8}, new int[]{4});
+
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testTensorArray_119_4() throws Exception {
+        Nd4j.create(1);
+
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/tensor_array_loop.pb.txt").getInputStream());
+        assertNotNull(tg);
+
+
+        val input_matrix = Nd4j.linspace(1, 10, 10).reshape(5, 2);
+        tg.associateArrayWithVariable(input_matrix, "input_matrix");
+
+
+        log.info("Graph: {}", tg.asFlatPrint());
+
+        val array = tg.execAndEndResult();
+
+        val exp = Nd4j.create(new float[] {3,6,  9,12,  15,18,  21,24,  27,30}, new int[]{5, 2});
+
+        assertEquals(exp, array);
+    }
 
     @Test(expected = ND4JIllegalStateException.class)
     public void testNonFrozenGraph1() throws Exception {

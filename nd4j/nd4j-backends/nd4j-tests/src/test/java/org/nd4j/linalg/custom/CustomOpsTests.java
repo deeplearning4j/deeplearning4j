@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
+import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -109,7 +110,7 @@ public class CustomOpsTests {
         assertEquals(exp, arrayX);
     }
 
-    @Test
+    @Test(expected = ND4JIllegalStateException.class)
     public void testInplaceOp1() throws Exception {
         val arrayX = Nd4j.create(10, 10);
         val arrayY = Nd4j.create(10, 10);
@@ -129,7 +130,7 @@ public class CustomOpsTests {
         assertEquals(exp, arrayX);
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test
     public void testNoneInplaceOp3() throws Exception {
         val arrayX = Nd4j.create(10, 10);
         val arrayY = Nd4j.create(10, 10);
@@ -146,32 +147,7 @@ public class CustomOpsTests {
 
         Nd4j.getExecutioner().exec(op);
 
-        assertEquals(exp, arrayX);
-    }
-
-
-    @Test
-    public void testInplaceOp2() throws Exception {
-        val arrayX = Nd4j.create(10, 10);
-        val arrayY = Nd4j.create(10, 10);
-        val arrayZ = Nd4j.create(10, 10);
-
-        arrayX.assign(3.0);
-        arrayY.assign(1.0);
-
-        val exp = Nd4j.create(10,10).assign(4.0);
-        val expZ = Nd4j.create(10,10);
-
-        CustomOp op = DynamicCustomOp.builder("add")
-                .addInputs(arrayX, arrayY)
-                .addOutputs(arrayZ)
-                .callInplace(true)
-                .build();
-
-        Nd4j.getExecutioner().exec(op);
-
-        assertEquals(exp, arrayX);
-        assertEquals(expZ, arrayZ);
+        assertEquals(exp, op.getOutputArgument(0));
     }
 
 
@@ -336,5 +312,31 @@ public class CustomOpsTests {
     @Test
     public void testOpStatus1() throws Exception {
         assertEquals(OpStatus.ND4J_STATUS_OK, OpStatus.byNumber(0));
+    }
+
+    @Test
+    public void testRandomStandardNormal_1() {
+        val shape = Nd4j.create(new float[] {5, 10});
+        val op = new RandomStandardNormal(shape);
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(1, op.outputArguments().length);
+        val output = op.getOutputArgument(0);
+
+        assertArrayEquals(new long[]{5, 10}, output.shape());
+    }
+
+    @Test
+    public void testRandomStandardNormal_2() {
+        val shape = new long[]{5, 10};
+        val op = new RandomStandardNormal(shape);
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(1, op.outputArguments().length);
+        val output = op.getOutputArgument(0);
+
+        assertArrayEquals(new long[]{5, 10}, output.shape());
     }
 }

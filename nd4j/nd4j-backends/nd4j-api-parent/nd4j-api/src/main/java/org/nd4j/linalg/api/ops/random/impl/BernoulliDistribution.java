@@ -2,11 +2,13 @@ package org.nd4j.linalg.api.ops.random.impl;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +20,12 @@ import java.util.Map;
  */
 public class BernoulliDistribution extends BaseRandomOp {
     private double prob;
+
+    public BernoulliDistribution(SameDiff sd, double prob, long[] shape){
+        super(sd, shape);
+        this.prob = prob;
+        this.extraArgs = new Object[] {this.prob};
+    }
 
     public BernoulliDistribution() {
         super();
@@ -86,6 +94,6 @@ public class BernoulliDistribution extends BaseRandomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Collections.emptyList(); //No SDVariable args
     }
 }

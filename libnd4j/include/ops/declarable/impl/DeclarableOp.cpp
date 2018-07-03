@@ -105,7 +105,7 @@ namespace nd4j {
                 }
             } else {
                 nd4j_printf("BOOM!\n","");
-                throw "Boom!";
+                throw std::runtime_error("Boom!");
             }
 
             return z;
@@ -114,7 +114,7 @@ namespace nd4j {
 
 
         template <typename T>
-        bool nd4j::ops::DeclarableOp<T>::prepareOutputs(Context<T> &ctx) {
+        int nd4j::ops::DeclarableOp<T>::prepareOutputs(Context<T> &ctx) {
             auto workspace = ctx.getWorkspace();
             GraphProfile *prof = nullptr;
             NodeProfile *node = nullptr;
@@ -129,10 +129,12 @@ namespace nd4j {
 
             if (ctx.isInplace()) {
                 // do nothing, getZ result will do the trick
+                return static_cast<int>(ctx.width());
             } else {
                 // if op is not inplace - we should pre-allocate arrays
 
                 ShapeList inSha;
+                int results = 0;
 
                 if (Environment::getInstance()->isProfiling() && node != nullptr)
                     inputStart = std::chrono::system_clock::now();
@@ -159,6 +161,7 @@ namespace nd4j {
                 }
 
                 auto outSha = this->calculateOutputShape(&inSha, ctx);
+                results = outSha->size();
 
                 // optionally saving shapeTime
                 if (Environment::getInstance()->isProfiling() && node != nullptr) {
@@ -205,9 +208,9 @@ namespace nd4j {
                     auto arrayTime = std::chrono::duration_cast<std::chrono::nanoseconds>(arrayEnd - arrayStart).count();
                     node->setArrayTime(arrayTime);
                 }
-            }
 
-            return true;
+                return results;
+            }
         }
 
         template <typename T>
@@ -217,14 +220,6 @@ namespace nd4j {
 
         template <typename T>
         void nd4j::ops::DeclarableOp<T>::storeResult(nd4j::graph::Context<T> &ctx, int outputNumber, NDArray<T>& array) {
-
-            if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
-                T mean = array.meanNumber();
-                //if (mean == (T) 0.0f || (mean < (T) 1e-5f && mean > (T) -1e-5f))
-                //    nd4j_debug("node_%i:%i result has 0.0 as mean\n", block.getNodeId(), outputNumber);
-                nd4j_debug("node_%i:%i result length: [%i]; mean [%f]\n", ctx.nodeId(), outputNumber, (int) array.lengthOf(), (float) mean);
-            }
-
             ctx.pushNDArrayToVariableSpace(ctx.nodeId(), outputNumber, &array, !ctx.isInplace());
         }
 
@@ -237,9 +232,9 @@ namespace nd4j {
 
             Nd4jLong len = shape::length(shape);
             Nd4jLong* __shape;
-            ALLOCATE(__shape, workspace, shape::shapeInfoLength(shape[0]), Nd4jLong); //new int[shape[0] * 2 + 4];
+            ALLOCATE(__shape, workspace, shape::shapeInfoLength(shape), Nd4jLong); //new int[shape[0] * 2 + 4];
 
-            memcpy(__shape, shape, shape::shapeInfoByteLength(shape[0]));
+            memcpy(__shape, shape, shape::shapeInfoByteLength(shape));
 
             // if that's first run - we probably have nothing here
             if (var->getNDArray() == nullptr) {
@@ -301,7 +296,7 @@ namespace nd4j {
             REQUIRE_OK(this->validateArguments(*block));
 
             // this method will allocate output NDArrays for this op
-            this->prepareOutputs(*block);
+            auto numOutputs = this->prepareOutputs(*block);
 
             if (Environment::getInstance()->isProfiling()) {
                 timeStart = std::chrono::system_clock::now();
@@ -328,6 +323,25 @@ namespace nd4j {
                         p->nodeById(block->nodeId())->setExecutionTime(outerTime);
                         p->nodeById(block->nodeId())->setTotalSize(memoryUsed);
                     }
+                }
+            }
+
+
+            // now we print out all outputs for this node
+            if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
+                auto vs = block->getVariableSpace();
+
+                for (int e = 0; e < numOutputs; e++) {
+                    // if given output index doesn't exist - we're done
+                    if (!vs->hasVariable(block->nodeId(), e))
+                        break;
+
+                    auto array = vs->getVariable(block->nodeId(), e)->getNDArray();
+
+                    auto shape = ShapeUtils<T>::shapeAsString(array);
+                    auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(32);
+
+                    nd4j_printf("node_%i:%i result shape: %s; first values %s\n", block->nodeId(), e, shape.c_str(), first.c_str());
                 }
             }
 
@@ -463,6 +477,10 @@ namespace nd4j {
                 if (v->variableType() == VariableType::NDARRAY) {
                     NDArray<T> *aV = v->getNDArray();
 
+                    // if array is empty intentionally - we're ok with that
+                    if (v->isEmpty())
+                        continue;
+
                     if (aV == nullptr || !aV->nonNull()) {
                         if (this->getOpName() != nullptr) {
                             nd4j_printf("Node [%i:<%s>]: NDArray [%i] (%i:%i) is NULL\n", block.getNodeId(), this->getOpName()->c_str(), cnt, p.first, p.second);
@@ -524,7 +542,7 @@ namespace nd4j {
         template <typename T>
         Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs, std::vector<T>& tArgs, std::vector<Nd4jLong>& iArgs, bool isInplace) {
             // TODO: nullptr here might be replaced
-            return execute(nullptr, inputs, outputs, tArgs, iArgs, isInplace);
+            return execute(ProviderRNG::getInstance().getRNG(), inputs, outputs, tArgs, iArgs, isInplace);
         }
 
         template <typename T>

@@ -36,7 +36,9 @@ import java.util.Random;
 import static org.bytedeco.javacpp.lept.*;
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
@@ -47,7 +49,7 @@ public class TestNativeImageLoader {
     static final Random rng = new Random(seed);
 
     @Test
-    public void testConvertPix() {
+    public void testConvertPix() throws Exception {
         PIX pix;
         Mat mat;
 
@@ -103,14 +105,14 @@ public class TestNativeImageLoader {
         assertEquals(CV_8UC4, mat.type());
 
         int w4 = 100, h4 = 238, ch4 = 1, pages = 1;
-        String path2MitosisFile = "/testimages2/mitosis.tif";
+        String path2MitosisFile = "datavec-data-image/testimages2/mitosis.tif";
         NativeImageLoader loader5 = new NativeImageLoader(h4, w4, ch4, NativeImageLoader.MultiPageMode.FIRST);
         INDArray array6 = null;
         try {
-            array6 = loader5.asMatrix(
-						new ClassPathResource(path2MitosisFile).getFile());
+            array6 = loader5.asMatrix(new ClassPathResource(path2MitosisFile).getFile());
         } catch (IOException e) {
             e.printStackTrace();
+            fail();
         }
         assertEquals(4, array6.rank());
         assertEquals(pages, array6.size(0));
@@ -119,7 +121,8 @@ public class TestNativeImageLoader {
         assertEquals(w4, array6.size(3));
 
         int ch5 = 4, pages1 = 1;
-        NativeImageLoader loader6 = new NativeImageLoader(h4, w4, ch5, NativeImageLoader.MultiPageMode.CHANNELS);
+        NativeImageLoader loader6 = new NativeImageLoader(h4, w4, 1, NativeImageLoader.MultiPageMode.CHANNELS);
+        loader6.direct = false; // simulate conditions under Android
         INDArray array7 = null;
         try {
             array7 = loader6.asMatrix(
@@ -137,8 +140,7 @@ public class TestNativeImageLoader {
         NativeImageLoader loader7 = new NativeImageLoader(h4, w4, ch6, NativeImageLoader.MultiPageMode.MINIBATCH);
         INDArray array8 = null;
         try {
-            array8 = loader7.asMatrix(
-                  new ClassPathResource(path2MitosisFile).getFile());
+            array8 = loader7.asMatrix(new ClassPathResource(path2MitosisFile).getFile());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -161,24 +163,29 @@ public class TestNativeImageLoader {
         assertEquals(2, array1.rank());
         assertEquals(1, array1.rows());
         assertEquals(h1 * w1 * ch1, array1.columns());
+        assertNotEquals(0.0, array1.sum().getDouble(0), 0.0);
 
         INDArray array2 = loader1.asRowVector(img2);
         assertEquals(2, array2.rank());
         assertEquals(1, array2.rows());
         assertEquals(h1 * w1 * ch1, array2.columns());
+        assertNotEquals(0.0, array2.sum().getDouble(0), 0.0);
 
         int w2 = 103, h2 = 68, ch2 = 4;
         NativeImageLoader loader2 = new NativeImageLoader(h2, w2, ch2);
+        loader2.direct = false; // simulate conditions under Android
 
         INDArray array3 = loader2.asRowVector(img1);
         assertEquals(2, array3.rank());
         assertEquals(1, array3.rows());
         assertEquals(h2 * w2 * ch2, array3.columns());
+        assertNotEquals(0.0, array3.sum().getDouble(0), 0.0);
 
         INDArray array4 = loader2.asRowVector(img2);
         assertEquals(2, array4.rank());
         assertEquals(1, array4.rows());
         assertEquals(h2 * w2 * ch2, array4.columns());
+        assertNotEquals(0.0, array4.sum().getDouble(0), 0.0);
     }
 
     @Test
@@ -195,6 +202,7 @@ public class TestNativeImageLoader {
         assertEquals(1, array1.size(1));
         assertEquals(h1, array1.size(2));
         assertEquals(w1, array1.size(3));
+        assertNotEquals(0.0, array1.sum().getDouble(0), 0.0);
 
         INDArray array2 = loader1.asMatrix(img2);
         assertEquals(4, array2.rank());
@@ -202,9 +210,11 @@ public class TestNativeImageLoader {
         assertEquals(1, array2.size(1));
         assertEquals(h1, array2.size(2));
         assertEquals(w1, array2.size(3));
+        assertNotEquals(0.0, array2.sum().getDouble(0), 0.0);
 
         int w2 = 111, h2 = 66, ch2 = 3;
         NativeImageLoader loader2 = new NativeImageLoader(h2, w2, ch2);
+        loader2.direct = false; // simulate conditions under Android
 
         INDArray array3 = loader2.asMatrix(img1);
         assertEquals(4, array3.rank());
@@ -212,6 +222,7 @@ public class TestNativeImageLoader {
         assertEquals(3, array3.size(1));
         assertEquals(h2, array3.size(2));
         assertEquals(w2, array3.size(3));
+        assertNotEquals(0.0, array3.sum().getDouble(0), 0.0);
 
         INDArray array4 = loader2.asMatrix(img2);
         assertEquals(4, array4.rank());
@@ -219,10 +230,11 @@ public class TestNativeImageLoader {
         assertEquals(3, array4.size(1));
         assertEquals(h2, array4.size(2));
         assertEquals(w2, array4.size(3));
+        assertNotEquals(0.0, array4.sum().getDouble(0), 0.0);
 
         int w3 = 123, h3 = 77, ch3 = 3;
         NativeImageLoader loader3 = new NativeImageLoader(h3, w3, ch3);
-        File f3 = new ClassPathResource("/testimages/class0/2.jpg").getFile();
+        File f3 = new ClassPathResource("datavec-data-image/testimages/class0/2.jpg").getFile();
         ImageWritable iw3 = loader3.asWritable(f3);
 
         INDArray array5 = loader3.asMatrix(iw3);
@@ -231,12 +243,14 @@ public class TestNativeImageLoader {
         assertEquals(3, array5.size(1));
         assertEquals(h3, array5.size(2));
         assertEquals(w3, array5.size(3));
+        assertNotEquals(0.0, array5.sum().getDouble(0), 0.0);
 
         Mat mat = loader3.asMat(array5);
         assertEquals(w3, mat.cols());
         assertEquals(h3, mat.rows());
         assertEquals(ch3, mat.channels());
         assertTrue(mat.type() == CV_32FC(ch3) || mat.type() == CV_64FC(ch3));
+        assertNotEquals(0.0, sumElems(mat).get(), 0.0);
 
         Frame frame = loader3.asFrame(array5, Frame.DEPTH_UBYTE);
         assertEquals(w3, frame.imageWidth);
@@ -247,6 +261,16 @@ public class TestNativeImageLoader {
         Java2DNativeImageLoader loader4 = new Java2DNativeImageLoader();
         BufferedImage img12 = loader4.asBufferedImage(array1);
         assertEquals(array1, loader4.asMatrix(img12));
+
+        NativeImageLoader loader5 = new NativeImageLoader(0, 0, 0);
+        loader5.direct = false; // simulate conditions under Android
+        INDArray array7 = loader5.asMatrix(f3);
+        assertEquals(4, array7.rank());
+        assertEquals(1, array7.size(0));
+        assertEquals(3, array7.size(1));
+        assertEquals(32, array7.size(2));
+        assertEquals(32, array7.size(3));
+        assertNotEquals(0.0, array7.sum().getDouble(0), 0.0);
     }
 
     @Test
@@ -261,24 +285,29 @@ public class TestNativeImageLoader {
         assertEquals(h1, scaled1.rows());
         assertEquals(w1, scaled1.cols());
         assertEquals(img1.channels(), scaled1.channels());
+        assertNotEquals(0.0, sumElems(scaled1).get(), 0.0);
 
         Mat scaled2 = loader1.scalingIfNeed(img2);
         assertEquals(h1, scaled2.rows());
         assertEquals(w1, scaled2.cols());
         assertEquals(img2.channels(), scaled2.channels());
+        assertNotEquals(0.0, sumElems(scaled2).get(), 0.0);
 
         int w2 = 70, h2 = 120, ch2 = 3;
         NativeImageLoader loader2 = new NativeImageLoader(h2, w2, ch2);
+        loader2.direct = false; // simulate conditions under Android
 
         Mat scaled3 = loader2.scalingIfNeed(img1);
         assertEquals(h2, scaled3.rows());
         assertEquals(w2, scaled3.cols());
         assertEquals(img1.channels(), scaled3.channels());
+        assertNotEquals(0.0, sumElems(scaled3).get(), 0.0);
 
         Mat scaled4 = loader2.scalingIfNeed(img2);
         assertEquals(h2, scaled4.rows());
         assertEquals(w2, scaled4.cols());
         assertEquals(img2.channels(), scaled4.channels());
+        assertNotEquals(0.0, sumElems(scaled4).get(), 0.0);
     }
 
     @Test
@@ -295,11 +324,13 @@ public class TestNativeImageLoader {
         assertEquals(85, cropped1.rows());
         assertEquals(60, cropped1.cols());
         assertEquals(img1.channels(), cropped1.channels());
+        assertNotEquals(0.0, sumElems(cropped1).get(), 0.0);
 
         Mat cropped2 = loader.centerCropIfNeeded(img2);
         assertEquals(70, cropped2.rows());
         assertEquals(95, cropped2.cols());
         assertEquals(img2.channels(), cropped2.channels());
+        assertNotEquals(0.0, sumElems(cropped2).get(), 0.0);
     }
 
 
@@ -334,7 +365,7 @@ public class TestNativeImageLoader {
 
     @Test
     public void testAsWritable() throws Exception {
-        File f0 = new ClassPathResource("/testimages/class0/0.jpg").getFile();
+        File f0 = new ClassPathResource("datavec-data-image/testimages/class0/0.jpg").getFile();
 
         NativeImageLoader imageLoader = new NativeImageLoader();
         ImageWritable img = imageLoader.asWritable(f0);
@@ -355,6 +386,7 @@ public class TestNativeImageLoader {
         assertEquals(1, array1.size(1));
         assertEquals(h1, array1.size(2));
         assertEquals(w1, array1.size(3));
+        assertNotEquals(0.0, array1.sum().getDouble(0), 0.0);
     }
 
     @Test
@@ -364,8 +396,8 @@ public class TestNativeImageLoader {
         f.setAccessible(true);
         m.setAccessible(true);
 
-        File f1 = new ClassPathResource("voc/2007/JPEGImages/000005.jpg").getFile();
-        File f2 = new ClassPathResource("voc/2007/JPEGImages/000007.jpg").getFile();
+        File f1 = new ClassPathResource("datavec-data-image/voc/2007/JPEGImages/000005.jpg").getFile();
+        File f2 = new ClassPathResource("datavec-data-image/voc/2007/JPEGImages/000007.jpg").getFile();
 
         //Start with a large buffer
         byte[] buffer = new byte[20*1024*1024];

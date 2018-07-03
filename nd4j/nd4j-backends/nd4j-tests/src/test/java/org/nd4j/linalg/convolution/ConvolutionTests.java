@@ -58,7 +58,7 @@ public class ConvolutionTests extends BaseNd4jTest {
     @Test
     public void testIm2ColKnownValues() {
         //Input: w=3, h=3, depth=2, minibatch = 2
-        //kh=2, kw=2
+        //kH=2, kW=2
         /*
         ----- Input images -----
         example 0:
@@ -197,7 +197,7 @@ public class ConvolutionTests extends BaseNd4jTest {
     @Test
     public void testIm2ColKnownValuesDilated() {
         //Input: w=4, h=4, depth=1, minibatch = 2, dilation=2, stride 1
-        //kh=2, kw=2
+        //kH=2, kW=2
         /*
         ----- Input images -----
         example 0:
@@ -310,7 +310,7 @@ public class ConvolutionTests extends BaseNd4jTest {
     @Test
     public void testIm2ColKnownValuesDilatedStrided() {
         //Input: w=5, h=5, depth=1, minibatch = 1, dilation=2, stride 2
-        //kh=2, kw=2
+        //kH=2, kW=2
         /*
         ----- Input images -----
         example 0:
@@ -392,7 +392,7 @@ public class ConvolutionTests extends BaseNd4jTest {
     @Test
     public void testIm2ColKnownValuesMiniBatch3() {
         //Input: w=3, h=3, depth=2, minibatch = 3
-        //kh=2, kw=2
+        //kH=2, kW=2
         /*
         ----- Input images -----
         example 0:
@@ -1369,7 +1369,7 @@ public class ConvolutionTests extends BaseNd4jTest {
                                             for (int ph : padH) {
                                                 for (int pw : padW) {
                                                     if ((w - kw + 2 * pw) % sw != 0 || (h - kh + 2 * ph) % sh != 0)
-                                                        continue; //(w-kp+2*pw)/sw + 1 is not an integer,  i.e., number of outputs doesn't fit
+                                                        continue; //(w-kp+2*pW)/sw + 1 is not an integer,  i.e., number of outputs doesn't fit
 
                                                     System.out.println("Running " + m + " " + d + " " + h + " " + w);
                                                     for (boolean cAll : coverall) {
@@ -1451,7 +1451,7 @@ public class ConvolutionTests extends BaseNd4jTest {
                                                 for (int pw : padW) {
                                                     System.out.println("Before assertion");
                                                     if ((w - kw + 2 * pw) % sw != 0 || (h - kh + 2 * ph) % sh != 0)
-                                                        continue; //(w-kp+2*pw)/sw + 1 is not an integer, i.e., number of outputs doesn't fit
+                                                        continue; //(w-kp+2*pW)/sw + 1 is not an integer, i.e., number of outputs doesn't fit
 
                                                     INDArray in = Nd4j.rand(new int[] {m, d, h, w});
                                                     assertEquals(in.data().allocationMode(), mode);
@@ -1627,13 +1627,13 @@ public class ConvolutionTests extends BaseNd4jTest {
 
                 //https://github.com/deeplearning4j/libnd4j/blob/master/include/ops/declarable/generic/convo/pooling/avgpool2d.cpp
                 DynamicCustomOp op1 = DynamicCustomOp.builder("avgpool2d")
-                        .addIntegerArguments(new int[]{2, 2, 1, 1, 0, 0, 1, 1, 1, 0, 0})   //ky, kx, sy, sx, py, px, dy, dx, isSameMode, ???, divisor, nchw
+                        .addIntegerArguments(new int[]{2, 2, 1, 1, 0, 0, 1, 1, 1, 0, 0})   //ky, kx, sH, sW, py, px, dy, dx, isSameMode, ???, divisor, nchw
                         .addInputs(input)
                         .addOutputs(Nd4j.create(new int[]{1, 1, 3, 3}, outputOrder))
                         .build();
 
                 DynamicCustomOp op2 = DynamicCustomOp.builder("avgpool2d")
-                        .addIntegerArguments(new int[]{2, 2, 1, 1, 0, 0, 1, 1, 1, 2, 0})   //ky, kx, sy, sx, py, px, dy, dx, isSameMode, ???, divisor, nchw
+                        .addIntegerArguments(new int[]{2, 2, 1, 1, 0, 0, 1, 1, 1, 1, 0})   //ky, kx, sH, sW, py, px, dy, dx, isSameMode, ???, divisor, nchw
                         .addInputs(input)
                         .addOutputs(Nd4j.create(new int[]{1, 1, 3, 3}, outputOrder))
                         .build();
@@ -1660,7 +1660,7 @@ public class ConvolutionTests extends BaseNd4jTest {
             INDArray x = Nd4j.linspace(1, len, len).reshape('c', 2, 4, 4, 2);
 
             DynamicCustomOp op = DynamicCustomOp.builder("avgpool2d")
-                    .addIntegerArguments(new int[]{2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1})        //ky, kx, sy, sx, py, px, dy, dx, isSameMode, ???, divisor, nchw
+                    .addIntegerArguments(new int[]{2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1})        //ky, kx, sH, sW, py, px, dy, dx, isSameMode, ???, divisor, nchw
                     .addInputs(x)
                     .addOutputs(Nd4j.create(new int[]{2, 2, 2, 2}, outputOrder))
                     .build();

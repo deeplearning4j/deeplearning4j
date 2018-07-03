@@ -3,16 +3,20 @@ package org.deeplearning4j.zoo;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.impl.BenchmarkDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.transferlearning.TransferLearningHelper;
 import org.deeplearning4j.zoo.model.*;
 import org.deeplearning4j.zoo.model.helper.DarknetHelper;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;
 import java.util.Map;
@@ -80,8 +84,21 @@ public class TestInstantiation extends BaseDL4JTest {
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
-        INDArray[] result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 224, 224}));
+        INDArray f = Nd4j.rand(new int[] {1, 3, 224, 224});
+        INDArray[] result = initializedModel.output(f);
         assertArrayEquals(result[0].shape(), new long[] {1, 1000});
+
+        //Test fitting. Not ewe need to use transfer learning, as ResNet50 has a dense layer, not an OutputLayer
+        initializedModel = new TransferLearning.GraphBuilder(initializedModel)
+                .removeVertexAndConnections("fc1000")
+                .addLayer("fc1000", new OutputLayer.Builder()
+                        .lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .nIn(2048).nOut(1000).activation(Activation.SOFTMAX).build(), "flatten_1")
+                .setOutputs("fc1000")
+                .build();
+        initializedModel.fit(new org.nd4j.linalg.dataset.DataSet(f, TestUtils.randomOneHot(1, 1000, 12345)));
+        System.out.println("FIT COMPLETE");
+
 
         // clean up for current model
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -191,11 +208,29 @@ public class TestInstantiation extends BaseDL4JTest {
         //Sanity check on the non-pretrained versions:
         ZooModel[] models = new ZooModel[]{
                 VGG16.builder().numClasses(10).build(),
-                VGG19.builder().numClasses(10).build()
+                VGG19.builder().numClasses(10).build(),
+                FaceNetNN4Small2.builder().embeddingSize(100).numClasses(10).build()
         };
 
-        for(ZooModel zm : models){
-            zm.init();
+        int[][] inputSizes = new int[][]{
+                {1,3,224,224},
+                {1,3,224,224},
+                {1,3,64,64}
+        };
+
+//        for(ZooModel zm : models){
+        for( int i=0; i<models.length; i++ ){
+            ZooModel zm = models[i];
+            INDArray in = Nd4j.create(inputSizes[i]);
+            Model m = zm.init();
+
+            if(m instanceof MultiLayerNetwork){
+                MultiLayerNetwork mln = (MultiLayerNetwork)m;
+                mln.output(in);
+            } else {
+                ComputationGraph cg = (ComputationGraph)m;
+                cg.output(in);
+            }
 
             System.gc();
         }

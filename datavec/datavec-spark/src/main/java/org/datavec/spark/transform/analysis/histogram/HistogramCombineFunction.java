@@ -17,6 +17,7 @@
 package org.datavec.spark.transform.analysis.histogram;
 
 import org.apache.spark.api.java.function.Function2;
+import org.datavec.api.transform.analysis.histogram.HistogramCounter;
 
 import java.util.ArrayList;
 import java.util.List;

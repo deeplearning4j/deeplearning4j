@@ -35,7 +35,6 @@ import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
  * Created by susaneraly on 11/6/17.
  */
 @Slf4j
-@RunWith(Parameterized.class)
 public class TFGraphTestAllHelper {
 
     public enum ExecuteWith {
@@ -132,6 +131,8 @@ public class TFGraphTestAllHelper {
             log.info("\n\tTEST " + modelName + " PASSED...");
             log.info("\n========================================================\n");
         }
+
+        Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, ExecuteWith execType) throws IOException {
@@ -162,6 +163,8 @@ public class TFGraphTestAllHelper {
                 }
             }
         }
+
+        Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
     public static SameDiff getGraphAfterExec(String baseDir, String modelName, Map<String, INDArray> inputs, ExecuteWith executeWith) throws IOException {
@@ -183,12 +186,10 @@ public class TFGraphTestAllHelper {
 
 //            val string = graph.asFlatPrint();
 //            log.info("Graph structure: \n{}", string);
-            //val executioner = new NativeGraphExecutioner();
-            //val results = executioner.executeGraph(graph, configuration);
+            val executioner = new NativeGraphExecutioner();
+            val results = executioner.executeGraph(graph, configuration);
 
-            //assertTrue(results.length > 0); //FIXME: Later
-
-            graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/conv_0.fb"));
+//            graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/conv_0.fb"));
         } else if (executeWith.equals(ExecuteWith.JUST_PRINT)) {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));

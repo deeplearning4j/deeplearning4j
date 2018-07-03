@@ -38,14 +38,6 @@ public class Tan extends BaseTransformOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Tan(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Tan(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
     public Tan() {
     }
 

@@ -151,6 +151,7 @@ public interface INDArray extends Serializable {
     /**
      * Resets the linear view
      */
+    @Deprecated
     void resetLinearView();
 
     /**
@@ -197,7 +198,9 @@ public interface INDArray extends Serializable {
      * 1,length(ndarray)
      *
      * @return the linear view of this ndarray
+     * @deprecated Linear views are not always possible. Use reshape(array.length()) or reshape(1,array.length())
      */
+    @Deprecated
     INDArray linearView();
 
 
@@ -207,7 +210,9 @@ public interface INDArray extends Serializable {
      * 1,length(ndarray)
      *
      * @return the linear view of this ndarray
+     * * @deprecated Linear views are not always possible. Use reshape(array.length()) or reshape(1,array.length())
      */
+    @Deprecated
     INDArray linearViewColumnOrder();
 
     /**
@@ -1514,6 +1519,15 @@ public interface INDArray extends Serializable {
 
     long[] toLongVector();
 
+    /**
+     * Convert this ndarray to a 2d int matrix.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 2d int array
+     */
+    long[][] toLongMatrix();
 
     /**
      * Convert this ndarray to a 2d int matrix.
@@ -2744,6 +2758,16 @@ public interface INDArray extends Serializable {
     boolean equalsWithEps(Object o, double eps);
 
     /**
+     * This method checks 2 INDArrays for equal shapes.<br>
+     * Shapes are considered equal if:<br>
+     * (a) Both arrays have equal rank, and<br>
+     * (b) size(0)...size(rank()-1) are equal for both arrays
+     * @param other Other
+     * @return True if shap
+     */
+    boolean equalShapes(INDArray other);
+
+    /**
      * Perform efficient (but unsafe) duplication. Don't use this method unless you know exactly what you are doing.
      * Instead, use {@link #dup()}
      *
@@ -3022,6 +3046,14 @@ public interface INDArray extends Serializable {
      */
     int toFlatArray(FlatBufferBuilder builder);
 
+    INDArray convertToHalfs();
     INDArray convertToFloats();
     INDArray convertToDoubles();
+
+
+    /**
+     * This method returns true if this INDArray is special case: no-value INDArray
+     * @return
+     */
+    boolean isEmpty();
 }

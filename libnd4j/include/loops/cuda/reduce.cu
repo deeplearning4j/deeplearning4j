@@ -275,7 +275,7 @@ namespace functions {
     				    __syncthreads();
 
                         for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-						    shape::ind2subC(tadRank, tadShape, i, xCoord);
+						    shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
 						    auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
 						    sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
@@ -338,7 +338,7 @@ namespace functions {
 					Nd4jLong ind2sub[MAX_RANK];
 
 					for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
-						shape::ind2subC(rank, xShape, i, ind2sub);
+						shape::ind2subC(rank, xShape, i, n, ind2sub);
 
 						auto offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[offset], extraParams), extraParams);
@@ -442,8 +442,8 @@ namespace functions {
 					sPartials[threadIdx.x] = OpType::startingValue(dx + tadOffsetForBlock);
 
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-						shape::ind2subC(tadRank, tadShape, i, xCoord);
-						Nd4jLong xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+						shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
+						auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					}
@@ -507,8 +507,8 @@ namespace functions {
 					sPartials[threadIdx.x] = OpType::startingValue(dx + tadOffsetForBlock);
 
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-						shape::ind2subC(tadRank, tadShape, i, xCoord);
-						Nd4jLong xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+						shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
+						auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
 
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					}

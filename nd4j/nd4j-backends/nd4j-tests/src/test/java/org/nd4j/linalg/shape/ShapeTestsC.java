@@ -409,6 +409,59 @@ public class ShapeTestsC extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testReshapeToTrueScalar_1() {
+        val orig = Nd4j.create(new float[]{1.0f}, new int[]{1, 1});
+        val exp = Nd4j.trueScalar(1.0f);
+
+        assertArrayEquals(new long[]{1, 1}, orig.shape());
+
+        val reshaped = orig.reshape();
+
+        assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
+        assertEquals(exp, reshaped);
+    }
+
+    @Test
+    public void testReshapeToTrueScalar_2() {
+        val orig = Nd4j.create(new float[]{1.0f}, new int[]{1});
+        val exp = Nd4j.trueScalar(1.0f);
+
+        assertArrayEquals(new long[]{1}, orig.shape());
+
+        val reshaped = orig.reshape();
+
+        assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
+        assertEquals(exp, reshaped);
+    }
+
+    @Test
+    public void testReshapeToTrueScalar_3() {
+        val orig = Nd4j.create(new float[]{1.0f}, new int[]{1, 1});
+        val exp = Nd4j.trueVector(new float[]{1.0f});
+
+        assertArrayEquals(new long[]{1, 1}, orig.shape());
+
+        val reshaped = orig.reshape(1);
+
+        assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
+        assertEquals(exp, reshaped);
+    }
+
+    @Test
+    public void testReshapeToTrueScalar_4() {
+        val orig = Nd4j.create(new float[]{1.0f}, new int[]{1, 1});
+        val exp = Nd4j.trueScalar(1.0f);
+
+        assertArrayEquals(new long[]{1, 1}, orig.shape());
+
+        val reshaped = orig.reshape(new int[0]);
+
+        assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
+        assertEquals(exp, reshaped);
+    }
+
     @Override
     public char ordering() {
         return 'c';

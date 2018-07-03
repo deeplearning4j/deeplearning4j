@@ -33,16 +33,6 @@ public class AsyncShieldDataSetIterator implements DataSetIterator {
     }
 
     /**
-     * Total examples in the iterator
-     *
-     * @return
-     */
-    @Override
-    public int totalExamples() {
-        return backingIterator.totalExamples();
-    }
-
-    /**
      * Input columns for the dataset
      *
      * @return
@@ -102,26 +92,6 @@ public class AsyncShieldDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return backingIterator.batch();
-    }
-
-    /**
-     * The current cursor if applicable
-     *
-     * @return
-     */
-    @Override
-    public int cursor() {
-        return backingIterator.cursor();
-    }
-
-    /**
-     * Total number of examples in the dataset
-     *
-     * @return
-     */
-    @Override
-    public int numExamples() {
-        return backingIterator.numExamples();
     }
 
     /**

@@ -10,11 +10,11 @@
 namespace nd4j {
     namespace ops {
         OP_IMPL(zeros_as, 1, 1, false) {
-            auto input = INPUT_VARIABLE(0);
+            // auto input = INPUT_VARIABLE(0);
 
             auto out = OUTPUT_VARIABLE(0);
 
-            STORE_RESULT(*out);
+            *out = static_cast<T>(0.f);
 
             return ND4J_STATUS_OK;
         }

@@ -128,11 +128,4 @@ public interface ConvexOptimizer extends Serializable {
      */
     void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, LayerWorkspaceMgr workspaceMgr);
 
-    /**
-     * Check termination conditions
-     * setup a search state
-     * @param gradient layer gradients
-     * @param iteration what iteration the optimizer is on
-     */
-    boolean checkTerminalConditions(INDArray gradient, double oldScore, double score, int iteration);
 }

@@ -23,8 +23,8 @@ public class Exit extends BaseCompatOp {
 
     @Override
     public List<long[]> calculateOutputShape() {
-        if(args()[0].getArr() != null) {
-            return Arrays.asList(args()[0].getShape(),args()[0].getShape());
+        if(arg().getArr() != null) {
+            return Collections.singletonList(arg().getShape());
         }
         else
             return Collections.emptyList();
@@ -48,5 +48,10 @@ public class Exit extends BaseCompatOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+    }
+
+    @Override
+    public int getNumOutputs(){
+        return 1;
     }
 }

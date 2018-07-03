@@ -30,22 +30,15 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import java.util.List;
 
 /**
- * Rational Tanh Derivative, as described at as described at https://github.com/deeplearning4j/libnd4j/issues/351
+ * Rational Tanh Derivative, as described at https://github.com/deeplearning4j/libnd4j/issues/351
+ * Calculates dOut/dIn given input, not dL/dIn given dL/dOut and input
  *
  * @author raver119@gmail.com
  * @author AlexDBlack
  */
 public class RationalTanhDerivative extends BaseTransformOp {
-    public RationalTanhDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
-
-    public RationalTanhDerivative(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public RationalTanhDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+    public RationalTanhDerivative(SameDiff sameDiff, SDVariable in, boolean inPlace) {
+        super(sameDiff, in, inPlace);
     }
 
     public RationalTanhDerivative() {}
@@ -89,6 +82,6 @@ public class RationalTanhDerivative extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        throw new UnsupportedOperationException("Differentiation not supported: " + getClass().getSimpleName());
     }
 }

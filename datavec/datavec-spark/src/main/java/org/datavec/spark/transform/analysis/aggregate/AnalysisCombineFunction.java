@@ -16,8 +16,9 @@
 
 package org.datavec.spark.transform.analysis.aggregate;
 
+
 import org.apache.spark.api.java.function.Function2;
-import org.datavec.spark.transform.analysis.AnalysisCounter;
+import org.datavec.api.transform.analysis.AnalysisCounter;
 
 import java.util.ArrayList;
 import java.util.List;

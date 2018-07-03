@@ -2,6 +2,8 @@ package org.deeplearning4j.datasets.fetchers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.common.resources.DL4JResources;
+import org.deeplearning4j.common.resources.ResourceType;
 import org.nd4j.util.ArchiveUtils;
 
 import java.io.File;
@@ -18,10 +20,6 @@ import java.util.zip.Checksum;
 @Slf4j
 public abstract class CacheableExtractableDataSetFetcher implements CacheableDataSet {
 
-    public final static String DL4J_DIR = "/.deeplearning4j/";
-    public final static File ROOT_CACHE_DIR = new File(System.getProperty("user.home"), DL4J_DIR);
-    public File LOCAL_CACHE = new File(ROOT_CACHE_DIR, localCacheName());
-
     @Override public String dataSetName(DataSetType set) { return ""; }
     @Override public String remoteDataUrl() { return remoteDataUrl(DataSetType.TRAIN); }
     @Override public long expectedChecksum() { return expectedChecksum(DataSetType.TRAIN); }
@@ -35,7 +33,8 @@ public abstract class CacheableExtractableDataSetFetcher implements CacheableDat
     public void downloadAndExtract(DataSetType set) throws IOException {
         String localFilename = new File(remoteDataUrl(set)).getName();
         File tmpFile = new File(System.getProperty("java.io.tmpdir"), localFilename);
-        File cachedFile = new File(ROOT_CACHE_DIR.getAbsolutePath(), localFilename);
+        File LOCAL_CACHE = getLocalCacheDir();
+        File cachedFile = new File(LOCAL_CACHE, localFilename);
 
         // check empty cache
         if(LOCAL_CACHE.exists()) {
@@ -69,6 +68,10 @@ public abstract class CacheableExtractableDataSetFetcher implements CacheableDat
         ArchiveUtils.unzipFileTo(tmpFile.getAbsolutePath(), LOCAL_CACHE.getAbsolutePath());
     }
 
+    protected File getLocalCacheDir(){
+        return DL4JResources.getDirectory(ResourceType.DATASET, localCacheName());
+    }
+
     /**
      * Returns a boolean indicating if the dataset is already cached locally.
      *
@@ -76,7 +79,21 @@ public abstract class CacheableExtractableDataSetFetcher implements CacheableDat
      */
     @Override
     public boolean isCached() {
-        return LOCAL_CACHE.exists();
+        return getLocalCacheDir().exists();
     }
 
+
+    protected static void deleteIfEmpty(File localCache){
+        if(localCache.exists()) {
+            File[] files = localCache.listFiles();
+            if(files == null || files.length < 1){
+                try {
+                    FileUtils.deleteDirectory(localCache);
+                } catch (IOException e){
+                    //Ignore
+                    log.debug("Error deleting directory: {}", localCache);
+                }
+            }
+        }
+    }
 }

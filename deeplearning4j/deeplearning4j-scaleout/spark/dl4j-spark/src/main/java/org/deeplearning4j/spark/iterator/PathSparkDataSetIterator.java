@@ -34,11 +34,6 @@ public class PathSparkDataSetIterator extends BaseDataSetIterator<String> {
     }
 
     @Override
-    public int totalExamples() {
-        throw new UnsupportedOperationException("Total examples unknown for PathSparkDataSetIterator");
-    }
-
-    @Override
     public DataSet next() {
         DataSet ds;
         if (preloadedDataSet != null) {

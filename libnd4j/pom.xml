@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <!--
   ~ /*
   ~  * Copyright 2017 Skymind,Inc.
@@ -17,49 +19,35 @@
   ~
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <parent>
+        <groupId>org.deeplearning4j</groupId>
+        <artifactId>deeplearning4j</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
 
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>org.nd4j</groupId>
     <artifactId>libnd4j</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-
-    <repositories>
-        <repository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-    <scm>
-        <connection>scm:git://github.com:deeplearning4j/libnd4j.git</connection>
-        <developerConnection>scm:git:git@github.com:deeplearning4j/libnd4j.git</developerConnection>
-        <url>git@github.com:deeplearning4j/libnd4j.git</url>
-        <tag>HEAD</tag>
-    </scm>
-
     <packaging>pom</packaging>
 
     <name>libnd4j</name>
-    <description>The C++ engine that powers the scientific computing library ND4J - n-dimensional arrays for Java</description>
+    <description>The C++ engine that powers the scientific computing library ND4J - n-dimensional
+        arrays for Java
+    </description>
     <url>http://nd4j.org/</url>
 
-    <properties>
-        <libnd4j.chip>cpu</libnd4j.chip>
-        <libnd4j.platform>${os.name}-${os.arch}</libnd4j.platform>
-        <libnd4j.extension></libnd4j.extension>
-        <libnd4j.cuda></libnd4j.cuda>
-        <libnd4j.compute></libnd4j.compute>
-        <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
-        <javacpp.version>1.4.1</javacpp.version>
-    </properties>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <developers>
         <developer>
@@ -77,13 +65,16 @@
         </developer>
     </developers>
 
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
+    <properties>
+        <libnd4j.chip>cpu</libnd4j.chip>
+        <libnd4j.platform>${os.name}-${os.arch}</libnd4j.platform>
+        <libnd4j.extension></libnd4j.extension>
+        <libnd4j.cuda></libnd4j.cuda>
+        <libnd4j.compute></libnd4j.compute>
+        <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
+        <libnd4j.tests.phase>test</libnd4j.tests.phase>
+        <libnd4j.test.is.release.build>true</libnd4j.test.is.release.build>
+    </properties>
 
     <build>
         <extensions>
@@ -110,7 +101,7 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
-                            <skip>${compile.skip}</skip>
+                            <skip>${libnd4j.cpu.compile.skip}</skip>
                             <buildCommand>
                                 <program>bash</program>
                                 <argument>${project.basedir}/buildnativeoperations.sh</argument>
@@ -128,25 +119,28 @@
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>
                     </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
                     <execution>
                         <id>javacpp.cppbuild.clean</id>
                         <phase>clean</phase>
                         <goals>
-                            <goal>build</goal>
+                            <goal>clean</goal>
                         </goals>
                         <configuration>
-                            <skip>${clean.skip}</skip>
-                            <buildCommand>
-                                <program>rm</program>
-                                <argument>-Rf</argument>
-                                <argument>blasbuild</argument>
-                            </buildCommand>
-                            <workingDirectory>${project.basedir}</workingDirectory>
+                            <filesets>
+                                <fileset>
+                                    <directory>blasbuild</directory>
+                                </fileset>
+                            </filesets>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.0.0</version>
@@ -164,38 +158,25 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.6.0</version>
+
                 <executions>
-                    <!--<execution>-->
-                        <!--<id>libnd4j.cpu.test.clean</id>-->
-                        <!--<phase>clean</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>exec</goal>-->
-                        <!--</goals>-->
-                        <!--<configuration>-->
-                            <!--<executable>make</executable>-->
-                            <!--<workingDirectory>${project.basedir}/tests_cpu</workingDirectory>-->
-                            <!--<arguments>-->
-                                <!--<argument>clean</argument>-->
-                            <!--</arguments>-->
-                        <!--</configuration>-->
-                    <!--</execution>-->
                     <execution>
-                        <id>libnd4j.cpu.test.run</id>
-                        <phase>test</phase>
+                        <id>libnd4j.test.run</id>
+                        <phase>${libnd4j.tests.phase}</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <skip>${maven.test.skip}</skip>
+                            <skip>${libnd4j.test.skip}</skip>
                             <executable>bash</executable>
-                            <workingDirectory>${project.basedir}/tests_cpu</workingDirectory>
+                            <workingDirectory>${basedir}/tests_cpu</workingDirectory>
                             <arguments>
                                 <argument>run_tests.sh</argument>
+                                <argument>--release=${libnd4j.test.is.release.build}</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -256,10 +237,11 @@
                                     <goal>build</goal>
                                 </goals>
                                 <configuration>
-                                    <skip>${compile.skip}</skip>
+                                    <skip>${libnd4j.cuda.compile.skip}</skip>
                                     <buildCommand>
                                         <program>bash</program>
-                                        <argument>${project.basedir}/buildnativeoperations.sh</argument>
+                                        <argument>${project.basedir}/buildnativeoperations.sh
+                                        </argument>
                                         <argument>--chip</argument>
                                         <argument>cuda</argument>
                                         <argument>--platform</argument>
@@ -279,12 +261,13 @@
                 </plugins>
             </build>
         </profile>
-
         <!-- If someone knows a better way to do this, please do let me know! -->
         <profile>
             <id>linux</id>
             <activation>
-                <os><name>linux</name></os>
+                <os>
+                    <name>linux</name>
+                </os>
             </activation>
             <properties>
                 <os.name>linux</os.name>
@@ -293,7 +276,9 @@
         <profile>
             <id>macosx</id>
             <activation>
-                <os><name>mac os x</name></os>
+                <os>
+                    <name>mac os x</name>
+                </os>
             </activation>
             <properties>
                 <os.name>macosx</os.name>
@@ -302,7 +287,9 @@
         <profile>
             <id>windows</id>
             <activation>
-                <os><family>windows</family></os>
+                <os>
+                    <family>windows</family>
+                </os>
             </activation>
             <properties>
                 <os.name>windows</os.name>
@@ -311,7 +298,9 @@
         <profile>
             <id>i386</id>
             <activation>
-                <os><arch>i386</arch></os>
+                <os>
+                    <arch>i386</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -320,7 +309,9 @@
         <profile>
             <id>i486</id>
             <activation>
-                <os><arch>i486</arch></os>
+                <os>
+                    <arch>i486</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -329,7 +320,9 @@
         <profile>
             <id>i586</id>
             <activation>
-                <os><arch>i586</arch></os>
+                <os>
+                    <arch>i586</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -338,7 +331,9 @@
         <profile>
             <id>i686</id>
             <activation>
-                <os><arch>i686</arch></os>
+                <os>
+                    <arch>i686</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -347,7 +342,9 @@
         <profile>
             <id>x86</id>
             <activation>
-                <os><arch>x86</arch></os>
+                <os>
+                    <arch>x86</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -356,7 +353,9 @@
         <profile>
             <id>amd64</id>
             <activation>
-                <os><arch>amd64</arch></os>
+                <os>
+                    <arch>amd64</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -365,7 +364,9 @@
         <profile>
             <id>x86-64</id>
             <activation>
-                <os><arch>x86-64</arch></os>
+                <os>
+                    <arch>x86-64</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
@@ -374,221 +375,42 @@
         <profile>
             <id>arm</id>
             <activation>
-                <os><arch>arm</arch></os>
+                <os>
+                    <arch>arm</arch>
+                </os>
             </activation>
             <properties>
                 <os.arch>arm</os.arch>
             </properties>
         </profile>
+        <profile>
+            <id>clean-tests</id>
+            <activation>
+                <file>
+                    <exists>${basedir}/tests_cpu/Makefile</exists>
+                </file>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.6.0</version>
 
-        <profile>
-            <id>s3-repo</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>s3-repo</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>s3-repo</id>
-                    <name>s3-repo</name>
-                    <url>s3://${s3.repo.url}</url>
-                </snapshotRepository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>skymindnexus-skil</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>skymindnexus-skil</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <repository>
-                    <id>skymindnexus</id>
-                    <name>skymindnexus</name>
-                    <url>https://nexus.skymind.io/repository/skil/</url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>local-nexus</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>nexus</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>local-nexus</id>
-                    <name>local-nexus</name>
-                    <url>
-                        http://master-jenkins.skymind.io:8088/repository/snapshots
-                    </url>
-                </snapshotRepository>
-                <!-- <repository> -->
-                <!--     <id>local-nexus</id> -->
-                <!--     <name>local-nexus</name> -->
-                <!--     <url> -->
-                <!--         http://master-jenkins.skymind.io:8088/service/local/staging/deploy/maven2 -->
-                <!--     </url> -->
-                <!-- </repository> -->
-            </distributionManagement>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <version>2.8.2</version>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.6</version>
                         <executions>
                             <execution>
-                                <id>default-deploy</id>
-                                <phase>deploy</phase>
+                                <id>libnd4j.test.clean</id>
+                                <phase>clean</phase>
                                 <goals>
-                                    <goal>deploy</goal>
+                                    <goal>exec</goal>
                                 </goals>
-                            </execution>
-                        </executions>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>local-nexus</serverId>
-                            <nexusUrl>http://master-jenkins.skymind.io:8088/</nexusUrl>
-                            <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>local-jfrog</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>jfrog</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>local-jfrog</id>
-                    <name>local-jfrog</name>
-                    <url>http://master-jenkins.skymind.io:8081/artifactory/libs-snapshot-local
-                    </url>
-                </snapshotRepository>
-                <repository>
-                    <id>local-jfrog</id>
-                    <name>local-jfrog</name>
-                    <url>http://master-jenkins.skymind.io:8081/artifactory/libs-release-local
-                    </url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>Bintray-artifactory</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>bintray</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>bintray-deeplearning4j-maven</id>
-                    <name>deeplearning4j-maven-snapshots</name>
-                    <url>https://oss.jfrog.org/artifactory/oss-snapshot-local</url>
-                </snapshotRepository>
-                <repository>
-                    <id>bintray-deeplearning4j-maven</id>
-                    <name>deeplearning4j-maven-releases</name>
-                    <url>https://api.bintray.com/maven/deeplearning4j/maven/${project.artifactId}/;publish=1</url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>sonatype-nexus</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>sonatype</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>sonatype-nexus-snapshots</id>
-                    <name>Sonatype Nexus snapshot repository</name>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-                <repository>
-                    <id>nexus-releases</id>
-                    <name>Nexus Release Repository</name>
-                    <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <version>2.8.2</version>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.6</version>
-                        <executions>
-                            <execution>
-                                <id>default-deploy</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>deploy</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>sonatype-nexus-snapshots</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>release-sign-artifacts</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
-                        <configuration>
-                            <passphrase>${gpg.passphrase}</passphrase>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
+                                <configuration>
+                                    <executable>make</executable>
+                                    <workingDirectory>${basedir}/tests_cpu</workingDirectory>
+                                    <arguments>
+                                        <argument>clean</argument>
+                                    </arguments>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -596,5 +418,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>

@@ -41,7 +41,9 @@
        (20, simdOps::ReverseMod),\
        (21, simdOps::SafeDivide),\
        (22, simdOps::Mod) ,\
-       (23, simdOps::TruncateDiv)
+       (23, simdOps::TruncateDiv), \
+       (24, simdOps::And), \
+       (25, simdOps::Or)
 
 
 
@@ -137,7 +139,7 @@
         (92, simdOps::PowDerivative), \
         (93,simdOps::ATanh), \
         (94,simdOps::Reciprocal), \
-        (95,simdOps::Sqr), \
+        (95,simdOps::Square), \
         (96,simdOps::RELU6)
 
 
@@ -174,7 +176,11 @@
         (20, simdOps::FloorDiv) ,\
         (21, simdOps::FloorMod), \
         (22, simdOps::SquaredSubtract),\
-        (23, simdOps::SafeDivide)
+        (23, simdOps::SafeDivide), \
+        (24, simdOps::AMax), \
+        (25, simdOps::AMin), \
+        (26, simdOps::And), \
+        (27, simdOps::Or)
 
 
 
@@ -218,7 +224,11 @@
         (23, simdOps::NormFrobenius), \
         (24, simdOps::NormP), \
         (25, simdOps::SquaredNorm), \
-        (26, simdOps::CountZero)
+        (26, simdOps::CountZero), \
+        (27, simdOps::IsFinite), \
+        (28, simdOps::IsInfOrNan), \
+        (29, simdOps::IsNan), \
+        (30, simdOps::IsInf)
 
 
 
@@ -236,7 +246,8 @@
         (10, randomOps::LogNormalDistribution) ,\
         (11, randomOps::TruncatedNormalDistribution) ,\
         (12, randomOps::AlphaDropOut),\
-        (13, randomOps::ExponentialDistribution)
+        (13, randomOps::ExponentialDistribution),\
+        (14, randomOps::ExponentialDistributionInv)
 
 
 

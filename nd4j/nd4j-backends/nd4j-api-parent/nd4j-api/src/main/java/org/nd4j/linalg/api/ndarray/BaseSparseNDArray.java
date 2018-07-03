@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
@@ -26,7 +27,6 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.LinAlgExceptions;
 
-import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +46,8 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     * */
 
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 2;
-    protected int rows, columns, rank;
+    protected long rows, columns;
+    protected int rank;
     protected Boolean isVector = null;
     protected Boolean isMatrix = null;
     protected Boolean isScalar = null;
@@ -179,6 +180,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public long[] toLongVector() {
         return new long[0];
+    }
+
+    @Override
+    public long[][] toLongMatrix() {
+        return new long[0][];
     }
 
     @Override
@@ -325,7 +331,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return length;
     }
 
-    protected void init(int[] shape) {
+    protected void init(long[] shape) {
 
         if (shape.length == 1) {
             rows = 1;
@@ -1673,12 +1679,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int columns() {
-        return columns;
+        return (int) columns;
     }
 
     @Override
     public int rows() {
-        return rows;
+        return (int) rows;
     }
 
     /**
@@ -1924,6 +1930,18 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public boolean equals(Object o) {
         return equalsWithEps(o, Nd4j.EPS_THRESHOLD);
+    }
+
+    @Override
+    public boolean equalShapes(@NonNull INDArray other){
+        if(rank() != other.rank())
+            return false;
+        for( int i=0; i<rank(); i++ ){
+            if(size(i) != other.size(i)){
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

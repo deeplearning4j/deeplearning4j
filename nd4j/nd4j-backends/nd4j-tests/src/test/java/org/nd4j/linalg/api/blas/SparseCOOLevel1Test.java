@@ -22,7 +22,7 @@ public class SparseCOOLevel1Test extends BaseNd4jTest {
     // vector = [1, 2, 0, 4]
     private double[] data = {1, 2, 4};
     private int[][] indexes = new int[][] {{0, 0}, {0, 1}, {0, 3}};
-    private int[] shape = {1, 4};
+    private long[] shape = {1, 4};
 
     public SparseCOOLevel1Test(Nd4jBackend backend) {
         super(backend);
@@ -91,7 +91,7 @@ public class SparseCOOLevel1Test extends BaseNd4jTest {
 
         //System.out.println("indexes: " + ((BaseSparseNDArray) sparseVec).getVectorCoordinates().toString());
         INDArray expectedSparseVec = Nd4j.createSparseCSR(new double[] {3, 6, 6, 12}, new int[] {0, 1, 2, 3},
-                        new int[] {0}, new int[] {4}, new int[] {1, 4});
+                        new int[] {0}, new int[] {4}, new long[] {1, 4});
         INDArray expectedVec = Nd4j.create(new double[] {-1, -2, 3, -4});
         assertEquals(getFailureMessage(), expectedSparseVec.data(), sparseVec.data());
 
@@ -120,7 +120,7 @@ public class SparseCOOLevel1Test extends BaseNd4jTest {
         Nd4j.getBlasWrapper().level1().rot(vec.length(), sparseVec, vec, 1, 2);
 
         INDArray expectedSparseVec = Nd4j.createSparseCSR(new double[] {3, 6, 9, 12}, new int[] {0, 1, 2, 3},
-                        new int[] {0}, new int[] {4}, new int[] {1, 4});
+                        new int[] {0}, new int[] {4}, new long[] {1, 4});
         INDArray expectedVec = Nd4j.create(new double[] {-1, -2, -3, -4});
         assertEquals(getFailureMessage(), expectedSparseVec.data(), sparseVec.data());
         assertEquals(getFailureMessage(), expectedVec, vec);

@@ -25,6 +25,7 @@ import lombok.val;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -164,16 +165,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testDiag() {
       INDArray diag = Nd4j.diag(Nd4j.linspace(1,4,4).reshape(4,1));
       assertArrayEquals(new long[] {4,4},diag.shape());
-
-    }
-
-    @Test
-    public void testSoftmaxDerivativeGradient() {
-        INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
-        INDArray inputDup = input.dup();
-        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative(input,Nd4j.ones(2,2),input));
-        Nd4j.getExecutioner().exec(new SoftMaxDerivative(inputDup));
-        assertEquals(input,inputDup);
     }
 
     @Test
@@ -5168,12 +5159,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
     protected double getLogEntropy(double[] array) {
-        double ret = 0;
-        for (double x : array) {
-            ret += FastMath.log(FastMath.pow(x, 2));
-        }
-
-        return ret;
+        return Math.log(MathUtils.entropy(array));
     }
 
 
@@ -5735,16 +5721,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 .inputArrays(new INDArray[]{input})
                 .outputs(new INDArray[]{output})
                 .conv2DConfig(Conv2DConfig.builder()
-                        .kh(kY)
-                        .kw(kX)
-                        .kh(kY)
-                        .kw(kX)
-                        .sy(sY)
-                        .sx(sX)
-                        .ph(pY)
-                        .pw(pX)
-                        .dh(dY)
-                        .dw(dX)
+                        .kH(kY)
+                        .kW(kX)
+                        .kH(kY)
+                        .kW(kX)
+                        .sH(sY)
+                        .sW(sX)
+                        .pH(pY)
+                        .pW(pX)
+                        .dH(dY)
+                        .dW(dX)
                         .isSameMode(isSameMode)
                         .build())
 
@@ -6476,6 +6462,195 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(source.shapeInfoDataBuffer(), result.shapeInfoDataBuffer());
         assertEquals(source, result);
+    }
+
+    @Test
+    public void testVariance_4D_1() {
+        val dtype = Nd4j.dataType();
+
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+
+        val x = Nd4j.ones(10, 20, 30, 40);
+        val result = x.var(false, 0, 2, 3);
+
+        Nd4j.getExecutioner().commit();
+
+        log.info("Result shape: {}", result.shapeInfoDataBuffer().asLong());
+
+        Nd4j.setDataType(dtype);
+    }
+
+    @Test
+    public void testSomething() {
+        val a = Nd4j.create(10, 20);
+
+        log.info("Shape: {}", a.mean(0).shape());
+    }
+
+    @Test
+    public void testTranspose_Custom(){
+
+        INDArray arr = Nd4j.linspace(1,15, 15).reshape(5,3);
+        INDArray out = Nd4j.create(3,5);
+
+        val op = DynamicCustomOp.builder("transpose")
+                .addInputs(arr)
+                .addOutputs(out)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        INDArray exp = arr.transpose();
+        assertEquals(exp, out);
+    }
+
+    @Test
+    public void testRowColumnOpsRank1(){
+
+        for( int i=0; i<6; i++ ) {
+            INDArray orig = Nd4j.linspace(1, 12, 12).reshape('c', 3, 4);
+            INDArray in1r = orig.dup();
+            INDArray in2r = orig.dup();
+            INDArray in1c = orig.dup();
+            INDArray in2c = orig.dup();
+
+            INDArray rv1 = Nd4j.create(new double[]{1, 2, 3, 4}, new long[]{1, 4});
+            INDArray rv2 = Nd4j.create(new double[]{1, 2, 3, 4}, new long[]{4});
+            INDArray cv1 = Nd4j.create(new double[]{1, 2, 3}, new long[]{3, 1});
+            INDArray cv2 = Nd4j.create(new double[]{1, 2, 3}, new long[]{3});
+
+            switch (i){
+                case 0:
+                    in1r.addiRowVector(rv1);
+                    in2r.addiRowVector(rv2);
+                    in1c.addiColumnVector(cv1);
+                    in2c.addiColumnVector(cv2);
+                    break;
+                case 1:
+                    in1r.subiRowVector(rv1);
+                    in2r.subiRowVector(rv2);
+                    in1c.subiColumnVector(cv1);
+                    in2c.subiColumnVector(cv2);
+                    break;
+                case 2:
+                    in1r.muliRowVector(rv1);
+                    in2r.muliRowVector(rv2);
+                    in1c.muliColumnVector(cv1);
+                    in2c.muliColumnVector(cv2);
+                    break;
+                case 3:
+                    in1r.diviRowVector(rv1);
+                    in2r.diviRowVector(rv2);
+                    in1c.diviColumnVector(cv1);
+                    in2c.diviColumnVector(cv2);
+                    break;
+                case 4:
+                    in1r.rsubiRowVector(rv1);
+                    in2r.rsubiRowVector(rv2);
+                    in1c.rsubiColumnVector(cv1);
+                    in2c.rsubiColumnVector(cv2);
+                    break;
+                case 5:
+                    in1r.rdiviRowVector(rv1);
+                    in2r.rdiviRowVector(rv2);
+                    in1c.rdiviColumnVector(cv1);
+                    in2c.rdiviColumnVector(cv2);
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+            assertEquals(in1r, in2r);
+            assertEquals(in1c, in2c);
+
+        }
+    }
+
+    @Test
+    public void testEmptyShapeRank0(){
+        Nd4j.getRandom().setSeed(12345);
+        int[] s = new int[0];
+        INDArray create = Nd4j.create(s);
+        INDArray zeros = Nd4j.zeros(s);
+        INDArray ones = Nd4j.ones(s);
+        INDArray uninit = Nd4j.createUninitialized(s).assign(0);
+        INDArray rand = Nd4j.rand(s);
+
+        INDArray tsZero = Nd4j.trueScalar(0);
+        INDArray tsOne = Nd4j.trueScalar(1);
+        Nd4j.getRandom().setSeed(12345);
+        INDArray tsRand = Nd4j.trueScalar(Nd4j.rand(new int[]{1,1}).getDouble(0));
+        assertEquals(tsZero, create);
+        assertEquals(tsZero, zeros);
+        assertEquals(tsOne, ones);
+        assertEquals(tsZero, uninit);
+        assertEquals(tsRand, rand);
+
+
+        Nd4j.getRandom().setSeed(12345);
+        long[] s2 = new long[0];
+        create = Nd4j.create(s2);
+        zeros = Nd4j.zeros(s2);
+        ones = Nd4j.ones(s2);
+        uninit = Nd4j.createUninitialized(s2).assign(0);
+        rand = Nd4j.rand(s2);
+
+        assertEquals(tsZero, create);
+        assertEquals(tsZero, zeros);
+        assertEquals(tsOne, ones);
+        assertEquals(tsZero, uninit);
+        assertEquals(tsRand, rand);
+    }
+
+    @Test
+    public void testScalarView_1() {
+        val array = Nd4j.linspace(1, 5, 5);
+        val exp = Nd4j.create(new double[]{1.0, 2.0, 5.0, 4.0, 5.0});
+        val scalar = array.getScalar(2);
+
+        assertEquals(3.0, scalar.getDouble(0), 1e-5);
+        scalar.addi(2.0);
+
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testScalarView_2() {
+        val array = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        val exp = Nd4j.create(new double[]{1.0, 2.0, 5.0, 4.0}).reshape(2, 2);
+        val scalar = array.getScalar(1, 0);
+
+        assertEquals(3.0, scalar.getDouble(0), 1e-5);
+        scalar.addi(2.0);
+
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testSomething_1() {
+        val arrayX = Nd4j.create(128, 128, 'f');
+        val arrayY = Nd4j.create(128, 128, 'f');
+        val arrayZ = Nd4j.create(128, 128, 'f');
+
+        int iterations = 10000;
+        // warmup
+        for (int e = 0; e < 1000; e++)
+            arrayX.addi(arrayY);
+
+        for (int e = 0; e < iterations; e++) {
+            val c = new GemmParams(arrayX, arrayY, arrayZ);
+        }
+
+        val tS = System.nanoTime();
+        for (int e = 0; e < iterations; e++) {
+            //val c = new GemmParams(arrayX, arrayY, arrayZ);
+            arrayX.mmuli(arrayY, arrayZ);
+        }
+
+        val tE = System.nanoTime();
+
+        log.info("Average time: {}", ((tE - tS) / iterations));
     }
 
     ///////////////////////////////////////////////////////

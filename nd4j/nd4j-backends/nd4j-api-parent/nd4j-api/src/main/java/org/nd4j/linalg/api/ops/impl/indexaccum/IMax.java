@@ -36,8 +36,8 @@ import java.util.List;
  * @author Alex Black
  */
 public class IMax extends BaseIndexAccumulation {
-    public IMax(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
-        super(sameDiff, i_v, dimensions);
+    public IMax(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v, keepDims, dimensions);
     }
 
     public IMax() {

@@ -161,17 +161,17 @@ namespace functions {
                 for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
 
                     if (shape::order(tadOnlyShapeInfo) == 'c') {
-                        shape::ind2subC(tadRank,tadShape, i, xCoord);
-                        shape::ind2subC(yRank, yShape, i, yCoord);
+                        shape::ind2subC(tadRank,tadShape, i, tadLength, xCoord);
+                        shape::ind2subC(yRank, yShape, i, tadLength, yCoord);
                     } else {
-                        shape::ind2sub(tadRank,tadShape, i, xCoord);
-                        shape::ind2sub(yRank, yShape, i, yCoord);
+                        shape::ind2sub(tadRank,tadShape, i, tadLength, xCoord);
+                        shape::ind2sub(yRank, yShape, i, tadLength, yCoord);
                     }
 
                     if (shape::order(tadOnlyShapeInfoZ) == 'c')
-                        shape::ind2subC(zRank,zShape, i, zCoord);
+                        shape::ind2subC(zRank,zShape, i, tadLength, zCoord);
                     else
-                        shape::ind2sub(zRank,zShape, i, zCoord);
+                        shape::ind2sub(zRank,zShape, i, tadLength, zCoord);
 
                     auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
                     auto zOffset = shape::getOffset(tadOffsetForBlockZ, zShape, zStride, zCoord, zRank);

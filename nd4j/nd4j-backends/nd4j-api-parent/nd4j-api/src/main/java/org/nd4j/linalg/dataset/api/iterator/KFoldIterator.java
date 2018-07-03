@@ -62,7 +62,6 @@ public class KFoldIterator implements DataSetIterator {
      *
      * @return total number of examples in the dataset including all k folds
      */
-    @Override
     public int totalExamples() {
         // FIXME: int cast
         return (int) singleFold.getLabels().size(0);
@@ -121,24 +120,6 @@ public class KFoldIterator implements DataSetIterator {
      */
     public int lastBatch() {
         return lastBatch;
-    }
-
-    /**
-     * cursor value of zero indicates no iterations and the very first fold will be held out as test
-     * cursor value of 1 indicates the the next() call will return all but second fold which will be held out as test
-     * curson value of k-1 indicates the next() call will return all but the last fold which will be held out as test
-     *
-     * @return the value of the cursor which indicates which fold is held out as a test set
-     */
-
-    @Override
-    public int cursor() {
-        return kCursor;
-    }
-
-    @Override
-    public int numExamples() {
-        return totalExamples();
     }
 
     @Override

@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -181,7 +182,9 @@ public class KerasBatchNormalization extends KerasLayer {
                 throw new InvalidKerasConfigurationException(
                         "Parameter " + PARAM_NAME_GAMMA + " does not exist in weights");
         } else {
-            INDArray dummyGamma = Nd4j.onesLike(weights.get(PARAM_NAME_GAMMA));
+            INDArray dummyGamma = weights.containsKey(PARAM_NAME_GAMMA)
+                    ? Nd4j.onesLike(weights.get(PARAM_NAME_GAMMA))
+                    : Nd4j.onesLike(weights.get(PARAM_NAME_BETA));
             this.weights.put(BatchNormalizationParamInitializer.GAMMA, dummyGamma);
         }
         if (weights.containsKey(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()))

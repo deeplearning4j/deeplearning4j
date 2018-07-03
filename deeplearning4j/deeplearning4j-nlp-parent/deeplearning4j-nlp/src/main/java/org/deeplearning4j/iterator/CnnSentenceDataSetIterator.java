@@ -331,11 +331,6 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int totalExamples() {
-        return sentenceProvider.totalNumSentences();
-    }
-
-    @Override
     public int inputColumns() {
         return wordVectorSize;
     }
@@ -364,16 +359,6 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
     @Override
     public int batch() {
         return minibatchSize;
-    }
-
-    @Override
-    public int cursor() {
-        return cursor;
-    }
-
-    @Override
-    public int numExamples() {
-        return totalExamples();
     }
 
     @Override

@@ -74,4 +74,9 @@ public class ROCScoreCalculator extends BaseIEvaluationScoreCalculator<Model, IE
                 throw new IllegalStateException("Unknown type: " + type);
         }
     }
+
+    @Override
+    public boolean minimizeScore() {
+        return false;   //Maximize AUC, AUPRC
+    }
 }

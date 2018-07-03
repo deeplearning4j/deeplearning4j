@@ -35,6 +35,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class TruncateDivOp extends BaseDynamicTransformOp {
+    public static final String OP_NAME = "truncatediv";
+
     public TruncateDivOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, new SDVariable[] {i_v1, i_v2 }, false);
     }
@@ -55,7 +57,7 @@ public class TruncateDivOp extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "truncatediv";
+        return OP_NAME;
     }
 
     @Override

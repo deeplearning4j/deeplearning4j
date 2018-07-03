@@ -47,6 +47,7 @@ public class OutputLayer extends BaseOutputLayer {
 
     protected OutputLayer(Builder builder) {
         super(builder);
+        initializeConstraints(builder);
     }
 
     @Override

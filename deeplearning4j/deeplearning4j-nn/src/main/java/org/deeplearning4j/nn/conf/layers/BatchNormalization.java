@@ -25,7 +25,6 @@ import java.util.Map;
  * Batch normalization configuration
  */
 @Data
-@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Builder
@@ -49,6 +48,10 @@ public class BatchNormalization extends FeedForwardLayer {
         initializeConstraints(builder);
     }
 
+    public BatchNormalization(){
+        this(new Builder());    //Defaults from builder
+    }
+
     @Override
     public BatchNormalization clone() {
         BatchNormalization clone = (BatchNormalization) super.clone();
@@ -58,6 +61,8 @@ public class BatchNormalization extends FeedForwardLayer {
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        LayerValidation.assertNOutSet("BatchNormalization", getLayerName(), layerIndex, getNOut());
+
         org.deeplearning4j.nn.layers.normalization.BatchNormalization ret =
                         new org.deeplearning4j.nn.layers.normalization.BatchNormalization(conf);
         ret.setListeners(trainingListeners);

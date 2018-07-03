@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<something>
-    <a>aValue0</a>
-    <b>bValue0</b>
-    <c>
-        <x>cxValue0</x>
-        <y>cyValue0</y>
-    </c>
-</something>

@@ -8,6 +8,7 @@ import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.BooleanAdapter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -22,17 +23,20 @@ public class CumProd extends DynamicCustomOp {
     public CumProd() {
     }
 
-    public CumProd(SameDiff sameDiff, SDVariable x, int... dimension) {
-        super(null, sameDiff, new SDVariable[]{x});
+    public CumProd(SameDiff sameDiff, SDVariable x, SDVariable axis) {
+        this(sameDiff, x, axis, false, false);
+    }
+
+    public CumProd(SameDiff sameDiff, SDVariable x, SDVariable axis, boolean exclusive, boolean reverse) {
+        super(null, sameDiff, new SDVariable[]{x, axis});
         this.sameDiff = sameDiff;
-        this.dimensions = dimension;
+        this.exclusive = exclusive;
+        this.reverse = reverse;
         addArgs();
     }
 
-    public CumProd(SameDiff sameDiff, SDVariable x, boolean exclusive, boolean reverse, int... dimension) {
-        super(null, sameDiff, new SDVariable[]{x});
-        this.sameDiff = sameDiff;
-        this.dimensions = dimension;
+    public CumProd(INDArray in, INDArray axis, INDArray result, boolean exclusive, boolean reverse) {
+        super(null, new INDArray[]{in, axis}, new INDArray[]{result}, null, (List<Integer>)null);
         this.exclusive = exclusive;
         this.reverse = reverse;
         addArgs();
@@ -95,8 +99,6 @@ public class CumProd extends DynamicCustomOp {
 
     protected void addArgs() {
         addIArgument(exclusive ? 1 : 0, reverse ? 1 : 0);
-        if (dimensions != null && dimensions.length > 0)
-            addIArgument(dimensions);
     }
 
     @Override
@@ -106,12 +108,6 @@ public class CumProd extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        // Output gradient is the reversed cumulative product of the reversed input gradient
-        SDVariable gradient = sameDiff.setupFunction(grad.get(0));
-
-        SDVariable reverseGrad = sameDiff.reverse(gradient, 1 - dimensions[0]);
-        SDVariable ret = sameDiff.cumprod(reverseGrad, exclusive, reverse, dimensions);
-        SDVariable reversedRet = sameDiff.reverse(ret, 1 - dimensions[0]);
-        return Arrays.asList(reversedRet);
+        return Collections.singletonList(f().cumprodBp(arg(0), arg(1), grad.get(0), exclusive, reverse));
     }
 }

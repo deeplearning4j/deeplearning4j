@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -39,7 +40,10 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
  *
  * @author Alex Black
  * @see LSTM LSTM class, for the version without peephole connections
+ * @deprecated Will be eventually removed. Use {@link LSTM} instead, which has similar prediction accuracy, but supports
+ * CuDNN for faster network training on CUDA (Nvidia) GPUs
  */
+@Deprecated
 @Slf4j
 public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
@@ -100,7 +104,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
                         workspaceMgr);
 
         weightNoiseParams.clear();
-
+        p.setSecond(backpropDropOutIfPresent(p.getSecond()));
         return p;
     }
 
@@ -118,6 +122,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
+        Preconditions.checkState(input.rank() == 3,
+                "3D input expected to RNN layer expected, got " + input.rank());
         applyDropOutIfNecessary(training, workspaceMgr);
 
 //        if (cacheMode == null)

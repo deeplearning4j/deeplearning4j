@@ -68,6 +68,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
         weightNoiseParams.clear();
 
+        epsilon3d = backpropDropOutIfPresent(epsilon3d);
         return new Pair<>(gradAndEpsilonNext.getFirst(), epsilon3d);
     }
 

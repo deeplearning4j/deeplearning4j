@@ -25,6 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -94,7 +95,9 @@ public class AMin extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        SDVariable sgn = sameDiff.sign(arg());
+        SDVariable minBp = f().minBp(sameDiff.abs(arg()), f1.get(0), false, dimensions);
+        return Collections.singletonList(sgn.mul(minBp));
     }
 
 

@@ -12,15 +12,15 @@ Jumpy requires an uber jar (a jar file that contains nd4j and all its dependenci
 Easiest way to build the uber jar is by running `mvn package` on the [`pom.xml`](/pom.xml) file:
 
 ```bash 
-git clone https://www.github.com/deeplearning4j/jumpy.git
+git clone https://github.com/deeplearning4j/deeplearning4j.git
 cd jumpy
 mvn package
 ```
 
-This will create a jar file called `dl4j-1.0.0-SNAPSHOT.jar` in the `target` directory. Set `JUMPY_CLASS_PATH` environment variable to path of this file.
+This will create a jar file called `jumpy-1.0.0-beta.jar` in the `target` directory. Set `JUMPY_CLASS_PATH` environment variable to path of this file.
 
 ```bash
-export JUMPY_CLASS_PATH='/...../jumpy/target/dl4j-1.0.0-SNAPSHOT.jar'
+export JUMPY_CLASS_PATH='/...../jumpy/target/jumpy-1.0.0-SNAPSHOT.jar'
 ```
 
 Finally, either install jumpy via pip:

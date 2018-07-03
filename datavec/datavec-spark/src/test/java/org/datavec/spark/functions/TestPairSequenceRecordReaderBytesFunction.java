@@ -33,7 +33,9 @@ import org.datavec.spark.functions.pairdata.PairSequenceRecordReaderBytesFunctio
 import org.datavec.spark.functions.pairdata.PathToKeyConverter;
 import org.datavec.spark.functions.pairdata.PathToKeyConverterFilename;
 import org.datavec.spark.util.DataVecSparkUtil;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
 import scala.Tuple2;
 
@@ -48,16 +50,18 @@ import static org.junit.Assert.fail;
 
 public class TestPairSequenceRecordReaderBytesFunction extends BaseSparkTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void test() throws Exception {
         //Goal: combine separate files together into a hadoop sequence file, for later parsing by a SequenceRecordReader
         //For example: use to combine input and labels data from separate files for training a RNN
         JavaSparkContext sc = getContext();
 
-        ClassPathResource cpr = new ClassPathResource("/video/shapes_0.mp4");
-        String path = cpr.getFile().getAbsolutePath();
-        String folder = path.substring(0, path.length() - 12);
-        path = folder + "*";
+        File f = testDir.newFolder();
+        new ClassPathResource("datavec-spark/video/").copyDirectory(f);
+        String path = f.getAbsolutePath() + "/*";
 
         PathToKeyConverter pathConverter = new PathToKeyConverterFilename();
         JavaPairRDD<Text, BytesPairWritable> toWrite =
@@ -80,7 +84,7 @@ public class TestPairSequenceRecordReaderBytesFunction extends BaseSparkTest {
         List<Tuple2<List<List<Writable>>, List<List<Writable>>>> fromSequenceFile = writables.collect();
 
         //Load manually (single copy) and compare:
-        InputSplit is = new FileSplit(new File(folder), new String[] {"mp4"}, true);
+        InputSplit is = new FileSplit(f, new String[] {"mp4"}, true);
         SequenceRecordReader srr = getReader();
         srr.initialize(is);
 

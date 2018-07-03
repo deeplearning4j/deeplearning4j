@@ -11,6 +11,8 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import java.util.ArrayList;
 import java.util.Map;
 
+
+
 /**
  * Imports an Input layer from Keras. Used to set InputType of DL4J model.
  *
@@ -105,7 +107,7 @@ public class KerasInput extends KerasLayer {
                 myInputType = new InputType.InputTypeFeedForward(this.inputShape[0]);
                 break;
             case 2:
-                myInputType = new InputType.InputTypeRecurrent(this.inputShape[1]);
+                myInputType = new InputType.InputTypeRecurrent(this.inputShape[1], this.inputShape[0]);
                 break;
             case 3:
                 switch (this.dimOrder) {

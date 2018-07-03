@@ -9,14 +9,13 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 public class Concat extends DynamicCustomOp {
@@ -29,6 +28,7 @@ public class Concat extends DynamicCustomOp {
     public Concat(SameDiff sameDiff, int concatDimension, SDVariable... inputs){
         super(null, sameDiff, inputs);
         addIArgument(concatDimension);
+        this.concatDimension = concatDimension;
     }
 
     @Override
@@ -50,7 +50,8 @@ public class Concat extends DynamicCustomOp {
                 throw new ND4JIllegalStateException("Array with variable name " + varName + " unset!");
             }
 
-            concatDimension = var.getArr().getInt(0);
+            val arr = var.getArr();
+            concatDimension = arr.getInt(0);
             addIArgument(concatDimension);
         }
 
@@ -115,7 +116,8 @@ public class Concat extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         int concatDimension = -1;
         String input = null;
-        for(int i = 0; i < nodeDef.getInputCount(); i++) {
+        val inputCount = nodeDef.getInputCount();
+        for(int i = 0; i < inputCount; i++) {
             if(nodeDef.getInput(i).contains("/concat_dim")) {
                 input = nodeDef.getInput(i);
                 break;
@@ -140,7 +142,7 @@ public class Concat extends DynamicCustomOp {
 
             this.concatDimension = concatDimension;
             addIArgument(this.concatDimension);
-            log.debug("Concat dimension: {}", concatDimension);
+            log.trace("Concat dimension: {}", concatDimension);
 
         }
 
@@ -185,5 +187,13 @@ public class Concat extends DynamicCustomOp {
     @Override
     public Op.Type opType() {
         return Op.Type.CUSTOM;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+        SDVariable[] args = args();
+        SDVariable[] bpArgs = Arrays.copyOf(args, args.length + 1);
+        bpArgs[bpArgs.length-1] = i_v.get(0);
+        return Arrays.asList(new ConcatBp(sameDiff, concatDimension, bpArgs).outputVariables());
     }
 }

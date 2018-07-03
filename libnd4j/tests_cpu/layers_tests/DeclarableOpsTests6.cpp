@@ -52,6 +52,48 @@ TEST_F(DeclarableOpsTests6, Test_Dilation2D_Again_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_1) {
+    NDArray<float> matrix('c', {5, 2});
+    NDArray<float> b(0.0f);
+    NDArray<float> e(1.0f);
+    NDArray<float> s(1.0f);
+
+    NDArray<float> exp('c', {2}, {1.0f, 2.0f});
+
+    NDArrayFactory<float>::linspace(1, matrix);
+
+    nd4j::ops::strided_slice<float> op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);    
+
+    ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_2) {
+    NDArray<float> matrix('c', {5, 2});
+    NDArray<float> b('c', {1}, {0.0f});
+    NDArray<float> e('c', {1}, {1.0f});
+    NDArray<float> s('c', {1}, {1.0f});
+
+    NDArray<float> exp('c', {2}, {1.0f, 2.0f});
+
+    NDArrayFactory<float>::linspace(1, matrix);
+
+    nd4j::ops::strided_slice<float> op;
+    auto result = op.execute({&matrix, &b, &e, &s}, {}, {0, 0, 0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);    
+
+    ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
     NDArray<float> x('c', {1, 1}, {2.0f});
     NDArray<float> exp('c', {1, 1}, {4.0f});
@@ -95,8 +137,8 @@ TEST_F(DeclarableOpsTests6, Test_gatherNd_Edge_1) {
 
     auto z = result->at(0);
 
-    z->printIndexedBuffer();
-    z->printShapeInfo("z shape");
+    //z->printIndexedBuffer();
+    //z->printShapeInfo("z shape");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -260,8 +302,8 @@ TEST_F(DeclarableOpsTests6, TestDropout_1) {
     auto ress = op.execute({&x, &shape}, {0.2f}, {113});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-    ress->at(0)->printIndexedBuffer("Result is ");
-    x.printIndexedBuffer("Input is");
+    //ress->at(0)->printIndexedBuffer("Result is ");
+    //x.printIndexedBuffer("Input is");
 
     delete ress;
 }
@@ -277,8 +319,8 @@ TEST_F(DeclarableOpsTests6, TestDropout_2) {
     auto ress = op.execute({&x}, {0.4f}, {113});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-    x.printIndexedBuffer("Input is");
-    ress->at(0)->printIndexedBuffer("Result is ");
+    //x.printIndexedBuffer("Input is");
+    //ress->at(0)->printIndexedBuffer("Result is ");
 
     delete ress;
 }
@@ -485,6 +527,31 @@ TEST_F(DeclarableOpsTests6, BinCount_3) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BinCount_4) {
+
+    NDArray<double> x('c', {2, 2, 2}, {
+        1, 2, 0, 1, 2, 2, 1, 2}
+    );
+
+    NDArray<double> weights('c', {2, 2, 2}, {
+        2, 1, 3, 1, 5, 1, 1, 6}
+    );
+
+// ------------------------------------
+
+    NDArray<double> exp({3., 4.,  13., 0.0});
+
+    nd4j::ops::bincount<double> op;
+
+    auto res = op.execute({&x, &weights}, {}, {4, 4});
+
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_1) {
 
     NDArray<double> x( {2., 2., 2.} );
@@ -592,9 +659,9 @@ TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_1) {
 
     auto z = result->at(0);
     auto norm = result->at(1);
-    z->printIndexedBuffer("Output");
-    exp.printIndexedBuffer("Expected");
-    norm->printIndexedBuffer("Norm");
+    //z->printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expected");
+    //norm->printIndexedBuffer("Norm");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -664,9 +731,9 @@ TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_3) {
 
     auto z = result->at(0);
     auto y = result->at(1);
-    z->printIndexedBuffer("Output 1");
-    y->printIndexedBuffer("Output 2");
-    result->at(2)->printIndexedBuffer("Global norm is");
+    //z->printIndexedBuffer("Output 1");
+    //y->printIndexedBuffer("Output 2");
+    //result->at(2)->printIndexedBuffer("Global norm is");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.isSameShape(y));
@@ -689,8 +756,8 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -710,8 +777,8 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_2) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -872,8 +939,8 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_4) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -900,9 +967,9 @@ TEST_F(DeclarableOpsTests6, ReluLayer_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printShapeInfo("Output shape");
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+    // z->printShapeInfo("Output shape");
+    // z->printIndexedBuffer("Output ");
+    // exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1829,3 +1896,177 @@ TEST_F(DeclarableOpsTests6, dynamic_bidir_rnn_test5) {
 
     delete results;
 }
+
+
+TEST_F(DeclarableOpsTests6, Test_Diag_119_1) {
+    NDArray<float> x('c', {3}, {0.15f, 0.25f, 0.35f});
+    NDArray<float> e('c', {3, 3}, {0.15f, 0.0f, 0.0f,   0.0f, 0.25f, 0.0f,   0.0f, 0.0f, 0.35f});
+
+    nd4j::ops::diag<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_Diag_119_2) {
+    NDArray<float> x('c', {1}, {0.15f});
+    NDArray<float> e('c', {1, 1}, {0.15f});
+
+    nd4j::ops::diag<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_Diag_119_3) {
+    NDArray<float> x(0.15f);
+    NDArray<float> e('c', {1, 1}, {0.15f});
+
+    nd4j::ops::diag<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, deconv2d_test1) {
+
+    int bS=2, iH=4,iW=4,  iC=5,oC=10,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=3,oW=3;
+    int paddingMode = 0;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, oH, oW, oC});
+    NDArray<double> weights ('c', {kH, kW, iC, oC});    
+    NDArray<double> exp('c', {bS, iH, iW, iC}, {  2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 27.75,  32.75,  37.75,  42.75,  47.75,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  52.75,  57.75,  62.75,  67.75,  72.75,130.5 , 140.5 , 150.5 , 160.5 , 170.5 ,130.5 , 140.5 , 150.5 , 160.5 , 170.5 , 77.75,  82.75,  87.75,  92.75,  97.75,
+                                                   2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 27.75,  32.75,  37.75,  42.75,  47.75,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  52.75,  57.75,  62.75,  67.75,  72.75,130.5 , 140.5 , 150.5 , 160.5 , 170.5 ,130.5 , 140.5 , 150.5 , 160.5 , 170.5 , 77.75,  82.75,  87.75,  92.75,  97.75});
+    input = 0.5;
+    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::deconv2d<double> op;
+    ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* output = results->at(0);            
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, deconv2d_test2) {
+
+    int bS=2, iH=4,iW=4,  iC=5,oC=10,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=4,oW=4;
+    int paddingMode = 1;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, oH, oW, oC});
+    NDArray<double> weights ('c', {kH, kW, iC, oC});
+    NDArray<double> exp('c', {bS, iH, iW, iC}, {2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                 2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  });    
+    input = 0.5;
+    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::deconv2d<double> op;
+    ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* output = results->at(0);            
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, deconv2d_tf_test1) {
+
+    int bS=2, iH=4,iW=4,  iC=5,oC=10,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=3,oW=3;
+    int paddingMode = 0;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, oH, oW, oC});
+    NDArray<double> weights ('c', {kH, kW, iC, oC});
+    NDArray<double> outShape('c', {4}, {static_cast<double>(bS), static_cast<double>(iH), static_cast<double>(iW), static_cast<double>(iC)});
+    NDArray<double> exp('c', {bS, iH, iW, iC}, {  2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 27.75,  32.75,  37.75,  42.75,  47.75,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  52.75,  57.75,  62.75,  67.75,  72.75,130.5 , 140.5 , 150.5 , 160.5 , 170.5 ,130.5 , 140.5 , 150.5 , 160.5 , 170.5 , 77.75,  82.75,  87.75,  92.75,  97.75,
+                                                   2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 27.75,  32.75,  37.75,  42.75,  47.75,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
+                                                  52.75,  57.75,  62.75,  67.75,  72.75,130.5 , 140.5 , 150.5 , 160.5 , 170.5 ,130.5 , 140.5 , 150.5 , 160.5 , 170.5 , 77.75,  82.75,  87.75,  92.75,  97.75});
+    input = 0.5;
+    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::deconv2d_tf<double> op;
+    ResultSet<double>* results = op.execute({&outShape, &weights, &input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* output = results->at(0);            
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, deconv2d_tf_test2) {
+
+    int bS=2, iH=4,iW=4,  iC=5,oC=10,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=4,oW=4;
+    int paddingMode = 1;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, oH, oW, oC});
+    NDArray<double> weights ('c', {kH, kW, iC, oC});
+    NDArray<double> outShape('c', {4}, {static_cast<double>(bS), static_cast<double>(iH), static_cast<double>(iW), static_cast<double>(iC)});
+    NDArray<double> exp('c', {bS, iH, iW, iC}, {2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                 2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
+                                                55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  });    
+    input = 0.5;
+    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::deconv2d_tf<double> op;
+    ResultSet<double>* results = op.execute({&outShape, &weights, &input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* output = results->at(0);            
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    
+    delete results;
+}
+
+  
+
+  

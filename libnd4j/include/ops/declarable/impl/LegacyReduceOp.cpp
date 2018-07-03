@@ -26,7 +26,8 @@ namespace nd4j {
         template <typename T>
         Nd4jStatus LegacyReduceOp<T>::validateAndExecute(Context<T> &block) {
             auto x = INPUT_VARIABLE(0);
-        
+
+
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
             nd4j_debug("Executing LegacyReduceOp: [%i]\n", opNum);
 
@@ -110,14 +111,14 @@ namespace nd4j {
 
                     // keepDims processing, for TF compatibility
                     if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
-                        z->printShapeInfo("z shape before");
+                        // z->printShapeInfo("z shape before");
                         std::vector<Nd4jLong> newshape(z->getShapeAsVector());
                         for (int e = 0; e < axis.size(); e++) {
                             auto a = axis.at(e);
                             newshape.insert(newshape.begin() + a, 1);
                         }
                         z->reshapei(z->ordering(), newshape);
-                        z->printShapeInfo("z shape after");
+                        // z->printShapeInfo("z shape after");
                     }
 
                     OVERWRITE_RESULT(z);
@@ -143,16 +144,24 @@ namespace nd4j {
                 allAxes = true;
 
             if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
-                // in this case we just return scalar
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
-                newShape[0] = 2;
-                newShape[1] = 1;
-                newShape[2] = 1;
-                newShape[3] = 1;
-                newShape[4] = 1;
-                newShape[5] = 0;
-                newShape[6] = 1;
-                newShape[7] = 99;
+                if (block.getIArguments()->size() > 0 && block.getIArguments()->at(0) == 1) {
+                    // in this case we just return legacy scalar
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
+                    newShape[0] = 2;
+                    newShape[1] = 1;
+                    newShape[2] = 1;
+                    newShape[3] = 1;
+                    newShape[4] = 1;
+                    newShape[5] = 0;
+                    newShape[6] = 1;
+                    newShape[7] = 99;
+                } else {
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), Nd4jLong);
+                    newShape[0] = 0;
+                    newShape[1] = 0;
+                    newShape[2] = 1;
+                    newShape[3] = 99;
+                }
             } else {
                 // in this case we're building proper shape for reduction
                 auto array = new NDArray<T>(nullptr, inShape, block.getWorkspace());

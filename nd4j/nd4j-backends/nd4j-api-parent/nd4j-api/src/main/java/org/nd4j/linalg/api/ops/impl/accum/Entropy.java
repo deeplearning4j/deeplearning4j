@@ -25,20 +25,18 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Entropy Op - returns the entropy (information gain, or uncertainty of a random variable).
+ * -sum(x * log(x))
  *
  * @author raver119@gmail.com
  */
 public class Entropy extends BaseAccumulation {
     public Entropy(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
-    }
-
-    public Entropy(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
-        super(sameDiff, i_v, i_v2, dimensions);
     }
 
     public Entropy() {}
@@ -73,12 +71,6 @@ public class Entropy extends BaseAccumulation {
         return "entropy";
     }
 
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
-
     @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
@@ -92,5 +84,19 @@ public class Entropy extends BaseAccumulation {
     @Override
     public Type getOpType() {
         return Type.REDUCE;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        //dL/dx = dL/dOut * dOut/dIn
+        //out = -sum(x*log(x))
+        // let z = x * log(x)
+        //Then we can do sumBp(z, -dL/dOut)
+        //Note d/dx(x*log(x)) = log(x)+1
+
+        SDVariable logx = f().log(arg());
+        SDVariable xLogX = arg().mul(logx);
+        SDVariable sumBp = f().sumBp(xLogX, f1.get(0).neg(), false, dimensions);
+        return Collections.singletonList(sumBp.mul(logx.add(1.0)));
     }
 }

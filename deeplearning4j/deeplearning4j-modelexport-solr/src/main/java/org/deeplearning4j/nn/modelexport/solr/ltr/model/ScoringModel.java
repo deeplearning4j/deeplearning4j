@@ -17,11 +17,12 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelGuesser;
+import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * An <a href="https://lucene.apache.org/solr/7_3_0/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html">
+ * An <a href="https://lucene.apache.org/solr/7_4_0/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html">
  * org.apache.solr.ltr.model.LTRScoringModel</a> that computes scores using a {@link MultiLayerNetwork} or
  * {@link ComputationGraph} model.
  * <p>
@@ -41,7 +42,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * <p>
  * Apache Solr Reference Guide:
  * <ul>
- * <li> <a href="https://lucene.apache.org/solr/guide/7_3/learning-to-rank.html">Learning To Rank</a>
+ * <li> <a href="https://lucene.apache.org/solr/guide/7_4/learning-to-rank.html">Learning To Rank</a>
  * </ul>
  */
 public class ScoringModel extends AdapterModel {
@@ -107,34 +108,12 @@ public class ScoringModel extends AdapterModel {
   }
 
   /**
-   * Currently supports {@link MultiLayerNetwork} and {@link ComputationGraph} models.
-   * Pull requests to support additional <code>org.deeplearning4j</code> models are welcome.
+   * Uses the {@link NetworkUtils#output(Model, INDArray)} method.
    */
   public static float outputScore(Model model, float[] modelFeatureValuesNormalized) {
-
     final INDArray input = Nd4j.create(modelFeatureValuesNormalized);
-
-    if (model instanceof MultiLayerNetwork) {
-      final MultiLayerNetwork multiLayerNetwork = (MultiLayerNetwork)model;
-      final INDArray output = multiLayerNetwork.output(input);
-      return output.getFloat(0);
-    }
-
-    if (model instanceof ComputationGraph) {
-      final ComputationGraph computationGraph = (ComputationGraph)model;
-      final INDArray output = computationGraph.outputSingle(input);
-      return output.getFloat(0);
-    }
-
-    final String message;
-    if (model.getClass().getName().startsWith("org.deeplearning4j")) {
-      message = model.getClass().getName()+" models are not yet supported and " +
-        "pull requests are welcome: https://github.com/deeplearning4j/deeplearning4j";
-    } else {
-      message = model.getClass().getName()+" models are unsupported.";
-    }
-
-    throw new UnsupportedOperationException(message);
+    final INDArray output = NetworkUtils.output(model, input);
+    return output.getFloat(0);
   }
 
   @Override

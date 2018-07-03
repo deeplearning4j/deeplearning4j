@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.util.GraphIndices;
+import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.multilayer.MultiLayerTest;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
@@ -762,6 +763,39 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         }
 
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
+    }
+
+    @Test
+    public void testExternalErrorsInvalid(){
+
+        int nIn = 2;
+        int nOut = 4;
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(4).activation(Activation.RELU).build(), "in")
+                .addLayer("1", new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.RELU).build(), "0")
+                .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(nOut).build(), "1")
+                .setOutputs("out")
+                .setInputTypes(InputType.feedForward(nIn))
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray actionInput = Nd4j.randn(3, nIn);
+        INDArray[] input = new INDArray[]{actionInput};
+
+        cg.setInputs(input);
+        cg.feedForward(input, true, false);
+
+        INDArray externalError = Nd4j.rand(3, nIn);
+        try {
+            cg.backpropGradient(externalError);
+            fail("Expected exception");
+        } catch (IllegalStateException e){
+            assertTrue(e.getMessage().contains("output layer"));
+        }
     }
 
     @Test
@@ -1647,5 +1681,42 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         net.fit(new SingletonMultiDataSetIterator(mds));
         assertEquals(exp, listener.getModelClasses());
+    }
+
+    @Test
+    public void testAllowInputModification(){
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .graphBuilder()
+                .addInputs("in1", "in2")
+                .layer("0", new DenseLayer.Builder().nOut(10).build(), "in1")   //Modification should not be allowed on input
+                .layer("1", new DenseLayer.Builder().nOut(10).build(), "in2")   //Modification should not be allowed on input
+                .layer("2", new DenseLayer.Builder().nOut(10).build(), "0")     //Modification SHOULD be allowed
+                .layer("3", new DenseLayer.Builder().nOut(10).build(), "1")     //First in topo sort for using this input - not allowed
+                .layer("4", new DenseLayer.Builder().nOut(10).build(), "1")     //Second in topo sort - not allowed
+                .layer("5", new DenseLayer.Builder().nOut(10).build(), "1")     //Last in topo sort - allowed
+                .layer("6", new DenseLayer.Builder().nOut(10).build(), "2", "3", "4", "5")   //Input from merge vertex - allowed
+                .setOutputs("6")
+                .setInputTypes(InputType.feedForward(10), InputType.feedForward(10))
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        Map<String,Boolean> exp = new HashMap<>();
+        exp.put("0", false);
+        exp.put("1", false);
+        exp.put("2", true);
+        exp.put("3", false);
+        exp.put("4", false);
+        exp.put("5", true);
+        exp.put("6", true);
+
+
+        for(String s : exp.keySet()){
+            boolean allowed = ((org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer)cg.getLayer(s)).isInputModificationAllowed();
+//            System.out.println(s + "\t" + allowed);
+            assertEquals(s, exp.get(s), allowed);
+        }
     }
 }

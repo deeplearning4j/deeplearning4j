@@ -24,19 +24,25 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseCudnnHelper;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -120,11 +126,30 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         val inH = (int) input.size(2);
         val inW = (int) input.size(3);
 
+        final boolean isHalf = (Nd4j.dataType() == DataBuffer.Type.HALF);
+        INDArray gammaOrig = null;
+        INDArray dGammaViewOrig = null;
+        INDArray dBetaViewOrig = null;
+        if(isHalf) {    //Convert FP16 to FP32 if required (CuDNN BN doesn't support FP16 for these params, only for input/output)
+            gammaOrig = gamma;
+            dGammaViewOrig = dGammaView;
+            dBetaViewOrig = dBetaView;
+            /*
+            From CuDNN docs: bnScale, resultBnScaleDiff, resultBnBiasDiff, savedMean, savedInvVariance
+            "Note: The data type of this tensor descriptor must be 'float' for FP16 and FP32 input tensors, and 'double'
+            for FP64 input tensors."
+            >> Last 2 are the meanCache and varCache; first 3 are below
+             */
+            gamma = gamma.convertToFloats();
+            dGammaView = dGammaView.convertToFloats();
+            dBetaView = dBetaView.convertToFloats();
+        }
+
         Gradient retGradient = new DefaultGradient();
 
-        if (!Shape.strideDescendingCAscendingF(epsilon)) {
+        if (!Shape.hasDefaultStridesForShape(epsilon)) {
             // apparently not supported by cuDNN
-            epsilon = epsilon.dup();
+            epsilon = epsilon.dup('c');
         }
 
         val srcStride = ArrayUtil.toInts(input.stride());
@@ -143,9 +168,8 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
-        val gammaStride = ArrayUtil.toInts(gamma.stride());
-        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.gammaBetaTensorDesc, TENSOR_FORMAT, dataType, shape[0],
-                        shape[1], shape.length > 2 ? shape[2] : 1, shape.length > 3 ? shape[3] : 1));
+        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.gammaBetaTensorDesc, TENSOR_FORMAT, toCudnnDataType(gamma.data().dataType()), shape[0],
+                shape[1], shape.length > 2 ? shape[2] : 1, shape.length > 3 ? shape[3] : 1));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareActionAllWrite(input, epsilon, nextEpsilon, gamma,
@@ -172,6 +196,13 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             context.syncOldStream();
 
+        //Convert back and assign, if required:
+        if(isHalf){
+            gammaOrig.assign(((JCublasNDArray)gamma).convertToHalfs());
+            dGammaViewOrig.assign(((JCublasNDArray)dGammaView).convertToHalfs());
+            dBetaViewOrig.assign(((JCublasNDArray)dBetaView).convertToHalfs());
+        }
+
         return new Pair<>(retGradient, nextEpsilon);
     }
 
@@ -179,6 +210,19 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     @Override
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
+
+        final boolean isHalf = (Nd4j.dataType() == DataBuffer.Type.HALF);
+        INDArray origGamma = gamma;
+        INDArray origBeta = beta;
+        INDArray origMean = mean;
+        INDArray origVar = var;
+        if(isHalf) {
+            gamma = gamma.convertToFloats();
+            beta = beta.convertToFloats();
+            mean = mean.convertToFloats();
+            var = var.convertToFloats();
+        }
+
         //Notation difference between CuDNN and our implementation:
         //Us:       runningMean = (1-decay) * batchMean + decay * runningMean
         //CuDNN:    runningMean = decay * batchMean + (1-decay) * runningMean
@@ -200,9 +244,8 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
 
-        val gammaStride = ArrayUtil.toInts(gamma.stride());
-        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.gammaBetaTensorDesc, TENSOR_FORMAT, dataType, shape[0],
-                        shape[1], shape.length > 2 ? shape[2] : 1, shape.length > 3 ? shape[3] : 1));
+        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.gammaBetaTensorDesc, TENSOR_FORMAT, toCudnnDataType(mean.data().dataType()), shape[0],
+                shape[1], shape.length > 2 ? shape[2] : 1, shape.length > 3 ? shape[3] : 1));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context =
@@ -242,6 +285,23 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             context.syncOldStream();
 
+        if(training && isHalf){
+            //Update the running mean and variance arrays; also gamma/beta
+            origMean.assign(((JCublasNDArray)mean).convertToHalfs());
+            origVar.assign(((JCublasNDArray)var).convertToHalfs());
+            origGamma.assign(((JCublasNDArray)gamma).convertToHalfs());
+            origBeta.assign(((JCublasNDArray)beta).convertToHalfs());
+        }
+
         return activations;
+    }
+
+
+    @Override
+    public Map<String, Long> helperMemoryUse() {
+        Map<String,Long> memUse = new HashMap<>();
+        memUse.put("meanCache", meanCache.capacity());
+        memUse.put("varCache", varCache.capacity());
+        return memUse;
     }
 }

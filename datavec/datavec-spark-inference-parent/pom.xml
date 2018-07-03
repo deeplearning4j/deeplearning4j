@@ -11,10 +11,18 @@
     <packaging>pom</packaging>
 
     <name>datavec-spark-inference-parent</name>
-<modules>
-    <module>datavec-spark-inference-server</module>
-    <module>datavec-spark-inference-client</module>
-    <module>datavec-spark-inference-model</module>
-</modules>
+    <modules>
+        <module>datavec-spark-inference-server</module>
+        <module>datavec-spark-inference-client</module>
+        <module>datavec-spark-inference-model</module>
+    </modules>
 
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-9.0</id>
+        </profile>
+    </profiles>
 </project>

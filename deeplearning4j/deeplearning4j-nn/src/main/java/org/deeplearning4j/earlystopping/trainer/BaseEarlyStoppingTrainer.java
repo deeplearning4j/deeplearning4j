@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -99,6 +100,13 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
         }
 
         Map<Integer, Double> scoreVsEpoch = new LinkedHashMap<>();
+
+        Preconditions.checkNotNull(esConfig.getScoreCalculator(), "Score calculator cannot be null");
+        if(esConfig.getScoreCalculator().minimizeScore()){
+            bestModelScore = Double.MAX_VALUE;
+        } else {
+            bestModelScore = -Double.MAX_VALUE;
+        }
 
         int epochCount = 0;
         while (true) {
@@ -193,15 +201,15 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     || epochCount % esConfig.getEvaluateEveryNEpochs() == 0) {
                 //Calculate score at this epoch:
                 ScoreCalculator sc = esConfig.getScoreCalculator();
-                double score = (sc == null ? 0.0 : esConfig.getScoreCalculator().calculateScore(model));
-                scoreVsEpoch.put(epochCount - 1, score);
+                double score = esConfig.getScoreCalculator().calculateScore(model);
+                scoreVsEpoch.put(epochCount, score);
 
                 boolean invalidScore = Double.isNaN(score) || Double.isInfinite(score);
                 if(invalidScore){
                     log.warn("Score is not finite for epoch {}: score = {}", epochCount, score);
                 }
 
-                if (sc != null && score < bestModelScore || (bestModelEpoch == -1 && invalidScore)) {
+                if ((sc.minimizeScore() && score < bestModelScore) || (!sc.minimizeScore() && score > bestModelScore) || (bestModelEpoch == -1 && invalidScore)) {
                     //Save best model:
                     if (bestModelEpoch == -1) {
                         //First calculated/reported score
@@ -218,6 +226,8 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     } catch (IOException e) {
                         throw new RuntimeException("Error saving best model", e);
                     }
+                } else {
+                    log.info("Score at epoch {}: {}", epochCount, score);
                 }
 
                 if (esConfig.isSaveLastModel()) {

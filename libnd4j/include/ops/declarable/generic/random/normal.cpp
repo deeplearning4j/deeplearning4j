@@ -13,8 +13,7 @@ namespace nd4j {
             // normal distribution
             auto rng = block.getRNG();
 
-            if (rng == nullptr)
-                return Status::THROW("RNG is null, aborting...");
+            REQUIRE_TRUE(rng != nullptr, 0, "RNG isn't defined for this Graph instance");
 
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
@@ -34,6 +33,8 @@ namespace nd4j {
 
             return SHAPELIST(newShape);
         }
+		
+		DECLARE_SYN(randomnormal, random_normal);
     }
 }
 

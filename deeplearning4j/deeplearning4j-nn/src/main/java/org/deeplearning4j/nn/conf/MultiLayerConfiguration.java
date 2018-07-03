@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -81,6 +82,17 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     //Counter for the number of epochs completed so far. Used for per-epoch schedules
     protected int epochCount = 0;
+
+    public int getEpochCount() {
+        return epochCount;
+    }
+
+    public void setEpochCount(int epochCount) {
+        this.epochCount = epochCount;
+        for(int i = 0; i < confs.size(); i++) {
+            getConf(i).setEpochCount(epochCount);
+        }
+    }
 
     /**
      *

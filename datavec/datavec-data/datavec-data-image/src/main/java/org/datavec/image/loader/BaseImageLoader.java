@@ -39,16 +39,20 @@ public abstract class BaseImageLoader implements Serializable {
 
     protected static final Logger log = LoggerFactory.getLogger(BaseImageLoader.class);
 
+    public enum MultiPageMode {
+        MINIBATCH, CHANNELS, FIRST
+    }
+
     public static final File BASE_DIR = new File(System.getProperty("user.home"));
     public static final String[] ALLOWED_FORMATS = {"tif", "jpg", "png", "jpeg", "bmp", "JPEG", "JPG", "TIF", "PNG"};
     protected Random rng = new Random(System.currentTimeMillis());
 
-    protected int height = -1;
-    protected int width = -1;
-    protected int channels = -1;
+    protected long height = -1;
+    protected long width = -1;
+    protected long channels = -1;
     protected boolean centerCropIfNeeded = false;
     protected ImageTransform imageTransform = null;
-    protected NativeImageLoader.MultiPageMode multiPageMode = null;
+    protected MultiPageMode multiPageMode = null;
 
     public String[] getAllowedFormats() {
         return ALLOWED_FORMATS;

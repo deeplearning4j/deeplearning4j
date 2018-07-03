@@ -11,6 +11,7 @@
 #include <array/DataType.h>
 #include <types/float16.h>
 #include <helpers/BitwiseUtils.h>
+#include <loops/type_conversions.h>
 
 namespace nd4j {
     template <typename T>
@@ -22,33 +23,72 @@ namespace nd4j {
 
             switch (dataType) {
                 case DataType_FLOAT: {
-                        auto tmp = (float *) src;
+                        if (std::is_same<T, float>::value && canKeep) {
+                            memcpy(buffer, src, length * sizeof(T));
+                        } else {
+                            auto tmp = reinterpret_cast<float *>(src);
 
-                        //#pragma omp parallel for simd schedule(guided)
-                        for (Nd4jLong e = 0; e < length; e++) {
-                            buffer[e] = canKeep ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
+#if __GNUC__ <= 4
+                            if (!canKeep)
+                                for (Nd4jLong e = 0; e < length; e++)
+                                    buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                            else
+                                TypeCast::convertGeneric<float, T>(nullptr, tmp, length, buffer);
+#else
+#pragma omp parallel for simd schedule(guided)
+                            for (Nd4jLong e = 0; e < length; e++)
+                                buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+#endif
                         }
                     }
                     break;
                 case DataType_DOUBLE: {
-                        auto tmp = (double *) src;
+                        if (std::is_same<T, double>::value && canKeep) {
+                            memcpy(buffer, src, length * sizeof(T));
+                        } else {
+                            auto tmp = reinterpret_cast<double *>(src);
 
-                        //#pragma omp parallel for simd schedule(guided)
-                        for (Nd4jLong e = 0; e < length; e++)
-                            buffer[e] = canKeep ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
+#if __GNUC__ <= 4
+                            if (!canKeep)
+                                for (Nd4jLong e = 0; e < length; e++)
+                                    buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                            else
+                                TypeCast::convertGeneric<double, T>(nullptr, tmp, length, buffer);
+
+
+#else
+#pragma omp parallel for schedule(static)
+                            for (Nd4jLong e = 0; e < length; e++)
+                                buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+#endif
+
+                        }
                     }
                     break;
                 case DataType_HALF: {
-                        auto tmp = (float16 *) src;
 
-                        //#pragma omp parallel for simd schedule(guided)
-                        for (Nd4jLong e = 0; e < length; e++)
-                            buffer[e] = canKeep ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
+                        if (std::is_same<T, float16>::value && canKeep) {
+                            memcpy(buffer, src, length * sizeof(T));
+                        } else {
+                            auto tmp = reinterpret_cast<float16 *>(src);
+
+#if __GNUC__ <= 4
+                            if (!canKeep)
+                                for (Nd4jLong e = 0; e < length; e++)
+                                    buffer[e] = BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                            else
+                                TypeCast::convertGeneric<float16, T>(nullptr, tmp, length, buffer);
+#else
+#pragma omp parallel for schedule(static)
+                            for (Nd4jLong e = 0; e < length; e++)
+                                buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+#endif
+                        }
                     }
                     break;
                 default: {
-                    nd4j_printf("Unsupported DataType requested: [%i]\n", (int) dataType);
-                    throw "Unsupported DataType";
+                    nd4j_printf("Unsupported DataType requested: [%i]\n", static_cast<int>(dataType));
+                    throw std::runtime_error("Unsupported DataType");
                 }
             }
         }

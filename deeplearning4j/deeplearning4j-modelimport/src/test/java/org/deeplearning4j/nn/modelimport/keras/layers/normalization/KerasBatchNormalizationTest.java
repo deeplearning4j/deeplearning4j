@@ -21,8 +21,10 @@ import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +35,7 @@ import static org.junit.Assert.assertEquals;
  * @author Max Pumperla
  */
 public class KerasBatchNormalizationTest {
+    public static final String PARAM_NAME_BETA = "beta";
     private final String LAYER_NAME = "batch_norm_layer";
 
     private Integer keras1 = 1;
@@ -72,5 +75,27 @@ public class KerasBatchNormalizationTest {
         assertEquals(epsilon, layer.getEps(), 0.0);
         assertEquals(momentum, layer.getDecay(), 0.0);
 
+    }
+
+    @Test
+    public void testSetWeights() throws Exception {
+        Map<String, INDArray> weights = weightsWithoutGamma();
+        KerasBatchNormalization batchNormalization = new KerasBatchNormalization(keras2);
+
+        batchNormalization.setScale(false);
+        batchNormalization.setWeights(weights);
+
+        int size = batchNormalization.getWeights().size();
+        assertEquals(4, size);
+
+    }
+
+    @NotNull
+    private Map<String, INDArray> weightsWithoutGamma() {
+        Map<String, INDArray> weights = new HashMap<>();
+        weights.put(conf2.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE(), Nd4j.ones(1));
+        weights.put(conf2.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN(), Nd4j.ones(1));
+        weights.put(PARAM_NAME_BETA, Nd4j.ones(1));
+        return weights;
     }
 }

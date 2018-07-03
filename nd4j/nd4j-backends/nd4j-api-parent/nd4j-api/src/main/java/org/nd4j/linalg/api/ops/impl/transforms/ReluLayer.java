@@ -4,7 +4,12 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 
 /**
@@ -13,11 +18,11 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
  * @author Max Pumperla
  */
 @NoArgsConstructor
-public class ReluLayer extends DynamicCustomOp {
+public class ReluLayer extends XwPlusB {
 
 
     public ReluLayer(SameDiff sameDiff, SDVariable input, SDVariable weights, SDVariable bias) {
-        super(null, sameDiff, new SDVariable[] {input, weights, bias}, false);
+        super(sameDiff, input, weights, bias);
 
     }
 
@@ -35,6 +40,16 @@ public class ReluLayer extends DynamicCustomOp {
     @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx name found for shape " + opName());
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradient) {
+        //TODO a native implementation would be faster
+        //Backprop through ReLU, then it's same as XwPlusB
+        SDVariable[] args = args();
+        SDVariable xwb = sameDiff.xwPlusB(args[0], args[1], (args.length == 2 ? null : args[2]));
+        SDVariable grad = gradient.get(0).mul(sameDiff.step(xwb, 0));
+        return super.doDiff(Collections.singletonList(grad));
     }
 
 }

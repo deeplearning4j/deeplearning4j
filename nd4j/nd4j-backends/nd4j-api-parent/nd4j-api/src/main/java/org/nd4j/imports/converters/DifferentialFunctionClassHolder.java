@@ -2,6 +2,7 @@ package org.nd4j.imports.converters;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -31,7 +32,7 @@ public class DifferentialFunctionClassHolder {
     private Map<String,OpDef> tensorflowOpDescriptors;
     private Map<String,Map<String,Field>> fieldsForFunction;
 
-    private  Set<String>  fieldNamesOpsIgnore;
+    private Set<String>  fieldNamesOpsIgnore;
     private Set<String> classesWithConfig = new LinkedHashSet<String>(){{
         add(AvgPooling2D.class.getName());
         add(Conv2D.class.getName());
@@ -42,7 +43,14 @@ public class DifferentialFunctionClassHolder {
         add(Pooling2D.class.getName());
         add(Pooling3D.class.getName());
         add(DepthwiseConv2D.class.getName());
+        add(DeConv2DTF.class.getName());
     }};
+
+    @Getter
+    private int countTotalTfOps;
+    @Getter
+    private int countTotalMappedOps;
+
     /**
      * Get the fields for a given {@link DifferentialFunction}
      * @param function the function to get the fields for
@@ -246,6 +254,8 @@ public class DifferentialFunctionClassHolder {
         Collections.sort(missingOps);
         log.warn("Missing " + set.size() + " ops!");
 
+        countTotalTfOps = tensorflowOpDescriptors.size();
+        countTotalMappedOps = nodeConverters.size();
     }
 
 

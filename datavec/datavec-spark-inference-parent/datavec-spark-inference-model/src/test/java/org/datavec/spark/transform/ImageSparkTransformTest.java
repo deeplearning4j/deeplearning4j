@@ -4,7 +4,9 @@ import org.datavec.image.transform.ImageTransformProcess;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchImageRecord;
 import org.datavec.spark.transform.model.SingleImageRecord;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.serde.base64.Nd4jBase64;
@@ -18,11 +20,14 @@ import static org.junit.Assert.assertEquals;
  */
 public class ImageSparkTransformTest {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
     public void testSingleImageSparkTransform() throws Exception {
         int seed = 12345;
 
-        File f1 = new ClassPathResource("/testimages/class1/A.jpg").getFile();
+        File f1 = new ClassPathResource("datavec-spark-inference/testimages/class1/A.jpg").getFile();
 
         SingleImageRecord imgRecord = new SingleImageRecord(f1.toURI());
 
@@ -41,9 +46,9 @@ public class ImageSparkTransformTest {
     public void testBatchImageSparkTransform() throws Exception {
         int seed = 12345;
 
-        File f0 = new ClassPathResource("/testimages/class1/A.jpg").getFile();
-        File f1 = new ClassPathResource("/testimages/class1/B.png").getFile();
-        File f2 = new ClassPathResource("/testimages/class1/C.jpg").getFile();
+        File f0 = new ClassPathResource("datavec-spark-inference/testimages/class1/A.jpg").getFile();
+        File f1 = new ClassPathResource("datavec-spark-inference/testimages/class1/B.png").getFile();
+        File f2 = new ClassPathResource("datavec-spark-inference/testimages/class1/C.jpg").getFile();
 
         BatchImageRecord batch = new BatchImageRecord();
         batch.add(f0.toURI());
