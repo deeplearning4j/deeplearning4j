@@ -137,6 +137,8 @@ public class Nd4j {
     public final static String MEMORY_MANAGER = "memorymanager";
     public final static String WORKSPACE_MANAGER = "workspacemanager";
     public final static String RANDOM_PROVIDER = "random";
+    public static final String LOG_INIT_ENV_PROPERTY = "org.nd4j.log.initialization";
+
     //execution mode for element wise operations
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
 
@@ -7007,7 +7009,10 @@ public class Nd4j {
                 fallbackMode.set(false);
             }
 
-            OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
+            String logInitProperty = System.getProperty(LOG_INIT_ENV_PROPERTY, "true");
+            if(Boolean.parseBoolean(logInitProperty)) {
+                OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
