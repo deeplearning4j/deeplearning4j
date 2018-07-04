@@ -6895,12 +6895,13 @@ public class SameDiff {
     }
 
     /**
-     * 
+     * Remove a single dimension of size 1.
+     * For example, if input has shape [a,b,1,c] then squeeze(input, 2) returns an array of shape [a,b,c]
      *
-     * @param name
-     * @param ix
-     * @param axis
-     * @return
+     * @param name Name of the output variable
+     * @param ix   Input variable
+     * @param axis Size 1 dimension to remove
+     * @return Output variable
      */
     public SDVariable squeeze(String name, SDVariable ix, int axis) {
         SDVariable result = f().squeeze(ix, axis);
@@ -7085,6 +7086,114 @@ public class SameDiff {
                                          double shift) {
         SDVariable[] res = f().normalizeMoments(counts, means, variances, shift);
         return updateVariableNamesAndReferences(res, name);
+    }
+
+    /**
+     * @see #confusionMatrix(String, SDVariable, SDVariable)
+     */
+    public SDVariable confusionMatrix(SDVariable labels, SDVariable predictions) {
+        return confusionMatrix((String) null, labels, predictions);
+    }
+
+    /**
+     * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+     * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))<br>
+     * For example, if labels = [0, 1, 1] and predicted = [0, 2, 1] then output is:<br>
+     * [1, 0, 0]<br>
+     * [0, 1, 1]<br>
+     * [0, 0, 0]<br>
+     *
+     * @param name   Name of the output variable
+     * @param labels Labels - 1D array of integer values representing label values
+     * @param pred   Predictions - 1D array of integer values representing predictions. Same length as labels
+     * @return Output variable (2D, shape [numClasses, numClasses})
+     */
+    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred) {
+        SDVariable result = f().confusionMatrix(labels, pred);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @see #confusionMatrix(String, SDVariable, SDVariable, Integer)
+     */
+    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, Integer numClasses) {
+        return confusionMatrix(null, labels, pred, numClasses);
+    }
+
+    /**
+     * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+     * which are represented as integer values.<br>
+     * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], and numClasses=4 then output is:<br>
+     * [1, 0, 0, 0]<br>
+     * [0, 1, 1, 0]<br>
+     * [0, 0, 0, 0]<br>
+     * [0, 0, 0, 0]<br>
+     *
+     * @param name       Name of the output variable
+     * @param labels     Labels - 1D array of integer values representing label values
+     * @param pred       Predictions - 1D array of integer values representing predictions. Same length as labels
+     * @param numClasses Number of classes
+     * @return Output variable (2D, shape [numClasses, numClasses})
+     */
+    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, Integer numClasses) {
+        SDVariable result = f().confusionMatrix(labels, pred, numClasses);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @see #confusionMatrix(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, SDVariable weights) {
+        return confusionMatrix(null, labels, pred, weights);
+    }
+
+    /**
+     * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+     * which are represented as integer values. This version assumes the number of classes is 1 + max(max(labels), max(pred))<br>
+     * For example, if labels = [0, 1, 1], predicted = [0, 2, 1] and weights = [1, 2, 3]
+     * [1, 0, 0]<br>
+     * [0, 3, 2]<br>
+     * [0, 0, 0]<br>
+     *
+     * @param name    Name of the output variable
+     * @param labels  Labels - 1D array of integer values representing label values
+     * @param pred    Predictions - 1D array of integer values representing predictions. Same length as labels
+     * @param weights Weights - 1D array of values (may be real/decimal) representing the weight/contribution of
+     *                each prediction. Must be same length as both labels and predictions arrays
+     * @return Output variable (2D, shape [numClasses, numClasses})
+     */
+    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, SDVariable weights) {
+        SDVariable result = f().confusionMatrix(labels, pred, weights);
+        return updateVariableNameAndReference(result, name);
+    }
+
+
+    /**
+     * @see #confusionMatrix(String, SDVariable, SDVariable, Integer, SDVariable)
+     */
+    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, Integer numClasses, SDVariable weights) {
+        return confusionMatrix(null, labels, pred, numClasses, weights);
+    }
+
+    /**
+     * Compute the 2d confusion matrix of size [numClasses, numClasses] from a pair of labels and predictions, both of
+     * which are represented as integer values.<br>
+     * For example, if labels = [0, 1, 1], predicted = [0, 2, 1], numClasses = 4, and weights = [1, 2, 3]
+     * [1, 0, 0, 0]<br>
+     * [0, 3, 2, 0]<br>
+     * [0, 0, 0, 0]<br>
+     * [0, 0, 0, 0]<br>
+     *
+     * @param name    Name of the output variable
+     * @param labels  Labels - 1D array of integer values representing label values
+     * @param pred    Predictions - 1D array of integer values representing predictions. Same length as labels
+     * @param weights Weights - 1D array of values (may be real/decimal) representing the weight/contribution of
+     *                each prediction. Must be same length as both labels and predictions arrays
+     * @return Output variable (2D, shape [numClasses, numClasses})
+     */
+    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, Integer numClasses, SDVariable weights) {
+        SDVariable result = f().confusionMatrix(labels, pred, numClasses, weights);
+        return updateVariableNameAndReference(result, name);
     }
 
     /**
@@ -7945,46 +8054,9 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
-    public SDVariable confusionMatrix(SDVariable labels, SDVariable predictions) {
-        return confusionMatrix((String) null, labels, predictions);
-    }
-
-    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred) {
-        SDVariable result = f().confusionMatrix(labels, pred);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, Integer numClasses) {
-        return confusionMatrix(null, labels, pred, numClasses);
-    }
-
-    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, Integer numClasses) {
-        SDVariable result = f().confusionMatrix(labels, pred, numClasses);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, SDVariable weights) {
-        return confusionMatrix(null, labels, pred, weights);
-    }
-
-    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, SDVariable weights) {
-        SDVariable result = f().confusionMatrix(labels, pred, weights);
-        return updateVariableNameAndReference(result, name);
-    }
-
-
-    public SDVariable confusionMatrix(SDVariable labels, SDVariable pred, Integer numClasses, SDVariable weights) {
-        return confusionMatrix(null, labels, pred, numClasses, weights);
-    }
-
-    public SDVariable confusionMatrix(String name, SDVariable labels, SDVariable pred, Integer numClasses, SDVariable weights) {
-        SDVariable result = f().confusionMatrix(labels, pred, numClasses, weights);
-        return updateVariableNameAndReference(result, name);
-    }
-
     /**
-     * @param variable
+     * Add the specified variable to this SameDiff instance
+     * @param variable Variable to add
      */
     public void addVariable(SDVariable variable) {
         if (variableMap == null)
@@ -7995,12 +8067,10 @@ public class SameDiff {
 
         /**
          * Of note here:
-         * We don't validate base don vertex id
-         * because more than one input can have the same
+         * We don't validate based on vertex id because more than one input can have the same
          * vertex id as a result.
          *
-         * We validate based on variable opName instead
-         * which takes in to account function names as well
+         * We validate based on variable opName instead which takes in to account function names as well
          * as input ids
          */
         if (variableMap.containsKey(variable.getVarName()) && !variableMap.get(variable.getVarName()).equals(variable)) {
@@ -8009,14 +8079,16 @@ public class SameDiff {
 
         Preconditions.checkState(variable.getSameDiff() == this, "Same diff instance for variable must be the same!");
         variableMap.put(variable.getVarName(), variable);
-
     }
 
 
     /**
-     * Generate a new variable name
-     * based on the uniqueness
-     * of thebase name and arg index
+     * Generate a new variable name based on the uniqueness of the base name and arg index<br>
+     * For example, if baseName = "X" will return:<br>
+     * "X" if "X" does not already exist, or "X:argIndex" if argIndex > 0<br>
+     * "X_1" if "X" already exists, or "X_1:argIndex" if argIndex > 0<br>
+     * "X_2" if "X" and "X_1" already exists, or "X_2:argIndex" if argIndex > 0<br>
+     * And so on, until an unused name is found
      *
      * @param baseName the base name to use (use function.opName() where function is a {@link DifferentialFunction}
      * @param argIndex the arg index
@@ -8037,7 +8109,6 @@ public class SameDiff {
         if (getVariable(name) != null) {
             throw new ND4JIllegalStateException("Converged on already generated variable!");
         }
-
         return name;
     }
 
@@ -8066,7 +8137,7 @@ public class SameDiff {
 
 
     /**
-     * Simple recurrent  unit
+     * Simple recurrent unit
      *
      * @param configuration the configuration for the sru
      * @return
@@ -8099,7 +8170,7 @@ public class SameDiff {
 
 
     /**
-     * Simiple recurrent  unit
+     * Simiple recurrent unit
      *
      * @param baseName      the base name to use for output variables
      * @param configuration the configuration for the sru
@@ -8120,98 +8191,258 @@ public class SameDiff {
         return new GRUCell(this, configuration).outputVariables(baseName)[0];
     }
 
-
+    /**
+     * @see #slice(String, SDVariable, int[], int[])
+     */
     public SDVariable slice(SDVariable input, int[] begin, int[] size) {
         return slice(null, input, begin, size);
     }
 
+    /**
+     * Get a subset of the specified input, by specifying the first element and the size of the array.<br>
+     * For example, if input is:<br>
+     * [a, b, c]<br>
+     * [d, e, f]<br>
+     * then slice(input, begin=[0,1], size=[2,1] will return:<br>
+     * [b]<br>
+     * [e]<br>
+     * <br>
+     * Note that for each dimension i, begin[i] + size[i] <= input.size(i)
+     *
+     * @param name  Output variable name
+     * @param input Variable to get subset of
+     * @param begin Beginning index. Must be same length as rank of input array
+     * @param size  Size of the output array. Must be same length as rank of input array
+     * @return Subset of the input
+     */
     public SDVariable slice(String name, SDVariable input, int[] begin, int[] size) {
         SDVariable ret = f().slice(input, begin, size);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #stridedSlice(String, SDVariable, long[], long[], long[])
+     */
     public SDVariable stridedSlice(SDVariable input, int[] begin, int[] end, int[] strides) {
         return stridedSlice(null, input, begin, end, strides);
     }
 
+    /**
+     * @see #stridedSlice(String, SDVariable, long[], long[], long[])
+     */
     public SDVariable stridedSlice(String name, SDVariable input, int[] begin, int[] end, int[] strides) {
         return stridedSlice(name, input, begin, end, strides, 0, 0, 0, 0, 0);
     }
 
+    /**
+     * @see #stridedSlice(String, SDVariable, long[], long[], long[])
+     */
     public SDVariable stridedSlice(SDVariable input, long[] begin, long[] end, long[] strides) {
         return stridedSlice(null, input, begin, end, strides);
     }
 
+    /**
+     * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
+     * For example, if input is:<br>
+     * [a, b, c]<br>
+     * [d, e, f]<br>
+     * [g, h, i]<br>
+     * then stridedSlice(input, begin=[0,1], end=[2,2], strides=[2,1]) will return:<br>
+     * [b, c]<br>
+     * [h, i]<br>
+     * <br>
+     *
+     * @param name    Output variable name
+     * @param input   Variable to get subset of
+     * @param begin   Beginning index. Must be same length as rank of input array
+     * @param end     End index. Must be same length as the rank of the array
+     * @param strides Stride ("step size") for each dimension. Must be same length as the rank of the array. For example,
+     *                stride of 2 means take every second element.
+     * @return Subset of the input
+     */
     public SDVariable stridedSlice(String name, SDVariable input, long[] begin, long[] end, long[] strides) {
         return stridedSlice(name, input, begin, end, strides, 0, 0, 0, 0, 0);
     }
 
-    public SDVariable stridedSlice(SDVariable in, int[] begin, int[] end, int[] strides, int beginMask,
-                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
-        return stridedSlice(null, in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
-    }
-
-    public SDVariable stridedSlice(String name, SDVariable in, int[] begin, int[] end, int[] strides, int beginMask,
-                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
-        SDVariable ret = f().stridedSlice(in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    public SDVariable stridedSlice(SDVariable in, long[] begin, long[] end, long[] strides, int beginMask,
-                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
-        return stridedSlice(null, in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
-    }
-
+    /**
+     * Get a subset of the specified input, by specifying the first element, last element, and the strides.<br>
+     * Operates as described in {@link #stridedSlice(SDVariable, long[], long[], long[])} with some extra mask arrays
+     * as described below.
+     *
+     * @param name           Output variable name
+     * @param in             Variable to get subset of
+     * @param begin          Beginning index
+     * @param end            End index
+     * @param strides        Stride ("step size") for each dimension. For example,
+     *                       stride of 2 means take every second element.
+     * @param beginMask      Bit mask: If the ith bit is set to 1, then the value in the begin long[] is ignored,
+     *                       and a value of 0 is used instead for the beginning index for that dimension
+     * @param endMask        Bit mask: If the ith bit is set to 1, then the value in the end long[] is ignored,
+     *                       and a value of size(i)-1 is used instead for the end index for that dimension
+     * @param ellipsisMask   Bit mask: only one non-zero value is allowed here. If a non-zero value is set, then other
+     *                       dimensions are inserted as required at the specified position
+     * @param newAxisMask    Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and
+     *                       a size 1 dimension is inserted at this point
+     * @param shrinkAxisMask Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and
+     *                       a size 1 dimension is removed at this point. Note that begin/end/stride values must
+     *                       result in a size 1 output for these dimensions
+     * @return A subset of the input array
+     */
     public SDVariable stridedSlice(String name, SDVariable in, long[] begin, long[] end, long[] strides, int beginMask,
                                    int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
         SDVariable ret = f().stridedSlice(in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #stridedSlice(String, SDVariable, long[], long[], long[], int, int, int, int, int)
+     */
+    public SDVariable stridedSlice(SDVariable in, int[] begin, int[] end, int[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        return stridedSlice(null, in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
+    }
+
+    /**
+     * @see #stridedSlice(String, SDVariable, long[], long[], long[], int, int, int, int, int)
+     */
+    public SDVariable stridedSlice(String name, SDVariable in, int[] begin, int[] end, int[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        SDVariable ret = f().stridedSlice(in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * @see #stridedSlice(String, SDVariable, long[], long[], long[], int, int, int, int, int)
+     */
+    public SDVariable stridedSlice(SDVariable in, long[] begin, long[] end, long[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        return stridedSlice(null, in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
+    }
+
+    /**
+     * @see #scatterAdd(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterAdd(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterAdd(null, ref, indices, updates);
+    }
+
+    /**
+     * Scatter addition operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] += updates[...]<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] += updates[i, ...]<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] += updates[i, ..., k, ...]<br>
+     * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
+     *
+     * @param name    Name of the output variable
+     * @param ref     Initial/source variable
+     * @param indices Indices array
+     * @param updates Updates to add to the initial/source array
+     * @return The updated variable
+     */
     public SDVariable scatterAdd(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
         SDVariable ret = f().scatterAdd(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #scatterMul(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterMul(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterMul(null, ref, indices, updates);
+    }
+
+    /**
+     * Scatter multiplication operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] *= updates[...]<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] *= updates[i, ...]<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] *= updates[i, ..., k, ...]<br>
+     * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
+     *
+     * @param name    Name of the output variable
+     * @param ref     Initial/source variable
+     * @param indices Indices array
+     * @param updates Updates to add to the initial/source array
+     * @return The updated variable
+     */
     public SDVariable scatterMul(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
         SDVariable ret = f().scatterMul(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #scatterSub(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterSub(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterSub(null, ref, indices, updates);
+    }
+
+    /**
+     * Scatter subtraction operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] -= updates[...]<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] -= updates[i, ...]<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] -= updates[i, ..., k, ...]<br>
+     * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
+     *
+     * @param name    Name of the output variable
+     * @param ref     Initial/source variable
+     * @param indices Indices array
+     * @param updates Updates to add to the initial/source array
+     * @return The updated variable
+     */
     public SDVariable scatterSub(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
         SDVariable ret = f().scatterSub(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #scatterDiv(String, SDVariable, SDVariable, SDVariable)
+     */
+    public SDVariable scatterDiv(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterDiv(null, ref, indices, updates);
+    }
+
+    /**
+     * Scatter division operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] /= updates[...]<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] /= updates[i, ...]<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] /= updates[i, ..., k, ...]<br>
+     * Note that if multiple indices refer to the same location, the contributions from each is handled correctly.
+     *
+     * @param name    Name of the output variable
+     * @param ref     Initial/source variable
+     * @param indices Indices array
+     * @param updates Updates to add to the initial/source array
+     * @return The updated variable
+     */
     public SDVariable scatterDiv(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
         SDVariable ret = f().scatterDiv(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #scatterUpdate(String, SDVariable, SDVariable, SDVariable)
+     */
     public SDVariable scatterUpdate(SDVariable ref, SDVariable indices, SDVariable updates) {
         return scatterUpdate(null, ref, indices, updates);
     }
 
+    /**
+     * Scatter update operation.<br>
+     * If indices is rank 0 (a scalar), then out[index, ...] = updates[...]<br>
+     * If indices is rank 1 (a vector), then for each position i, out[indices[i], ...] = updates[i, ...]<br>
+     * If indices is rank 2+, then for each position (i,...,k), out[indices[i], ..., indices[k], ...] = updates[i, ..., k, ...]<br>
+     * Note that if multiple indices refer to the same location, the output at those locations is undefined - different
+     * updates may occur in different orders
+     *
+     * @param name    Name of the output variable
+     * @param ref     Initial/source variable
+     * @param indices Indices array
+     * @param updates Updates to add to the initial/source array
+     * @return The updated variable
+     */
     public SDVariable scatterUpdate(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
         SDVariable ret = f().scatterUpdate(ref, indices, updates);
         return updateVariableNameAndReference(ret, name);
-    }
-
-
-    public SDVariable scatterAdd(SDVariable ref, SDVariable indices, SDVariable updates) {
-        return scatterAdd(null, ref, indices, updates);
-    }
-
-    public SDVariable scatterMul(SDVariable ref, SDVariable indices, SDVariable updates) {
-        return scatterMul(null, ref, indices, updates);
-    }
-
-    public SDVariable scatterSub(SDVariable ref, SDVariable indices, SDVariable updates) {
-        return scatterSub(null, ref, indices, updates);
-    }
-
-    public SDVariable scatterDiv(SDVariable ref, SDVariable indices, SDVariable updates) {
-        return scatterDiv(null, ref, indices, updates);
     }
 
 
@@ -8308,7 +8539,6 @@ public class SameDiff {
                     addOutgoingFor(ret, function);
 
                 return ret;
-
             }
         }
 
@@ -8352,7 +8582,6 @@ public class SameDiff {
                     throw new ND4JIllegalStateException("Converged on already generated variable!");
                 }
 
-
                 checkGet = var(name, shape, new ZeroInitScheme(ordering));
             }
 
@@ -8364,7 +8593,6 @@ public class SameDiff {
             checkGet.setCreator(function);
             ret[i] = checkGet;
         }
-
 
         return ret;
     }
@@ -8383,12 +8611,10 @@ public class SameDiff {
 
 
     /**
-     * Get a function instance
-     * given the opName
+     * Get a SameDiff function instance given the name of the function
      *
-     * @param functionName the opName of the function
-     * @return the same diff function instance
-     * defined for the given opName
+     * @param functionName the name of the function
+     * @return the same diff function instance defined for the given name
      */
     public SameDiff getFunction(String functionName) {
         return sameDiffFunctionInstances.get(functionName);
@@ -8396,9 +8622,10 @@ public class SameDiff {
 
 
     /**
-     * u
+     * Execute the specified ops and return the output of the last one
      *
-     * @return
+     * @param ops Ops to execute
+     * @return Output (or first output) of the final op in the list, after execution
      */
     public INDArray execAndEndResult(List<DifferentialFunction> ops) {
         List<DifferentialFunction> exec = exec(ops);
@@ -8407,7 +8634,13 @@ public class SameDiff {
     }
 
     /**
-     * @return
+     * Execute the graph using the current arrays/state and return the array for the final variable in the graph.<br>
+     * After execution, the arrays for other variables can be obtained using {@link #getArrForVarName(String)}
+     * or {@link SDVariable#getArr()}<br>
+     * <p>
+     * Note: If the final operation has multiple output variables, use {@link #execAndEndResults()} instead
+     *
+     * @return The output of the final operation in the graph after execution
      */
     public INDArray execAndEndResult() {
         List<DifferentialFunction> exec = exec().getRight();
@@ -8419,6 +8652,13 @@ public class SameDiff {
         return output[0].getArr();
     }
 
+    /**
+     * Execute the graph using the current arrays/state and return the array(s) for the final variable in the graph.<br>
+     * After execution, the arrays for other variables can be obtained using {@link #getArrForVarName(String)}
+     * or {@link SDVariable#getArr()}<br>
+     *
+     * @return The outputs of the final operation in the graph, after execution
+     */
     public INDArray[] execAndEndResults() {
         List<DifferentialFunction> exec = exec().getRight();
         val finalOp = exec.get(exec.size() - 1);
@@ -8430,6 +8670,14 @@ public class SameDiff {
         return outArrays;
     }
 
+    /**
+     * Execute the graph using the current arrays/state and return the (first, and possibly only) array for the specified
+     * variable in the graph.<br>
+     * After execution, the arrays for other variables can be obtained using {@link #getArrForVarName(String)}
+     * or {@link SDVariable#getArr()}
+     *
+     * @return The output of the final operation in the graph
+     */
     public INDArray execAndEndResult(int outputIndex) {
         List<DifferentialFunction> exec = exec().getRight();
         val output = exec.get(exec.size() - 1).outputVariables()[outputIndex];
@@ -8471,9 +8719,7 @@ public class SameDiff {
 
     /**
      * Executes the list of operations.
-     * This exec method is for
-     * only invoking operations
-     * rather than creating them
+     * This exec method is for only invoking operations rather than creating them
      *
      * @param ops the list of already created ops
      * @return the passes in list
@@ -8569,8 +8815,7 @@ public class SameDiff {
     }
 
     /**
-     * A function definition for
-     * samediff
+     * A function definition for samediff
      */
     public interface SameDiffFunctionDefinition {
 
@@ -8650,11 +8895,10 @@ public class SameDiff {
 
 
     /**
-     * Exec a given function
+     * Exec a given SameDiff function instance
      *
-     * @param functionName the opName of the function
-     *                     to invoke
-     * @return
+     * @param functionName the name of the SameDiff function instance to invoke
+     * @return Output of the final variable after execution
      */
     public INDArray execAndEndResult(String functionName) {
         return sameDiffFunctionInstances.get(functionName).execAndEndResult();
@@ -8662,10 +8906,9 @@ public class SameDiff {
 
 
     /**
-     * Exec a given function
+     * Execute the specified SameDiff function instance
      *
-     * @param functionName the opName of the function
-     *                     to invoke
+     * @param functionName the name of the SameDiff function instance to invoke
      * @return
      */
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec(String functionName) {
@@ -8682,8 +8925,7 @@ public class SameDiff {
     }
 
     /**
-     * Exec the given function
-     * given the ops
+     * Exec the given function given the ops
      *
      * @param functionName the opName of the function to
      *                     exec
@@ -8696,11 +8938,13 @@ public class SameDiff {
 
 
     /**
-     * Builds a backwards graph
-     * and executes the operations
-     * on that graph.
+     * Execute the gradient (backward pass) function on this graph.<br>
+     * Constructs a backwards graph (differentiating the defined graph) if it does not already exist, and the executes
+     * the operations on that graph, calculating gradients for all variables.<br>
+     * Note that after execBackwards() has completed, the gradient arrays for a each variable can be accessed using
+     * {@link SDVariable#getGradient()} followed by  {@link SDVariable#getArr()} or by using {@link #getGradForVariable(String)}
      *
-     * @return
+     * @return Result of execution
      */
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> execBackwards() {
         if (getFunction("grad") == null) {
@@ -8723,6 +8967,14 @@ public class SameDiff {
         return forward;
     }
 
+    /**
+     * Create the gradient function (for calculating gradients via {@link #execBackwards()}) if it is not already defined.
+     * Users do not usually need to call this function manually, as it is called as required in the aforementioned method.
+     * <br><br>
+     * If the gradient function already exists, this method is a no-op.<br>
+     * After this method returns, the SameDiff function instance for the gradient can be accessed using {@link #getFunction(String)}
+     * with name "grad" as the argument.
+     */
     public void createGradFunction() {
         if (log.isTraceEnabled()) {
             log.trace("Defining function \"grad\"");
@@ -8851,8 +9103,7 @@ public class SameDiff {
 
 
     /**
-     * Exec a backwards operation
-     * and return the end result
+     * Exec a backwards operation and return the end result
      *
      * @return
      */
@@ -8881,10 +9132,9 @@ public class SameDiff {
 
 
     /**
-     * Set the original shape for a given place holder.
-     * This is used to track original shapes of place holder variables.
-     * The reason we track original shapes is to validate
-     * possible candidate arrays coming in (especially with -1
+     * Set the original shape for a given place holder.<br>
+     * This is used to track original shapes of place holder variables.<br>
+     * The reason we track original shapes is to validate possible candidate arrays coming in (especially with -1
      * as the expected shapes).
      * <p>
      * Note that if {@link #isPlaceHolder(String)}
@@ -8918,10 +9168,8 @@ public class SameDiff {
 
 
     /**
-     * Get the original shape for the vertex id if one was set
-     * (other wise returns null).
-     * This is mainly for use in validating passed in arrays
-     * as arguments to {@link #resolveVariablesWith(Map)}
+     * Get the original shape for the vertex id if one was set (other wise returns null).<br>
+     * This is mainly for use in validating passed in arrays as arguments to {@link #resolveVariablesWith(Map)}
      * usually when executing using {@link #execWithPlaceHolder(Map)}
      *
      * @param varName the vertex id to get the original shape for.
@@ -8932,11 +9180,11 @@ public class SameDiff {
     }
 
     /**
-     * Returns true if this vertex id
-     * is a place holder variable or not
+     * Returns true if this vertex id is a place holder variable or not<br>
+     * A place holder variable is one where the array shape(s) are currently known and can't yet be calculated
      *
      * @param varName the vertex id to test
-     * @return
+     * @return True if the variable is a placeholder, false otherwise
      */
     public boolean isPlaceHolder(String varName) {
         return placeHolderVarNames.contains(varName);
@@ -8957,11 +9205,8 @@ public class SameDiff {
 
 
     /**
-     * Resolve all ndarrays by updating the variables
-     * for each array specified in the given map.
-     * An {@link IllegalStateException} will be thrown
-     * if not all arrays are
-     * specified for resolution.
+     * Resolve all ndarrays by updating the variables for each array specified in the given map.
+     * An {@link IllegalStateException} will be thrown if not all arrays are specified for resolution.
      *
      * @param arrays the arrays to resolve.
      */
@@ -9002,7 +9247,6 @@ public class SameDiff {
             updateShapeForVarName(entry.getKey(), entry.getValue().shape());
             associateArrayWithVariable(entry.getValue(), getVariable(entry.getKey()));
             updateArrayForVarName(entry.getKey(), entry.getValue());
-
         }
 
 
@@ -9016,20 +9260,15 @@ public class SameDiff {
                 CustomOp customOp = (CustomOp) func;
                 customOp.populateInputsAndOutputsFromSameDiff();
             }
-
         }
-
 
         //declare resolved
         resolvedVariables = true;
     }
 
     /**
-     * Returns true if all place holder variables
-     * are resolved.
-     * A place holder variable is resolved when
-     * {@link #getVariable(String)}
-     * getArr() does not return null and
+     * Returns true if all place holder variables are resolved.<br>
+     * A place holder variable is resolved when {@link #getVariable(String)} getArr() does not return null and
      * the shape is properly resolved.
      *
      * @return true if all place holder variables are resolved.
@@ -9046,11 +9285,9 @@ public class SameDiff {
     }
 
     /**
-     * Add one or or more place holder variables
-     * for the given vertex id.
+     * Add one or or more place holder variables for the given vertex id.
      * <p>
-     * Note that if a vertex id in placeHolderVariables
-     * isn't present in this samediff instance anyways,
+     * Note that if a vertex id in placeHolderVariables isn't present in this samediff instance anyways,
      * an {@link ND4JIllegalStateException} is thrown
      *
      * @param varName              the vertex id to add place holders for
@@ -9063,7 +9300,6 @@ public class SameDiff {
             }
         }
 
-
         List<String[]> placeHolders = placeHolderMap.get(varName);
         if (placeHolders == null) {
             placeHolders = new ArrayList<>();
@@ -9075,26 +9311,22 @@ public class SameDiff {
 
 
     /**
-     * Returns true if the given vertex id
-     * has any placeholder variables
+     * Returns true if the given vertex id has any placeholder variables
      *
      * @param vertexId the vertex id to check for
-     * @return true if this vertex has any place holder
-     * variables or not
+     * @return true if this vertex has any place holder variables or not
      */
     public boolean hasPlaceHolderVariables(String vertexId) {
         return placeHolderMap.containsKey(vertexId);
     }
 
     /**
-     * Get the place holders for a given
-     * vertex id. May return null.
+     * Get the place holders for a given vertex id. May return null.
      * <p>
      * Consider using {@link #hasPlaceHolderVariables(String)}
      *
      * @param varName the vertex id to get the place holders for
-     * @return the place holder variables for the given vertex
-     * id or null
+     * @return the place holder variables for the given vertex id or null
      */
     public List<String[]> getPlaceHoldersFor(String varName) {
         return placeHolderMap.get(varName);
@@ -9102,10 +9334,8 @@ public class SameDiff {
 
 
     /**
-     * Creates and executes a list of operations
-     * based on the given variables passed in.
-     * {@link #resolveVariablesWith(Map)}
-     * is called
+     * Creates and executes a list of operations based on the given variables passed in.<br>
+     * {@link #resolveVariablesWith(Map)} is called
      *
      * @return
      */
@@ -9115,9 +9345,8 @@ public class SameDiff {
     }
 
     /**
-     * Get the {@link SDVariable}
-     * associated with each function
-     * based on the {@link DifferentialFunction#outputVariables()} ()}
+     * Get the {@link SDVariable} associated with each function based on the
+     * {@link DifferentialFunction#outputVariables()} ()}
      *
      * @param functions the functions to get the variables for
      * @return the list of variables associated with the given {@link DifferentialFunction}
@@ -9133,13 +9362,9 @@ public class SameDiff {
 
 
     /**
-     * Updates the variable name
-     * property on the passed in variable,
-     * the reference in samediff,
-     * and returns the variable.
+     * Updates the variable name property on the passed in variable, the reference in samediff, and returns the variable.
      * <p>
-     * Note that if null for the new variable is passed in,
-     * it will just return the original input variable.
+     * Note that if null for the new variable is passed in, it will just return the original input variable.
      *
      * @param varToUpdate the variable to update
      * @param newVarName  the new variable name
@@ -9168,8 +9393,7 @@ public class SameDiff {
 
 
     /**
-     * Updates the variable name property on the passed in variables,
-     * its reference in samediff, and returns the variable.
+     * Updates the variable name property on the passed in variables, its reference in samediff, and returns the variable.
      *
      * @param variablesToUpdate the variable to update
      * @param newVariableNames  the new variable name
@@ -9189,7 +9413,12 @@ public class SameDiff {
         return updatedVariables;
     }
 
-
+    /**
+     * Associate the current SameDiff instance with all ops and variables.
+     * This is necessary to ensure that when dealing with shared state (usually with a SameDiff function such
+     * as "grad" - the backward function) we have the correct SameDiff instance set for all ops/SDVariables.<br>
+     * If this is not done, arrays and shapes could be fetched from the incorrect SameDiff instance for some methods
+     */
     protected void associateSameDiffWithOpsAndVariables(){
         for(DifferentialFunction df : functionInstancesById.values()){
             df.setSameDiff(this);
@@ -9226,10 +9455,19 @@ public class SameDiff {
 
     private Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec_cache;
 
+    /**
+     * Clear the execution cache, if it is present
+     */
     public void clearExecutionCache(){
         exec_cache = null;
     }
 
+    /**
+     * Execute the SameDiff instance using the current state<br>
+     * After execution, the arrays for variables can be obtained using {@link #getArrForVarName(String)} or
+     * {@link SDVariable#getArr()}<br>
+     * @return Execution results
+     */
     public Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> exec() {
 
         /*
@@ -9899,7 +10137,6 @@ public class SameDiff {
             parent.exec_cache = exec_cache;
         }
 
-
         return ret;
     }
 
@@ -9937,7 +10174,6 @@ public class SameDiff {
             realShapes.append(" Output shape for " + arg.getVarName() + " is  " + Arrays.
                     toString(getShapeForVarName(arg.getVarName())));
         }
-
 
 //        log.info(realShapes.toString());
     }
@@ -10033,6 +10269,7 @@ public class SameDiff {
     }
 
     /**
+     * Note: INTENDED FOR DEVELOPER USE<br>
      * This method extract base variable name and output index (if exists) from raw variable name.
      * I.e:
      * - if variable name is "Unstack_2", result will be Pair("Unstack_2", 0)
@@ -10177,10 +10414,11 @@ public class SameDiff {
 
 
     /**
-     * This method exports given SameDiff instance into FlatBuffers
+     * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
+     * all arrays as a ByteBuffer containing the FlatBuffers format data
      *
      * @param configuration - ExecutorConfiguration to be embedded into serialized graph
-     * @return
+     * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
     public ByteBuffer asFlatBuffers(@NonNull ExecutorConfiguration configuration) {
         Nd4j.getExecutioner().commit();
@@ -10278,9 +10516,10 @@ public class SameDiff {
     }
 
     /**
-     * This method exports given SameDiff instance into FlatBuffers
+     * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
+     * all arrays as a ByteBuffer containing the FlatBuffers format data
      *
-     * @return
+     * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
     public ByteBuffer asFlatBuffers() {
         val configuration = ExecutorConfiguration.builder()
@@ -10321,7 +10560,7 @@ public class SameDiff {
     /**
      * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later
      *
-     * @param file
+     * @param file File to save the FlatBuffers serialized graph (including arrays) to
      */
     public void asFlatFile(@NonNull File file) throws IOException {
         val fb = asFlatBuffers();
@@ -10337,7 +10576,7 @@ public class SameDiff {
     /**
      * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later
      *
-     * @param file
+     * @param file File to save the FlatBuffers serialized graph (including arrays) to
      */
     public void asFlatFile(@NonNull File file, @NonNull ExecutorConfiguration configuration) throws IOException {
         val fb = asFlatBuffers(configuration);
@@ -10351,9 +10590,10 @@ public class SameDiff {
     }
 
     /**
-     * This method returns "flattened" graph.
+     * This method returns a text representation of the "flattened" graph.
      *
-     * @return
+     * @return String representation of the graph
+     * @see #summary()
      */
     public String asFlatPrint() {
         val sb = new StringBuilder();
@@ -10503,10 +10743,10 @@ public class SameDiff {
     }
 
     /**
-     * This method converts enums for DataType
+     * This method converts enums for Op.Type
      *
-     * @param type
-     * @return
+     * @param type Byte representing the op type
+     * @return Op type
      */
     public static Op.Type getTypeFromByte(byte type) {
         switch (type) {
@@ -10540,10 +10780,10 @@ public class SameDiff {
     }
 
     /**
-     * This method converts enums for DataType
+     * This method converts an Op.Type to it's corresponding byte value
      *
-     * @param type
-     * @return
+     * @param type type to convert
+     * @return Byte representing the op type
      */
     public static byte getFlatOpType(Op.Type type) {
         switch (type) {
@@ -10585,7 +10825,14 @@ public class SameDiff {
         }
     }
 
-
+    /**
+     * Generate and return a String representation of the current SameDiff instance<br>
+     * Reports variables, ops, SameDiff function instances, and (where possible) array shapes.<br>
+     * For ops, the input and output variables are reported.<br>
+     * For variables, the ops that they are inputs to - or outputs of - are also reported
+     *
+     * @return A String representation of the SameDiff instance
+     */
     public String summary() {
 
         Map<String, SDVariable> varMap = variableMap();
