@@ -30,9 +30,20 @@ public class TensorflowConversion {
     //allows us to use nd4j buffers for memory management
     //rather than having them managed by tensorflow
     private   static Deallocator_Pointer_long_Pointer calling;
+    private static TensorflowConversion INSTANCE;
+
+    /**
+     * Get a singleton instance
+     * @return
+     */
+    public static TensorflowConversion getInstance() {
+        if(INSTANCE == null)
+            INSTANCE = new TensorflowConversion();
+        return INSTANCE;
+    }
 
 
-    public TensorflowConversion() {
+    private TensorflowConversion() {
         if(calling == null)
             calling = DummyDeAllocator.getInstance();
 

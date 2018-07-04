@@ -32,7 +32,7 @@ public class GraphRunner implements Closeable {
     //the in memory representation parsed from protobuf
     private tensorflow.TF_Graph graph;
     //the conversion between nd4j and tensorflow
-    private TensorflowConversion conversion = new TensorflowConversion();
+    private TensorflowConversion conversion =  TensorflowConversion.getInstance();
     //a persistent session to be used when running the graph
     private tensorflow.TF_Session session;
     //the options for the model

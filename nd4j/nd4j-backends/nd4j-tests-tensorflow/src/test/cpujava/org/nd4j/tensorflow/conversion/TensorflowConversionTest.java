@@ -18,7 +18,7 @@ public class TensorflowConversionTest {
     public void testView() {
         INDArray matrix = Nd4j.linspace(1,8,8).reshape(2,4);
         INDArray view = matrix.slice(0);
-        TensorflowConversion conversion = new TensorflowConversion();
+        TensorflowConversion conversion =TensorflowConversion.getInstance();
         tensorflow.TF_Tensor tf_tensor = conversion.tensorFromNDArray(view);
         INDArray converted = conversion.ndArrayFromTensor(tf_tensor);
         assertEquals(view,converted);
@@ -28,7 +28,7 @@ public class TensorflowConversionTest {
     public void testNullArray() {
         INDArray array = Nd4j.create(2,2);
         array.setData(null);
-        TensorflowConversion conversion = new TensorflowConversion();
+        TensorflowConversion conversion =TensorflowConversion.getInstance();
         tensorflow.TF_Tensor tf_tensor = conversion.tensorFromNDArray(array);
         fail();
     }
@@ -36,7 +36,7 @@ public class TensorflowConversionTest {
     @Test
     public void testConversionFromNdArray() throws Exception {
         INDArray arr = Nd4j.linspace(1,4,4);
-        TensorflowConversion tensorflowConversion = new TensorflowConversion();
+        TensorflowConversion tensorflowConversion =TensorflowConversion.getInstance();
         tensorflow.TF_Tensor tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
         INDArray fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
         assertEquals(arr,fromTensor);
@@ -50,7 +50,7 @@ public class TensorflowConversionTest {
 
     @Test
     public void testCudaIfAvailable() throws Exception {
-        TensorflowConversion tensorflowConversion = new TensorflowConversion();
+        TensorflowConversion tensorflowConversion =TensorflowConversion.getInstance();
         byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
         //byte[] content = Files.readAllBytes(Paths.get(new File("/home/agibsonccc/code/dl4j-test-resources/src/main/resources/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").toURI()));
         tensorflow.TF_Graph initializedGraphForNd4jDevices = tensorflowConversion.loadGraph(content);
