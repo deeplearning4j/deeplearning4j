@@ -1415,8 +1415,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
-                    long length) {
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length) {
         val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
 
         val p = new PointerPointer<>(new Pointer[]{null, stream});
@@ -1424,11 +1423,40 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         nativeOps.convertTypes(p, typeSrc.ordinal(), source, length, typeDst.ordinal(), target);
     }
 
+    @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer) {
+        Pointer srcPtr = null;
+        Pointer dstPtr = null;
+        long size = 0;
+        long ssize = 0;
+        val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
+        if (buffer instanceof CompressedDataBuffer) {
+            // compressing
+            size = ((CompressedDataBuffer) buffer).getCompressionDescriptor().getCompressedLength();
+            ssize = ((CompressedDataBuffer) buffer).getCompressionDescriptor().getOriginalLength();
 
+            srcPtr = nativeOps.mallocDevice(ssize, null, 0);
+            dstPtr = nativeOps.mallocDevice(size, null, 0);
+
+            nativeOps.memcpyAsync(srcPtr, source, ssize, CudaConstants.cudaMemcpyHostToDevice, stream);
+        } else {
+            // decompressing
+            throw new UnsupportedOperationException();
+        }
+
+        convertDataEx(typeSrc, srcPtr, typeDst, dstPtr, buffer.length());
+        nativeOps.memcpyAsync(buffer.addressPointer(), dstPtr, size, CudaConstants.cudaMemcpyHostToHost, stream);
+
+        stream.synchronize();
+
+        if (buffer instanceof CompressedDataBuffer) {
+            nativeOps.freeDevice(srcPtr, null);
+            nativeOps.freeDevice(dstPtr, null);
+        }
+    }
 
     @Override
-    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst,
-                    DataBuffer target) {
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
 
         val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
         Pointer srcPtr = null;
@@ -1453,23 +1481,29 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         } else {
             // if true - we're decompressing from host memory
             if (source instanceof CompressedDataBuffer) {
+                log.info("Replacing source ptr");
                 val size = ((CompressedDataBuffer) source).getCompressionDescriptor().getCompressedLength();
                 srcPtr = nativeOps.mallocDevice(size, null, 0);
                 nativeOps.memcpyAsync(srcPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
+                stream.synchronize();
             } else
                 srcPtr = AtomicAllocator.getInstance().getPointer(source);
 
             // if true - we're compressing into host memory
             if (target instanceof CompressedDataBuffer) {
+                log.info("Replacing target ptr");
                 val size = ((CompressedDataBuffer) target).getCompressionDescriptor().getCompressedLength();
                 dstPtr = nativeOps.mallocDevice(size, null, 0);
                 nativeOps.memcpyAsync(dstPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
+                stream.synchronize();
             } else
                 dstPtr = AtomicAllocator.getInstance().getPointer(target);
         }
 
 
         convertDataEx(typeSrc, srcPtr, typeDst, dstPtr, target.length());
+
+        Nd4j.getExecutioner().commit();
 
 
         // we were compressing something into temporary buffer
@@ -1491,7 +1525,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         }
 
-        stream.synchronize();
+        Nd4j.getExecutioner().commit();
     }
 
     @Override

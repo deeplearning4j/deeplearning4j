@@ -138,8 +138,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
     @Override
     public void attachThreadToDevice(long threadId, Integer deviceId) {
         List<Integer> devices = new ArrayList<>(CudaEnvironment.getInstance().getConfiguration().getAvailableDevices());
-        logger.debug("Manually mapping thread [{}] to device [{}], out of [{}] devices...", threadId, deviceId,
-                        devices.size());
+        logger.trace("Manually mapping thread [{}] to device [{}], out of [{}] devices...", threadId, deviceId, devices.size());
         affinityMap.put(threadId, deviceId);
     }
 

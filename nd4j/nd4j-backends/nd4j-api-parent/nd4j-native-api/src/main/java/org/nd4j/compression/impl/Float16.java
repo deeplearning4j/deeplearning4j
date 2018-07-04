@@ -50,8 +50,8 @@ public class Float16 extends AbstractCompressor {
     protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
                     int elementSize) {
 
-        BytePointer ptr = new BytePointer(length * 2);
-        CompressionDescriptor descriptor = new CompressionDescriptor();
+        val ptr = new BytePointer(length * 2);
+        val descriptor = new CompressionDescriptor();
         descriptor.setCompressedLength(length * 2);
         descriptor.setOriginalLength(length * elementSize);
         descriptor.setOriginalElementSize(elementSize);
@@ -60,9 +60,10 @@ public class Float16 extends AbstractCompressor {
         descriptor.setCompressionAlgorithm(getDescriptor());
         descriptor.setCompressionType(getCompressionType());
 
-        CompressedDataBuffer buffer = new CompressedDataBuffer(ptr, descriptor);
+        val buffer = new CompressedDataBuffer(ptr, descriptor);
 
-        Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataBuffer.TypeEx.FLOAT16, ptr, length);
+        //Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataBuffer.TypeEx.FLOAT16, ptr, length);
+        Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataBuffer.TypeEx.FLOAT16, buffer);
 
         return buffer;
     }
