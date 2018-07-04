@@ -65,6 +65,7 @@
         <module>nd4j-backends</module>
         <module>nd4j-parameter-server-parent</module>
         <module>nd4j-uberjar</module>
+        <module>nd4j-tensorflow</module>
     </modules>
 
     <properties>
@@ -77,6 +78,9 @@
         <javacpp.platform.sysroot/> <!-- -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
         <javacpp.platform.extension/>
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
+        <tensorflow.version>1.9.0-rc1</tensorflow.version>
+        <tensorflow.javacpp.version>${tensorflow.version}-1.4.2-SNAPSHOT</tensorflow.javacpp.version>
+
     </properties>
 
     <dependencyManagement>
