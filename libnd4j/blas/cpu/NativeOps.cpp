@@ -3152,6 +3152,14 @@ int NativeOps::estimateThresholdFloat(Nd4jPointer *extraPointers, Nd4jPointer x,
     return estimateThresholdGeneric<float>(extraPointers, x, N, threshold);
 }
 
+int NativeOps::estimateThresholdDouble(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+    return estimateThresholdGeneric<double>(extraPointers, x, N, threshold);
+}
+
+
+int NativeOps::estimateThresholdHalf(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+    return estimateThresholdGeneric<float16>(extraPointers, x, N, threshold);
+}
 
 
 void NativeOps::deleteShapeList(Nd4jPointer shapeList) {
