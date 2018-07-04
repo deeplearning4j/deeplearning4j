@@ -4256,123 +4256,284 @@ public class SameDiff {
         return repeat(null, df, axis);
     }
 
-    
     public SDVariable repeat(String name, SDVariable df, int axis) {
         SDVariable ret = f().repeat(df, axis);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #stack(String, int, SDVariable...)
+     */
     public SDVariable stack(int axis, SDVariable... values) {
         return stack(null, axis, values);
     }
 
+    /**
+     * Stack a set of N SDVariables of rank X into one rank X+1 variable.
+     * If inputs have shape [a,b,c] then output has shape:<br>
+     * axis = 0: [N,a,b,c]<br>
+     * axis = 1: [a,N,b,c]<br>
+     * axis = 2: [a,b,N,c]<br>
+     * axis = 3: [a,b,c,N]<br>
+     *
+     * @param name   Name of the output variable
+     * @param axis   Axis to stack on
+     * @param values Input variables to stack. Must have the same shape for all inputs
+     * @return Output variable
+     * @see #unstack(String[], SDVariable, int, int)
+     */
     public SDVariable stack(String name, int axis, SDVariable... values) {
         SDVariable ret = f().stack(values, axis);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #stack(String, int, SDVariable...)
+     */
     public SDVariable parallel_stack(SDVariable[] values) {
         return parallel_stack(null, values);
     }
 
+    /**
+     * @see #stack(String, int, SDVariable...)
+     */
     public SDVariable parallel_stack(String name, SDVariable[] values) {
         SDVariable ret = f().parallel_stack(values);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #unstack(String[], SDVariable, int, int)
+     */
     public SDVariable[] unstack(SDVariable value, int axis) {
         return unstack(null, value, axis);
     }
 
+    /**
+     * @see #unstack(String[], SDVariable, int, int)
+     */
     public SDVariable[] unstack(String[] names, SDVariable value, int axis) {
         SDVariable[] ret = f().unstack(value, axis);
         return updateVariableNamesAndReferences(ret, names);
     }
 
+    /**
+     * @see #unstack(String[], SDVariable, int, int)
+     */
     public SDVariable[] unstack(SDVariable value, int axis, int num) {
         return unstack(null, value, axis, num);
     }
 
+    /**
+     * Unstack a variable of rank X into N rank X-1 variables by taking slices along the specified axis.
+     * If input has shape [a,b,c] then output has shape:
+     * axis = 0: [b,c]<br>
+     * axis = 1: [a,c]<br>
+     * axis = 2: [a,b]<br>
+     *
+     * @param names Output variable names. May be null
+     * @param value Input variable to unstack
+     * @param axis  Axis to unstack on
+     * @param num   Number of output variables
+     * @return Output variables
+     * @see #stack(String, int, SDVariable...)
+     */
     public SDVariable[] unstack(String[] names, SDVariable value, int axis, int num) {
         SDVariable[] ret = f().unstack(value, axis, num);
         return updateVariableNamesAndReferences(ret, names);
     }
 
+    /**
+     * Element-wise Gaussian error function - out = erf(in)
+     *
+     * @param iX Input variable
+     * @return Output variable
+     */
     public SDVariable erf(SDVariable iX) {
         return erf(null, iX);
     }
 
+    /**
+     * Element-wise Gaussian error function - out = erf(in)
+     *
+     * @param name Output variable name
+     * @param iX   Input variable
+     * @return Output variable
+     */
     public SDVariable erf(String name, SDVariable iX) {
         SDVariable ret = f().erf(iX);
         return updateVariableNameAndReference(ret, name);
     }
 
-
+    /**
+     * Element-wise complementary Gaussian error function - out = erfc(in) = 1 - erf(in)
+     *
+     * @param iX Input variable
+     * @return Output variable
+     */
     public SDVariable erfc(SDVariable iX) {
         return erfc(null, iX);
     }
 
+    /**
+     * Element-wise complementary Gaussian error function - out = erfc(in) = 1 - erf(in)
+     *
+     * @param name Name of the output variable
+     * @param iX   Input variable
+     * @return Output variable
+     */
     public SDVariable erfc(String name, SDVariable iX) {
         SDVariable ret = f().erfc(iX);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #diag(String, SDVariable)
+     */
     public SDVariable diag(SDVariable iX) {
         return diag(null, iX);
     }
 
+    /**
+     * Returns an output variable with diagonal values equal to the specified values; off-diagonal values will be set to 0<br>
+     * For example, if input = [1,2,3], then output is given by:<br>
+     * [ 1, 0, 0]<br>
+     * [ 0, 2, 0]<br>
+     * [ 0, 0, 3]<br>
+     * <br>
+     * Higher input ranks are also supported: if input has shape [a,...,R-1] then output[i,...,k,i,...,k] = input[i,...,k].
+     * i.e., for input rank R, output has rank 2R
+     *
+     * @param name Name of the output variable
+     * @param iX   Input variable
+     * @return Output variable
+     */
     public SDVariable diag(String name, SDVariable iX) {
         SDVariable ret = f().diag(iX);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #diagPart(String, SDVariable)
+     */
     public SDVariable diagPart(SDVariable iX) {
         return diagPart(null, iX);
     }
 
+    /**
+     * Extract the diagonal part from the input array.<br>
+     * If input is<br>
+     * [ 1, 0, 0]<br>
+     * [ 0, 2, 0]<br>
+     * [ 0, 0, 3]<br>
+     * then output is [1, 2, 3].<br>
+     * Supports higher dimensions: in general, out[i,...,k] = in[i,...,k,i,...,k]
+     *
+     * @param iX Input variable
+     * @return Diagonal part of the input
+     * @see #diag(String, SDVariable)
+     */
     public SDVariable diagPart(String name, SDVariable iX) {
         SDVariable ret = f().diagPart(iX);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #setDiag(String, SDVariable, SDVariable)
+     */
     public SDVariable setDiag(SDVariable in, SDVariable diag) {
         return setDiag(null, in, diag);
     }
 
+    /**
+     * Set the diagonal value to the specified values<br>
+     * If input is<br>
+     * [ a, b, c]<br>
+     * [ d, e, f]<br>
+     * [ g, h, i]<br>
+     * and diag = [ 1, 2, 3] then output is<br>
+     * [ 1, b, c]<br>
+     * [ d, 2, f]<br>
+     * [ g, h, 3]<br>
+     *
+     * @param name Name of the output variable
+     * @param in   Input variable
+     * @param diag Diagonal
+     * @return Output variable
+     */
     public SDVariable setDiag(String name, SDVariable in, SDVariable diag) {
         SDVariable ret = f().setDiag(in, diag);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * @see #oneHot(String, SDVariable, int)
+     */
     public SDVariable oneHot(SDVariable indices, int depth) {
         return oneHot(null, indices, depth, -1, 1.00, 0.00);
     }
 
+    /**
+     * @see #oneHot(String, SDVariable, int, int, double, double)
+     */
     public SDVariable oneHot(SDVariable indices, int depth, int axis, double on, double off) {
         return oneHot(null, indices, depth, axis, on, off);
     }
 
+    /**
+     * Convert the array to a one-hot array with walues 0 and 1 for each entry<br>
+     * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],
+     * with out[i, ..., j, in[i,...,j]] = 1 with other values being set to 0
+     *
+     * @param name    Output variable name
+     * @param indices Indices - value 0 to depth-1
+     * @param depth   Number of classes
+     * @return Output variable
+     * @see #oneHot(SDVariable, int, int, double, double)
+     */
     public SDVariable oneHot(String name, SDVariable indices, int depth) {
         return oneHot(name, indices, depth, -1, 1.00, 0.00);
     }
 
+    /**
+     * Convert the array to a one-hot array with walues {@code on} and {@code off} for each entry<br>
+     * If input has shape [ a, ..., n] then output has shape [ a, ..., n, depth],
+     * with {@code out[i, ..., j, in[i,...,j]] = on} with other values being set to {@code off}
+     *
+     * @param name    Output variable name
+     * @param indices Indices - value 0 to depth-1
+     * @param depth   Number of classes
+     * @return Output variable
+     */
     public SDVariable oneHot(String name, SDVariable indices, int depth, int axis, double on, double off) {
         SDVariable ret = f().onehot(indices, depth, axis, on, off);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * Element-wise reciprocal (inverse) function: out[i] = 1 / in[i]
+     *
+     * @param a Input variable
+     * @return Output variable
+     */
     public SDVariable reciprocal(SDVariable a) {
         return reciprocal(null, a);
     }
 
+    /**
+     * Element-wise reciprocal (inverse) function: out[i] = 1 / in[i]
+     *
+     * @param name Name of the output variable
+     * @param a    Input variable
+     * @return Output variable
+     */
     public SDVariable reciprocal(String name, SDVariable a) {
         SDVariable ret = f().reciprocal(a);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * @param iX
-     * @return
+     * Intended for developer use
      */
     public SDVariable gradientBackwardsMarker(SDVariable iX) {
         return gradientBackwardsMarker(generateNewVarName(new GradientBackwardsMarker().opName(), 0), iX);
@@ -4380,33 +4541,61 @@ public class SameDiff {
 
 
     /**
-     * @param iX
-     * @return
+     * Element-wise hard tanh function:<br>
+     * out[i] = -1 if in[i] <= -1<br>
+     * out[1] = in[i] if -1 < in[i] < 1<br>
+     * out[i] = 1 if in[i] >= 1<br>
+     *
+     * @param a Input variable
+     * @return Output variable
      */
     public SDVariable hardTanh(SDVariable iX) {
         return hardTanh(null, iX);
     }
 
+    /**
+     * Element-wise hard sigmoid function:<br>
+     * out[i] = 0 if in[i] <= -2.5<br>
+     * out[1] = 0.2*in[i]+0.5 if -2.5 < in[i] < 2.5<br>
+     * out[i] = 1 if in[i] >= 2.5<br>
+     *
+     * @param a Input variable
+     * @return Output variable
+     */
     public SDVariable hardSigmoid(SDVariable in) {
         return hardSigmoid(null, in);
     }
 
+    /**
+     * Element-wise hard sigmoid function:<br>
+     * out[i] = 0 if in[i] <= -2.5<br>
+     * out[1] = 0.2*in[i]+0.5 if -2.5 < in[i] < 2.5<br>
+     * out[i] = 1 if in[i] >= 2.5<br>
+     *
+     * @param name Name of the output variable
+     * @param a    Input variable
+     * @return Output variable
+     */
     public SDVariable hardSigmoid(String name, SDVariable in) {
         SDVariable ret = f().hardSigmoid(in);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * @param iX
-     * @return
+     * Derivative (dOut/dIn) of the element-wise hard Tanh function - {@link #hardTanh(SDVariable)}
+     *
+     * @param iX Input
+     * @return Output variable
      */
     public SDVariable hardTanhDerivative(SDVariable iX) {
         return hardTanhDerivative(null, iX);
     }
 
     /**
-     * @param iX
-     * @return
+     * Element-wise sigmoid function: out[i] = 1.0/(1+exp(-in[i]))
+     *
+     * @param iX Input Variable
+     * @return Output variable
      */
     public SDVariable sigmoid(SDVariable iX) {
         return sigmoid(null, iX);
@@ -4414,91 +4603,146 @@ public class SameDiff {
 
 
     /**
-     * @param iX
-     * @return
+     * Element-wise sigmoid function derivative: dL/dIn given input and dL/dIn
+     *
+     * @param iX  Input Variable
+     * @param wrt Gradient at the output - dL/dOut. Must have same shape as the input
+     * @return Output variable
      */
     public SDVariable sigmoidDerivative(SDVariable iX, SDVariable wrt) {
         return sigmoidDerivative(null, iX, wrt);
     }
 
+    /**
+     * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))
+     *
+     * @param iX Input Variable
+     * @return Output variable
+     */
     public SDVariable logSigmoid(SDVariable iX) {
         return logSigmoid(null, iX);
     }
 
+    /**
+     * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))
+     *
+     * @param name Name of the output variable
+     * @param iX   Input Variable
+     * @return Output variable
+     */
     public SDVariable logSigmoid(String name, SDVariable iX) {
         SDVariable ret = f().logSigmoid(iX);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * @param iX
-     * @return
+     * Element-wise sign (signum) function:<br>
+     * out = -1 if in < 0<br>
+     * out = 0 if in = 0<br>
+     * out = 1 if in > 0
+     *
+     * @param iX Input variable
+     * @return Output variable
      */
     public SDVariable sign(SDVariable iX) {
         return sign(null, iX);
     }
 
     /**
-     * @param iX
-     * @return
+     * Element-wise softsign function: out = x / (abs(x) + 1)
+     *
+     * @param iX Input variable
+     * @return Output variable
      */
     public SDVariable softsign(SDVariable iX) {
         return softsign(null, iX);
     }
 
     /**
-     * @param iX
-     * @return
+     * Element-wise derivative (dOut/dIn) of the softsign function {@link #softsign(SDVariable)}
+     *
+     * @param iX Input variable
+     * @return Output varible
      */
     public SDVariable softsignDerivative(SDVariable iX) {
         return softsignDerivative(null, iX);
     }
 
     /**
-     * @param iX
-     * @return
+     * Element-wise softplus function: out = log(exp(x) + 1)
+     *
+     * @param iX Input variable
+     * @return Output variable
      */
     public SDVariable softplus(SDVariable iX) {
         return softplus(null, iX);
     }
 
+    /**
+     * Element-wise "swish" function: out = x * sigmoid(b*x) with b=1.0<br>
+     * See: <a href="https://arxiv.org/abs/1710.05941">https://arxiv.org/abs/1710.05941</a>
+     *
+     * @param iX Input variable
+     * @return Output variable
+     */
     public SDVariable swish(SDVariable iX) {
         return swish(null, iX);
     }
 
+    /**
+     * Element-wise "swish" function: out = x * sigmoid(b*x) with b=1.0<br>
+     * See: <a href="https://arxiv.org/abs/1710.05941">https://arxiv.org/abs/1710.05941</a>
+     *
+     * @param name Name of the output variable
+     * @param iX   Input variable
+     * @return Output variable
+     */
     public SDVariable swish(String name, SDVariable iX) {
         SDVariable ret = f().swish(iX);
         return updateVariableNameAndReference(ret, name);
     }
 
     /**
-     * @param iX
-     * @return
+     * Element-wise exponential linear unit (ELU) function:<br>
+     * out = x if x > 0<br>
+     * out = a * (exp(x) - 1) if x <= 0<br>
+     * with constant a = 1.0
+     * <p>
+     * See: <a href="http://arxiv.org/abs/1511.07289">http://arxiv.org/abs/1511.07289</a>
+     *
+     * @param iX Input variable
+     * @return Output variable
      */
     public SDVariable elu(SDVariable iX) {
         return elu(null, iX);
     }
 
     /**
-     * @param iX
-     * @return
+     * Element-wise derivative exponential linear unit (ELU) function, dOut/dIn give input.
+     * {@link #elu(SDVariable)}
+     * @param iX Input variable
+     * @return Output variable
      */
     public SDVariable eluDerivative(SDVariable iX) {
         return eluDerivative(null, iX);
     }
 
     /**
-     * @param iX
-     * @param cutoff
-     * @return
+     * Element-wise leaky RELU function with alpha=0.01:<br>
+     * out = x if x >= cutoff<br>
+     * out = 0.01 * x if x < cutoff
+     * @param iX     Input variable
+     * @param cutoff Cutoff - usually 0.0
+     * @return Output variable
      */
     public SDVariable leakyRelu(SDVariable iX, double cutoff) {
         return leakyRelu(null, iX, cutoff);
     }
 
     /**
-     * @param iX
-     * @return
+     * Full array mean reduction operation
+     * @param iX Input variable
+     * @return Output variable - scalar
      */
     public SDVariable mean(SDVariable iX) {
         return mean(null, iX);
@@ -4506,19 +4750,23 @@ public class SameDiff {
 
 
     /**
-     * @param iX
-     * @param dimension
-     * @return
+     * Mean (average) array reduction operation, optionally along specified dimensions
+     *
+     * @param iX        Input variable
+     * @param dimension Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Reduced array of rank (input rank - num dimensions)
      */
     public SDVariable mean(SDVariable iX, int... dimension) {
         return mean(null, iX, dimension);
     }
 
     /**
-     * @param iX
-     * @param biasCorrected
-     * @param dimensions
-     * @return
+     * Stardard deviation array reduction operation, optionally along specified dimensions
+     *
+     * @param iX            Input variable
+     * @param biasCorrected If true: divide by (N-1) (i.e., sample stdev). If false: divide by N (population stdev)
+     * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable standardDeviation(SDVariable iX,
                                         boolean biasCorrected,
@@ -4527,10 +4775,12 @@ public class SameDiff {
     }
 
     /**
-     * @param iX
-     * @param biasCorrected
-     * @param dimensions
-     * @return
+     * Variance array reduction operation, optionally along specified dimensions
+     *
+     * @param iX            Input variable
+     * @param biasCorrected If true: divide by (N-1) (i.e., sample variable). If false: divide by N (population variance)
+     * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable variance(SDVariable iX,
                                boolean biasCorrected,
@@ -4541,8 +4791,8 @@ public class SameDiff {
     /**
      * Entropy reduction: -sum(x * log(x))
      *
-     * @param in         Input
-     * @param dimensions Dimensions to reduce on (null for full array)
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce on (null/empty for full array)
      * @return Output variable
      */
     public SDVariable entropy(SDVariable in, int... dimensions) {
@@ -4552,9 +4802,10 @@ public class SameDiff {
     /**
      * Entropy reduction: -sum(x * log(x))
      *
-     * @param in         Input
-     * @param dimensions Dimensions to reduce on (null for full array)
-     * @return Output variable
+     * @param name       Name of the output variable
+     * @param in         Input variable
+     * @param dimensions Dimensions to reduce on (null/empty for full array)
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable entropy(String name, SDVariable in, int... dimensions) {
         SDVariable ret = f().entropy(in, dimensions);
@@ -4564,9 +4815,9 @@ public class SameDiff {
     /**
      * Log entropy reduction: log(-sum(x * log(x)))
      *
-     * @param in         Input
+     * @param in         Input variable
      * @param dimensions Dimensions to reduce on (null for full array)
-     * @return Output variable
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable logEntropy(SDVariable in, int... dimensions) {
         return logEntropy(null, in, dimensions);
@@ -4575,9 +4826,10 @@ public class SameDiff {
     /**
      * Log entropy reduction: log(-sum(x * log(x)))
      *
-     * @param in         Input
+     * @param name       Name of the output variable
+     * @param in         Input variable
      * @param dimensions Dimensions to reduce on (null for full array)
-     * @return Output variable
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable logEntropy(String name, SDVariable in, int... dimensions) {
         SDVariable ret = f().logEntropy(in, dimensions);
@@ -4585,14 +4837,30 @@ public class SameDiff {
     }
 
     /**
-     * @param iX
-     * @param dimensions
-     * @return
+     * Sum array reduction operation, optionally along specified dimensions
+     *
+     * @param iX         Input variable
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable sum(SDVariable iX, int... dimensions) {
         return sum(null, iX, dimensions);
     }
 
+    /**
+     * Sum array reduction operation, optionally along specified dimensions.<br>
+     * Note that if keepDims = true, the output variable has the same rank as the input variable,
+     * with the reduced dimensions having size 1. This can be useful for later broadcast operations (such as subtracting
+     * the mean along a dimension).<br>
+     * Example: if input has shape [a,b,c] and dimensions=[1] then output has shape:
+     * keepDims = true: [a,1,c]<br>
+     * keepDims = false: [a,c]
+     *
+     * @param iX         Input variable
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions) if keepDims = false, or
+     * of rank (input rank) if keepdims = true
+     */
     public SDVariable sum(SDVariable iX, boolean keepDims, int... dimensions) {
         return sum(null, iX, keepDims, dimensions);
     }
@@ -4600,46 +4868,109 @@ public class SameDiff {
 
 
     /**
-     * @param iX
-     * @param dimensions
-     * @return
+     * Product array reduction operation, optionally along specified dimensions
+     *
+     * @param iX         Input variable
+     * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
+     * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
     public SDVariable prod(SDVariable iX, int... dimensions) {
         return prod(null, iX, dimensions);
     }
 
-
+    /**
+     * Element-wise scalar maximum operation: out = max(in, value)
+     *
+     * @param in    Input variable
+     * @param value Scalar value to compare
+     * @return Output variable
+     */
     public SDVariable scalarMax(SDVariable in, Number value) {
         return scalarMax(null, in, value);
     }
 
+    /**
+     * Element-wise scalar maximum operation: out = max(in, value)
+     *
+     * @param name  Name of the output variable
+     * @param in    Input variable
+     * @param value Scalar value to compare
+     * @return Output variable
+     */
     public SDVariable scalarMax(String name, SDVariable in, Number value) {
         SDVariable ret = f().scalarMax(in, value);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * Element-wise scalar minimum operation: out = min(in, value)
+     *
+     * @param in    Input variable
+     * @param value Scalar value to compare
+     * @return Output variable
+     */
     public SDVariable scalarMin(SDVariable in, Number value) {
         return scalarMin(null, in, value);
     }
 
+    /**
+     * Element-wise scalar minimum operation: out = min(in, value)
+     *
+     * @param name  Name of the output variable
+     * @param in    Input variable
+     * @param value Scalar value to compare
+     * @return Output variable
+     */
     public SDVariable scalarMin(String name, SDVariable in, Number value) {
         SDVariable ret = f().scalarMin(in, value);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * Element-wise scalar floor modulus operation: out = floorMod(in, value).
+     * i.e., returns the remainder after division by 'value'
+     *
+     * @param in    Input variable
+     * @param value Scalar value to compare
+     * @return Output variable
+     */
     public SDVariable scalarFloorMod(SDVariable in, Number value) {
         return scalarFloorMod(null, in, value);
     }
 
+    /**
+     * Element-wise scalar floor modulus operation: out = floorMod(in, value).
+     * i.e., returns the remainder after division by 'value'
+     *
+     * @param name  Name of the output variable
+     * @param in    Input variable
+     * @param value Scalar value to compare
+     * @return Output variable
+     */
     public SDVariable scalarFloorMod(String name, SDVariable in, Number value) {
         SDVariable ret = f().scalarFloorMod(in, value);
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * Return an arary with equal shape to the input, but all elements set to value 'set'
+     *
+     * @param in  Input variable
+     * @param set Value to set
+     * @return Output variable
+     */
     public SDVariable scalarSet(SDVariable in, Number set) {
         return scalarSet(null, in, set);
     }
 
+    /**
+     * Return an arary with equal shape to the input, but all elements set to value 'set'
+     *
+     * @param name Name of the output variable
+     * @param in   Input variable
+     * @param set  Value to set
+     * @return Output variable
+     */
     public SDVariable scalarSet(String name, SDVariable in, Number set) {
         SDVariable ret = f().scalarSet(in, set);
         return updateVariableNameAndReference(ret, name);
