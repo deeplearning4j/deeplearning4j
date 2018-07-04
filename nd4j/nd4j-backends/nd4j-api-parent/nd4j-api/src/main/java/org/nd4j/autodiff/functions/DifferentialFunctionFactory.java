@@ -1180,8 +1180,8 @@ public class DifferentialFunctionFactory {
     }
 
 
-    public SDVariable leakyRelu(SDVariable iX, double cutoff) {
-        return new LeakyReLU(sameDiff(), iX, false, cutoff).outputVariable();
+    public SDVariable leakyRelu(SDVariable iX, double alpha) {
+        return new LeakyReLU(sameDiff(), iX, false, alpha).outputVariable();
 
     }
 
