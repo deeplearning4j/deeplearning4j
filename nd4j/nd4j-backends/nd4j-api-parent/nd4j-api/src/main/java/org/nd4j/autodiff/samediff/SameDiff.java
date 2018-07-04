@@ -1699,12 +1699,12 @@ public class SameDiff {
                 .varName(arr.getVarName())
                 .weightInitScheme(new NDArraySupplierInitScheme(new NDArraySupplierInitScheme.NDArraySupplier() {
                     @Override
+                    /**
+                     * Pre allocate the array if it doesn't already exist.
+                     * The reason we do this is to avoid race conditions with
+                     * {@link #allocate()}
+                     */
                     public INDArray getArr() {
-                        /**
-                         * Pre allocate the array if it doesn't already exist.
-                         * The reason we do this is to avoid race conditions with
-                         * {@link #allocate()}
-                         */
                         if (arr.getArr() == null) {
                             INDArray retArr = arr.getWeightInitScheme().create(arr.getShape());
                             associateArrayWithVariable(retArr, arr);
@@ -2252,6 +2252,15 @@ public class SameDiff {
     }
 
 
+    /**
+     * Generate a new random SDVariable, where values are randomly sampled according to a Binomial distribution,
+     * with the specified number of trials and probability.
+     *
+     * @param nTrials Number of trials parameter for the binomial distribution
+     * @param p       Probability of success for each trial
+     * @param shape   Shape of the new random SDVariable, as a 1D array
+     * @return New SDVariable
+     */
     public SDVariable randomBinomial(int nTrials, double p, long... shape){
         return randomBinomial(null, nTrials, p, shape);
     }
@@ -4495,26 +4504,44 @@ public class SameDiff {
     }
 
     /**
-     * @param iX
-     * @return
+     * Softmax activation
+     *
+     * @param iX Input variable
+     * @return Output variable
      */
     public SDVariable softmax(SDVariable iX) {
         return softmax(null, iX);
     }
 
     /**
-     * @param iX
-     * @return
+     * Softmax activation
+     *
+     * @param iX Input variable
+     * @return Output variable
      */
     public SDVariable softmax(String name, SDVariable iX) {
         SDVariable result = functionFactory.softmax(iX);
         return updateVariableNameAndReference(result, name);
     }
 
+    /**
+     * Log softmax activation
+     *
+     * @param iX Input variable
+     * @return Output variable
+     */
     public SDVariable logSoftmax(SDVariable iX) {
         return logSoftmax(null, iX);
     }
 
+
+    /**
+     * Log softmax activation
+     *
+     * @param name Variable name
+     * @param iX Input variable
+     * @return Output variable
+     */
     public SDVariable logSoftmax(String name, SDVariable iX) {
         SDVariable ret = f().logSoftmax(iX);
         return updateVariableNameAndReference(ret, name);
@@ -4776,11 +4803,32 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * TODO doc string
+     *
+     * @param df
+     * @param weights
+     * @param strides
+     * @param rates
+     * @param isSameMode
+     * @return
+     */
     public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides,
                                  int[] rates, boolean isSameMode) {
         return dilation2D(null, df, weights, strides, rates, isSameMode);
     }
 
+    /**
+     * TODO doc string
+     *
+     * @param name
+     * @param df
+     * @param weights
+     * @param strides
+     * @param rates
+     * @param isSameMode
+     * @return
+     */
     public SDVariable dilation2D(String name, SDVariable df, SDVariable weights, int[] strides,
                                  int[] rates, boolean isSameMode) {
         SDVariable ret = f().dilation2D(df, weights, strides, rates, isSameMode);
@@ -4917,10 +4965,25 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * TODO doc string
+     *
+     * @param df
+     * @param indices
+     * @return
+     */
     public SDVariable gatherNd(SDVariable df, SDVariable indices) {
         return gatherNd(null, df, indices);
     }
 
+    /**
+     * TODO doc string
+     *
+     * @param name
+     * @param df
+     * @param indices
+     * @return
+     */
     public SDVariable gatherNd(String name, SDVariable df, SDVariable indices) {
         SDVariable ret = f().gatherNd(df, indices);
         return updateVariableNameAndReference(ret, name);
@@ -4933,6 +4996,9 @@ public class SameDiff {
         return repeat(null, df, axis);
     }
 
+    /**
+     * @see #repeat(String, SDVariable, int)
+     */
     public SDVariable repeat(String name, SDVariable df, int axis) {
         SDVariable ret = f().repeat(df, axis);
         return updateVariableNameAndReference(ret, name);
@@ -7444,10 +7510,27 @@ public class SameDiff {
     }
 
 
+    /**
+     * TODO doc string
+     *
+     * @param x
+     * @param y
+     * @param dimensions
+     * @return
+     */
     public SDVariable dot(SDVariable x, SDVariable y, int... dimensions) {
         return dot(null, x, y, dimensions);
     }
 
+    /**
+     * TODO doc string
+     *
+     * @param name
+     * @param x
+     * @param y
+     * @param dimensions
+     * @return
+     */
     public SDVariable dot(String name, SDVariable x, SDVariable y, int... dimensions) {
         SDVariable ret = f().dot(x, y, dimensions);
         return updateVariableNameAndReference(ret, name);
@@ -7703,16 +7786,35 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
+    /**
+     * TODO: doc string
+     *
+     * @param ix
+     * @param iy
+     * @param dimensions
+     * @return
+     */
     public SDVariable jaccardDistance(SDVariable ix, SDVariable iy, int... dimensions) {
         return jaccardDistance(null, ix, iy, dimensions);
     }
 
+    /**
+     * TODO doc string
+     *
+     * @param name
+     * @param ix
+     * @param iy
+     * @param dimensions
+     * @return
+     */
     public SDVariable jaccardDistance(String name, SDVariable ix, SDVariable iy, int... dimensions) {
         SDVariable result = functionFactory.jaccardDistance(ix, iy, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
     /**
+     * TODO doc string
+     *
      * @param iX
      * @param i_y
      * @param dimensions
@@ -7723,6 +7825,8 @@ public class SameDiff {
     }
 
     /**
+     * TODO doc string
+     *
      * @param iX
      * @param i_y
      * @param dimensions
@@ -7732,6 +7836,7 @@ public class SameDiff {
         return lossCosineSimilarity(generateNewVarName(new LossCosineProximity().opName(), 0), iX, i_y, dimensions);
     }
 
+    // TODO: document all losses
     /**
      * @param iX
      * @param i_y
@@ -7876,33 +7981,92 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
+    /**
+     * TODO
+     *
+     * @param logits
+     * @param weights
+     * @param labels
+     * @param reductionMode
+     * @param labelSmoothing
+     * @return
+     */
     public SDVariable sigmoidCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
                                                     int reductionMode, double labelSmoothing) {
         return sigmoidCrossEntropyWithLogits(null, logits, weights, labels, reductionMode, labelSmoothing);
     }
 
+    /**
+     * TODO
+     *
+     * @param name
+     * @param logits
+     * @param weights
+     * @param labels
+     * @param reductionMode
+     * @param labelSmoothing
+     * @return
+     */
     public SDVariable sigmoidCrossEntropyWithLogits(String name, SDVariable logits, SDVariable weights, SDVariable labels,
                                                     int reductionMode, double labelSmoothing) {
         SDVariable res = f().sigmoidCrossEntropyWithLogits(logits, weights, labels, reductionMode, labelSmoothing);
         return updateVariableNameAndReference(res, name);
     }
 
+    /**
+     * TODO
+     *
+     * @param logits
+     * @param weights
+     * @param labels
+     * @param reductionMode
+     * @param labelSmoothing
+     * @return
+     */
     public SDVariable softmaxCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
                                                     int reductionMode, double labelSmoothing) {
         return softmaxCrossEntropyWithLogits(null, logits, weights, labels, reductionMode, labelSmoothing);
     }
 
+    /**
+     * TODO
+     *
+     * @param name
+     * @param logits
+     * @param weights
+     * @param labels
+     * @param reductionMode
+     * @param labelSmoothing
+     * @return
+     */
     public SDVariable softmaxCrossEntropyWithLogits(String name, SDVariable logits, SDVariable weights, SDVariable labels,
                                                     int reductionMode, double labelSmoothing) {
         SDVariable res = f().softmaxCrossEntropyWithLogits(logits, weights, labels, reductionMode, labelSmoothing);
         return updateVariableNameAndReference(res, name);
     }
 
+    /**
+     * TODO
+     *
+     * @param targets
+     * @param inputs
+     * @param weights
+     * @return
+     */
     public SDVariable weightedCrossEntropyWithLogits(SDVariable targets, SDVariable inputs,
                                                      SDVariable weights) {
         return weightedCrossEntropyWithLogits(null, targets, inputs, weights);
     }
 
+    /**
+     * TODO
+     *
+     * @param name
+     * @param targets
+     * @param inputs
+     * @param weights
+     * @return
+     */
     public SDVariable weightedCrossEntropyWithLogits(String name, SDVariable targets, SDVariable inputs,
                                                      SDVariable weights) {
         SDVariable res = f().weightedCrossEntropyWithLogits(targets, inputs, weights);
