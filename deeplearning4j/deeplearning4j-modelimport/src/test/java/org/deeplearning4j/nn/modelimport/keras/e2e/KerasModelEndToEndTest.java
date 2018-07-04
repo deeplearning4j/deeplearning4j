@@ -85,6 +85,8 @@ public class KerasModelEndToEndTest {
     private static final String H5_EXTENSION = ".h5";
     private static final double EPS = 1E-5;
 
+    private static final boolean SKIP_GRAD_CHECKS = false;
+
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();
 
@@ -528,7 +530,7 @@ public class KerasModelEndToEndTest {
                 compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, nOut, EPS);
             }
 
-            if (checkGradients) {
+            if (checkGradients && ! SKIP_GRAD_CHECKS) {
                 Random r = new Random(12345);
                 INDArray input = getInputs(outputsArchive, tfOrdering)[0];
                 INDArray predictionsDl4j = model.output(input, false);
