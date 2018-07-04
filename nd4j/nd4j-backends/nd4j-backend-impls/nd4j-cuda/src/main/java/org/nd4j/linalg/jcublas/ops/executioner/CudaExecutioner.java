@@ -2595,6 +2595,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Nd4j.getExecutioner().commit();
 
+        //
+        if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
+            try {
+                val list = this.calculateOutputShape(op);
+                if (list.isEmpty())
+                    throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
+
+                for (val shape: list)
+                    op.addOutputArgument(Nd4j.create(shape));
+
+            } catch (Exception e) {
+                throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
+            }
+        }
+
         if (op.opName().equalsIgnoreCase("im2col")) {
             val dtype = Nd4j.dataType();
 
