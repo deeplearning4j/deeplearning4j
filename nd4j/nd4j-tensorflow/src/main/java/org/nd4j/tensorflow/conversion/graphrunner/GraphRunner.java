@@ -4,6 +4,7 @@ import com.github.os72.protobuf351.ByteString;
 import com.github.os72.protobuf351.InvalidProtocolBufferException;
 import com.github.os72.protobuf351.util.JsonFormat;
 import lombok.Getter;
+import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.PointerPointer;
 import org.bytedeco.javacpp.tensorflow;
@@ -15,6 +16,7 @@ import org.tensorflow.framework.GPUOptions;
 import org.tensorflow.framework.NodeDef;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -27,8 +29,6 @@ import static org.bytedeco.javacpp.tensorflow.*;
  * @author Adam Gibson
  */
 public class GraphRunner implements Closeable {
-    //stored temporarily: this should  be null by end of initialization
-    private byte[] graphToUse;
     //the in memory representation parsed from protobuf
     private tensorflow.TF_Graph graph;
     //the conversion between nd4j and tensorflow
@@ -47,12 +47,68 @@ public class GraphRunner implements Closeable {
 
 
     /**
+     * Pass in a graph instance and
+     * the length of the protobuf
+     * that it was instantiated with.
+     * For files this is typically
+     * {@link File#length()},
+     * for byte arrays, this is
+     * byte array.length
+     * and for {@link java.nio.ByteBuffer}
+     * this would be something like the
+     * {@link java.nio.ByteBuffer#capacity()}
+     * @param graph a pointer to the {@link TF_Graph} to use when executing
+     * @param graphDef {@link org.tensorflow.framework.GraphDef} protobuf
+     *                                                          definition containing
+     *                                                          the graph configuration
+     *                                                          for automatically inferring
+     *                                                          things like
+     *                                                          graph inputs and outputs
+     */
+    public GraphRunner(tensorflow.TF_Graph graph,org.tensorflow.framework.GraphDef graphDef) {
+        this.graph = graph;
+        initSessionAndStatusIfNeeded(graphDef);
+
+    }
+
+    /**
      * Initialize with the graph content to use
      * @param graphToUse the raw byte content
      *                   of a protobuf file saved by tensorflow
      */
     public GraphRunner(byte[] graphToUse) {
         this(graphToUse,getAlignedWithNd4j());
+    }
+
+
+    /**
+     * Initialize with the graph content to use
+     * @param filePath path of a protobuf file saved by tensorflow
+     */
+    public GraphRunner(String filePath) {
+        this(filePath,getAlignedWithNd4j());
+    }
+
+
+
+    /**
+     * Initialize with the graph content to use
+     * @param filePath path of a protobuf file saved by tensorflow
+     * @param sessionOptionsConfiguration the session options to use
+     *                                    for running sessions
+     */
+    public GraphRunner(String filePath,org.tensorflow.framework.ConfigProto sessionOptionsConfiguration) {
+        byte[] graphToUse = null;
+
+        try {
+            graphToUse = IOUtils.toByteArray(new File(filePath).toURI());
+            this.graph = conversion.loadGraph(graphToUse);
+            this.protoBufConfigProto = sessionOptionsConfiguration;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unable to parse protobuf",e);
+        }
+
+        initSessionAndStatusIfNeeded(graphToUse);
     }
 
     /**
@@ -63,15 +119,14 @@ public class GraphRunner implements Closeable {
      *                                    for running sessions
      */
     public GraphRunner(byte[] graphToUse,org.tensorflow.framework.ConfigProto sessionOptionsConfiguration) {
-        this.graphToUse = graphToUse;
-
         try {
+            this.graph = conversion.loadGraph(graphToUse);
             this.protoBufConfigProto = sessionOptionsConfiguration;
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to parse protobuf",e);
         }
 
-        initSessionAndStatusIfNeeded();
+        initSessionAndStatusIfNeeded(graphToUse);
     }
 
 
@@ -179,38 +234,33 @@ public class GraphRunner implements Closeable {
         return outputArrays;
     }
 
-    private void initSessionAndStatusIfNeeded() {
-        try {
-            //use the protobuf api to load the graph definition and load the node metadata
-            org.tensorflow.framework.GraphDef graphDef1 = org.tensorflow.framework.GraphDef.parseFrom(graphToUse);
-            inputsForGraph = new LinkedHashSet<>();
-            outputsForGraph = new LinkedHashSet<>();
-            //infer the inputs and outputs for the graph
-            Set<String> seenAsInput = new LinkedHashSet<>();
-            for(int i = 0; i < graphDef1.getNodeCount(); i++) {
-                NodeDef node = graphDef1.getNode(i);
-                if(node.getInputCount() < 1) {
-                    inputsForGraph.add(node.getName());
-                }
 
-                for(int input = 0; input < node.getInputCount(); input++) {
-                    seenAsInput.add(node.getInput(input));
-                }
-            }
-            //find the nodes that were not inputs to any  nodes: these are the outputs
-            for(int i = 0; i < graphDef1.getNodeCount(); i++) {
-                if(!seenAsInput.contains(graphDef1.getNode(i).getName())) {
-                    outputsForGraph.add(graphDef1.getNode(i).getName());
-                }
+
+    private void initSessionAndStatusIfNeeded( org.tensorflow.framework.GraphDef graphDef1 ) {
+        inputsForGraph = new LinkedHashSet<>();
+        outputsForGraph = new LinkedHashSet<>();
+        //infer the inputs and outputs for the graph
+        Set<String> seenAsInput = new LinkedHashSet<>();
+        for(int i = 0; i < graphDef1.getNodeCount(); i++) {
+            NodeDef node = graphDef1.getNode(i);
+            if(node.getInputCount() < 1) {
+                inputsForGraph.add(node.getName());
             }
 
-            //used for random access
-            inputOrder = new ArrayList<>(inputsForGraph);
-            outputOrder = new ArrayList<>(outputsForGraph);
-
-        } catch (InvalidProtocolBufferException e) {
-            e.printStackTrace();
+            for(int input = 0; input < node.getInputCount(); input++) {
+                seenAsInput.add(node.getInput(input));
+            }
         }
+        //find the nodes that were not inputs to any  nodes: these are the outputs
+        for(int i = 0; i < graphDef1.getNodeCount(); i++) {
+            if(!seenAsInput.contains(graphDef1.getNode(i).getName())) {
+                outputsForGraph.add(graphDef1.getNode(i).getName());
+            }
+        }
+
+        //used for random access
+        inputOrder = new ArrayList<>(inputsForGraph);
+        outputOrder = new ArrayList<>(outputsForGraph);
 
 
         //setup the status object to be used for all tensorflow calls
@@ -222,8 +272,6 @@ public class GraphRunner implements Closeable {
         //setup and configure the session, factoring
         //in the ConfigObject as needed
         if(session == null) {
-            graph = conversion.getInitializedGraphForNd4jDevices(graphToUse);
-
             options = TF_NewSessionOptions();
             if(protoBufConfigProto != null) {
                 BytePointer bytePointer = new BytePointer(protoBufConfigProto.toByteArray());
@@ -240,9 +288,16 @@ public class GraphRunner implements Closeable {
 
         }
 
-        //get rid of the graph representation once used
-        graphToUse = null;
+    }
 
+    private void initSessionAndStatusIfNeeded(byte[] graphToUse) {
+        try {
+            //use the protobuf api to load the graph definition and load the node metadata
+            org.tensorflow.framework.GraphDef graphDef1 = org.tensorflow.framework.GraphDef.parseFrom(graphToUse);
+            initSessionAndStatusIfNeeded(graphDef1);
+        } catch (InvalidProtocolBufferException e) {
+            e.printStackTrace();
+        }
     }
 
     public static org.tensorflow.framework.ConfigProto getAlignedWithNd4j() {

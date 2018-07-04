@@ -194,10 +194,9 @@ public class TensorflowConversion {
      * @return the initialized graph
      * @throws IOException
      */
-    public TF_Graph getInitializedGraphForNd4jDevices(String filePath) throws IOException {
+    public TF_Graph loadGraph(String filePath) throws IOException {
         byte[] bytes = Files.readAllBytes(Paths.get(filePath));
-        bytes = setDeviceForGraphDef(bytes);
-        return getInitializedGraphForNd4jDevices(bytes);
+        return loadGraph(bytes);
     }
 
     /**
@@ -225,44 +224,6 @@ public class TensorflowConversion {
     }
 
 
-    /**
-     * Returns a byte array of {@link GraphDef}
-     * initialized with the current device for the thread.
-     *
-     * Depending on the active {@link Nd4j#getBackend()}
-     * the device will either be the gpu pinned to the current thread
-     * or the cpu
-     * @param bytes the bytes of {@link GraphDef} protobuf
-     *              to modify
-     * @return the modified {@link GraphDef} definition with raw bytes
-     * @throws IOException
-     */
-    public byte[] setDeviceForGraphDef(byte[] bytes) throws IOException {
-        GraphDef graph = new GraphDef();
-
-        if (!graph.ParseFromArray(new BytePointer(bytes), bytes.length)) {
-            throw new IOException("Could not import GraphDef");
-        }
-
-        Integer deviceForThread = Nd4j.getAffinityManager().getDeviceForThread(Thread.currentThread());
-        String deviceName = null;
-        //gpu
-        if(Nd4j.getBackend().getClass().getName().contains("JCublasBackend")) {
-            deviceName = "/gpu:" + deviceForThread;
-        }
-        else {
-            deviceName = "/cpu:" + deviceForThread;
-        }
-
-
-        SetDefaultDevice(deviceName, graph);
-        ByteBuffer bytePointer = graph.asByteBuffer();
-        byte[] ret = new byte[bytePointer.capacity()];
-        bytePointer.get(ret);
-        return ret;
-
-    }
-
 
     /**
      * Get an initialized {@link TF_Graph}
@@ -279,7 +240,7 @@ public class TensorflowConversion {
      * @throws IOException
      */
 
-    public TF_Graph getInitializedGraphForNd4jDevices(byte[] content) {
+    public TF_Graph loadGraph(byte[] content) {
         byte[] toLoad = content;
         TF_Buffer graph_def = TF_NewBufferFromString(new BytePointer(toLoad), content.length);
         TF_Status status = TF_NewStatus();

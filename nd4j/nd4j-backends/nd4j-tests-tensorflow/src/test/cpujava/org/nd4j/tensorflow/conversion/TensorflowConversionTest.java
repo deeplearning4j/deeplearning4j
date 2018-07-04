@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.tensorflow.conversion.TensorflowConversion;
 import org.tensorflow.framework.GraphDef;
 
 import static org.junit.Assert.assertEquals;
@@ -54,7 +53,7 @@ public class TensorflowConversionTest {
         TensorflowConversion tensorflowConversion = new TensorflowConversion();
         byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
         //byte[] content = Files.readAllBytes(Paths.get(new File("/home/agibsonccc/code/dl4j-test-resources/src/main/resources/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").toURI()));
-        tensorflow.TF_Graph initializedGraphForNd4jDevices = tensorflowConversion.getInitializedGraphForNd4jDevices(content);
+        tensorflow.TF_Graph initializedGraphForNd4jDevices = tensorflowConversion.loadGraph(content);
         assertNotNull(initializedGraphForNd4jDevices);
 
         String deviceName = tensorflowConversion.defaultDeviceForThread();
@@ -66,8 +65,7 @@ public class TensorflowConversionTest {
         }
 
         byte[] content2 = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
-        byte[] content3 = tensorflowConversion.setDeviceForGraphDef(content2);
-        GraphDef graphDef1 = GraphDef.parseFrom(content3);
+        GraphDef graphDef1 = GraphDef.parseFrom(content2);
         for(int i = 0; i < graphDef1.getNodeCount(); i++)
             assertEquals(deviceName,graphDef1.getNode(i).getDevice());
         System.out.println(graphDef1);
