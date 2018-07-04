@@ -1,0 +1,42 @@
+{
+  "excludes": [
+    "abstract"
+  ],
+  "indices": [
+    {
+      "page": "samediff/index.md",
+      "module_index": "samediff"
+    },
+    {
+      "page": "functions/index.md",
+      "module_index": "functions"
+    }
+  ],
+  "pages": [
+    {
+      "page": "samediff/variables.md",
+      "class": [
+        "samediff/SDVariable.java"
+      ]
+    },
+    {
+      "page": "samediff/samediff.md",
+      "class": [
+        "samediff/SameDiff.java"
+      ]
+    },
+    {
+      "page": "samediff/execution.md",
+      "class": [
+        "samediff/SameDiffOpExecutioner.java"
+      ]
+    },
+    {
+      "page": "functions/function-factory.md",
+      "class": [
+        "functions/DifferentialFunctionFactory.java"
+      ]
+    }
+  ]
+}
+

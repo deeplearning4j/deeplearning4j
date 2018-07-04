@@ -1255,7 +1255,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         properties.put(Nd4jEnvironment.HOST_FREE_MEMORY_KEY, Pointer.maxBytes() - Pointer.totalBytes());
 
         // fill bandwidth information
-        properties.put(Nd4jEnvironment.MEMORY_BANDWIDTH_KEY, PerformanceTracker.getInstance().getCurrentBandwidth());
+        /*
+        Note: Environment information is logged as part of ND4J initialization... but PerformanceTracker required
+        ND4J init to be completed before it can be initialized. Hence we can get a null PerformanceTracker when
+        OpExecutioner.printEnvironmentInformation() is called as part of ND4J class initialization - even
+        though PerformanceTracker.getInstance() refers to a static final field (as it may not yet be initialized)
+         */
+        if(PerformanceTracker.getInstance() != null) {
+            properties.put(Nd4jEnvironment.MEMORY_BANDWIDTH_KEY, PerformanceTracker.getInstance().getCurrentBandwidth());
+        }
 
         return properties;
     }

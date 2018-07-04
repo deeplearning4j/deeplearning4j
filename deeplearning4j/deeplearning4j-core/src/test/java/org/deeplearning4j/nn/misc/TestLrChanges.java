@@ -59,7 +59,9 @@ public class TestLrChanges extends BaseDL4JTest {
         conf2.setIterationCount(conf.getIterationCount());
         net2.setParams(net.params().dup());
 
+        assertEquals(0.1, net.getLearningRate(0).doubleValue(), 0.0);
         net.setLearningRate(0, 0.5);  //Set LR for layer 0 to 0.5
+        assertEquals(0.5, net.getLearningRate(0).doubleValue(), 0.0);
 
         assertEquals(conf, conf2);
         assertEquals(conf.toJson(), conf2.toJson());
@@ -222,7 +224,9 @@ public class TestLrChanges extends BaseDL4JTest {
         conf2.setIterationCount(conf.getIterationCount());
         net2.setParams(net.params().dup());
 
+        assertEquals(0.1, net.getLearningRate("0").doubleValue(), 0.0);
         net.setLearningRate("0", 0.5);  //Set LR for layer 0 to 0.5
+        assertEquals(0.5, net.getLearningRate("0").doubleValue(), 0.0);
 
         assertEquals(conf, conf2);
         assertEquals(conf.toJson(), conf2.toJson());

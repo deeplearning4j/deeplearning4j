@@ -501,6 +501,11 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer) {
+
+    }
+
+    @Override
     public INDArray createFromNpyPointer(Pointer pointer) {
         return null;
     }
@@ -620,7 +625,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
 
     @Override
-    public INDArray empty() {
+    public INDArray empty(DataBuffer.Type type) {
         throw new UnsupportedOperationException();
     }
 }

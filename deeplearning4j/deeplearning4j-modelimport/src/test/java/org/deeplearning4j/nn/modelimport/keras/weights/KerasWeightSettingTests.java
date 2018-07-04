@@ -154,6 +154,12 @@ public class KerasWeightSettingTests {
 
         INDArray bias = model.getLayer(0).getParam("b");
         assert (bias.length() == 6);
+
+        INDArray input = Nd4j.ones(1, 5, 3, 4);
+        INDArray output = model.output(input);
+
+        assert Arrays.equals(output.shape(), new long[] {1, 6, 1, 2});
+
         logSuccess(modelPath);
     }
 

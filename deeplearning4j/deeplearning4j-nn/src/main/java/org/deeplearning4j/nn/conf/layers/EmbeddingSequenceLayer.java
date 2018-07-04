@@ -95,7 +95,7 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
 
         private boolean hasBias = false;
         private int inputLength = 1;
-        private boolean inferInputLength = false;
+        private boolean inferInputLength = true;
 
         /**
          * If true: include bias parameters in the layer. False (default): no bias.

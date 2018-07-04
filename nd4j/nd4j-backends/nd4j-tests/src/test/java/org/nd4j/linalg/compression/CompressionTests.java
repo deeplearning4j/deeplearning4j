@@ -275,6 +275,8 @@ public class CompressionTests extends BaseNd4jTest {
         assertNotEquals(null, compressed.shapeInfoDataBuffer());
         assertTrue(compressed.isCompressed());
 
+        //Nd4j.getExecutioner().commit();
+
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compressed);
 
         assertEquals(exp, decomp);
