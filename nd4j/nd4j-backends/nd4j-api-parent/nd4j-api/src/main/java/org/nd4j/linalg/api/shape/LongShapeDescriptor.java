@@ -72,9 +72,9 @@ public class LongShapeDescriptor {
     public int hashCode() {
         int result = (int) order;
 
-        result = 31 * result + Long.hashCode(offset);
-        result = 31 * result + Long.hashCode(ews);
-        result = 31 * result + Long.hashCode(extras);
+        result = 31 * result + longHashCode(offset);
+        result = 31 * result + longHashCode(ews);
+        result = 31 * result + longHashCode(extras);
         result = 31 * result + Arrays.hashCode(shape);
         result = 31 * result + Arrays.hashCode(stride);
         return result;
@@ -95,6 +95,10 @@ public class LongShapeDescriptor {
         return result;
     }
 
+    private int longHashCode(long v) {
+        // impl from j8
+        return (int)(v ^ (v >>> 32));
+    }
 
     public static LongShapeDescriptor fromShapeDescriptor(@NonNull ShapeDescriptor descriptor) {
         return new LongShapeDescriptor(ArrayUtil.toLongArray(descriptor.getShape()), ArrayUtil.toLongArray(descriptor.getStride()), descriptor.getOffset(), descriptor.getEws(), descriptor.getOrder(), descriptor.getExtras());
