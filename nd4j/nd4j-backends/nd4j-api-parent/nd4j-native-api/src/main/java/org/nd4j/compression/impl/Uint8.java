@@ -45,8 +45,8 @@ public class Uint8 extends AbstractCompressor {
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer,
-                        DataBuffer.TypeEx.UINT8);
+        val t = getBufferTypeEx(buffer);
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(t, buffer, DataBuffer.TypeEx.UINT8);
         return result;
     }
 

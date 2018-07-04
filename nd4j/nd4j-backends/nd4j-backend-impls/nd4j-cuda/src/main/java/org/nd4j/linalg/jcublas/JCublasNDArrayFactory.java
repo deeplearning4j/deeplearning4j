@@ -1476,7 +1476,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             if (target instanceof CompressedDataBuffer) {
                 val size = ((CompressedDataBuffer) target).getCompressionDescriptor().getCompressedLength();
                 dstPtr = ws.alloc(size, MemoryKind.DEVICE, DataBuffer.Type.HALF, false);
-                nativeOps.memcpyAsync(dstPtr, target.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
+                //nativeOps.memcpyAsync(dstPtr, target.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
             }
         } else {
             // if true - we're decompressing from host memory
@@ -1494,8 +1494,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                 log.info("Replacing target ptr");
                 val size = ((CompressedDataBuffer) target).getCompressionDescriptor().getCompressedLength();
                 dstPtr = nativeOps.mallocDevice(size, null, 0);
-                nativeOps.memcpyAsync(dstPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
-                stream.synchronize();
+                //nativeOps.memcpyAsync(dstPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
+                //stream.synchronize();
             } else
                 dstPtr = AtomicAllocator.getInstance().getPointer(target);
         }
@@ -1564,7 +1564,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             buffer = Nd4j.createBuffer(descriptor.getNumberOfElements(), false);
 
             AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(buffer);
-            point.tickHostWrite();
+            point.tickDeviceWrite();
         }
 
         convertDataEx(typeSrc, source, typeDst, buffer);
