@@ -2253,5 +2253,13 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     }
 
+    @Override
+    public long[] shapeInfoJava() {
+        return javaShapeInformation;
+    }
 
+    @Override
+    public DataBuffer.Type dataType() {
+        return data().dataType();
+    }
 }

@@ -3975,7 +3975,11 @@ public class Nd4j {
      * @return
      */
     public static INDArray empty() {
-        val ret = INSTANCE.empty();
+        return empty(Nd4j.dataType());
+    }
+
+    public static INDArray empty(DataBuffer.Type type) {
+        val ret = INSTANCE.empty(type);
         logCreationIfNecessary(ret);
         return ret;
     }

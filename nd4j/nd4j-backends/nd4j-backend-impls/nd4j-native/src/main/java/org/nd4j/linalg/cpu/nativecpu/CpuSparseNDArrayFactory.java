@@ -625,7 +625,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
 
     @Override
-    public INDArray empty() {
+    public INDArray empty(DataBuffer.Type type) {
         throw new UnsupportedOperationException();
     }
 }
