@@ -807,19 +807,22 @@ NDArray<T>* NDArrayFactory<T>::simpleMMul(const NDArray<T>* a, const NDArray<T>*
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArrayFactory<T>::batchedMmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>* y, nd4j::NDArray<T>* z, const bool transX, const bool transY) {
+void NDArrayFactory<T>::matmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>* y, nd4j::NDArray<T>* z, const bool transX, const bool transY) {
+   
+    int xRank = x->rankOf();
+    int yRank = y->rankOf();
 
-    std::vector<Nd4jLong> outShape = ShapeUtils<T>::evalShapeForBatchedMmul(x->getShapeInfo(), y->getShapeInfo(), transX, transY);
+    std::vector<Nd4jLong> outShape = ShapeUtils<T>::evalShapeForMatmul(x->getShapeInfo(), y->getShapeInfo(), transX, transY);
     if(!z->isSameShape(outShape)) {
-        nd4j_printf("NDArrayFactory::batchedMmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils<T>::shapeAsString(z).c_str(), ShapeUtils<T>::shapeAsString(outShape).c_str());
+        nd4j_printf("NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils<T>::shapeAsString(z).c_str(), ShapeUtils<T>::shapeAsString(outShape).c_str());
         throw std::invalid_argument("");       
     }
-
-    const int rank = x->rankOf();
-    NDArray<T>* xT(const_cast<NDArray<T>*>(x)), *yT(const_cast<NDArray<T>*>(y));
+        
+    NDArray<T>* xT(const_cast<NDArray<T>*>(x)), *yT(const_cast<NDArray<T>*>(y)), *zT(z);
     
     if(transX || transY) {
         
+        const int rank = xRank >= yRank ? xRank : yRank;
         std::vector<int> permut(rank);
         for (int i = 0; i < rank-2; ++i)
             permut[i] = i;        
@@ -833,17 +836,24 @@ void NDArrayFactory<T>::batchedMmul(const nd4j::NDArray<T>* x, const nd4j::NDArr
             yT = y->permute(permut);
     }
 
-    if(rank == 2) {
-        mmulHelper(xT, yT, z, (T)1., (T)0.);        
+    if(xRank <= 2 && yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D),  matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
+
+        if(xRank == 1 || yRank == 2) {   // reduce vector-matrix to matrix-matrix case
+            xT = x->reshape(x->ordering(), {1, x->lengthOf()}); // please note x is not transposed in this case (since xRank=1)
+            zT = z->reshape(z->ordering(), {1, z->lengthOf()});
+        }
+        
+        mmulHelper(xT, yT, zT, (T)1., (T)0.);        
     }
-    else {
-        const int batchRank = rank - 2;    
+    else {  // rest cases -  batched mmul
+        
+        const int batchRank = xRank - 2;    
         std::vector<int> dimsToExclude(batchRank);
         for(int i = 0; i < batchRank; ++i)
             dimsToExclude[i] = i;
 
         const Nd4jLong numOfSubArrs = ShapeUtils<T>::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
-        Nd4jLong idxRanges[2 * rank];
+        Nd4jLong idxRanges[2 * xRank];
 
 #pragma omp parallel for schedule(guided) private(idxRanges)
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
@@ -851,7 +861,7 @@ void NDArrayFactory<T>::batchedMmul(const nd4j::NDArray<T>* x, const nd4j::NDArr
             ShapeUtils<T>::evalIdxRangesForSubArr(i, xT->getShapeInfo(), dimsToExclude, idxRanges);
             NDArray<T> xSubArr = (*xT)(idxRanges, false);
             NDArray<T> ySubArr = (*yT)(idxRanges, false);
-            NDArray<T> zSubArr = (*z)(idxRanges, false);
+            NDArray<T> zSubArr = (*zT)(idxRanges, false);
             mmulHelper(&xSubArr, &ySubArr, &zSubArr, (T)1., (T)0.);
         }
     }
@@ -860,6 +870,8 @@ void NDArrayFactory<T>::batchedMmul(const nd4j::NDArray<T>* x, const nd4j::NDArr
         delete xT;
     if(yT != y)
         delete yT;
+    if(zT != z)
+        delete zT;
 }
 
 

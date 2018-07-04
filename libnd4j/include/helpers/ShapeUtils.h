@@ -103,10 +103,10 @@ namespace nd4j {
         static std::vector<Nd4jLong> composeShapeUsingDimsAndIdx(const std::vector<int>& dimsAndIdx);
 
         /**
-        *  x * y = c,  evaluate shape for array resulting from mmul operation, corresponds to case when input arrays have the same rank and rank is >= 2, outer (batch) dimensions (that is 0,1,...,rank-3) of input arrays should match 
-        *  also this method works when both ranks = 2
+        *  x * y = c,  evaluate shape for array resulting from mmul operation
+        *  possible cases: dot product (xRank=yRank=1), matrix-vector product (xRank=2, yRank=1), vector-matrix product (xRank=1, yRank=2), matrix-matrix product (xRank=yRank and rank >=2)
         */
-        static std::vector<Nd4jLong> evalShapeForBatchedMmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY);
+        static std::vector<Nd4jLong> evalShapeForMatmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY);
 
         
         /**

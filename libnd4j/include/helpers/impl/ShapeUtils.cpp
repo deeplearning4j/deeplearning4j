@@ -897,39 +897,60 @@ std::vector<Nd4jLong> ShapeUtils<T>::composeShapeUsingDimsAndIdx(const std::vect
 
 ////////////////////////////////////////////////////////////////////////////////
 template<typename T>
-std::vector<Nd4jLong> ShapeUtils<T>::evalShapeForBatchedMmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY) {
+std::vector<Nd4jLong> ShapeUtils<T>::evalShapeForMatmul(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const bool transX, const bool transY) {
 
     const int xRank = xShapeInfo[0];
     const int yRank = yShapeInfo[0];
-        
-    
-    // ******* input validation ******* //
-    if(xRank != yRank) {
-        nd4j_printf("ShapeUtils::evalShapeForBatchedMmul static method: the ranks of arrays must be the same, but got xRank = %i and yRank = %i ! \n", xRank, yRank);
-        throw std::invalid_argument("");
-    }
-
-    if(xRank < 2) {
-        nd4j_printf("ShapeUtils::evalShapeForBatchedMmul static method: the ranks of arrays must be >= 2, but got xRank = %i and yRank = %i ! \n", xRank, yRank);
-        throw std::invalid_argument("");
-    }
 
     const Nd4jLong x0Dim = transX ? xShapeInfo[xRank]   : xShapeInfo[xRank-1];
     const Nd4jLong y0Dim = transY ? yShapeInfo[yRank]   : yShapeInfo[yRank-1];
     const Nd4jLong x1Dim = transX ? xShapeInfo[xRank-1] : xShapeInfo[xRank];
     const Nd4jLong y1Dim = transY ? yShapeInfo[yRank-1] : yShapeInfo[yRank];
+    
+
+    if(xRank == 1 && yRank == 1) {   // dot case, output is vector with length = 1
+        if(xShapeInfo[1] != yShapeInfo[1]) {
+            nd4j_printf("ShapeUtils::evalShapeForMatmul method: since input arrays are vectors they must have the same length, but got x length = %i, y length = %i !", xShapeInfo[1], yShapeInfo[1]); 
+            throw std::invalid_argument("");
+        }
+        return std::vector<Nd4jLong>({1});
+    }
+
+
+    if(xRank == 1 && yRank == 2) {  // vector x matrix, i.e. [4] x [4,5] = [5], output is vector
+        if(xShapeInfo[1] != y0Dim) {
+            nd4j_printf("ShapeUtils::evalShapeForMatmul method: input arrays have inconsistent shapes for vector-matrix product: x %s, y %s !", ShapeUtils<T>::shapeAsString(xShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(yShapeInfo).c_str());
+            throw std::invalid_argument("");
+        }
+        return std::vector<Nd4jLong>({y1Dim});
+    }
+
+
+    if(xRank == 2 && yRank == 1) {  // matrix x vector , i.e. [4,5] x [5] = [4], output is vector
+        if(x1Dim != yShapeInfo[1]) {
+            nd4j_printf("ShapeUtils::evalShapeForMatmul method: input arrays have inconsistent shapes for vector-matrix product: x %s, y %s !", ShapeUtils<T>::shapeAsString(xShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(yShapeInfo).c_str());
+            throw std::invalid_argument("");
+        }        
+        return std::vector<Nd4jLong>({x0Dim});
+    }
+
+    
+    // rest cases - usual 2Dx2D or batched mmul    
+    if(xRank != yRank) {
+        nd4j_printf("ShapeUtils::evalShapeForMatmul static method: the ranks of arrays must be the same, but got xRank = %i and yRank = %i ! \n", xRank, yRank);
+        throw std::invalid_argument("");
+    }   
 
     if(x1Dim != y0Dim) {
-        nd4j_printf("ShapeUtils::evalShapeForBatchedMmul static method: input shapes are inconsistent: xDim %i != yDim %i \n", x1Dim, y0Dim);
+        nd4j_printf("ShapeUtils::evalShapeForMatmul static method: input shapes are inconsistent: xDim %i != yDim %i \n", x1Dim, y0Dim);
         throw std::invalid_argument("");       
     }
 
     for(int i = 0; i < xRank - 2; ++i)
         if(xShapeInfo[i+1] != yShapeInfo[i+1]) {
-            nd4j_printf("ShapeUtils::evalShapeForBatchedMmul static method: input shapes are inconsistent: xShape = %s, yShape = %s ! \n", ShapeUtils<T>::shapeAsString(xShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(yShapeInfo).c_str());
+            nd4j_printf("ShapeUtils::evalShapeForMatmul static method: input shapes are inconsistent: xShape = %s, yShape = %s ! \n", ShapeUtils<T>::shapeAsString(xShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(yShapeInfo).c_str());
             throw std::invalid_argument("");       
-        }
-    // ******* end of input validation ******* //
+        }    
 
     std::vector<Nd4jLong> cShape(xRank);
 
