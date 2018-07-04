@@ -2,6 +2,7 @@ package org.nd4j.jita.workspace;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -143,16 +144,13 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 if (workspaceConfiguration.getPolicyMirroring() == MirroringPolicy.HOST_ONLY)
                     return null;
 
-                PagedPointer ptr = workspace.getDevicePointer().withOffset(prevOffset, numElements);
+                val ptr = workspace.getDevicePointer().withOffset(prevOffset, numElements);
 
                 if (isDebug.get())
                     log.info("Workspace [{}] device_{}: alloc array of {} bytes, capacity of {} elements; prevOffset: {}; newOffset: {}; size: {}; address: {}", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements, prevOffset, deviceOffset.get(), currentSize.get(), ptr.address());
 
                 if (initialize) {
-                    //CudaContext context = AtomicAllocator.getInstance().getMemoryHandler().getCudaContext();
-
-                    CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-
+                    val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
                     int ret = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, requiredMemory, 0, context.getSpecialStream());
                     if (ret == 0)
@@ -205,8 +203,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                             return pointer;
                         } else {
                             pinnedCount.incrementAndGet();
-                            //
-                            //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
+
                             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
                             //pointer.setLeaked(true);
                             pointer.isLeaked();
@@ -228,7 +225,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                 PagedPointer ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
 
-                if (initialize && workspaceConfiguration.getPolicyMirroring() == MirroringPolicy.HOST_ONLY)
+                // && workspaceConfiguration.getPolicyMirroring() == MirroringPolicy.HOST_ONLY
+                if (initialize)
                     Pointer.memset(ptr, 0, requiredMemory);
 
                 return ptr;

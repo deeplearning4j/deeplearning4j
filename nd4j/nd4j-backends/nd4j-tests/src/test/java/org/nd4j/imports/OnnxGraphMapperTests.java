@@ -39,7 +39,6 @@ public class OnnxGraphMapperTests {
             assertEquals(1,sameDiff.functions().length);
             System.out.println(sameDiff);
         }
-
     }
 
     @Test
@@ -47,16 +46,5 @@ public class OnnxGraphMapperTests {
         val loadedFile = new ClassPathResource("onnx_graphs/sm_cnn.onnx").getInputStream();
         val mapped = OnnxGraphMapper.getInstance().importGraph(loadedFile);
         System.out.println(mapped.variables());
-    }
-
-
-
-
-
-    @Test
-    public void testLoadResnet() throws Exception {
-        val loadedFile = new ClassPathResource("onnx_graphs/resnet50/model.pb").getInputStream();
-
-        val mapped = OnnxGraphMapper.getInstance().importGraph(loadedFile);
     }
 }

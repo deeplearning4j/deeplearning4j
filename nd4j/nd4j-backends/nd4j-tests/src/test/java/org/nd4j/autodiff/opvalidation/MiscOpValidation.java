@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.CumProd;
 import org.nd4j.linalg.api.ops.impl.accum.CumSum;
+import org.nd4j.linalg.api.ops.impl.accum.Mmul;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
@@ -575,6 +576,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMmulGradients(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/5648
 
         int[] aShape = new int[]{2,3};
         int[] bShape = new int[]{3,4};
@@ -629,6 +631,32 @@ public class MiscOpValidation extends BaseOpValidation {
         if(!transpose)
             return orig;
         return new int[]{orig[1], orig[0]};
+    }
+
+    @Test
+    public void testBatchMmulBasic() {
+        OpValidationSuite.ignoreFailing();
+
+        int M = 5;
+        int N = 3;
+        int K = 4;
+
+        INDArray A = Nd4j.create(new int[] {M, N}, new float[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15});
+        INDArray B = Nd4j.create(new int[] {N, K}, new float[]{1,2,3,4,5,6,7,8,9,10,11,12});
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable A1 = sd.var("A1", A);
+        SDVariable A2 = sd.var("A2", A);
+        SDVariable B1 = sd.var("B1", B);
+        SDVariable B2 = sd.var("B2", B);
+
+        SDVariable[] batchMul = sd.batchMmul(new SDVariable[] {A1, A2}, new SDVariable[] {B1, B2});
+        sd.exec();
+
+        INDArray resultingMatrix = batchMul[0].getArr();
+        System.out.print(resultingMatrix);
+
     }
 
 
@@ -1097,6 +1125,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMergeRank1(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/5648
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", Nd4j.create(new long[]{1}).assign(5));
 

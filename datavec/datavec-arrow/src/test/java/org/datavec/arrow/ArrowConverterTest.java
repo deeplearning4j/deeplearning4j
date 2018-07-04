@@ -18,10 +18,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.LongWritable;
-import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.*;
 import org.datavec.arrow.recordreader.ArrowRecordReader;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.junit.Rule;
@@ -38,8 +35,10 @@ import java.io.IOException;
 import java.util.*;
 
 import static java.nio.channels.Channels.newChannel;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class ArrowConverterTest {
 
@@ -48,6 +47,40 @@ public class ArrowConverterTest {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
+
+    @Test
+    public void testArrowColumnINDArray() {
+        Schema.Builder schema = new Schema.Builder();
+        List<String> single = new ArrayList<>();
+        int numCols = 2;
+        INDArray arr = Nd4j.create(4);
+        for(int i = 0; i < numCols; i++) {
+            schema.addColumnNDArray(String.valueOf(i),new long[]{1,4});
+            single.add(String.valueOf(i));
+        }
+
+        Schema buildSchema = schema.build();
+        List<List<Writable>> list = new ArrayList<>();
+        List<Writable> firstRow = new ArrayList<>();
+        for(int i = 0 ; i < numCols; i++) {
+            firstRow.add(new NDArrayWritable(arr));
+        }
+
+        list.add(firstRow);
+
+        List<FieldVector> fieldVectors = ArrowConverter.toArrowColumns(bufferAllocator, buildSchema, list);
+        assertEquals(numCols,fieldVectors.size());
+        assertEquals(1,fieldVectors.get(0).getValueCount());
+        assertFalse(fieldVectors.get(0).isNull(0));
+
+        ArrowWritableRecordBatch arrowWritableRecordBatch = ArrowConverter.toArrowWritables(fieldVectors, buildSchema);
+        assertEquals(1,arrowWritableRecordBatch.size());
+
+        Writable writable = arrowWritableRecordBatch.get(0).get(0);
+        assertTrue(writable instanceof NDArrayWritable);
+        NDArrayWritable ndArrayWritable = (NDArrayWritable) writable;
+        assertEquals(arr,ndArrayWritable.get());
+    }
 
     @Test
     public void testArrowColumnString() {

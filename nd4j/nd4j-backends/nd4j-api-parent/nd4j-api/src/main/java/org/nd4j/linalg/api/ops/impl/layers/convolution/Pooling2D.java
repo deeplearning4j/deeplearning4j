@@ -85,6 +85,8 @@ public class Pooling2D extends DynamicCustomOp {
     }
 
     private void addArgs() {
+        val t = config.getType();
+
         addIArgument(config.getKH());
         addIArgument(config.getKW());
         addIArgument(config.getSH());
@@ -94,7 +96,7 @@ public class Pooling2D extends DynamicCustomOp {
         addIArgument(config.getDH());
         addIArgument(config.getDW());
         addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));
-        addIArgument((config.getType() == Pooling2DType.AVG) ? config.getDivisor().ordinal() : (int)config.getExtra());
+        addIArgument((t == Pooling2DType.AVG) ? config.getDivisor().ordinal() : (int)config.getExtra());
         addIArgument(ArrayUtil.fromBoolean(config.isNHWC()));
     }
 
@@ -160,7 +162,7 @@ public class Pooling2D extends DynamicCustomOp {
                 .type(null)
                 .isSameMode(isSameMode)
                 .kH(kH.intValue())
-                .kH(kW.intValue())
+                .kW(kW.intValue())
                 .pH(padding.get(0).intValue())
                 .pW(padding.get(1).intValue())
                 .virtualWidth(1)

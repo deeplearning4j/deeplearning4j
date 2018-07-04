@@ -1,6 +1,8 @@
 package org.nd4j.list;
 
+import lombok.NonNull;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -22,14 +24,16 @@ public class NDArrayList extends  BaseNDArrayList<Double>  {
     private int size;
 
     public NDArrayList() {
-        this.container = Nd4j.create(10);
+        this.container = Nd4j.create(10L);
     }
 
     /**
      * Specify the underlying ndarray for this list.
      * @param container the underlying array.
      */
-    public NDArrayList(INDArray container) {
+    public NDArrayList(@NonNull INDArray container) {
+        Preconditions.checkState(container == null || container.rank() == 1, "Container must be rank 1: is rank %s",
+                container == null ? 0 : container.rank());
         this.container = container;
     }
 
@@ -83,10 +87,10 @@ public class NDArrayList extends  BaseNDArrayList<Double>  {
     @Override
     public boolean add(Double aDouble) {
         if(container == null) {
-            container = Nd4j.create(10);
+            container = Nd4j.create(10L);
         }
         else if(size == container.length()) {
-            INDArray newContainer = Nd4j.create(container.length() * 2);
+            INDArray newContainer = Nd4j.create(container.length() * 2L);
             newContainer.put(new INDArrayIndex[]{NDArrayIndex.interval(0,container.length())},container);
             container = newContainer;
         }
@@ -101,7 +105,7 @@ public class NDArrayList extends  BaseNDArrayList<Double>  {
         if(idx < 0)
             return false;
         container.put(new INDArrayIndex[]{NDArrayIndex.interval(idx,container.length())},container.get(NDArrayIndex.interval(idx + 1,container.length())));
-        container = container.reshape(1,size);
+        container = container.reshape(size);
         return true;
     }
 
@@ -291,10 +295,10 @@ public class NDArrayList extends  BaseNDArrayList<Double>  {
 
     private void growCapacity(int idx) {
         if(container == null) {
-            container = Nd4j.create(10);
+            container = Nd4j.create(10L);
         }
         else if(idx >= container.length()) {
-            val max = Math.max(container.length() * 2,idx);
+            long max = Math.max(container.length() * 2L,idx);
             INDArray newContainer = Nd4j.create(max);
             newContainer.put(new INDArrayIndex[]{NDArrayIndex.interval(0,container.length())},container);
             container = newContainer;
@@ -311,16 +315,16 @@ public class NDArrayList extends  BaseNDArrayList<Double>  {
 
     private void moveBackward(int index) {
         int numMoved = size - index - 1;
-        INDArrayIndex[] first = new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.interval(index  ,index  + numMoved)};
-        INDArrayIndex[] getRange = new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.interval(index + 1 ,index + 1  + numMoved)};
+        INDArrayIndex[] first = new INDArrayIndex[] {NDArrayIndex.interval(index  ,index  + numMoved)};
+        INDArrayIndex[] getRange = new INDArrayIndex[] {NDArrayIndex.interval(index + 1 ,index + 1  + numMoved)};
         container.put(first,container.get(getRange));
     }
 
     private void moveForward(int index) {
         int numMoved = size - index - 1;
-        INDArrayIndex[] getRange = new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.interval(index,index + numMoved)};
+        INDArrayIndex[] getRange = new INDArrayIndex[] {NDArrayIndex.interval(index,index + numMoved)};
         INDArray get = container.get(getRange).dup();
-        INDArrayIndex[] first = new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.interval(index + 1,index + 1 + get.length())};
+        INDArrayIndex[] first = new INDArrayIndex[] {NDArrayIndex.interval(index + 1,index + 1 + get.length())};
         container.put(first,get);
     }
 

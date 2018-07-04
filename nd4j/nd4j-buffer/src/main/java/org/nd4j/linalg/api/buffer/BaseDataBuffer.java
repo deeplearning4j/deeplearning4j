@@ -298,6 +298,23 @@ public abstract class BaseDataBuffer implements DataBuffer {
         //wrappedBuffer = pointer.asByteBuffer();
     }
 
+    public BaseDataBuffer(long[] data, boolean copy, MemoryWorkspace workspace) {
+        allocationMode = AllocUtil.getAllocationModeFromContext();
+        length = data.length;
+        underlyingLength = data.length;
+        attached = true;
+        parentWorkspace = workspace;
+
+        initTypeAndSize();
+
+        //log.info("Allocating FloatPointer from array of {} elements", data.length);
+
+        pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asLongPointer().put(data);
+        workspaceGenerationId = workspace.getGenerationId();
+        indexer = LongIndexer.create((LongPointer) pointer);
+        //wrappedBuffer = pointer.asByteBuffer();
+    }
+
 
     /**
      *
@@ -776,6 +793,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
+    @Override
+    public void setData(long[] data) {
+        for (int i = 0; i < data.length; i++) {
+            put(i, data[i]);
+        }
+    }
 
     @Override
     public void assign(long[] indices, double[] data, boolean contiguous, long inc) {
@@ -825,10 +848,26 @@ public abstract class BaseDataBuffer implements DataBuffer {
         assign(value, 0);
     }
 
+    @Override
+    public double[] getDoublesAt(long offset, long inc, int length) {
+        if (offset + length > length())
+            length -= offset;
+
+        double[] ret = new double[length];
+        for (int i = 0; i < length; i++) {
+            ret[i] = getDouble(i + offset);
+        }
+        return ret;
+    }
 
     @Override
     public double[] getDoublesAt(long offset, int length) {
         return getDoublesAt(offset, 1, length);
+    }
+
+    @Override
+    public float[] getFloatsAt(long offset, int length) {
+        return getFloatsAt(offset, 1, length);
     }
 
     @Override
@@ -842,6 +881,37 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return ret;
     }
 
+    @Override
+    public long[] getLongsAt(long offset, int length) {
+        return getLongsAt(offset, 1, length);
+    }
+
+    @Override
+    public long[] getLongsAt(long offset, long inc, int length) {
+        if (offset + length > length())
+            length -= offset;
+        long[] ret = new long[length];
+        for (int i = 0; i < length; i++) {
+            ret[i] = getLong(i + offset);
+        }
+        return ret;
+    }
+
+    @Override
+    public int[] getIntsAt(long offset, int length) {
+        return getIntsAt(offset, 1, length);
+    }
+
+    @Override
+    public int[] getIntsAt(long offset, long inc, int length) {
+        if (offset + length > length())
+            length -= offset;
+        int[] ret = new int[length];
+        for (int i = 0; i < length; i++) {
+            ret[i] = getInt(i + offset);
+        }
+        return ret;
+    }
 
     @Override
     public DataBuffer dup() {
@@ -887,24 +957,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public abstract DataBuffer create(int[] data);
 
-    @Override
-    public double[] getDoublesAt(long offset, long inc, int length) {
-        if (offset + length > length())
-            length -= offset;
-
-        double[] ret = new double[length];
-        for (int i = 0; i < length; i++) {
-            ret[i] = getDouble(i + offset);
-        }
-
-
-        return ret;
-    }
-
-    @Override
-    public float[] getFloatsAt(long offset, int length) {
-        return getFloatsAt(offset, 1, length);
-    }
 
     @Override
     public abstract IComplexFloat getComplexFloat(long i);
@@ -1443,7 +1495,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     elementSize = 2;
 
                 if (currentType != DataTypeUtil.getDtypeFromContext() && currentType != Type.HALF && currentType != Type.INT
-                        && !(DataTypeUtil.getDtypeFromContext() == Type.DOUBLE)) {
+                        && currentType != Type.LONG && !(DataTypeUtil.getDtypeFromContext() == Type.DOUBLE)) {
                     log.warn("Loading a data stream with opType different from what is set globally. Expect precision loss");
                     if (DataTypeUtil.getDtypeFromContext() == Type.INT)
                         log.warn("Int to float/double widening UNSUPPORTED!!!");
@@ -1461,11 +1513,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void readContent(DataInputStream s, Type currentType, Type globalType) {
         try {
             if (currentType == Type.DOUBLE) {
-                for (int i = 0; i < length(); i++) {
+                for (long i = 0; i < length(); i++) {
                     putByGlobalType(i, s.readDouble(), globalType);
                 }
             } else if (currentType == Type.FLOAT) {
-                for (int i = 0; i < length(); i++) {
+                for (long i = 0; i < length(); i++) {
                     putByGlobalType(i, s.readFloat(), globalType);
                 }
             } else if (currentType == Type.COMPRESSED) {
@@ -1474,24 +1526,24 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 long originalLength = s.readLong();
                 long numberOfElements = s.readLong();
 
-                // special case here. We should collect bytes, wrap them into pointer, and then decompress
-                byte[] temp = new byte[(int) compressedLength];
-                for (int i = 0; i < compressedLength; i++) {
-                    temp[i] = s.readByte();
-                }
-                pointer = new BytePointer(temp);
+                pointer = new BytePointer(compressedLength);
                 type = Type.COMPRESSED;
+                val tp = (BytePointer) pointer;
+
+                for (long i = 0; i < compressedLength; i++) {
+                    tp.put(i, s.readByte());
+                }
 
             } else if (currentType == Type.HALF) {
-                for (int i = 0; i < length(); i++) {
+                for (long i = 0; i < length(); i++) {
                     putByGlobalType(i, toFloat(s.readShort()), globalType);
                 }
             } else if (currentType == Type.LONG) {
-                for (int i = 0; i < length(); i++) {
+                for (long i = 0; i < length(); i++) {
                     putByGlobalType(i, s.readLong(), globalType);
                 }
             } else {
-                for (int i = 0; i < length(); i++) {
+                for (long i = 0; i < length(); i++) {
                     putByGlobalType(i, s.readInt(), globalType);
                 }
             }
@@ -1502,27 +1554,27 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void write(DataOutputStream out) throws IOException {
-        if (length() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Length of data buffer can not be >= Integer.MAX_VALUE on output");
+        //if (length() >= Integer.MAX_VALUE)
+         //   throw new IllegalArgumentException("Length of data buffer can not be >= Integer.MAX_VALUE on output");
         //        log.info("Saving dType: {}", dataType().name());
         out.writeUTF(allocationMode.name());
         out.writeLong(length());
         out.writeUTF(dataType().name());
         if (dataType() == Type.DOUBLE) {
-            for (int i = 0; i < length(); i++)
+            for (long i = 0; i < length(); i++)
                 out.writeDouble(getDouble(i));
         } else if (dataType() == Type.LONG) {
-            for (int i = 0; i < length(); i++)
+            for (long i = 0; i < length(); i++)
                 out.writeLong(getLong(i));
         } else if (dataType() == Type.INT) {
-            for (int i = 0; i < length(); i++)
+            for (long i = 0; i < length(); i++)
                 out.writeInt(getInt(i));
         } else if (dataType() == Type.HALF) {
-            for (int i = 0; i < length(); i++) {
+            for (long i = 0; i < length(); i++) {
                 out.writeShort(getShort(i));
             }
         } else {
-            for (int i = 0; i < length(); i++) {
+            for (long i = 0; i < length(); i++) {
                 out.writeFloat(getFloat(i));
             }
         }
@@ -1717,7 +1769,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 case INT:
                     pointer = getParentWorkspace().alloc(capacity, Type.INT, false).asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);
-
+                    break;
+                case LONG:
+                    pointer = getParentWorkspace().alloc(capacity, Type.LONG, false).asLongPointer();
+                    indexer = LongIndexer.create((LongPointer) pointer);
                     break;
             }
 
@@ -1735,6 +1790,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 case FLOAT:
                     pointer = new FloatPointer(length);
                     indexer = FloatIndexer.create((FloatPointer) pointer);
+                    break;
+                case LONG:
+                    pointer = new LongPointer(length);
+                    indexer = LongIndexer.create((LongPointer) pointer);
                     break;
             }
         }

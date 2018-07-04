@@ -50,7 +50,7 @@
                         Maximum heap size was set to 6g, as a minimum required value for tests run.
                         Depending on a build machine, default value is not always enough.
                     -->
-                    <argLine>-Xmx6g</argLine>
+                    <argLine>-Ddtype=double -Xmx6g</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -213,7 +213,6 @@
             <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
             <classifier>${dependency.platform}</classifier>
         </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

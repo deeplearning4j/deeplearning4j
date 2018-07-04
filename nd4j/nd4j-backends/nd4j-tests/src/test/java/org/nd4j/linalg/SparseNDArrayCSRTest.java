@@ -30,7 +30,7 @@ public class SparseNDArrayCSRTest {
     private int[] columns = {0, 1, 3, 0, 1, 2, 3, 4, 0, 2, 3, 1, 4};
     private int[] pointerB = {0, 3, 5, 8, 11};
     private int[] pointerE = {3, 5, 8, 11, 13};
-    private int[] shape = {5, 5};
+    private long[] shape = {5, 5};
 
 
     @Test
@@ -57,7 +57,7 @@ public class SparseNDArrayCSRTest {
             double[] expectedColumns = {0, 1, 3, 0, 1, 1, 2, 3, 4, 0, 2, 3, 1, 4};
             int[] expectedPointerB = {0, 3, 5, 9, 12};
             int[] expectedPointerE = {3, 5, 9, 12, 14};
-            int[] expectedShape = {5, 5};
+            long[] expectedShape = {5, 5};
 
 
             assertArrayEquals(expectedValues, sparseCSRArray.getDoubleValues(), 0);
@@ -104,7 +104,7 @@ public class SparseNDArrayCSRTest {
             double[] expectedColumns = {0, 1, 3, 0, 1, 2, 3, 4, 0, 2, 3, 1, 4};
             int[] expectedPointerB = {0, 3, 5, 8, 11};
             int[] expectedPointerE = {3, 5, 8, 11, 13};
-            int[] expectedShape = {5, 5};
+            long[] expectedShape = {5, 5};
 
             assertArrayEquals(expectedValues, sparseCSRArray.getDoubleValues(), 0);
             assertArrayEquals(expectedColumns, sparseCSRArray.getColumns(), 0);

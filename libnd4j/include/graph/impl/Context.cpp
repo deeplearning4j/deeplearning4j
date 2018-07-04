@@ -193,10 +193,12 @@ namespace nd4j {
                 std::string shape_ = ShapeUtils<T>::shapeAsString(array);
 
                 float m = std::numeric_limits<float>::quiet_NaN();
-                if (!array->isEmpty())
-                    m = static_cast<float>(array->meanNumber());
-
-                nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), m);
+                if (!array->isEmpty()) {
+                    auto values = array->asIndexedString(16);
+                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; first values: %s\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), values.c_str());
+                } else {
+                    nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), array->ews(), array->ordering(), m);
+                }
             }
 
             return v;

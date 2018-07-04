@@ -101,12 +101,16 @@ public class Solver {
         }
 
         public Builder listener(TrainingListener... listeners) {
-            this.listeners.addAll(Arrays.asList(listeners));
+            if (listeners != null)
+                this.listeners.addAll(Arrays.asList(listeners));
+
             return this;
         }
 
         public Builder listeners(Collection<TrainingListener> listeners) {
-            this.listeners.addAll(listeners);
+            if (listeners != null)
+                this.listeners.addAll(listeners);
+
             return this;
         }
 

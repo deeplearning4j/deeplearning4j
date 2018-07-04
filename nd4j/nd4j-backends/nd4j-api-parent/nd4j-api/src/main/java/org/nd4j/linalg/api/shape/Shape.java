@@ -28,6 +28,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
+import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -2434,6 +2436,8 @@ public class Shape {
      * @return true if c+descending, f+ascending, false otherwise
      */
     public static boolean strideDescendingCAscendingF(INDArray array) {
+        if(array.rank() <= 1)
+            return true;
         long[] strides = array.stride();
         if (array.isVector() && strides[0] == 1 && strides[1] == 1)
             return true;
@@ -3490,8 +3494,21 @@ public class Shape {
         return true;
     }
 
+    /**
+     *
+     * @param shape
+     * @return
+     */
+    public static long lengthOf(long[] shape) {
+        if (shape.length == 0)
+            return 1L;
+        else
+            return ArrayUtil.prodLong(shape);
+    }
 
     public static boolean hasDefaultStridesForShape(INDArray input){
+        if(input.rank() == 0)
+            return true;
         if(!strideDescendingCAscendingF(input)){
             return false;
         }
@@ -3506,5 +3523,7 @@ public class Shape {
     }
 
 
-
+    public static boolean isEmpty(long[] shapeInfo) {
+        return ArrayOptionsHelper.arrayType(shapeInfo) == ArrayType.EMPTY;
+    }
 }

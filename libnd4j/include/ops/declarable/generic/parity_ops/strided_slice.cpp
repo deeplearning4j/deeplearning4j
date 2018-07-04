@@ -364,26 +364,12 @@ namespace nd4j {
 
             auto sub = x->subarray(indices);
 
-            if (!isLive) {
-                auto z = OUTPUT_VARIABLE(0);
-                z->assign(sub);
-            } else {
-
-                // FIXME: yet another fix for missing 1D shapes
-                if (final_shape.size() == 1) {
-                    final_shape.insert(final_shape.begin(), 1);
-                }
-
-                if (final_shape.size() >= 2)
-                    sub->reshapei(x->ordering(), final_shape);
-
-                auto stb = sub->dup(x->ordering());
-                OVERWRITE_RESULT(stb);
-            }
+            auto z = OUTPUT_VARIABLE(0);
+            z->assign(sub);
 
             delete sub;
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
         DECLARE_SYN(stridedslice, strided_slice);
 
@@ -402,29 +388,29 @@ namespace nd4j {
             int delta = dim_values % 3;
             int elements = dim_values / 3;
 
-            // if that's live - shape will be resolved in runtime
-            if (dim_values == 0) {
-                Nd4jLong *newShape;
-                std::vector<Nd4jLong> shape({1, 1});
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), Nd4jLong);
-                shape::shapeBuffer(shape.size(), shape.data(), newShape);
-
-                return SHAPELIST(newShape);
-            }
-
-            int delta2 = dim_values / x_rank;
 
             std::vector<int> begin;
             std::vector<int> end;
             std::vector<int> strides;
 
-            std::vector<int> args;
-            for (int e = 5; e < block.getIArguments()->size(); e++)
-                args.emplace_back(INT_ARG(e));
+            // if that's live - shape will be resolved in runtime
+            if (dim_values == 0 ) {
+                begin = INPUT_VARIABLE(1)->template asVectorT<int>();
+                end = INPUT_VARIABLE(2)->template asVectorT<int>();
+                strides = INPUT_VARIABLE(3)->template asVectorT<int>();
+            } else if (dim_values > 0) {
+                int delta2 = dim_values / x_rank;
 
-            ShapeUtils<T>::copyVectorPart(begin, args, elements, 0);
-            ShapeUtils<T>::copyVectorPart(end, args, elements, elements);
-            ShapeUtils<T>::copyVectorPart(strides, args, elements, elements * 2);
+                std::vector<int> args;
+                for (int e = 5; e < block.getIArguments()->size(); e++)
+                    args.emplace_back(INT_ARG(e));
+
+                ShapeUtils<T>::copyVectorPart(begin, args, elements, 0);
+                ShapeUtils<T>::copyVectorPart(end, args, elements, elements);
+                ShapeUtils<T>::copyVectorPart(strides, args, elements, elements * 2);
+            }
+
+            REQUIRE_TRUE(begin.size() > 0 && end.size() > 0 && strides.size() > 0, 0, "Strided_Slice: empty arguments");
 
             Nd4jLong *newShape;
             std::vector<Nd4jLong> input_shape(shape::rank(inShape));
