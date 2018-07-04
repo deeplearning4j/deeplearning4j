@@ -1,5 +1,7 @@
 package org.deeplearning4j.util;
 
+import lombok.val;
+import org.apache.commons.lang3.SerializationUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -381,6 +383,56 @@ public class ModelSerializerTest extends BaseDL4JTest {
         assertNotNull(pair.getSecond());
     }
 
+
+    @Test
+    public void testJavaSerde_1() throws Exception {
+        int nIn = 5;
+        int nOut = 6;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01)
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new OutputLayer.Builder().nIn(nIn).nOut(nOut).build(), "in")
+                .setOutputs("0")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        DataSet dataSet = trivialDataSet();
+        NormalizerStandardize norm = new NormalizerStandardize();
+        norm.fit(dataSet);
+
+        val b = SerializationUtils.serialize(net);
+
+        ComputationGraph restored = SerializationUtils.deserialize(b);
+
+        assertEquals(net, restored);
+    }
+
+    @Test
+    public void testJavaSerde_2() throws Exception {
+        int nIn = 5;
+        int nOut = 6;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01)
+                .list()
+                .layer(0, new OutputLayer.Builder().nIn(nIn).nOut(nOut).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        DataSet dataSet = trivialDataSet();
+        NormalizerStandardize norm = new NormalizerStandardize();
+        norm.fit(dataSet);
+
+        val b = SerializationUtils.serialize(net);
+
+        MultiLayerNetwork restored = SerializationUtils.deserialize(b);
+
+        assertEquals(net, restored);
+    }
 
     @Test
     public void testPutGetObject() throws Exception {

@@ -576,6 +576,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMmulGradients(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/5648
 
         int[] aShape = new int[]{2,3};
         int[] bShape = new int[]{3,4};
@@ -1124,6 +1125,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
     @Test
     public void testMergeRank1(){
+        OpValidationSuite.ignoreFailing();  //https://github.com/deeplearning4j/deeplearning4j/issues/5648
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", Nd4j.create(new long[]{1}).assign(5));
 

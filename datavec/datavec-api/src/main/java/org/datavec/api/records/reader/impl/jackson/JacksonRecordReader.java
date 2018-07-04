@@ -189,66 +189,18 @@ public class JacksonRecordReader extends BaseRecordReader {
 
 
     private List<Writable> readValues(URI uri, String fileContents) {
-        List<Writable> out = new ArrayList<>();
-        List<String[]> paths = selection.getFieldPaths();
-        List<Writable> valueIfMissing = selection.getValueIfMissing();
+        List<Writable> out = JacksonReaderUtils.parseRecord(fileContents, selection, mapper);
 
-        Map<String, Object> map;
-        try {
-            map = mapper.readValue(fileContents, typeRef);
-        } catch (IOException e) {
-            throw new RuntimeException("Error parsing file", e);
-        }
-
-        //Now, extract out values...
-        for (int i = 0; i < paths.size(); i++) {
-            //First: check if we should insert the label here...
-            if (i == labelPosition && labelGenerator != null) {
-                out.add(labelGenerator.getLabelForPath(uri));
-            }
-
-            String[] currPath = paths.get(i);
-            String value = null;
-            Map<String, Object> currMap = map;
-            for (int j = 0; j < currPath.length; j++) {
-                if (currMap.containsKey(currPath[j])) {
-                    Object o = currMap.get(currPath[j]);
-                    if (j == currPath.length - 1) {
-                        //Expect to get the final value
-                        if (o instanceof String) {
-                            value = (String) o;
-                        } else if (o instanceof Number) {
-                            value = o.toString();
-                        } else {
-                            throw new IllegalStateException(
-                                            "Expected to find String on path " + Arrays.toString(currPath) + ", found "
-                                                            + o.getClass() + " with value " + o);
-                        }
-                    } else {
-                        //Expect to get a map...
-                        if (o instanceof Map) {
-                            currMap = (Map<String, Object>) o;
-                        }
-                    }
-                } else {
-                    //Not found
-                    value = null;
-                    break;
-                }
-            }
-
-            Writable outputWritable;
-            if (value == null) {
-                outputWritable = valueIfMissing.get(i);
+        //Add label - if required
+        if(labelGenerator != null){
+            Writable label = labelGenerator.getLabelForPath(uri);
+            List<String[]> paths = selection.getFieldPaths();
+            if ((labelPosition >= paths.size() || labelPosition == -1)) {
+                //Edge case: might want label as the last value
+                out.add(label);
             } else {
-                outputWritable = new Text(value);
+                out.add(labelPosition, label);  //Add and shift existing to right
             }
-            out.add(outputWritable);
-        }
-
-        //Edge case: might want label as the last value
-        if ((labelPosition >= paths.size() || labelPosition == -1) && labelGenerator != null) {
-            out.add(labelGenerator.getLabelForPath(uri));
         }
 
         return out;

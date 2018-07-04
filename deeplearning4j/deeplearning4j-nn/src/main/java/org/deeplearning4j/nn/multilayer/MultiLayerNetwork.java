@@ -86,9 +86,7 @@ import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 
@@ -526,6 +524,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             intializeConfigurations();
         if (initCalled)
             return;
+
+        if (layerMap == null)
+            layerMap = new LinkedHashMap<>();
 
         if (layerWiseConfigurations.getTrainingWorkspaceMode() == null)
             layerWiseConfigurations.setTrainingWorkspaceMode(WorkspaceMode.NONE);
@@ -3630,6 +3631,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
+     * Get the current learning rate, for the specified layer, from the network.
+     * Note: If the layer has no learning rate (no parameters, or an updater without a learning rate) then null is returned
+     * @param layerNumber   Layer number to get the learning rate for
+     * @return Learning rate for the specified layer, or null
+     */
+    public Double getLearningRate(int layerNumber){
+        return NetworkUtils.getLearningRate(this, layerIndex);
+    }
+
+    /**
      * Return the layer size (number of units) for the specified layer.<br>
      * Note that the meaning of the "layer size" can depend on the type of layer. For example:<br>
      * - DenseLayer, OutputLayer, recurrent layers: number of units (nOut configuration option)<br>
@@ -3739,4 +3750,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
         return false;
     }
+
+    private void writeObject(ObjectOutputStream oos) throws IOException {
+        ModelSerializer.writeModel(this, oos, true);
+    }
+
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        val mln = ModelSerializer.restoreMultiLayerNetwork(ois, true);
+
+        this.defaultConfiguration = mln.defaultConfiguration.clone();
+        this.layerWiseConfigurations = mln.layerWiseConfigurations.clone();
+        this.init();
+        this.flattenedParams.assign(mln.flattenedParams);
+
+        if (mln.getUpdater() != null && mln.getUpdater(false).getStateViewArray() != null)
+            this.getUpdater(true).getStateViewArray().assign(mln.getUpdater(false).getStateViewArray());
+    }
+
 }
