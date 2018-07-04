@@ -18,6 +18,5 @@ pages:
   - SameDiff graphs and operations: samediff/samediff.md
   - SameDiff execution: samediff/execution.md
 - Samediff functions:
-  - Differential functions: functions/differential-functions.md
-  - Diffterential function factory: functions/function-factory.md
+  - Differential functions: functions/function-factory.md
 - Adding new SameDiff ops: adding-ops.md

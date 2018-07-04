@@ -32,12 +32,6 @@
       ]
     },
     {
-      "page": "functions/differential-functions.md",
-      "class": [
-        "functions/DifferentialFunction.java"
-      ]
-    },
-    {
       "page": "functions/function-factory.md",
       "class": [
         "functions/DifferentialFunctionFactory.java"

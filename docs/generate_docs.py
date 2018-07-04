@@ -120,7 +120,7 @@ class DocumentationGenerator:
 
         methods = []
         for method in method_strings:
-            print("Processing doc string for method {}".format(method))
+            # print("Processing doc string for method {}".format(method))
             doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?' + \
                         '(public [static\s]?[a-zA-Z0-9]* ' + method + '[\S\s]*?){'
             # TODO: this will sometimes run forever. fix regex
@@ -173,6 +173,9 @@ class DocumentationGenerator:
         cls = data.get('class', "")
         if cls:
             classes = cls
+
+        print(module)
+        print(classes)
 
         for cls in sorted(classes):
             class_string = self.inspect_class_string(module, cls)
