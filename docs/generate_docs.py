@@ -25,48 +25,48 @@ class DocumentationGenerator:
         self.indices = site.get('indices', [])
         self.excludes = site.get('excludes', [])
 
+
     '''Generate links within documentation.
     '''
-
     def class_to_docs_link(self, module_name, class_name):
         return self.docs_root + module_name.replace('.', '/') + '#' + class_name
 
+
     '''Generate links to source code.
     '''
-
     def class_to_source_link(self, module_name, cls_name):
         return '[[source]](' + self.github_root + module_name + '/' + cls_name + '.' + self.language + ')'
 
+
     '''Returns code string as markdown snippet of the respective language.
     '''
-
     def to_code_snippet(self, code):
         return '```' + self.language + '\n' + code + '\n```\n'
+
 
     '''Doc strings (in Java/Scala) need to be stripped of all '*' values.
     Convert '@param' to '- param'. Strip line with author as well.
     
     TODO can be vastly improved.
     '''
-
     def process_main_docstring(self, doc_string):
         lines = doc_string.split('\n')
         doc = [line.replace('*', '').lstrip(' ').rstrip('/') for line in lines[1:-1] if not '@' in line]
         return '\n'.join(doc)
 
+
     '''Doc strings (in Java/Scala) need to be stripped of all '*' values.
     Convert '@param' to '- param'. TODO can be vastly improved.
     '''
-
     def process_docstring(self, doc_string):
         lines = doc_string.split('\n')
         doc = [line.replace('*', '').lstrip(' ').replace('@', '- ') for line in lines]
         return '\n'.join(doc)
 
+
     '''Takes unformatted signatures and doc strings and returns a properly
     rendered piece that fits into our markdown layout.
     '''
-
     def render(self, signature, doc_string, class_name, is_method):
         if is_method:  # Method name from signature
             method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
@@ -78,9 +78,9 @@ class DocumentationGenerator:
             sub_blocks.append(doc_string + '\n')
         return '\n\n'.join(sub_blocks)
 
+
     '''Returns main doc string of class/object in question.
     '''
-
     def get_main_doc_string(self, class_string, class_name):
         doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n'  # match "/** ... */" at the top
         doc_string = re.search(doc_regex, class_string)
@@ -94,9 +94,9 @@ class DocumentationGenerator:
         doc_index = 0 if not doc_match else doc_string.end()
         return doc, class_string[doc_index:]
 
+
     '''Returns doc string and signature data for constructors.
     '''
-
     def get_constructor_data(self, class_string, class_name):
         constructors = []
         if 'public ' + class_name in class_string:
@@ -110,36 +110,41 @@ class DocumentationGenerator:
                 constructors.append((signature, doc))
         return constructors, class_string
 
+
     '''Returns doc string and signature data for methods
     in the public API of an object
     '''
-
     def get_public_method_data(self, class_string):
         method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
         method_strings = re.findall(method_regex, class_string)
 
         methods = []
         for method in method_strings:
+            # print("Processing doc string for method {}".format(method))
             doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?' + \
                         '(public [static\s]?[a-zA-Z0-9]* ' + method + '[\S\s]*?){'
+            # TODO: this will sometimes run forever. fix regex
             result = re.search(doc_regex, class_string)
-            doc_string, signature = result.groups()
-            doc = self.process_docstring(doc_string)
-            class_string = class_string[result.end():]
-            methods.append((signature, doc))
+            if result:
+                doc_string, signature = result.groups()
+                doc = self.process_docstring(doc_string)
+                class_string = class_string[result.end():]
+                methods.append((signature, doc))
+            else:
+                print("Warning, no doc string found for method {}".format(method))
         return methods
+
 
     '''Returns source code of a class in a module as string.
     '''
-
     def inspect_class_string(self, module, cls):
         return self.read_file(self.source_code_path + module + '/' + cls)
+
 
     '''Searches for file names within a module to generate an index. The result
     of this is used to create index.md files for each module in question so as
     to easily navigate documentation.
     '''
-
     def read_index_data(self, data):
         module_index = data.get('module_index', "")
         modules = os.listdir(self.project_name + self.target_dir + '/' + module_index)
@@ -155,7 +160,6 @@ class DocumentationGenerator:
             - doc strings and signatures of methods
     Values are returned as nested list, picked up in the main program to write documentation blocks.      
     '''
-
     def read_page_data(self, data):
         if data.get('module_index', ""):  # indices are created after pages
             return []
@@ -182,9 +186,9 @@ class DocumentationGenerator:
 
         return page_data
 
+
     '''Before generating new docs into target folder, clean up old files. 
     '''
-
     def clean_target(self):
         if os.path.exists(self.project_name + self.target_dir):
             shutil.rmtree(self.project_name + self.target_dir)
@@ -201,17 +205,17 @@ class DocumentationGenerator:
                     )
                     shutil.copy(file_path, new_file_path)
 
+
     '''Given a file path, read content and return string value.
     '''
-
     def read_file(self, path):
         with open(path) as f:
             return f.read()
 
+
     '''Create main index.md page for a project by parsing README.md
     and appending it to the template version of index.md
     '''
-
     def create_index_page(self):
         readme = self.read_file(self.project_name + 'README.md')
         index = self.read_file(self.project_name + 'templates/index.md')
@@ -220,10 +224,10 @@ class DocumentationGenerator:
         with open(self.project_name + self.target_dir + '/index.md', 'w') as f:
             f.write(index)
 
+
     '''Write blocks of content (arrays of strings) as markdown to
     the file name provided in page_data.
     '''
-
     def write_content(self, blocks, page_data):
         assert blocks, 'No content for page ' + page_data['page']
 
@@ -243,10 +247,10 @@ class DocumentationGenerator:
         with open(path, 'w') as f:
             f.write(markdown)
 
+
     '''Prepend headers for jekyll, i.e. provide "default" layout and a
     title for the post.
     '''
-
     def prepend_headers(self):
         for subdir, dirs, file_names in os.walk(self.project_name + self.target_dir):
             for file_name in file_names:
