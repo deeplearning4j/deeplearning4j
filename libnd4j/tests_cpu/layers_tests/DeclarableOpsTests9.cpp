@@ -586,11 +586,12 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
     nd4j_printf("\n01Dropout count %i\n\n", count);
 
     nd4j::ops::dropout_bp<float> op2;
-
+    NDArray<float> exp('c', {10,10}, {4.f, 0.f, 12.f, 0.f, 20.f, 24.f, 0.f, 32.f, 0.f, 0.f, 0.f, 0.f, 52.f, 56.f, 60.f, 0.f, 0.f, 0.f, 0.f, 0.f, 84.f, 88.f, 0.f, 0.f, 0.f, 0.f, 108.f, 0.f, 0.f, 120.f, 0.f, 0.f, 132.f, 0.f, 0.f, 0.f, 0.f, 0.f, 156.f, 0.f, 164.f, 168.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 200.f, 204.f, 0.f, 0.f, 0.f, 220.f, 0.f, 0.f, 232.f, 236.f, 240.f, 0.f, 248.f, 0.f, 0.f, 260.f, 0.f, 0.f, 0.f, 276.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 316.f, 0.f, 324.f, 0.f, 0.f, 336.f, 0.f, 0.f, 0.f, 0.f, 356.f, 0.f, 0.f, 368.f, 0.f, 0.f, 0.f, 384.f, 388.f, 0.f, 0.f, 400.f});
     auto ressX = op2.execute({&x1, &x0}, {0.5f}, {119});
 
     ASSERT_EQ(ND4J_STATUS_OK, ressX->status());
     ressX->at(0)->printIndexedBuffer("02Dropout result is ");
+    ASSERT_TRUE(exp.equalsTo(ressX->at(0)));
     delete ressX;
     delete ress;
 }
