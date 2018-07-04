@@ -619,6 +619,17 @@ public class SameDiff {
         updateShapeForVarName(varName, shape, false);
     }
 
+    /**
+     * Update a vertex id with the given shape.<br>
+     * Note that you should use {@link #putShapeForVarName(String, long[])} if you want to add a new shape.
+     * Update is meant to be an in place replacement of the shape for the vertex id *only*.
+     *
+     * @param varName the vertex id to associate
+     * @param shape   the shape to associate with
+     * @param clearArrayOnShapeMismatch boolean to indicate whether to clear the variable on shape mismatch
+     * @see #putShapeForVarName(String, long[])
+     * @see #putOrUpdateShapeForVarName(String, long[], boolean)
+     */
     public void updateShapeForVarName(String varName, long[] shape, boolean clearArrayOnShapeMismatch) {
         if (shape == null) {
             throw new ND4JIllegalStateException("Null shapes not allowed!");
@@ -1471,10 +1482,25 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    /**
+     * Return a variable of given shape in which all values have a given constant value.
+     *
+     * @param value constant to set for each value
+     * @param shape shape of the variable as long array
+     * @return A new SDVariable of provided shape with constant value.
+     */
     public SDVariable constant(SDVariable value, long... shape) {
         return constant(null, value, shape);
     }
 
+    /**
+     * Return a variable of given shape in which all values have a given constant value.
+     *
+     * @param name  Name of the new SDVariable
+     * @param value constant to set for each value
+     * @param shape shape of the variable as long array
+     * @return A new SDVariable of provided shape with constant value.
+     */
     public SDVariable constant(String name, SDVariable value, long... shape) {
         SDVariable ret = f().constant(value, shape);
         return updateVariableNameAndReference(ret, name);
@@ -1483,6 +1509,7 @@ public class SameDiff {
     /**
      * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
      * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
+     *
      * @param start  Start value
      * @param stop   Stop value
      * @param number Number of values to generate
@@ -1495,6 +1522,7 @@ public class SameDiff {
     /**
      * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
      * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]
+     *
      * @param name Name of the new variable
      * @param start  Start value
      * @param stop   Stop value
@@ -1568,6 +1596,9 @@ public class SameDiff {
         return meshgrid(names, true, inputs);
     }
 
+    /**
+     * @see #meshgrid(List, SDVariable...)
+     */
     public SDVariable[] meshgrid(List<String> names, boolean cartesian, SDVariable... inputs){
         Preconditions.checkState(names == null || names.size() == inputs.length,
                 "Got %s names but %s inputs", (names == null ? 0 : names.size()), inputs.length);
@@ -1771,6 +1802,9 @@ public class SameDiff {
                 .varName(name)
                 .weightInitScheme(new NDArraySupplierInitScheme(new NDArraySupplierInitScheme.NDArraySupplier() {
                     @Override
+                    /**
+                     * Return array
+                     */
                     public INDArray getArr() {
                         return arrRef;
                     }
