@@ -288,6 +288,11 @@
                                     <version>3.3</version>
                                     <message>Please install maven 3.3 or higher</message>
                                 </requireMavenVersion>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>org.projectlombok:*:*:*:compile</exclude>
+                                    </excludes>
+                                </bannedDependencies>
                             </rules>
                         </configuration>
                     </execution>
