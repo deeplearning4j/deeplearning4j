@@ -23,6 +23,7 @@ public class ArrowSerdeTest {
         INDArray matrix = Nd4j.linspace(1,8,8).reshape(2,4);
         Tensor tensor = ArrowSerde.toTensor(matrix.slice(0));
         INDArray from = ArrowSerde.fromTensor(tensor);
+        assertEquals(matrix.data().dataType(),from.data().dataType());
         assertEquals(matrix.slice(0),from);
     }
 

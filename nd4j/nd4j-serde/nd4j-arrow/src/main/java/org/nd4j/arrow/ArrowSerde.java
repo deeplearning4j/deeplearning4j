@@ -45,7 +45,7 @@ public class ArrowSerde {
         }
 
         DataBuffer.Type  type = typeFromTensorType(b,elementSize);
-        DataBuffer dataBuffer = DataBufferStruct.createFromByteBuffer(tensor.getByteBuffer(),(int) tensor.data().offset(),type,length,elementSize);
+        DataBuffer dataBuffer = DataBufferStruct.createFromByteBuffer(tensor.getByteBuffer(),(int) tensor.data().offset(),type,length);
         INDArray arr = Nd4j.create(dataBuffer,shape);
         arr.setShapeAndStride(shape,stride);
         return arr;
@@ -85,9 +85,9 @@ public class ArrowSerde {
      * @return the offset added
      */
     public static int addDataForArr(FlatBufferBuilder bufferBuilder, INDArray arr) {
-        DataBuffer toAdd = arr.isView() ? arr.data().dup() : arr.data();
+        DataBuffer toAdd = arr.isView() ? arr.dup().data() : arr.data();
         int offset = DataBufferStruct.createDataBufferStruct(bufferBuilder,toAdd);
-        int ret = Buffer.createBuffer(bufferBuilder,offset,arr.data().length() * arr.data().getElementSize());
+        int ret = Buffer.createBuffer(bufferBuilder,offset,toAdd.length() * toAdd.getElementSize());
         return ret;
 
     }
@@ -105,8 +105,10 @@ public class ArrowSerde {
                 Tensor.addTypeType(bufferBuilder,Type.Int);
                 break;
             case FLOAT:
-            case DOUBLE:
                 Tensor.addTypeType(bufferBuilder,Type.FloatingPoint);
+                break;
+            case DOUBLE:
+                Tensor.addTypeType(bufferBuilder,Type.Decimal);
                 break;
         }
     }
@@ -155,13 +157,11 @@ public class ArrowSerde {
      * @return the data buffer type
      */
     public static DataBuffer.Type typeFromTensorType(byte type,int elementSize) {
-        if(type == Type.Decimal || type == Type.FloatingPoint) {
-            if(elementSize == 4) {
-                return DataBuffer.Type.FLOAT;
-            }
-            else if(elementSize == 8) {
-                return DataBuffer.Type.DOUBLE;
-            }
+        if(type == Type.FloatingPoint) {
+            return DataBuffer.Type.FLOAT;
+        }
+        else if(type == Type.Decimal) {
+            return DataBuffer.Type.DOUBLE;
         }
         else if(type == Type.Int) {
             if(elementSize == 4) {

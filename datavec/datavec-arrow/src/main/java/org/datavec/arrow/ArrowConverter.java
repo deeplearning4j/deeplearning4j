@@ -765,6 +765,8 @@ public class ArrowConverter {
                 case NDArray:
                     NDArrayWritable arr = (NDArrayWritable) value;
                     VarBinaryVector nd4jArrayVector = (VarBinaryVector) fieldVector;
+                    //slice the databuffer to use only the needed portion of the buffer
+                    //for proper offsets
                     ByteBuffer byteBuffer = ArrowSerde.toTensor(arr.get()).getByteBuffer().slice();
                     nd4jArrayVector.set(row,byteBuffer,0,byteBuffer.capacity());
                     break;
@@ -864,6 +866,8 @@ public class ArrowConverter {
         VarBinaryVector ret = new VarBinaryVector(name,bufferAllocator);
         ret.allocateNew();
         for(int i = 0; i < data.length; i++) {
+            //slice the databuffer to use only the needed portion of the buffer
+            //for proper offset
             ByteBuffer byteBuffer = ArrowSerde.toTensor(data[i]).getByteBuffer().slice();
             ret.set(i,byteBuffer,0,byteBuffer.capacity());
         }
