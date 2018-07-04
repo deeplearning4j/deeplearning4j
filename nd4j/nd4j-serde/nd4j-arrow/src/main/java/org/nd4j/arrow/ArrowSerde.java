@@ -85,7 +85,8 @@ public class ArrowSerde {
      * @return the offset added
      */
     public static int addDataForArr(FlatBufferBuilder bufferBuilder, INDArray arr) {
-        int offset = DataBufferStruct.createDataBufferStruct(bufferBuilder,arr.data());
+        DataBuffer toAdd = arr.isView() ? arr.data().dup() : arr.data();
+        int offset = DataBufferStruct.createDataBufferStruct(bufferBuilder,toAdd);
         int ret = Buffer.createBuffer(bufferBuilder,offset,arr.data().length() * arr.data().getElementSize());
         return ret;
 
