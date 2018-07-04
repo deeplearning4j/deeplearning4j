@@ -11,15 +11,34 @@ import org.tensorflow.framework.GraphDef;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public class TensorflowConversionTest {
 
+    @Test
+    public void testView() {
+        INDArray matrix = Nd4j.linspace(1,8,8).reshape(2,4);
+        INDArray view = matrix.slice(0);
+        TensorflowConversion conversion = new TensorflowConversion();
+        tensorflow.TF_Tensor tf_tensor = conversion.tensorFromNDArray(view);
+        INDArray converted = conversion.ndArrayFromTensor(tf_tensor);
+        assertEquals(view,converted);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testNullArray() {
+        INDArray array = Nd4j.create(2,2);
+        array.setData(null);
+        TensorflowConversion conversion = new TensorflowConversion();
+        tensorflow.TF_Tensor tf_tensor = conversion.tensorFromNDArray(array);
+        fail();
+    }
 
     @Test
     public void testConversionFromNdArray() throws Exception {
         INDArray arr = Nd4j.linspace(1,4,4);
         TensorflowConversion tensorflowConversion = new TensorflowConversion();
-       tensorflow.TF_Tensor tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
+        tensorflow.TF_Tensor tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
         INDArray fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
         assertEquals(arr,fromTensor);
         arr.addi(1.0);

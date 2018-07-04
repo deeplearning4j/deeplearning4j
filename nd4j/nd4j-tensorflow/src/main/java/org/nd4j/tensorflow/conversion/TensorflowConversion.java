@@ -49,6 +49,17 @@ public class TensorflowConversion {
      * @return the equivalent {@link TF_Tensor}
      */
     public TF_Tensor tensorFromNDArray(INDArray ndArray) {
+       //we infer data type from the ndarray.databuffer()
+        //for now we throw an exception
+        if(ndArray.data() == null) {
+           throw new IllegalArgumentException("Unable to infer data type from null databuffer");
+       }
+
+        if(ndArray.isView() || ndArray.ordering() != 'c') {
+            ndArray = ndArray.dup('c');
+        }
+
+
         long[] ndShape = ndArray.shape();
         long[] tfShape = new long[ndShape.length];
         for (int i = 0; i < ndShape.length; i++) {
