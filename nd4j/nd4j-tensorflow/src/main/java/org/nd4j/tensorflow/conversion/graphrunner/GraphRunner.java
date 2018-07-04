@@ -41,6 +41,7 @@ public class GraphRunner implements Closeable {
     private tensorflow.TF_Status status;
     @Getter
     private Set<String> inputsForGraph,outputsForGraph;
+    @Getter
     private List<String> inputOrder,outputOrder;
     @Getter
     private org.tensorflow.framework.ConfigProto protoBufConfigProto;
