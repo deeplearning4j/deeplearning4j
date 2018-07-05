@@ -40,8 +40,9 @@ import static java.lang.System.setProperty;
 @Slf4j
 public class RoutedTransport extends BaseTransport {
 
+    //Apparently buffer requirements are a multiple of this?? https://github.com/akka/akka/issues/21923#issuecomment-264707476
     private static final String AERON_TERM_BUFFER_PROP = "aeron.term.buffer.length";
-    private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,28); //256MB
+    private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,25); //32MB
 
     protected List<RemoteConnection> shards = new ArrayList<>();
     protected Map<Long, RemoteConnection> clients = new ConcurrentHashMap<>();
