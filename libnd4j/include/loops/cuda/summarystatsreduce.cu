@@ -492,8 +492,6 @@ namespace functions {
             int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
             float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
 
-            nd4j_printf("smem: %i\n", launchDims.z)
-
             functions::summarystats::summaryStatsReduceFloat<<<launchDims.x,launchDims.y,launchDims.z * 2, *stream>>>(
                     opNum,
                             x,
