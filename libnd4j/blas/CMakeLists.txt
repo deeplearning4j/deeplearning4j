@@ -19,9 +19,6 @@ if(WIN32)
     endforeach()
 endif()
 
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_RELEASE=true -Wl,-rpath,$ORIGIN/")
-
 if ("${LIBND4J_ALL_OPS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
 else()
@@ -55,12 +52,8 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /EHsc")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
-    #  -fmax-errors=3
-
-    set(CMAKE_CXX_FLAGS_RELEASE  " -O3 -std=c++11 -fassociative-math -funsafe-math-optimizations")
-    set(CMAKE_CXX_FLAGS_DEBUG " -g -O0 -std=c++11")
-
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -fPIC")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/")
 endif()
 
 
@@ -220,36 +213,23 @@ elseif(CPU_BLAS)
 
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
-if(IOS)
-    add_library(${LIBND4J_NAME} STATIC cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
+    add_library(nd4jobj OBJECT cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
             cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
             ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
             Environment.cpp Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
             ${OPS_SOURCES})
-else()
-
-    add_library(${LIBND4J_NAME} SHARED cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
-            cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
-            ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
-            Environment.cpp Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-            ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
-            ${OPS_SOURCES} )
-
-
+    if(IOS)
+        add_library(${LIBND4J_NAME}       STATIC $<TARGET_OBJECTS:nd4jobj>)
+    else()
+        add_library(${LIBND4J_NAME}static STATIC $<TARGET_OBJECTS:nd4jobj>)
+        add_library(${LIBND4J_NAME}       SHARED $<TARGET_OBJECTS:nd4jobj>)
+    endif()
     if ("${LIBND4J_ALL_OPS}" AND "${LIBND4J_BUILD_MINIFIER}")
         message(STATUS "Building minifier...")
-        add_library(nd4jstatic STATIC cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
-            cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
-            ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
-            Environment.cpp Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-            ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
-            ${OPS_SOURCES} )
-
         add_executable(minifier ../minifier/minifier.cpp ../minifier/graphopt.cpp)
-        target_link_libraries(minifier nd4jstatic)
+        target_link_libraries(minifier ${LIBND4J_NAME}static)
     endif()
-endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
       message(FATAL_ERROR "You need at least GCC 4.9")

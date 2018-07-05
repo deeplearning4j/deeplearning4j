@@ -275,6 +275,8 @@ public class CompressionTests extends BaseNd4jTest {
         assertNotEquals(null, compressed.shapeInfoDataBuffer());
         assertTrue(compressed.isCompressed());
 
+        //Nd4j.getExecutioner().commit();
+
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compressed);
 
         assertEquals(exp, decomp);
@@ -669,7 +671,6 @@ public class CompressionTests extends BaseNd4jTest {
 
         assertEquals(exp_1, initial);
     }
-
 
     @Override
     public char ordering() {

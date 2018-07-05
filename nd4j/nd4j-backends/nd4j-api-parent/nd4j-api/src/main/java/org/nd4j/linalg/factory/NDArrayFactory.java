@@ -1359,7 +1359,8 @@ public interface NDArrayFactory {
      */
     INDArray scalar(Number value);
 
-    INDArray empty();
+    INDArray empty(DataBuffer.Type type);
+
     INDArray trueScalar(Number value);
 
     INDArray trueVector(float[] data);
@@ -1888,8 +1889,9 @@ public interface NDArrayFactory {
      * @param target
      * @param length
      */
-    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target,
-                    long length);
+    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length);
+
+    void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer);
 
     /**
      * Create from an in memory numpy pointer

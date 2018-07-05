@@ -1,5 +1,6 @@
 package org.nd4j.compression.impl;
 
+import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -47,8 +48,8 @@ public class Float8 extends AbstractCompressor {
     protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length,
                     int elementSize) {
 
-        BytePointer ptr = new BytePointer(length);
-        CompressionDescriptor descriptor = new CompressionDescriptor();
+        val ptr = new BytePointer(length);
+        val descriptor = new CompressionDescriptor();
         descriptor.setCompressedLength(length * 1);
         descriptor.setOriginalLength(length * elementSize);
         descriptor.setOriginalElementSize(elementSize);
@@ -57,9 +58,10 @@ public class Float8 extends AbstractCompressor {
         descriptor.setCompressionAlgorithm(getDescriptor());
         descriptor.setCompressionType(getCompressionType());
 
-        CompressedDataBuffer buffer = new CompressedDataBuffer(ptr, descriptor);
+        val buffer = new CompressedDataBuffer(ptr, descriptor);
 
-        Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataBuffer.TypeEx.FLOAT8, ptr, length);
+        //Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataBuffer.TypeEx.FLOAT8, ptr, length);
+        Nd4j.getNDArrayFactory().convertDataEx(srcType, srcPointer, DataBuffer.TypeEx.FLOAT8, buffer);
 
         return buffer;
     }

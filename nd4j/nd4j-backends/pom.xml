@@ -16,6 +16,7 @@
         <module>nd4j-tests</module>
         <module>nd4j-backend-impls</module>
         <module>nd4j-api-parent</module>
+        <module>nd4j-tests-tensorflow</module>
     </modules>
 
     <profiles>

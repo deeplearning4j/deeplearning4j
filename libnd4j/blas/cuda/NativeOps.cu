@@ -6725,6 +6725,18 @@ void NativeOps::deleteResultWrapper(Nd4jPointer ptr) {
 }
 
 
+int NativeOps::estimateThresholdFloat(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+	throw std::runtime_error("estimateThresholdFloat: Not implemented yet");
+}
+
+int NativeOps::estimateThresholdDouble(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+    throw std::runtime_error("estimateThresholdDouble: Not implemented yet");
+}
+
+int NativeOps::estimateThresholdHalf(Nd4jPointer *extraPointers, Nd4jPointer x, int N, float threshold) {
+    throw std::runtime_error("estimateThresholdHalf: Not implemented yet");
+}
+
 /*
  * TypeDef:
  *     void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);

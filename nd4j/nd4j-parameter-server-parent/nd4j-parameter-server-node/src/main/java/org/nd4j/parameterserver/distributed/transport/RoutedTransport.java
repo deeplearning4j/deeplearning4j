@@ -1,5 +1,6 @@
 package org.nd4j.parameterserver.distributed.transport;
 
+import com.google.common.math.IntMath;
 import io.aeron.Aeron;
 import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
@@ -10,19 +11,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.StringUtils;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.ClientRouter;
 import org.nd4j.parameterserver.distributed.logic.RetransmissionHandler;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
+import org.nd4j.parameterserver.distributed.logic.routing.InterleavedRouter;
 import org.nd4j.parameterserver.distributed.messages.*;
 import org.nd4j.parameterserver.distributed.messages.requests.IntroductionRequestMessage;
-import org.nd4j.parameterserver.distributed.logic.routing.InterleavedRouter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +39,10 @@ import static java.lang.System.setProperty;
  */
 @Slf4j
 public class RoutedTransport extends BaseTransport {
+
+    //Apparently buffer requirements are a multiple of this?? https://github.com/akka/akka/issues/21923#issuecomment-264707476
+    private static final String AERON_TERM_BUFFER_PROP = "aeron.term.buffer.length";
+    private static final long DEFAULT_TERM_BUFFER_PROP = IntMath.pow(2,25); //32MB
 
     protected List<RemoteConnection> shards = new ArrayList<>();
     protected Map<Long, RemoteConnection> clients = new ConcurrentHashMap<>();
@@ -62,7 +67,11 @@ public class RoutedTransport extends BaseTransport {
         setProperty("aeron.client.liveness.timeout", "30000000000");
 
         // setting this property to try to increase maxmessage length, not sure if it still works though
-        setProperty("aeron.term.buffer.length", "32000000");
+        //Term buffer length: must be power of 2 and in range 64kB to 1GB: https://github.com/real-logic/aeron/wiki/Configuration-Options
+        String p = System.getProperty(AERON_TERM_BUFFER_PROP);
+        if(p == null){
+            System.setProperty(AERON_TERM_BUFFER_PROP, String.valueOf(DEFAULT_TERM_BUFFER_PROP));
+        }
 
         context = new Aeron.Context().publicationConnectionTimeout(30000000000L).driverTimeoutMs(30000)
                         .keepAliveInterval(100000000);

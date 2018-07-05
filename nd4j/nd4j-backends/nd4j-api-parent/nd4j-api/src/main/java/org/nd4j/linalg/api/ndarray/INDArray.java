@@ -3056,4 +3056,16 @@ public interface INDArray extends Serializable {
      * @return
      */
     boolean isEmpty();
+
+    /**
+     * This method returns shapeInformation as jvm long array
+     * @return
+     */
+    long[] shapeInfoJava();
+
+    /**
+     * This method returns dtype for this INDArray
+     * @return
+     */
+    DataBuffer.Type dataType();
 }
