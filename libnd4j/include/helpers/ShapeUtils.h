@@ -125,6 +125,12 @@ namespace nd4j {
         static void evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude, Nd4jLong* idxRanges);
 
         /**
+        *   create shapeInfo for given order basing on shape stored in shapeOnly vector
+        *   memory allocation for shapeInfo is on given workspace
+        */
+        static Nd4jLong* createShapeInfo(const char order, const std::vector<Nd4jLong> shapeOnly, memory::Workspace* workspace);
+
+        /**
         *  method returns false if permut == {0,1,2,...permut.size()-1} - in that case permutation is unnecessary
         */
         FORCEINLINE static bool isPermutNecessary(const std::vector<int>& permut);

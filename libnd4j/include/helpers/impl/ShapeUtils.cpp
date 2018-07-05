@@ -908,12 +908,12 @@ std::vector<Nd4jLong> ShapeUtils<T>::evalShapeForMatmul(const Nd4jLong* xShapeIn
     const Nd4jLong y1Dim = transY ? yShapeInfo[yRank-1] : yShapeInfo[yRank];
     
 
-    if(xRank == 1 && yRank == 1) {   // dot case, output is vector with length = 1
+    if(xRank == 1 && yRank == 1) {   // dot case, output is scalar
         if(xShapeInfo[1] != yShapeInfo[1]) {
             nd4j_printf("ShapeUtils::evalShapeForMatmul method: since input arrays are vectors they must have the same length, but got x length = %i, y length = %i !", xShapeInfo[1], yShapeInfo[1]); 
             throw std::invalid_argument("");
         }
-        return std::vector<Nd4jLong>({1});
+        return std::vector<Nd4jLong>({0});
     }
 
 
@@ -1000,6 +1000,31 @@ void ShapeUtils<T>::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4j
         idxRanges[currIdx]    = indexes[i];
         idxRanges[currIdx +1] = indexes[i] + 1;
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+Nd4jLong* ShapeUtils<T>::createShapeInfo(const char order, const std::vector<Nd4jLong> shapeOnly, memory::Workspace* workspace) {
+
+    int rank = shapeOnly.size();
+
+    if(shapeOnly[0] == 0) // scalar case
+        rank = 0;
+    
+    Nd4jLong* shapeInfo = nullptr;
+    
+    if(rank == 0) {    // scalar case
+        shapeInfo = ShapeUtils<T>::createScalarShapeInfo(workspace);
+    }
+    else {
+        ALLOCATE(shapeInfo, workspace, shape::shapeInfoLength(rank), Nd4jLong);
+        shapeInfo[0] = rank;
+        for(int i = 0; i < rank; ++i)
+            shapeInfo[i + 1] = shapeOnly[i];
+        shape::updateStrides(shapeInfo, order);
+    }
+
+    return shapeInfo;
 }
 
 template class ND4J_EXPORT ShapeUtils<float>;

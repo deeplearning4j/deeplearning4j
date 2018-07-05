@@ -836,6 +836,175 @@ TEST_F(DeclarableOpsTests9, matmul_test16) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test17) {
+
+    NDArray<double> x ('f', {4, 3});
+    NDArray<double> y ('c', {4});
+    NDArray<double> exp('f',{3}, {7., 8., 9.});
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 0});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test18) {
+
+    NDArray<double> x ('f', {3});
+    NDArray<double> y ('c', {4, 3});
+    NDArray<double> exp('f',{4}, {1.4, 3.2, 5., 6.8});
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {0, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test19) {
+
+    NDArray<double> x ('f', {1, 1});
+    NDArray<double> y ('c', {1, 1});
+    NDArray<double> exp('f',{1, 1}, {0.2});
+
+    NDArrayFactory<double>::linspace(2., x);
+    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test20) {
+
+    NDArray<double> x ('f', {1, 1});
+    NDArray<double> y ('c', {1, 1});
+    NDArray<double> exp('f',{1, 1}, {0.2});
+
+    NDArrayFactory<double>::linspace(2., x);
+    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1,1,1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test21) {
+
+    NDArray<double> x ('f', {1});
+    NDArray<double> y ('c', {1, 1});
+    NDArray<double> exp('f',{1}, {0.2});
+
+    NDArrayFactory<double>::linspace(2., x);
+    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test22) {
+
+    NDArray<double> x ('f', {1,1});
+    NDArray<double> y ('c', {1});
+    NDArray<double> exp('f',{1}, {0.2});
+
+    NDArrayFactory<double>::linspace(2., x);
+    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test23) {
+
+    NDArray<double> x ('f', {4});   
+    NDArray<double> y ('c', {4});
+    NDArray<double> exp(3.);
+
+    NDArrayFactory<double>::linspace(1., x);
+    NDArrayFactory<double>::linspace(0.1, y, 0.1);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, matmul_test24) {
+
+    NDArray<double> x ('f', {1}, {2.});   
+    NDArray<double> y ('c', {1}, {3.});
+    NDArray<double> exp(6.);
+ 
+    nd4j::ops::matmul<double> op;
+    ResultSet<double>* results = op.execute({&x, &y}, {}, {1, 1});
+    NDArray<double>* z = results->at(0);
+ 
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete results;
+}
 
 
 

@@ -820,7 +820,7 @@ void NDArrayFactory<T>::matmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>
         
     NDArray<T>* xT(const_cast<NDArray<T>*>(x)), *yT(const_cast<NDArray<T>*>(y)), *zT(z);
     
-    if(transX || transY) {
+    if((transX && xRank > 1) || (transY && yRank > 1)) {
         
         const int rank = xRank >= yRank ? xRank : yRank;
         std::vector<int> permut(rank);
@@ -836,9 +836,9 @@ void NDArrayFactory<T>::matmul(const nd4j::NDArray<T>* x, const nd4j::NDArray<T>
             yT = y->permute(permut);
     }
 
-    if(xRank <= 2 && yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D),  matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
+    if(xRank <= 2 && yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
 
-        if(xRank == 1 || yRank == 2) {   // reduce vector-matrix to matrix-matrix case
+        if(xRank == 1 && yRank == 2) {   // reduce vector-matrix to matrix-matrix case
             xT = x->reshape(x->ordering(), {1, x->lengthOf()}); // please note x is not transposed in this case (since xRank=1)
             zT = z->reshape(z->ordering(), {1, z->lengthOf()});
         }

@@ -1556,7 +1556,9 @@ Nd4jLong  NDArray<T>::memoryFootprint() {
 //////////////////////////////////////////////////////////////////////////
 // still the definition of inline function must be in header file
 template<typename T>
-bool NDArray<T>::isSameShape(const std::vector<Nd4jLong>& shape) const{
+bool NDArray<T>::isSameShape(const std::vector<Nd4jLong>& shape) const{    
+    if (this->isScalar() && shape.size() == 1 && shape[0] == 0)
+        return true;
     if (this->rankOf() != (int) shape.size())
         return false;
     for (int e = 0; e < this->rankOf(); e++) {

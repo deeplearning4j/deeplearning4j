@@ -84,10 +84,7 @@ DECLARE_SHAPE_FN(matmul) {
           int transY = iSize > 1 ? INT_ARG(1) : 0;
     const int transZ = iSize > 2 ? INT_ARG(2) : 0;
 
-    const int xRank = xShapeInfo[0];
-    const int yRank = yShapeInfo[0];
-
-    REQUIRE_TRUE(xRank > 0 && yRank > 0, 0, "MATMUL OP: input arrays must have rank bigger than 0 (should not be scalars), but got instead: x rank = %i, y rank = %i !", xRank, yRank);
+    REQUIRE_TRUE(xShapeInfo[0] > 0 && yShapeInfo[0] > 0, 0, "MATMUL OP: input arrays must have rank bigger than 0 (should not be scalars), but got instead: x rank = %i, y rank = %i !", xShapeInfo[0], yShapeInfo[0]);
 
     if(transZ) {
         xShapeInfo = inputShape->at(1);
@@ -97,17 +94,9 @@ DECLARE_SHAPE_FN(matmul) {
         transY = !temp;
     }
 
-    std::vector<Nd4jLong> zShape = ShapeUtils<T>::evalShapeForMatmul(xShapeInfo, yShapeInfo, transX, transY);
-    
-    Nd4jLong* zShapeInfo = nullptr;
-    ALLOCATE(zShapeInfo, block.getWorkspace(), shape::shapeInfoLength(xRank), Nd4jLong);
+    std::vector<Nd4jLong> zShapeOnly = ShapeUtils<T>::evalShapeForMatmul(xShapeInfo, yShapeInfo, transX, transY);
 
-    zShapeInfo[0] = xRank;
-    for(int i = 0; i < xRank; ++i)
-        zShapeInfo[i + 1] = zShape[i];
-    shape::updateStrides(zShapeInfo, 'f' /*shape::order(xShapeInfo)*/);    
-
-    return SHAPELIST(zShapeInfo);
+    return SHAPELIST( ShapeUtils<T>::createShapeInfo('f', zShapeOnly, block.getWorkspace()) );    
 }
 
 }
