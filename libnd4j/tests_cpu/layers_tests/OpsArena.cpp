@@ -11,6 +11,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <memory/MemoryReport.h>
 #include <memory/MemoryUtils.h>
+#include <MmulHelper.h>
 
 using namespace nd4j;
 using namespace nd4j::ops;
@@ -140,14 +141,14 @@ TEST_F(OpsArena, TestMmulHelper1) {
     NDArray<float> b('c', {100, 100});
     NDArray<float> c('c', {100, 100});
 
-    nd4j::NDArrayFactory<float>::mmulHelper(&a, &b, &c);
+    nd4j::MmulHelper<float>::mmul(&a, &b, &c);
 
     nd4j::memory::MemoryReport before, after;
 
     nd4j::memory::MemoryUtils::retrieveMemoryStatistics(before);
 
     for (int e = 0; e < numIterations; e++) {
-        nd4j::NDArrayFactory<float>::mmulHelper(&a, &b, &c);
+        nd4j::MmulHelper<float>::mmul(&a, &b, &c);
     }
 
     nd4j::memory::MemoryUtils::retrieveMemoryStatistics(after);
@@ -162,7 +163,7 @@ TEST_F(OpsArena, TestMmulHelper2) {
     NDArray<float> a('c', {100, 100});
     NDArray<float> b('c', {100, 100});
 
-    auto c = nd4j::NDArrayFactory<float>::mmulHelper(&a, &b);
+    auto c = nd4j::MmulHelper<float>::mmul(&a, &b);
     delete c;
 
     nd4j::memory::MemoryReport before, after;
@@ -170,7 +171,7 @@ TEST_F(OpsArena, TestMmulHelper2) {
     nd4j::memory::MemoryUtils::retrieveMemoryStatistics(before);
 
     for (int e = 0; e < numIterations; e++) {
-        c = nd4j::NDArrayFactory<float>::mmulHelper(&a, &b);
+        c = nd4j::MmulHelper<float>::mmul(&a, &b);
         delete c;
     }
 

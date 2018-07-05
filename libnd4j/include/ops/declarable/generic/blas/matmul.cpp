@@ -8,7 +8,7 @@
 #if NOT_EXCLUDED(OP_matmul)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/matmul.h>
+#include <MmulHelper.h>
 
 namespace nd4j {
 namespace ops  {
@@ -63,7 +63,7 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
     }
     // ******* end of input validation ******* //
     
-    NDArrayFactory<T>::matmul(x, y, z, transX, transY);
+    MmulHelper<T>::matmul(x, y, z, transX, transY);
 
     return Status::OK();
 }
@@ -150,7 +150,7 @@ DECLARE_SHAPE_FN(matmul) {
                 //NDArray<T> *_z = z->reshape(z->ordering(), {1, (int) z->lengthOf()});
         
                 // gemm
-                nd4j::NDArrayFactory<T>::mmulHelper(_x, _y, z, alpha, beta);
+                nd4j::MmulHelper<T>::mmul(_x, _y, z, alpha, beta);
 
                 delete _x;
                 //delete _z;
@@ -161,7 +161,7 @@ DECLARE_SHAPE_FN(matmul) {
                 NDArray<T> *_x = transX == 111 ? x : x->transpose();
                 NDArray<T> *_y = transY == 111 ? y : y->transpose();
                 // gemv
-                nd4j::NDArrayFactory<T>::mmulHelper(_x, _y, z, alpha, beta);
+                nd4j::MmulHelper<T>::mmul(_x, _y, z, alpha, beta);
 
                 if (transX == 112)
                     delete _x;
@@ -173,7 +173,7 @@ DECLARE_SHAPE_FN(matmul) {
                 NDArray<T> *_x = transX == 111 ? x : x->transpose();
                 NDArray<T> *_y = transY == 111 ? y : y->transpose();
 
-                nd4j::NDArrayFactory<T>::mmulHelper(_x, _y, z, alpha, beta);
+                nd4j::MmulHelper<T>::mmul(_x, _y, z, alpha, beta);
 
                 if (transX == 112)
                     delete _x;
@@ -182,7 +182,7 @@ DECLARE_SHAPE_FN(matmul) {
                     delete _y;
             } else if (x->isVector() && y->isMatrix()) {
                 // gemm
-                nd4j::NDArrayFactory<T>::mmulHelper(x, y, z, alpha, beta);
+                nd4j::MmulHelper<T>::mmul(x, y, z, alpha, beta);
             } else if ((x->isMatrix() && y->isMatrix() || (x->isColumnVector() || (x->isRowVector() && transX == 112)) && (y->isRowVector() || (y->isColumnVector() && transY == 112))) && iSize > 0) {
                 // gemm
                 NDArray<T> *_x = transX == 111 ? x : x->transpose();
@@ -191,7 +191,7 @@ DECLARE_SHAPE_FN(matmul) {
                 REQUIRE_TRUE(_x->rankOf() == 2 && _y->rankOf() == 2, 0, "MatMul: both operands should have rank 2");
                 REQUIRE_TRUE(_x->columns() == _y->rows(), 0, "MatMul: number of A.colums() should be equal to number of B.rows()");
 
-                nd4j::NDArrayFactory<T>::mmulHelper(_x, _y, z, alpha, beta);
+                nd4j::MmulHelper<T>::mmul(_x, _y, z, alpha, beta);
 
                 if (transX == 112)
                     delete _x;
@@ -204,10 +204,10 @@ DECLARE_SHAPE_FN(matmul) {
                 REQUIRE_TRUE(x->rankOf() == 2 && y->rankOf() == 2, 0, "MatMul: both operands should have rank 2");
                 REQUIRE_TRUE(x->columns() == y->rows(), 0, "MatMul: number of A.colums() should be equal to number of B.rows()");
 
-                nd4j::NDArrayFactory<T>::mmulHelper(x, y, z, alpha, beta);
+                nd4j::MmulHelper<T>::mmul(x, y, z, alpha, beta);
             } else if (x->isVector() && y->isVector()) {
                 // dot
-                nd4j::NDArrayFactory<T>::mmulHelper(x, y, z, alpha, beta);
+                nd4j::MmulHelper<T>::mmul(x, y, z, alpha, beta);
             } else if (x->isVector() && y->isScalar()) {
                 // elementwise mul
 

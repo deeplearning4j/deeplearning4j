@@ -10,6 +10,7 @@
 #include <Workspace.h>
 #include <MemoryRegistrator.h>
 #include <NDArrayFactory.h>
+#include <MmulHelper.h>
 
 using namespace nd4j;
 using namespace nd4j::memory;
@@ -184,7 +185,7 @@ TEST_F(WorkspaceTests, Test_Arrays_1) {
 
     NDArray<float> z('c', {3, 3}, {0, 0, 0, 0, 0, 0, 0, 0, 0}, &ws);
 
-    NDArrayFactory<float>::mmulHelper(&x, &y, &z);
+    MmulHelper<float>::mmul(&x, &y, &z);
 
     y.assign(&x);
 
