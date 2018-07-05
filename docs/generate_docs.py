@@ -12,9 +12,7 @@ class DocumentationGenerator:
         self.out_language = args.out_language
         self.template_dir = args.templates if self.out_language == 'en' else args.templates + '_' + self.out_language
         self.project_name = args.project + '/'
-
-        assert os.path.exists(self.project_name + self.template_dir), \
-            'No template folder for language ' + self.out_language
+        self.validate_templates()
 
         self.target_dir = args.sources if self.out_language == 'en' else args.sources + '_' + self.out_language
         self.language = args.language
@@ -29,6 +27,14 @@ class DocumentationGenerator:
         self.pages = site.get('pages', [])
         self.indices = site.get('indices', [])
         self.excludes = site.get('excludes', [])
+
+    '''
+    '''
+    def validate_templates(self):
+        assert os.path.exists(self.project_name + self.template_dir), \
+            'No template folder for language ' + self.out_language
+        # TODO: check if folder structure for 'templates' and 'templates_XX' aligns
+        # TODO: do additional sanity checks to assure different languages are in sync
 
 
     '''Generate links within documentation.
