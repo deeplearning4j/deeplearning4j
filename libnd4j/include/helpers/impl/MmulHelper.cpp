@@ -6,7 +6,7 @@
 #define LIBND4J_MMULHELPER_CPP
 
 #include "../MmulHelper.h"
-#include "../NDArrayFactory.h"
+#include <NDArrayFactory.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/BlasHelper.h>
 
