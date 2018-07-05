@@ -108,9 +108,9 @@ class DocumentationGenerator:
 
     '''Returns doc string and signature data for constructors.
     '''
-    def get_constructor_data(self, class_string, class_name):
+    def get_constructor_data(self, class_string, class_name, use_contructor):
         constructors = []
-        if 'public ' + class_name in class_string:
+        if 'public ' + class_name in class_string and use_contructor:
             while 'public ' + class_name in class_string:
                 doc_regex = r'\/\*\*\n([\S\s]*?.*)\*\/\n[\S\s]*?(public ' \
                             + class_name + '.[\S\s]*?){'
@@ -125,9 +125,20 @@ class DocumentationGenerator:
     '''Returns doc string and signature data for methods
     in the public API of an object
     '''
-    def get_public_method_data(self, class_string):
+    def get_public_method_data(self, class_string, includes, excludes):
         method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
+
+        print('>>> INCLUDES/EXCLUDES')
+        print(includes)
+        print(excludes)
+
+        # Either use all methods or use include methods that can be found
         method_strings = re.findall(method_regex, class_string)
+        if includes:
+            method_strings = [i for i in includes if i in method_strings]
+
+        # Exclude all 'exclude' methods
+        method_strings = [m for m in method_strings if m not in excludes]
 
         methods = []
         for method in method_strings:
@@ -185,21 +196,41 @@ class DocumentationGenerator:
         if cls:
             classes = cls
 
-        # print(module)
-        # print(classes)
+        includes = data.get('include', [])
+        excludes = data.get('exclude', [])
+
+        use_constructors = data.get('constructors', True)
+        tag = data.get('autogen_tag', '')
 
         for cls in sorted(classes):
             class_string = self.inspect_class_string(module, cls)
+            class_string = self.get_tag_data(class_string, tag)
             class_string = class_string.replace('<p>', '').replace('</p>', '')
             class_name = cls.replace('.' + self.language, '')
             doc_string, class_string = self.get_main_doc_string(class_string, class_name)
-            constructors, class_string = self.get_constructor_data(class_string, class_name)
-            methods = self.get_public_method_data(class_string)
+            constructors, class_string = self.get_constructor_data(class_string, class_name, use_constructors)
+            methods = self.get_public_method_data(class_string, includes, excludes)
 
             page_data.append([module, class_name, doc_string, constructors, methods])
 
         return page_data
 
+    '''If a tag is present in a source code string, extract everything between
+    tag::<tag>::start and tag::<tag>::end.
+    '''
+    def get_tag_data(self, class_string, tag):
+        start_tag = r'tag::' + tag + '::start'
+        end_tag = r'tag::' + tag + '::end'
+        if not tag:
+            return class_string
+        elif tag and start_tag in class_string and end_tag not in class_string:
+            print("Warning: Start tag, but no end tag found for tag: ", tag)
+        elif tag and start_tag in class_string and end_tag not in class_string:
+            print("Warning: End tag, but no start tag found for tag: ", tag)
+        else:
+            start = re.search(start_tag, class_string)
+            end = re.search(end_tag, class_string)
+            return class_string[start.end():end.start()]
 
     '''Before generating new docs into target folder, clean up old files. 
     '''
