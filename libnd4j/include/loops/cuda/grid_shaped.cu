@@ -22,16 +22,16 @@ __device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            params[0] = (Nd4jPointer *) &scalarA;
+            params[0] = reinterpret_cast<Nd4jPointer *>(&scalarA);
         }
-        else params[0] = (Nd4jPointer *) extraA;
+        else params[0] = reinterpret_cast<Nd4jPointer *>(extraA);
 
         if (opTypeB == 0) {
-            params[1] = (Nd4jPointer *) &scalarB;
+            params[1] = reinterpret_cast<Nd4jPointer *>(&scalarB);
         }
-        else params[1] = (Nd4jPointer *) extraB;
+        else params[1] = reinterpret_cast<Nd4jPointer *>(extraB);
 
-        paramsPtr = (T *) params;
+        paramsPtr = reinterpret_cast<T *>(params);
     }
     __syncthreads();
 
@@ -49,16 +49,16 @@ __device__ static inline void invertedMetaPairwiseShapedGeneric(const int opType
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            params[0] = (Nd4jPointer *) &scalarA;
+            params[0] = reinterpret_cast<Nd4jPointer *>(&scalarA);
         }
-        else params[0] = (Nd4jPointer *) extraA;
+        else params[0] = reinterpret_cast<Nd4jPointer *>(extraA);
 
         if (opTypeB == 0) {
-            params[1] = (Nd4jPointer *) &scalarB;
+            params[1] = reinterpret_cast<Nd4jPointer *>(&scalarB);
         }
-        else params[1] = (Nd4jPointer *) extraB;
+        else params[1] = reinterpret_cast<Nd4jPointer *>(extraB);
 
-        paramsPtr = (T *) params;
+        paramsPtr = reinterpret_cast<T *>(params);
     }
     __syncthreads();
 
@@ -71,16 +71,16 @@ __device__ static inline void invertedMetaPairwiseShapedGeneric(const int opType
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            params[0] = (Nd4jPointer *) &scalarA;
+            params[0] = reinterpret_cast<Nd4jPointer *>(&scalarA);
         }
-        else params[0] = (Nd4jPointer *) extraA;
+        else params[0] = reinterpret_cast<Nd4jPointer *>(extraA);
 
         if (opTypeB == 0) {
-            params[1] = (Nd4jPointer *) &scalarB;
+            params[1] = reinterpret_cast<Nd4jPointer *>(&scalarB);
         }
-        else params[1] = (Nd4jPointer *) extraB;
+        else params[1] = reinterpret_cast<Nd4jPointer *>(extraB);
 
-        paramsPtr = (T *) params;
+        paramsPtr = reinterpret_cast<T *>(params);
     }
     __syncthreads();
 
@@ -93,16 +93,16 @@ __device__ static inline void invertedMetaPairwiseShapedNumericGeneric(const int
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
         if (opTypeA == 0) {
-            params[0] = (Nd4jPointer *) &scalarA;
+            params[0] = reinterpret_cast<Nd4jPointer *>(&scalarA);
         }
-        else params[0] = (Nd4jPointer *) extraA;
+        else params[0] = reinterpret_cast<Nd4jPointer *>(extraA);
 
         if (opTypeB == 0) {
-            params[1] = (Nd4jPointer *) &scalarB;
+            params[1] = reinterpret_cast<Nd4jPointer *>(&scalarB);
         }
-        else params[1] = (Nd4jPointer *) extraB;
+        else params[1] = reinterpret_cast<Nd4jPointer *>(extraB);
 
-        paramsPtr = (T *) params;
+        paramsPtr = reinterpret_cast<T *>(params);
     }
 
     __syncthreads();
@@ -135,6 +135,10 @@ extern "C" __global__ void invertedMetaPairwiseShapedNumericHalf(const int opTyp
 namespace functions {
     namespace grid {
 
+        __device__ void _ind2subC(int rank, Nd4jLong *shape, Nd4jLong idx, Nd4jLong length, Nd4jLong *coords) {
+            shape::ind2subC(rank, shape, idx, length, coords);
+        }
+
         __device__ void _ind2subC(int rank, Nd4jLong *shape, Nd4jLong idx, Nd4jLong *coords) {
             shape::ind2subC(rank, shape, idx, coords);
         }
@@ -160,7 +164,7 @@ namespace functions {
          * @tparam T
          */
         template <typename T>
-        __device__ T _execute_2OE(const int opType, const int opNum, T x, T y, T *extras) {
+        __device__  __noinline__ T _execute_2OE(const int opType, const int opNum, T x, T y, T *extras) {
             T z;
             switch(opType) {
                 case 2: {
@@ -181,8 +185,9 @@ namespace functions {
         * @tparam T
         */
         template <typename T>
-        __device__ T _execute_1OE(const int opType, const int opNum, T x, T *extras) {
+        __device__ __noinline__ T _execute_1OE(const int opType, const int opNum, T x, T *extras) {
             T z;
+
             switch(opType) {
                 case 0: {
                     EXECUTE_NOE((x, extras), OPS_A(SCALAR_OPS));
@@ -201,9 +206,9 @@ namespace functions {
         __device__ T _invertedOpExecutorA(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, T x, T y, T *extras) {
             // this code is basically InvertedMetaOp, reorganized to suit per-type execution
 
-            Nd4jPointer *wrap = reinterpret_cast<Nd4jPointer *> (extras);
-            T *paramsA = reinterpret_cast<T *> (wrap[0]);
-            T *paramsB = reinterpret_cast<T *> (wrap[1]);
+            auto wrap = reinterpret_cast<Nd4jPointer *> (extras);
+            auto paramsA = reinterpret_cast<T *> (wrap[0]);
+            auto paramsB = reinterpret_cast<T *> (wrap[1]);
             T intermediate;
 
             // Executing first op, opA
@@ -219,7 +224,6 @@ namespace functions {
         template<typename T>
         __device__ void GRIDShaped<T>::transformCuda(int opTypeA, int opNumA, int opTypeB, int opNumB,  T *dx, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *result, Nd4jLong *resultShapeBuffer, T *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, Nd4jLong *tadOnlyShapeInfo) {
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
-
 
             __shared__ int xRank;
             __shared__ int yRank;
@@ -258,8 +262,8 @@ namespace functions {
                 Nd4jLong yCoord[MAX_RANK];
 
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-                    _ind2subC(xRank, xShape, i, xCoord);
-                    _ind2subC(yRank, yShape, i, yCoord);
+                    _ind2subC(xRank, xShape, i, n, xCoord);
+                    _ind2subC(yRank, yShape, i, n, yCoord);
 
                     auto xOffset = _getOffset(0, xShape, xStride, xCoord, xRank);
                     auto yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);
@@ -272,14 +276,14 @@ namespace functions {
                 Nd4jLong resultCoord[MAX_RANK];
 
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-                    _ind2subC(xRank, xShape, i, xCoord);
-                    _ind2subC(yRank, yShape, i, yCoord);
-                    _ind2subC(resultRank, zShape, i, resultCoord);
+                    _ind2subC(xRank, xShape, i, n, xCoord);
+                    _ind2subC(yRank, yShape, i, n, yCoord);
+                    _ind2subC(resultRank, zShape, i, n, resultCoord);
 
                     auto xOffset = _getOffset(0, xShape, xStride, xCoord, xRank);
                     auto yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);
                     auto resultOffset = _getOffset(0, zShape, zStride, resultCoord, resultRank);
-                    result[0] = _invertedOpExecutorA(opTypeA, opNumA, opTypeB, opNumB, dx[xOffset], y[yOffset], extraParams); //OpType::op(dx[xOffset], y[yOffset], extraParams);
+                    result[resultOffset] = _invertedOpExecutorA(opTypeA, opNumA, opTypeB, opNumB, dx[xOffset], y[yOffset], extraParams); //OpType::op(dx[xOffset], y[yOffset], extraParams);
                 }
             }
         }
@@ -326,8 +330,8 @@ namespace functions {
                 Nd4jLong yCoord[MAX_RANK];
 
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-                    _ind2subC(xRank, xShape, i, xCoord);
-                    _ind2subC(yRank, yShape, i, yCoord);
+                    _ind2subC(xRank, xShape, i, n, xCoord);
+                    _ind2subC(yRank, yShape, i, n, yCoord);
 
                     auto xOffset = _getOffset(0, xShape, xStride, xCoord, xRank);
                     auto yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);
@@ -339,9 +343,9 @@ namespace functions {
                 Nd4jLong resultCoord[MAX_RANK];
 
                 for (Nd4jLong i = tid; i < n; i += gridDim.x * blockDim.x) {
-                    _ind2subC(xRank, xShape, i, xCoord);
-                    _ind2subC(yRank, yShape, i, yCoord);
-                    _ind2subC(resultRank, zShape, i, resultCoord);
+                    _ind2subC(xRank, xShape, i, n, xCoord);
+                    _ind2subC(yRank, yShape, i, n, yCoord);
+                    _ind2subC(resultRank, zShape, i, n, resultCoord);
 
                     auto xOffset = _getOffset(0, xShape, xStride, xCoord, xRank);
                     auto yOffset = _getOffset(0, yShape, yStride, yCoord, yRank);

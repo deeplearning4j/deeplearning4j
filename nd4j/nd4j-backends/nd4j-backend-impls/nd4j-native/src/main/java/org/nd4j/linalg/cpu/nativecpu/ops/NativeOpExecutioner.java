@@ -165,9 +165,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         boolean keepDims;
         boolean newFormat;
-        if(op instanceof BaseAccumulation) {
-            keepDims = ((BaseAccumulation) op).isKeepDims();
-            newFormat = ((BaseAccumulation) op).isNewFormat();
+        if(op instanceof BaseIndexAccumulation) {
+            keepDims = ((BaseIndexAccumulation) op).isKeepDims();
+            newFormat = ((BaseIndexAccumulation) op).isNewFormat();
         } else {
             keepDims = false;
             newFormat = false;
@@ -1255,7 +1255,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         properties.put(Nd4jEnvironment.HOST_FREE_MEMORY_KEY, Pointer.maxBytes() - Pointer.totalBytes());
 
         // fill bandwidth information
-        properties.put(Nd4jEnvironment.MEMORY_BANDWIDTH_KEY, PerformanceTracker.getInstance().getCurrentBandwidth());
+        /*
+        Note: Environment information is logged as part of ND4J initialization... but PerformanceTracker required
+        ND4J init to be completed before it can be initialized. Hence we can get a null PerformanceTracker when
+        OpExecutioner.printEnvironmentInformation() is called as part of ND4J class initialization - even
+        though PerformanceTracker.getInstance() refers to a static final field (as it may not yet be initialized)
+         */
+        if(PerformanceTracker.getInstance() != null) {
+            properties.put(Nd4jEnvironment.MEMORY_BANDWIDTH_KEY, PerformanceTracker.getInstance().getCurrentBandwidth());
+        }
 
         return properties;
     }
@@ -1419,14 +1427,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
 
-        MatchCondition condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
-        int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+        //val condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
+        //long t1 = System.currentTimeMillis();
+        int cntAbs = input.data().dataType() == DataBuffer.Type.FLOAT ? loop.estimateThresholdFloat(null, input.data().addressPointer(), (int) input.length(), (float) threshold)
+                : input.data().dataType() == DataBuffer.Type.DOUBLE ? loop.estimateThresholdDouble(null, input.data().addressPointer(), (int) input.length(), (float) threshold)
+                : loop.estimateThresholdHalf(null, input.data().addressPointer(), (int) input.length(), (float) threshold);
+        //long t2 = System.currentTimeMillis();
 
         if (cntAbs < 2)
             return null;
 
         if (boundary != null)
             cntAbs = Math.min(cntAbs, boundary);
+
+        //log.info("S: {}; T: {}", cntAbs, t2 - t1);
 
         DataBuffer buffer = input.data();
 
@@ -1949,9 +1963,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
-                Pointer.memcpy(array.data().addressPointer(), buffer, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType());
+                Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType());
 
-                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
                 //newMap.put(keySet.get(e), array);
 //                if (map.containsKey(nodeName))
@@ -1986,9 +2000,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
-                Pointer.memcpy(array.data().addressPointer(), buffer, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType());
+                Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType());
 
-                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
                 //newMap.put(keySet.get(nodeId), array);
                 val nodeName = var.getName().getString();
@@ -2024,9 +2038,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
-                Pointer.memcpy(array.data().addressPointer(), buffer, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType());
+                Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType());
 
-                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, ArrayUtil.prodLong(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
 
                 //newMap.put(keySet.get(nodeId), array);
                 val nodeName = var.getName().getString();
@@ -2104,5 +2118,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
         return retShape;
+    }
+
+    @Override
+    public ExecutionerType type() {
+        return ExecutionerType.NATIVE_CPU;
     }
 }

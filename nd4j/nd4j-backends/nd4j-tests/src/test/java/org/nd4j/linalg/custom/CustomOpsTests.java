@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -110,7 +111,7 @@ public class CustomOpsTests {
         assertEquals(exp, arrayX);
     }
 
-    @Test
+    @Test(expected = ND4JIllegalStateException.class)
     public void testInplaceOp1() throws Exception {
         val arrayX = Nd4j.create(10, 10);
         val arrayY = Nd4j.create(10, 10);
@@ -130,7 +131,7 @@ public class CustomOpsTests {
         assertEquals(exp, arrayX);
     }
 
-    @Test(expected = ND4JIllegalStateException.class)
+    @Test
     public void testNoneInplaceOp3() throws Exception {
         val arrayX = Nd4j.create(10, 10);
         val arrayY = Nd4j.create(10, 10);
@@ -147,32 +148,7 @@ public class CustomOpsTests {
 
         Nd4j.getExecutioner().exec(op);
 
-        assertEquals(exp, arrayX);
-    }
-
-
-    @Test
-    public void testInplaceOp2() throws Exception {
-        val arrayX = Nd4j.create(10, 10);
-        val arrayY = Nd4j.create(10, 10);
-        val arrayZ = Nd4j.create(10, 10);
-
-        arrayX.assign(3.0);
-        arrayY.assign(1.0);
-
-        val exp = Nd4j.create(10,10).assign(4.0);
-        val expZ = Nd4j.create(10,10);
-
-        CustomOp op = DynamicCustomOp.builder("add")
-                .addInputs(arrayX, arrayY)
-                .addOutputs(arrayZ)
-                .callInplace(true)
-                .build();
-
-        Nd4j.getExecutioner().exec(op);
-
-        assertEquals(exp, arrayX);
-        assertEquals(expZ, arrayZ);
+        assertEquals(exp, op.getOutputArgument(0));
     }
 
 
@@ -240,15 +216,13 @@ public class CustomOpsTests {
         val array0 = Nd4j.create(new int[] {2, 2}, 'c'); //some random array with +ve numbers
         val array1 = array0.dup('c').addi(5);
 
-        Nd4j.getExecutioner().commit();
-
         assertEquals(exp, array1);
     }
 
     @Test
     public void testMergeMaxMixedOrder() {
         val array0 = Nd4j.rand('f', 5, 2).addi(1); //some random array with +ve numbers
-        val array1 = array0.dup().addi(5);
+        val array1 = array0.dup('c').addi(5);
         array1.put(0, 0, 0); //array1 is always bigger than array0 except at 0,0
 
         //expected value of maxmerge
@@ -259,6 +233,7 @@ public class CustomOpsTests {
         CustomOp op = DynamicCustomOp.builder("mergemax")
                 .addInputs(array0, array1)
                 .addOutputs(zF)
+                .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(op);
 
@@ -341,6 +316,9 @@ public class CustomOpsTests {
 
     @Test
     public void testRandomStandardNormal_1() {
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
+            return;
+
         val shape = Nd4j.create(new float[] {5, 10});
         val op = new RandomStandardNormal(shape);
 
@@ -354,6 +332,9 @@ public class CustomOpsTests {
 
     @Test
     public void testRandomStandardNormal_2() {
+        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
+            return;
+
         val shape = new long[]{5, 10};
         val op = new RandomStandardNormal(shape);
 

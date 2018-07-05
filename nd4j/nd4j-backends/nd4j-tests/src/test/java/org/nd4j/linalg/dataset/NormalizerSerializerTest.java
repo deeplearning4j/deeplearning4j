@@ -42,6 +42,16 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
     }
 
     @Test
+    public void testImagePreProcessingScaler() throws Exception {
+        ImagePreProcessingScaler imagePreProcessingScaler = new ImagePreProcessingScaler(0,1);
+        SUT.write(imagePreProcessingScaler,tmpFile);
+
+        ImagePreProcessingScaler restored = SUT.restore(tmpFile);
+        assertEquals(imagePreProcessingScaler,restored);
+
+    }
+
+    @Test
     public void testNormalizerStandardizeNotFitLabels() throws Exception {
         NormalizerStandardize original = new NormalizerStandardize(Nd4j.create(new double[] {0.5, 1.5}),
                         Nd4j.create(new double[] {2.5, 3.5}));

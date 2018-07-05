@@ -25,6 +25,7 @@ import lombok.val;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -164,16 +165,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testDiag() {
       INDArray diag = Nd4j.diag(Nd4j.linspace(1,4,4).reshape(4,1));
       assertArrayEquals(new long[] {4,4},diag.shape());
-
-    }
-
-    @Test
-    public void testSoftmaxDerivativeGradient() {
-        INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
-        INDArray inputDup = input.dup();
-        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftMaxDerivative(input,Nd4j.ones(2,2),input));
-        Nd4j.getExecutioner().exec(new SoftMaxDerivative(inputDup));
-        assertEquals(input,inputDup);
     }
 
     @Test
@@ -6489,43 +6480,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.setDataType(dtype);
     }
 
-
     @Test
-    public void testEye(){
+    public void testSomething() {
+        val a = Nd4j.create(10, 20);
 
-        int[] rows = new int[]{3,3,3,3};
-        int[] cols = new int[]{3,2,2,2};
-        int[][] batch = new int[][]{null, null, {4}, {3,3}};
-        INDArray[] expOut = new INDArray[4];
-
-        expOut[0] = Nd4j.eye(3);
-        expOut[1] = Nd4j.create(new double[][]{{1,0,0},{0,1,0}});
-        expOut[2] = Nd4j.create(4,3,2);
-        for( int i=0; i<4; i++ ){
-            expOut[2].get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
-        }
-        expOut[3] = Nd4j.create(3,3,3,2);
-        for( int i=0; i<3; i++ ){
-            for( int j=0; j<3; j++ ) {
-                expOut[3].get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all()).assign(expOut[1]);
-            }
-        }
-
-
-        for(int i=0; i<3; i++ ) {
-            INDArray out = Nd4j.create(expOut[i].shape());
-
-            DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("eye")
-                    .addOutputs(out)
-                    .addIntegerArguments(rows[i], cols[i]);
-            if(batch[i] != null){
-                op.addIntegerArguments(batch[i]);
-            }
-
-            Nd4j.getExecutioner().exec(op.build());
-
-            assertEquals(expOut[i], out);
-        }
+        log.info("Shape: {}", a.mean(0).shape());
     }
 
     @Test
@@ -6668,6 +6627,31 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, array);
     }
 
+    @Test
+    public void testSomething_1() {
+        val arrayX = Nd4j.create(128, 128, 'f');
+        val arrayY = Nd4j.create(128, 128, 'f');
+        val arrayZ = Nd4j.create(128, 128, 'f');
+
+        int iterations = 10000;
+        // warmup
+        for (int e = 0; e < 1000; e++)
+            arrayX.addi(arrayY);
+
+        for (int e = 0; e < iterations; e++) {
+            val c = new GemmParams(arrayX, arrayY, arrayZ);
+        }
+
+        val tS = System.nanoTime();
+        for (int e = 0; e < iterations; e++) {
+            //val c = new GemmParams(arrayX, arrayY, arrayZ);
+            arrayX.mmuli(arrayY, arrayZ);
+        }
+
+        val tE = System.nanoTime();
+
+        log.info("Average time: {}", ((tE - tS) / iterations));
+    }
 
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {

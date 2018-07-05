@@ -530,8 +530,9 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public INDArray empty() {
+    public INDArray empty(DataBuffer.Type type) {
         long extras  = ArrayOptionsHelper.setOptionBit(0L, ArrayType.EMPTY);
+        extras = ArrayOptionsHelper.setOptionBit(extras, type);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new int[0], new int[0],0,1,'c', extras);
         return new NDArray(null, (LongBuffer) shape.getFirst(), shape.getSecond());
     }
@@ -1349,6 +1350,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, DataBuffer buffer) {
+        convertDataEx(typeSrc, source, typeDst, buffer.addressPointer(), buffer.length() * buffer.getElementSize());
+    }
+
+    @Override
     public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst,
                               DataBuffer target) {
         convertDataEx(typeSrc, source.addressPointer(), typeDst, target.addressPointer(), target.length());
@@ -1456,43 +1462,53 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(double[] values, int[][] indices, int[] shape) {
+    public INDArray createSparseCOO(double[] values, int[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(float[] values, int[][] indices, int[] shape) {
+    public INDArray createSparseCOO(float[] values, int[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape) {
+    public INDArray createSparseCOO(double[] values, long[][] indices, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape) {
+    public INDArray createSparseCOO(float[] values, long[][] indices, long[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, long[] shape) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape) {
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, long[] shape) {
         throw new UnsupportedOperationException();
     }
 

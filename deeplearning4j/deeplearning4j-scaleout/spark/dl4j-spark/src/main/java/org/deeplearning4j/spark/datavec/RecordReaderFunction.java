@@ -58,12 +58,7 @@ public class RecordReaderFunction implements Function<String, DataSet> {
     public DataSet call(String v1) throws Exception {
         recordReader.initialize(new StringSplit(v1));
         List<DataSet> dataSets = new ArrayList<>();
-        List<Writable> record = recordReader.next();
-        List<Writable> currList;
-        if (record instanceof List)
-            currList = (List<Writable>) record;
-        else
-            currList = new ArrayList<>(record);
+        List<Writable> currList = recordReader.next();
 
         INDArray label = null;
         INDArray featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() - 1 : currList.size());
@@ -75,10 +70,10 @@ public class RecordReaderFunction implements Function<String, DataSet> {
                 Writable current = currList.get(j);
                 if (converter != null)
                     current = converter.convert(current);
-                label = FeatureUtil.toOutcomeVector(Double.valueOf(current.toString()).intValue(), numPossibleLabels);
+                label = FeatureUtil.toOutcomeVector(current.toInt(), numPossibleLabels);
             } else {
                 Writable current = currList.get(j);
-                featureVector.putScalar(count++, Double.valueOf(current.toString()));
+                featureVector.putScalar(count++, current.toDouble());
             }
         }
 
@@ -94,8 +89,8 @@ public class RecordReaderFunction implements Function<String, DataSet> {
         }
 
 
-        DataSet ret = new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])),
-                        Nd4j.vstack(labels.toArray(new INDArray[0])));
+        DataSet ret = new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[inputs.size()])),
+                        Nd4j.vstack(labels.toArray(new INDArray[inputs.size()])));
         return ret;
     }
 }

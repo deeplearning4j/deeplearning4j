@@ -231,7 +231,7 @@ DECLARE_SHAPE_FN(conv2d_bp) {
         return SHAPELIST(gradIshapeInfo, gradWshapeInfo, gradBshapeInfo);
     }     
 
-    return SHAPELIST(gradIshapeInfo, gradWshapeInfo);        
+    return SHAPELIST(gradIshapeInfo, gradWshapeInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////// 

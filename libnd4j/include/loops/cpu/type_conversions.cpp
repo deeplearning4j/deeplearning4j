@@ -5,6 +5,7 @@
 #include <types/types.h>
 #include <op_boilerplate.h>
 #include <loops/type_conversions.h>
+#include <OmpLaunchHelper.h>
 
 namespace nd4j {
 
@@ -25,45 +26,60 @@ namespace nd4j {
         auto l = static_cast<int>(N);
         z[1] = l;
 
+        int threads = OmpLaunchHelper::betterThreads(N);
+        int span = OmpLaunchHelper::betterSpan(N, threads);
+
+        T tt = static_cast<T>(threshold);
+        T mtt = -tt;
+
         // we use 3 as offset, since first 12 bytes are occupied with header
         int flimit = limit + 4;
         volatile int cnt = 4;
         volatile bool flag = false;
-#pragma omp parallel for schedule(guided) default(shared)
-        for (int e = 0; e < l;  e++) {
-            bool flag_load;
+#pragma omp parallel num_threads(threads) default(shared)
+        {
+            int tid = omp_get_thread_num();
+            int start = span * tid;
+            int stop = span * (tid + 1);
+            if (stop > l)
+                stop = l;
+
+            for (int e = start; e < stop; e++) {
+                bool flag_load;
 #pragma omp atomic read
-            flag_load = flag;
-            if (flag_load)
-                continue;
+                flag_load = flag;
+                if (flag_load)
+                    break;
 
-            T cUpd = x[e];
-            if (cUpd >= static_cast<T>(threshold)) {
-                int idx;
+                T cUpd = x[e];
+                if (cUpd >= tt) {
+                    int idx;
 #pragma omp atomic capture
-                idx = cnt++;
+                    idx = cnt++;
 
-                if (idx >= flimit) {
+                    if (idx >= flimit) {
 #pragma omp atomic write
-                    flag = true;
-                    continue;
-                }
+                        flag = true;
+                        break;
+                    }
 
-                z[idx] = e + 1;
-                x[e] -= static_cast<T>(threshold);
-            } else if (cUpd <= static_cast<T>(-threshold)) {
-                int idx;
+                    z[idx] = e + 1;
+                    x[e] -= tt;
+                } else if (cUpd <= mtt) {
+                    int idx;
 #pragma omp atomic capture
-                idx = cnt++;
+                    idx = cnt++;
 
-                if (idx >= flimit) {
+                    if (idx >= flimit) {
 #pragma omp atomic write
-                    flag = true;
-                    continue;
-                }
+                        flag = true;
+                        break;
+                    }
 
-                z[idx] = -e - 1;
-                x[e] += static_cast<T>(threshold);
+
+                    z[idx] = -e - 1;
+                    x[e] += tt;
+                }
             }
         }
     }

@@ -1,6 +1,7 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -32,6 +33,9 @@ public class Nd4jTestsF extends BaseNd4jTest {
 
     @Test
     public void testConcat3D_Vstack_F() throws Exception {
+        //Nd4j.getExecutioner().enableVerboseMode(true);
+        //Nd4j.getExecutioner().enableDebugMode(true);
+
         int[] shape = new int[] {1, 1000, 150};
         //INDArray cOrder =  Nd4j.rand(shape,123);
 
@@ -56,6 +60,22 @@ public class Nd4jTestsF extends BaseNd4jTest {
             INDArray tad = res.tensorAlongDimension(e, 1, 2);
             assertEquals((double) e, tad.meanNumber().doubleValue(), 1e-5);
         }
+    }
+
+
+    @Test
+    public void testSlice_1() {
+        val arr = Nd4j.linspace(1,4, 4).reshape(2, 2, 1);
+        val exp0 = Nd4j.create(new double[]{1, 3}, new int[] {2, 1});
+        val exp1 = Nd4j.create(new double[]{2, 4}, new int[] {2, 1});
+
+        val slice0 = arr.slice(0).dup('f');
+        assertEquals(exp0, slice0);
+        assertEquals(exp0, arr.slice(0));
+
+        val slice1 = arr.slice(1).dup('f');
+        assertEquals(exp1, slice1);
+        assertEquals(exp1, arr.slice(1));
     }
 
     @Override

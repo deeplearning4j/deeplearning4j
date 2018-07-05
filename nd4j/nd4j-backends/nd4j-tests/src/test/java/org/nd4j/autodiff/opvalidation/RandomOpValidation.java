@@ -297,7 +297,6 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @Test
     public void testRandomExponential() {
-        OpValidationSuite.ignoreFailing();
         long length = 1_000_000;
         INDArray shape = Nd4j.trueVector(new double[]{length});
         INDArray out = Nd4j.createUninitialized(new long[]{length});

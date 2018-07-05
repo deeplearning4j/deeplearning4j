@@ -111,7 +111,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected transient boolean compressed = false;
 
     // this field holds jvm copy of shapeInfo
-    protected long[] javaShapeInformation;
+    protected transient JvmShapeInfo jvmShapeInfo;
+
 
 
     //Precalculate these arrays (like [3,2,1,0], [2,1,0], [1,0], [0] etc) for use in TAD, to avoid creating same int[]s over and over
@@ -1063,7 +1064,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     private void setShapeInformation(Pair<DataBuffer, long[]> shapeInfo) {
         this.shapeInformation = shapeInfo.getFirst();
-        this.javaShapeInformation = shapeInfo.getSecond();
+        this.jvmShapeInfo = new JvmShapeInfo(shapeInfo.getSecond());
     }
 
 
@@ -1181,10 +1182,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         long length = length();
 
-        if (dimension >= Shape.rank(javaShapeInformation)) {
-            if (length / size(Shape.rank(javaShapeInformation) - 1) >= Integer.MAX_VALUE)
+        if (dimension >= jvmShapeInfo.rank) {
+            if (length / size(jvmShapeInfo.rank - 1) >= Integer.MAX_VALUE)
                 throw new IllegalArgumentException("Vectors along dimension can not be >= Integer.MAX_VALUE");
-            return (int) (length / size(Shape.rank(javaShapeInformation) - 1));
+            return (int) (length / size(jvmShapeInfo.rank - 1));
         }
         if (length / size(dimension) >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Vectors along dimension can not be >= Integer.MAX_VALUE");
@@ -1201,10 +1202,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray vectorAlongDimension(int index, int dimension) {
         if (dimension < 0)
-            dimension = Shape.rank(javaShapeInformation) + dimension;
+            dimension = jvmShapeInfo.getRank() + dimension;
 
         //return the whole thing
-        if (dimension == Shape.rank(javaShapeInformation) - 1 && size(dimension) == 1 && rank() > 2
+        if (dimension == jvmShapeInfo.getRank() - 1 && size(dimension) == 1 && rank() > 2
                 || rank() > 2 && dimension == 0 && size(dimension) == 1) {
             return this;
         }
@@ -1516,7 +1517,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return putScalar(indexes[0], indexes[1], indexes[2], indexes[3], value);
         } else {
             autoProcessScalarCall();
-            long offset = Shape.getOffset(javaShapeInformation, indexes);
+            long offset = Shape.getOffset(jvmShapeInfo.javaShapeInformation, indexes);
             data.put(offset, value);
         }
         return this;
@@ -1542,7 +1543,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return putScalar(indexes[0], indexes[1], indexes[2], indexes[3], value);
         } else {
             autoProcessScalarCall();
-            long offset = Shape.getOffset(javaShapeInformation, indexes);
+            long offset = Shape.getOffset(jvmShapeInfo.javaShapeInformation, indexes);
             data.put(offset, value);
         }
         return this;
@@ -1560,7 +1561,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (rank() > 2)
             throw new IllegalStateException("Cannot use putScalar(int,int,double) on a rank " + rank() + " INDArray");
-        long offset = Shape.getOffsetUnsafe(javaShapeInformation, row, col);
+        long offset = Shape.getOffsetUnsafe(jvmShapeInfo.javaShapeInformation, row, col);
         data.put(offset, value);
         return this;
     }
@@ -1574,16 +1575,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new IllegalStateException(
                     "Cannot use putScalar(int,int,int,double) on a rank " + rank() + " INDArray");
         long offset = 0; // Shape.getOffsetUnsafe(javaShapeInformation, dim0, dim1, dim2);
-        long size_0 = javaShapeInformation[1];
-        long size_1 = javaShapeInformation[1 + 1];
-        long size_2 = javaShapeInformation[1 + 2];
+        long size_0 = jvmShapeInfo.javaShapeInformation[1];
+        long size_1 = jvmShapeInfo.javaShapeInformation[1 + 1];
+        long size_2 = jvmShapeInfo.javaShapeInformation[1 + 2];
 
         if (size_0 != 1)
-            offset += dim0 * javaShapeInformation[1 + 0 + 3];
+            offset += dim0 * jvmShapeInfo.javaShapeInformation[1 + 0 + 3];
         if (size_1 != 1)
-            offset += dim1 * javaShapeInformation[1 + 1 + 3];
+            offset += dim1 * jvmShapeInfo.javaShapeInformation[1 + 1 + 3];
         if (size_2 != 1)
-            offset += dim2 * javaShapeInformation[1 + 2 + 3];
+            offset += dim2 * jvmShapeInfo.javaShapeInformation[1 + 2 + 3];
 
         data.put(offset, value);
         return this;
@@ -1597,7 +1598,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (rank() != 4)
             throw new IllegalStateException(
                     "Cannot use putScalar(int,int,int,int,double) on a rank " + rank() + " INDArray");
-        long offset = Shape.getOffsetUnsafe(javaShapeInformation, dim0, dim1, dim2, dim3);
+        long offset = Shape.getOffsetUnsafe(jvmShapeInfo.javaShapeInformation, dim0, dim1, dim2, dim3);
         data.put(offset, value);
         return this;
     }
@@ -2031,13 +2032,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isEmpty())
             return false;
 
-        if (Shape.rank(javaShapeInformation) == 0) {
+        if (jvmShapeInfo.rank == 0) {
             return true;
-        } else if (Shape.rank(javaShapeInformation) > 2) {
+        } else if (jvmShapeInfo.rank > 2) {
             return false;
-        } else if (Shape.rank(javaShapeInformation) == 1) {
-            return shapeOf().getInt(0) == 1;
-        } else if (Shape.rank(javaShapeInformation) == 2) {
+        } else if (jvmShapeInfo.rank == 1) {
+            return shape()[0] == 1;
+        } else if (jvmShapeInfo.rank == 2) {
             return shape()[0] == 1 && shape()[1] == 1 || length() == 1;
         }
 
@@ -2588,7 +2589,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             And it's possible to be not a view, and have non-empty originalBuffer
          */
         // length/data.length can be different in case of Threshold conversion
-        return Shape.offset(javaShapeInformation) > 0
+        return Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
                 || (length() < data().length() && data.dataType() != DataBuffer.Type.INT)
                 || data().originalDataBuffer() != null;
     }
@@ -2682,7 +2683,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         long[] dotProductOffsets = offsets;
         int[] dotProductStride = stride;
 
-        long offset = Shape.offset(javaShapeInformation) + NDArrayIndex.offset(dotProductStride, dotProductOffsets);
+        long offset = Shape.offset(jvmShapeInfo.javaShapeInformation) + NDArrayIndex.offset(dotProductStride, dotProductOffsets);
         if (offset >= data().length())
             offset = ArrayUtil.sumLong(offsets);
 
@@ -2749,8 +2750,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (i < 0)
             i += this.length();
 
-        long idx = this.isVector() ? i : Shape.getOffset(this.javaShapeInformation, Shape.ind2subC(this.shape(), i));
-        val buffer = Nd4j.createBuffer(this.data(), idx, 1);
+        long idx = this.isVector() ? i : Shape.getOffset(jvmShapeInfo.javaShapeInformation, Shape.ind2subC(this.shape(), i));
+        val buffer = Nd4j.createBuffer( this.data(), this.data().originalOffset() + idx, 1);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],0,1,'c');
         return Nd4j.createArrayFromShapeBuffer(buffer, shape);
     }
@@ -3198,10 +3199,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int stride(int dimension) {
-        int rank = Shape.rank(javaShapeInformation);
+        int rank = jvmShapeInfo.rank;
         if (dimension < 0)
-            return strideOf().getInt(dimension + rank);
-        return strideOf().getInt(dimension);
+            return (int) stride()[dimension + rank];
+        return (int) stride()[dimension];
     }
 
     @Override
@@ -3574,6 +3575,23 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public long[][] toLongMatrix() {
+        if(!isMatrix()) {
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
+        }
+
+        if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
+        long[][] ret = new long[(int) rows()][(int) columns()];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = getRow(i).dup().data().asLong();
+        }
+
+        return ret;
+    }
+
+    @Override
     public int[][] toIntMatrix() {
         if(!isMatrix()) {
             throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
@@ -3775,15 +3793,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 Nd4j.getBlasWrapper().level3().gemm(BlasBufferUtil.getCharForTranspose(result),
                         BlasBufferUtil.getCharForTranspose(this), BlasBufferUtil.getCharForTranspose(temp), 1.0,
                         this, other, 0.0, temp);
-                Nd4j.getBlasWrapper().level3().gemm(
-                        BlasBufferUtil.getCharForTranspose(result),
-                        BlasBufferUtil.getCharForTranspose(this),
-                        BlasBufferUtil.getCharForTranspose(temp),
-                        1.0,
-                        this,
-                        other,
-                        0.0,
-                        temp);
             }
 
             result.assign(temp);
@@ -4172,12 +4181,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Deprecated
     public long linearIndex(long i) {
         long idx = i;
-        for (int j = 0; j < Shape.rank(javaShapeInformation) - 1; j++) {
+        for (int j = 0; j < jvmShapeInfo.rank - 1; j++) {
             if (size((int) i) == 1)
                 continue;
             idx += i * stride(j);
         }
-        return Shape.offset(javaShapeInformation) + (idx);
+        return Shape.offset(jvmShapeInfo.javaShapeInformation) + (idx);
     }
 
 
@@ -4201,7 +4210,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (slice >= slices)
             throw new IllegalArgumentException("Illegal slice " + slice);
 
-        if (Shape.rank(javaShapeInformation) == 0 || isVector()) {
+        if (jvmShapeInfo.rank == 0 || isVector()) {
             if (slice == 0 || isVector()) {
                 return createScalarForIndex(slice, true);
             }
@@ -4278,7 +4287,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (slice >= slices)
             throw new IllegalArgumentException("Illegal slice " + slice);
 
-        if (Shape.rank(javaShapeInformation) == 0) {
+        if (jvmShapeInfo.rank == 0) {
             if (slice == 0)
                 return createScalarForIndex(slice, true);
             else
@@ -4314,7 +4323,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if (indexes[i] < 0)
                 indexes[i] += this.size(i);
         }
-        long idx = Shape.getOffset(this.javaShapeInformation, indexes);
+        long idx = Shape.getOffset(jvmShapeInfo.javaShapeInformation, indexes);
         val buffer = Nd4j.createBuffer(this.data(), idx, 1);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],0,1,'c');
         return Nd4j.createArrayFromShapeBuffer(buffer, shape);
@@ -4330,7 +4339,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 indexes[i] += this.size(i);
         }
 
-        long idx = Shape.getOffset(this.javaShapeInformation, indexes);
+        long idx = Shape.getOffset(jvmShapeInfo.javaShapeInformation, indexes);
         val buffer = Nd4j.createBuffer(this.data(), idx, 1);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],0,1,'c');
         return Nd4j.createArrayFromShapeBuffer(buffer, shape);
@@ -4704,8 +4713,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 Shape.stride(shapeInformation)) : " Other array should have been stride: "
                 + Shape.toString(Shape.stride(shapeInformation)) + " but was "
                 + Arrays.toString(other.stride());
-        assert Shape.offset(javaShapeInformation) == other.offset() : "Offset of this array is "
-                + Shape.offset(javaShapeInformation) + " but other was " + other.offset();
+        assert Shape.offset(jvmShapeInfo.javaShapeInformation) == other.offset() : "Offset of this array is "
+                + Shape.offset(jvmShapeInfo.javaShapeInformation) + " but other was " + other.offset();
 
     }
 
@@ -5288,7 +5297,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return the shape of this matrix
      */
     public long[] shape() {
-        return Shape.shape(javaShapeInformation);
+        return jvmShapeInfo.shape;
     }
 
     /**
@@ -5309,7 +5318,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public long[] stride() {
-        return Shape.stride(javaShapeInformation);
+        return jvmShapeInfo.stride;
     }
 
 
@@ -5323,7 +5332,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public char ordering() {
-        return Shape.order(javaShapeInformation);
+        return jvmShapeInfo.order;
     }
 
     /**
@@ -5335,6 +5344,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public long size(int dimension) {
+        if (dimension < 0)
+            dimension += jvmShapeInfo.rank;
+
         if (isScalar()) {
             if (dimension == 0 || dimension == 1 || dimension < 0)
                 return length();
@@ -5342,22 +5354,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);
         }
 
-        if (dimension < 0) {
-            return shapeOf().getInt(dimension + Shape.rank(javaShapeInformation));
-        }
-
         if (dimension >= rank())
             throw new IllegalArgumentException("Invalid size: cannot get size of dimension " + dimension + " for rank "
                     + rank() + " NDArray (array shape: " + Arrays.toString(this.shape()) + ")");
 
-        val _shapeInfo = shapeInfoDataBuffer();
-        val _shape = shapeOf();
-        return shapeOf().getInt(dimension);
+        return jvmShapeInfo.shape[dimension];
     }
 
     @Override
     public int rank() {
-        return Shape.rank(javaShapeInformation);
+        return jvmShapeInfo.rank;
     }
 
     /**
@@ -5367,7 +5373,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public long length() {
-        return Shape.length(javaShapeInformation);
+        return jvmShapeInfo.length;
     }
 
     /**
@@ -5378,7 +5384,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     @Deprecated
     public long lengthLong() {
-        return Shape.length(javaShapeInformation);
+        return jvmShapeInfo.length;
     }
 
     @Override
@@ -5399,7 +5405,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         boolean compatible = true;
         int count = shape.length - 1;
-        int thisCount = Shape.rank(javaShapeInformation) - 1;
+        int thisCount = jvmShapeInfo.rank - 1;
         for (int i = shape.length - 1; i > 0; i--) {
             if (count < 0 || thisCount < 0)
                 break;
@@ -5520,7 +5526,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray dimShuffle(Object[] rearrange, long[] newOrder, boolean[] broadCastable) {
         Nd4j.getCompressor().autoDecompress(this);
 
-        if (broadCastable.length != Shape.rank(javaShapeInformation))
+        if (broadCastable.length != jvmShapeInfo.rank)
             throw new IllegalArgumentException(
                     "The broadcastable dimensions must be the same length as the current shape");
 
@@ -5630,7 +5636,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return dup();
         boolean alreadyInOrder = true;
         //IntBuffer shapeInfo = shapeInfo();
-        int rank = Shape.rank(javaShapeInformation);
+        int rank = jvmShapeInfo.rank;
         for (int i = 0; i < rank; i++) {
             if (rearrange[i] != i) {
                 alreadyInOrder = false;
@@ -5663,7 +5669,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray permutei(int... rearrange) {
         boolean alreadyInOrder = true;
         val shapeInfo = shapeInfo();
-        int rank = Shape.rank(javaShapeInformation);
+        int rank = jvmShapeInfo.rank;
         for (int i = 0; i < rank; i++) {
             if (rearrange[i] != i) {
                 alreadyInOrder = false;
@@ -5739,7 +5745,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     protected void checkArrangeArray(int[] arr) {
-        assert arr.length == Shape.rank(javaShapeInformation) : "Invalid rearrangement: number of arrangement != shape";
+        assert arr.length == jvmShapeInfo.rank : "Invalid rearrangement: number of arrangement != shape";
         for (int i = 0; i < arr.length; i++) {
             if (arr[i] >= arr.length)
                 throw new IllegalArgumentException("The specified dimensions can't be swapped. Given element " + i
@@ -5769,7 +5775,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isVector() {
-        if (Shape.rank(javaShapeInformation) == 1)
+        if (jvmShapeInfo.rank == 1)
             return true;
 
         return isRowVector() || isColumnVector();
@@ -6478,8 +6484,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
-        int buffer = FlatArray.createBufferVector(builder, this.data().asBytes());
-        int array = FlatArray.createFlatArray(builder, shape, buffer, SameDiff.getDataTypeAsByte(this.data().dataType()), ByteOrder.BE);
+        int buffer = this.isEmpty() ? 0 : FlatArray.createBufferVector(builder, this.data().asBytes());
+        val type = this.isEmpty() ? SameDiff.getDataTypeAsByte(Nd4j.dataType()) : SameDiff.getDataTypeAsByte(this.data().dataType());
+        int array = FlatArray.createFlatArray(builder, shape, buffer, type, ByteOrder.BE);
 
         return array;
     }
@@ -6597,6 +6604,28 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isEmpty() {
-        return ArrayOptionsHelper.arrayType(javaShapeInformation) == ArrayType.EMPTY;
+        return Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
+    }
+
+
+    @Override
+    public long[] shapeInfoJava() {
+        return jvmShapeInfo.javaShapeInformation;
+    }
+
+    @Override
+    public DataBuffer.Type dataType() {
+        val e = Shape.extras(jvmShapeInfo.javaShapeInformation);
+
+        if (e != 0) {
+            val t = ArrayOptionsHelper.dataType(jvmShapeInfo.javaShapeInformation);
+            if (t != DataBuffer.Type.UNKNOWN)
+                return t;
+        }
+
+        if (data != null)
+            return data.dataType();
+
+        return DataBuffer.Type.UNKNOWN;
     }
 }

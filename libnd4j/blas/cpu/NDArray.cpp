@@ -352,10 +352,10 @@ template <typename T>
 
             #pragma omp parallel for schedule(guided) private(tCoord, uCoord, vCoord, zCoord)
             for (int e = 0; e < this->lengthOf(); e++) {
-                shape::ind2subC(this->rankOf(), this->shapeOf(), e, tCoord);
-                shape::ind2subC(second->rankOf(), second->shapeOf(), e, uCoord);
-                shape::ind2subC(third->rankOf(), third->shapeOf(), e, vCoord);
-                shape::ind2subC(target->rankOf(), target->shapeOf(), e, zCoord);
+                shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), tCoord);
+                shape::ind2subC(second->rankOf(), second->shapeOf(), e, this->lengthOf(), uCoord);
+                shape::ind2subC(third->rankOf(), third->shapeOf(), e, this->lengthOf(), vCoord);
+                shape::ind2subC(target->rankOf(), target->shapeOf(), e, this->lengthOf(), zCoord);
 
                 Nd4jLong tOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), tCoord, this->rankOf());
                 Nd4jLong uOffset = shape::getOffset(0, second->shapeOf(), second->stridesOf(), uCoord, second->rankOf());
@@ -393,9 +393,9 @@ template <typename T>
 
 #pragma omp parallel for schedule(guided) private(xCoord, yCoord, zCoord)
             for (int e = 0; e < this->lengthOf(); e++) {
-                shape::ind2subC(this->rankOf(), this->shapeOf(), e, xCoord);
-                shape::ind2subC(other->rankOf(), other->shapeOf(), e, yCoord);
-                shape::ind2subC(target->rankOf(), target->shapeOf(), e, zCoord);
+                shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
+                shape::ind2subC(other->rankOf(), other->shapeOf(), e, this->lengthOf(), yCoord);
+                shape::ind2subC(target->rankOf(), target->shapeOf(), e, this->lengthOf(), zCoord);
 
                 auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
                 auto yOffset = shape::getOffset(0, other->shapeOf(), other->stridesOf(), yCoord, other->rankOf());
@@ -421,8 +421,8 @@ template <typename T>
             Nd4jLong zCoord[MAX_RANK];
 #pragma omp parallel for schedule(guided) private(xCoord, zCoord)
             for (int e = 0; e < this->lengthOf(); e++) {
-                shape::ind2subC(this->rankOf(), this->shapeOf(), e, xCoord);
-                shape::ind2subC(target->rankOf(), target->shapeOf(), e, zCoord);
+                shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
+                shape::ind2subC(target->rankOf(), target->shapeOf(), e, this->lengthOf(), zCoord);
 
                 auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
                 auto zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord, target->rankOf());
@@ -447,8 +447,8 @@ template <typename T>
 
 #pragma omp parallel for schedule(guided) private(xCoord, zCoord)
             for (int e = 0; e < this->lengthOf(); e++) {
-                shape::ind2subC(this->rankOf(), this->shapeOf(), e, xCoord);
-                shape::ind2subC(target->rankOf(), target->shapeOf(), e, zCoord);
+                shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
+                shape::ind2subC(target->rankOf(), target->shapeOf(), e, this->lengthOf(), zCoord);
 
                 Nd4jLong xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
                 Nd4jLong zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord, target->rankOf());
@@ -484,9 +484,9 @@ template <typename T>
 
 #pragma omp parallel for schedule(guided) private(xCoord, yCoord, zCoord)
             for (int e = 0; e < this->lengthOf(); e++) {
-                shape::ind2subC(this->rankOf(), this->shapeOf(), e, xCoord);
-                shape::ind2subC(other->rankOf(), other->shapeOf(), e, yCoord);
-                shape::ind2subC(target->rankOf(), target->shapeOf(), e, zCoord);
+                shape::ind2subC(this->rankOf(), this->shapeOf(), e, this->lengthOf(), xCoord);
+                shape::ind2subC(other->rankOf(), other->shapeOf(), e, this->lengthOf(), yCoord);
+                shape::ind2subC(target->rankOf(), target->shapeOf(), e, this->lengthOf(), zCoord);
 
                 auto xOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), xCoord, this->rankOf());
                 auto yOffset = shape::getOffset(0, other->shapeOf(), other->stridesOf(), yCoord, other->rankOf());
@@ -528,16 +528,16 @@ NDArray<T>::NDArray(const NDArray<T> *other, const bool copyStrides, nd4j::memor
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
     std::vector<int8_t> NDArray<T>::asByteVector() {
-        std::vector<int8_t> result((unsigned long) this->lengthOf() * sizeOfT());
+        std::vector<int8_t> result((unsigned long long) this->lengthOf() * sizeOfT());
 
         if (this->isView()) {
-            auto tmp = this->dup();
+            auto tmp = this->dup(this->ordering());
 
-            memcpy(result.data(), tmp->_buffer, (unsigned long) tmp->lengthOf() * sizeOfT());
+            memcpy(result.data(), tmp->_buffer, (unsigned long long) tmp->lengthOf() * sizeOfT());
 
             delete tmp;
         } else {
-            memcpy(result.data(), _buffer, (unsigned long) this->lengthOf() * sizeOfT());
+            memcpy(result.data(), _buffer, (unsigned long long) this->lengthOf() * sizeOfT());
         }
 
         return result;
@@ -1938,7 +1938,7 @@ NDArray<T> NDArray<T>::tile(const std::vector<Nd4jLong>& reps) const {
         const auto resultRank = result.rankOf();
 #pragma omp parallel for simd if(resultLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
         for(int i=0;  i<resultLen; ++i) {
-            shape::ind2subC(resultRank, resultShape, i, idx);
+            shape::ind2subC(resultRank, resultShape, i, resultLen, idx);
             newBuff[ shape::getOffset(0, resultShape, resultStrides, idx, resultRank) ] = (*this)(shape::subArrayIndex(newShapeInfo, _shapeInfo, i));
         }
     }
@@ -1957,7 +1957,7 @@ void NDArray<T>::tile(const std::vector<Nd4jLong>& reps, NDArray<T>& target) con
         delete []newShapeInfo;    
         throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
     }
-    delete[] newShapeInfo;
+    RELEASE(newShapeInfo, _workspace);
 
     // fill newBuff, loop through all elements of newBuff 
     // looping through _buffer goes automatically by means of getSubArrayIndex applying
@@ -1981,7 +1981,7 @@ void NDArray<T>::tile(const std::vector<Nd4jLong>& reps, NDArray<T>& target) con
         const auto targetRank = target.rankOf();
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
         for(int i=0;  i<targetLen; ++i) {
-            shape::ind2subC(targetRank, targetShape, i, idx);
+            shape::ind2subC(targetRank, targetShape, i, targetLen, idx);
             targetBuff[ shape::getOffset(0, targetShape, targetStrides, idx, targetRank) ] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
         }
     }
@@ -1999,8 +1999,8 @@ void NDArray<T>::tile(NDArray<T>& target) const {
 
     // fill newBuff, loop through all elements of newBuff 
     // looping through _buffer goes automatically by means of getSubArrayIndex applying
-    const int ews = target.ews();
-    const int targetLen = target.lengthOf();
+    const auto ews = target.ews();
+    const auto targetLen = target.lengthOf();
     T* targetBuff = target.getBuffer();
     if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
@@ -2019,7 +2019,7 @@ void NDArray<T>::tile(NDArray<T>& target) const {
         const auto targetRank = target.rankOf();
 #pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) private(idx)
         for(int i=0;  i<targetLen; ++i) {
-            shape::ind2subC(targetRank, targetShape, i, idx);
+            shape::ind2subC(targetRank, targetShape, i, targetLen, idx);
             targetBuff[ shape::getOffset(0, targetShape, targetStrides, idx, targetRank) ] = (*this)(shape::subArrayIndex(target._shapeInfo, _shapeInfo, i));
         }
     }

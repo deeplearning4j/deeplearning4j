@@ -103,6 +103,8 @@ namespace nd4j {
                 auto stop = INT_ARG(1);
                 auto step = INT_ARG(2);
 
+                REQUIRE_TRUE(stop != start, 0, "Range: stop should be larger then start");
+
                 auto e = static_cast<T>(start);
                 if (start > stop) {
                     while (e > (T) stop) {
@@ -119,6 +121,8 @@ namespace nd4j {
                 T start = T_ARG(0);
                 T stop = T_ARG(1);
                 T step = T_ARG(2);
+
+                REQUIRE_TRUE(stop != start, 0, "Range: stop should be larger then start");
 
                 auto e = start;
                 if (start > stop) {
@@ -143,6 +147,8 @@ namespace nd4j {
                 T start = arr0->getScalar(0);
                 T stop = arr1->getScalar(0);
                 T step = arr2->getScalar(0);
+
+                REQUIRE_TRUE(stop != start, 0, "Range: stop should be larger then start");
 
                 auto e = start;
                 if (start > stop) {

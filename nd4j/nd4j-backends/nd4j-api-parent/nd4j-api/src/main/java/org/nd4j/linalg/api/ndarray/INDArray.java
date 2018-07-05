@@ -1519,6 +1519,15 @@ public interface INDArray extends Serializable {
 
     long[] toLongVector();
 
+    /**
+     * Convert this ndarray to a 2d int matrix.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 2d int array
+     */
+    long[][] toLongMatrix();
 
     /**
      * Convert this ndarray to a 2d int matrix.
@@ -3047,4 +3056,16 @@ public interface INDArray extends Serializable {
      * @return
      */
     boolean isEmpty();
+
+    /**
+     * This method returns shapeInformation as jvm long array
+     * @return
+     */
+    long[] shapeInfoJava();
+
+    /**
+     * This method returns dtype for this INDArray
+     * @return
+     */
+    DataBuffer.Type dataType();
 }

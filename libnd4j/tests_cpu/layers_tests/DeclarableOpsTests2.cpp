@@ -166,6 +166,19 @@ TEST_F(DeclarableOpsTests2, Gather_test_5) {
 }
 
 
+TEST_F(DeclarableOpsTests2, Eye_check_119_1) {
+
+    nd4j::ops::eye<float> op;
+    auto result = op.execute({},{},{3, 2});
+
+    auto z = result->at(0);
+
+    z->printShapeInfo("z shape");
+
+    delete result;
+}
+
+
 TEST_F(DeclarableOpsTests2, YetAnotherMatmulTest_1) {
     NDArray<float> A('c', {3, 3});
     NDArray<float> B('c', {3, 1});

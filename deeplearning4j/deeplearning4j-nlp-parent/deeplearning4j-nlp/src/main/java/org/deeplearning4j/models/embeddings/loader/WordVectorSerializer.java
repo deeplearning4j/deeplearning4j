@@ -736,8 +736,11 @@ public class WordVectorSerializer {
         Word2Vec w2v = readWord2Vec(file);
 
         // and "convert" it to ParaVec model + optionally trying to restore labels information
-        ParagraphVectors vectors = new ParagraphVectors.Builder(w2v.getConfiguration()).vocabCache(w2v.getVocab())
-                        .lookupTable(w2v.getLookupTable()).resetModel(false).build();
+        ParagraphVectors vectors = new ParagraphVectors.Builder(w2v.getConfiguration())
+                .vocabCache(w2v.getVocab())
+                .lookupTable(w2v.getLookupTable())
+                .resetModel(false)
+                .build();
 
         try (ZipFile zipFile = new ZipFile(file)) {
             // now we try to restore labels information

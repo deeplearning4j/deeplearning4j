@@ -358,14 +358,15 @@ public class PreProcessor3D4DTest extends BaseNd4jTest {
         INDArray expectedLabelMean, expectedLabelStd, expectedLabelMin, expectedLabelMax;
 
         public Construct4dDataSet(int nExamples, int nChannels, int height, int width) {
+            Nd4j.getRandom().setSeed(12345);
 
             INDArray allImages = Nd4j.rand(new int[] {nExamples, nChannels, height, width});
             allImages.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).muli(100)
                             .addi(200);
-            allImages.get(NDArrayIndex.all(), NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.all()).muli(0.001)
+            allImages.get(NDArrayIndex.all(), NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.all()).muli(0.01)
                             .subi(10);
 
-            INDArray labels = Nd4j.linspace(1, nChannels, nChannels).reshape(nChannels, 1);
+            INDArray labels = Nd4j.linspace(1, nChannels, nChannels).reshape('c', nChannels, 1);
             sampleDataSet = new DataSet(allImages, labels);
 
             expectedMean = allImages.mean(0, 2, 3);
