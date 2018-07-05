@@ -1427,14 +1427,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
 
-        MatchCondition condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
-        int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+        //val condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
+        //long t1 = System.currentTimeMillis();
+        int cntAbs = input.data().dataType() == DataBuffer.Type.FLOAT ? loop.estimateThresholdFloat(null, input.data().addressPointer(), (int) input.length(), (float) threshold)
+                : input.data().dataType() == DataBuffer.Type.DOUBLE ? loop.estimateThresholdDouble(null, input.data().addressPointer(), (int) input.length(), (float) threshold)
+                : loop.estimateThresholdHalf(null, input.data().addressPointer(), (int) input.length(), (float) threshold);
+        //long t2 = System.currentTimeMillis();
 
         if (cntAbs < 2)
             return null;
 
         if (boundary != null)
             cntAbs = Math.min(cntAbs, boundary);
+
+        //log.info("S: {}; T: {}", cntAbs, t2 - t1);
 
         DataBuffer buffer = input.data();
 

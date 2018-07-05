@@ -317,17 +317,17 @@ template<typename T>
 
 		template<>
         math_def inline double nd4j_abs<double>(double value) {
-			return value < 0 ? -value : value;
+			return fabs(value);
 		}
 
 		template<>
         math_def inline int nd4j_abs<int>(int value) {
-			return value < 0 ? -value : value;
+			return abs(value);
 		}
 
 		template<>
 		math_def inline Nd4jLong nd4j_abs<Nd4jLong>(Nd4jLong value) {
-			return value < 0 ? -value : value;
+			return llabs(value);
 		}
 
 
