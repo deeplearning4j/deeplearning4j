@@ -125,9 +125,14 @@ class DocumentationGenerator:
     '''Returns doc string and signature data for methods
     in the public API of an object
     '''
-    def get_public_method_data(self, class_string):
+    def get_public_method_data(self, class_string, includes, excludes):
         method_regex = r'public [static\s]?[a-zA-Z0-9]* ([a-zA-Z0-9]*)\('
-        method_strings = re.findall(method_regex, class_string)
+
+        # Either use all methods or the ones provided by includes
+        method_strings = includes if includes else re.findall(method_regex, class_string)
+
+        # Exclude all 'exclude' methods
+        method_strings = [m for m in method_strings if m not in excludes]
 
         methods = []
         for method in method_strings:
@@ -200,7 +205,7 @@ class DocumentationGenerator:
             class_name = cls.replace('.' + self.language, '')
             doc_string, class_string = self.get_main_doc_string(class_string, class_name)
             constructors, class_string = self.get_constructor_data(class_string, class_name, use_constructors)
-            methods = self.get_public_method_data(class_string)
+            methods = self.get_public_method_data(class_string, includes, excludes)
 
             page_data.append([module, class_name, doc_string, constructors, methods])
 
