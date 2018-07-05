@@ -48,12 +48,33 @@ public class ArrowConverterTest {
     public TemporaryFolder testDir = new TemporaryFolder();
 
 
+
+    @Test
+    public void testToArrayFromINDArray() {
+        Schema.Builder schemaBuilder = new Schema.Builder();
+        schemaBuilder.addColumnNDArray("outputArray",new long[]{1,4});
+        Schema schema = schemaBuilder.build();
+        int numRows = 4;
+        List<List<Writable>> ret = new ArrayList<>(numRows);
+        for(int i = 0; i < numRows; i++) {
+            ret.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.linspace(1,4,4))));
+        }
+
+        List<FieldVector> fieldVectors = ArrowConverter.toArrowColumns(bufferAllocator, schema, ret);
+        ArrowWritableRecordBatch arrowWritableRecordBatch = new ArrowWritableRecordBatch(fieldVectors,schema);
+        INDArray array = ArrowConverter.toArray(arrowWritableRecordBatch);
+        assertArrayEquals(new long[]{4,4},array.shape());
+
+        INDArray assertion = Nd4j.repeat(Nd4j.linspace(1,4,4),4).reshape(4,4);
+        assertEquals(assertion,array);
+    }
+
     @Test
     public void testArrowColumnINDArray() {
         Schema.Builder schema = new Schema.Builder();
         List<String> single = new ArrayList<>();
         int numCols = 2;
-        INDArray arr = Nd4j.create(4);
+        INDArray arr = Nd4j.linspace(1,4,4);
         for(int i = 0; i < numCols; i++) {
             schema.addColumnNDArray(String.valueOf(i),new long[]{1,4});
             single.add(String.valueOf(i));
@@ -80,6 +101,11 @@ public class ArrowConverterTest {
         assertTrue(writable instanceof NDArrayWritable);
         NDArrayWritable ndArrayWritable = (NDArrayWritable) writable;
         assertEquals(arr,ndArrayWritable.get());
+
+        Writable writable1 = ArrowConverter.fromEntry(0, fieldVectors.get(0), ColumnType.NDArray);
+        NDArrayWritable ndArrayWritablewritable1 = (NDArrayWritable) writable1;
+        System.out.println(ndArrayWritablewritable1.get());
+
     }
 
     @Test

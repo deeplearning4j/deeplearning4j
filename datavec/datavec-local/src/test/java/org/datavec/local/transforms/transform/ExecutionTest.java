@@ -48,8 +48,8 @@ public class ExecutionTest  {
     @Test
     public void testExecutionNdarray() {
         Schema schema = new Schema.Builder()
-                .addColumnNDArray("first",new long[]{1,4})
-                .addColumnNDArray("second",new long[]{1,4}).build();
+                .addColumnNDArray("first",new long[]{1,32577})
+                .addColumnNDArray("second",new long[]{1,32577}).build();
 
         TransformProcess transformProcess = new TransformProcess.Builder(schema)
                 .ndArrayMathFunctionTransform("first", MathFunction.SIN)
