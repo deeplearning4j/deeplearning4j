@@ -5,7 +5,8 @@ python generate_docs.py \
     --project keras-import \
     --language java \
     --code ../deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/ \
-    --docs_root deeplarning4j.org/keras
+    --docs_root deeplarning4j.org/keras \
+    --out_language en
 
 # Generate ScalNet docs
 python generate_docs.py \
